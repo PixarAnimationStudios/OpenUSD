@@ -1,0 +1,35 @@
+GetName(PEPPER) returns PEPPER
+GetFullName(PEPPER) returns Condiment::PEPPER
+GetDisplayName(PEPPER) returns Pepper
+GetValueFromName("KETCHUP") returns true: 14
+GetValueFromFullName("Condiment::KETCHUP") returns true: 14
+GetName(NO_NAME) returns 
+GetFullName(NO_NAME) returns 
+GetValueFromName("SQUID") returns false: -1
+GetValueFromFullName("Condiment::SQUID") returns false: -1
+name1 = "SUMMER"
+name2 = "Season::SUMMER"
+name3 = "SUMMER"
+s1 = 4, found = true
+s2 = -1, found = false
+s3 = 4, full name = Season::AUTUMN, found = true
+s4 = 5, found = true
+s5 = -1, found = false
+type name "Season" is known
+type name "Summer" is unknown
+type name "Condiment" is known
+type name "Sandwich" is unknown
+names associated with Condiment:
+KETCHUP
+PEPPER
+SALT
+names associated with SUMMER:
+AUTUMN
+SPRING
+SUMMER
+WINTER
+names associated with "Summer":
+AUTUMN
+SPRING
+SUMMER
+WINTER

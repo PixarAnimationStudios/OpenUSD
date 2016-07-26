@@ -1,0 +1,1 @@
+Error: parse error at bad-commaPlacement.json:5:9: Missing a name for object member.

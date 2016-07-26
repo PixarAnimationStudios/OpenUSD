@@ -1,0 +1,314 @@
+#usda 1.0
+
+over "Ball" (
+    variants = {
+        string shadingVariant = "Cue"
+    }
+    add variantSets = "shadingVariant"
+)
+{
+    over "mesh"
+    {
+    }
+
+    over "Looks"
+    {
+        over "BallLook"
+        {
+            over "BallTexture"
+            {
+            }
+        }
+    }
+    variantSet "shadingVariant" = {
+        "Ball_1" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball1.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(1, 0.850422, 0.0241323)]
+            }
+
+        }
+        "Ball_10" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball10.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.0170208, 0.0444973, 0.363132)]
+            }
+
+        }
+        "Ball_11" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball11.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.947959, 0.0329563, 0.0134364)]
+            }
+
+        }
+        "Ball_12" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball12.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.0473661, 0.0167832, 0.133209)]
+            }
+
+        }
+        "Ball_13" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball13.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.956527, 0.215727, 0.0241323)]
+            }
+
+        }
+        "Ball_14" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball14.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.0013732, 0.0494753, 0.0429018)]
+            }
+
+        }
+        "Ball_15" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball15.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.333438, 0.0019764, 0.00550657)]
+            }
+
+        }
+        "Ball_2" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball2.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.0170208, 0.0444973, 0.363132)]
+            }
+
+        }
+        "Ball_3" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball3.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.947959, 0.0329563, 0.0134364)]
+            }
+
+        }
+        "Ball_4" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball4.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.0473661, 0.0167832, 0.133209)]
+            }
+
+        }
+        "Ball_5" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball5.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.956527, 0.215727, 0.0241323)]
+            }
+
+        }
+        "Ball_6" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball6.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.0013732, 0.0494753, 0.0429018)]
+            }
+
+        }
+        "Ball_7" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball7.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.333438, 0.0019764, 0.00550657)]
+            }
+
+        }
+        "Ball_8" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball8.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.00977218, 0.00908114, 0.00778151)]
+            }
+
+        }
+        "Ball_9" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ball9.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(1, 0.850422, 0.0241323)]
+            }
+
+        }
+        "Cue" {
+            over "Looks"
+            {
+                over "BallLook"
+                {
+                    over "BallTexture"
+                    {
+                        string filename = "./tex/ballCue.tex"
+                    }
+                }
+            }
+
+            over "mesh"
+            {
+                color3f[] primvars:displayColor = [(0.991221, 0.982484, 0.743576)]
+            }
+
+        }
+    }
+}
+

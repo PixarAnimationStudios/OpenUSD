@@ -1,0 +1,76 @@
+#usda 1.0
+(
+    defaultPrim = "ExampleModelingVariants"
+    upAxis = "Z"
+)
+
+def Xform "ExampleModelingVariants" (
+    kind = "component"
+    payload = @./ExampleModelingVariants_payload.usd@</ExampleModelingVariants>
+    variants = {
+        string modelingVariant = "Sphere"
+        string shadingComplexity = "full"
+    }
+    add variantSets = ["modelingVariant", "shadingComplexity"]
+)
+{
+    variantSet "modelingVariant" = {
+        "ALL_VARIANTS" {
+            float3[] extentsHint
+            float3[] extentsHint.timeSamples = {
+                0: [(-1.5, -1, -1.5), (1.5, 1, 1.5)],
+            }
+
+        }
+        "Cone" {
+            float3[] extentsHint
+            float3[] extentsHint.timeSamples = {
+                0: [(-1, -1, -1), (1, 1, 1)],
+            }
+
+        }
+        "Cube" {
+            float3[] extentsHint
+            float3[] extentsHint.timeSamples = {
+                0: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+            }
+
+        }
+        "Cylinder" {
+            float3[] extentsHint
+            float3[] extentsHint.timeSamples = {
+                0: [(-1, -1, -1), (1, 1, 1)],
+            }
+
+        }
+        "Sphere" {
+            float3[] extentsHint
+            float3[] extentsHint.timeSamples = {
+                0: [(-1, -1, -1), (1, 1, 1)],
+            }
+
+        }
+        "Torus" {
+            float3[] extentsHint
+            float3[] extentsHint.timeSamples = {
+                0: [(-1.5, -0.5, -1.5), (1.5, 0.5, 1.5)],
+            }
+
+        }
+    }
+    variantSet "shadingComplexity" = {
+        "display" {
+
+        }
+        "full" {
+
+        }
+        "modeling" {
+
+        }
+        "none" {
+
+        }
+    }
+}
+

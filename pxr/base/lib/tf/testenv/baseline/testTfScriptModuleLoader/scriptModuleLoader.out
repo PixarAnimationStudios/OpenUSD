@@ -1,0 +1,45 @@
+# Test case: loading one library generates a request to load all
+# libraries, one of which attemps to import the library we're
+# currently loading.
+Registering library LoadsAll with predecessors: 
+Registering library DepLoadsAll with predecessors: LoadsAll, 
+Registering library Other with predecessors: LoadsAll, 
+# This should attempt to (forwardly) load Other, which in turn tries
+# to import LoadsAll, which would fail, but we defer loading Other
+# until after LoadsAll is finished loading.
+_LoadUpTo('DepLoadsAll') {
+  Load('LoadsAll');
+  _LoadUpTo('LoadsAll') {
+  }
+}
+_LoadUpTo('') {
+  Load('DepLoadsAll');
+  _LoadUpTo('DepLoadsAll') {
+  }
+  Load('Other');
+  _LoadUpTo('Other') {
+  }
+}
+# Registering a library that is totally independent, and raises an
+# error when loaded, but whose name comes first in dependency order.
+# Since there is no real dependency, the SML should not try to load
+# this module, which would cause an exception.
+Registering library AAA_RaisesError with predecessors: 
+# Test case: loading one library dynamically imports a new,
+# previously unknown dependent library, which registers further
+# dependencies, and expects them to load.
+Registering library LoadsUnknown with predecessors: 
+Registering library Test with predecessors: LoadsUnknown, 
+# This should load LoadsUnknown, which loads Unknown dynamically,
+# which should request for Unknown's dependencies (NewDependency) to
+# load, which should work.
+_LoadUpTo('Test') {
+  Load('LoadsUnknown');
+  _LoadUpTo('LoadsUnknown') {
+  }
+Registering library Unknown with predecessors: NewDynamicDependency, 
+Registering library NewDynamicDependency with predecessors: 
+  _LoadUpTo('Unknown') {
+    Load('NewDynamicDependency');
+  }
+}

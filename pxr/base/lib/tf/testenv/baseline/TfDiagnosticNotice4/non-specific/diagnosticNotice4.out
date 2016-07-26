@@ -1,0 +1,32 @@
+Fatal Coding Error: AXIOM [testTf], Class Type: AXIOM, in AXIOM, AXIOM:12
+
+Fatal Coding Error: AXIOM [testTf], Class Type: AXIOM, in AXIOM, AXIOM:12
+
+Fatal Coding Error: FATAL_CODING_ERROR [testTf], Class Type: FATAL_CODING_ERROR, in FATAL_CODING_ERROR, FATAL_CODING_ERROR:12
+
+Fatal Coding Error: FATAL_CODING_ERROR [testTf], Class Type: FATAL_CODING_ERROR, in FATAL_CODING_ERROR, FATAL_CODING_ERROR:12
+
+Recoverable Coding Error: NONFATAL_CODING_ERROR [testTf], Class Type: NONFATAL_CODING_ERROR, in NONFATAL_CODING_ERROR, NONFATAL_CODING_ERROR:12
+
+Recoverable Coding Error: NONFATAL_CODING_ERROR [testTf], Class Type: NONFATAL_CODING_ERROR, in NONFATAL_CODING_ERROR, NONFATAL_CODING_ERROR:12
+
+Fatal Error: FATAL_ERROR [testTf]
+
+Fatal Error: FATAL_ERROR [testTf]
+
+Error: NONFATAL_ERROR [testTf]
+
+Error: NONFATAL_ERROR [testTf]
+
+Warning: WARNING [testTf]
+
+Warning: WARNING [testTf]
+
+Remark: REMARK [testTf]
+
+Remark: REMARK [testTf]
+
+C++ Exception: UNCAUGHT_EXCEPTION [testTf]
+
+C++ Exception: UNCAUGHT_EXCEPTION [testTf]
+

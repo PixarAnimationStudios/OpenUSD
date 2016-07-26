@@ -1,0 +1,19 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleDepBadDep",
+            "Info": {
+                # This plugin specified a dependency on an unknown type.
+                "PluginDependencies": {
+                    "_TestPlugBase<2>": ["UnknownBase3Derived"]
+                },
+                "Types": {
+                    "TestPlugPythonDepBadDep": {
+                        "bases": ["_TestPlugBase<3>"]
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,12 @@
+set(PXR_PREFIX tutorials)
+set(PXR_INSTALL_SUBDIR share/usd/tutorials)
+
+add_subdirectory(authoringProperties)
+add_subdirectory(authoringVariants)
+add_subdirectory(convertingLayerFormats)
+add_subdirectory(endToEnd)
+add_subdirectory(exampleModelingVariantsKatana)
+add_subdirectory(helloWorld)
+add_subdirectory(referencingLayers)
+add_subdirectory(traversingStage)
+

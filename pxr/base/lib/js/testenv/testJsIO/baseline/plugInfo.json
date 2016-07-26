@@ -1,0 +1,217 @@
+{
+    "Types": {
+        "MoverAttachPoints": {
+            "addGroup": "Movers",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "AttachPoints"
+        },
+        "MoverBakedSubdivWarp": {
+            "addGroup": "Movers",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "BakedSubdivWarp"
+        },
+        "MoverBend": {
+            "addGroup": "Movers",
+            "addSuffix": "bnd",
+            "bases": ["MfMover"],
+            "displayName": "Bend"
+        },
+        "MoverBend::MultiMode": {
+            "isSdValueType": true
+        },
+        "MoverBow": {
+            "addGroup": "Movers",
+            "addSuffix": "bow",
+            "bases": ["MfMover"],
+            "displayName": "Bow"
+        },
+        "MoverConstraintBase": {
+            "bases": ["MfMover"]
+        },
+        "MoverConstraintBase::LocalSpaceMode": {
+            "isSdValueType": true
+        },
+        "MoverCopySubdivPoints": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "CopySubdivPoints"
+        },
+        "MoverCurveDeform": {
+            "addGroup": "Movers",
+            "addSuffix": "crv",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Curve"
+        },
+        "MoverCurveFit": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "CurveFit"
+        },
+        "MoverCylinderDeform": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "Cylinder"
+        },
+        "MoverDisplacementAccumulator": {
+            "addGroup": "Movers",
+            "bases": ["MfParallelMover"],
+            "displayName": "DisplacementAccumulator"
+        },
+        "MoverFrameDeform": {
+            "addGroup": "Movers",
+            "addSuffix": "frm",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Frame"
+        },
+        "MoverFrameDeform::RotationFrame": {
+            "isSdValueType": true
+        },
+        "MoverJointMover": {
+            "addGroup": "Movers",
+            "bases": ["MoverTransformBase"],
+            "displayName": "Joint"
+        },
+        "MoverLatticeDeform": {
+            "addGroup": "Movers",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Lattice"
+        },
+        "MoverLatticeDeform::Version": {
+            "isSdValueType": true
+        },
+        "MoverMacroDriver": {
+            "addGroup": "Other",
+            "bases": ["MfPrim"],
+            "displayName": "MacroDriver"
+        },
+        "MoverMultiRotate": {
+            "addGroup": "Movers",
+            "addSuffix": "rot",
+            "bases": ["MfMover"],
+            "displayName": "MultiRotate"
+        },
+        "MoverMultiSculpt": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "MultiSculpt"
+        },
+        "MoverMultiSculpt::Basis": {
+            "isSdValueType": true
+        },
+        "MoverPtMultBaker": {
+            "bases": ["MfMover"]
+        },
+        "MoverRadialReformer": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "RadialReformer"
+        },
+        "MoverRadialRotate": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "RadialRotate"
+        },
+        "MoverRadialSquetch": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "RadialSquetch"
+        },
+        "MoverRadialSquetch::Mode": {
+            "isSdValueType": true
+        },
+        "MoverRelax": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "Relax"
+        },
+        "MoverRepulse": {
+            "addGroup": "Movers",
+            "addSuffix": "rpl",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Repulse"
+        },
+        "MoverRotate": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "Rotate"
+        },
+        "MoverRotate::Mode": {
+            "isSdValueType": true
+        },
+        "MoverRotate::RotationDirection": {
+            "isSdValueType": true
+        },
+        "MoverScale": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "Scale"
+        },
+        "MoverScale::Mode": {
+            "isSdValueType": true
+        },
+        "MoverSculptDeform": {
+            "addGroup": "Movers",
+            "addSuffix": "sculpt",
+            "bases": ["MfMover"],
+            "displayName": "Sculpt"
+        },
+        "MoverSingleRotate": {
+            "bases": ["MfMover"]
+        },
+        "MoverSquetch": {
+            "addGroup": "Movers",
+            "addSuffix": "sqtch",
+            "bases": ["MfMover"],
+            "displayName": "Squetch"
+        },
+        "MoverSubdivWarp": {
+            "addGroup": "Movers",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "SubdivWarp"
+        },
+        "MoverSubdivWarp::Complexity": {
+            "isSdValueType": true
+        },
+        "MoverSubdivWarp::Version": {
+            "isSdValueType": true
+        },
+        "MoverSurfaceDeform": {
+            "addGroup": "Movers",
+            "addSuffix": "srf",
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Surface"
+        },
+        "MoverSurfaceDeform::Version": {
+            "isSdValueType": true
+        },
+        "MoverTransformBase": {
+            "bases": ["MfMover"]
+        },
+        "MoverTransformDeform": {
+            "addGroup": "Movers",
+            "addSuffix": "xform",
+            "bases": ["MoverTransformBase"],
+            "displayName": "Transform"
+        },
+        "MoverTransformDeform::FramePivotMethod": {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::Mode": {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::MultiMode": {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::TransformOrder": {
+            "isSdValueType": true
+        },
+        "MoverTranslate": {
+            "addGroup": "Movers",
+            "bases": ["MfMover"],
+            "displayName": "Translate"
+        },
+        "MoverTranslate::Mode": {
+            "isSdValueType": true
+        }
+    }
+}

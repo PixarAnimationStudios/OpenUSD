@@ -1,0 +1,17 @@
+/*!
+\page usdShade_page_front UsdShade : USD Shading Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdShade : USD Shading Schema
+\publicLib
+\endif
+
+\section usdShade_overview Overview
+
+UsdShade provides schemas and behaviors for creating and connecting shading
+networks (UsdShadeShader, UsdShadeParameter), organizing shading networks into
+coherent packaged units for binding to geometry and reuse (UsdShadeLook), and
+creating instanceable user interfaces for Looks that drive shader parameters
+(UsdShadeInterfaceAttribute). 
+
+
+*/

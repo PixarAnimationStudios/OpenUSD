@@ -1,0 +1,98 @@
+/*!
+\page sdf_page_front Sdf : Scene Description Foundations
+\if ( PIXAR_MFB_BUILD )
+\mainpage Sdf : Scene Description Foundations
+\publicLib
+\endif
+
+\brief Sdf provides the foundations for serializing scene description to a reference ascii format, or a (multitude of) plugin-defined format.  It also provides the primitive abstractions for interacting with scene description, such as SdfPath, SdfLayer, SdfPrimSpec.
+
+\section sdf_overview Overview
+
+Implements scene description \em layers in USD.  In USD, a complete scene description is composed from partial scene description stored in SdfLayer objects.  The primary unit of scene description within a layer is a \em prim \em spec, represented by the SdfPrimSpec class.  A complete UsdPrim on a stage is a composition of the prim's built-in fallback values and all of the prim spec objects specified in Sdf layers.  (For an overview of prims and stages, see the \ref usd_page_front "Usd library overview".) 
+
+Use methods on an SdfLayer object to export and save a layer to a file, or to load a file from disk.  Scene description files are stored in <c>.usd</c> format (one layer per file, ascii or binary).  Other features abstracted at the layer level include journaling (undo and redo functionality) and logging, which can be customized by subclassing SdfLayerStateDelegateBase .
+
+You should primarily work with scene description using the classes in the Usd library.  The UsdStage object not only represents a complete scene; it also knows how each of the partial scene descriptions were combined to form the complete scene.  For example, the UsdStage object has the context to know how the path of a UsdPrim object on the stage relates to the paths of each SdfPrimSpec object in each layer that contributes a partial description to the complete prim.  SdfLayer objects do not have the context to know how they relate to other layers.
+
+\section sdf_layering Layering and Referencing
+
+An SdfPrimSpec object is named and forms a namespace hierarchy with other prims.  Each layer contains one or more root prims, each of which may have a hierarchy of children.  The SdfPath class provides methods to manipulate paths for all of the objects that comprise a layer's scene description.  For example, SdfPath assigns unique paths for each of the objects in a namespace hierarchy; this includes paths to scene description that "lives inside of" particular variants of a VariantSet.
+
+Layers can be combined in several ways.  An SdfLayer can have \e sublayers.  When layering, the SdfPrimSpec objects in an SdfLayer object merge over the prims at the same namespace path in the layer.  An SdfPrimSpec object can also reference another prim within its own layer or a root prim from another layer.  When referencing, a prim and its name children merge over the other prim that it references.
+
+Note that layering and referencing means that multiple SdfPrimSpec objects may contribute partial descriptions for the same logical prim.  The full description of the prim in a given scene comes only from combining or \em composing the contributions of each of the SdfPrimSpec objects. 
+
+\section sdf_layers_opinions Layers and Opinions
+
+You can think of the partial scene spec in an SdfLayer object as one \em opinion on an aspect of a complete scene.  Several properties at the layer level determine how or whether the opinion offered at a particular layer is considered when the system composes a complete prim on a stage.  For example, the SdfPrimSpec and SdfPropertySpec classes have an access permission property (SdfPermission) that you can use to specify whether a layer is public or private.
+
+\section sdf_primSpec Prim Spec
+
+There are many different kinds of prims, but at the level of scene description they are all represented by an SdfPrimSpec object.  An SdfPrimSpec object represents a partial description of an individual prim in a scene.  It does not require values for every property it contains.  In addition, the list of properties that an SdfPrimSpec object owns may be sparse.  An SdfPrimSpec object that describes a Cylinder may have a radius but no height, relying on either another SdfPrimSpec object or the prim's fallback definition to provide the height.  Similarly, the list of name children on an SdfPrimSpec object may be sparse.
+
+SdfPrimSpec properties are represented by the SdfPropertySpec class. Property specs also represent partial scene description.  The SdfPropertySpec subclasses represent the basic types of properties that prims can have:
+
+<ul>
+	<li>
+        <b>SdfAttributeSpec.</b> Represents values, which can be scalar or array-valued.  For example, the \c radius attribute of a Sphere gprim holds a scalar value; the \c points attribute of a Mesh gprim holds an array value. 
+	</li>
+	<li>
+	    <b>SdfRelationshipSpec.</b> Represents a relationship to other prims, attributes, or relationships, such as the \c look:binding relationship that assigns Looks to Gprims.
+	</li>
+</ul>
+
+
+\section sdf_metadata Plugin Metadata
+
+Prims, attributes, and relationships can also store metadata. Plugins can register new metadata fields on SdfPrimSpec, SdfAttributeSpec, and SdfRelationshipSpec by adding an entry called "SdfMetadata" to their \c plugInfo.json file. For example, the \e Wizards plugin registers the \c wizardData metadata field as a dictionary, and uses it to hold configuration data for various wizard dialogs. SdfMetadata is a dictionary in which each key defines the name of a new metadata field. Each new field must specify "type", a string containing the menva type name, and can optionally specify "default", the default value to use. If "default" is not specified, the default value is taken from SdfGetDefaultValueForTypeName(). For example:
+
+<pre>
+# plugInfo.json
+{
+    "SdfMetadata": {
+         "pi": {
+             "type": "double",
+             "default", 3.14159
+         },
+         "center": {
+             "type": "Vec3d",
+             "default": [0, 1, 0]
+         },
+         "arrayOfStrings": {
+             "type": "string[]"
+         }
+    }
+}
+</pre>
+
+Metadata types are limited to the set of predefined types listed below. Array values (specified by adding "[]" to the type name, like "string[]") are be stored in a VtArray.
+
+<table>
+    <tr><th>String in plugInfo.json</th><th>C++ type</th></tr>
+    <tr><td>"bool"</td><td>bool</td></tr>
+    <tr><td>"float"</td><td>float</td></tr>
+    <tr><td>"double"</td><td>double</td></tr>
+    <tr><td>"int"</td><td>int</td></tr>
+    <tr><td>"string"</td><td>std::string</td></tr>
+    <tr><td>"token"</td><td>TfToken</td></tr>
+    <tr><td>"asset"</td><td>SdfAssetPath</td></tr>
+    <tr><td>"Vec2d"</td><td>GfVec2d</td></tr>
+    <tr><td>"Vec2i"</td><td>GfVec2i</td></tr>
+    <tr><td>"Vec3d"</td><td>GfVec3d</td></tr>
+    <tr><td>"Vec3i"</td><td>GfVec3i</td></tr>
+    <tr><td>"Vec4d"</td><td>GfVec4d</td></tr>
+    <tr><td>"Vec4i"</td><td>GfVec4i</td></tr>
+    <tr><td>"Matrix2d"</td><td>Matrix2d</td></tr>
+    <tr><td>"Matrix3d"</td><td>Matrix3d</td></tr>
+    <tr><td>"Matrix4d"</td><td>Matrix4d</td></tr>
+    <tr><td>"dictionary"</td><td>VtDictionary</td></tr>
+</table>
+
+Due to the design of the plugInfo.json system, default values can only be specified using a double, an int, a string, or a flat list of one of those types. While it would be simpler for the default values to be specified directly via the Python API, this would require loading modules just to read plugInfo.json files, and the plugInfo.json would no longer be as lightweight as it currently is. Since values are specified in a flat list, the default value <code>[1, 2, 3, 4]</code> could be parsed in multiple ways. Parsing using a type of "Vec2d[]" would yield <code>Vt.Vec2dArray((2,), (Gf.Vec2d(1, 2), Gf.Vec2d(3, 4)))</code> because the original array had four values and each Vec2d takes two values (while a VtArray can have multiple dimensions, default values will always be parsed into a 1D VtArray). Parsing that same array using a type of "Matrix2d" would yield <code>Gf.Matrix2d(1, 2, 3, 4)</code> because a Matrix2d requires four values. A default value may never be specified for dictionaries, which will always be empty by default, and must always be specified for enum types.
+
+\section sdf_fileFormatPlugin Custom File Formats
+
+It is possible to create plugins that adapt other file formats to USD, such that a USD file can reference a file of another format, and the plugin will dynamically translate the file's contents into data recognizable as SdfPrimSpec 's, SdfPropertySpec 's, etc.  If it is acceptable to have the file's entire contents translated and cached in memory at the time the file is opened, then deriving a class from the SdfFileFormat plugin base class is the primary task.  If, however, one wishes to access the data lazily (as most binary file formats are designed to do), then one must also create an SdfAbstractData -derived adapter as part of the plugin.
+
+*/

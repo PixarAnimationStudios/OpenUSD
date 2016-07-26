@@ -1,0 +1,17 @@
+test: testWorkLoopsPerf
+spec: pxr/base/lib/work
+configs:
+- name: fedora-gcc64-opt
+  epoch: 1400263260
+  digest: f02ae366892b0a001aeb18c2a16944f5
+  profiles:
+  - name: TBB Loops_time
+    digest: d41d8cd98f00b204e9800998ecf8427e
+    inputs: []
+    outputs:
+    - {metric: time, value: 0.21208873304347825}
+  - name: TBB for_each Loops_time
+    digest: d41d8cd98f00b204e9800998ecf8427e
+    inputs: []
+    outputs:
+    - {metric: time, value: 0.1701477133714286}

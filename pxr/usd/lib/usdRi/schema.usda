@@ -1,0 +1,154 @@
+#usda 1.0
+(
+    "This file describes the USD Shader (RSL) schemata for code generation."
+    subLayers = [
+        @../usd/schema.usda@,
+        @../usdShade/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "usdRi"
+        string libraryPath      = "pxr/usd/usdRi"
+        # string libraryPrefix  = "UsdRi"
+        # string tokensPrefix   = "UsdRi"
+        # dictionary libraryTokens = {}
+    }
+)
+{
+}
+
+class "Statements" (
+    doc = """Container namespace schema for all renderman statements""" 
+) {
+    float ri:focusRegion (
+        customData = {
+            string apiName = "focusRegion"
+        }
+        doc = """Represents the value of the 'focusregion' option to RiCamera 
+        in centimeters. Specifies the stretch of space along the camera view 
+        axis surrounding the focus plane that contains everything that will 
+        be rendered in perfect focus.  If unauthored, a value of zero should
+        be assumed. <b>Note:</b> this parameter may not be supportable in
+        RIS renders in RenderMan 19 and above."""
+    )
+}
+
+##### RSL #####
+
+class RslShader "RslShader" (
+    inherits = [</Shader>]
+) {
+    asset info:sloPath (
+        customData = {
+            string apiName = "sloPath"
+        }
+    )
+}
+
+##### RIS #####
+
+class RisObject "RisObject" (
+    inherits = [</Shader>]
+    doc = """Represents a ris object with connectable parameters. """ 
+) {
+    asset info:filePath (
+        customData = { 
+            string apiName = "filePath"
+        }
+    )
+    asset info:argsPath (
+        customData = {
+            string apiName = "argsPath"
+        }
+    )
+}
+
+class RisPattern "RisPattern" (
+    inherits = [</RisObject>]
+    doc = """Represents a ris pattern object. Multiple of these can be assigned.""" 
+) {
+}
+
+class RisOslPattern "RisOslPattern" (
+    inherits = [</RisPattern>]
+    doc = """Represents a ris osl pattern object.""" 
+) {
+    asset info:filePath = @PxrOSL@ (
+        hidden = true
+        customData = {
+            string apiName = "filePath"
+        }
+    )
+    asset info:oslPath (
+        customData = {
+            string apiName = "oslPath"
+        }
+    )
+}
+
+class RisBxdf "RisBxdf" (
+    inherits = [</RisObject>]
+    doc = """Represents a ris bxdf object. One of these is assigned at one time.""" 
+) {
+}
+
+class RisIntegrator "RisIntegrator" (
+    inherits = </Typed>
+    doc = """Integrator. Only one can be declared in a rib scene.""" 
+) {
+    asset filePath
+    asset argsPath
+}
+
+### Look API common to both RSL and RIS ###
+
+class "RiLookAPI" (
+    doc = """This API provides the relationships to prman shaders and RIS objects."""
+    customData = {
+        # We want the class name to be UsdRiLookAPI
+        string className = "LookAPI"    
+        string extraIncludes = """
+#include "pxr/usd/usdShade/interfaceAttribute.h"
+#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdRi/rslShader.h"
+#include "pxr/usd/usdRi/risBxdf.h"
+#include "pxr/usd/usdRi/risPattern.h"
+
+// Version 1 changes UsdRiRslShaderObject to UsdRiRslShader
+#define USDRI_LOOK_API_VERSION 1
+"""
+    }
+) {
+    rel riLook:surface (
+        customData = {
+            string apiName = "surface"
+        }
+    )
+    rel riLook:displacement (
+        customData = {
+            string apiName = "displacement"
+        }
+    )
+    rel riLook:volume (
+        customData = {
+            string apiName = "volume"
+        }
+    )
+    rel riLook:coshaders (
+        customData = {
+            string apiName = "coshaders"
+        }
+    )
+    rel riLook:bxdf (
+        customData = {
+            string apiName = "bxdf"
+        }
+    )
+    rel riLook:patterns (
+        customData = {
+            string apiName = "patterns"
+        }
+    )
+}

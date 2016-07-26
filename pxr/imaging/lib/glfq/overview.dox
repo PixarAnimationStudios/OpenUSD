@@ -1,0 +1,61 @@
+/*!
+\mainpage
+
+Provides a QGLContext specialized to support OpenGL debug output.
+
+OpenGL debug output can provide more detailed diagnostic information
+than is otherwise available to OpenGL applications.
+
+The classes in this module make it easy to enable OpenGL debug output
+in Qt applications by simply creating a custom QGLContext when initializing
+a QGLWidget subclass.
+
+For convenience, the glf module provides a way to register a default
+debug output message callback function, but it is also possible to use
+the GL debug output API directly.
+
+Once your code has been modified to use this facility, you can enable
+or disable the creation of a debug context by setting the env var
+\p GLF_ENABLE_DEBUG_OUTPUT to true or false respectively.
+
+C++ Example:
+\code
+class MyQGLWidget : public QGLWidget {
+public:
+    MyQGLWidget(const QGLFormat & format, QWidget * parent = NULL) 
+        : QGLWidget(new GlfQGLDebugContext(format), parent) {}
+
+protected:
+    virtual void initializeGL() {
+        GlfGlewInit();
+        GlfRegisterDefaultDebugOutputMessageCallback();
+        // other initialization code
+    }
+
+    virtual void paintGL() {
+        glClearColor(0.1, 0.1, 0.1, 1.0);
+        glClear(GL.GL_COLOR_BUFFER_BIT);
+        // other drawing code
+    }
+};
+\endcode
+
+Python Example:
+\code
+class MyQGLWidget(QtOpenGL.QGLWidget):
+    def __init__(self, glFormat, parent=None):
+        super(MyQGLWidget, self).__init__(GlfQ.CreateGLDebugContext(glFormat), parent)
+
+    def initializeGL(self):
+        Glf.GlewInit()
+        Glf.RegisterDefaultDebugOutputMessageCallback()
+        # other initialization code
+
+    def paintGL(self):
+        GL.glClearColor(0.1, 0.1, 0.1, 1.0)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        # other drawing code
+
+\endcode
+
+*/

@@ -1,0 +1,157 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdx/shaders/renderPass.glslfx
+
+-- glsl HdxRenderPass.RenderColorOutputWithSelection
+
+vec4 ApplySelectionColor(vec4 color)
+{
+#if defined(HD_HAS_selOffset)
+    int primId = HdGet_primID();
+    ivec2 minmax = HdGet_selOffsetMinMax();
+    if (primId >= minmax.x && primId <= minmax.y) {
+        if (bool(selValue[selOffset[primId - minmax.x]])) {
+            vec4 s = HdGet_selColor();
+            color.rgb = mix(color.rgb, s.rgb, s.a);
+        }
+    }
+#endif
+#if defined(HD_HAS_hdxSelectionBuffer)
+    int primId = HdGet_primID();
+    int smin = hdxSelectionBuffer[0];
+    int smax = hdxSelectionBuffer[1];
+    bool sel = false;
+    if (primId >= smin && primId < smax) {
+        int v = hdxSelectionBuffer[2 + primId - smin];
+        if (v == 1) {
+            sel = true;
+        } else if (v == 0) {
+            sel = false;
+        } else {
+            #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
+            for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
+                smin = hdxSelectionBuffer[v];
+                smax = hdxSelectionBuffer[v+1];
+                // allow to highlight in a top-down manner, by flipping level
+                // during iteration.
+                // note: instanceIndex[0] is instanceID.
+                //       instanceIndex for level n is stored at instanceIndex[n+1]
+                primId = GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
+                if (primId >= smin && primId < smax) {
+                    v = hdxSelectionBuffer[v+primId-smin+2];
+                    if (v == 1) {
+                       sel = true;
+                       break;
+                    } else if (v == 0) {
+                       sel = false;
+                       break;
+                    } else {
+                        smin = hdxSelectionBuffer[v];
+                        smax = hdxSelectionBuffer[v+1];
+                        primId = GetElementID();
+                        sel = bool(primId >= smin && primId < smax);
+                        if (sel) {
+                            sel = hdxSelectionBuffer[v+primId-smin+2] != 0;
+                        }
+                    }
+                } else {
+                    sel = false;
+                    break;
+                }
+            }
+            #else
+                // We have no instances, but we may still have faces selected.
+                smin = hdxSelectionBuffer[v];
+                smax = hdxSelectionBuffer[v+1];
+                primId = GetElementID();
+                sel = bool(primId >= smin && primId < smax);
+                if (sel) {
+                    sel = hdxSelectionBuffer[2+v+primId-smin] != 0;
+                }
+            #endif
+        }
+        if (sel) {
+            vec4 s = HdGet_selColor();
+            color.rgb = mix(color.rgb, s.rgb, s.a);
+        }
+    }
+#endif
+    return color;
+}
+
+vec4 ApplyColorOverrides(vec4 color)
+{
+#if defined(HD_HAS_overrideColor)
+    // Mix in override color
+    vec4 overrideColor = HdGet_overrideColor();
+    color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
+#endif
+    return ApplySelectionColor(color);
+}
+
+layout (location = 0) out vec4 colorOut;
+
+void RenderColor(vec4 color)
+{
+    colorOut = color;
+}
+
+-- glsl HdxRenderPass.RenderColorIdOutput
+
+layout (location = 0) out vec4 primIdOut;
+layout (location = 1) out vec4 instanceIdOut;
+layout (location = 2) out vec4 elementIdOut;
+
+vec4 ApplyColorOverrides(vec4 color)
+{
+    // Don't apply overrides during ID render pass.
+    return color;
+}
+
+void RenderColor(vec4 color)
+{
+    int primId = HdGet_primID();
+    primIdOut = vec4(((primId & 0x0000ff) >>  0) / 255.0,
+                     ((primId & 0x00ff00) >>  8) / 255.0,
+                     ((primId & 0xff0000) >> 16) / 255.0, 0);
+
+    // instanceIndex is a tuple of integers (num nested levels).
+    // for picking, we store global instanceId (instanceIndex[0]) in the
+    // selection framebuffer and then reconstruct the tuple in postprocess.
+    int instanceId = GetDrawingCoord().instanceIndex[0];
+    instanceIdOut = vec4(((instanceId & 0x0000ff) >>  0) / 255.0,
+                         ((instanceId & 0x00ff00) >>  8) / 255.0,
+                         ((instanceId & 0xff0000) >> 16) / 255.0, 0);
+
+    int elementId = GetElementID();
+    elementIdOut = vec4(((elementId & 0x0000ff) >>  0) / 255.0,
+                        ((elementId & 0x00ff00) >>  8) / 255.0,
+                        ((elementId & 0xff0000) >> 16) / 255.0, 0);
+
+}
+

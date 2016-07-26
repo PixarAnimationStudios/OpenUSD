@@ -1,0 +1,54 @@
+// This file is used solely to put useful information on the main
+// index page produced by doxygen.
+
+// IF YOU ADD A NEW GROUP, PLEASE ADD IT TO THE LIST BELOW!!
+
+// Comprehensive package documenation:
+
+// Classes/functions by groups:
+
+//! \defgroup group_gf_LinearAlgebra Linear Algebra
+//  Classes having to do with linear algebra.
+
+//! \defgroup group_gf_BasicMath Basic Mathematical Operations
+//  Functions for basic mathematical operations.
+
+//! \defgroup group_gf_BasicGeometry Basic Geometry
+//  Classes for basic geometry.
+
+//! \defgroup group_gf_Noise Noise and Randomness 
+//  Classes/functions having to do with random numbers and noise.
+
+//! \defgroup group_gf_DebuggingOutput Output For Debugging
+//  Functions/classes that generate output solely as a debugging aid
+
+//! \defgroup group_gf_Color Color
+//  Classes/functions for manipulating colors.
+
+//! \defgroup group_gf_Gamma Gamma Mapping Operations
+//  Functions for mapping colors between gamma spaces.
+
+/*!
+\page gf_page_front Gf : Graphics Foundations
+\if ( PIXAR_MFB_BUILD )
+\mainpage Gf : Graphics Foundations
+\publicLib
+\endif
+
+\anchor mainpage_Gf
+
+Contains foundation classes and functions for working with the basic mathematical aspects of graphics.  
+
+The high-level grouping of the classes and functions is as follows:
+
+<ul>
+ 	<li> \link group_gf_LinearAlgebra \b Linear \b Algebra - \endlink Includes classes representing basic types, including vectors of varying numbers and types (such as vectors of two, three, and four float components), two and three-dimensional arrays of sizes, and compound linear transformations. </li>
+ 	<li>  \link group_gf_BasicMath \b Basic \b Mathematical \b Operations - \endlink  Includes classes and functions for performing operations such as converting between radians and degrees, calculating square roots, minimum and maximum values, absolute values, and so on.</li>
+	<li> \link group_gf_BasicGeometry \b Basic \b Geometry - \endlink  Includes classes that represent basic types such as one to three-dimensional floating point ranges, three-dimensional bounding boxes, planes, rays, and splines.</li>
+	<li> \link group_gf_Noise \b Noise \b and \b Randomness - \endlink  Includes classes and functions for generating random numbers and various types of noise, including different dimensional levels of input and output (for example, four-dimensional input, two dimensional output).</li>
+	<li> \link group_gf_DebuggingOutput \b Output \b For \b Debugging - \endlink  Includes functions for quickly outputting Gf types (these are particularly useful for diagnostic purposes).</li>
+<!--  	<li> \link group_gf_Color Color \endlink</li>
+  	<li> \link group_gf_Gamma Gamma Mapping</li> \endlink -->
+</ul>
+
+*/

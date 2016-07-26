@@ -1,0 +1,7 @@
+#!/bin/bash -e
+txmake=/opt/pixar/RenderManProServer-20.3/bin/txmake
+$txmake ballCue.jpg ballCue.tex
+$txmake ball1.jpg ball1.tex
+$txmake ball9.jpg ball9.tex
+$txmake ball8.jpg ball8.tex
+$txmake ball4.jpg ball4.tex

@@ -1,0 +1,422 @@
+/*!
+
+\page Usd_Page_GeneratingSchemas Creating New Schema Classes with usdGenSchema
+
+USD provides a code generator script 'usdGenSchema' for creating new schema 
+classes. The script is driven by a USD layer (typically named schema.usda) and 
+generates the necessary C++ classes and supporting Python code for all the 
+schema classes defined in it.
+
+This USD layer must meet the following prerequisites in order for generated code 
+to compile and work with USD Core successfully.
+
+  - Must specify the libraryName as layer metadata.
+  - Schema typenames must be unique across all libraries.
+  - Attribute names and tokens must be camelCased valid C/python identifiers,
+    with the allowance that ':' signifies property namespacing.  See
+    \ref Usd_OM_UsdProperty and \ref Usd_NameSpacedPropertiesInCodeGen
+    for more information.
+  - usd/schema.usda must exist in the LayerStack, not necessarily as a direct 
+    subLayer. 
+
+See pxr/usd/lib/usdGeom/schema.usda for an example.
+
+\section Usd_IsAVsAPISchemas IsA Vs. API Schemas
+
+Schema classes can be classified into the following two types:
+
+ - <b>API schema</b> - An API schema provides an interface to a prim's
+    qualities, but does not specify a typeName for the underlying prim. The
+    prim's qualities include its inheritance structure, attributes,
+    relationships etc. Since it cannot provide a typeName, an API schema is
+    considered to be non-concrete. We are in-process as of 5/15 on
+    establishing a convention that the C++/python class name for API schemas
+    ends in "API".  In core USD, UsdModelAPI is an example
+    of an API schema; UsdRiLookAPI is an example from our RenderMan schema
+    module, which adds/extracts RenderMan-specific shading information from a
+    generic UsdShadeLook-typed prim.  Also by convention (with which
+    usdGenSchema can help), the properties that "belong" to an API schema are
+    typically namespaced with the base-name of the schema, camelCased.  For
+    example, UsdRiLookAPI::CreateBxdfRel() will create a relationship named
+    riLook:bxdf.
+
+ - <b>IsA schema</b> - An IsA schema can impart a typeName to a prim in
+    addition to providing an interface to a prim's qualities. Every IsA
+    schema must derive from the core class UsdTyped, which is the base class
+    for all typed schemas. Furthermore, an IsA schema can be concrete or
+    non-concrete. An IsA schema will be concrete (or instantiable) if its
+    schema declaration provides both a name for the schema (in quotes) and a
+    typeName in the schema.usda file in which it is defined. A non-concrete
+    (abstract) IsA schema provides only a name for the schema, and hence
+    cannot be instantiated; non-concrete schemas exist to serve as
+    super-classes for related sets of concrete IsA schemas. UsdGeomImageable
+    is an example of a non-concrete IsA schema. UsdGeomScope is an example of
+    a concrete, typed IsA schema.
+
+\note "Instantiable," in this context, means instantiable as a typed prim in
+scene description.  The generated classes for all schemas, be they API,
+concrete-typed or non-concrete-typed are always instantiable in C++ or python
+as interface objects through which one can interact with UsdPrim objects.
+
+The definition of an IsA schema is published, at runtime, into an
+introspectable \ref UsdSchemaRegistry "schema definition registry", which is
+consulted by core Usd when performing property value resolution
+(i.e. retrieving a property's value at a given UsdTimeCode).  This allows IsA
+schemas to provide \em fallback \em values for their properties, that is, a value
+that the property will possess, even when none has been authored. Because the
+definition registry is keyed by prim typeName, a prim can "be" (IsA) at most
+a single type, whereas a prim can host data for any number of API schemas,
+which cannot provide fallback values.
+
+API schemas and non-concrete typed schemas must not provide a typeName in their 
+class declaration in a schema.usda file. 
+
+See \ref Usd_ExampleSchema for examples of each type of schema class.
+
+\section Usd_SchemaCodeGeneration Schema Code Generation
+
+Simply run the usdGenSchema command (you may need to precede it with "mc run " 
+at Pixar) to generate code in the current directory for the schema classes 
+defined in the file named 'schema.usda'. Various command-line options are 
+available for customizing the code generation process.
+
+\code
+usage: usdGenSchema [-h] [-t TEMPLATEPATH] [schemaPath] [codeGenPath]
+
+Generate C++ schema class code from a USD file.
+
+positional arguments:
+  schemaPath            The source USD file where schema classes are defined.
+                        [Default: ./schema.usda]
+  codeGenPath           The target directory where the code should be
+                        generated. [Default: .]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TEMPLATEPATH, --templates TEMPLATEPATH
+                        The directory of the schema class templates. 
+                        [Default: .../pxr/bin/codegenTemplates]
+\endcode
+
+The code generator uses \c jinja2 templates that are found in the template path 
+specified on the command line.  The list of files generated or modified by 
+usdGenSchema depends on the schema class templates in the template path. 
+The default schema class templates that ship with USD include the following 
+files:
+
+  - {schemaClass.h, schemaClass.cpp, wrapSchemaClass.cpp}  
+    One set for each class found in schema.usda
+
+  - {tokens.h, tokens.cpp, wrapTokens.cpp}  
+    Contains static TfTokens for use with all schema in the library.
+
+In addition to the files in schemata and tokens related files, the following 
+files are edited by the script:
+
+  - generatedSchema.usda 
+    Processed form of schema definitions that will be consumed at runtime by 
+    USD core.
+
+  - plugInfo.json 
+    Every Pxr module that contains plugins has one of these.  We add a 
+    declaration for every generated schema class into this file so that 
+    USD core can discover all plugin prim types cheaply and robustly.
+
+Note: Before you can successfully run usdGenSchema, you must make editable the 
+files you want to update! 
+
+Finally, note that usdGenSchema does not update the SConscript (or CMakeLists.txt
+for external clients) and module.cpp files, even if they are editable.  If you 
+have added a new class(es), you must add them to the the SConscript and 
+module.cpp files yourself, and make sure to add them to your changelist. If 
+you are creating a brand new schema library, you'll need to add all the newly 
+generated files to your revision control system.
+
+\section Usd_NameSpacedPropertiesInCodeGen Namespaced Properties in Code Generation
+
+usdGenSchema also supports the use of namespaced properties for code generation.  
+For example, float  foo:bar will generate UsdMyClass::GetFooBarAttr() and 
+UsdTokens->fooBar (with a value of "foo:bar").  usdGenSchema will raise 
+exceptions to avoid naming collisions in the schema API and enforces a 
+One-to-One mapping of token identifiers to token values, as shown below.
+
+\code
+class MyClass "MyClass" {
+    # Generates UsdMyClass::GetFooBarAttr() and UsdTokens->fooBar with value 
+    # "fooBar"
+    float fooBar
+
+    # ERROR: Naming collision in both API and tokens. Generates 
+    # UsdMyClass::GetFooBarAttr() and UsdTokens->fooBar with value "foo:bar"
+    float foo:bar
+
+    # ERROR: Naming collision in tokens. Generates UsdMyClass::GetMyTokenAttr() 
+    # and UsdTokens->fooBar with value "foo-bar"
+    token myToken = "foo-bar" (allowedTokens = ["foo-bar"])    
+}
+\endcode 
+
+\section Usd_GlobalSchemaProperties Global Schema Properties
+
+Each schema.usda file can contain a \em GLOBAL section like the following to
+provide customizations that apply to all the classes in the module:
+
+\code
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "pxUsdGeom"
+        string libraryPath       = "lava/pxUsdGeom"
+        string libraryPrefix     = "PxUsdGeom"
+        string tokensPrefix      = "PxUsdGeom"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string value = "/non-identifier-tokenValue!"
+                string doc = """doc for libraryTokens2"""
+            }
+        }
+    }
+)
+{
+\endcode
+ 
+Here's a short description of each datum in the global customData dictionary:
+
+  - \b libraryName - The name of the module into which the schema-generated files 
+    will be installed. \b Required!
+
+  - \b libraryPath - The partial path with which to prefix '#include' statements 
+    of generated files for this module. For external (non-Pixar) plugins, we 
+    recommend setting libraryPath to ".", so that the headers inside src 
+    directory are included in the generated files. \b Required!
+
+  - \b libraryPrefix - The prefix for all generated schema classes in the module.  
+    If not specified, falls back to ProperCase(libraryName)
+
+  - \b tokensPrefix - The prefix to use for the tokens class, if it needs to be 
+    different from libraryPrefix 
+
+  - \b libraryTokens - a place to declare tokens meaningful to some schema's in the 
+    module, which will be included in the static tokens for the module. If 
+    provided, the "doc" string will be included in the tokens documentation.
+    If provided, the "value" string will be assigned as the token's value; 
+    otherwise, the token's value will be its identifier (as a TfToken).
+ 
+\section Usd_PerClassProperties Customizing Per-Class Properties
+
+\code
+class PxHairman "PxHairman" (
+    customData = {
+        string className = "Hairman"
+        string fileName = "_hairman"
+        string extraIncludes = """
+#include "pxr/usd/usdGeom/primvar.h"
+"""
+    }
+)
+{
+}
+\endcode
+
+Here's a short description of each datum in the per-class customData dictionary:
+
+  - \b className - If the Usd prim typeName for the schema must be different than 
+    the un-prefixed class name,  then use className customData to provide the 
+    class name for the C++ (which will be prefixed) and python schema classes. 
+
+  - \b fileName - if specified, will be the base name for the .h and .cpp generated 
+    files.  If not specified, base name falls back to  CamelCase(className)
+
+  - \b extraIncludes - if specified, will add extra include paths for files 
+    required by the "custom" section of this class only. Note that this will 
+    add includes to the generated header file for the class. If includes 
+    are only needed in the generated implementation file(.cpp), 
+    one can instead add the header includes to the custom 
+    section of the cpp file specifically.
+
+\section Usd_CustomizingPerProperty Customizing Per-Property 
+
+\code
+ColorFloat[] primvars:displayColor (
+    customData = {
+        string apiName = "displayColor"
+    }
+)
+\endcode
+ 
+Here's a short description of each datum in the per-property customData 
+dictionary:
+
+  - \b apiName - Schema properties may define an 'apiName' in customData to 
+    override the default generated accessor API. For example, the above spec 
+    produces GetDisplayColorAttr instead of GetPrimVarsDisplayColorAttr as the 
+    attribute accessor.
+    Note: The actual name of the property as defined on the prim is still
+    primvars:displayColor.
+
+
+\section Usd_ExampleSchema Example Schema Classes
+
+\code
+#usda 1.0
+(
+    """ This file describes an example schemata used for code generation using 
+        usdGenSchema. 
+    """
+    subLayers = [
+        # This is mainly needed for definition of UsdTyped.
+        @/path/to/core/usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "myLib"
+        string libraryPath = "componentName/myLib"
+        dictionary libraryTokens = {
+            dictionary sampleToken = {
+                string doc = "Documentation for sample token."
+            }
+        }
+    }
+) {
+
+}
+
+# Example of a non-concrete IsA schema
+# Note that non-concreate IsA schemas cannot specify a typeName in the class
+# declaration, but they are allowed to provide fallback values for attributes.
+class "MyBaseCustomPrim" (
+    doc = """Defines a non-instantiable (non-concrete) typed schema that derives
+             from MyCustomPrim. Derived schema classes can inherit from this 
+             schema to add (for e.g.) geometric properties."""
+    
+    # IsA schemas should derive from </Typed> or a Schema that derives from
+    # Typed.
+    #
+    # API schemas need not specify inherits. usdGenSchema sets the parent
+    # class for such schemas to UsdSchemaBase.
+    inherits = </Typed>
+    customData = {
+        string className = "MyBasePrim"
+    }
+) {
+    # Some base attributes common to all derived schemas
+    uniform double uniformScale = 1.0 (
+        doc = "A double valued uniform attribute representing scale."
+    )
+
+    Vec3f rotation = (0, 0, 0) (
+        doc = "A varying 3D vector in floating-pt precision representing rotation."
+    )
+
+    Vec3d translation = (0, 0, 0) (
+        doc = "A varying double valued 3D vector representing translation."
+    )
+}
+
+# Example of a concrete, typed (IsA) schema
+class MyCustomPrim "MyCustomPrim" (
+    doc = """Defines a custom typed (IsA) schema prim"""
+
+    inherits = </MyBaseCustomPrim>
+
+    customData = {
+        string className = "MyPrim"
+        customData = {
+            string extraIncludes = """
+                #include "pxr/base/gf/bbox3d.h"
+                #include "pxr/usd/usdGeom/primvar.h" """
+        }
+    }
+)  {
+    # Attributes with fallback values.
+    asset filePath = @/path/to/default/file@ (
+        doc = """An asset path valued attribute that points to a file on disk."""
+    )
+
+    uniform token axis = "X" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """A token valued attribute representing an axis."""
+    )
+
+    Transform transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (0,0,0,1)) (
+        doc = """Double-precision transformation matrix, which should encode
+                 the entire local transformation for a prim.""")
+    )
+
+    # Attributes with no fallback values.
+    PointFloat[] points (
+        doc = """An attribute representing a list of points in 3D space."""
+    )
+
+    string[] strArray (
+        doc = """A string array valued attribute."""
+    )
+
+    string str (
+        doc = """An int valued attribute."""
+    )
+
+    # Relationships
+    rel target (
+        doc = """A relationship called target that could point to another prim
+                or a property"""
+    )
+}
+
+# Example API schema that provides an interface for manipulating a specific 
+# set of attributes on a prim.
+# Note that API schemas cannot provide fallback values for the attributes in 
+# them.  
+# 
+# API schemas can "declare" and provide access to properties defined by
+# collections of other IsA and API schemas, gathered into one API for 
+# convenience.  They can also (more commonly, in our use, thus far), define
+# their own properties.  In this capacity, the convention is to namespace
+# each property with the API's name (camelCased), for easy identification.  
+# For example...
+class "MyParamsAPI" {
+    double myParams:size (
+        customData = {
+            string apiName = "size"
+        }
+        doc = "double specifying the size."
+    )
+
+    uniform int myParams:numSamples (
+        customData = {
+            string apiName = "numSamples"
+        }
+        doc = "Uniform int specifying the number of samples."
+    )
+
+    Vec3d myParams:offset (
+        customData = {
+            string apiName = "offset"
+        }
+        doc = "3D offset."
+    )
+    
+    # By default, all properties of IsA and API schemas are considered
+    # "builtin", i.e. not \ref UsdProperty::IsCustom() "custom".  However,
+    # one can force a schema property to be considered custom by explicitly
+    # declaring it to be so.
+    custom string info
+}
+\endcode
+
+See \ref Usd_Page_Datatypes for the list of all data types provided by Sdf.
+
+\section Usd_GeneratedSchemaCustomCode Adding Custom Code To Generated Schemas
+
+Custom code written after the "// --(BEGIN CUSTOM CODE)--" delimiter in the 
+generated schema files will be preserved between successive usdGenSchema runs. 
+Typically, this will include additional API you may want to provide on your
+schema classes.
+
+\section Usd_SchemaExtensionPhilosophy Impact on Interchange of Creating and Extending Schemas
+
+Coming soon!
+
+*/

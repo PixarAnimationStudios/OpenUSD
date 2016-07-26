@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    defaultPrim = "hello"
+)
+ 
+def Xform "hello"
+{
+    custom double3 xformOp:translate = (4, 5, 6)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+ 
+    def Sphere "world"
+    {
+        float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        double radius = 2
+    }
+}

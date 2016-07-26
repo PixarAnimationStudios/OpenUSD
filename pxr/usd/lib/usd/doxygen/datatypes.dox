@@ -1,0 +1,142 @@
+/*!
+
+\page Usd_Page_Datatypes Basic Datatypes for Scene Description Provided by Sdf
+
+\section Usd_Datatypes Attribute value types
+
+USD supports a variety of data types for attribute values. 
+These types are encoded in an SdfValueTypeName object that corresponds to an 
+underlying C++ type and is what a user would receive from a call to 
+UsdAttribute::GetTypeName. Methods for looking up these objects are provided 
+by \c SdfSchema and they're enumerated in the 
+object \c SdfValueTypeNames -- \sa SdfSchema
+
+For example, to create a custom, Matrix4d-valued attribute on prim \em foo:
+\code
+if (UsdAttribute mat = foo.CreateAttribute(TfToken("myMatrix"), SdfValueTypeNames->Matrix4d)){
+   mat.Set(GfMatrix4d(1));  // Assign identity matrix
+} else {
+   // error creating the attribute
+}
+\endcode
+In python:
+\code{.py}
+mat = foo.CreateAttribute("myMatrix", Sdf.ValueTypeNames.Matrix4d)
+if mat:
+   mat.Set(Gf.Matrix4d(1))  # Assign identity matrix
+else:
+   # error creating the attribute
+\endcode
+
+\section Usd_Basic_Datatypes Basic data types
+
+This table lists the fundamental data types supported by USD.
+
+| Value type token | C++ type      | Description                                      |
+|:-----------------|:--------------|:-------------------------------------------------|
+| bool             | bool          |                                                  |
+| uchar            | uint8_t       | 8  bit unsigned integer                          |
+| int              | int32_t       | 32 bit signed   integer                          |
+| uint             | uint32_t      | 32 bit unsigned integer                          |
+| int64            | int64_t       | 64 bit signed   integer                          |
+| uint64           | uint64_t      | 64 bit unsigned integer                          |
+| half             | half          | 16 bit floating point (imath half)               |
+| float            | float         | 32 bit floating point                            |
+| double           | double        | 64 bit floating point                            |
+| string           | std::string   | stl string                                       |
+| token            | TfToken       | interned string with fast comparison and hashing |
+| asset            | SdfAssetPath  | represents a resolvable path to another asset    |
+| matrix2d         | GfMatrix2d    | 2x2 matrix of doubles                            |
+| matrix3d         | GfMatrix3d    | 3x3 matrix of doubles                            |
+| matrix4d         | GfMatrix4d    | 4x4 matrix of doubles                            |
+| quatd            | GfQuatd       | double-precision quaternion                      |
+| quatf            | GfQuatf       | single-precision quaternion                      |
+| quath            | GfQuath       | half-precision quaternion                        |
+| double2          | GfVec2d       | vector of 2 doubles                              |
+| float2           | GfVec2f       | vector of 2 floats                               |
+| half2            | GfVec2h       | vector of 2 half's                               |
+| int2             | GfVec2i       | vector of 2 ints                                 |
+| double3          | GfVec3d       | vector of 3 doubles                              |
+| float3           | GfVec3f       | vector of 3 floats                               |
+| half3            | GfVec3h       | vector of 3 half's                               |
+| int3             | GfVec3i       | vector of 3 ints                                 |
+| double4          | GfVec4d       | vector of 4 doubles                              |
+| float4           | GfVec4f       | vector of 4 floats                               |
+| half4            | GfVec4h       | vector of 4 half's                               |
+| int4             | GfVec4i       | vector of 4 ints                                 |
+
+\section Usd_Roles Roles
+
+Value types may also be specified by one of a set of special type names. 
+These names correspond to the basic data types listed above but provide 
+extra semantics about how the data should be interpreted. For instance, 
+a value of type "frame4d" is a GfMatrix4d, but represents a coordinate frame.
+
+These type names are grouped by a "role" name, such that all types with the 
+same role have the same semantics. All of these "semantic types" 
+are also provided in SdfValueTypeNames
+
+| Value type token  | Underlying type | Role name  | Role Meaning                                        |
+|:------------------|:----------------|:-----------|:----------------------------------------------------|
+| point3d           | Vec3d           | Point      | transform as a position                             |
+| point3f           | Vec3f           | Point      | transform as a position                             |
+| point3h           | Vec3h           | Point      | transform as a position                             |
+| normal3d          | Vec3d           | Normal     | transform as a normal                               |
+| normal3f          | Vec3f           | Normal     | transform as a normal                               |
+| normal3h          | Vec3h           | Normal     | transform as a normal                               |
+| vector3d          | Vec3d           | Vector     | transform as a direction                            |
+| vector3f          | Vec3f           | Vector     | transform as a direction                            |
+| vector3h          | Vec3h           | Vector     | transform as a direction                            |
+| color3d           | Vec3d           | Color      | energy-linear RGB                                   |
+| color3f           | Vec3f           | Color      | energy-linear RGB                                   |
+| color3h           | Vec3h           | Color      | energy-linear RGB                                   |
+| color4d           | Vec4d           | Color      | energy-linear RGBA, <b>not</b> pre-alpha multiplied |
+| color4f           | Vec4f           | Color      | energy-linear RGBA, <b>not</b> pre-alpha multiplied |
+| color4h           | Vec4h           | Color      | energy-linear RGBA, <b>not</b> pre-alpha multiplied |
+| frame4d           | Matrix4d        | Frame      | defines a coordinate frame                          |
+
+The following exist for historical/internal reasons, 
+but we expect to eliminate them prior to open-sourcing.
+
+| Value type token  | Underlying type | Role name  |
+|:------------------|:----------------|:-----------|
+| Transform         | Matrix4d        | Transform  |
+| PointIndex        | int             | PointIndex |
+| EdgeIndex         | Vec2i           | EdgeIndex  |
+| FaceIndex         | int             | FaceIndex  |
+
+\section Usd_Array_Datatypes Array data types
+
+USD also supports arrays of the above data types. The value type 
+name for these arrays is simply the name of the underlying value type 
+and "[]", e.g. "bool[]", "float[]", etc., and are also provided by 
+SdfValueTypeNames with a "Array" suffix on the basic datatype 
+(e.g. SdfValueTypeNames->FloatArray provides "float[]"). 
+The corresponding C++ type is VtArray, e.g. VtArray<bool>, VtArray<float>, etc.
+
+\section Usd_Dictionary_Type Dictionary-valued Metadata
+
+Metadata in USD (See \ref Usd_OM_Metadata) can take on several other datatypes.  
+Most of these are highly-specialized, pertaining to composition, 
+like SdfListOp<SdfReference>, but we also provide one very versatile 
+datatype <b>dictionary</b> <em>that can only be assumed by metadata</em>, 
+such as \ref UsdObject::GetCustomData() "customData". A dictionary's entries 
+are keyed by string, and can take on any other scene description value type, 
+\em including dictionary, allowing for nested dictionaries.
+
+Dictionaries have special value-resolution semantics, in that each field 
+resolves independently of all others, allowing dictionaries to be sparsely 
+described and overridden in many layers.  This behavior, which we have 
+found highly desirable, also makes dictionaries more expensive to fully 
+compose than all other value types (except those that 
+are \ref Usd_OM_ListOps "list-edited").  It is for this reason that we 
+disallow dictionary as a value type for attributes: it would eliminate 
+the extremely important performance characteristic of attribute 
+value resolution that "strongest opinion wins".
+
+You can use the builtin customData for your truly ad-hoc user-data needs, 
+but you can also add new dictionary-valued metadata by defining it in a 
+module plugInfo.json file - 
+see \ref Usd_Extending_Metadata for details on how to do so.
+
+*/

@@ -1,0 +1,140 @@
+/*! \page page_tf_Notification The TfNotice Notification System
+
+\section sec_tf_Notification_Contents Contents
+
+\li \ref sec_tf_Notification_Overview
+\li \ref sec_tf_Notification_NotificationClasses
+\li \ref sec_tf_Notification_DeliveryMechanism
+\li \ref sec_tf_Notification_SimpleExample
+\li \ref sec_tf_Notification_CompleteExample
+\li \ref sec_tf_Notification_ThreadSafety
+\li \ref sec_tf_Notification_History
+\li \ref sec_tf_Notification_DesignRationale
+\li \ref sec_tf_Notification_Todo
+\li \ref sec_tf_Notification_OpenIssues
+
+\section sec_tf_Notification_Overview Overview
+
+The notification subsystem notifies interested objects that some important event has occurred somewhere in the application. Notices can be thought of as anonymous function calls.  They are function calls in the sense that they are synchronous and efficient; they are anonymous in the sense that senders aren't aware of listeners (although listeners can choose to be aware of senders if they wish). 
+
+A common use of notification is for a model to notify a view that the model has changed and the view needs to be updated.  (The terms model and view are used here as in the Model-View-Controller paradigm).  For example, a cue sheet might send a cue-changed notification to inform an mdt-like spread sheet view to update itself.  Notifications are synchronous broadcasts.  The sender doesn't know who is interested in the notification and there can be many listeners for each notification.  Another use of notification is in the Tf error handling mechanism.  See TfError for more details.
+
+\section sec_tf_Notification_NotificationClasses Notification Classes
+
+The notification subsystem exports one class, named TfNotice.  This class is used to represent the arguments to the anonymous function call. The TfNotice base class is the class from which all notifications are derived.  Notifications are intended to encapsulate information about some event that is important to the application.  Each derived notification class should provide the most specific information possible that describes the event.  For example, a cue-changed notification class should contain a pointer to the avar that changed.
+
+As the example below indicates, notices associated with changes to a model are part of the model's public interface.  Accordingly, these types of notices should be designed carefully and changed infrequently.
+
+\section sec_tf_Notification_DeliveryMechanism Delivery Mechanism
+
+A sender issues a notice by constructing a new notice object (derived from the TfNotice class) and invoking the Send() method to have the notice delivered to all interested listeners. The notification system synchronously invokes each interested listener (in arbitrary order), then returns control to the sender.  An implication of synchronicity is that the listeners are run in the sender's thread.  Another implication is that listeners should be as efficient as possible to avoid unnecessary slowdowns.
+
+\section sec_tf_Notification_SimpleExample Simple Example
+
+The following code sample illustrates the use of notification where a cue-changed notice is received by a listener associated with the user interface of an interactive application.  The cue library defines the CueAvarChangedNotice class in cue.h:
+
+\code
+class CueAvarChangedNotice : public TfNotice 
+{
+public:
+    CueAvarChangedNotice(const Cue *whichCue, const std::string &whichAvar);
+    Cue *GetCue() const;
+    const std::string GetAvar() const;
+private:
+    std::string _avar;
+    const Cue *_cue;    
+};
+
+\endcode
+
+Observe that the new notice class registers itself with the TfType type-system; this is required so that registration of interest in a class N results in a listener receiving notice of type N as well as notices of any type derived from N.
+
+Let us say that you define a class that needs to know when the cue changes. In the following example, this class is interested in all notices, and in particular is interested in cue change notices.
+
+\code
+class UIListener : public TfWeakBase 
+{
+public:
+    UIListener() 
+	{
+        TfWeakPtr<UIListener> me(this);
+        TfNotice::Register(me, &UIListener::ProcessCueChange);
+        TfNotice::Register(me, &UIListener::ProcessAllNotices);
+    }
+
+    void ProcessCueChange(const CueChangeNotice &n);
+    void ProcessAllNotices(const TfNotice &n);
+};
+\endcode
+
+When this listener class is initialized, it uses the templated free function TfNotice::Register to register interest in any notice class derived from CueChangeNotice.  When such a notice is sent, the ProcessCueChange() method should be called. In this example, TfNotice::Register is used a second time to indicate that the ProcessAllNotices() method should be called whenever a notice derived from TfNotice (that is, any kind of notice at all) is sent.
+
+Note that a UIListener has no way of indicating that it no longer wishes to receive messages.  If your class needs the ability to turn listening on and off, see TfNotice::Revoke() for more information.  However, note that it is always safe for a listener to simply be deleted without informing the TfNotice system (but see also \ref sec_tf_Notification_ThreadSafety below).
+
+Now that every thing is initialized you can get down to changing the cue.  The cue class member function that changes the avar  sends the notice as follows (in cue.cpp):
+
+\code
+//
+// Tell the Tf type system to instanciate the type. This
+// must be done in a single .cpp file.
+//
+TF_INSTANTIATE_TYPE(CueChangedNotice, 
+                     TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+...
+
+void
+Cue::_ChangeAvar(const string &avarName, double t, double v)
+{
+    // the avar changing code goes here
+    ...
+
+    // notify listeners that this avar has changed
+    CueChangedNotice(this, avar).Send();
+}
+\endcode
+
+\subsection sec_tf_Notification_CompleteExample Complete Example
+Following is a complete example:
+
+\include test/notice.cpp
+
+\subsection sec_tf_Notification_ThreadSafety Thread Safety
+
+A listening object receives notices in the same thread that a notice is sent from.  Thus, a listener object might call TfNotice::Register() in thread A, but have its notice-receiving method called in threads B and C, possibly even simultaneously.  Finally, if a listening object receives a notice while being deleted, bad things can (and will) happen.
+
+If you know that thread-safety is not a concern (that is, your listening object will only receive notices in one thread, and your listening object will only be deleted in that thread), then your listener object can simply derive off of TfWeakBase.  However, if thread-safety is a concern, there are two issues to worry about.
+
+First, if your listening object receives more than one notice at the same time and that is a problem, you will need to add locking behavior into your object's method calls.
+
+Second, if you are worried that your listener object might be deleted while in the middle of receiving a notice call, then you need to make your listening object support both TfRefPtr and TfWeakPtr.  That is, your object must derive from TfWeakBase \e and TfRefBase (one of the rarely allowed cases on concrete multiple inheritance) and should only be accessed through these smart pointers.  Additionally, you must register your listener using TfNotice::RegisterDeletionSafe().
+
+The above actions furnish a guaranteee against untimely deletion, because the notification center prevents a listener from being destroyed while receiving a notice, by temporarily creating a TfRefPtr pointing to the object.  (In between notices, the notification center points to the listener only by a TfWeakPtr, which allows the listener to destruct when not in use).
+
+\section sec_tf_Notification_History History
+
+Initial version written by Chris King on 11/3/2000 based on several earlier
+documents:
+
+    - <a href="http://tools.pixar.com/projects/luxo/appframework/events.old.1.html>events.old.1.html</a>
+    - <a href="http://tools.pixar.com/projects/luxo/appframework/events.old.html>events.old.html</a>
+
+\section sec_tf_Notification_DesignRationale Design Rationale
+
+\subsection sec_tf_Notification_Notifier Notification managers
+
+Presto uses a central notification manager.  Notification events are synchronous and broadcast.  Broadcast means there are lots of handlers. The handlers can be unordered so we can easily optimize by sorting the handlers by interest type. 
+
+
+\todo \section sec_tf_Notification_Todo Left To Do
+    - Write something about policy of clients using idle events to process notifications. 
+
+\todo \section sec_tf_Notification_OpenIssues Open Issues
+
+    - When a model changes it sends out notices, a UI element gets 
+      the notification so it knows it needs to update. Is there any other call
+      that has to be made to get the gui to go ahead and update itself?
+    - In the ui, who registers? Panels, dialogs, widgets, tool bars? What is 
+      the granularity of notification messages? Camera model changed or 
+      reticle guides were turned on in the camera.
+*/

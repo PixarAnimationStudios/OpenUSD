@@ -1,0 +1,78 @@
+global proc usdMaya_CreateUsdProxyShape()
+{
+    string $fileName = `fileDialog -mode 0 -dm "*.usd *.usda" -t "Choose a USD File"`;
+    
+    string $baseName = capitalizeString(`basenameEx $fileName`);
+    if( isValidObjectName($baseName) )
+        $baseName += "_usd";
+    else
+        $baseName = "UsdStage";
+    
+    string $shapeNode = `createNode "pxrUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
+    setAttr -type "string" ($shapeNode+".filePath") $fileName;
+    
+    select -r $shapeNode;
+}
+
+global proc int usdMaya_SetAssemblyVariant(string $nodeShape, string $variantSetName, string $variant)
+{
+    //
+    // Reference: AEUsdAssemblyTemplate.mel -> AEUsdAssemblyTemplate_variantSets_Replace()
+    //
+    int $success = false;
+    int $foundVariantSet = false;
+    string $nodeAttr = ($nodeShape+".variantSets");
+    int $indices[] = `getAttr -mi $nodeAttr`;
+    int $index;
+    for ($index in $indices) {
+        string $iterVariantSet  = `getAttr ($nodeAttr+"["+$index+"].variantSet")`;
+        if ($iterVariantSet != $variantSetName) {
+            continue;
+        }
+        $foundVariantSet = true;
+        string $variantAttr = ($nodeAttr+"["+$index+"].variant");
+        if (`getAttr $variantAttr` != $variant) {
+            if (`getAttr -settable $variantAttr`) {
+                setAttr -type "string" $variantAttr $variant;
+                $success = true;
+            }
+            else {
+                warning("Attribute "+$variantAttr+" not settable.");
+            }
+            break; // exit out of loop
+        }
+    }
+    if (!$foundVariantSet) {
+        warning("Did not find VariantSet "+$variantSetName+" on "+$nodeShape);
+    }
+    return $success;
+}
+
+
+// =======================================================
+// Helper functions for px_usdAssembly C++ class
+//
+// TODO: XXX Incorporate into C++ file where UsdRepresentations defined
+//
+global proc string usdMaya_UsdMayaReferenceAssembly_repTypeLabel(string $repType)
+{
+    return $repType;
+}
+
+
+global proc string[] usdMaya_UsdMayaReferenceAssembly_listRepTypes()
+{
+    string $repTypes[] = {"Collapsed", 
+                          "Expanded", 
+                          "Full",
+                          "Playback"
+                         };
+    return $repTypes;
+}
+
+
+global proc usdMaya()
+{
+    // load plugins
+    catch ( `px_includeUtilities` );
+}

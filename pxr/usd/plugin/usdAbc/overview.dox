@@ -1,0 +1,7 @@
+/*!
+\mainpage
+
+This library currently exists to provide the alembic file format plugin for
+USD, and currently has no user-level API.
+
+*/

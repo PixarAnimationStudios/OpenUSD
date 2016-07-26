@@ -1,0 +1,157 @@
+// This file is used solely to put useful information on the main
+// index page produced by doxygen.
+
+/*!
+\mainpage
+\anchor hd_mainpage
+
+libHd is a scenegraph agnostic, OpenGL render engine designed for high
+performance playback.
+
+Hd provides a uniform drawing framework that can combine multiple scenegraph
+inputs into a single, sorted render pass and can share and aggregate underlying
+GPU resources, such as mesh refinements or topological data. It is optimized 
+both for dynamically changing scenes and cached playback.
+
+\section hd_datastructures Primary Data Structures
+
+There are three primary sub-systems: scenegraph index, the drawing/compute
+framework and the resource manager. The dependencies of these systems are
+structured strictly in that order, the scenegraph can depend on the drawing
+framework and the drawing framework can depend on the resource manager.
+
+In addition to these three primary subsystems, there is a user-facing API to 
+execute drawing commands. This includes, for example, HdEngine and
+HdRenderPass. For simplicity, these are included in the "drawing framework"
+diagram below, but actually have cross-cutting dependencies.
+
+Finally, there are utilities for monitoring performance and debugging. The 
+full dependency stack looks as follows:
+
+<center>
+<pre>
+.------------------------------.
+|    Engine/User-Facing API    |
+|------------------------------|
+|       Scenegraph Index       |
+|------------------------------|
+|  Drawing & Compute Framework |
+|------------------------------|
+|      Resource Management     |
+|------------------------------|
+|  Perf & Debugging Utilities  |
+'------------------------------'
+</pre></center>
+
+\b The \b Drawing \b Framework 
+
+Drawing is done by gathering all draw items for a RenderPass and constructing a
+CommandBuffer. The Engine structured such that it cannot know what RenderIndex
+is providing DrawItems; this is critical to allow multiple data RenderIndex
+sources to contribute to a single render pass (imagine Usd rendering in
+Presto).
+
+<pre>
+HdEngine: Entry point for drawing, consumes HdRenderPass, produces HdCommandBuffer.
+
+HdRenderPass
+  |
+  |--- HdRprimCollection: Indicates selected rprims for render pass
+  |--- HdRenderIndex: Usd, Presto, DsoMoss, ...
+  |--- HdCommandBuffer
+
+HdRenderPassState
+  |
+  |--- Camera states (view and projection matrices, viewport)
+  |--- Rasterization states (alpha, depth, tessellation level, etc)
+
+HdCommandBuffer: The work to be performed for a single render pass
+  |
+  |--- HdDrawItem[]: A view of DrawItems sorted by GPU state, including alpha sort
+  |--- Hd_DrawBatch[]: A GPU representation of the DrawItems
+  
+HdDrawItem: Abstraction of an OpenGL draw call.
+  |
+  |--- HdDrawingCoord
+  |--- Hd_GeometricShader
+  |--- HdRprimSharedData
+
+</pre>
+
+
+\b The \b Scenegraph \b Index
+
+The scenegraph index is a mapping from the source scenegraph's prim to a prim
+in the render engine, an Rprim. The scenegraph is responsible for providing any
+inherited graphics state required for drawing, so the engine prim structure can
+remain flat for efficiency. As a result, only prims that can result in draw
+calls exist in the RenderIndex, such as meshes and curves.
+
+The diagram below depicts object ownership; StripedBufferArray, Topology, and 
+BufferResource are shared objects.
+
+<pre>
+HdSceneDelegate: Abstracts the client scene graph (Usd, Presto, DsoMoss, ...)
+  |
+  |--- HdRenderIndex: Holds the prim mapping from client to render engine
+         |
+         |--- HdRprim: Subdiv, Curve, ...
+                |
+                |--- HdRepr: Hull, Refined, BBox, Edges, Points
+                |      |
+                |      |--- HdDrawItem: A single GL draw call
+                |             |
+                |             |--- HdRprimSharedData: Shader, ...
+                |             |
+                |             |--- HdDrawingCoord: a bundle of buffer array ranges
+                |                    |
+                |                    |--- HdBufferArrayRange: A subset of aggregated buffer HdBufferArray
+                |
+                |--- HdMeshTopology
+                       |
+                       |--- PxOsdMeshTopology (face vertices, indices)
+                       |
+                       |--- Subdivision data
+
+</pre>
+
+\b The \b Resource \b Manager
+The resource management subsystem is responsible for resource allocation, buffer aggregation, and resource sharing.
+
+<pre>
+
+HdResourceRegistry
+  |
+  |--- Constant (per-rprim) Buffers -> HdBufferResource[] (HdInterleavedMemoryManager)
+  |
+  |--- Instance Buffers             -> HdBufferResource[] (HdVBOMemoryManager)
+  |
+  |--- Vertex PrimVar Buffers       -> HdBufferResource[] (HdVBOMemoryManager)
+  |    Element PrimVar Buffefs
+  |    FaceVarying PrimVar Buffers
+  |
+  |--- Topology Buffers             -> HdBufferResource[] (HdVBOMemoryManager)
+  |
+  |--- Shader Paramters             -> HdBufferResource[] (HdInterleavedMemoryManager)
+  |
+  |--- Textures
+
+</pre>
+
+\b Supported OpenGL versions
+
+Hydra requires at least OpenGL 4.0.
+When higher GL versions, or certain extensions, are available, the following performance optimizations are automatically enabled.
+
+<table>
+    <caption id="GL version">Optional performance optimizations</caption>
+    <tr><td>GPU Instance Culling </td><td>OpenGL 4.3, ARB_shader_storage_buffer_object or NV_shader_buffer_load</td></tr>
+    <tr><td>Multi Draw Indirect  </td><td>OpenGL 4.5 or ARB_multi_draw_indirect</td></tr>
+    <tr><td>Bindless Buffer      </td><td>NV_shader_buffer_load</td></tr>
+    <tr><td>Bindless Texture     </td><td>ARB_bindless_texture</td></tr>
+    <tr><td>Direct State Access  </td><td>OpenGL 4.3 or ARB_direct_state_access</td></tr>
+    <tr><td>Explicit Binding     </td><td>OpenGL 4.3 or ARB_explicit_uniform_location</td></tr>
+</table>
+
+
+*/

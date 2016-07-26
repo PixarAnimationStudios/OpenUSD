@@ -1,0 +1,212 @@
+/*!
+\page page_tf_RegistryManager The TfRegistryManager Registry Initialization System
+
+\section RegistryManagerContents Contents
+
+\li \ref RegistryManagerRationale 
+\li \ref RegistryManagerPushModel
+\li \ref RegistryManagerPitfalls
+\li \ref RegistryManagerDefiningRegistryFunctions
+\li \ref RegistryManagerSubscribing
+\li \ref RegistryManagerSingletons
+\li \ref RegistryManagerUnloadingCode
+
+\section RegistryManagerRationale Rationale
+
+A common C++ design pattern is embedding global objects with constructors in libraries, to ensure that certain initialization takes place at program startup time.  Often the actual global object is not of any importance; rather, the side-effect of executing the function sometime before main is the goal.  This is typically the case when it is necessary to advertise a facility that is not necessarily known to the application (for example, capabilities that a library provides).  The TfRegistryManager was written to avoid the necessity of embedding libraries and binaries with so-called "static constructors," which is the phrase used to describe any function which is run before main to initialize an object.
+
+If you want simply want to use TfRegistryManager, skip the next section and go directly to the \ref tf_RegistryManager_DefiningRegistryFunctions Defining Registry Functions section.
+
+However, if you want to understand the "traditional" technique that TfRegistryManager replaces (and why this replacement is necessary), read on!
+
+\section RegistryManagerPushModel Pushing Data
+
+As an example, consider a facility for registering image transformation functions:
+
+\code
+class ImageTransformer;
+
+class ImageTransformerRegistry 
+{
+    void Add(ImageTransformer*, const std::string& name);
+
+    ImageTransformer* GetByName(const std::string& name);
+};
+\endcode
+
+Suppose a library Xyz wishes to make available a new image transformation.  Imagine that there is a function XyzInit() which you could call to ask the Xyz library to add its image transformations to the registry.  This is an example of data "pulling": given that you explicitly know that library Xyz exists, you can pull its data by calling XyzInit() prior to actually using any of Xyz's transforms.
+
+However, you often don't know what libraries may be linked into our program, and keeping track can be quite difficult.  Additionally, a library might not even be linked into a program: it might be loaded manually, as in the case of plugins.  The usual solution is to add a static constructor into the Xyz library, to "push" data into the registry at startup time:
+
+\code
+class XyzTransformer : public ImageTransformer 
+{
+     ...
+};
+
+void XyzInit() 
+{
+    static bool initialized = false;
+    if (initialized)
+	return;
+
+    XyzTransformer* transformer = new XyzTransformer;
+    ImageTransformerRegistry.GetInstance().Add(transformer, "XyzTransformer");
+    initialized = true;
+    return 0;
+}
+
+struct Xyz_GlobalObject 
+{
+    Xyz_GlobalObject() {
+       XyzInit();
+    }
+};
+
+static Xyz_GlobalObject forceInit;
+\endcode
+
+Here, the global object forceInit exists only to have the side effect of running XyzInit().  If Xyz is linked into a program, then at program startup-time (that is, sometime before main), Xyz_StartupFunction() will be run.  Alternately, if loaded as a plugin, at load time forceInit will be constructed, causing XyzInit() to be run.
+
+Thus, even without anyone knowing about library Xyz, it has managed to advertise its presence.  Is this a good idea?
+
+\section RegistryManagerPitfalls Pitfalls of Static Constructors
+
+There are many problems with the approach described above.
+
+First, the C++ standard is quite vague about exactly when a global object such as forceInit is constructed.  While many implementations will construct forceInit before main() if Xyz is linked into an application, other implementations (specifically Darwin) can be quite lazy about it, and will not construct \c forceInit until just before it is first referenced.  This can be well after main(), or perhaps even never!  (And this behavior is well within the C++ standard.)
+
+Second, even if forceInit is constructed before main(), it is impossible in any implementation to control precisely when it will be constructed.  For an image transformation library, construction "sometime" before main is quite acceptable.  However, for more core facilities (a run-time object-type registry, for example) construction of the facility "sometime" before main() is not nearly precise enough.  Typically, a variety of facilities all compete for construction before main(), and if the facilities depend on one another, it can be quite difficult to ensure they are initialized in a suitable order.
+
+Third, suppose that the program never actually makes use of any image transformations.  It seems a waste to put information into a registry if the registry is never queried.  Even worse, the following call (presumably) creates an ImageTransformerRegistry():
+
+\code
+    ImageTransformerRegistry.GetInstance().Add(transformer, "XyzTransformer");
+\endcode
+
+It would be better to not even create the registry (let alone populate it) if nobody cares.  While the savings may seem small, eliminating a large number of these initializations can allow a program to start up much faster.
+
+Finally, adding insult to injury, the above naive design isn't thread safe.
+
+\anchor tf_RegistryManager_DefiningRegistryFunctions
+\section RegistryManagerDefiningRegistryFunctions Defining Registry Functions
+
+A far better design is for an interested registry to pull data at the time the registry is constructed.  The question is how to do this without requiring explicit knowledge of the data available in a program.  This is the job of the TfRegistryManager.  Here is how you would use TfRegistryManager for the case of image transformations and the Xyz library (discussed in the previous section).
+
+First, let us start with the Xyz library.  The library needs to define a function that is only to be run when the image transformation registry asks for it.  This is done using the TF_REGISTRY_FUNCTION_WITH_TAG() macro, as follows:
+
+\code
+#include "pxr/base/tf/registryManager.h"
+
+class XyzTransformer : public ImageTransformer 
+{
+     ...
+};
+
+TF_REGISTRY_FUNCTION_WITH_TAG(ImageTransformerRegistry, XyzTransformer)
+{
+    ImageTransformer* transformer = new XyzTransformer;
+    ImageTransformerRegistry.GetInstance().Add(transformer, "XyzTransformer");
+}
+\endcode
+
+The first argument to the TF_REGISTRY_FUNCTION_WITH_TAG() macro in the above example marks the function body below as belonging to the domain ImageTransformerRegistry; this function will not be run until the TfRegistryManager is told to ininitialize this domain.  The second parameter must be a type-name, but it does not matter what type-name is used as long as each call of TF_REGISTRY_FUNCTION_WITH_TAG(ImageTransformerRegistry,T) uses a different type T.  Also, both type-names used in the macro must be free from using the "<", ">" or ":" characters (i.e. no templated, nested, or name-space qualified types).  Thus, in some other file, we might also have the following:
+
+\code
+#include "pxr/base/tf/registryManager.h"
+
+class OtherTransformer : public ImageTransformer 
+{
+     ...
+};
+
+TF_REGISTRY_FUNCTION_WITH_TAG(ImageTransformerRegistry, OtherTransformer)
+{
+    ImageTransformer* transformer = new OtherTransformer;
+    ImageTransformerRegistry.GetInstance().Add(transformer, "OtherTransformer");
+
+    // we could also put even more stuff in the registry here
+}
+\endcode
+
+\section RegistryManagerSubscribing Subscribing to Registry Functions
+
+Now let us see how the ImageTransformerRegistry facility uses TfRegistryManager.  At the time that ImageTransformerRegistry wants the TF_REGISTRY_FUNCTION_WITH_TAG() functions it cares about to run, it makes the following call:
+
+\code
+      TfRegistryManager::GetInstance().SubscribeTo<ImageTransformerRegistry>();
+\endcode
+
+(Note that the class TfRegistryManager is a singleton and TfRegistryManager::GetInstance() returns a reference to this singleton.)
+
+When SubscribeTo<T>() is called it causes all TF_REGISTRY_FUNCTION() functions whose first key is T to be run.  Additionally, any subsequently loaded code will immmediately run all of its TF_REGISTRY_FUNCTION() functions whose first key is T.  It is safe to multiply describe to the same service, as subsequent subscriptions to the same service are ignored.
+
+\section RegistryManagerSingletons Registry Singletons
+
+Usually the registries being managed are singletons.  In this case, assuming you are using the TfSingleton design pattern, your final code should look like this:
+
+\code
+ImageTransformerRegistry&
+ImageTransformerRegistry::GetInstance()
+{
+    return TfSingleton<ImageTransformerRegistry>::GetInstance();
+}
+
+ImageTransformerRegistry::ImageTransformerRegistry()
+{
+    // initialize all variables, etc. for the class
+    ...
+
+
+
+    // this next call makes it possible to call
+    // ImageTransformerRegistry::GetInstance() before this constructor
+    // has finished.
+
+    TfSingleton<ImageTransformerRegistry>::SetInstanceConstructed(*this);    
+
+    // now pull the data (i.e. run
+    //    TF_REGISTRY_FUNCTION_WITH_TAG(ImageTransformerRegistry,T) for all T.
+    //
+    TfRegistryManager::GetInstance().SubscribeTo<ImageTransformerRegistry>();
+}
+
+ImageTransformerRegistry::~ImageTransformerRegistry()
+{
+    // don't run subscriptions on my account any longer...
+    TfRegistryManager::GetInstance().UnsubscribeFrom<ImageTransformerRegistry>();
+}
+\endcode
+
+
+\code
+    TfSingleton<ImageTransformerRegistry>::SetInstanceConstructed(*this);
+\endcode
+
+The line of code above (located just before the call to SubscribeTo() in the previous example) is vital.  The reason is that the call to SubscribeTo() will immediately cause various TF_REGISTRY_FUNCTION() functions to be called, which in turn will usually call ImageTransformerRegistry::GetInstance().  However, without first calling SetInstanceConstructed(), calling GetInstance() cannot return, since the constructor for ImageTransformerRegistry hasn't yet completed and the code would deadlock (or fatally abort).
+
+\section RegistryManagerUnloadingCode Unloading Code
+
+It may be necessary for a registry to be depopulated when code unloads.  In the case of the image transformer library, we probably want to remove items from the registry when plugins defining image transformations are unloaded.  This is done as follows:
+
+\code
+ImageTransformerRegistry::Remove(const string& name)
+{
+    // removes name as a known transformer type
+    _transformerMap.erase(name);
+}
+
+ImageTransformerRegistry::Add(ImageTransformer* transformer, const string& name)
+{
+    // add data into table
+    _transformerMap[name] = transformer;
+
+    // schedule removal:
+    auto cl = std::bind(&ImageTransferRegistry::Remove, this, name);
+    TfRegistryManager::GetInstance().AddFunctionForUnload(cl);
+}
+\endcode
+
+The above call to AddFunctionForUnload() schedules that the given callback (effectively, the call this->Remove(name)) be run when the code from which Add() was itself called is unloaded.  If Add() was called from within a TF_REGISTRY_FUNCTION() function, then when the library or module defining this TF_REGISTRY_FUNCTION() function is unloaded, the callback is called.  (Note however that as an optimization, no callbacks are run when code is unloaded because exit() has been called.  Callbacks are executed though, for code that is unloaded without the rest of the program terminating.)
+
+*/

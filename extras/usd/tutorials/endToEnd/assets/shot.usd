@@ -1,0 +1,19 @@
+#usda 1.0
+
+def Xform "World"
+{
+    def Xform "sets"
+    {
+    }
+
+    def Xform "anim"
+    {
+    }
+
+    def "main_cam" (
+        add references = @./main_cam.usd@
+    )
+    {
+    }
+}
+

@@ -1,0 +1,17 @@
+/*! \page page_tf_Initialization Initialization Techniques and Practices
+
+\section InitializationQuickGuide Quick Guide
+
+Initialization in C++ is tricky.  Here is a very quick start to dealing
+with various initialization problems.
+
+XXX Actually write some stuff here.
+
+\section InitializationBadThings Bad Things
+
+\section InitializationAtStartup Execution At Startup
+
+\section InitializationSingletons The Singleton Solution
+
+\section InitializationMultithreading Multithreading
+*/

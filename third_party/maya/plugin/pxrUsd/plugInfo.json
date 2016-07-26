@@ -1,0 +1,19 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "UsdMaya": {
+                    "PrimWriter": {
+                        "mayaPlugin": "pxrUsd",
+                        "providesTranslator": [
+                            "pxrUsdProxyShape",
+                            "pxrUsdReferenceAssembly"
+                        ]
+                    }
+                }
+            },
+            "Name": "@PLUG_INFO_PLUGIN_NAME@",
+            "Type": "python"
+        }
+    ]
+}

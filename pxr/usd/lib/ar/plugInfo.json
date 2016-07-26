@@ -1,0 +1,13 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "ArResolver": {}
+                }
+            },
+            "Name": "pxr.Ar",
+            "Type": "python"
+        }
+    ]
+}

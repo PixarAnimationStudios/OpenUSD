@@ -1,0 +1,14 @@
+/*!
+\page usdHydra_page_front UsdHydra : USD Shading Schema for Hydra
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdHydra : USD Shading Schema for Hydra
+\publicLib
+\endif
+
+\section usdHydra_overview Overview
+
+UsdHydra provides schemas and behaviors for creating and connecting shading
+networks based on UsdShade.
+
+
+*/

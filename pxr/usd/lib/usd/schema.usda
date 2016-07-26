@@ -1,0 +1,152 @@
+#usda 1.0
+(
+    "This file describes the USD primitive schemata and drives code generation."
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "usd"
+        string libraryPath      = "pxr/usd/usd"
+        # string libraryPrefix  = "Usd"
+        # string tokensPrefix   = "Usd"
+        dictionary libraryTokens = {
+            dictionary clipAssetPaths = {
+              string doc = """
+              List of asset paths to the clips for this prim. This list is                 
+              unordered, but elements in this list are referred to by index in
+              other clip-related fields.
+              """
+            }
+
+            dictionary clipPrimPath = {
+              string doc = """
+              Path to the prim in the clips from which time samples will be read.
+              This prim's path will be substituted with this value to determine
+              the final path in the clip from which to read data. For instance,
+              if this prims' path is '/Prim_1', the clip prim path is '/Prim', 
+              and we want to get values for the attribute '/Prim_1.size'. The
+              clip prim path will be substituted in, yielding '/Prim.size', and
+              each clip will be examined for values at that path.
+              """
+            }
+
+            dictionary clipManifestAssetPath = {
+              string doc = """
+              Asset path for the clip manifest. The clip manifest indicates which
+              attributes have time samples authored in the clips specified on this
+              prim. During value resolution, we will only look for time samples 
+              in clips if the attribute exists and is declared as varying in the
+              manifest. Note that the clip manifest is only consulted to check
+              check if an attribute exists and what its variability is. Other values
+              and metadata authored in the manifest will be ignored.
+                                                                                     
+              For instance, if this prims' path is '/Prim_1', the clip prim path is
+              '/Prim', and we want values for the attribute '/Prim_1.size', we will
+              only look within this prims' clips if the attribute '/Prim.size'
+              exists and is varying in the manifest.
+              """
+            }
+
+            dictionary clipTimes = {
+              string doc = """
+              List of pairs (stage time, clip time) indicating the time in the
+              active clip that should be consulted for values at the corresponding
+              stage time. 
+
+              During value resolution, this list will be sorted by stage time; 
+              times will then be linearly interpolated between consecutive entries.
+              For instance, for clip times [(0.0, 0.0), (10.0, 20.0)], 
+              at stage time 0, values from the active clip at time 0 will be used,
+              at stage time 5, values from the active clip at time 10, and at stage 
+              time 10, clip values at time 20.
+              """
+            }
+
+            dictionary clipActive = {
+              string doc = """
+              List of pairs (time, clip index) indicating the time on the stage
+              at which the clip specified by the clip index is active. For instance,
+              a value of [(0.0, 0), (20.0, 1)] indicates that clip 0 is active
+              at time 0 and clip 1 is active at time 20.
+              """
+            }
+        }
+    }
+)
+{
+}
+
+class "Typed" 
+(
+    doc = """The base class for all \\em typed schemas (those that can impart a
+    typeName to a UsdPrim), and therefore the base class for all
+    concrete, instantiable "IsA" schemas.
+       
+    UsdTyped implements a typeName-based query for its override of
+    UsdSchemaBase::_IsCompatible().  It provides no other behavior."""
+)
+{
+}
+
+class "ModelAPI" 
+(
+    doc = """UsdModelAPI is an API schema that provides an interface to a prim's
+    model qualities, if it does, in fact, represent the root prim of a model.
+    
+    The first and foremost model quality is its \\em kind, i.e. the metadata 
+    that establishes it as a model (See KindRegistry).  UsdModelAPI provides
+    various methods for setting and querying the prim's kind, as well as
+    queries (also available on UsdPrim) for asking what category of model
+    the prim is.  See \\ref Usd_ModelKind "Kind and Model-ness".
+    
+    UsdModelAPI also provides access to a prim's \\ref Usd_Model_AssetInfo "assetInfo"
+    data.  While any prim \\em can host assetInfo, it is common that published
+    (referenced) assets are packaged as models, therefore it is convenient
+    to provide access to the one from the other.
+    
+    \\todo establish an _IsCompatible() override that returns IsModel()
+    \\todo GetModelInstanceName()
+    """
+)
+{
+}
+
+class "ClipsAPI"
+(
+    doc = """ UsdClipsAPI is an API schema that provides an interface to
+    a prim's clip metadata. Clips are a "value resolution" feature that 
+    allows one to specify a sequence of usd files (clips) to be consulted, 
+    over time, as a source of varying overrides for the prims at and 
+    beneath this model prim in namespace.
+
+    Clips are a "value resolution" feature that allows one to specify           
+    a sequence of usd files (clips) to be consulted, over time, as a source         
+    of varying overrides for the prims at and beneath this model prim in            
+    namespace.          
+            
+    SetClipAssetPaths() establishes the set of clips that can be consulted.         
+    SetClipActive() specifies the ordering of clip application over time            
+    (clips can be repeated), while SetClipTimes() specifies time-mapping            
+    from stage-time to clip-time for the clip active at a given stage-time,         
+    which allows for time-dilation and repetition of clips.  Finally,           
+    SetClipPrimPath() determines the path within each clip that will map            
+    to this prim, i.e. the location within the clip at which we will look           
+    for opinions for this prim.         
+            
+    Important facts about clips:            
+    \li Within the layerstack in which clips are established, the           
+    opinions within the clips will be \em weaker than any direct opinions           
+    in the layerstack, but \em stronger than varying opinions coming across             
+    references and variants.            
+    \li We will never look for metadata or default opinions in clips            
+    when performing value resolution on the owning stage, since these           
+    quantities must be time-invariant.          
+            
+    This leads to the common structure in which we reference a model asset          
+    on a prim, and then author clips at the same site: the asset reference          
+    will provide the topology and unvarying data for the model, while           
+    the clips will provide the time-sampled animation.
+    """
+)
+{
+}

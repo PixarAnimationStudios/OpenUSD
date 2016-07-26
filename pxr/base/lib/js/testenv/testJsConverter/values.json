@@ -1,0 +1,17 @@
+{
+    "Object" : {
+        "Array" : ["string", 42, -42, 42.0, true, false, null],
+        "ArrayString" : ["string1", "string2"],
+        "ArrayUInt64" : [42, 42],
+        "ArrayInt64" : [-42, 42],
+        "ArrayReal" : [-42.0, 42.0],
+        "ArrayBool" : [true, false],
+        "String" : "value",
+        "UInt64" : 42,
+        "Int64" : -42,
+        "Real" : 42.0,
+        "BoolTrue" : true,
+        "BoolFalse" : false,
+        "Null" : null
+    }
+}

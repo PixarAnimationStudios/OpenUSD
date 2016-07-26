@@ -1,0 +1,12 @@
+{
+    "Object": {
+        "Array": ["string", 42, -42, 42.0, true, false, null],
+        "BoolFalse": false,
+        "BoolTrue": true,
+        "Int64": -42,
+        "Null": null,
+        "Real": 42.0,
+        "String": "value",
+        "UInt64": 42
+    }
+}

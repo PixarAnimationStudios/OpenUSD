@@ -1,0 +1,432 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hd/shaders/mesh.glslfx
+
+#import $TOOLS/hd/shaders/instancing.glslfx
+#import $TOOLS/hd/shaders/meshNormal.glslfx
+#import $TOOLS/hd/shaders/meshWire.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Vertex
+
+out VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+out vec4 tesPatchCoord;
+out vec2 tesTessCoord;
+out vec4 gsPatchCoord;
+out vec2 gsTessCoord;
+
+void main(void)
+{
+    ProcessPrimVars();
+
+    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    vec4 point        = vec4(HdGet_points().xyz, 1);
+    vec4 normal       = vec4(GetVertexNormal(), 0);
+
+    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+    outData.Neye = vec4(transpose(transformInv *
+                                  GetWorldToViewInverseMatrix()) *
+                        normal).xyz;
+
+    // Fill out redundantly, since at this point we don't know
+    // the following stages include tessellation or geometry shader.
+    // we rely on that compiler (linker) optimizes out these redundant
+    // assignment and attribute plumbing.
+    tesPatchCoord = gsPatchCoord = vec4(0);
+    tesTessCoord = gsTessCoord = vec2(0);
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_PointSize = GetPointSize(gl_VertexID);
+    ApplyClipPlanes(outData.Peye);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.TessControl.BSpline
+
+layout(vertices = 16) out;
+
+patch out vec4 tessOuterLo, tessOuterHi;
+
+in VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inpt[gl_MaxPatchVertices];
+
+out VertexDataTess
+{
+    OsdPerPatchVertexBezier v;
+} outpt[16];
+
+void main(void)
+{
+    vec3 cv[16];
+    for (int i = 0; i < 16; ++i) {
+        cv[i] = inpt[i].Peye.xyz;
+    }
+
+    ivec3 patchParam = GetPatchParam();
+
+    OsdComputePerPatchVertexBSpline(patchParam, gl_InvocationID, cv,
+                                    outpt[gl_InvocationID].v);
+
+    // Wait for all basis conversion to be finished
+    barrier();
+
+    if (gl_InvocationID == 0) {
+        vec4 tessLevelOuter = vec4(0);
+        vec2 tessLevelInner = vec2(0);
+
+        // Gather bezier control points to compute limit surface tess levels
+        OsdPerPatchVertexBezier cpBezier[16];
+        for (int i = 0; i < 16; ++i) {
+            cpBezier[i] = outpt[i].v;
+        }
+        OsdGetTessLevelsAdaptiveLimitPoints(cpBezier, patchParam,
+                                            tessLevelOuter, tessLevelInner,
+                                            tessOuterLo, tessOuterHi);
+
+        gl_TessLevelOuter[0] = tessLevelOuter[0];
+        gl_TessLevelOuter[1] = tessLevelOuter[1];
+        gl_TessLevelOuter[2] = tessLevelOuter[2];
+        gl_TessLevelOuter[3] = tessLevelOuter[3];
+
+        gl_TessLevelInner[0] = tessLevelInner[0];
+        gl_TessLevelInner[1] = tessLevelInner[1];
+    }
+
+    ProcessPrimVars();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.TessEval.Bezier
+
+layout(quads) in;
+
+patch in vec4 tessOuterLo, tessOuterHi;
+
+in VertexDataTess {
+    OsdPerPatchVertexBezier v;
+} inpt[gl_MaxPatchVertices];
+
+out VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+// XXX: due to NVIDIA shader compiler bug (filed as 1687344)
+// we can't put patchCoord into interface block.
+out vec4 tesPatchCoord;
+out vec2 tesTessCoord;
+
+void main(void)
+{
+    OsdPerPatchVertexBezier cv[16];
+    for (int i = 0; i < 16; ++i) {
+        cv[i] = inpt[i].v;
+    }
+    vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
+                                         tessOuterLo,
+                                         tessOuterHi);
+
+    vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
+    vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
+
+    ivec3 patchParam = inpt[0].v.patchParam;
+    OsdEvalPatchBezier(patchParam, UV, cv, P, dPu, dPv, N, dNu, dNv);
+
+    outData.Peye = vec4(P, 1);
+    outData.Neye = N;
+
+    tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
+    tesTessCoord = UV;
+
+    ProcessPrimVars(UV.x, UV.y, 10, 9, 6, 5);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.Triangle
+
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+in VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[3];
+
+in vec4 tesPatchCoord[3];
+in vec2 tesTessCoord[3];
+
+out VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+out vec4 gsPatchCoord;
+out vec2 gsTessCoord;
+
+
+vec4 GetPatchCoord(int index)
+{
+    return tesPatchCoord[index];
+}
+
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
+
+void emit(int index, int triIndex0, int triIndex1, int triIndex2, vec3 normal)
+{
+    outData.Peye = displacementShader(index, inData[index].Peye, normal, GetPatchCoord(index));
+    outData.Neye = normal;
+    gsPatchCoord = GetPatchCoord(index);
+    gsPatchCoord.w = GetElementID() - GetDrawingCoord().elementCoord + 0.5;
+    gsTessCoord = vec2(0);
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    int inEdgeFlag = 0;
+    vec2 dt01 = abs(tesTessCoord[0] - tesTessCoord[1]);
+    vec2 dt12 = abs(tesTessCoord[1] - tesTessCoord[2]);
+    vec2 dt20 = abs(tesTessCoord[2] - tesTessCoord[0]);
+    if (min(dt01.x, dt01.y) > 0.03) inEdgeFlag |= 2;
+    if (min(dt12.x, dt12.y) > 0.03) inEdgeFlag |= 4;
+    if (min(dt20.x, dt20.y) > 0.03) inEdgeFlag |= 1;
+
+    ProcessTriEdgeDistance(inData[index].Peye,
+                           inData[triIndex0].Peye,
+                           inData[triIndex1].Peye,
+                           inData[triIndex2].Peye,
+                           inEdgeFlag);
+
+    ProcessPrimVars(index);
+
+    EmitVertex();
+}
+
+void main(void)
+{
+    gl_PrimitiveID = gl_PrimitiveIDIn;
+
+    bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
+
+    vec3 normal0 = GetTriGeometryNormal(
+        inData[0].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
+        isFlipped);
+    vec3 normal1 = GetTriGeometryNormal(
+        inData[1].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
+        isFlipped);
+    vec3 normal2 = GetTriGeometryNormal(
+        inData[2].Neye, inData[0].Peye, inData[1].Peye, inData[2].Peye,
+        isFlipped);
+
+    emit(0, 0, 1, 2, normal0);
+    emit(1, 0, 1, 2, normal1);
+    emit(2, 0, 1, 2, normal2);
+    EndPrimitive();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.Quad
+
+layout(lines_adjacency) in;
+layout(triangle_strip, max_vertices = 6) out;
+
+in VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[4];
+
+out VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+out vec4 gsPatchCoord;
+out vec2 gsTessCoord;
+
+vec4 GetPatchCoord(int index)
+{
+    vec2 uv[4];
+    uv[0] = vec2(0, 0);
+    uv[1] = vec2(1, 0);
+    uv[2] = vec2(1, 1);
+    uv[3] = vec2(0, 1);
+
+    ivec3 patchParam = GetPatchParam();
+    return OsdInterpolatePatchCoord(uv[index], patchParam);
+}
+
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
+
+void emit(int index, int triIndex0, int triIndex1, int triIndex2,
+          vec3 normal, int triCounter)
+{
+    outData.Peye = displacementShader(index, inData[index].Peye, normal, GetPatchCoord(index));
+    outData.Neye = normal;
+
+    gsPatchCoord = GetPatchCoord(index);
+    gsTessCoord = vec2(0);
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    ProcessQuadEdgeDistance(inData[index].Peye,
+                            inData[triIndex0].Peye,
+                            inData[triIndex1].Peye,
+                            inData[triIndex2].Peye,
+                            triCounter);
+
+    ProcessPrimVars(index);
+
+    EmitVertex();
+}
+
+void main(void)
+{
+    gl_PrimitiveID = gl_PrimitiveIDIn;
+
+    bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
+
+    vec3 normal0 = GetQuadGeometryNormal(
+        inData[0].Neye,
+        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
+        isFlipped);
+    vec3 normal1 = GetQuadGeometryNormal(
+        inData[1].Neye,
+        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
+        isFlipped);
+    vec3 normal2 = GetQuadGeometryNormal(
+        inData[2].Neye,
+        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
+        isFlipped);
+    vec3 normal3 = GetQuadGeometryNormal(
+        inData[3].Neye,
+        inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
+        isFlipped);
+
+    //  0---3
+    //  |  .|
+    //  | . |
+    //  |.  |
+    //  1---2
+
+    emit(0, 0, 1, 3, normal0, 0);
+    emit(1, 0, 1, 3, normal1, 0);
+    emit(3, 0, 1, 3, normal3, 0);
+    EndPrimitive();
+
+    emit(3, 3, 1, 2, normal3, 1);
+    emit(1, 3, 1, 2, normal1, 1);
+    emit(2, 3, 1, 2, normal2, 1);
+    EndPrimitive();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.Unlit
+
+vec4 Lit(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    return color;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.Lit
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
+
+vec4 Lit(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    return surfaceShader(Peye, Neye, color, patchCoord);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment
+
+in VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData;
+
+in vec4 gsPatchCoord;
+in vec2 gsTessCoord;
+
+vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color);
+
+#ifndef HD_HAS_ptexFaceOffset
+#define HD_HAS_ptexFaceOffset
+int HdGet_ptexFaceOffset()
+{
+    return 0;
+}
+#endif
+
+vec4 GetPatchCoord(int localIndex)
+{
+    return vec4(gsPatchCoord.xyz,
+                gsPatchCoord.w + HdGet_ptexFaceOffset());
+}
+
+void main(void)
+{
+    bool isFlipped = IsFlipped();
+
+    if (ShouldCullFaceAccordingToShading(gl_FrontFacing, isFlipped)) {
+        discard;
+    }
+
+    vec4 color = vec4(HdGet_color());
+
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+    vec3 Neye = GetShadingNormal(inData.Neye, isFlipped);
+
+    color.rgb = ApplyColorOverrides(color).rgb;
+
+    color = mix(color,
+                Lit(vec4(Peye, 1), Neye, color, GetPatchCoord()),
+                GetLightingBlendAmount());
+
+    color = ApplyEdgeColor(color, GetPatchCoord());
+
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+
+    RenderColor(color);
+}

@@ -1,0 +1,20 @@
+/*!
+\mainpage
+
+Provides core translation between Usd and Maya.  This library also contains
+some of the logic for usd assembly references.
+
+<h3>Translation Plugins</h3>
+
+Plugins can provide new translation functions for Usd types that are not known
+to the core system.
+
+\sa PxrUsdMayaPrimReaderRegistry
+
+<h3>Chaser Plugins</h3>
+
+Plugins to the export process can be provided an enabled as needed.
+
+\sa PxrUsdMayaChaserRegistry
+
+*/

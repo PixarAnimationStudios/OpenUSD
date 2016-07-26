@@ -1,0 +1,192 @@
+/*!
+\page page_tf_Diagnostic Guide To Diagnostic Facilities
+
+Describes the use of low-level programming macros to issue coding errors, runtime errors, warnings and status messages.
+
+\section DiagnosticContents Contents
+
+\li \ref DiagnosticQuickStart 
+\li \ref DiagnosticIntendedUse 
+\li \ref DiagnosticTF_FATAL_ERROR 
+\li \ref DiagnosticTF_ERROR 
+\li \ref DiagnosticTF_WARN 
+\li \ref DiagnosticTF_STATUS 
+\li \ref DiagnosticTF_FUNC_NAME 
+
+\section DiagnosticQuickStart Quick Guide to Functions and Macros
+
+If you are already familiar with the TF library diagnostic facilities, here is a quick guide to picking the correct facility:
+
+	- If it is a coding bug:
+		- If you can work around the bug, do so, but use TF_CODING_ERROR() to inform users that the bug exists and to let the system back out changes to authored data if necessary.
+		- If you can't get past the bug, use TF_FATAL_ERROR() to clearly describe what's wrong.  (If the bug doesn't cross API lines, or in regression tests, TF_AXIOM() is also acceptable.  See \ref DiagnosticTF_FATAL_ERROR to make the distinction clear.)
+	- If it is not a coding bug:  Use one of TF_RUNTIME_ERROR(), TF_ERROR(), TF_WARN(), TF_STATUS() to communicate what went wrong.  Use TF_FATAL_ERROR() only if there is no reasonable way for the program to continue onward.
+
+\section DiagnosticIntendedUse Intended Use
+
+The intended use of the diagnostic facilities in the Tf Library is for documenting and communicating various abnormal conditions that can occur in your code.  The facilities in the Tf Library, while effective, are fairly low-level.  If your application or library has access to higher-level and more structured diagnostic facilities, you are urged to make use of them; if not, you should use the facilities in the Tf Library.  Although these facilities are fairly simple, they are also highly configurable.
+
+The diagnostic facilities in the Tf Library are appropriate for the following tasks:
+    - Communicating coding errors (for example, unsatisfied program invariants)
+    - Communicating serious runtime errors whose cause is external (for example, a needed server can't be found, a vital configuration file is missing)
+    - Informing the user of problems that are not handled by other parts of the program.
+
+To communicate errors, warnings, and status messages, the Tf Library first attempts to call a delegate which may be installed by a higher-level library.  If there is no delegate installed, default actions include printing errors and warnings to \c stderr, printing status messages to \c stdout, printing stack traces, and terminating the program on fatal errors.  The following list describes usage scenarios for the diagnostsic facilities in the Tf Libarary:
+
+    \li For non-fatal coding errors (for example, something you didn't expect, non-fatal violation of an API requirement), use TF_CODING_ERROR().
+    \li For fatal coding errors (for example, an unexpected, unrecoverable coding error, violation of an API requirement which cannot be handled), use TF_FATAL_ERROR() or TF_AXIOM().
+    \li For fatal external errors (for example, you wanted to execute "/bin/cat", but it doesn't exist, the database server won't respond) use TF_FATAL_ERROR().
+    \li For non-fatal user errors or conditions (for example, a mesh has bad topology, but there is no facility for fixing it, a color is out of range, etc.) use TF_RUNTIME_ERROR() or to be more specific, TF_ERROR().
+    \li For warnings (conditions which might possibly be an error, but are not always so) use TF_WARN().
+    \li For anything else (not fatal, never an error, but useful to know) use TF_STATUS().
+
+\section DiagnosticTF_FATAL_ERROR Fatal Errors
+
+Sometimes there is no reasonable way to proceed past a coding bug.  In this case, use TF_FATAL_ERROR().  Again, be sure to give a clear and concise explanation of what went wrong.  Following is an actual example from the Tf Library:
+
+\code
+#include "pxr/base/tf/diagnostic.h"
+
+template <template <class> class PtrTemplate, class Type>
+Type*
+TfWeakPtrFacade::~operator -> () const
+{
+    Type *ptr = _FetchPointer();
+    if (not ptr)
+        TF_FATAL_ERROR("Dereferenced an invalid %s",
+                       ArchGetDemangled(typeid(PtrTemplate<Type>)).c_str());
+    return ptr;
+}
+\endcode
+
+In this example, clients cannot dereference a NULL weak pointer.
+
+<h4> Proper Usage of TF_AXIOM() </h4>
+
+Sometimes it is useful to let the condition itself be the error message.  If you reasonably believe that no code-path could allow your condition to fail, then for brevity you might prefer TF_AXIOM().  This implies that use of TF_AXIOM() is designed to document internal assumptions of the code; if a client of your code passes illegal parameters to a public function, it is not appropriate to use TF_AXIOM() to catch this.
+
+You can also use TF_AXIOM() for regression tests.
+
+Here are some reasonable uses of TF_AXIOM():
+\code
+    // At this point, either function1 or function2 must have been set.
+    if (_function1)
+	return (*_function1)(arg1);
+    else {
+	TF_AXIOM(_function2 != NULL);
+	return (*_function2)(arg2);
+    }
+\endcode
+
+\code
+    // private accessor -- no client code can call this directly
+    double _GetValue(size_t index) 
+	{
+	TF_AXIOM(index < GetMaxIndex());
+	return _values[index];
+    }
+\endcode
+
+<h4> Improper Usage of TF_AXIOM() </h4>
+
+You should avoid using TF_AXIOM() when it can fail because of a client's use of the code.  (Killing off the program is serious enough; doing so without giving the client a strong indication of what they did wrong, and how to fix it, is extremely unhelpful.)  The following code sample illustrates improper use of TF_AXIOM():
+
+\code    
+    // in refPtr.h:
+    T* operator->() const {
+	TF_AXIOM(_data);
+	return _data;
+    }
+\endcode
+
+The above axiom fails when you try to use the "->" operator on a reference-counted pointer which points to NULL.  Since a client can cause this to happen, you should use TF_FATAL_ERROR instead, as shown in this sample:
+
+\code
+    T* operator ->() const {
+	if (!_data)
+	    TF_FATAL_ERROR("attempted member lookup on NULL pointer");
+	return _data;
+    }
+\endcode
+
+The following code sample demonstrates another improper use of TF_AXIOM(). The axiom is not good, because \c not \c _instance doesn't help anyone fix their code:
+
+\code
+#include "pxr/base/tf/diagnostic.h"
+
+template <typename T>
+void
+TfSingleton<T>::SetInstanceConstructed(T& instance)
+{
+    TF_AXIOM(not _instance);
+    _instance = &instance;
+}
+\endcode
+
+Instead, you should use TF_FATAL_ERROR as follows:
+
+\code
+#include "pxr/base/tf/diagnostic.h"
+
+template <typename T>
+void
+TfSingleton<T>::SetInstanceConstructed(T& instance)
+{
+    if (_instance)
+        TF_FATAL_ERROR("this function may not be called after "
+                       "GetInstance() has completed");
+    _instance = &instance;
+}
+\endcode
+
+\section DiagnosticTF_ERROR Non-Fatal Errors
+
+To report non-fatal errors, use the TF_ERROR system.  That system is documented here: \ref page_tf_TfError.  Generally, errors reported this way will let execution continue.  The system may turn the errors into Python exceptions when returning into Python.  Also, if there are unhandled errors remaining at the end of an application iteration, the system may roll back the undo stack to the last known good state.  
+
+There are two convenience macros provided here that generate errors.  Use TF_CODING_ERROR() to indicate a recoverable coding error.  Use TF_RUNTIME_ERROR() to indicate a generic runtime error.  Use TF_ERROR() to provide more specific error codes when possible.
+
+Be sure to make the description of the bug clear (but concise), as in the following example:
+
+\code
+    #include "pxr/base/tf/diagnostic.h"
+
+    void
+    Node::_SetParent(_Node* parent)
+    {
+	if (_GetChildCount() > 0) {
+	    TF_CODING_ERROR("cannot set/change parent once child node "
+			    "has been given children itself");
+	    return;
+        }
+
+	_parent = parent;
+    }
+\endcode
+
+In this case, leaving the parent as set originally is deemed acceptable, so the coding bug is non-fatal.
+
+\section DiagnosticTF_WARN Warnings
+
+For situations where it is important to inform the user of an undesirable situation that you can handle, but which may lead to errors, use TF_WARN().  This will generally be displayed in the application, indicating the warning to the user.
+
+\section DiagnosticTF_STATUS Status Messages
+
+For situations where it is important to inform the user of some expected status information, use TF_STATUS().  This will generally be displayed in the application (in a status bar, for instance).
+
+\section DiagnosticTF_FUNC_NAME Function Names
+
+If you need to get the name of the function you are currently in, use the TF_FUNC_NAME() macro.  This macro returns the function's name as a string.  The name is meant for diagnostic purposes only, and while it should be human readable, no guarantees are made to the exact formatting of the string.  Note that this macro is only callable from C++.  If you need to get the function name from C, consider using the __ARCH_FUNCTION__ or __ARCH_PRETTY_FUNCTION__ macros.
+
+For example:
+
+\code
+void YourClass::SomeMethod(int x) 
+{
+    cout << "Debugging info about function " << TF_FUNC_NAME() << "." << endl;
+    ...
+}
+\endcode
+
+The preceding code sample should display something like: "Debugging info about function YourClass::SomeMethod."
+
+*/

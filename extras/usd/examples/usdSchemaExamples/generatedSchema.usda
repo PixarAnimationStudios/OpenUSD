@@ -1,0 +1,46 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class "SimplePrim" (
+    doc = """An example of an untyped schema prim. Note that it does not 
+    specify a typeName"""
+)
+{
+    int intAttr = 0 (
+        doc = "An integer attribute with fallback value of 0."
+    )
+    rel target = None (
+        doc = """A relationship called target that could point to another prim
+        or a property"""
+    )
+}
+
+class ComplexPrim "ComplexPrim" (
+    doc = "An example of a untyped IsA schema prim"
+)
+{
+    string complexString = "somethingComplex"
+    int intAttr = 0 (
+        doc = "An integer attribute with fallback value of 0."
+    )
+    rel target = None (
+        doc = """A relationship called target that could point to another prim
+        or a property"""
+    )
+}
+
+class "ParamsAPI"
+{
+    double params:mass (
+        doc = "Double value denoting mass"
+    )
+    double params:velocity (
+        doc = "Double value denoting velocity"
+    )
+    double params:volume (
+        doc = "Double value denoting volume"
+    )
+}
+

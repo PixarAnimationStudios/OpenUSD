@@ -1,0 +1,15 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleLoaded",
+            "Info": {
+                "Types": {
+                    "TestPlugModuleLoaded.TestPlugPythonLoaded": {
+                        "bases": ["_TestPlugBase<1>"]
+                    }
+                }
+            }
+        }
+    ]
+}

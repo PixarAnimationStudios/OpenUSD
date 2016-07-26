@@ -1,0 +1,10 @@
+// This file is used solely to put useful information on the main
+// index page produced by doxygen.
+
+/*!
+\mainpage
+\anchor hdx_mainpage
+
+libHd: Extensions for libHd
+
+*/

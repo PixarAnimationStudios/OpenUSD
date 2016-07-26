@@ -1,0 +1,78 @@
+#usda 1.0
+(
+    """ This file contains an example schemata for code generation using
+        usdGenSchema.
+    """
+    subLayers = [
+        @../../../../pxr/usd/lib/usd/schema.usda@
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdSchemaExamples"
+        string libraryPath       = "."
+        string libraryPrefix     = "UsdSchemaExamples"
+    }
+) {
+}
+
+class "SimplePrim" (
+    doc = """An example of an untyped schema prim. Note that it does not 
+    specify a typeName"""
+    # IsA schemas should derive from </Typed>, which is defined in the sublayer
+    # usd/lib/usd/schema.usda.
+    inherits = </Typed>
+    customData = {
+        # Provide a different class name for the C++ and python schema classes.
+        # This will be prefixed with libraryPrefix.
+        # In this case, the class name becomes UsdSchemaExamplesSimple.
+        string className = "Simple"
+        }
+    )  
+{
+    int intAttr = 0 (
+        doc = "An integer attribute with fallback value of 0."
+    )
+    rel target (
+        doc = """A relationship called target that could point to another prim
+        or a property"""
+    )
+}
+
+# Note that it does not specify a typeName.
+class ComplexPrim "ComplexPrim" (
+    doc = """An example of a untyped IsA schema prim"""
+    # Inherits from </SimplePrim> defined in simple.usda.
+    inherits = </SimplePrim>
+    customData = {
+        string className = "Complex"
+    }
+)  
+{
+    string complexString = "somethingComplex"
+}
+    
+class "ParamsAPI"
+{
+    double params:mass (
+        # Informs schema generator to create GetMassAttr() method
+        # instead of GetParamsMassAttr() method
+        customData = {
+            string apiName = "mass"
+        }
+        doc = "Double value denoting mass"
+    )
+    double params:velocity (
+        customData = {
+            string apiName = "velocity"
+        }
+        doc = "Double value denoting velocity"
+    )
+    double params:volume (
+        customData = {
+            string apiName = "volume"
+        }
+        doc = "Double value denoting volume"
+    )
+}

@@ -1,0 +1,76 @@
+// Expect: #1 ProcessNotice
+// Expect: #1 ProcessTestNotice
+// Expect: #2 ProcessNotice
+// Expect: #2 ProcessTestNotice
+// Expect: #2 ProcessMyTestNotice from unknown
+Listener #2: ProcessTestNotice got first
+Listener #1: ProcessTestNotice got first
+Listener #2: ProcessNotice got a notice
+Listener #1: ProcessNotice got a notice
+// Expect: #1 ProcessNotice
+// Expect: #1 ProcessTestNotice
+// Expect: #2 ProcessNotice
+// Expect: #2 ProcessTestNotice
+// Expect: #2 ProcessMyTestNotice from #2
+// Expect: #2 ProcessMyTestNotice from #2
+Listener #2: ProcessMyTestNotice got second from Sender #2
+Listener #2: ProcessTestNotice got second
+Listener #1: ProcessTestNotice got second
+Listener #2: ProcessNotice got a notice
+Listener #1: ProcessNotice got a notice
+// Expect: #1 ProcessNotice
+// Expect: #1 ProcessTestNotice
+// Expect: #2 ProcessNotice
+// Expect: #2 ProcessMyTestNotice from #1
+Listener #1: ProcessTestNotice got third
+Listener #2: ProcessNotice got a notice
+Listener #1: ProcessNotice got a notice
+// Expect: #1 ProcessTestNotice
+// Expect: #2 ProcessNotice
+// Expect: #2 ProcessMyTestNotice from #2
+// Expect: #2 ProcessMyTestNotice from #2
+Listener #2: ProcessMyTestNotice got fourth from Sender #2
+Listener #1: ProcessTestNotice got fourth
+Listener #2: ProcessNotice got a notice
+// Expect: #1 ProcessTestNotice
+// Expect: #2 ProcessNotice
+// Expect: #2 ProcessMyTestNotice from #2
+Listener #1: ProcessTestNotice got fifth
+Listener #2: ProcessNotice got a notice
+// Expect: #1 ProcessTestNotice
+// Expect: #2 ProcessNotice
+// Expect: #2 ProcessMyTestNotice from #2
+Listener #1: ProcessTestNotice got sixth
+Listener #2: ProcessNotice got a notice
+// Expect: #1 ProcessTestNotice
+Listener #1: ProcessTestNotice got seventh
+// Expect: nothing
+
+--- Main Thread Log ---
+// MainListener should respond four times
+MainListener::ProcessMainNotice got Main notice 1
+MainListener::ProcessNotice got notice of type MainNotice
+MainListener::ProcessNotice got notice of type WorkerNotice
+MainListener::ProcessNotice got notice of type WorkerNotice
+// MainListener::ProcessNotice should respond once
+MainListener::ProcessNotice got notice of type MainNotice
+// MainListener should not respond
+
+--- Work Thread Log ---
+// WorkListener should respond once
+WorkListener::ProcessWorkerNotice got WorkerNotice 1
+// WorkListener should not respond
+Expecting no replies to send...
+Expecting 3 replies to send...
+SpoofCheckListener: C
+SpoofCheckListener: B
+SpoofCheckListener: A
+Expecting no replies to send...
+Expecting 3 replies to send...
+SpoofCheckListener: C
+SpoofCheckListener: B
+SpoofCheckListener: A
+Expecting 3 replies to send...
+SpoofCheckListener: C
+SpoofCheckListener: B
+SpoofCheckListener: A

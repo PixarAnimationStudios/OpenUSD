@@ -1,0 +1,619 @@
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+#include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/reference.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/tracelite/trace.h"
+
+#include <iostream>
+
+using std::string;
+using std::vector;
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<SdfTokenListOp>()
+        .Alias(TfType::GetRoot(), "SdfTokenListOp");
+    TfType::Define<SdfPathListOp>()
+        .Alias(TfType::GetRoot(), "SdfPathListOp");
+    TfType::Define<SdfStringListOp>()
+        .Alias(TfType::GetRoot(), "SdfStringListOp");
+    TfType::Define<SdfReferenceListOp>()
+        .Alias(TfType::GetRoot(), "SdfReferenceListOp");
+    TfType::Define<SdfIntListOp>()
+        .Alias(TfType::GetRoot(), "SdfIntListOp");
+    TfType::Define<SdfUIntListOp>()
+        .Alias(TfType::GetRoot(), "SdfUIntListOp");
+    TfType::Define<SdfInt64ListOp>()
+        .Alias(TfType::GetRoot(), "SdfInt64ListOp");
+    TfType::Define<SdfUInt64ListOp>()
+        .Alias(TfType::GetRoot(), "SdfUInt64ListOp");
+    TfType::Define<SdfUnregisteredValueListOp>()
+        .Alias(TfType::GetRoot(), "SdfUnregisteredValueListOp");
+
+    TfType::Define<SdfListOpType>();
+}
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(SdfListOpTypeExplicit);
+    TF_ADD_ENUM_NAME(SdfListOpTypeAdded);
+    TF_ADD_ENUM_NAME(SdfListOpTypeDeleted);
+    TF_ADD_ENUM_NAME(SdfListOpTypeOrdered);
+}
+
+template <typename T>
+SdfListOp<T>::SdfListOp() :
+    _isExplicit(false)
+{
+    // do nothing
+}
+
+template <typename T>
+void 
+SdfListOp<T>::Swap(SdfListOp<T>& rhs)
+{
+    std::swap(_isExplicit, rhs._isExplicit);
+    _explicitItems.swap(rhs._explicitItems);
+    _addedItems.swap(rhs._addedItems);
+    _deletedItems.swap(rhs._deletedItems);
+    _orderedItems.swap(rhs._orderedItems);
+}
+
+template <typename T>
+const typename SdfListOp<T>::ItemVector &
+SdfListOp<T>::GetItems(SdfListOpType type) const
+{
+    switch(type) {
+    case SdfListOpTypeExplicit:
+        return _explicitItems;
+    case SdfListOpTypeAdded:
+        return _addedItems;
+    case SdfListOpTypeDeleted:
+        return _deletedItems;
+    case SdfListOpTypeOrdered:
+        return _orderedItems;
+    }
+
+    TF_CODING_ERROR("Got out-of-range type value: %d", type);
+    return _explicitItems;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::SetExplicitItems(const ItemVector &items)
+{
+    _SetExplicit(true);
+    _explicitItems = items;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::SetAddedItems(const ItemVector &items)
+{
+    _SetExplicit(false);
+    _addedItems = items;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::SetDeletedItems(const ItemVector &items)
+{
+    _SetExplicit(false);
+    _deletedItems = items;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::SetOrderedItems(const ItemVector &items)
+{
+    _SetExplicit(false);
+    _orderedItems = items;
+}
+
+template <typename T>
+void
+SdfListOp<T>::SetItems(const ItemVector &items, SdfListOpType type)
+{
+    switch(type) {
+    case SdfListOpTypeExplicit:
+        SetExplicitItems(items);
+        break;
+    case SdfListOpTypeAdded:
+        SetAddedItems(items);
+        break;
+    case SdfListOpTypeDeleted:
+        SetDeletedItems(items);
+        break;
+    case SdfListOpTypeOrdered:
+        SetOrderedItems(items);
+        break;
+    }
+}
+
+template <typename T>
+void
+SdfListOp<T>::_SetExplicit(bool isExplicit)
+{
+    if (isExplicit != _isExplicit) {
+        _isExplicit = isExplicit;
+        _explicitItems.clear();
+        _addedItems.clear();
+        _deletedItems.clear();
+        _orderedItems.clear();
+    }
+}
+
+template <typename T>
+void
+SdfListOp<T>::Clear()
+{
+    // _SetExplicit will clear all items and set the explicit flag as specified.
+    // Temporarily change explicit flag to bypass check in _SetExplicit.
+    _isExplicit = true;
+    _SetExplicit(false);
+}
+
+template <typename T>
+void
+SdfListOp<T>::ClearAndMakeExplicit()
+{
+    // _SetExplicit will clear all items and set the explicit flag as specified.
+    // Temporarily change explicit flag to bypass check in _SetExplicit.
+    _isExplicit = false;
+    _SetExplicit(true);
+}
+
+template <typename T>
+void 
+SdfListOp<T>::ApplyOperations(ItemVector* vec, const ApplyCallback& cb) const
+{
+    if (not vec) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    // Apply edits.
+    // Note that our use of _ApplyMap in the helper functions below winds up
+    // quietly ensuring duplicate items aren't processed in the ItemVector.
+    _ApplyList result;
+    if (IsExplicit()) {
+        _ApplyMap search;
+        _AppendKeys(SdfListOpTypeExplicit, cb, &result, &search);
+    }
+    else {
+        unsigned int numToDelete = _deletedItems.size();
+        unsigned int numToAppend = _addedItems.size();
+        unsigned int numToOrder = _orderedItems.size();
+
+        if (!cb &&  ((numToDelete+numToAppend+numToOrder) == 0)) {
+            // nothing to do, so avoid copying vectors
+            return;
+        }
+
+        // Make a list of the inputs.  We can efficiently (O(1)) splice
+        // these elements later.
+        result.insert(result.end(), vec->begin(), vec->end());
+
+        // Make a map of keys to list iterators.  This avoids O(n)
+        // searches within O(n) loops below.
+        _ApplyMap search;
+        for (typename _ApplyList::iterator i = result.begin();
+             i != result.end(); ++i) {
+            search[*i] = i;
+        }
+
+        _DeleteKeys (SdfListOpTypeDeleted, cb, &result, &search);
+        _AppendKeys (SdfListOpTypeAdded,   cb, &result, &search);
+        _ReorderKeys(SdfListOpTypeOrdered, cb, &result, &search);
+    }
+
+    // Copy the result back to vec.
+    vec->clear();
+    vec->insert(vec->end(), result.begin(), result.end());
+}
+
+template <class ItemType, class ListType, class MapType>
+static inline
+void _InsertIfUnique(const ItemType& item, ListType* result, MapType* search)
+{
+    if (search->find(item) == search->end()) {
+        (*search)[item] = result->insert(result->end(), item);
+    }
+}
+
+template <class ItemType, class ListType, class MapType>
+static inline
+void _RemoveIfPresent(const ItemType& item, ListType* result, MapType* search)
+{
+    typename MapType::iterator j = search->find(item);
+    if (j != search->end()) {
+        result->erase(j->second);
+        search->erase(j);
+    }
+}
+
+template <class T>
+void
+SdfListOp<T>::_AppendKeys(
+    SdfListOpType op,
+    const ApplyCallback& callback,
+    _ApplyList* result,
+    _ApplyMap* search) const
+{
+    TF_FOR_ALL(i, GetItems(op)) {
+        if (callback) {
+            if (boost::optional<T> item = callback(op, *i)) {
+                // Only append if the item isn't already present.
+                _InsertIfUnique(*item, result, search);
+            }
+        }
+        else {
+            _InsertIfUnique(*i, result, search);
+        }
+    }
+}
+
+template <class T>
+void
+SdfListOp<T>::_DeleteKeys(
+    SdfListOpType op,
+    const ApplyCallback& callback,
+    _ApplyList* result,
+    _ApplyMap* search) const
+{
+    TF_FOR_ALL(i, GetItems(op)) {
+        if (callback) {
+            if (boost::optional<T> item = callback(op, *i)) {
+                _RemoveIfPresent(*item, result, search);
+            }
+        }
+        else {
+            _RemoveIfPresent(*i, result, search);
+        }
+    }
+}
+
+template <class T>
+void
+SdfListOp<T>::_ReorderKeys(
+    SdfListOpType op,
+    const ApplyCallback& callback,
+    _ApplyList* result,
+    _ApplyMap* search) const
+{
+    // Make a vector and set of the source items.
+    ItemVector order;
+    std::set<ItemType, _ItemComparator> orderSet;
+    TF_FOR_ALL(i, GetItems(op)) {
+        if (callback) {
+            if (boost::optional<T> item = callback(op, *i)) {
+                if (orderSet.insert(*item).second) {
+                    order.push_back(*item);
+                }
+            }
+        }
+        else {
+            if (orderSet.insert(*i).second) {
+                order.push_back(*i);
+            }
+        }
+    }
+    if (order.empty()) {
+        return;
+    }
+
+    // Move the result aside for now.
+    _ApplyList scratch;
+    std::swap(scratch, *result);
+
+    // Find each item from the order vector in the scratch list.
+    // Then find the next item in the scratch list that's also in
+    // in the order vector.  All of these items except the last
+    // form the next continuous sequence in the result.
+    TF_FOR_ALL(i, order) {
+        typename _ApplyMap::const_iterator j = search->find(*i);
+        if (j != search->end()) {
+            // Find the next item in both scratch and order.
+            typename _ApplyList::iterator e = j->second;
+            do {
+                ++e;
+            } while (e != scratch.end() and orderSet.count(*e) == 0);
+
+            // Move the sequence to result.
+            result->splice(result->end(), scratch, j->second, e);
+        }
+    }
+
+    // Any items remaining in scratch are neither in order nor after
+    // anything in order.  Therefore they must be first in their
+    // current order.
+    result->splice(result->begin(), scratch);
+}
+
+template <typename T>
+static inline
+bool
+_ModifyCallbackHelper(const typename SdfListOp<T>::ModifyCallback& cb,
+                      std::vector<T>* itemVector)
+{
+    bool didModify = false;
+
+    std::vector<T> modifiedVector;
+    TF_FOR_ALL(item, *itemVector) {
+        boost::optional<T> modifiedItem = cb(*item);
+        if (not modifiedItem) {
+            didModify = true;
+        }
+        else if (*modifiedItem != *item) {
+            modifiedVector.push_back(*modifiedItem);
+            didModify = true;
+        } else {
+            modifiedVector.push_back(*item);
+        }
+    }
+
+    if (didModify) {
+        itemVector->swap(modifiedVector);
+    }
+
+    return didModify;
+}
+
+template <typename T>
+bool 
+SdfListOp<T>::ModifyOperations(const ModifyCallback& callback)
+{
+    bool didModify = false;
+
+    if (callback) {
+        didModify |= _ModifyCallbackHelper(callback, &_explicitItems);
+        didModify |= _ModifyCallbackHelper(callback, &_addedItems);
+        didModify |= _ModifyCallbackHelper(callback, &_deletedItems);
+        didModify |= _ModifyCallbackHelper(callback, &_orderedItems);
+    }
+
+    return didModify;
+}
+
+template <typename T>
+bool 
+SdfListOp<T>::ReplaceOperations(const SdfListOpType op, size_t index, size_t n, 
+                               const ItemVector& newItems)
+{
+    bool needsModeSwitch = 
+        (IsExplicit() and op != SdfListOpTypeExplicit) or
+        (not IsExplicit() and op == SdfListOpTypeExplicit);
+
+    // XXX: This behavior was copied from GdListEditor, which
+    //      appears to have been copied from old Sd code...
+    //      the circle is now complete.
+    //
+    // XXX: This is to mimic old Sd list editor behavior.  If
+    //      we insert into a list we should automatically change
+    //      modes, but if we replace or remove then we should
+    //      silently ignore the request.
+    if (needsModeSwitch and (n > 0 or newItems.empty())) {
+        return false;
+    }
+
+    ItemVector itemVector = GetItems(op);
+
+    if (index > itemVector.size()) {
+        TF_CODING_ERROR("Invalid start index %zd (size is %zd)",
+                        index, itemVector.size());
+        return false;
+    }
+    else if (index + n > itemVector.size()) {
+        TF_CODING_ERROR("Invalid end index %zd (size is %zd)",
+                        index + n - 1, itemVector.size());
+        return false;
+    }
+
+    if (n == newItems.size()) {
+        std::copy(newItems.begin(), newItems.end(), itemVector.begin() + index);
+    }
+    else {
+        itemVector.erase(itemVector.begin() + index, 
+                         itemVector.begin() + index + n);
+        itemVector.insert(itemVector.begin() + index,
+                          newItems.begin(), newItems.end());
+    }
+
+    SetItems(itemVector, op);
+    return true;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::ComposeOperations(const SdfListOp<T>& stronger, SdfListOpType op)
+{
+
+    SdfListOp<T> &weaker = *this;
+
+    if (op == SdfListOpTypeExplicit) {
+        weaker.SetItems(stronger.GetItems(op), op);
+    }
+    else {
+        const ItemVector &weakerVector = weaker.GetItems(op);
+        _ApplyList weakerList(weakerVector.begin(), weakerVector.end());
+        _ApplyMap weakerSearch;
+        for (typename _ApplyList::iterator i = weakerList.begin(); 
+                i != weakerList.end(); ++i) {
+            weakerSearch[*i] = i;
+        }
+
+        if (op == SdfListOpTypeOrdered) {
+            stronger._AppendKeys(op, ApplyCallback(), 
+                                 &weakerList, &weakerSearch);
+            stronger._ReorderKeys(op, ApplyCallback(), 
+                                  &weakerList, &weakerSearch);
+        } else if (op == SdfListOpTypeAdded) {
+            stronger._AppendKeys(op,
+                                 ApplyCallback(),
+                                 &weakerList,
+                                 &weakerSearch);
+        } else if (op == SdfListOpTypeDeleted) {
+            stronger._AppendKeys(op,
+                                 ApplyCallback(),
+                                 &weakerList,
+                                 &weakerSearch);
+        }
+
+        weaker.SetItems(ItemVector(weakerList.begin(), weakerList.end()), op);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// Free functions
+
+template <class ItemType>
+void SdfApplyListOrdering(std::vector<ItemType>* v, 
+                         const std::vector<ItemType>& order)
+{
+    if (not order.empty() and not v->empty()) {
+        // XXX: This is lame, but just for now...
+        SdfListOp<ItemType> tmp;
+        tmp.SetOrderedItems(order);
+        tmp.ApplyOperations(v);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// Stream i/o
+
+template <typename T>
+static void
+_StreamOutItems(
+    std::ostream &out,
+    const string &itemsName,
+    const std::vector<T> &items,
+    bool *firstItems)
+{
+    if (not items.empty()) {
+        out << (*firstItems ? "" : ", ") << itemsName << " Items: [";
+        *firstItems = false;
+        TF_FOR_ALL(it, items) {
+            out << *it << (it.GetNext() ? ", " : "");
+        }
+        out << "]";
+    }
+}
+
+template <typename T>
+static std::ostream &
+_StreamOut(std::ostream &out, const SdfListOp<T> &op)
+{
+    //out << _GetListopName(op) << "(";
+    out << "SdfListOp" << "(";
+
+    // print out the explicit, deleted, added, and ordered items
+    bool firstItems = true;
+    _StreamOutItems(out, "Explicit", op.GetExplicitItems(), &firstItems);
+    _StreamOutItems(out, "Deleted", op.GetDeletedItems(), &firstItems);
+    _StreamOutItems(out, "Added", op.GetAddedItems(), &firstItems);
+    _StreamOutItems(out, "Ordered", op.GetOrderedItems(), &firstItems);
+    out << ")";
+
+    return out;
+}
+
+// Stream method for list ops.
+//
+template <typename ITEM_TYPE>
+std::ostream & operator<<( std::ostream &out, const SdfListOp<ITEM_TYPE> &op)
+{
+    return _StreamOut(out, op);
+}
+
+////////////////////////////////////////////////////////////////////////
+// Traits
+
+template<>
+struct Sdf_ListOpTraits<TfToken>
+{
+    typedef TfTokenFastArbitraryLessThan ItemComparator;
+};
+
+template<>
+struct Sdf_ListOpTraits<SdfPath>
+{
+    typedef SdfPath::FastLessThan ItemComparator;
+};
+
+template<>
+struct Sdf_ListOpTraits<SdfUnregisteredValue>
+{
+    struct LessThan {
+        bool operator()(const SdfUnregisteredValue& x,
+                        const SdfUnregisteredValue& y) const {
+            const size_t xHash = hash_value(x);
+            const size_t yHash = hash_value(y);
+            if (xHash < yHash) {
+                return true;
+            }
+            else if (xHash > yHash or x == y) {
+                return false;
+            }
+
+            // Fall back to comparing the string representations if
+            // the hashes of x and y are equal but x and y are not.
+            return TfStringify(x) < TfStringify(y);
+        }
+    };
+
+    typedef LessThan ItemComparator;
+};
+
+////////////////////////////////////////////////////////////////////////
+// Template instantiation.
+
+#define SDF_INSTANTIATE_LIST_OP(ValueType)                       \
+    template class SdfListOp<ValueType>;                         \
+    template std::ostream&                                       \
+    operator<<(std::ostream &, const SdfListOp<ValueType> &)     \
+
+SDF_INSTANTIATE_LIST_OP(int);
+SDF_INSTANTIATE_LIST_OP(unsigned int);
+SDF_INSTANTIATE_LIST_OP(int64_t);
+SDF_INSTANTIATE_LIST_OP(uint64_t);
+SDF_INSTANTIATE_LIST_OP(string);
+SDF_INSTANTIATE_LIST_OP(TfToken);
+SDF_INSTANTIATE_LIST_OP(SdfUnregisteredValue);
+SDF_INSTANTIATE_LIST_OP(SdfPath);
+SDF_INSTANTIATE_LIST_OP(SdfReference);
+
+template
+void SdfApplyListOrdering(std::vector<string>* v, 
+                          const std::vector<string>& order);
+template
+void SdfApplyListOrdering(std::vector<TfToken>* v, 
+                          const std::vector<TfToken>& order);

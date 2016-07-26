@@ -1,0 +1,12 @@
+/*!
+
+\page Usd_Page_AuthoringEditing Authoring and Editing Scene Description
+
+\section Usd_SelectiveEditing Specifying Where Edits Should Go
+
+\section Usd_Notification Client Safety and Response to Edits
+
+See the section on \ref Usd_BoolReturns for how to ensure retained Usd objects 
+are still valid for use.
+
+*/

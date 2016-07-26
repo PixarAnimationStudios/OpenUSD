@@ -1,0 +1,4 @@
+add_subdirectory(katanaAttrfncApi)
+add_subdirectory(katanaOpApi)
+add_subdirectory(katanaPluginApi)
+add_subdirectory(usdKatana)

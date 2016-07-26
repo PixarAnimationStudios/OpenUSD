@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class BlindDataObject "BlindDataObject" (
+    doc = "Container namespace schema for katana blind data from the klf file"
+)
+{
+    string katana:type
+    bool katana:visible
+}
+
+class LookAPI "LookAPI" (
+    doc = "Katana-specific extensions of UsdShadeLook."
+)
+{
+    uniform string katana:primName (
+        doc = """When a Look derives from another, \"base\" Look (see
+        \"SetBaseLook()\"), it seems natural to
+        think about a \"child\" that inherits from its base Look \"parent\".
+        However, in USD, the derived Look cannot be a child of the base Look
+        because the derives relationship would cause an infinite
+        recursion in the composition graph (because the derived Look must
+        inherit not just the base Look prim itself, but all of the shader and
+        other prims scoped underneath it, which would include the derived Look
+        itself).
+
+        For UI's that want to present the hierarchy that derivation implies,
+        we provide primName, which specifies the derived Look's 
+        \"relative name\" with respect to the base Look.
+
+        For example, a structure that looks like:
+        - Metal
+          - .. Brass
+          - .. Aluminum
+
+        will be encoded as
+        - Metal
+        - Metal_Brass
+        - Metal_Aluminum
+
+        We set derivedName on Metal_Brass and Metal_Aluminum to Brass and
+        Aluminum, to be able to have proper child names if the hierarchy
+        is reconstructed.
+        """
+    )
+}
+

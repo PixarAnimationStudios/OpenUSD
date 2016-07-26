@@ -1,0 +1,53 @@
+/*!
+\mainpage
+
+This is the main op for reading in a Usd stage into katana.
+
+The op should always be configured to run "at this location".
+
+The op can be extended by teaching it about new types/kinds.  The op manages
+traversal and behaves roughly according to the following pseudocode:
+
+\code
+_LoadPrimIfNeeded(usdPrim);
+opForType = _GetOpForType(usdPrim.usdTypeName);
+if (opForType) {
+    interface.execOp(opForType);
+}
+
+// the op above may decide to skip this
+if (shouldExecKindOp) {
+    opForKind = _GetOpForKind(usdPrim.kind);
+    if (opForKind) {
+        interface.execOp(opForKind);
+    }
+}
+
+// either of the ops above can choose to not have children traversed.
+// they can also have specific childen skipped.
+if (traverseChildren) {
+    for (child in children) {
+        if (shouldVisit(child)) {
+            interface.createChild(child.name, "");
+        }
+    }
+}
+\endcode
+
+
+\section interOpCommunication Communicating between ops
+Currently, the type ops and kind ops communicate with \c pxrUsdIn by doing
+\code
+interface.setAttr("__UsdIn.<subAttrPath>", attr);
+\endcode
+
+Some possible values for \c subAttrPath and \c attr are:
+- \c execKindOp as an \c IntAttribute
+- \c skipAllChildren as an \c IntAttribute
+- \c skipChild.childName as an \c IntAttribute
+
+\section extending Extending PxrOpUsdIn
+To teach \c PxrOpUsdIn about new types or kinds, please see the documentation in
+\c usdKatana.
+
+*/

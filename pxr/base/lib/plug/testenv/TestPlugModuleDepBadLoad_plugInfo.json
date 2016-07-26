@@ -1,0 +1,18 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleDepBadLoad",
+            "Info": {
+                "PluginDependencies": {
+                    "TessPlugBase1": ["TestPlugUnloadable"]
+                },
+                "Types": {
+                    "TestPlugPythonDepBadLoad": {
+                        "bases": ["_TestPlugBase<3>"]
+                    }
+                }
+            }
+        }
+    ]
+}

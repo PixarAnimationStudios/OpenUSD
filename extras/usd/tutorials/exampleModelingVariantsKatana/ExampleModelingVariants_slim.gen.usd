@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    baseAsset = @ExampleModelingVariants/usd/ExampleModelingVariants.shading.gen.usd@
+)
+
+def "ExampleModelingVariants" (
+    variants = {
+        string shadingComplexity = "full"
+    }
+    add variantSets = "shadingComplexity"
+)
+{
+    over "Shaders"
+    {
+        custom uniform asset proxyPtexDir = @../ptex/proxy/Default@
+    }
+
+    over "HWRig"
+    {
+        custom uniform asset proxyPtexDir = @../ptex/proxy/Default@
+    }
+    variantSet "shadingComplexity" = {
+        "display" {
+
+        }
+        "full" (
+            add references = @./ExampleModelingVariants_slim.gen.usd@</ShaderDefs>
+        ) {
+
+        }
+        "none" {
+
+        }
+    }
+}
+
+over "ShaderDefs"
+{
+    custom string ri:attributes:user:GprimDataFile = "ExampleModelingVariants/mdl/ExampleModelingVariants.gprimdata"
+    custom string ri:attributes:user:ModelName = "ExampleModelingVariants"
+
+    def Xform "Shaders"
+    {
+        custom string primData__gprimType = "shaders" (
+            customData = {
+                string EXPORT_TO_POSECACHE = "include"
+            }
+        )
+    }
+}
+

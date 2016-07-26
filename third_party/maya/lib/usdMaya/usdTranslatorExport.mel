@@ -1,0 +1,196 @@
+
+global proc usdTranslatorExport_AnimationCB() {
+    if (`checkBox -q -v animationCheckBox` == 1) {
+        intFieldGrp -e -vis true startTimeField;
+        intFieldGrp -e -vis true endTimeField;
+        button -e -vis true animRangeButton;
+    } else {
+        intFieldGrp -e -vis false startTimeField;
+        intFieldGrp -e -vis false endTimeField;
+        button -e -vis false animRangeButton;
+    }
+}
+
+global proc usdTranslatorExport_AnimationRangeCB() {
+	int $startTime = `playbackOptions -q -animationStartTime`;
+	int $endTime = `playbackOptions -q -animationEndTime`;
+	intFieldGrp -e -v1 $startTime startTimeField;
+	intFieldGrp -e -v1 $endTime endTimeField;
+}
+
+
+global proc usdTranslatorExport_SetCheckbox(string $arg, string $widget) {
+    if ($arg == "0") {
+        checkBox -e -v false $widget;
+    } else {
+        checkBox -e -v true $widget;
+    }
+}
+
+global proc string usdTranslatorExport_AppendFromCheckbox(string $currentOptions, string $arg, string $widget) {
+    if (`checkBox -q -v $widget` == 1) {
+        return $currentOptions + ";" + $arg + "=1";
+    } else {
+        return $currentOptions + ";" + $arg + "=0";
+    }
+}
+
+global proc string usdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
+    string $value = `optionMenuGrp -q -value $widget`;
+    return $currentOptions + ";" + $arg + "=" + $value;
+}
+
+global proc string usdTranslatorExport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
+    string $value = `intFieldGrp -q -value1 $widget`;
+    return $currentOptions + ";" + $arg + "=" + $value;
+}
+
+global proc int usdTranslatorExport (string $parent,
+                                 string $action,
+                                 string $initialSettings,
+                                 string $resultCallback )
+//
+//  Description:
+//    This script posts the USDExport file translator options.
+//    The optionsString is of the form:
+//    varName1=value1;varName2=value2;...
+//
+//  Parameters:
+//    $parent - the elf parent layout for this options layout. It is
+//            always a scrollLayout.
+//    $action - the action that is to be performed with this invokation of this proc.
+//        Valid options are:
+//        "query" - construct the options string and pass it to the resultCallback.
+//        "post" - post all the elf controls.
+//    $initialSettings - the current options string in effect at the time this script is invoked.
+//    $resultCallback - This is the proc to be called with the result string. 
+//            resultCallback ( string $optionsString )
+//
+//    Returns:
+//        1 if successfull.
+//        0 otherwise.
+//
+{
+    int $bResult;
+    string $currentOptions;
+    string $optionList[];
+    string $optionBreakDown[];
+    int $index;
+        
+    if ($action == "post") {
+        setParent $parent;
+
+        columnLayout -adj true usdOptsCol;
+        
+	    optionMenuGrp -l "Shading Mode:" shadingModePopup;
+	        menuItem -l "None";
+	        menuItem -l "GPrim Colors";
+	        menuItem -l "Look Colors";
+	        menuItem -l "RfM Shaders";
+            
+        checkBox -l "Make Instances" exportReferencesAsInstanceableCheckBox;
+
+        checkBox -l "Export UVs" exportUVsCheckBox;
+
+        checkBox -l "Normalize UVs" normalizeUVsCheckBox;
+
+        checkBox -l "Export ColorSets" exportColorSetsCheckBox;
+
+        checkBox -l "Export Visibility" exportVisibilityCheckBox;
+
+        checkBox -l "Renderable Only" renderableOnlyCheckBox;
+         
+        checkBox -l "Export all cameras" allCamerasCheckBox;
+
+        optionMenuGrp -l "Render Layer Mode:" renderLayerModePopup;
+            menuItem -l "Use Default Layer";
+            menuItem -l "Use Current Layer";
+            menuItem -l "Modeling Variant Per Layer";
+
+        checkBox -l "Merge Transform and Shape Nodes" mergeXFormCheckBox;
+
+	    optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
+	        menuItem -l "Polygonal Mesh";
+	        menuItem -l "Bilinear SubDiv";
+	        menuItem -l "CatmullClark SDiv";
+	        menuItem -l "Loop SDiv";
+
+        checkBox -l "Export Animation" -cc ("usdTranslatorExport_AnimationCB") animationCheckBox;
+
+        columnLayout -width 100 animOptsCol;
+        intFieldGrp -l "Start Time:" startTimeField;
+        intFieldGrp -l "End Time:" endTimeField;
+        button -l "Animation Range" -command ("usdTranslatorExport_AnimationRangeCB") animRangeButton;
+        
+        setParent $parent;
+        
+        // Now set to current settings.
+        $currentOptions = $initialSettings;
+        if (size($currentOptions) > 0) {
+            tokenize($currentOptions, ";", $optionList);
+            for ($index = 0; $index < size($optionList); $index++) {
+                tokenize($optionList[$index], "=", $optionBreakDown);
+                if ($optionBreakDown[0] == "shadingMode") {
+                    optionMenuGrp -e -value $optionBreakDown[1] shadingModePopup;
+                } else if ($optionBreakDown[0] == "exportReferencesAsInstanceable") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferencesAsInstanceableCheckBox");
+                } else if ($optionBreakDown[0] == "exportUVs") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportUVsCheckBox");
+                } else if ($optionBreakDown[0] == "normalizeUVs") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeUVsCheckBox");
+                } else if ($optionBreakDown[0] == "exportColorSets") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
+                } else if ($optionBreakDown[0] == "renderableOnly") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "renderableOnlyCheckBox");
+                } else if ($optionBreakDown[0] == "allCameras") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "allCamerasCheckBox");
+                } else if ($optionBreakDown[0] == "renderLayerMode") {
+                    optionMenuGrp -e -value $optionBreakDown[1] renderLayerModePopup;
+                } else if ($optionBreakDown[0] == "mergeXForm") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeXFormCheckBox");
+                } else if ($optionBreakDown[0] == "defaultMeshScheme") {
+                    optionMenuGrp -e -value $optionBreakDown[1] defaultMeshSchemePopup;
+                } else if ($optionBreakDown[0] == "exportVisibility") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
+                } else if ($optionBreakDown[0] == "animation") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
+                } else if ($optionBreakDown[0] == "startTime") {
+                    int $startTime=$optionBreakDown[1];
+                    intFieldGrp -e -v1 $startTime startTimeField;
+                } else if ($optionBreakDown[0] == "endTime") {
+                    int $endTime; $endTime=$optionBreakDown[1];
+                    intFieldGrp -e -v1 $endTime endTimeField;
+                }
+            }
+        }
+        // Set visibility for anim widgets
+        usdTranslatorExport_AnimationCB();
+        
+        $bResult = 1;
+    
+    } else if ($action == "query") {
+    
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferencesAsInstanceable", "exportReferencesAsInstanceableCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeUVs", "normalizeUVsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "allCameras", "allCamerasCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "renderLayerMode", "renderLayerModePopup");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeXForm", "mergeXFormCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
+        $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
+                
+        eval($resultCallback+" \""+$currentOptions+"\"");
+        $bResult = 1;
+
+    } else {
+        $bResult = 0;
+    }
+
+    return $bResult;
+}

@@ -1,0 +1,19 @@
+Warning: in Test_TfDiagnosticNotices at line 180 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *
+Warning: in Test_TfDiagnosticNotices at line 181 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *, ...
+Warning: in Test_TfDiagnosticNotices at line 182 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Warning!
+SMALL: in Test_TfDiagnosticNotices at line 184 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *
+SMALL: in Test_TfDiagnosticNotices at line 185 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *, ...
+SMALL: in Test_TfDiagnosticNotices at line 186 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Warning!
+MEDIUM: in Test_TfDiagnosticNotices at line 188 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *
+MEDIUM: in Test_TfDiagnosticNotices at line 189 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *, ...
+MEDIUM: in Test_TfDiagnosticNotices at line 190 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Warning!
+Status: in Test_TfDiagnosticNotices at line 196 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *
+Status: in Test_TfDiagnosticNotices at line 197 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *, ...
+Status: in Test_TfDiagnosticNotices at line 198 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Status
+SMALL: in Test_TfDiagnosticNotices at line 200 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *
+SMALL: in Test_TfDiagnosticNotices at line 201 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *, ...
+SMALL: in Test_TfDiagnosticNotices at line 202 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Status
+MEDIUM: in Test_TfDiagnosticNotices at line 204 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *
+MEDIUM: in Test_TfDiagnosticNotices at line 205 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- const char *, ...
+MEDIUM: in Test_TfDiagnosticNotices at line 206 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Status
+UNREGISTERED: in Test_TfDiagnosticNotices at line 208 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Status message with an unregistered error code!

@@ -1,0 +1,1163 @@
+#usda 1.0
+(
+    "This file describes the USD Geometric schemata for code generation."
+    subLayers = [
+        @../usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName           = "usdGeom"
+        string libraryPath           = "pxr/usd/usdGeom"
+        # string libraryPrefix       = "UsdGeom"
+        # string tokensPrefix        = "UsdGeom"
+        dictionary libraryTokens = {
+            dictionary interpolation = {
+                string doc = """UsdGeomPrimvar - How a Primvar interpolates
+                across a primitive; equivalent to RenderMan's \\ref Usd_InterpolationVals "class specifier" """
+            }
+            dictionary elementSize = {
+                string doc = """UsdGeomPrimvar - The number of values in the
+                value array that must be aggregated for each element on the 
+                primitive."""
+            }
+            dictionary unauthoredValuesIndex = {
+                string doc = """UsdGeomPrimvar - The index that represents 
+                unauthored values in the indices array of an indexed primvar."""
+            }
+            dictionary constant ={
+                string doc = """Possible value for UsdGeomPrimvar::SetInterpolation.
+                Default value for UsdGeomPrimvar::GetInterpolation. One value
+                remains constant over the entire surface primitive."""
+            }
+            dictionary uniform = {
+                string doc = """Possible value for UsdGeomPrimvar::SetInterpolation.
+                One value remains constant for each uv patch segment of the
+                surface primitive (which is a \\em face for meshes)."""
+            }
+            dictionary varying = {
+                string doc = """Possible value for UsdGeomPrimvar::SetInterpolation.
+                Four values are interpolated over each uv patch segment of the 
+                surface. Bilinear interpolation is used for interpolation 
+                between the four values."""
+            }
+            dictionary vertex = {
+                string doc = """Possible value for UsdGeomPrimvar::SetInterpolation.
+                Values are interpolated between each vertex in the surface
+                primitive. The basis function of the surface is used for 
+                interpolation between vertices."""
+            }
+            dictionary faceVarying = {
+                string doc = """Possible value for UsdGeomPrimVar::SetInterpolation.
+                For polygons and subdivision surfaces, four values are
+                interpolated over each face of the mesh. Bilinear interpolation 
+                is used for interpolation between the four values."""
+            }
+            dictionary extentsHint = {
+                string doc = """Name of the attribute used to author extents
+                hints at the root of leaf models. Extents hints are stored by purpose
+                as a vector of GfVec3f values. They are ordered based on the order
+                of purpose tokens returned by 
+                UsdGeomImageable::GetOrderedPurposeTokens."""
+            }
+            dictionary faceSet = {
+                string doc = """This is the namespace prefix used by 
+                UsdGeomFaceSetAPI for authoring faceSet attributes."""
+            }
+            dictionary collection = {
+                string doc = """This is the namespace prefix used by 
+                UsdGeomCollectionAPI for authoring collections."""
+            }
+            dictionary upAxis = {
+                string doc = """Stage-level metadata that encodes a scene's
+                orientation as a token whose value can be "Y" or "Z"."""
+            }
+            dictionary edgeOnly = {
+                string doc = """Legacy token representing a deprecated 
+                faceVaryingInterpolateBoundary state. The modern equivalent
+                is UsdGeomTokens->none."""
+            }
+            dictionary edgeAndCorner = {
+                string doc = """Legacy token representing a deprecated 
+                faceVaryingInterpolateBoundary state. The modern equivalent
+                is UsdGeomTokens->cornersPlus1"""
+            }
+            dictionary alwaysSharp = {
+                string doc = """Legacy token representing a deprecated 
+                faceVaryingInterpolateBoundary state. The modern equivalent
+                is UsdGeomTokens->boundaries."""
+            }
+            dictionary bilinear = {
+                string doc = """Legacy token representing a deprecated 
+                faceVaryingInterpolateBoundary state. The modern equivalent
+                is UsdGeomTokens->all."""
+            }
+            dictionary faceVaryingInterpolateBoundary = {
+                string doc = """Legacy token. The modern equivalent
+                is faceVaryingLinearInterpolation."""
+            }
+        }
+    }
+)
+{
+}
+
+class "Imageable" (
+    inherits = </Typed>
+    doc = """\\brief Base class for all prims that may require rendering or 
+    visualization of some sort. The primary attributes of Imageable 
+    are \\em visibility and \\em purpose, which each provide instructions for
+    what geometry should be included for processing by rendering and other
+    computations.
+    
+    Imageable also introduces the concept (and API) of geometric
+    "primitive variables", as UsdGeomPrimvar, which interpolate across a 
+    primitive and can override shader inputs.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/base/gf/bbox3d.h"
+#include "pxr/usd/usdGeom/primvar.h" """
+    }
+) {
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = """Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc."""
+    )
+    
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a concept we have found useful in our pipeline for 
+        classifying geometry into categories that can each be independently
+        included or excluded from traversals of prims on a stage, such as
+        rendering or bounding-box computation traversals.  The fallback
+        purpose, \\em default indicates that a prim has "no special purpose"
+        and should generally be included in all traversals.  Subtrees rooted
+        at a prim with purpose \\em render should generally only be included
+        when performing a "final quality" render.  Subtrees rooted at a prim
+        with purpose \\em proxy should generally only be included when 
+        performing a lightweight proxy render (such as openGL).  Finally,
+        subtrees rooted at a prim with purpose \\em guide should generally
+        only be included when an interactive application has been explicitly
+        asked to "show guides". 
+        
+        In the previous paragraph, when we say "subtrees rooted at a prim",
+        we mean the most ancestral or tallest subtree that has an authored,
+        non-default opinion.  If the purpose of </RootPrim> is set to 
+        "render", then the effective purpose of </RootPrim/ChildPrim> will
+        be "render" even if that prim has a different authored value for
+        purpose.  <b>See ComputePurpose() for details of how purpose 
+        inherits down namespace</b>.
+        
+        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
+        accept combinations of included purposes as an input.
+        
+        Purpose \\em render can be useful in creating "light blocker"
+        geometry for raytracing interior scenes.  Purposes \\em render and
+        \\em proxy can be used together to partition a complicated model
+        into a lightweight proxy representation for interactive use, and a
+        fully realized, potentially quite heavy, representation for rendering.
+        One can also use UsdVariantSets to create proxy representations, but
+        this can potentially lead to an explosion in variants for models that
+        already have several axes of variation.  Purpose provides us with
+        another tool for interactive complexity management."""
+    )
+}
+
+class "Xformable" (
+    inherits = </Imageable>
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdGeom/xformOp.h" 
+#include <vector> """
+    }
+    doc = """\\brief Base class for all transformable prims, which allows arbitrary
+    sequences of component affine transformations to be encoded.
+
+    \\anchor usdGeom_linAlgBasics
+    <b>A Note about UsdGeom Linear Algebra</b>
+    
+    To ensure reliable interchange, we stipulate the following foundational
+    mathematical assumptions:
+    \\li Matrices are laid out and indexed in row-major order, such that, given
+    a \\c GfMatrix4d datum \\em mat, \\em mat[3][1] denotes the second column
+    of the fourth row.
+    \\li GfVec datatypes are row vectors that <b>pre-multiply</b> matrices to 
+    effect transformations, which implies, for example, that it is the fourth 
+    row of a GfMatrix4d that specifies the translation of the transformation.
+    \\li GfQuatf and GfQuatd quaternion objects are laid out with the first 
+    element as the imaginary 3-vector, followed by the real component.
+    \\li All rotation angles are expressed in degrees, not radians.
+    \\li Vector cross-products and rotations intrinsically follow the
+    <A HREF="https://en.wikipedia.org/wiki/Right-hand_rule">right hand rule.</A>
+
+
+    <b>Supported Component Transformation Operations</b>
+    
+    UsdGeomXformable currently supports arbitrary sequences of the following
+    operations, each of which can be encoded in an attribute of the proper
+    shape in any supported precision:
+    \\li translate - 3D
+    \\li scale     - 3D
+    \\li rotateX   - 1D angle in degrees
+    \\li rotateY   - 1D angle in degrees
+    \\li rotateZ   - 1D angle in degrees
+    \\li rotateABC - 3D where ABC can be any combination of the six principle
+                        Euler Angle sets: XYZ, XZY, YXZ, YZX, ZXY, ZYX.  See
+                        \\ref usdGeom_rotationPackingOrder "note on rotation packing order"
+    \\li orient    - 4D (quaternion)
+    \\li transform - 4x4D 
+    
+    <b>Creating a Component Transformation</b>
+    
+    To add components to a UsdGeomXformable prim, simply call AddXformOp()
+    with the desired op type, as enumerated in \\ref UsdGeomXformOp::Type,
+    and the desired precision, which is one of \\ref UsdGeomXformOp::Precision.
+    Optionally, you can also provide an "op suffix" for the operator that 
+    disambiguates it from other components of the same type on the same prim.  
+    Application-specific transform schemas can use the suffixes to fill a role 
+    similar to that played by AbcGeom::XformOp's "Hint" enums for their own 
+    round-tripping logic.
+    
+    We also provide specific "Add" API for each type, for clarity and 
+    conciseness, e.g. AddTranslateOp(), AddRotateXYZOp() etc.
+    
+    AddXformOp() will return a UsdGeomXformOp object, which is a schema on a 
+    newly created UsdAttribute that provides convenience API for authoring
+    and computing the component transformations.  The UsdGeomXformOp can then
+    be used to author any number of timesamples and default for the op.
+    
+    Each successive call to AddXformOp() adds an operator that will be applied
+    "more locally" than the preceding operator, just as if we were pushing
+    transforms onto a transformation stack - which is precisely what should
+    happen when the operators are consumed by a reader.
+    
+    \\note
+    If you can, please try to use the UsdGeomXformCommonAPI, which wraps
+    the UsdGeomXformable with an interface in which Op creation is taken
+    care of for you, and there is a much higher chance that the data you
+    author will be importable without flattening into other DCC's, as it
+    conforms to a fixed set of Scale-Rotate-Translate Ops.
+    
+    \\sa \\ref usdGeom_xformableExamples "Using the Authoring API"
+    
+    <b>Data Encoding</b>
+    
+    Because there is no "fixed schema" of operations, all of the attributes
+    that encode transform operations are \\em custom, and are scoped in 
+    the namespace "xformOp". The second component of an attribute's name provides
+    the \\em type of operation, as listed above.  An "xformOp" attribute can 
+    have additional namespace components derived from the \\em opSuffix argument 
+    to the AddXformOp() suite of methods, which provides a preferred way of 
+    naming the ops such that we can have multiple "translate" ops with unique
+    attribute names. For example, in the attribute named 
+    "xformOp:translate:maya:pivot", "translate" is the type of operation and
+    "maya:pivot" is the suffix.
+    
+    For example, the following ordered list of attribute declarations in usda
+    define a basic Scale-Rotate-Translate with XYZ Euler angles, wherein the
+    translation is double-precision, and the remainder of the ops are single.
+    \\code
+    double3 xformOp:translate
+    float3 xformOp:rotateXYZ
+    float3 xformOp:scale
+    \\endcode
+    
+    If it were important for the prim's rotations to be independently 
+    overridable, we could equivalently (at some performance cost) encode
+    the transformation also like so:
+    \\code
+    double3 xformOp:translate
+    float xformOp:rotateZ
+    float xformOp:rotateY
+    float xformOp:rotateX
+    float3 xformOp:scale
+    \\endcode
+    
+    Were we to add a Maya-style scalePivot to the above example, it might 
+    look like the following:
+    \\code
+    double3 xformOp:translate
+    float xformOp:rotateXYZ
+    double3 xformOp:translate:scalePivot
+    float3 xformOp:scale
+    \\endcode
+
+    <b>Paired "Inverted" Ops and Op Ordering</b>
+
+    We have been claiming that the ordered list of ops serves as a set
+    of instructions to a transform stack, but you may have noticed in the last
+    example that there is a missing operation - the pivot for the scale op
+    needs to be applied in its inverse-form as a final op!  In the 
+    AbcGeom::Xform schema, we would have encoded an actual "final" translation
+    op whose value was authored by the exporter as the negation of the pivot's
+    value.  However, doing so would be brittle in USD, given that each op can
+    be independently overridden, and the constraint that one attribute must be
+    maintained as the negation of the other in order for successful
+    re-importation of the schema cannot be expressed in USD.
+    
+    Our solution leverages the last component of the encoding: we already
+    require a statement of the op ordering (since they are attributes, they
+    will, in general be retrieved in dictionary order using the core API's).
+    We express this as a uniform builtin VtTokenArray attribute
+    \\em xformOpOrder, whose elements contain the full attribute names, 
+    in order, of the UsdGeomXformable transform operations.  It also may
+    contain one of two special tokens that address the paired op and
+    "stack resetting" behavior.
+
+    The "paired op" behavior is encoded as an "!invert!" prefix in 
+    \\em xformOpOrder, as the result of an AddXformOp(isInverseOp=True) call.  
+    The \\em xformOpOrder for the last example would look like:
+    \\code
+    uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot" ]
+    \\endcode
+    
+    When asked for its value via UsdGeomXformOp::GetOpTransform(), an
+    "inverted" Op (i.e. the "inverted" half of a set of paired Ops) will fetch 
+    the value of its paired attribute and return its negation.  This works for 
+    all op types - an error will be issued if a "transform" type op is singular 
+    and cannot be inverted. When getting the authored value of an inverted op 
+    via UsdGeomXformOp::Get(), the raw, uninverted value of the associated
+    attribute is returned.
+
+    For the sake of robustness, <b>setting a value on an inverted op is disallowed.</b>
+    Attempting to set a value on an inverted op will result in a coding error 
+    and no value being set. 
+    
+    <b>Resetting the Transform Stack</b>
+
+    The other special op/token that can appear in \\em xformOpOrder is
+    \\em "!resetXformStack!", which, appearing as the first element of 
+    \\em xformOpOrder, indicates this prim should not inherit the transformation
+    of its namespace parent.  See SetResetXformStack()
+
+    <b>Expected Behavior for "Missing" Ops</b>
+    
+    If an importer expects Scale-Rotate-Translate operations, but a prim
+    has only translate and rotate ops authored, the importer should assume
+    an identity scale.  This allows us to optimize the data a bit, if only
+    a few components of a very rich schema (like Maya's) are authored in the
+    app.
+    
+    \\anchor usdGeom_xformableExamples
+    <b>Using the C++ API</b>
+    
+    #1. Writing out a simple transform matrix encoding
+    \\snippet examples.cpp CreateMatrixWithDefault
+    
+    #2. Writing out an SRT with pivot using UsdGeomXformCommonAPI
+    \\snippet examples.cpp CreateSRTWithDefaults
+    
+    #3. Writing out a rotate-only pivot transform with animated
+    rotation and translation
+    \\snippet examples.cpp CreateAnimatedTransform
+    
+"""
+) {
+
+    uniform token[] xformOpOrder (
+        doc = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims.
+        
+        You should rarely, if ever, need to manipulate this attribute directly.
+        It is managed by the AddXformOp(), SetResetXformStack(), and
+        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
+        GetLocalTransformation()."""
+    )
+}
+
+class Scope "Scope" (
+    inherits = </Imageable>
+    doc = """Scope is the simplest grouping primitive, and does not carry the
+    baggage of transformability.  Note that transforms should inherit down
+    through a Scope successfully - it is just a guaranteed no-op from a
+    transformability perspective."""
+) {
+}
+
+class Xform "Xform" (
+    inherits = </Xformable>
+    doc = """Concrete prim schema for a transform, which implements Xformable """
+) {
+}
+
+class "Boundable" (
+    inherits = </Xformable>
+    doc = """\\brief Boundable introduces the ability for a prim to persistently
+    cache a rectilinear, local-space, extent.
+    
+    \\section UsdGeom_Boundable_Extent Why Extent and not Bounds ?
+    Boundable introduces the notion of "extent", which is a cached computation
+    of a prim's local-space 3D range for its resolved attributes <b>at the
+    layer and time in which extent is authored</b>.  We have found that with
+    composed scene description, attempting to cache pre-computed bounds at
+    interior prims in a scene graph is very fragile, given the ease with which
+    one can author a single attribute in a stronger layer that can invalidate
+    many authored caches - or with which a re-published, referenced asset can
+    do the same.
+    
+    Therefore, we limit to precomputing (generally) leaf-prim extent, which
+    avoids the need to read in large point arrays to compute bounds, and
+    provides UsdGeomBBoxCache the means to efficiently compute and
+    (session-only) cache intermediate bounds.  You are free to compute and
+    author intermediate bounds into your scenes, of course, which may work
+    well if you have sufficient locks on your pipeline to guarantee that once
+    authored, the geometry and transforms upon which they are based will
+    remain unchanged, or if accuracy of the bounds is not an ironclad
+    requisite. 
+    
+    When intermediate bounds are authored on Boundable parents, the child prims
+    will be pruned from BBox computation; the authored extent is expected to
+    incorporate all child bounds."""  
+)
+{
+    # XXX: Note this is really a GfRange3f, which is not fully supported
+    # in Vt I/O.
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), \\em without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
+}
+
+class "Gprim" ( 
+    inherits = </Boundable> 
+    doc = """\\brief Base class for all geometric primitives.  
+    
+    Gprim encodes basic graphical properties such as \\em doubleSided and
+    \\em orientation, and provides primvars for "display color" and "display
+    opacity" that travel with geometry to be used as shader overrides.  """
+
+) {
+    color3f[] primvars:displayColor (
+        customData = {
+            string apiName = "displayColor"
+        }
+        doc = """It is useful to have an "official" colorSet that can be used
+        as a display or modeling color, even in the absence of any specified
+        shader for a gprim.  DisplayColor serves this role; because it is a
+        UsdGeomPrimvar, it can also be used as a gprim override for any shader
+        that consumes a \\em displayColor parameter."""
+    )
+    
+    float[] primvars:displayOpacity (
+        customData = {
+            string apiName = "displayOpacity"
+        }
+        doc = """Companion to \\em displayColor that specifies opacity, broken
+        out as an independent attribute rather than an rgba color, both so that
+        each can be indepedently overridden, and because shaders rarely consume
+        rgba parameters."""
+    )
+    
+    uniform bool doubleSided = false (
+        doc = """Although some renderers treat all parametric or polygonal
+        surfaces as if they were effectively laminae with outward-facing
+        normals on both sides, some renderers derive significant optimizations
+        by considering these surfaces to have only a single outward side,
+        typically determined by control-point winding order and/or 
+        \\em orientation.  By doing so they can perform "backface culling" to
+        avoid drawing the many polygons of most closed surfaces that face away
+        from the viewer.
+        
+        However, it is often advantageous to model thin objects such as paper
+        and cloth as single, open surfaces that must be viewable from both
+        sides, always.  Setting a gprim's \\em doubleSided attribute to 
+        \\c true instructs all renderers to disable optimizations such as
+        backface culling for the gprim, and attempt (not all renderers are able
+        to do so, but the USD reference GL renderer always will) to provide
+        forward-facing normals on each side of the surface for lighting
+        calculations."""
+    )
+    
+    uniform token orientation = "rightHanded" (
+        allowedTokens = ["rightHanded", "leftHanded"]
+        doc = """See: http://renderman.pixar.com/resources/current/rps/attributes.html#orientation-and-sides""")
+}
+
+class Cube "Cube" (
+    inherits = </Gprim>
+    doc = """\\brief Defines a primitive rectilinear cube centered at the origin.
+    
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+) {
+    double size = 2.0 (
+        doc = """Indicates the length of each edge of the cube.  If you
+        author \\em size you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """Extent is re-defined on Cube only to provide a fallback value.
+        \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+
+}
+
+class Sphere "Sphere" (
+    inherits = </Gprim>
+    doc = """\\brief Defines a primitive sphere centered at the origin.
+    
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+) {
+    double radius = 1.0 (
+        doc = """Indicates the sphere's radius.  If you
+        author \\em radius you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """Extent is re-defined on Sphere only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Cylinder "Cylinder" (
+    inherits = </Gprim>
+    doc = """\\brief Defines a primitive cylinder with closed ends, centered at the 
+    origin, whose spine is along the specified \\em axis.
+    
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+) {
+    double height = 2 (
+        doc = """The size of the cylinder's spine along the specified
+        \\em axis.  If you author \\em height you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+    double radius = 1.0 (
+        doc = """The radius of the cylinder. If you author \\em radius
+        you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the cylinder is aligned"""
+    )
+
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """Extent is re-defined on Cylinder only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Capsule "Capsule" (
+    inherits = </Gprim>
+    doc = """\\brief Defines a primitive capsule, i.e. a cylinder capped by two half
+    spheres, centered at the origin, whose spine is along the specified
+    \\em axis."""
+) {
+    double height = 1.0 (
+        doc = """The size of the capsule's spine along the specified
+        \\em axis excluding the size of the two half spheres, i.e.
+        the size of the cylinder portion of the capsule.
+        If you author \\em height you must also author \\em extent.
+        \\sa GetExtentAttr()"""
+    )
+    double radius = 0.5 (
+        doc = """The radius of the capsule.  If you
+        author \\em radius you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the capsule is aligned"""
+    )
+
+    float3[] extent = [(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)] (
+        doc = """Extent is re-defined on Capsule only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Cone "Cone" (
+    inherits = </Gprim>
+    doc = """\\brief Defines a primitive cone, centered at the origin, whose spine
+    is along the specified \\em axis, with the apex of the cone pointing
+    in the direction of the positive axis.
+    
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+) {
+    double height = 2.0 (
+        doc = """The size of the cone's spine along the specified
+        \\em axis.  If you author \\em height you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+    double radius = 1.0 (
+        doc = """The radius of the cone.  If you
+        author \\em radius you must also author \\em extent.
+        
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the cone is aligned"""
+    )
+
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """Extent is re-defined on Cone only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class "PointBased" (
+    doc = """\\brief Base class for all UsdGeomGprims that possess points,
+    providing common attributes such as normals and velocities."""
+    
+    inherits = </Gprim>
+) {
+    # positional
+    point3f[] points (
+        doc = """The primary geometry attribute for all PointBased
+        primitives, describes points in (local) space."""
+    )
+    
+    vector3f[] velocities (
+        doc = """If provided, 'velocities' should be used by renderers to 
+        compute motion blur for a given 'points' sample, rather than 
+        interpolating to a neighboring 'points' sample.  This is the only
+        reasonable means of specifying motion blur for topologically
+        varying PointBased primitives.  It follows that the length of each
+        'velocities' sample must match the length of the corresponding
+        'points' sample."""
+    )
+
+    # shaping
+    normal3f[] normals (
+        doc = """Provide orientation for individual points, which, depending on
+        subclass, may define a surface, curve, or free points.  Note that in
+        general you should not need or want to provide 'normals' for any
+        Mesh that is subdivided, as the subdivision scheme will provide smooth
+        normals.  'normals' is not a generic Primvar,
+        but the number of elements in this attribute will be determined by
+        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+    )
+}
+
+class Mesh "Mesh" (
+    inherits = </PointBased>
+    doc="""Encodes a mesh surface whose definition and feature-set
+    will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
+    
+    1. Certain interpolation ("tag") parameters not yet supported
+    
+    2. Does not (as of 9/2014) yet support hierarchical edits.  We do intend
+    to provide some encoding in a future version of the schema.
+    
+    A key property of this mesh schema is that it encodes both subdivision
+    surfaces, and non-subdived "polygonal meshes", by varying the
+    \\em subdivisionScheme attribute.
+    
+    \\section UsdGeom_Mesh_Normals A Note About Normals
+    
+    Although the \\em normals attribute inherited from PointBased can be authored
+    on any mesh, they are almost never needed for subdivided meshes, and only
+    add rendering cost.  You may consider only authoring them for polygonal
+    meshes."""
+) {
+    #
+    # Common Properties
+    #
+    int[] faceVertexIndices (
+        doc = """Flat list of the index (into the 'points' attribute) of each
+        vertex of each face in the mesh.  If this attribute has more than
+        one timeSample, the mesh is considered to be topologically varying."""
+    )
+    
+    int[] faceVertexCounts (
+        doc = """Provides the number of vertices in each face of the mesh, 
+        which is also the number of consecutive indices in 'faceVertexIndices'
+        that define the face.  The length of this attribute is the number of
+        faces in the mesh.  If this attribute has more than
+        one timeSample, the mesh is considered to be topologically varying."""
+    )
+
+    #
+    # Subdiv Properties
+    #
+    
+    uniform token subdivisionScheme = "catmullClark" (
+        allowedTokens = ["catmullClark", "loop", "bilinear", "none"]
+        doc = """The subdivision scheme to be applied to the surface.  
+        Valid values are "catmullClark" (the default), "loop", "bilinear", and
+        "none" (i.e. a polymesh with no subdivision - the primary difference
+        between schemes "bilinear" and "none" is that bilinearly subdivided
+        meshes can be considered watertight, whereas there is no such guarantee
+        for un-subdivided polymeshes, and more mesh features (e.g. holes) may
+        apply to bilinear meshes but not polymeshes.  Polymeshes \\em may be
+        lighterweight and faster to render, depending on renderer and render
+        mode.)""")
+
+    token interpolateBoundary = "edgeAndCorner" (
+        allowedTokens = ["none", "edgeAndCorner", "edgeOnly"]
+        doc = """Specifies how interpolation boundary face edges are
+        interpolated. Valid values are "none", 
+        "edgeAndCorner" (the default), or "edgeOnly".""")
+
+    token faceVaryingLinearInterpolation = "cornersPlus1" (
+        allowedTokens = ["all", "none", "boundaries", "cornersOnly", 
+                         "cornersPlus1", "cornersPlus2"]
+        doc = """Specifies how face varying data is interpolated.  Valid values
+        are "all" (no smoothing), "cornersPlus1" (the default, Smooth UV),
+        "none" (Same as "cornersPlus1" but does not infer the presence 
+        of corners where two faceVarying edges meet at a single face), or 
+        "boundaries" (smooth only near vertices that are not at a
+        discontinuous boundary).
+
+        See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules""")
+
+    int[] holeIndices = [] (
+        doc = """The face indices (indexing into the 'faceVertexCounts'
+        attribute) of all faces that should be made invisible.""")
+
+    int[] cornerIndices = [] (
+        doc = """The vertex indices of all vertices that are sharp corners.""")
+
+    float[] cornerSharpnesses = [] (
+        doc = """The sharpness values for corners: each corner gets a single
+        sharpness value (Usd.Mesh.SHARPNESS_INFINITE for a perfectly sharp
+        corner), so the size of this array must match that of
+        'cornerIndices'""")
+
+    int[] creaseIndices = [] (
+        doc = """The indices of all vertices forming creased edges.  The size of 
+        this array must be equal to the sum of all elements of the 
+        'creaseLengths' attribute.""")
+
+    int[] creaseLengths = [] (
+        doc = """The length of this array specifies the number of creases on the
+        surface. Each element gives the number of (must be adjacent) vertices in
+        each crease, whose indices are linearly laid out in the 'creaseIndices'
+        attribute. Since each crease must be at least one edge long, each
+        element of this array should be greater than one.""")
+
+    float[] creaseSharpnesses = [] (
+        doc = """The per-crease or per-edge sharpness for all creases
+        (Usd.Mesh.SHARPNESS_INFINITE for a perfectly sharp crease).  Since
+        'creaseLengths' encodes the number of vertices in each crease, the
+        number of elements in this array will be either len(creaseLengths) or
+        the sum over all X of (creaseLengths[X] - 1). Note that while
+        the RI spec allows each crease to have either a single sharpness
+        or a value per-edge, USD will encode either a single sharpness
+        per crease on a mesh, or sharpnesses for all edges making up
+        the creases on a mesh.""")
+}
+
+class NurbsPatch "NurbsPatch" (
+    inherits = </PointBased>
+    doc = """\\brief Encodes a rational or polynomial non-uniform B-spline
+    surface, with optional trim curves.
+    
+    The encoding mostly follows that of RiNuPatch and RiTrimCurve: 
+    https://renderman.pixar.com/resources/current/RenderMan/geometricPrimitives.html#rinupatch , with some minor renaming and coalescing for clarity.
+    
+    The layout of control vertices in the \\em points attribute inherited
+    from UsdGeomPointBased is row-major with U considered rows, and V columns.
+    
+    \\anchor UsdGeom_NurbsPatch_Form
+    <b>NurbsPatch Form</b>
+    
+    The authored points, orders, knots, weights, and ranges are all that is
+    required to render the nurbs patch.  However, the only way to model closed
+    surfaces with nurbs is to ensure that the first and last control points
+    along the given axis are coincident.  Similarly, to ensure the surface is
+    not only closed but also C2 continuous, the last \\em order - 1 control
+    points must be (correspondingly) coincident with the first \\em order - 1
+    control points, and also the spacing of the last corresponding knots
+    must be the same as the first corresponding knots.
+    
+    <b>Form</b> is provided as an aid to interchange between modeling and
+    animation applications so that they can robustly identify the intent with
+    which the surface was modelled, and take measures (if they are able) to
+    preserve the continuity/concidence constraints as the surface may be rigged
+    or deformed.  
+    \\li An \\em open-form NurbsPatch has no continuity constraints.
+    \\li A \\em closed-form NurbsPatch expects the first and last control points
+    to overlap
+    \\li A \\em periodic-form NurbsPatch expects the first and last
+    \\em order - 1 control points to overlap.
+    
+    <b>Nurbs vs Subdivision Surfaces</b>
+    
+    Nurbs are an important modeling primitive in CAD/CAM tools and early
+    computer graphics DCC's.  Because they have a natural UV parameterization
+    they easily support "trim curves", which allow smooth shapes to be
+    carved out of the surface.
+    
+    However, the topology of the patch is always rectangular, and joining two 
+    nurbs patches together (especially when they have differing numbers of
+    spans) is difficult to do smoothly.  Also, nurbs are not supported by
+    the Ptex texturing technology (http://ptex.us).
+    
+    Neither of these limitations are shared by subdivision surfaces; therefore,
+    although they do not subscribe to trim-curve-based shaping, subdivs are
+    often considered a more flexible modeling primitive.
+    """
+) {
+    int uVertexCount (
+        doc = """Number of vertices in the U direction.  Should be at least as
+        large as uOrder."""
+    )
+
+    int vVertexCount (
+        doc = """Number of vertices in the V direction.  Should be at least as
+        large as vOrder."""
+    )
+
+    int uOrder (
+        doc = """Order in the U direction.  Order must be positive and is
+        equal to the degree of the polynomial basis to be evaluated, plus 1."""
+    )
+
+    int vOrder (
+        doc = """Order in the V direction.  Order must be positive and is
+        equal to the degree of the polynomial basis to be evaluated, plus 1."""
+    )
+
+    double[] uKnots (
+        doc = """Knot vector for U direction providing U parameterization.
+        The length of this array must be ( uVertexCount + uOrder ), and its
+        entries must take on monotonically increasing values."""  
+    )
+
+    double[] vKnots (
+        doc = """Knot vector for V direction providing U parameterization.
+        The length of this array must be ( vVertexCount + vOrder ), and its
+        entries must take on monotonically increasing values."""  
+    )
+
+    uniform token uForm = "open" (
+        allowedTokens = ["open", "closed", "periodic"]
+        doc = """Interpret the control grid and knot vectors as representing
+        an open, geometrically closed, or geometrically closed and C2 continuous
+        surface along the U dimension.
+        \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
+    )
+        
+    uniform token vForm = "open" (
+        allowedTokens = ["open", "closed", "periodic"]
+        doc = """Interpret the control grid and knot vectors as representing
+        an open, geometrically closed, or geometrically closed and C2 continuous
+        surface along the V dimension.
+        \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
+    )
+        
+    # Alembic's NuPatch does not encode these... wonder how they 
+    # get away with that?  Just assume it's the full range, presumably.
+    double2 uRange (
+        doc = """Provides the minimum and maximum parametric values (as defined
+        by uKnots) over which the surface is actually defined.  The minimum
+        must be less than the maximum, and greater than or equal to the
+        value of uKnots[uOrder-1].  The maxium must be less than or equal
+        to the last element's value in uKnots."""
+    )
+
+    double2 vRange (
+        doc = """Provides the minimum and maximum parametric values (as defined
+        by vKnots) over which the surface is actually defined.  The minimum
+        must be less than the maximum, and greater than or equal to the
+        value of vKnots[vOrder-1].  The maxium must be less than or equal
+        to the last element's value in vKnots."""
+    )
+
+    double[] pointWeights (
+        doc = """Optionally provides "w" components for each control point,
+        thus must be the same length as the points attribute.  If authored,
+        the patch will be rational.  If unauthored, the patch will be
+        polynomial, i.e. weight for all points is 1.0.
+        \\note Some DCC's pre-weight the \\em points, but in this schema, 
+        \\em points are not pre-weighted."""
+    )
+
+    int[] trimCurve:counts (
+        doc = """Each element specifies how many curves are present in each
+        "loop" of the trimCurve, and the length of the array determines how
+        many loops the trimCurve contains.  The sum of all elements is the
+        total nuber of curves in the trim, to which we will refer as 
+        \\em nCurves in describing the other trim attributes."""
+    )
+    
+    int[] trimCurve:orders (
+        doc = """Flat list of orders for each of the \\em nCurves curves."""
+    )
+    
+    int[] trimCurve:vertexCounts (
+        doc = """Flat list of number of vertices for each of the
+         \\em nCurves curves."""
+    )
+
+    double[] trimCurve:knots (
+        doc = """Flat list of parametric values for each of the
+        \\em nCurves curves.  There will be as many knots as the sum over
+        all elements of \\em vertexCounts plus the sum over all elements of
+        \\em orders."""
+    )
+
+    double2[] trimCurve:ranges (
+        doc = """Flat list of minimum and maximum parametric values 
+        (as defined by \\em knots) for each of the \\em nCurves curves."""
+    )
+
+    double3[] trimCurve:points (
+        doc = """Flat list of homogeneous 2D points (u, v, w) that comprise
+        the \\em nCurves curves.  The number of points should be equal to the
+        um over all elements of \\em vertexCounts."""
+    )
+
+}
+
+class "Curves" (
+    inherits = </PointBased>
+    doc = """\\brief Base class for BasisCurves (RiCurves) and NurbsCurves
+    (MayaCurves)."""
+) {
+    # topology attributes
+    int[] curveVertexCounts (
+        doc = """Curves-derived primitives can represent multiple distinct,
+        potentially disconnected curves.  The length of 'curveVertexCounts'
+        gives the number of such curves, and each element describes the
+        number of vertices in the corresponding curve"""
+    )
+    
+    # shaping attributes
+    float[] widths (
+        doc = """Provides width specification for the curves, whose application
+        will depend on whether the curve is oriented (normals are defined for
+        it), in which case widths are "ribbon width", or unoriented, in which
+        case widths are cylinder width.  'widths' is not a generic Primvar,
+        but the number of elements in this attribute will be determined by
+        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+    )
+}
+
+class BasisCurves "BasisCurves" (
+    inherits = </Curves>
+    doc = """Basis curves are analagous to RiCurves.  A basis matrix and vstep 
+    are used to uniformly interpolate the curves.  These curves are often used 
+    to render dense aggregate geometry like hair.
+    
+    A segment is the smoothly interpolated part between vertices.  A curves prim 
+    may have many curves, determined implicitly by the length of the 
+    curveVertexCount vector.  The number of segments an individual curve has is 
+    determined by the number of vertices it has, the wrap (periodicity), and the 
+    vstep of the basis.
+    
+    Basis to vstep mapping:
+        [bezier - 3, catmullRom - 1, bspline - 1, hermite - 2, power - 4]
+    
+    The first segment of a cubic curve is always defined by its first 4 points. 
+     The vstep is the increment used to determine what cv determines the 
+    next segment.  For a two segment bspline basis curve (vstep=1), the first 
+    segment will be defined by interpolating vertices [0, 1, 2, 3] and the 
+    second  segment will be defined by [1, 2, 3, 4].  For a two segment bezier 
+    basis curve (vstep = 3), the first segment will be defined by interpolating 
+    vertices [0, 1, 2, 3] and the second segment will be defined by 
+    [3, 4, 5, 6].  If the vstep is not one, then you must take special care
+    to make sure that the number of cvs properly divides by your vstep.
+    
+    For a given cubic curve, it holds that:
+        (curveVertexCount - 4) % vstep == 0 [nonperiodic]
+        (curveVertexCount) % vstep == 0 [periodic]
+        
+    For a given linear curve: 
+        segmentCount = curveVertexCount - 1 [nonperiodic]
+        segmentCount = curveVertexCount [periodic]
+    For a given cubic curve:
+        segmentCount = (curveVertexCount - 4) / vstep + 1 [nonperiodic]
+        segmentCount = curveVertexCount / vstep [periodic]
+        
+    For cubic curves, data can be either interpolated between vertices or 
+    across segments.  Per vertex data should be the same size as the number
+    of vertices in your curve.  Segment varying data is dependent on the 
+    wrap (periodicity) and number of segments in your curve.
+    
+    For a given curve:
+        segmentVaryingDataSize = segmentCount + 1 [nonperiodic]
+        segmentVaryingDataSize = segmentCount [periodic]    
+    
+    This prim represents two different entries in the RI spec:  RiBasis
+    and RiCurves, hence the name "BasisCurves."  If we are interested in
+    specifying a custom basis as RenderMan allows you to do, the basis
+    enum could be extended with a new "custom" token and with additional 
+    attributes vstep and matrix, but for compatability with AbcGeom and the
+    rarity of this use case, it is omitted for now."""
+) {
+    # interpolation attributes
+    uniform token type  = "cubic" (
+        allowedTokens = ["linear", "cubic"]
+        doc = """Linear curves interpolate linearly between cvs.  
+        Cubic curves use a basis matrix with 4 cvs to interpolate a segment.""")
+
+    uniform token basis = "bezier" (
+        allowedTokens = ["bezier", "bspline", "catmullRom", "hermite", "power"]
+        doc = """the basis specifies the vstep and matrix used for interpolation.
+        a custom basis could be supported with the addition of a custom token
+        and an additional set of matrix/vstep parameters.  For simplicity and
+        consistency with AbcGeom, we have omitted this.  The order of basis
+        and default value is intentionally the same as AbcGeom.""")
+
+    uniform token wrap = "nonperiodic" (
+        allowedTokens = ["nonperiodic", "periodic"]
+        doc = """if wrap is set to periodic, the curve when rendered will 
+        repeat the initial vertices (dependent on the vstep) to connect the
+        end points.""")
+}
+
+class NurbsCurves "NurbsCurves" (
+    inherits = </Curves>
+    doc = """Nurbs curves are analagous to Maya Nurbs Curves,  used for 
+    interchange of rigging and modeling curves.  Unlike Maya Curves, this 
+    curve spec supports batching of multiple curves into a single prim and 
+    widths in the schema.  Unlike maya, we require 
+    'numSegments + 2 * degree + 1' knots (2 more than maya does).  This is to
+    be more consistent with renderman's NURBS specification.  
+    
+    To express a periodic curve:
+    knot[0] = knot[1] - (knots[-2] - knots[-3]; 
+    knot[-1] = knot[-2] + (knot[2] - knots[1]);
+    
+    To express a nonperiodic curve:
+    knot[0] = knot[1];
+    knot[-1] = knot[-2];
+    
+    In spite of these slight differences in the spec, curves generated in Maya
+    should be preserved when roundtripping."""
+) {
+    # topology attributes
+    int[] order = [] (
+        doc = """Order is degree + 1.  It must be less than or equal to the 
+        number of cvsPerCurve""")
+
+    # interpolation attributes
+    double[] knots (
+        doc = """Knot vectors are batched together and define how to interpolate curve segments.""")
+        
+    double2[] ranges (
+        doc = """Specifies the parametric range used to evaluate the curve.""")
+}
+
+class Points "Points" (
+    inherits = </PointBased>
+    doc = """\\brief Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
+    
+    Points can be an efficient means of storing and rendering particle
+    effects comprised of thousands or millions of small particles.  Points
+    generally receive a single shading sample each, which should take 
+    \\em normals into account, if present."""
+
+) {
+    # shaping attributes
+    float[] widths (
+        doc = """Widths are defined as the \\em diameter of the points, in 
+                 object space"""
+    )
+    
+    int64[] ids (
+        doc = """Ids are optional; if authored, the ids array should be the same
+                 length as the points array, specifying (at each timesample if
+                 point identities are changing) the id of each point. The
+                 type is signed intentionally, so that clients can encode some
+                 binary state on Id'd points without adding a separate 
+                 primvar."""
+    )
+}
+
+class Camera "Camera" (
+    doc = """\\brief Transformable camera.
+    
+    Describes optical properties of a camera via a common set of attributes
+    that provide control over the camera's frustum as well as its depth of
+    field. For stereo, the left and right camera are individual prims tagged
+    through the \\ref UsdGeomCamera::GetStereoRoleAttr() "stereoRole attribute".
+    
+    There is a corresponding class GfCamera, which can hold the state of a
+    camera (at a particular time). \\ref UsdGeomCamera::GetCamera() and
+    \\ref UsdGeomCamera::SetFromCamera() convert between a USD camera prim and
+    a GfCamera.
+
+    To obtain the camera's location in world space, call the following on a
+    UsdGeomCamera 'camera':
+    \\code
+    GfMatrix4d camXform = camera.ComputeLocalToWorldTransform(time);
+    \\endcode
+    \\note
+    <b>Cameras in USD are always "Y up", regardless of the stage's orientation
+    (i.e. UsdGeomGetStageUpAxis()).</b>  This means that the inverse of 
+    'camXform' (the VIEW half of the <A HREF="http://www.glprogramming.com/red/chapter03.html#name2">MODELVIEW transform in OpenGL parlance</A>) 
+    will transform the world such that the camera is at the origin, looking 
+    down the -Z axis, with Y as the up axis.
+    
+    \\sa \\ref usdGeom_linAlgBasics "UsdGeom Linear Algebra Basic Assumptions"
+     """
+    inherits = </Xformable>
+    customData = {
+        string extraIncludes = """
+#include "pxr/base/gf/camera.h" """
+    }
+) {
+    # viewing frustum
+    token projection = "perspective" (
+        allowedTokens = ["perspective", "orthographic"])
+    float horizontalAperture  = 20.9550 (
+        doc = """Horizontal aperture in millimeters (or, more general, tenths
+                 of a world unit).
+                 Defaults to the standard 35mm spherical projector aperture.""")
+    float verticalAperture  = 15.2908 (
+        doc = """Vertical aperture in millimeters (or, more general, tenths of
+                 a world unit).
+                 Defaults to the standard 35mm spherical projector aperture.""")
+    float horizontalApertureOffset = 0.0 (
+        doc = """Horizontal aperture offset in the same units as
+                 horizontalAperture. Defaults to 0.""")
+    float verticalApertureOffset = 0.0 (
+        doc = """Vertical aperture offset in the same units as
+                 verticalAperture. Defaults to 0.""")
+    float focalLength = 50.0 (
+        doc = """Perspective focal length in millimeters (or, more general,
+                 tenths of a world unit).""")
+    float2 clippingRange = (1, 1000000) (
+        doc = """Near and far clipping distances in centimeters (or, more
+                 general, world units).""")
+    float4[] clippingPlanes = [] (
+        doc = """Additional, arbitrarily oriented clipping planes.
+                 A vector (a,b,c,d) encodes a clipping plane that cuts off
+                 (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
+                 are the coordinates in the camera's space.""")
+
+    # depth of field
+    float fStop = 0.0 (
+        doc = """Lens aperture. Defaults to 0.0, which turns off focusing.""")
+    float focusDistance = 0.0 (
+        doc = """Distance from the camera to the focus plane in centimeters (or
+                 more general, world units).""")
+
+    # stereoscopic 3D
+    uniform token stereoRole = "mono" (
+        allowedTokens = ["mono", "left", "right"]
+        doc = """If different from mono, the camera is intended to be the left
+                 or right camera of a stereo setup.""")
+}

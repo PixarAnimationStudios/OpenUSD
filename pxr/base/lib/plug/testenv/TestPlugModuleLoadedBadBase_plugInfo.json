@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleLoadedBadBase",
+            "Info": {
+                # This plugInfo specifies the wrong base
+                "Types": {
+                    "TestPlugModuleLoadedBadBase.TestPlugPythonLoadedBadBase": {
+                        "bases": ["_TestPlugBase<4>"]
+                    }
+                }
+            }
+        }
+    ]
+}

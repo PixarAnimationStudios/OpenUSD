@@ -1,0 +1,9 @@
+
+#header {
+    height:54px;
+    background: url(USDLogoDocs.png) no-repeat;
+}
+
+div.image img[src="USDLogoLrgWithAlpha.png"]{
+    width:550px;
+}

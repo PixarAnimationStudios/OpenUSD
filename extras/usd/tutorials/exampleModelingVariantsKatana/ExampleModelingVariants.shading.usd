@@ -1,0 +1,38 @@
+#usda 1.0
+
+def Xform "ExampleModelingVariants" (
+    variants = {
+        string shadingComplexity = "full"
+    }
+    add variantSets = "shadingComplexity"
+)
+{
+    over "Shaders"
+    {
+        custom uniform asset proxyPtexDir = @../ptex/proxy/Default@
+    }
+
+    over "HWRig"
+    {
+        custom uniform asset proxyPtexDir = @../ptex/proxy/Default@
+    }
+    variantSet "shadingComplexity" = {
+        "display" (
+            add references = @./ExampleModelingVariants_slim.gen.usd@</ExampleModelingVariants>
+        ) {
+
+        }
+        "full" (
+            add references = @./ExampleModelingVariants_slim.gen.usd@</ExampleModelingVariants>
+        ) {
+
+        }
+        "modeling" {
+
+        }
+        "none" {
+
+        }
+    }
+}
+

@@ -1,0 +1,313 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/glos/shaders/simpleLighting.glslfx
+--- #import /user/anim/global/shaders/simpleLighting.glslfx
+
+-- glsl SimpleLighting.GeometryInjection
+#ifndef NUM_LIGHTS
+#define NUM_LIGHTS 0
+#endif
+
+#if NUM_LIGHTS == 0
+
+#else  // NUM_LIGHTS == 0
+
+struct ShadowMatrix {
+    mat4 eyeToShadowMatrix;
+    vec4 basis0;
+    vec4 basis1;
+    vec4 basis2;
+    float bias;
+    float padding0;
+    float padding1;
+    float padding2;
+};
+
+layout(std140) uniform Shadow {
+    ShadowMatrix shadow[NUM_LIGHTS];
+};
+
+out vec2 FshadowFilterWidth[NUM_LIGHTS];
+
+void
+computeShadowFilterWidth(vec4 Peye)
+{
+    // interpolate filter width
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+        vec4 cx = shadow[i].basis0;
+        vec4 cy = shadow[i].basis1;
+        vec4 cz = shadow[i].basis2;
+        
+        // compare homogeneous vector length
+        vec3 x = cx.xyz - cx.w * Peye.xyz;
+        vec3 y = cy.xyz - cy.w * Peye.xyz;
+        vec3 z = cz.xyz - cz.w * Peye.xyz;
+        FshadowFilterWidth[i] = vec2(sqrt (1.0 / dot (x,x)), sqrt(1.0 / dot (y,y)));
+    }
+}
+
+#define COMPUTE_SHADOW_FILTER_WIDTH 1
+
+#endif  // NUM_LIGHTS == 0
+
+-- glsl SimpleLighting.SimpleLighting
+
+// ---------------------------------------------------------------------------
+// struct definitions
+// ---------------------------------------------------------------------------
+#ifndef NUM_LIGHTS
+#define NUM_LIGHTS 0
+#endif
+
+struct LightSource {
+    vec4 position;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    vec4 spotDirection;
+    vec4 spotCutoffAndFalloff;
+    vec4 attenuation;
+    bool hasShadow;
+    int shadowIndex;
+    int padding0;
+    int padding1;
+};
+
+struct ShadowMatrix {
+    mat4 eyeToShadowMatrix;
+    vec4 basis0;
+    vec4 basis1;
+    vec4 basis2;
+    float bias;
+    float padding0;
+    float padding1;
+    float padding2;
+};
+
+// ---------------------------------------------------------------------------
+// uniform blocks
+// ---------------------------------------------------------------------------
+#if NUM_LIGHTS == 0
+
+#else  // NUM_LIGHTS == 0
+
+layout(std140) uniform Lighting {
+    bool useLighting;
+    bool useColorMaterialDiffuse;
+    LightSource lightSource[NUM_LIGHTS];
+};
+
+layout(std140) uniform Shadow {
+    ShadowMatrix shadow[NUM_LIGHTS];
+};
+
+vec2
+computeShadowFilterWidth(int index, vec4 Peye)
+{
+    vec4 cx = shadow[index].basis0;
+    vec4 cy = shadow[index].basis1;
+    vec4 cz = shadow[index].basis2;
+
+    // compare homogeneous vector length
+    vec3 x = cx.xyz - cx.w * Peye.xyz;
+    vec3 y = cy.xyz - cy.w * Peye.xyz;
+    vec3 z = cz.xyz - cz.w * Peye.xyz;
+    return vec2(sqrt (1.0 / dot (x,x)), sqrt(1.0 / dot (y,y)));
+}
+
+#endif  // NUM_LIGHTS == 0
+
+layout(std140) uniform Material {
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    vec4 emission;
+    vec4 sceneColor;
+    float shininess;
+} material;
+
+// ---------------------------------------------------------------------------
+// textures
+// ---------------------------------------------------------------------------
+uniform sampler2DArray shadowTexture;
+uniform sampler2DArrayShadow shadowCompareTexture;
+
+// ---------------------------------------------------------------------------
+// lighting functions
+// ---------------------------------------------------------------------------
+
+#if NUM_LIGHTS == 0
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
+               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
+{
+    return color;
+}
+
+vec4
+simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+{
+    return material.emission + (material.sceneColor * material.ambient);
+}
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+{
+    return simpleLightingMaterial(color, Peye, Neye, Ctint);
+}
+
+#else // NUM_LIGHT == 0
+
+float
+shadowCompare(int index, vec4 coord)
+{
+    return texture(shadowCompareTexture,
+                   vec4(coord.x/coord.w, coord.y/coord.w, index, coord.z));
+}
+
+#ifndef SHADOW_FILTER
+float
+shadowFilter(int index, vec4 coord, vec4 Peye)
+{
+    return shadowCompare(index, coord);
+}
+#endif
+
+float
+shadowing(int index, vec4 Peye)
+{
+    float result = 1.0;
+    vec4 coord = shadow[index].eyeToShadowMatrix * Peye;
+
+    // coord.xy : homogenous shadow uv coordinate
+    // coord.z : cartesian receiver depth
+    // coord.w : shadow projection w
+
+    float dReceiver = coord.z/coord.w;
+    coord.z = min(1, dReceiver + shadow[index].bias);
+    return shadowFilter(index, coord, Peye);
+}
+
+float
+lightDistanceAttenuation(vec4 Peye, int index)
+{
+    float distAtten = 1.0;
+    if (lightSource[index].position.w != 0.0) {
+        float d = distance(lightSource[index].position, Peye);
+        distAtten = 1.0 / (lightSource[index].attenuation[0] +
+                           lightSource[index].attenuation[1] * d +
+                           lightSource[index].attenuation[2] * d*d);
+    }
+    return distAtten;
+}
+
+float
+lightSpotAttenuation(vec3 l, int index)
+{
+    float spotAtten = 1.0;
+    if (lightSource[index].spotCutoffAndFalloff.x < 180.0) {
+        float cosLight = dot(-l, lightSource[index].spotDirection.xyz);
+        spotAtten = (cosLight < cos(radians(lightSource[index].spotCutoffAndFalloff.x)))
+                ? 0.0 : pow(cosLight, lightSource[index].spotCutoffAndFalloff.y);
+    }
+    return spotAtten;
+}
+
+// for the comaptibility, turn on shadowing by default.
+#ifndef USE_SHADOWS
+#define USE_SHADOWS 1
+#endif
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
+               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
+{
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+
+        vec4 Plight = lightSource[i].position;
+
+        vec3 l = (Plight.w == 0.0)
+                    ? normalize(Plight.xyz)
+                    : normalize(Plight - Peye).xyz;
+
+        vec3 n = normalize(Neye);
+        vec3 h = normalize(l + vec3(0,0,1));    // directional viewer
+
+        float d = max(0.0, dot(n, l));
+        // note: result of pow(0, 0) is undefined in GLSL.
+        float s = pow(max(0.0, dot(n, h)), matShininess);
+
+        float atten = lightDistanceAttenuation(Peye, i);
+        float spot = lightSpotAttenuation(l, i);
+#if USE_SHADOWS
+        float shadow = (lightSource[i].hasShadow) ?
+            shadowing(lightSource[i].shadowIndex, Peye) : 1.0;
+#else
+        float shadow = 1.0;
+#endif
+        color += atten * spot *
+                 ((lightSource[i].ambient * matAmbient) +
+                  shadow * (d * Ctint * lightSource[i].diffuse * matDiffuse +
+                            s * lightSource[i].specular * matSpecular));
+    }
+
+    color.a = matDiffuse.a;
+
+    return color;
+}
+
+vec4
+simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+{
+    if (!useLighting) {
+        return color;
+    }
+
+    // XXX todo: useColorMaterialDiffuse
+
+    vec4 diffuse = color;
+    vec4 ambient = material.ambient;
+    vec4 specular = material.specular;
+    float shininess = material.shininess;
+
+    color = material.emission + (material.sceneColor * material.ambient);
+
+    return simpleLighting(color, Peye, Neye, Ctint,
+                          diffuse, ambient, specular, shininess);
+}
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+{
+    Neye = (gl_FrontFacing ? Neye : -Neye);
+
+    return simpleLightingMaterial(color, Peye, Neye, Ctint);
+}
+
+#endif  // NUM_LIGHTS == 0

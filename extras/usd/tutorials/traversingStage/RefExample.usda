@@ -1,0 +1,19 @@
+#usda 1.0
+
+over "refSphere" (
+    add references = @HelloWorld.usda@
+)
+{
+    uniform token[] xformOpOrder = []
+}
+
+over "refSphere2" (
+    add references = @HelloWorld.usda@
+)
+{
+    over "world"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+    }
+}
+

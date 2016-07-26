@@ -1,0 +1,104 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    "faceIndexPrimvar": {
+                        "appliesTo": [
+                            "attributes"
+                        ],
+                        "default": "ptexFaceIndex",
+                        "documentation": "Specifies an array of face indices used for ptex mapping",
+                        "type": "token"
+                    },
+                    "faceOffsetPrimvar": {
+                        "appliesTo": [
+                            "attributes"
+                        ],
+                        "default": "ptexFaceOffset",
+                        "documentation": "Specifies the ptex face index offset for aggregated ptex files",
+                        "type": "token"
+                    },
+                    "uvPrimvar": {
+                        "appliesTo": [
+                            "attributes"
+                        ],
+                        "default": "",
+                        "documentation": "Specifies the UV primvar for texture mapping",
+                        "type": "token"
+                    }
+                },
+                "Types": {
+                    "UsdImagingBasisCurvesAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "BasisCurves"
+                    },
+                    "UsdImagingCapsuleAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Capsule"
+                    },
+                    "UsdImagingConeAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Cone"
+                    },
+                    "UsdImagingCubeAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Cube"
+                    },
+                    "UsdImagingCylinderAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Cylinder"
+                    },
+                    "UsdImagingMeshAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Mesh"
+                    },
+                    "UsdImagingNurbsPatchAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "NurbsPatch"
+                    },
+                    "UsdImagingPointsAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Points"
+                    },
+                    "UsdImagingSphereAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Sphere"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdImaging",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

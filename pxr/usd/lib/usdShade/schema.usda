@@ -1,0 +1,152 @@
+#usda 1.0
+(
+    "This file describes the USD Shader schemata for code generation."
+    subLayers = [
+        @../usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdShade"
+        string libraryPath      = "pxr/usd/usdShade"
+        # dictionary libraryTokens = {}
+    }
+)
+{
+}
+
+class PShader "PShader" (
+    inherits = </Typed>
+) {
+    asset sloPath
+    uniform string shaderProtocol
+    uniform string shaderType
+    color3f displayColor
+    float displayOpacity
+}
+
+
+
+class Subgraph "Subgraph" (
+    inherits = </Typed>
+    doc = """A subgraph is a container for shading nodes, as well as other 
+    subgraphs. It has a public input interface and provides a list of public 
+    outputs, called terminals.
+
+    <b>Subgraph Interfaces</b>
+    
+    One of the most important functions of a Subgraph is to host the "interface"
+    with which clients of already-built shading networks will interact.  Please
+    see \\ref UsdShadeSubgraph_Interfaces "Interface Attributes" for a detailed
+    explanation of what the interface provides, and how to construct and
+    use it to effectively share/instance shader networks.
+
+    <b>Terminals</b>
+
+    Analogous to the public interface, these are relationships that each point 
+    to a single internal shader output.
+    """
+    customData = {
+        string extraIncludes = """
+#include <utility>
+#include "pxr/usd/usd/editTarget.h"
+#include "pxr/usd/usdShade/interfaceAttribute.h"
+#include "pxr/usd/usdShade/parameter.h"
+"""
+    }
+) {
+
+}
+
+
+class Look "Look" (
+    inherits = </Subgraph>
+    doc = """A Look provides a container into which multiple "render targets"
+    can add data that defines a "shading look" for a renderer.  Typically
+    this consists of one or more UsdRelationship properties that target
+    other prims of type \\em Shader - though a target/client is free to add
+    any data that is suitable.  We <b>strongly advise</b> that all targets
+    adopt the convention that all properties be prefixed with a namespace
+    that identifies the target, e.g. "rel ri:surface = </Shaders/mySurf>".
+    
+    <b>Binding Looks</b>
+    
+    In the UsdShading model, geometry expresses a binding to a single Look or
+    to a set of Looks partitioned by face-sets defined on the geometry;
+    it is legal to bind a Look at the root (or other sub-prim) of a model,
+    and then bind a different Look to individual gprims, but the meaning of
+    inheritance and "ancestral overriding" of Look bindings is left to each
+    render-target to determine.  Since UsdGeom has no concept of shading,
+    we provide the API for binding and unbinding geometry here, on UsdShadeLook.
+    Please see Bind(), Unbind(), GetBindingRel(), GetBoundLook().
+    
+    <b>Look Variation</b>
+    
+    The entire power of Usd variantSets and all the other composition 
+    operators can be brought to bear on encoding shading variation.  
+    UsdShadeLook provides facilities for a particular way of building
+    "Look variants" in which neither the identity of the Looks themselves
+    nor the geometry Look-bindings need to change - instead we vary the
+    targetted networks, interface values, and even parameter values within
+    a single variantSet.  
+    See \\ref UsdShadeLook_Variations "Authoring Look Variations" for more.
+    
+    <b>Authoring Looks for Referenced Re-use</b>
+    
+    The shading networks that a Look may target can live anywhere in a layer's
+    namespace.  However, it is advantageous to place all of the shaders that 
+    "belong" to the Look under it in namespace, particularly when building
+    "shading libraries/palettes" that you intend to reference into other,
+    composite, more specialized Looks.  This is because Usd references compose
+    all descendant prims of the reference target into the referencer's namespace.
+    This means that all of the library Look's shader network will come along 
+    with the Look when the Look gets referenced as a sub-component of another
+    Look.
+    
+    """
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/faceSetAPI.h"
+"""
+    }
+) {
+}
+
+class Shader "Shader" (
+    inherits = </Typed>
+    doc = """Base class for all usd shaders. This is not target specific,
+    although usually each render target will derive its own, renderer-specific
+    shader object types from this base.
+    
+    Shader objects generally (but need not) represent a one-to-one 
+    correspondence with shader objects of some kind in the target renderer.
+    The purpose of representing them in Usd is two-fold:
+    \\li To represent, via "connections" the topology of the shading network
+    that must be reconstructed in the renderer.
+    \\li To present a (partial or full) interface of typed parameters whose
+    values can be set and overridden in Usd, to be provided later at 
+    render-time as parameter values to the actual render shader objects.
+    
+    Facilities for both of these missions are largely encapsulated in the
+    UsdShadeParameter schema.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/parameter.h"
+    """
+    }
+) {
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+        customData = {
+            string apiName = "id"
+        }
+    )
+}
+

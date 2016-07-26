@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    defaultPrim = "main_cam"
+    endTimeCode = 0
+    startTimeCode = 0
+)
+
+def Camera "main_cam" (
+    kind = "component"
+)
+{
+    float circleOfConfusionSize = 0.0125
+    float4[] clippingPlanes = []
+    float2 clippingRange = (10, 500000)
+    matrix4d constraintTargets:HeadXf = ( (1, 0, 0, 0), (0, 0.999999999997669, 0, 0), (0, 0, 0.999999999997669, 0), (0, 15, 15, 1) ) (
+        constraintTargetIdentifier = "HeadXf"
+        customData = {
+            bool hasPropertyDefinition = 0
+        }
+    )
+    float3[] extentsHint = [(3.40282e+38, 3.40282e+38, 3.40282e+38), (-3.40282e+38, -3.40282e+38, -3.40282e+38)]
+    float focalLength = 25.047468
+    float focusDistance = 200
+    float fStop = 5.6
+    float horizontalAperture = 24
+    float lensSqueezeRatio = 1
+    token projection = "perspective"
+    uniform bool stereoscopic = 0
+    float verticalAperture = 13.5
+}
+

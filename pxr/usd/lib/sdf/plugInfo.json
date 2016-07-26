@@ -1,0 +1,36 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    "payloadAssetDependencies": {
+                        "appliesTo": "prims",
+                        "displayGroup": "Pipeline",
+                        "type": "asset[]"
+                    }
+                },
+                "Types": {
+                    "SdfFileFormat": {
+                        "displayName": "Sdf file format base class",
+                        "target": "sdf"
+                    },
+                    "SdfTextFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "displayName": "Sdf Text File Format",
+                        "extensions": [
+                            "sdf"
+                        ],
+                        "formatId": "sdf"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "sdf",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

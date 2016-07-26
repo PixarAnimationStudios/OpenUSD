@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    defaultPrim = "Ball"
+    upAxis = "Y"
+)
+
+def Xform "Ball" (
+    assetInfo = {
+        asset identifier = @Ball/Ball.usd@
+        string name = "Ball"
+    }
+    kind = "component"
+    add references = [
+        @./Ball.shadingVariants.usda@,
+        @./Ball.maya.usd@
+    ]
+)
+{
+}
+
+

@@ -1,0 +1,119 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class "Statements" (
+    doc = "Container namespace schema for all renderman statements"
+)
+{
+    float ri:focusRegion (
+        doc = """Represents the value of the 'focusregion' option to RiCamera 
+        in centimeters. Specifies the stretch of space along the camera view 
+        axis surrounding the focus plane that contains everything that will 
+        be rendered in perfect focus.  If unauthored, a value of zero should
+        be assumed. <b>Note:</b> this parameter may not be supportable in
+        RIS renders in RenderMan 19 and above."""
+    )
+}
+
+class RslShader "RslShader"
+{
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+    asset info:sloPath
+}
+
+class RisObject "RisObject" (
+    doc = "Represents a ris object with connectable parameters. "
+)
+{
+    asset info:argsPath
+    asset info:filePath
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+}
+
+class RisPattern "RisPattern" (
+    doc = "Represents a ris pattern object. Multiple of these can be assigned."
+)
+{
+    asset info:argsPath
+    asset info:filePath
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+}
+
+class RisOslPattern "RisOslPattern" (
+    doc = "Represents a ris osl pattern object."
+)
+{
+    asset info:argsPath
+    asset info:filePath = @PxrOSL@ (
+        hidden = true
+    )
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+    asset info:oslPath
+}
+
+class RisBxdf "RisBxdf" (
+    doc = "Represents a ris bxdf object. One of these is assigned at one time."
+)
+{
+    asset info:argsPath
+    asset info:filePath
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+}
+
+class RisIntegrator "RisIntegrator" (
+    doc = "Integrator. Only one can be declared in a rib scene."
+)
+{
+    asset argsPath
+    asset filePath
+}
+
+class "RiLookAPI" (
+    doc = "This API provides the relationships to prman shaders and RIS objects."
+)
+{
+    rel riLook:bxdf = None
+    rel riLook:coshaders = None
+    rel riLook:displacement = None
+    rel riLook:patterns = None
+    rel riLook:surface = None
+    rel riLook:volume = None
+}
+

@@ -1,0 +1,91 @@
+// This file is used solely to put useful information on the main
+// index page produced by doxygen.
+
+// IF YOU ADD A NEW GROUP, PLEASE ADD IT TO THE LIST BELOW!!
+
+//! \defgroup group_arch_Bits Bits
+//  Functions having to do with how bits are laid out on a machine.
+
+//! \defgroup group_arch_Multithreading Multithreading
+//  Functions having to do with multithreading.
+
+//! \defgroup group_arch_Math Math
+//  Functions for math.
+
+//! \defgroup group_arch_Strings Strings
+//  Functions having to do with string massaging/manipulation
+
+//! \defgroup group_arch_SystemFunctions System Functions
+//  Functions that encapsulate differing low-level system calls.
+
+//! \defgroup group_arch_Memory Memory Management
+//  Functions having to do with memory allocation/handling.
+
+//! \defgroup group_arch_Diagnostics Diagnostics
+//  Functions having to do with error reporting/handling.
+
+//! \defgroup group_arch_SymbolVisibility Symbol Visibility
+//  Macros having to do with symbol visibility
+
+
+
+/*!
+\mainpage 
+
+The ARCH library is a repository for all architecture-dependent
+code. It isolates all platform dependencies (and confusing \#ifdefs)
+into one small library and also serves as a common area for
+documentation of these multi-platform issues.
+
+The high-level grouping of the classes/functions is:
+    \li \link group_arch_Bits Bits \endlink
+    \li \link group_arch_Multithreading Multithreading \endlink
+    \li \link group_arch_Math Math \endlink
+    \li \link group_arch_Strings Strings \endlink
+    \li \link group_arch_SystemFunctions System Functions \endlink
+    \li \link group_arch_Memory Memory Management \endlink
+    \li \link group_arch_Diagnostics Diagnostics \endlink
+    \li \link group_arch_SymbolVisibility Symbol Visibility \endlink
+
+
+Symbols for use within libarch:
+
+For OS:
+    <ul>
+    <li> ARCH_OS_LINUX
+    <li> ARCH_OS_DARWIN
+    <li> ARCH_OS_WINDOWS
+    </ul>
+
+For processor:
+    <ul>
+    <li> ARCH_CPU_INTEL
+    <li> ARCH_CPU_ARM
+    </ul>
+
+For bits:
+    <ul>
+    <li> ARCH_BITS_64
+    </ul>
+
+For compiler:
+    <ul>
+    <li> ARCH_COMPILER_CLANG
+         <ul>
+         <li> ARCH_COMPILER_CLANG_MAJOR
+         <li> ARCH_COMPILER_CLANG_MINOR
+         <li> ARCH_COMPILER_CLANG_PATCHLEVEL
+         </ul>
+    <li> ARCH_COMPILER_GCC
+         <ul>
+         <li> ARCH_COMPILER_GCC_MAJOR
+         <li> ARCH_COMPILER_GCC_MINOR
+         <li> ARCH_COMPILER_GCC_PATCHLEVEL
+         </ul>
+    <li> ARCH_COMPILER_MSVC
+        <ul>
+        <li> ARCH_COMPILER_MSVC_VERSION
+        </ul>
+    <li> ARCH_COMPILER_ICC
+    </ul>
+*/

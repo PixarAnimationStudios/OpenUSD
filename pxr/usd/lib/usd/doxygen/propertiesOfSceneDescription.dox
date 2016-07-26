@@ -1,0 +1,40 @@
+/*!
+
+\page Usd_Page_PropertiesOfSceneDescription Important Properties of Scene Description
+
+\section Usd_Ordering Names, Namespace Ordering, and Property Namespaces
+
+\section Usd_ValueResolution TimeSamples, Defaults, and Value Resolution
+
+\section Usd_PrimSpecifiers Defs, Overs, Classes, and Prim Types
+
+\sa <A HREF="http://graphics.pixar.com/usd/docs/USD%2BFrequently%2BAsked%2BQuestions.html#USDFrequentlyAskedQuestions-Whatsthedifferencebetweenanoverandatypelessdef">What's the difference between an "over" and a "typeless def"? </A>
+
+\section Usd_ModelHierarchy Model Hierarchy: Meaning and Purpose
+
+Borrowing from \ref kind_coreKinds, we review the primary \em kinds we use
+to create the model hierarchy.
+<ul>
+<li><b>model</b> - Everything in the model hierarchy is a kind of model.</li>
+  <ul>
+  <li><b>component</b> - A component model is a terminal model in the model
+                         hierarchy - it can have no child models.</li>
+  <li><b>group</b> - a model that is simply a container for other models.</li>
+    <ul>
+    <li><b>assembly</b> - An "important" group model - often because it is
+                          iself a published asset.</li>
+    </ul>
+  </ul>
+<li><b>subcomponent</b> - Within a component model, subcomponents identify
+                          important (generally articulable) sub-trees.
+                          Subcomponents are "stopping points" when
+                          dynamically unrolling/expanding a component.</li>
+</ul>
+
+\section Usd_ActiveInactive How "active" Affects Prims on a UsdStage
+
+\section Usd_Filetypes Ascii, Binary, and Plugin Filetypes
+     
+\section Usd_AssetResolution Resolving Asset References
+
+*/

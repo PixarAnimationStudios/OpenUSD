@@ -1,0 +1,85 @@
+/*!
+\page work_page_front Work : Multi-threaded Dispatch
+\if ( PIXAR_MFB_BUILD )
+\mainpage Work : Multi-threaded Dispatch
+\publicLib
+\endif
+
+\section work_Summary Summary
+
+The <b>work</b> library is intended to simplify the use of multithreading in
+the context of our software ecosystem.
+
+This library is intended as a thin abstraction layer on top of a multithreading
+subsystem.  The abstraction serves two purposes:
+    <ol>
+    <li> To simplify the use of common constructs like "Parallel For"
+    <li> To centralize our dependency on a particular multithreading subsystem
+    (e.g., TBB, etc.).
+    </ol>
+
+Because of the way multithreading subsystems work and because of the way they 
+need to interact with each other in managing system resources, it is not 
+generally practical for each client to use whatever threading system they like 
+(e.g., TBB for one client, OpenMP for another).
+
+\section work_Initialiation Initializing and Limiting Mulithreading
+
+The library defaults to maximum concurrency, i.e. it will attempt to use as
+many threads as available on the system.  The default concurrency limit is
+established at static initialization time.
+The PXR_WORK_THREAD_LIMIT environment variable can be set to further limit
+concurrency, such as for example in a farm environment.  PXR_WORK_THREAD_LIMIT
+must be set to an integer N, denoting one of the following:
+    <ul>
+    <li> 0 - maximum concurrency (default if unset)
+    <li> 1 - single-threaded mode
+    <li> positive N - limit to N threads (clamped to number of hardware threads
+    available)
+    <li> negative N - limit to all but N hardware threads (clamped to 1)
+    </ul>
+
+The concurrency limit can be set programmatically, using for example:
+
+\code
+    
+    WorkSetConcurrencyLimitArgument(N);
+
+\endcode
+
+or
+
+\code
+    
+    WorkSetMaximumConcurrencyLimit();
+
+\endcode
+
+It is preferrable to use WorkSetMaximumConcurrencyLimit() when the desire to use
+the hardware to its fullest rather than specify the maximum concurrency limit
+manually.
+
+\section work_Example Simple "Parallel For" Example
+
+Once you've initialized the library, you can now harness the awesome power of
+your multi-core machine.  Here's a simple example of a Parallel For.
+
+\code
+
+static void _DoubleTheValues(size_t begin, size_t end, std::vector<int> *v)
+{
+    for (size_t i = begin; i < end; ++i)
+        (*v)[i] *= 2;
+}
+
+
+static void DoubleInParallel(std::vector<int> *v)
+{
+    WorkParallelForN(v->size(), boost::bind(&_DoubleTheValues, _1, _2, v));
+}
+
+\endcode
+
+You can avoid the boost::bind and provide your own functor object as well.
+
+*/

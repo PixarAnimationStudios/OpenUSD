@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleUnloadable",
+            "Info": {
+                "Types": {
+                    "TestPlugPythonUnloadable": {
+                        "bases": ["_TestPlugBase<1>"],
+                        "description": "unloadable plugin"
+                    }
+                }
+            }
+        }
+    ]
+}

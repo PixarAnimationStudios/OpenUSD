@@ -1,0 +1,6 @@
+{
+    "Types" : {
+        "MoverBend::MultiMode" : {
+            "isSdValueType": true,
+        }
+    }

@@ -1,0 +1,18 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "TestPlugDso2",
+            "Root": "..",
+            "LibraryPath": "TestPlugDso2",
+            "ResourcePath": "Resources",
+            "Info": {
+                "Types": {
+                    "TestPlugDerived2": {
+                        "bases": ["_TestPlugBase<2>"]
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleDepBadDep2",
+            "Info": {
+                # This plugInfo specifies a dependency for a type which
+                # is not registered as a plugin
+                "PluginDependencies": {
+                    "_TestPlugBase<3>": ["_TestPlugBase<1>"]
+                },
+                "Types": {
+                    "TestPlugPythonDepBadDep2": {
+                        "bases": ["_TestPlugBase<3>"]
+                    }
+                }
+            }
+        }
+    ]
+}

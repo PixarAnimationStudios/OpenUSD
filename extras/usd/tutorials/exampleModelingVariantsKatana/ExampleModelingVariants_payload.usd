@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "ExampleModelingVariants"
+)
+
+def "ExampleModelingVariants" (
+    add references = [
+        @./ExampleModelingVariants.shading.usd@</ExampleModelingVariants>,
+        @./ExampleModelingVariants.geom.usd@</ExampleModelingVariants>
+    ]
+)
+{
+    custom uniform asset presto:rig = @ExampleModelingVariants/menv30/ExampleModelingVariants_rig.menva@
+}
+

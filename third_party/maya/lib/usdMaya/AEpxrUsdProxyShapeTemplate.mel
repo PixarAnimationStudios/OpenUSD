@@ -1,0 +1,92 @@
+/**
+ * \file AEusdProxyShapeTemplate.mel
+ * \brief attribute editor for UsdMayaProxyShape
+ */
+
+/**
+ * create custom controls for the attribute editor
+ *
+ * \param   anAttr  name of the attribute
+ */
+global proc AEpxrUsdProxyShapeTemplate_FilePathNew(
+    string $anAttr) {
+
+        //
+        // setup ui template
+        //
+        setUITemplate -pushTemplate attributeEditorTemplate;
+
+        rowLayout -numberOfColumns 3;
+            
+            text -label "File Path";
+            textField usdFilePathField;
+            symbolButton -image "navButtonBrowse.xpm" usdFileBrowserButton;
+        setParent ..;
+
+        //
+        // wireup ae page
+        //
+        AEpxrUsdProxyShapeTemplate_FilePathReplace($anAttr);
+
+        //
+        // cleanup state
+        //
+        setUITemplate -popTemplate;
+}
+
+/**
+ * connect custom attribute editor controls to the correct attributes
+ *
+ * \param   anAttr  name of the attribute
+ */
+global proc AEpxrUsdProxyShapeTemplate_FilePathReplace(
+    string $anAttr) {
+
+        evalDeferred ("connectControl usdFilePathField " + $anAttr);
+
+        button -edit -command ("AEpxrUsdProxyShapeTemplate_FileBrowser " + $anAttr) usdFileBrowserButton;
+}
+
+/**
+ * create a file browser 
+ *
+ * This is method is used as the command method on a control to launch a file
+ * browser.
+ *
+ * \param   anAttr  name of the attribute
+ *
+  */
+global proc AEpxrUsdProxyShapeTemplate_FileBrowser(string $anAttr) 
+{
+    string $fileNames[] = `fileDialog2 
+        -caption "Specify USD File"
+        -fileFilter "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)"
+        -fileMode 1`;
+    if (size($fileNames) > 0) {
+        evalEcho ("setAttr -type \"string\" " + $anAttr + " \"" + $fileNames[0] + "\"");
+    }
+}
+
+/**
+ * attribute editor template for pxrUsdProxyShape nodes
+ *
+ * \param   nodeName   name of the node
+ */
+global proc AEpxrUsdProxyShapeTemplate( string $nodeName )
+{
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -beginLayout "USD" -collapse 0;
+        editorTemplate -callCustom "AEpxrUsdProxyShapeTemplate_FilePathNew" "AEpxrUsdProxyShapeTemplate_FilePathReplace" "filePath";
+        editorTemplate -addControl "primPath";
+        editorTemplate -addControl "excludePrimPaths";
+        editorTemplate -addControl "variantKey";
+        editorTemplate -addControl "complexity";
+        editorTemplate -addControl "tint";
+        editorTemplate -addControl "tintColor";
+    editorTemplate -endLayout;
+
+    AEsurfaceShapeTemplate $nodeName;
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

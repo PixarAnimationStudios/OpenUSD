@@ -1,0 +1,194 @@
+#usda 1.0
+(
+    subLayers = [
+        @../usd/schema.usda@,
+        @../usdShade/schema.usda@,
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdHydra"
+        string libraryPath      = "pxr/usd/usdHydra"
+        dictionary libraryTokens = {
+            //
+            // Shader IDs 
+            //
+            dictionary HwUvTexture_1 = { }
+            dictionary HwPtexTexture_1 = { }
+            dictionary HwPrimvar_1 = { }
+
+            //
+            // Texture Sampler Tokens
+            //
+            dictionary black = {
+                string doc = """Return black when sampling outside the bounds of
+                the texture."""
+            }
+            dictionary clamp = {
+                string doc = """The texture coordinate is clamped to [0,1].
+                """
+            }
+            dictionary repeat = {
+                string doc = """The texture coordinate wraps around the texture.
+                So a texture coordinate of -0.2 becomes the equivalent of 0.8.
+                """
+            }
+            dictionary mirror = {
+                string doc = """The texture coordinate wraps around like a
+                mirror. -0.2 becomes 0.2, -1.2 becomes 0.8, etc.
+                """
+            }
+
+
+            dictionary nearest = {
+                string doc = """Selects the nearest sample for the given
+                coordinate
+                """
+            }
+            dictionary linear = {
+                string doc = """A weighted linear blend of nearest adjacent
+                samples.
+                """
+            }
+
+            dictionary nearestMipmapNearest= {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object
+                """
+            }
+            dictionary nearestMipmapLinear = {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object
+                """
+            }
+            dictionary linearMipmapNearest= {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object
+                """
+            }
+            dictionary linearMipmapLinear = {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object
+                """
+            }
+        }
+    }
+)
+{
+}
+
+class "HydraLookAPI" (
+    doc = """
+          """
+    customData = {
+        string className = "LookAPI"
+    }
+) {
+    // TODO: displayLook:bxdf is more general than this library and should
+    // perhaps be lofted up to UsdShade.
+    
+    rel displayLook:bxdf (
+        customData = {
+            string apiName = "bxdf"
+        }
+    )
+}
+
+class "HydraShader" (
+    inherits = [</Shader>]
+    customData = {
+        string className = "Shader"
+    }
+) {
+    uniform asset info:filename = @@ (
+        customData = {
+            string apiName = "filename"
+        }
+    )
+}
+
+class "HydraPrimvar" (
+    inherits = [</Shader>]
+    customData = {
+        string className = "Primvar"
+    }
+) {
+    uniform token info:varname = "" (
+        customData = {
+            string apiName = "varname"
+        }
+        doc = """The name of the primvar. Note that on the gprim, this primvar
+        must follow the standard UsdGeom primvar declaration.
+        
+        Further note that this name should not contain the UsdGeom primvar
+        namespace prefix.
+        """
+    )
+}
+
+
+class "Texture" (
+    inherits = [</Shader>]
+    customData = {
+        string className = "Texture"
+    }
+) {
+    uniform asset info:filename = @@ (
+        customData = {
+            string apiName = "filename"
+        }
+        doc = "Asset path to the file containg the image data."
+    )
+    double frame (
+        doc = "The frame offset for animated textures."
+    )
+    uniform float textureMemory (
+        doc = """Amount of memory used to store the texture (in Mb). A value of 
+        zero specifies the native resolution."""
+    )
+}
+
+class "UvTexture" (
+    inherits = [</Texture>]
+    customData = {
+        string className = "UvTexture"
+    }
+) {
+    float2 uv (
+        doc = "The uv coordinates at which to sample the texture."
+    )
+
+    uniform token wrapS (
+        allowedTokens = ["clamp", "repeat", "mirror", "black"]
+        doc = "Specifies the wrap mode for this texture."
+    )
+    uniform token wrapT (
+        allowedTokens = ["clamp", "repeat", "mirror", "black"]
+        doc = "Specifies the wrap mode for this texture."
+    )
+    uniform token minFilter (
+        allowedTokens = ["nearest", "linear",
+                         "linearMipmapLinear", "linearMipmapNearest",
+                         "nearestMipmapLinear", "nearestMipmapNearest" ]
+        doc = "Specifies the minification filter mode for this texture."
+    )
+    uniform token magFilter (
+        allowedTokens = ["nearest", "linear"]
+        doc = "Specifies the magnification filter mode for this texture."
+    )
+
+}
+
+class "PtexTexture" (
+    inherits = [</Texture>]
+    customData = {
+        string className = "PtexTexture"
+    }
+) {
+    uniform int faceIndex (
+        doc = """The Ptex face index from which to sample. By default, this
+        parameter will be bound to the ptexFaceIndex primvar."""
+    )
+    uniform int faceOffset (
+        doc = """The Ptex face offset to be applied to the face index. By
+        default, this parameter will be bound to the ptexFaceOffset primvar."""
+    )
+}
+

@@ -1,0 +1,31 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "ShaderResources": "shaders",
+                "Types": {                                                                  
+                    "Glf_OIIOImage" : {
+                        "bases": ["GlfImage"],
+                        "imageTypes": ["bmp", "exr", "jpg", "png", "tif", "zfile"],
+                        "precedence": 0
+                    },
+                    "GlfPtexTexture" : {
+                        "bases": ["GlfTexture"],
+                        "textureTypes": ["ptx", "ptex"],
+                        "precedence": 1
+                    },
+                    "GlfUVTexture" : {
+                        "bases": ["GlfBaseTexture"],
+                        "textureTypes": ["*"],
+                        "precedence": 0
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "glf",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

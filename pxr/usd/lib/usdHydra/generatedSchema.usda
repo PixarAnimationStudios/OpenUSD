@@ -1,0 +1,139 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class "HydraLookAPI" (
+    doc = """
+          """
+)
+{
+    rel displayLook:bxdf = None
+}
+
+class Shader "HydraShader"
+{
+    uniform asset info:filename = @@
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+}
+
+class Shader "HydraPrimvar"
+{
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+    uniform token info:varname = "" (
+        doc = """The name of the primvar. Note that on the gprim, this primvar
+        must follow the standard UsdGeom primvar declaration.
+        
+        Further note that this name should not contain the UsdGeom primvar
+        namespace prefix.
+        """
+    )
+}
+
+class Shader "Texture"
+{
+    double frame (
+        doc = "The frame offset for animated textures."
+    )
+    uniform asset info:filename = @@ (
+        doc = "Asset path to the file containg the image data."
+    )
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+    uniform float textureMemory (
+        doc = """Amount of memory used to store the texture (in Mb). A value of 
+        zero specifies the native resolution."""
+    )
+}
+
+class Shader "UvTexture"
+{
+    double frame (
+        doc = "The frame offset for animated textures."
+    )
+    uniform asset info:filename = @@ (
+        doc = "Asset path to the file containg the image data."
+    )
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+    uniform token magFilter (
+        allowedTokens = ["nearest", "linear"]
+        doc = "Specifies the magnification filter mode for this texture."
+    )
+    uniform token minFilter (
+        allowedTokens = ["nearest", "linear", "linearMipmapLinear", "linearMipmapNearest", "nearestMipmapLinear", "nearestMipmapNearest"]
+        doc = "Specifies the minification filter mode for this texture."
+    )
+    uniform float textureMemory (
+        doc = """Amount of memory used to store the texture (in Mb). A value of 
+        zero specifies the native resolution."""
+    )
+    float2 uv (
+        doc = "The uv coordinates at which to sample the texture."
+    )
+    uniform token wrapS (
+        allowedTokens = ["clamp", "repeat", "mirror", "black"]
+        doc = "Specifies the wrap mode for this texture."
+    )
+    uniform token wrapT (
+        allowedTokens = ["clamp", "repeat", "mirror", "black"]
+        doc = "Specifies the wrap mode for this texture."
+    )
+}
+
+class Shader "PtexTexture"
+{
+    uniform int faceIndex (
+        doc = """The Ptex face index from which to sample. By default, this
+        parameter will be bound to the ptexFaceIndex primvar."""
+    )
+    uniform int faceOffset (
+        doc = """The Ptex face offset to be applied to the face index. By
+        default, this parameter will be bound to the ptexFaceOffset primvar."""
+    )
+    double frame (
+        doc = "The frame offset for animated textures."
+    )
+    uniform asset info:filename = @@ (
+        doc = "Asset path to the file containg the image data."
+    )
+    uniform token info:id (
+        doc = """The id is an identifier for the type or purpose of the 
+        shader. E.g.: Texture or FractalFloat. 
+        The use of this id will depend on the renderer: some will turn it
+        into an actual shader path, some will use it to generate dynamically
+        a shader source code.
+        """
+    )
+    uniform float textureMemory (
+        doc = """Amount of memory used to store the texture (in Mb). A value of 
+        zero specifies the native resolution."""
+    )
+}
+

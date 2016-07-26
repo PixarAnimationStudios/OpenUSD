@@ -1,0 +1,217 @@
+{
+    "Types" : {
+        "MoverBend::MultiMode" : {
+            "isSdValueType": true
+        },
+        "MoverFrameDeform::RotationFrame" : {
+            "isSdValueType": true
+        },
+        "MoverLatticeDeform::Version" : {
+            "isSdValueType": true
+        },
+        "MoverRadialSquetch::Mode" : {
+            "isSdValueType": true
+        },
+        "MoverRotate::Mode" : {
+            "isSdValueType": true
+        },
+        "MoverRotate::RotationDirection" : {
+            "isSdValueType": true
+        },
+        "MoverScale::Mode" : {
+            "isSdValueType": true
+        },
+        "MoverSubdivWarp::Version" : {
+            "isSdValueType": true
+        },
+        "MoverSubdivWarp::Complexity" : {
+            "isSdValueType": true
+        },
+        "MoverSurfaceDeform::Version" : {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::Mode" : {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::MultiMode" : {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::TransformOrder" : {
+            "isSdValueType": true
+        },
+        "MoverTransformDeform::FramePivotMethod" : {
+            "isSdValueType": true
+        },
+        "MoverTranslate::Mode" : {
+            "isSdValueType": true
+        },
+        "MoverMultiSculpt::Basis" : {
+            "isSdValueType": true
+        },
+        "MoverAttachPoints"     : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "AttachPoints",
+            "addGroup": "Movers"
+        },
+        "MoverTransformBase"    : {
+            "bases": ["MfMover"]
+        },
+        "MoverBakedSubdivWarp"       : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "BakedSubdivWarp",
+            "addGroup": "Movers"
+        },
+    	"MoverBend"             : {
+            "bases": ["MfMover"],
+            "displayName": "Bend",
+            "addGroup": "Movers",
+            "addSuffix": "bnd"
+        },
+    	"MoverBow"              : {
+            "bases": ["MfMover"],
+            "displayName": "Bow",
+            "addGroup": "Movers",
+            "addSuffix": "bow"
+        },
+        "MoverConstraintBase" : {
+            "bases": ["MfMover"]
+        },
+        "MoverConstraintBase::LocalSpaceMode" : {
+            "isSdValueType": true
+        },        
+        "MoverCopySubdivPoints" : {
+            "bases": ["MfMover"],
+            "displayName": "CopySubdivPoints",
+            "addGroup": "Movers"
+        },
+        "MoverCurveDeform"      : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Curve",
+            "addGroup": "Movers",
+            "addSuffix": "crv"
+        },
+        "MoverCurveFit"      : {
+            "bases": ["MfMover"],
+            "displayName": "CurveFit",
+            "addGroup": "Movers"
+        },
+        "MoverCylinderDeform"   : {
+            "bases": ["MfMover"],
+            "displayName": "Cylinder",
+            "addGroup": "Movers"
+        },
+    	"MoverFrameDeform"      : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Frame",
+            "addGroup": "Movers",
+            "addSuffix": "frm"
+        },
+    	"MoverLatticeDeform"    : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Lattice",
+            "addGroup": "Movers"
+        },
+    	"MoverMultiRotate"      : {
+            "bases": ["MfMover"],
+            "displayName": "MultiRotate",
+            "addGroup": "Movers",
+            "addSuffix": "rot"
+        },
+        "MoverMultiSculpt"     : {
+            "bases": ["MfMover"],
+            "displayName": "MultiSculpt",
+            "addGroup": "Movers"
+        },
+    	"MoverPtMultBaker"      : {
+            "bases": ["MfMover"]
+        },
+    	"MoverRadialRotate"     : {
+            "bases": ["MfMover"],
+            "displayName": "RadialRotate",
+            "addGroup": "Movers"
+        },
+     	"MoverRadialReformer"   : {
+            "bases": ["MfMover"],
+            "displayName": "RadialReformer",
+            "addGroup": "Movers"
+        },
+    	"MoverRadialSquetch"    : {
+            "bases": ["MfMover"],
+            "displayName": "RadialSquetch",
+            "addGroup": "Movers"
+        },
+    	"MoverRepulse"          : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Repulse",
+            "addGroup": "Movers",
+            "addSuffix": "rpl"
+        },
+    	"MoverScale"            : {
+            "bases": ["MfMover"],
+            "displayName": "Scale",
+            "addGroup": "Movers"
+        },
+        "MoverSculptDeform"     : {
+            "bases": ["MfMover"],
+            "displayName": "Sculpt",
+            "addGroup": "Movers",
+            "addSuffix": "sculpt"
+        },
+    	"MoverRelax"            : {
+            "bases": ["MfMover"],
+            "displayName": "Relax",
+            "addGroup": "Movers"
+        },
+    	"MoverRotate"           : {
+            "bases": ["MfMover"],
+            "displayName": "Rotate",
+            "addGroup": "Movers"
+        },
+    	"MoverSingleRotate"     : {
+            "bases": ["MfMover"]
+        },
+    	"MoverSquetch"          : {
+            "bases": ["MfMover"],
+            "displayName": "Squetch",
+            "addGroup": "Movers",
+            "addSuffix": "sqtch"
+        },
+        "MoverSubdivWarp"       : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "SubdivWarp",
+            "addGroup": "Movers"
+        },
+        "MoverSurfaceDeform"    : {
+            "bases": ["MoverConstraintBase"],
+            "displayName": "Surface",
+            "addGroup": "Movers",
+            "addSuffix": "srf"
+        },
+    	"MoverTranslate"        : {
+            "bases": ["MfMover"],
+            "displayName": "Translate",
+            "addGroup": "Movers"
+        },
+        "MoverDisplacementAccumulator" : {
+            "bases": ["MfParallelMover"],
+            "displayName": "DisplacementAccumulator",
+            "addGroup": "Movers"
+        },
+        "MoverJointMover"      : {
+            "bases": ["MoverTransformBase"],
+            "displayName": "Joint",
+            "addGroup": "Movers"
+        },
+        "MoverTransformDeform" : {
+            "bases": ["MoverTransformBase"],
+            "displayName": "Transform",
+            "addGroup": "Movers",
+            "addSuffix": "xform"
+        },
+        "MoverMacroDriver": {
+            "bases": ["MfPrim"],
+            "displayName": "MacroDriver",
+            "addGroup": "Other"
+        }
+    }
+}

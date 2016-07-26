@@ -1,0 +1,16 @@
+/*!
+\mainpage
+
+This is an example library that provides a very rudimentary OBJ file format
+plugin for Usd.  It is intentionally not particularly functional.  The aim is to
+provide nearly the bare minimum plugin structure for learning purposes.  For a
+far more advanced example, including an implementation of a low-level layer
+backing store plugin, see the usdAbc alembic plugin.
+
+The plugin is structured by functional component:
+
+- \b fileFormat contains the SdfFileFormat plugin interface implementation.
+- \b stream and \b streamIO contain the OBJ parser and data representation.
+- \b translator contains the logic that translates OBJ data to Usd data.
+
+*/

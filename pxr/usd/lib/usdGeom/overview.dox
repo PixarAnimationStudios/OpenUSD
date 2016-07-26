@@ -1,0 +1,106 @@
+/*!
+
+\page usdGeom_page_front UsdGeom : USD Geometry Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdGeom : USD Geometry Schema
+\endif
+
+\brief <b>UsdGeom</b> defines the 3D graphics-related prim and property
+schemas that together form a basis for interchanging geometry between DCC
+tools in a graphics pipeline.
+
+\section UsdGeom_Structure Class Structure
+
+\subsection UsdGeom_Imageable UsdGeomImageable
+
+Currently, all classes in UsdGeom inherit from UsdGeomImageable , whose intent is
+to capture any prim type that might want to be rendered or visualized.  This
+distinction is made for two reasons: 
+- so that there \em could be types that would never want to be renderered,
+and can thus be optimized around, for traversals, and also to enable
+validation: for example, in a compatible shading schema, only
+UsdGeomImageable-derived prims should be able to express a look/material binding.  
+- for the common properties described in UsdGeomImageable, including visibility,
+purpose, and the attribute schema for \ref UsdGeomPrimvar primvars.
+
+Admittedly, not all of the classes inheriting from UsdGeomImageable really need
+to be imageable - they are grouped as they are to avoid the need for
+multiple-inheritance, which would arise because some classes that may not
+necessarily be imageable are definitely transformable.
+
+\subsection UsdGeom_Xformable UsdGeomXformable
+
+UsdGeom takes a strong stance that geometry prims be transformable.  This is
+primarily a scalability and complexity management decision, since prim-count
+has a strong correlation to total scene composition time and memory
+footprint, and eliminating the need for a "shape" node for every piece of
+geometry generally reduces overall prim count by anywhere from 30% to 50%,
+depending on depth and branching factor of one's scene.
+
+UsdGeomXformable encapsulates the schema for a prim that is transformable.
+Readers familiar with AbcGeom's Xform schema will find Xformable familiar,
+but more easily introspectable.  Xformable decomposes a transformation into
+an ordered sequence of \ref UsdGeomXformOp "ops"; unlike AbcGeom::Xform,
+which packs the op data into static and varying arrays, UsdGeomXformable
+expresses each op as an independent UsdAttribute.  This data layout, while
+somewhat more expensive to extract, is much more conducive to "composed scene
+description" because it allows individual ops to be overridden in stronger
+layers independently of all other ops.  We provide facilities leveraging
+core Usd features that help mitigate the extra cost of reading more
+attributes per-prim for performance-sensitive clients.
+
+Of course, UsdGeom still requires a prim schema that simply represents a
+transformable prim that scopes other child prims, which is fulfilled by
+UsdGeomXform .
+
+\note You may find it useful to digest the \ref usdGeom_linAlgBasics
+"basic assumptions of UsdGeom linear algebra"
+
+\subsection UsdGeom_Gprim UsdGeomGprim
+
+UsdGeomGprim is the base class for all "geometric primitives", which encodes
+several per-primitive graphics-related properties. Defined Gprims 
+currently include:
+- UsdGeomMesh
+- UsdGeomNurbsPatch
+- UsdGeomBasisCurves
+- UsdGeomNurbsCurves
+- UsdGeomPoints
+- UsdGeomCapsule
+- UsdGeomCone
+- UsdGeomCube
+- UsdGeomCylinder
+- UsdGeomSphere
+
+We expect there to be some debate around the last five "intrinsic" Gprims:
+Capsule, Cone, Cube, Cylinder, and Sphere, as not all DCC's support them as
+primitives.  In Pixar's pipeline, we in fact rarely render these primitives,
+but find them highly useful for their fast inside/outside tests in defining
+volumes for lighting effects, procedural modifiers (such as "kill spheres"
+for instancers), and colliders.  The last, in particular, is quite useful for
+interchanging data with rigid-body simulators.  It is necessary to be able to
+transmit these volumes from dressing/animation tools to
+simulation/lighting/rendering tools, thus their presence in our schema.  We
+expect to support these and other "non-native" schema types as some form of
+proxy or "pass through" prim in DCC's that do not understand them.
+
+
+\subsection UsdGeom_Camera UsdGeomCamera
+
+UsdGeomCamera encodes a transformable camera.
+
+
+\subsection UsdGeom_ModelAPI UsdGeomModelAPI
+
+UsdGeomModelAPI is an API schema that extends the basic UsdModelAPI API with concepts
+unique to models that contain 3D geometry.  This includes:
+\li \ref UsdGeomModelAPI::GetExtentsHint "cached extent hints encompassing an entire model"
+\li API for collecting and extracting all \ref UsdGeomConstraintTarget "constraint targets" for a model from the model's root prim.
+
+\section UsdGeom_StageMetrics Stage Metrics
+
+The classes described above are concerned with individual primitives and 
+properties.  Some geometic quantities, however, describe aspects of an entire
+scene, which we encode as /stage metadata/.  For example it is UsdGeom that
+allows \ref UsdGeomUpAxis_group .
+*/
