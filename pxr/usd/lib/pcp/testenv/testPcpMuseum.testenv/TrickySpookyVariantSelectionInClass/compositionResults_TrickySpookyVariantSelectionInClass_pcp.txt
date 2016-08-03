@@ -1,0 +1,150 @@
+Loading @testPcpMuseum.testenv/TrickySpookyVariantSelectionInClass/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.usda            /Char
+    CharRig.usda         /CharRig
+
+Child names:
+     ['Anim', 'Rig', 'InheritTest']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim>
+
+Prim Stack:
+    CharRig.usda         /CharRig/Anim
+
+Child names:
+     ['LeftLeg', 'RightLeg']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig>
+
+Prim Stack:
+    root.usda            /Char/Rig
+    CharRig.usda         /CharRig/Rig
+
+Child names:
+     ['SymLegRig', 'LeftLegRig', 'RightLegRig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/SymLegRig>
+
+Prim Stack:
+    root.usda            /Char/Rig/SymLegRig
+    CharRig.usda         /CharRig/Rig/SymLegRig
+    LegRig.usda          /LegRig
+    LegRig.usda          /LegRig{LegRigStyle=1Leg}
+
+Variant Selections:
+    {LegRigStyle = 1Leg}
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/SymLegRig/Anim>
+
+Prim Stack:
+    LegRig.usda          /LegRig{LegRigStyle=1Leg}Anim
+
+Property names:
+     ['avarFor1LegStyle']
+
+Property stacks:
+/Char/Rig/SymLegRig/Anim.avarFor1LegStyle:
+    LegRig.usda          /LegRig{LegRigStyle=1Leg}Anim.avarFor1LegStyle
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/LeftLegRig>
+
+Prim Stack:
+    root.usda            /Char/Rig/LeftLegRig
+    root.usda            /Char/Rig/SymLegRig
+    CharRig.usda         /CharRig/Rig/LeftLegRig
+    CharRig.usda         /CharRig/Rig/SymLegRig
+    LegRig.usda          /LegRig
+    LegRig.usda          /LegRig{LegRigStyle=1Leg}
+
+Variant Selections:
+    {LegRigStyle = 1Leg}
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/RightLegRig>
+
+Prim Stack:
+    root.usda            /Char/Rig/RightLegRig
+    root.usda            /Char/Rig/SymLegRig
+    CharRig.usda         /CharRig/Rig/RightLegRig
+    CharRig.usda         /CharRig/Rig/SymLegRig
+    LegRig.usda          /LegRig
+    LegRig.usda          /LegRig{LegRigStyle=2Leg}
+
+Variant Selections:
+    {LegRigStyle = 2Leg}
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest>
+
+Prim Stack:
+    root.usda            /Char/InheritTest
+    CharRig.usda         /CharRig/InheritTest
+
+Child names:
+     ['_class_X', 'X', 'Y']
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/_class_X>
+
+Prim Stack:
+    root.usda            /Char/InheritTest/_class_X
+    CharRig.usda         /CharRig/InheritTest/_class_X
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/X>
+
+Prim Stack:
+    root.usda            /Char/InheritTest/X
+    root.usda            /Char/InheritTest/_class_X
+    CharRig.usda         /CharRig/InheritTest/X
+    CharRig.usda         /CharRig/InheritTest/_class_X
+    LegRig.usda          /LegRig
+    LegRig.usda          /LegRig{LegRigStyle=2Leg}
+
+Variant Selections:
+    {LegRigStyle = 2Leg}
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/X/Anim>
+
+Prim Stack:
+    CharRig.usda         /CharRig/InheritTest/X/Anim
+    LegRig.usda          /LegRig{LegRigStyle=2Leg}Anim
+
+Property names:
+     ['avarFor2LegStyle']
+
+Property stacks:
+/Char/InheritTest/X/Anim.avarFor2LegStyle:
+    LegRig.usda          /LegRig{LegRigStyle=2Leg}Anim.avarFor2LegStyle
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/Y>
+
+Prim Stack:
+    CharRig.usda         /CharRig/InheritTest/Y
+    CharRig.usda         /CharRig/InheritTest/X/Anim
+    LegRig.usda          /LegRig{LegRigStyle=2Leg}Anim
+
+Property names:
+     ['avarFor2LegStyle']
+

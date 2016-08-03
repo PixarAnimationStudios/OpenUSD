@@ -31,6 +31,7 @@
 
 #include <mutex>
 #include <vector>
+#include <ciso646>
 
 // Compile-time option to help debug identity issues.
 //#define DEBUG_IDENTITY

@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Payload" {
+    over "Foo" {
+        over "Bar" {
+            def Scope "Baz" {
+                string payloader = "Payloaded value"
+            }
+        }
+    }
+}

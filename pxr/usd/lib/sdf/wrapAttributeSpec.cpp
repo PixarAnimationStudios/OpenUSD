@@ -25,6 +25,8 @@
 
 #define TF_MAX_ARITY 8
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,8 +34,6 @@
 #include "pxr/usd/sdf/pyMarkerProxy.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

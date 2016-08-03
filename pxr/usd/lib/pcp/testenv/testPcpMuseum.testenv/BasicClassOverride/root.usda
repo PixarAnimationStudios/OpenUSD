@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    """
+    This example has a reference to a character group.
+    The character group has several instances of a model,
+    along with an override of that model's class (so as to
+    affect all the instances).  One of the instances in 
+    the group then overrides that class opinion.
+    Back in the root layer, we override the class.
+
+    This example illustrates a key difference in how global classes
+    work in 30 vs. 2x.  Specifically, it shows how references
+    strongly "encapsulate" the strength of their contents, including
+    any internal opinions about classes.
+    """
+)
+
+def "Group" (
+    add references = @group.usda@</Group>
+)
+{
+    over "Model_2"
+    {
+        string value = "Root-layer override just for this instance."
+    }
+}
+
+class Prim "_class_Model"
+{
+    string value = "Root layer's override for the class."
+}

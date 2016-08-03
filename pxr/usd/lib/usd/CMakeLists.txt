@@ -3,6 +3,7 @@ set(PXR_PACKAGE usd)
 
 pxr_shared_library(usd
     LIBRARIES
+        arch
         kind
         pcp
         sdf
@@ -67,6 +68,9 @@ pxr_shared_library(usd
         instanceKey
         interpolators
         wrapUtils
+
+    PUBLIC_HEADERS
+        api.h
 
     PRIVATE_HEADERS
         crateDataTypes.h

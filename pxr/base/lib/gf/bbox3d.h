@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
@@ -176,6 +177,7 @@ class GfBBox3d {
     }
 
     //!  \brief Returns the volume of the box (0 for an empty box).
+    GF_API
     double              GetVolume() const;
 
     //!  \brief Transforms the bounding box by the given matrix, which
@@ -189,6 +191,7 @@ class GfBBox3d {
     //!  \brief Returns the axis-aligned range (as a \c GfRange3d) that
     //results from applying the transformation matrix to the
     //axis-aligned box and aligning the result.
+    GF_API
     GfRange3d           ComputeAlignedRange() const;
 
     //!  \brief Returns the axis-aligned range (as a \c GfRange3d) that
@@ -203,10 +206,12 @@ class GfBBox3d {
     //both.  This uses the coordinate space of one of the two original
     //boxes as the space of the result; it uses the one that produces
     //the smaller of the two resulting boxes.
+    GF_API
     static GfBBox3d     Combine(const GfBBox3d &b1, const GfBBox3d &b2);
 
     //!  \brief Returns the centroid of the bounding box.
     // The centroid is computed as the transformed centroid of the range.
+    GF_API
     GfVec3d             ComputeCentroid() const;
 
     //!  \brief Component-wise equality test. The axis-aligned boxes and
@@ -240,6 +245,7 @@ class GfBBox3d {
 
     //!  Sets the transformation matrix and the inverse, checking for
     //degeneracies.
+    GF_API
     void                _SetMatrices(const GfMatrix4d &matrix);
 
     //!  This is used by \c Combine() when it is determined which
@@ -253,6 +259,6 @@ class GfBBox3d {
 ///
 /// The zeroArea flag is true or false and indicates whether the
 /// bbox has zero area primitives in it.
-std::ostream& operator<<(std::ostream&, const GfBBox3d&);
+GF_API std::ostream& operator<<(std::ostream&, const GfBBox3d&);
 
 #endif // GF_BBOX3D_H

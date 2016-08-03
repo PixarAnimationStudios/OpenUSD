@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "Ref"
+{
+    custom rel refSelfAbs
+    rel refSelfAbs = </Ref>
+    custom rel refChildAbs
+    rel refChildAbs = </Ref/RefChild>
+    custom rel refSelfRel
+    rel refSelfRel = </Ref>
+    custom rel refChildRel
+    rel refChildRel = </Ref/RefChild>
+    custom rel refBadAbs
+    rel refBadAbs = </Foo/Bar>
+    custom rel refBadRel
+    rel refBadRel = </Foo/Bar>
+
+    def MfScope "RefChild"
+    {
+        custom rel refSelfAbs
+        rel refSelfAbs = </Ref/RefChild>
+        custom rel refParentAbs
+        rel refParentAbs = </Ref>
+        custom rel refSelfRel
+        rel refSelfRel = </Ref/RefChild>
+        custom rel refParentRel
+        rel refParentRel = </Ref>
+        custom rel refBadAbs
+        rel refBadAbs = </Foo/Bar>
+        custom rel refBadRel
+        rel refBadRel = </Foo/Bar>
+    }
+}
+

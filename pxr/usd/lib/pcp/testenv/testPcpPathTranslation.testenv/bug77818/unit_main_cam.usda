@@ -1,0 +1,19 @@
+#usda 1.0
+
+def "main_cam" (
+    references = @unit_main_cam_defs.usda@</main_cam>
+    add variantSets = ["lenses"]
+    variants = {
+        string lenses = "Cooke_S4"
+    }
+)
+{
+    variantSet "lenses" = {
+        "Cooke_S4" {
+            over "Lens"
+            {
+                double k1
+            }
+        }
+    }
+}

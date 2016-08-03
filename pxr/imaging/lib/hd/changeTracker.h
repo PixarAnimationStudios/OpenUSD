@@ -24,6 +24,7 @@
 #ifndef HD_CHANGE_TRACKER_H
 #define HD_CHANGE_TRACKER_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
@@ -111,9 +112,11 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Rprim with the given \p id.
+	HDLIB_API
     void RprimInserted(SdfPath const& id, int initialDirtyState);
 
     /// Stop tracking Rprim with the given \p id.
+	HDLIB_API
     void RprimRemoved(SdfPath const& id);
 
     // ---------------------------------------------------------------------- //
@@ -121,18 +124,22 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the rprim with \p id.
+	HDLIB_API
     DirtyBits GetRprimDirtyBits(SdfPath const& id) const;
 
     /// Flag the Rprim with the given \p id as being dirty. Multiple calls with
     /// different dirty bits accumulate.
+	HDLIB_API
     void MarkRprimDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Clear the dirty flags for an HdRprim. if inSync is true, set OutOfSync
     /// flag to notify dirtyList will discover the prim to sync the residual
     /// data for new repr.
+	HDLIB_API
     void MarkRprimClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     /// Mark the primvar for the rprim with \p id as being dirty.
+	HDLIB_API
     void MarkPrimVarDirty(SdfPath const& id, TfToken const& name);
 
     /// Clear Varying bit of all prims.
@@ -142,45 +149,58 @@ public:
     /// rprims get dirtied with the same dirty bits.. The change tracker can
     /// leverage this and build stable sets of dirty lists and reduce the
     /// overall cost of an update iteration.
+	HDLIB_API
     void ResetVaryingState();
 
     // ---------------------------------------------------------------------- //
 
     /// Returns true if the rprim identified by \p id has any dirty flags set.
+	HDLIB_API
     bool IsRprimDirty(SdfPath const& id);
     
     /// Returns true if the rprim identified by \p id has a dirty extent.
+	HDLIB_API
     bool IsExtentDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty refine level.
+	HDLIB_API
     bool IsRefineLevelDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id with primvar \p name is
     /// dirty.
+	HDLIB_API
     bool IsPrimVarDirty(SdfPath const& id, TfToken const& name);
 
     /// Returns true if the rprim identified by \p id has any dirty primvars.
+	HDLIB_API
     bool IsAnyPrimVarDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty topology.
+	HDLIB_API
     bool IsTopologyDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has dirty doubleSided state.
+	HDLIB_API
     bool IsDoubleSidedDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has dirty cullstyle.
+	HDLIB_API
     bool IsCullStyleDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty subdiv tags.
+	HDLIB_API
     bool IsSubdivTagsDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty transform.
+	HDLIB_API
     bool IsTransformDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has dirty visibility.
+	HDLIB_API
     bool IsVisibilityDirty(SdfPath const& id);
     
     /// Returns true if the rprim identified by \p id has a dirty primID.
+	HDLIB_API
     bool IsPrimIdDirty(SdfPath const& id);
 
     /// Returns true if the dirtyBits has any flags set other than the varying flag.
@@ -194,52 +214,67 @@ public:
     }
 
     /// Returns true if the dirtyBits has a dirty extent. id is for perflog.
+	HDLIB_API
     static bool IsExtentDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty refine level. id is for perflog.
+	HDLIB_API
     static bool IsRefineLevelDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty subdiv tags. id is for perflog.
+	HDLIB_API
     static bool IsSubdivTagsDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty primvar \p name.
     /// id is for perflog.
+	HDLIB_API
     static bool IsPrimVarDirty(DirtyBits dirtyBits, SdfPath const& id,
                                TfToken const& name);
 
     /// Returns true if the dirtyBits has any dirty primvars.
     /// id is for perflog.
+	HDLIB_API
     static bool IsAnyPrimVarDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty topology. id is for perflog.
+	HDLIB_API
     static bool IsTopologyDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty doubleSided state. id is for perflog.
+	HDLIB_API
     static bool IsDoubleSidedDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty cullstyle. id is for perflog.
+	HDLIB_API
     static bool IsCullStyleDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty transform. id is for perflog.
+	HDLIB_API
     static bool IsTransformDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty visibility. id is for perflog.
+	HDLIB_API
     static bool IsVisibilityDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty primID. id is for perflog.
+	HDLIB_API
     static bool IsPrimIdDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty instancer. id is for perflog.
+	HDLIB_API
     static bool IsInstancerDirty(DirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty instance index. id is for perflog.
+	HDLIB_API
     static bool IsInstanceIndexDirty(DirtyBits dirtyBits, SdfPath const& id);
 
+	HDLIB_API
     static bool IsReprDirty(DirtyBits dirtyBits, SdfPath const &id);
 
     // ---------------------------------------------------------------------- //
 
     /// Set the primvar dirty flag to \p dirtyBits.
+	HDLIB_API
     static void MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name);
 
     // ---------------------------------------------------------------------- //
@@ -247,9 +282,11 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Instancer with the given \p id.
+	HDLIB_API
     void InstancerInserted(SdfPath const& id);
 
     /// Stop tracking Instancer with the given \p id.
+	HDLIB_API
     void InstancerRemoved(SdfPath const& id);
 
     // ---------------------------------------------------------------------- //
@@ -257,18 +294,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Shader with the given \p id.
+	HDLIB_API
     void ShaderInserted(SdfPath const& id);
 
     /// Stop tracking Shader with the given \p id.
+	HDLIB_API
     void ShaderRemoved(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+	HDLIB_API
     void MarkShaderDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Get the dirty bits for Shader with the given \p id.
+	HDLIB_API
     DirtyBits GetShaderDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p newBits.
+	HDLIB_API
     void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -276,18 +318,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Task with the given \p id.
+	HDLIB_API
     void TaskInserted(SdfPath const& id);
 
     /// Stop tracking Task with the given \p id.
+	HDLIB_API
     void TaskRemoved(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+	HDLIB_API
     void MarkTaskDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Get the dirty bits for Task with the given \p id.
+	HDLIB_API
     DirtyBits GetTaskDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p newBits.
+	HDLIB_API
     void MarkTaskClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -295,18 +342,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Texture with the given \p id.
+	HDLIB_API
     void TextureInserted(SdfPath const& id);
 
     /// Stop tracking Texture with the given \p id.
+	HDLIB_API
     void TextureRemoved(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+	HDLIB_API
     void MarkTextureDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Get the dirty bits for Texture with the given \p id.
+	HDLIB_API
     DirtyBits GetTextureDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p newBits.
+	HDLIB_API
     void MarkTextureClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -314,13 +366,16 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the instancer with \p id.
+	HDLIB_API
     DirtyBits GetInstancerDirtyBits(SdfPath const& id);
 
     /// Flag the Instancer with the given \p id as being dirty. Multiple calls
     /// with different dirty bits accumulate.
+	HDLIB_API
     void MarkInstancerDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Mark the primvar for the rprim with \p id as being dirty.
+	HDLIB_API
     void MarkInstancerClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -328,18 +383,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Camera with the given \p id.
+	HDLIB_API
     void CameraInserted(SdfPath const& id);
 
     /// Stop tracking Camera with the given \p id.
+	HDLIB_API
     void CameraRemoved(SdfPath const& id);
 
     /// Get the dirty bits for Camera with the given \p id.
+	HDLIB_API
     DirtyBits GetCameraDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+	HDLIB_API
     void MarkCameraDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Set the dirty flags to \p newBits.
+	HDLIB_API
     void MarkCameraClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -347,18 +407,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Light with the given \p id.
+	HDLIB_API
     void LightInserted(SdfPath const& id);
 
     /// Stop tracking Light with the given \p id.
+	HDLIB_API
     void LightRemoved(SdfPath const& id);
 
     /// Get the dirty bits for Light with the given \p id.
+	HDLIB_API
     DirtyBits GetLightDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+	HDLIB_API
     void MarkLightDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Set the dirty flags to \p newBits.
+	HDLIB_API
     void MarkLightClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -366,22 +431,28 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Draw Target with the given \p id.
+	HDLIB_API
     void DrawTargetInserted(SdfPath const& id);
 
     /// Stop tracking Draw Target with the given \p id.
+	HDLIB_API
     void DrawTargetRemoved(SdfPath const& id);
 
     /// Get the dirty bits for Draw Target with the given \p id.
+	HDLIB_API
     DirtyBits GetDrawTargetDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+	HDLIB_API
     void MarkDrawTargetDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
     /// Set the dirty flags to \p newBits.
+	HDLIB_API
     void MarkDrawTargetClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     /// Return an version number indicating if the set of
     /// draw targets has changed.
+	HDLIB_API
     unsigned GetDrawTargetSetVersion();
 
     // ---------------------------------------------------------------------- //
@@ -409,20 +480,25 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Adds a named collection for tracking.
+	HDLIB_API
     void AddCollection(TfToken const& collectionName);
 
     /// Marks a named collection as being dirty, this bumps the version of the
     /// collection.
+	HDLIB_API
     void MarkCollectionDirty(TfToken const& collectionName);
 
     /// Invalidates all collections by bumping a global version number.
+	HDLIB_API
     void MarkAllCollectionsDirty();
 
     /// Returns the current version of the named collection.
+	HDLIB_API
     unsigned GetCollectionVersion(TfToken const& collectionName);
 
     /// Returns the number of changes to visibility. This is intended to be used
     /// to detect when visibility has changed for *any* Rprim.
+	HDLIB_API
     unsigned GetVisibilityChangeCount();
 
     /// Returns the current version of varying state. This is used to refresh
@@ -437,16 +513,20 @@ public:
     }
 
     /// Marks all shader bindings dirty (draw batches need to be validated).
+	HDLIB_API
     void MarkShaderBindingsDirty();
 
     /// Returns the current shader binding version.
+	HDLIB_API
     unsigned GetShaderBindingsVersion() const;
 
     // ---------------------------------------------------------------------- //
     /// \name Debug
     // ---------------------------------------------------------------------- //
+	HDLIB_API
     static std::string StringifyDirtyBits(int dirtyBits);
 
+	HDLIB_API
     static void DumpDirtyBits(int dirtyBits);
 
 private:

@@ -1,0 +1,18 @@
+Loading @testPcpMuseum.testenv/ErrorInvalidPayload/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </BadPayload_NonExistentFile>
+
+Prim Stack:
+    root.usda            /BadPayload_NonExistentFile
+
+------------------------------------------------------------------------
+Results for composing </BadPayload_NonExistentPrim>
+
+Prim Stack:
+    root.usda            /BadPayload_NonExistentPrim
+

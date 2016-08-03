@@ -24,6 +24,7 @@
 #ifndef TF_STACKED_H
 #define TF_STACKED_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -119,7 +120,7 @@ public:
     }
 
 private:
-    friend class TfStackedAccess;
+    friend struct TfStackedAccess;
 
     // This function may be hidden (overridden) by derived classes to initialize
     // (pre-populate) the stack with some items.  One way to do this is to
@@ -185,7 +186,7 @@ private:
 
     static Stack &_GetStack() {
         // Technically unsafe double-checked lock to intitialize the stack.
-        if (ARCH_UNLIKELY(not _stackStorage)) {
+        if (ARCH_UNLIKELY(not static_cast<void*>(_stackStorage))) {
             // Make a new stack and try to set it.
             _StackStorage *old = nullptr;
             _StackStorage *tmp = new _StackStorage;

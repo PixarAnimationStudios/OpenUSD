@@ -24,6 +24,7 @@
 #ifndef USD_TIMECODE_H
 #define USD_TIMECODE_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/arch/hints.h"
 
 #include <boost/functional/hash.hpp>
@@ -31,6 +32,7 @@
 #include <limits>
 #include <iosfwd>
 #include <cmath>
+#include <ciso646>
 
 /// \brief Represent a time value, which may be either numeric, holding a
 /// double value, or a sentinel value UsdTimeCode::Default().
@@ -157,12 +159,12 @@ public:
     }
 
 private:
-    void _IssueGetValueOnDefaultError() const;
+    USD_API void _IssueGetValueOnDefaultError() const;
 
     double _value;
 };
 
 // Stream insertion.
-std::ostream& operator<<(std::ostream& os, const UsdTimeCode& time);
+USD_API std::ostream& operator<<(std::ostream& os, const UsdTimeCode& time);
 
 #endif // USD_TIMECODE_H

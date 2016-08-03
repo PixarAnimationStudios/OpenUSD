@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/base/plug/testPlugBase.h"
 
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 
@@ -55,3 +55,39 @@ void wrap_TestPlugBase()
     wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
     wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
 }
+
+#if defined(ARCH_COMPILER_MSVC)
+// There is a bug in the compiler which means we have to provide this
+// implementation. See here for more information:
+// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
+namespace boost
+{
+    template<> 
+    const volatile _TestPlugBase1* 
+        get_pointer(const volatile _TestPlugBase1* p)
+    { 
+        return p; 
+    }
+
+    template<> 
+    const volatile _TestPlugBase2* 
+        get_pointer(const volatile _TestPlugBase2* p)
+    { 
+        return p; 
+    }
+
+    template<> 
+    const volatile _TestPlugBase3* 
+        get_pointer(const volatile _TestPlugBase3* p)
+    { 
+        return p; 
+    }
+
+    template<> 
+    const volatile _TestPlugBase4* 
+        get_pointer(const volatile _TestPlugBase4* p)
+    { 
+        return p; 
+    }
+}
+#endif

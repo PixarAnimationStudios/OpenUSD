@@ -1,0 +1,27 @@
+#usda 1.0
+(
+    """
+    This museum case tests behavior when mixing specializes and inherit
+    arcs nested in namespace.
+    """
+)
+
+over "NestedClass"
+{
+}
+
+over "Specializes"
+{
+    over "Nested"
+    {
+    }
+}
+
+def "Root" (
+    references = @./ref.usda@</Ref>
+)
+{
+    over "Nested"
+    {
+    }
+}

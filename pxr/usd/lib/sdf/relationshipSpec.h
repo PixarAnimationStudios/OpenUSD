@@ -26,6 +26,7 @@
 #ifndef SDF_RELATIONSHIPSPEC_H
 #define SDF_RELATIONSHIPSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
@@ -47,7 +48,7 @@ template <class T> class Sdf_MarkerUtils;
 /// values that describe the relationship.  For example, point weights are
 /// commonly expressed as relational attributes.
 ///
-class SdfRelationshipSpec : public SdfPropertySpec
+class SDF_API SdfRelationshipSpec : public SdfPropertySpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeRelationship,
                      SdfRelationshipSpec, SdfPropertySpec);

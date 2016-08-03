@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Model "Model" (
+    doc = "Payload contents for the latest built version of this model."
+)
+{
+    def Scope "Rig" (
+        doc = "Heavy rigging is typically contained inside a payload."
+    ) {
+    }
+}

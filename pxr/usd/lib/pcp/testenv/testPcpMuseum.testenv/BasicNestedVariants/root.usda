@@ -1,0 +1,50 @@
+#usda 1.0
+(
+    '''
+    This case exercises simple nesting of variant sets in one file.
+    This came from bug 63723.
+    '''
+)
+
+def StdAvarsModel "Foo" (
+    add variantSets = "which"
+    variants = {
+        string which = "A"
+    }
+)
+{
+    variantSet "which" = {
+        "A" {
+            def GprimPivot "A" 
+            {
+                def GprimPivot "Number" (
+                    add variantSets = "count"
+                    variants = {
+                        string count = "one"
+                    }
+                )
+                {
+                    variantSet "count" = {
+                        "one" {
+                            def GprimPivot "one"
+                            {
+                            }
+
+                        }
+                        "two" {
+                            def GprimPivot "two"
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        "B" {
+            def GprimPivot "B"
+            {
+            }
+        }
+    }
+}
+

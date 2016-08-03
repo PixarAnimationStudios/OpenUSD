@@ -24,6 +24,7 @@
 #ifndef TF_PYSINGLETON_H
 #define TF_PYSINGLETON_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -44,6 +45,7 @@ namespace Tf_PySingleton {
 
 namespace bp = boost::python;
 
+TF_API
 bp::object _DummyInit(bp::tuple const & /* args */,
                       bp::dict const & /* kw */);
 
@@ -69,6 +71,7 @@ PtrType _GetSingletonWeakPtr(bp::object const & /* classObj */) {
     return GetWeakPtr(Singleton::GetInstance());
 }
 
+TF_API
 std::string _Repr(bp::object const &self, std::string const &prefix);
     
 struct Visitor : bp::def_visitor<Visitor> {
@@ -102,7 +105,9 @@ private:
 
 }
 
+TF_API
 Tf_PySingleton::Visitor TfPySingleton();
+TF_API
 Tf_PySingleton::Visitor TfPySingleton(std::string const &reprPrefix);
 
 #endif // TF_PYSINGLETON_H

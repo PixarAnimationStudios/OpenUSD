@@ -38,6 +38,7 @@
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
+#include "pxr/base/vt/api.h"
 
 #include <boost/aligned_storage.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -101,7 +102,7 @@ class VtValue;
 
 // Overload VtStreamOut for vector<VtValue>.  Produces output like [value1,
 // value2, ... valueN].
-std::ostream &VtStreamOut(std::vector<VtValue> const &val, std::ostream &);
+VT_API std::ostream &VtStreamOut(std::vector<VtValue> const &val, std::ostream &);
 
 // Base implementations for VtGetProxied{Type,Value}.
 template <class T>
@@ -657,24 +658,24 @@ public:
 
     //! \brief Returns true iff this is holding an array type (see
     // VtIsArray<>).
-    bool IsArrayValued() const;
+	VT_API bool IsArrayValued() const;
 
     //! \brief Return the number of elements in the held value if
     //! IsArrayValued(), return 0 otherwise.
-    size_t GetArraySize() const { return _GetNumElements(); }
+	VT_API size_t GetArraySize() const { return _GetNumElements(); }
 
     //! \brief Returns the typeid of the type held by this value.
-    std::type_info const &GetTypeid() const;
+	VT_API std::type_info const &GetTypeid() const;
 
     //! \brief Return the typeid of elements in a array valued type.  If not
     // holding an array valued type, return typeid(void).
-    std::type_info const &GetElementTypeid() const;
+	VT_API std::type_info const &GetElementTypeid() const;
 
     //! \brief Returns the TfType of the type held by this value.
-    TfType GetType() const;
+	VT_API TfType GetType() const;
 
     //! \brief Return the type name of the held typeid.
-    std::string GetTypeName() const;
+	VT_API std::string GetTypeName() const;
 
     //! \brief Returns a const reference to the held object if the held object
     // is of type \a T.  Invokes undefined behavior otherwise.  This is the
@@ -754,7 +755,7 @@ public:
     // mutate the operant \p val.
     //
     // \sa \ref VtValue_Casting
-    static VtValue CastToTypeOf(VtValue const &val, VtValue const &other);
+	VT_API static VtValue CastToTypeOf(VtValue const &val, VtValue const &other);
 
     //! \brief Return a VtValue holding \a val cast to \a type.  Return empty
     // VtValue if cast fails.
@@ -763,7 +764,7 @@ public:
     // mutate the operant \p val.
     //
     // \sa \ref VtValue_Casting
-    static VtValue CastToTypeid(VtValue const &val, std::type_info const &type);
+	VT_API static VtValue CastToTypeid(VtValue const &val, std::type_info const &type);
 
     //! \brief Return if a value of type \a from can be cast to type \a to.
     //
@@ -836,7 +837,7 @@ public:
 
     //! \brief Return a hash code for the held object by calling VtHashValue()
     // on it.
-    size_t GetHash() const;
+	VT_API size_t GetHash() const;
 
     friend inline size_t hash_value(VtValue const &val) {
         return val.GetHash();
@@ -875,12 +876,12 @@ public:
     bool operator != (const VtValue &rhs) const { return not (*this == rhs); }
 
     //! \brief Calls through to operator << on the held object.
-    friend std::ostream &operator << (std::ostream &out, const VtValue &self);
+	VT_API friend std::ostream &operator << (std::ostream &out, const VtValue &self);
 
 private:
     const Vt_Reserved* _GetReserved() const;
     size_t _GetNumElements() const;
-    friend class Vt_ValueReservedAccess;
+    friend struct Vt_ValueReservedAccess;
 
     static void _Copy(VtValue const &src, VtValue &dst) {
         if (src.IsEmpty()) {
@@ -926,9 +927,9 @@ private:
         return ARCH_UNLIKELY(_IsProxy() and not cmp) ? _TypeIsImpl(t) : cmp;
     }
 
-    bool _TypeIsImpl(std::type_info const &queriedType) const;
+    VT_API bool _TypeIsImpl(std::type_info const &queriedType) const;
 
-    bool _EqualityImpl(VtValue const &rhs) const;
+    VT_API bool _EqualityImpl(VtValue const &rhs) const;
 
     template <class Proxy>
     typename boost::enable_if<VtIsValueProxy<Proxy>, Proxy &>::type
@@ -963,7 +964,7 @@ private:
 
     // Helper invoked in case Get fails.  Reports an error and returns a default
     // value for \a queryType.
-    void const *
+    VT_API void const *
     _FailGet(Vt_DefaultValueHolder (*factory)(),
              std::type_info const &queryType) const;
 
@@ -984,13 +985,13 @@ private:
         return _info.BitsAs<unsigned int>() & _ProxyFlag;
     }
 
-    static void _RegisterCast(std::type_info const &from,
+    VT_API static void _RegisterCast(std::type_info const &from,
                               std::type_info const &to,
                               VtValue (*castFn)(VtValue const &));
 
-    static VtValue _PerformCast(std::type_info const &to, VtValue const &val);
+    VT_API static VtValue _PerformCast(std::type_info const &to, VtValue const &val);
 
-    static bool _CanCast(std::type_info const &from, std::type_info const &to);
+	VT_API static bool _CanCast(std::type_info const &from, std::type_info const &to);
 
     // helper template function for simple casts from From to To.
     template <typename From, typename To>
@@ -1005,7 +1006,7 @@ private:
     friend TfPyObjWrapper
     Vt_GetPythonObjectFromHeldValue(VtValue const &self);
 
-    TfPyObjWrapper _GetPythonObject() const;
+    VT_API TfPyObjWrapper _GetPythonObject() const;
 
     _Storage _storage;
     TfPointerAndBits<const _TypeInfo> _info;
@@ -1044,7 +1045,7 @@ struct Vt_ValueReservedAccess {
 // the factory for these types. 
 //
 #define _VT_DECLARE_ZERO_VALUE_FACTORY(r, unused, elem)                 \
-template <>                                                             \
+template <> VT_API                                                            \
 Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke();
 
 BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,

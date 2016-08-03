@@ -28,16 +28,24 @@
 #include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/systemInfo.h"
 
-#include <boost/python.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
+#include <atomic>
+#include <mutex>
+#include <atomic>
+#include <mutex>
+#include <atomic>
+#include <mutex>
 #include <atomic>
 #include <mutex>
 #include <string>
 #include <Python.h>
 #include <signal.h>
+#include <boost/python/extract.hpp>
+
+#include <ciso646>
 
 using std::string;
 
@@ -59,13 +67,15 @@ TfPyInitialize()
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (!Py_IsInitialized()) {
+        static std::string programName(ArchGetExecutablePath());
+
         // Initialize Python threading.  This grabs the GIL.  We'll release it
         // at the end of this function.
         PyEval_InitThreads();
 
         // Setting the program name is necessary in order for python to 
         // find the correct built-in modules. 
-        Py_SetProgramName(const_cast<char*>(strdup(ArchGetExecutablePath().c_str())));
+		Py_SetProgramName(const_cast<char*>(programName.c_str()));
 
         // We're here when this is a C++ program initializing python (i.e. this
         // is a case of "embedding" a python interpreter, as opposed to
@@ -73,14 +83,17 @@ TfPyInitialize()
         //
         // In this case we don't want python to change the sigint handler.  Save
         // it before calling Py_Initialize and restore it after.
+#if !defined(ARCH_OS_WINDOWS)
         struct sigaction origSigintHandler;
         sigaction(SIGINT, NULL, &origSigintHandler);
-        
+#endif
         Py_Initialize();
 
+#if !defined(ARCH_OS_WINDOWS)
         // Restore original sigint handler.
         sigaction(SIGINT, &origSigintHandler, NULL);
-        
+#endif
+
         char emptyArg[] = {'\0'};
         char *empty[] = {emptyArg};
         PySys_SetArgv(1, empty);
@@ -137,7 +150,7 @@ boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
             object const &globals, object const &locals)
 {
-    FILE *f = fopen(filename.c_str(), "rt");
+	FILE *f = ArchOpenFile(filename.c_str(), "rt");
     if (not f) {
         TF_CODING_ERROR("Could not open file '%s'!", filename.c_str());
         return handle<>();

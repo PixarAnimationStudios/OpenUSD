@@ -1,0 +1,12 @@
+*** Running test: GlfBindingMap
+
+GlfBindingMap
+ Attribute bindings
+  vsIn0 : 0
+  vsIn1 : 1
+ Sampler bindings
+  textureImage : 0
+ Uniform bindings
+  block0 : 0
+  block1 : 1
+Passed

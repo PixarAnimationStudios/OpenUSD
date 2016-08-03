@@ -29,6 +29,7 @@
 #ifndef _USDUTILS_STAGECACHE_H_
 #define _USDUTILS_STAGECACHE_H_
 
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -48,12 +49,14 @@ class UsdUtilsStageCache {
 public:
 
     // Returns the singleton stage cache.
+    USDUTILS_API
     static UsdStageCache &Get();
 
     // Given variant selections as a vector of pairs (vector in case order
     // matters to the client), constructs a session layer with overs on the
     // given root modelName with the variant selections, or returns a cached
     // session layer with those opinions.
+    USDUTILS_API
     static SdfLayerRefPtr GetSessionLayerForVariantSelections(
         const TfToken& modelName,
         const std::vector<std::pair<std::string, std::string> > &variantSelections);

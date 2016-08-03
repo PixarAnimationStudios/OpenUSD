@@ -24,6 +24,7 @@
 #ifndef TF_PYMODULENOTICE_H
 #define TF_PYMODULENOTICE_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/notice.h"
 
 #include <string>
@@ -39,6 +40,7 @@ class TfPyModuleWasLoaded : public TfNotice {
 public:
     explicit TfPyModuleWasLoaded(std::string const &name) : _name(name) {}
 
+    TF_API
     virtual ~TfPyModuleWasLoaded();
     
     //! \brief Return the name of the module that was loaded.

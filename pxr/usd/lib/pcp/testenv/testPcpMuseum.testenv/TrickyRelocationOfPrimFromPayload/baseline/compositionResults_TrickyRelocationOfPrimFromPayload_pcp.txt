@@ -1,0 +1,219 @@
+Loading @testPcpMuseum.testenv/TrickyRelocationOfPrimFromPayload/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel>
+
+Prim Stack:
+    root.usda            /PayloadedModel
+    model_payload.usda   /Model
+
+Child names:
+     ['Rig', 'Test']
+
+Prohibited child names:
+     ['Anim']
+
+Property names:
+     ['doc']
+
+Property stacks:
+/PayloadedModel.doc:
+    model_payload.usda   /Model.doc
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig>
+
+Prim Stack:
+    model_payload.usda   /Model/Rig
+    rig.usda             /Rig
+
+Child names:
+     ['SymRigBase', 'SymRig', 'LRig']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRigBase>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRigBase/Anim>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/PayloadedModel/Rig/SymRigBase/Anim.foo:
+    rig.usda             /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRig>
+
+Prim Stack:
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRig/Anim>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/PayloadedModel/Rig/SymRig/Anim.foo:
+    rig.usda             /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/LRig>
+
+Prim Stack:
+    rig.usda             /Rig/LRig
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test>
+
+Prim Stack:
+    root.usda            /PayloadedModel/Test
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test/Anim>
+
+Prim Stack:
+    model_payload.usda   /Model/Anim
+
+Child names:
+     ['LRig']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test/Anim/LRig>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/PayloadedModel/Test/Anim/LRig.foo:
+    rig.usda             /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel>
+
+Prim Stack:
+    root.usda            /ReferencePayloadedModel
+    model.usda           /Model
+    model_payload.usda   /Model
+
+Child names:
+     ['Rig', 'Test']
+
+Prohibited child names:
+     ['Anim']
+
+Property names:
+     ['doc']
+
+Property stacks:
+/ReferencePayloadedModel.doc:
+    model_payload.usda   /Model.doc
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig>
+
+Prim Stack:
+    model_payload.usda   /Model/Rig
+    rig.usda             /Rig
+
+Child names:
+     ['SymRigBase', 'SymRig', 'LRig']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRigBase>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRigBase/Anim>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/ReferencePayloadedModel/Rig/SymRigBase/Anim.foo:
+    rig.usda             /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRig>
+
+Prim Stack:
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRig/Anim>
+
+Prim Stack:
+    rig.usda             /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/ReferencePayloadedModel/Rig/SymRig/Anim.foo:
+    rig.usda             /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/LRig>
+
+Prim Stack:
+    rig.usda             /Rig/LRig
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test>
+
+Prim Stack:
+    model.usda           /Model/Test
+
+Child names:
+     ['Anim']
+

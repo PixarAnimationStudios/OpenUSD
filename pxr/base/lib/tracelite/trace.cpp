@@ -58,7 +58,7 @@ void
 Tracelite_ScopeAuto::_Initialize(std::atomic<TraceScopeHolder*>* siteData,
                                  const std::string& key)
 {
-    if (!*siteData)
+    if (!static_cast<void*>(*siteData))
         (*_initializeFunction)(siteData, &key, NULL, NULL);
 }
 
@@ -66,7 +66,7 @@ void
 Tracelite_ScopeAuto::_Initialize(std::atomic<TraceScopeHolder*>* siteData,
                                  char const* key1, char const* key2)
 {
-    if (!*siteData)
+    if (!static_cast<void*>(*siteData))
 	(*_initializeFunction)(siteData, NULL, key1, key2);
 }
 

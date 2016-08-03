@@ -1,0 +1,117 @@
+Loading @testPcpMuseum.testenv/BasicTimeOffset/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    A.usda               /Model
+    B.usda               /Model
+
+Time Offsets:
+    A.usda               /Model          reference  (offset=10.00, scale=1.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim>
+
+Prim Stack:
+    B.usda               /Model/Anim
+
+Time Offsets:
+    A.usda               /Model/Anim     reference  (offset=10.00, scale=1.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </Root/Frame>
+
+Prim Stack:
+    B.usda               /Model/Frame
+
+Time Offsets:
+    A.usda               /Model/Frame    reference  (offset=10.00, scale=1.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </RefPayload>
+
+Prim Stack:
+    root.usda            /RefPayload
+    ref_sub.usda         /Ref
+    B.usda               /Model
+
+Time Offsets:
+    ref.usda             /Ref            reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model          payload    (offset=30.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </RefPayload/Anim>
+
+Prim Stack:
+    B.usda               /Model/Anim
+
+Time Offsets:
+    ref.usda             /Ref/Anim       reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Anim     payload    (offset=30.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </RefPayload/Frame>
+
+Prim Stack:
+    B.usda               /Model/Frame
+
+Time Offsets:
+    ref.usda             /Ref/Frame      reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Frame    payload    (offset=30.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </MultiRef>
+
+Prim Stack:
+    root.usda            /MultiRef
+    ref_sub.usda         /Ref2
+    B.usda               /Model
+
+Time Offsets:
+    ref.usda             /Ref2           reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model          reference  (offset=30.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </MultiRef/Anim>
+
+Prim Stack:
+    B.usda               /Model/Anim
+
+Time Offsets:
+    ref.usda             /Ref2/Anim      reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Anim     reference  (offset=30.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </MultiRef/Frame>
+
+Prim Stack:
+    B.usda               /Model/Frame
+
+Time Offsets:
+    ref.usda             /Ref2/Frame     reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Frame    reference  (offset=30.00, scale=1.00)
+

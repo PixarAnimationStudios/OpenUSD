@@ -24,6 +24,7 @@
 #ifndef _USDUTILS_STITCH_CLIPS_H_
 #define _USDUTILS_STITCH_CLIPS_H_
 
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 SDF_DECLARE_HANDLES(SdfLayer);
@@ -87,7 +88,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// 
 /// Note: if this function fails, the root layer will be not be created.
 /// If the topology is not being reused, it will not be generated either.
-bool 
+USDUTILS_API bool 
 UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath, 

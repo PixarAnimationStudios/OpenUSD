@@ -39,8 +39,7 @@
 
 #elif defined ARCH_OS_WINDOWS
 
-// XXX: TODO
-// #include "pxr/imaging/garch/glPlatformContextWindows.h"
+#include "pxr/imaging/garch/glPlatformContextWindows.h"
 
 #else
 
@@ -48,7 +47,7 @@
 
 #endif
 
-GarchGLPlatformContextState GarchGetNullGLPlatformContextState();
+GARCH_API GarchGLPlatformContextState GarchGetNullGLPlatformContextState();
 
 inline
 size_t

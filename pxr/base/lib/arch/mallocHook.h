@@ -24,6 +24,7 @@
 #ifndef ARCH_MALLOCHOOK_H
 #define ARCH_MALLOCHOOK_H
 
+#include "pxr/base/arch/api.h"
 #include <stdlib.h>
 #include <string>
 
@@ -40,7 +41,7 @@
  * special behavior that depends on this library may use this function to 
  * determine if it is the active allocator.
  */
-bool ArchIsPtmallocActive();
+ARCH_API bool ArchIsPtmallocActive();
 
 /*!
  * \brief Return true if the C++ STL allocator was requested
@@ -80,6 +81,7 @@ public:
      * If \c *this has already been initialized, calling \c Initialize() a second
      * time will fail.
      */
+    ARCH_API
     bool Initialize(void* (*mallocWrapper)(size_t, const void*),
 		    void* (*reallocWrapper)(void*, size_t, const void*),
 		    void* (*memalignWrapper)(size_t, size_t, const void*),
@@ -93,6 +95,7 @@ public:
      * or dynamically initialized variable; rather, \c *this must be a global
      * variable, to ensure zero-initialization.
      */
+    ARCH_API
     bool IsInitialized();
     
     /*!
@@ -103,6 +106,7 @@ public:
      * are performed; in particular, calling this function without having
      * successfully initialized \p *this will likely crash your program.
      */
+    ARCH_API
     void* Malloc(size_t nBytes) {
 	return (*_underlyingMallocFunc)(nBytes);
     }
@@ -115,6 +119,7 @@ public:
      * are performed; in particular, calling this function without having
      * successfully initialized \p *this will likely crash your program.
      */
+    ARCH_API
     void* Realloc(void* ptr, size_t nBytes) {
 	return (*_underlyingReallocFunc)(ptr, nBytes);
     }
@@ -127,6 +132,7 @@ public:
      * are performed; in particular, calling this function without having
      * successfully initialized \p *this will likely crash your program.
      */
+    ARCH_API
     void* Memalign(size_t alignment, size_t nBytes) {
 	return (*_underlyingMemalignFunc)(alignment, nBytes);
     }
@@ -139,6 +145,7 @@ public:
      * are performed; in particular, calling this function without having
      * successfully initialized \p *this will likely crash your program.
      */
+    ARCH_API
     void Free(void* ptr) {
 	(*_underlyingFreeFunc)(ptr);
     }

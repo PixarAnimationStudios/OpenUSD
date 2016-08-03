@@ -32,8 +32,12 @@
 #else
 #   if defined(AR_EXPORTS)
 #       define AR_API ARCH_EXPORT
+#       define AR_API_TEMPLATE_CLASS(...)
+#       define AR_API_TEMPLATE_STRUCT(...)
 #   else
 #       define AR_API ARCH_IMPORT
+#       define AR_API_TEMPLATE_CLASS(...) extern template class AR_API __VA_ARGS__
+#       define AR_API_TEMPLATE_STRUCT(...) extern template struct AR_API __VA_ARGS__
 #   endif
 #   define AR_LOCAL ARCH_HIDDEN
 #endif

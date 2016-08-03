@@ -1,0 +1,11 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+# This file has two root prims with same name
+def MfScope "A"
+{
+}
+
+def MfScope "A"
+{
+}

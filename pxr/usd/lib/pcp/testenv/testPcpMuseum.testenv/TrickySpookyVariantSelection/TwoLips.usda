@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    subLayers = [
+        @SingleLip.usda@
+    ]
+)
+
+def Scope "LipsRig"
+{
+    over "Anim"
+    {
+        double Lip2
+    }
+
+    over "Rig"
+    {
+        def Scope "Lip2Sculpt"
+        {
+            double amount.connect = </LipsRig/Anim.Lip2>
+        }
+    }
+}

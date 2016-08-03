@@ -30,6 +30,7 @@
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -85,9 +86,12 @@ class GfQuatf
 
     //!
     // Construct from GfQuatd.
+    GF_API
     explicit GfQuatf(class GfQuatd const &other);
+
     //!
     // Implicitly convert from GfQuath.
+    GF_API
     GfQuatf(class GfQuath const &other);
 
     //!
@@ -139,6 +143,7 @@ class GfQuatf
     // the length before normalization. If the length of this
     // quaternion is smaller than \p eps, this sets the quaternion to
     // identity.
+    GF_API
     float Normalize(float eps = GF_MIN_VECTOR_LENGTH);
 
     //!
@@ -186,6 +191,7 @@ class GfQuatf
 
     //!
     // Post-multiply quaternion \p q into this quaternion.
+    GF_API
     GfQuatf &operator *=(const GfQuatf &q);
 
     //!
@@ -281,14 +287,14 @@ class GfQuatf
 //
 // If the interpolant \p alpha is zero, then the result is \p q0, while
 // \p alpha of one yields \p q1.
-GfQuatf
+GF_API GfQuatf
 GfSlerp(double alpha, const GfQuatf& q0, const GfQuatf& q1);
 
-GfQuatf
+GF_API GfQuatf
 GfSlerp(const GfQuatf& q0, const GfQuatf& q1, double alpha);
 
 /// Output a GfQuatd using the format (re, i, j, k)
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfQuatf const &);
+GF_API std::ostream& operator<<(std::ostream &, GfQuatf const &);
 
 #endif // GF_QUATERNION_H

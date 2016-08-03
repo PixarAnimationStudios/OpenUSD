@@ -26,6 +26,7 @@
 #ifndef SDF_MAPPERSPEC_H
 #define SDF_MAPPERSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
@@ -57,6 +58,7 @@ public:
     /// with the type name \p typeName.
     ///
     /// Mappers must be created in the context of an existing attribute.
+    SDF_API
     static SdfMapperSpecHandle New(const SdfAttributeSpecHandle& owner,
                                    const SdfPath& connPath,
                                    const std::string& typeName);
@@ -67,10 +69,12 @@ public:
     /// @{
 
     /// Returns the attribute that owns this mapper.
+    SDF_API
     SdfAttributeSpecHandle GetAttribute() const;
 
     ///
     /// Returns the connection path this mapper is associated with.
+    SDF_API
     SdfPath GetConnectionTargetPath() const;
 
     /// @}
@@ -78,9 +82,11 @@ public:
     /// @{
 
     /// Returns the type name for the mapper.
+    SDF_API
     std::string GetTypeName() const;
     
     /// Sets the type name for the mapper.
+    SDF_API
     void SetTypeName(const std::string& typeName);
 
     /// @}
@@ -92,6 +98,7 @@ public:
     /// The returned object is a proxy through which the args can be accessed
     /// or deleted.  It is not allowed to create new arguments using the list;
     /// Construct an \c SdfMapperArgSpec directly to do that.
+    SDF_API
     SdfMapperArgsProxy GetArgs() const;
 
     /// @}
@@ -99,9 +106,11 @@ public:
     /// @{
 
     /// \brief Returns the mapper's symmetry args.
+    SDF_API
     SdfDictionaryProxy GetSymmetryArgs() const;
     
     /// \brief Sets the mapper's symmetry args
+    SDF_API
     void SetSymmetryArgs(const VtDictionary& args);
 
     /// @}

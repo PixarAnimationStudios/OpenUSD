@@ -1,0 +1,15 @@
+#sdf 1.4.32
+
+def "Root" (
+    references = @ref.sdf@</Ref>
+)
+{
+    over "A" (
+        relocates = {
+            <B> : <B_2>
+        }
+    )
+    {
+    }
+}
+

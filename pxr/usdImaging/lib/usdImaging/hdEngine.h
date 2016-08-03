@@ -23,6 +23,7 @@
 //
 #pragma once
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/engine.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/imaging/hd/version.h"
@@ -49,6 +50,7 @@ typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 class UsdImagingHdEngine : public UsdImagingEngine
 {
 public:
+    USDIMAGING_API
     UsdImagingHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
@@ -56,60 +58,84 @@ public:
                        const UsdImagingHdEngineSharedPtr& sharedImaging =
                            UsdImagingHdEngineSharedPtr());
 
+    USDIMAGING_API
     virtual ~UsdImagingHdEngine();
 
+    USDIMAGING_API
     HdRenderIndexSharedPtr GetRenderIndex() const;
 
+    USDIMAGING_API
     virtual void InvalidateBuffers();
 
+    USDIMAGING_API
     static void PrepareBatch(
         const UsdImagingHdEngineSharedPtrVector& engines,
         const UsdPrimVector& rootPrims,
         const std::vector<UsdTimeCode>& times,
         RenderParams params);
 
+    USDIMAGING_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    USDIMAGING_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
+    USDIMAGING_API
     virtual void Render(const UsdPrim& root, RenderParams params);
 
     // A custom render override for hdEngine.
     // note: external RenderIndex may not be needed anymore.
+    USDIMAGING_API
     void Render(HdRenderIndex& index, RenderParams params);
 
+    USDIMAGING_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
+    USDIMAGING_API
     virtual void SetLightingStateFromOpenGL();
 
+    USDIMAGING_API
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
+    USDIMAGING_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
+    USDIMAGING_API
     virtual void SetRootVisibility(bool isVisible);
 
+    USDIMAGING_API
     virtual void SetSelected(SdfPathVector const& paths);
 
+    USDIMAGING_API
     virtual void ClearSelected();
+
+    USDIMAGING_API
     virtual void AddSelected(SdfPath const &path, int instanceIndex);
 
+    USDIMAGING_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromPrimIdColor(GfVec4i const& primIdColor,
                                                GfVec4i const& instanceIdColor,
                                                int* instanceIndexOut = NULL);
 
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
                                                  int instanceIndex,
                                                  int *absoluteInstanceIndex=NULL);
 
+    USDIMAGING_API
     virtual bool IsConverged() const;
 
+    USDIMAGING_API
     virtual std::vector<TfType> GetRenderGraphPlugins();
 
+    USDIMAGING_API
     virtual bool SetRenderGraphPlugin(TfType const &type);
 
+    USDIMAGING_API
     virtual bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -121,6 +147,7 @@ public:
         SdfPath *outHitInstancerPath = NULL,
 	int *outHitInstanceIndex = NULL);
 
+    USDIMAGING_API
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,

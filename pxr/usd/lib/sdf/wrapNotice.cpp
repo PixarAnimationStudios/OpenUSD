@@ -23,11 +23,12 @@
 //
 ///
 /// \file Sdf/wrapNotice.cpp
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

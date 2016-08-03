@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    """
+    This case exercises a relocation from a path bavck to that same path.
+    In terms of composition, this should be a no-op.
+
+    In terms of error policy, we may want to make this a composition error,
+    so this is categorized as an Error test in the museum -- however we
+    know there are existing assets out there with this situation
+    (see bug 70400).
+
+    This case primarily asserts that </Model_1/Instance/Test> still
+    composes correctly in the presence of this self-relocate.
+    """
+)
+
+def "Model_1" (
+    add references = @model.usda@</Model>
+)
+{
+    over "LocalClass"
+    {
+        def Scope "Test"
+        {
+        }
+    }
+
+    over "Instance" (
+        relocates = {
+            <Test>: <Test>
+        }
+    )
+    {
+        over "Test"
+        {
+        }
+    }
+}

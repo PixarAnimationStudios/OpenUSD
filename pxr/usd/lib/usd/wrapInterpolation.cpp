@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usd/interpolation.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/usd/usd/interpolation.h"
 
 void
 wrapUsdInterpolationType()

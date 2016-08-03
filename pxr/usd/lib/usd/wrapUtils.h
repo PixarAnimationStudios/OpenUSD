@@ -24,6 +24,7 @@
 #ifndef USD_WRAPUTILS_H
 #define USD_WRAPUTILS_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/object.h"
 
 #include <boost/python/def_visitor.hpp>
@@ -69,6 +70,7 @@ private:
 
     // Internal method that replaces the boost.python to_python converter for
     // the type \p pti.
+    USD_API
     static void _ReplaceConverter(
         boost::python::type_info pti,
         UsdObjType objType,
@@ -76,6 +78,7 @@ private:
         DowncastFn downcast);
 
     // Non-template helper function for _Convert.
+    USD_API
     static PyObject *_ConvertHelper(const UsdObject *obj);
 };
 

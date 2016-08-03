@@ -18,11 +18,15 @@ pxr_shared_library(garch
         arch
         ${OPENGL_gl_LIBRARY}
         ${APPKIT_LIBRARY}
+		
+	INCLUDE_DIRS
+		${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         glPlatformContext
 
     PUBLIC_HEADERS
+        api.h
         gl.h
         glext.h
         glu.h

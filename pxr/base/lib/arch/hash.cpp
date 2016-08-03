@@ -475,7 +475,7 @@ void SpookyHash::Hash128(
     remainder = (length - ((const uint8 *)end-(const uint8 *)message));
     memcpy(buf, end, remainder);
     memset(((uint8 *)buf)+remainder, 0, sc_blockSize-remainder);
-    ((uint8 *)buf)[sc_blockSize-1] = remainder;
+    ((uint8 *)buf)[sc_blockSize-1] = static_cast<uint8>(remainder);
     
     // do some final mixing 
     End(buf, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);

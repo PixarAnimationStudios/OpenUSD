@@ -1,0 +1,37 @@
+#usda 1.0
+
+def Capsule "MyCapsule"
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+    custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Sphere "MySphere"
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+    custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Cylinder "MyCylinder"
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+    custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Cube "MyCube"
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+    custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-12, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Cone "MyCone"
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+    custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-16, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+

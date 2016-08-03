@@ -24,8 +24,8 @@
 #ifndef GF_PLANE_H
 #define GF_PLANE_H
 
-
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
@@ -97,6 +97,7 @@ class GfPlane
     // This constructor sets this to the plane perpendicular to \p
     // normal and that passes through \p point. The passed-in normal
     // is normalized to unit length first.
+    GF_API
     void                Set(const GfVec3d &normal, const GfVec3d &point);
 
     //!
@@ -104,6 +105,7 @@ class GfPlane
     // given points. The normal is constructed from the cross product of
     // (\p p1 - \p p0) (\p p2 - \p p0). Results are undefined if the
     // points are collinear.
+    GF_API
     void                Set(const GfVec3d &p0,
                             const GfVec3d &p1,
                             const GfVec3d &p2);
@@ -150,6 +152,7 @@ class GfPlane
 
     //!
     // Transforms the plane by the given matrix.
+    GF_API
     GfPlane &           Transform(const GfMatrix4d &matrix);
 
     //! Flip the plane normal (if necessary) so that \p p is in the 
@@ -165,6 +168,7 @@ class GfPlane
     // Returns \c true if the given aligned bounding box is at least
     // partially on the positive side (the one the normal points into)
     // of the plane.
+    GF_API
     bool IntersectsPositiveHalfSpace(const GfRange3d &box) const;
 
     //!
@@ -184,6 +188,6 @@ class GfPlane
 
 /// Output a GfPlane using the format [(nx ny nz) distance]
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream&, const GfPlane&);
+GF_API std::ostream& operator<<(std::ostream&, const GfPlane&);
 
 #endif // GF_PLANE_H

@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <mutex>
+#include <iostream>
 
 TF_INSTANTIATE_SINGLETON(HdRenderContextCaps);
 

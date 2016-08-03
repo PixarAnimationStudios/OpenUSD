@@ -1,0 +1,199 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "PropertyTest" (
+    variantSets = "tests"
+)
+{
+    variantSet "tests" = {
+        "with_properties" {
+            custom double x = 5
+            rel test_rel = </foo/bar>
+        }
+    }
+}
+
+over MfScope "Comp" (
+    variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "full" (
+            references = [
+                @FullVariant.menva@</Full>
+            ]
+        ) {
+
+        }
+    }
+}
+
+over MfScope "Comp1_5" (
+    variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "full" (
+            references = [
+                @FullVariant.menva@</Full>
+            ]
+        ) {
+
+        }
+    }
+}
+
+over MfScope "Comp2" (
+    variantSets = ["standin", "brickstyle", "hairstyle"]
+    variants = {
+        string brickstyle = "a"
+        string hairstyle = "a"
+        string standin = "default"
+    }
+)
+{
+    variantSet "brickstyle" = {
+        "a" {
+            def MfScope "root"
+            {
+                custom string opinion = "blocking"
+            }
+
+        }
+        "b" {
+            def MfScope "root"
+            {
+                custom string opinion = "anim"
+            }
+
+        }
+        "c" (
+            references = [
+                @FullVariant.menva@</Full>
+            ]
+        ) {
+
+        }
+    }
+}
+
+over MfScope "Comp3" (
+    delete variantSets = "bad"
+    add variantSets = "good"
+    reorder variantSets = "good"
+)
+{
+    variantSet "good" = {
+        "blocking" {
+            def MfScope "root"
+            {
+                custom string opinion = "blocking"
+            }
+
+        }
+    }
+}
+
+over MfScope "Comp3_5" (
+    delete variantSets = "bad"
+    add variantSets = "good"
+    reorder variantSets = "good"
+)
+{
+    variantSet "good" = {
+        "blocking" {
+            def MfScope "root"
+            {
+                custom string opinion = "blocking"
+            }
+
+        }
+    }
+}
+
+over MfScope "Comp4" (
+    delete variantSets = ["bad", "ugly"]
+    add variantSets = ["good", "great"]
+    reorder variantSets = ["great", "good"]
+)
+{
+    variantSet "good" = {
+        "blocking" {
+            def MfScope "root"
+            {
+                custom string opinion = "blocking"
+            }
+
+        }
+        "anim" {
+            def MfScope "root"
+            {
+                custom string opinion = "anim"
+            }
+
+        }
+        "render" (
+            references = [
+                @FullVariant@</Full>
+            ]
+        ) {
+
+        }
+    }
+}
+
+over MfScope "RefComp1" (
+    references = [
+        @/tmp/foo.menva@</Comp>
+    ]
+    variants = {
+        string brickstyle = "pixar"
+    }
+)
+{
+}
+
+over MfScope "RefComp3" (
+    references = [
+        @/tmp/foo.menva@</Comp>
+    ]
+    variants = {
+        string brickstyle = "pixar"
+        string standin = "anim"
+    }
+)
+{
+}
+
+over MfScope "VariantNameCheck" (
+    variantSets = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
+    variants = {
+        string a = ".leadingdot"
+        string b = "has|a|bar"
+        string c = "has-a-hyphen"
+        string d = "_has_an_underscore"
+        string e = "5tartsWithDigit"
+        string f = ".has|a|bar|and|dot"
+        string g = ".has-a-hyphen-and-dot"
+        string h = "._has_an_underscore_and_dot"
+        string i = ".5tartsWithDigitAndDot"
+        string j = "7he|W-o_r|k-5_"
+        string k = ".7he|W-o_r|k-5_"
+    }
+)
+{
+    variantSet "a" = { ".leadingdot" { } }
+    variantSet "b" = { "has|a|bar" { } }
+    variantSet "c" = { "has-a-hyphen" { } }
+    variantSet "d" = { "_has_an_underscore" { } }
+    variantSet "e" = { "5tartsWithDigit" { } }
+    variantSet "f" = { ".has|a|bar|and|dot" { } }
+    variantSet "g" = { ".has-a-hyphen-and-dot" { } }
+    variantSet "h" = { "._has_an_underscore_and_dot" { } }
+    variantSet "i" = { ".5tartsWithDigitAndDot" { } }
+    variantSet "j" = { "7he|W-o_r|k-5_" { } }
+    variantSet "k" = { ".7he|W-o_r|k-5_" { } }
+}

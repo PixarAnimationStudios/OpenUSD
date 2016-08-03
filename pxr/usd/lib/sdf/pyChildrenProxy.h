@@ -26,13 +26,14 @@
 #ifndef SDF_PYCHILDRENPROXY_H
 #define SDF_PYCHILDRENPROXY_H
 
+#include <boost/python.hpp>
+#include <boost/python/slice.hpp>
+
 #include "pxr/usd/sdf/childrenProxy.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
 
 template <class _View>
 class SdfPyChildrenProxy {

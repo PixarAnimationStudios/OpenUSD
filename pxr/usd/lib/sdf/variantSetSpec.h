@@ -26,6 +26,7 @@
 #ifndef SDF_VARIANTSETSPEC_H
 #define SDF_VARIANTSETSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
@@ -54,7 +55,7 @@
 /// over the target prim, and then the referencing prim is composited over 
 /// the result.
 ///
-class SdfVariantSetSpec : public SdfSpec
+class SDF_API SdfVariantSetSpec : public SdfSpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeVariantSet,
                      SdfVariantSetSpec, SdfSpec);

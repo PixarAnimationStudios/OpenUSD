@@ -24,6 +24,7 @@
 // threadLimits.cpp
 //
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/envSetting.h"

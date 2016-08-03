@@ -1,0 +1,10 @@
+#usda 1.0
+
+def Scope "PrimA" (
+    add references = @ref2.usda@</PrimC>
+)
+{
+    def Scope "PrimA_Child"
+    {
+    }
+}

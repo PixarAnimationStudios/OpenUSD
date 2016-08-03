@@ -194,7 +194,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer
      */
 
     TF_FOR_ALL(it, bufferSpecs) {
-        int componentSize = HdConversions::GetComponentSize(it->glDataType);
+        int componentSize = (int)HdConversions::GetComponentSize(it->glDataType);
         int dataSize = componentSize * it->numComponents * it->arraySize;
 
         // Figure out the alignment we need for this type of data
@@ -225,7 +225,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer
     // populate BufferResources, interleaved
     int offset = 0;
     TF_FOR_ALL(it, bufferSpecs) {
-        int componentSize = HdConversions::GetComponentSize(it->glDataType);
+        int componentSize = (int)HdConversions::GetComponentSize(it->glDataType);
         int dataSize = componentSize * it->numComponents * it->arraySize;
 
         // Figure out alignment for this data member
@@ -530,7 +530,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     if (glBufferSubData != NULL) {
         int vboStride = VBO->GetStride();
         GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;
-        int dataSize = VBO->GetNumComponents() * VBO->GetComponentSize() * VBO->GetArraySize();
+        int dataSize = (int)(VBO->GetNumComponents() * VBO->GetComponentSize() * VBO->GetArraySize());
         const unsigned char *data =
             (const unsigned char*)bufferSource->GetData();
 

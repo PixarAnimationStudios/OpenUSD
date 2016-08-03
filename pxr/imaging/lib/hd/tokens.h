@@ -24,8 +24,9 @@
 #ifndef HD_TOKENS_H
 #define HD_TOKENS_H
 
-#include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
             
 #define HD_TOKENS                               \
     (adjacency)                                 \
@@ -188,11 +189,13 @@
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
 
-
-TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGLSLProgramTokens, HD_GLSL_PROGRAM_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_SHADER_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
+// XXX - why do we need this here?
+ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
+TF_DECLARE_PUBLIC_TOKENS(HdTokens, HDLIB_API, HD_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HDLIB_API, HD_PERF_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdGLSLProgramTokens, HDLIB_API, HD_GLSL_PROGRAM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HDLIB_API, HD_SHADER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HDLIB_API, HD_OPTION_TOKENS);
+ARCH_PRAGMA_RESTORE
 
 #endif //HD_TOKENS_H

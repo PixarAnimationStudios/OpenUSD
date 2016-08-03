@@ -50,6 +50,7 @@ class _TestPlugBase : public TfRefBase, public TfWeakBase {
         return TfCreateRefPtr(new This());
     }
 
+    PLUG_API
     static RefPtr Manufacture(const std::string & subclass);
 
   protected:

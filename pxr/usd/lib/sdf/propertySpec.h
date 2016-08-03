@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/api.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -51,7 +52,7 @@
 /// NOTE: Do not use Python reserved words and keywords as attribute names.
 /// This will cause attribute resolution to fail.
 ///
-class SdfPropertySpec : public SdfSpec
+class SDF_API SdfPropertySpec : public SdfSpec
 {
     SDF_DECLARE_ABSTRACT_SPEC(SdfSchema, SdfPropertySpec, SdfSpec);
 

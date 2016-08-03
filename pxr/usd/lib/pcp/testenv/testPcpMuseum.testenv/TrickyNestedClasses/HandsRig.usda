@@ -1,0 +1,41 @@
+#usda 1.0
+
+def Scope "HandsRig"
+{
+    class MfScope "_Class_HandRig" (
+        references = @HandRig.usda@</HandRig>
+    )
+    {
+        over "IndexRig"
+        {
+        }
+        over "_Class_FingerRig"
+        {
+        }
+    }
+
+    class MfScope "SymHandRig" (
+        inherits = </HandsRig/_Class_HandRig>
+    )
+    {
+        over "IndexRig"
+        {
+        }
+        over "_Class_FingerRig"
+        {
+        }
+    }
+
+    def MfScope "LHandRig" (
+        inherits = </HandsRig/SymHandRig>
+    )
+    {
+        over "IndexRig"
+        {
+        }
+        over "_Class_FingerRig"
+        {
+        }
+    }
+}
+

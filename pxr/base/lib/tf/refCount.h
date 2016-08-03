@@ -26,6 +26,8 @@
 
 
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pragmas.h"
+#include "pxr/base/tf/api.h"
 #include <atomic>
 
 /*!

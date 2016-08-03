@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    subLayers = [
+        @A.usda@
+    ]
+)
+def DifferentPrimType "B" 
+{
+    custom double B_attr
+}

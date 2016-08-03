@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    """
+    This example is like TrickyLocalClassHierarchy, but with
+    relocations added.
+    """
+)
+
+class "C_1" (
+    references = @Sullivan_masterrig.usda@</C>
+)
+{
+}
+

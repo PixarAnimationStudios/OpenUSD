@@ -1,0 +1,18 @@
+#sdf 1.4.32
+
+def Scope "Prim"
+{
+    ThisType::IsBogus foo = bogus (
+        hidden = true
+    )
+    ThisType::IsBogus[] fooEmptyList = [] (
+        hidden = true
+    )
+    ThisType::IsBogus[] fooList = [bogus, bogus, bogus, bogus] (
+        hidden = true
+    )
+    ThisType::IsBogus fooTuple = (bogus, bogus) (
+        hidden = true
+    )
+}
+

@@ -26,6 +26,7 @@
 #ifndef GLF_GLCONTEXTREGISTRY_H
 #define GLF_GLCONTEXTREGISTRY_H
 
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
 #include <boost/noncopyable.hpp>
@@ -34,7 +35,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-class GlfGLContextRegistry_Data;
+struct GlfGLContextRegistry_Data;
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
@@ -77,5 +78,7 @@ private:
     boost::optional<GlfGLContextSharedPtr> _shared;
     boost::scoped_ptr<GlfGLContextRegistry_Data> _data;
 };
+
+GLF_API_TEMPLATE_CLASS(TfSingleton<GlfGLContextRegistry>);
 
 #endif  // GLF_GLCONTEXTREGISTRY_H

@@ -1,0 +1,35 @@
+#usda 1.0
+
+def Scope "LegsRig" (
+    relocates = {
+        <LLegRig/TentacleRig/Tentacle>: <Legs/LHip>, 
+        <LLegRig/TentacleRig/Tentacle/Seg2>: <Legs/LHip/Knee>, 
+    }
+)
+{
+    def Scope "Legs"
+    {
+    }
+
+    def Scope "SymLegRig" (
+        references = @SymLegRig.usda@</SymLegRig>
+    )
+    {
+        over "TentacleRig"
+        {
+            over "Tentacle"
+            {
+                over "Seg2"
+                {
+                }
+            }
+        }
+    }
+
+    def Scope "LLegRig" (
+        inherits = </LegsRig/SymLegRig>
+    )
+    {
+    }
+}
+

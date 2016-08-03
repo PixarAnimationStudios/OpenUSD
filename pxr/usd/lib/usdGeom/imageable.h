@@ -24,6 +24,7 @@
 #ifndef USDGEOM_GENERATED_IMAGEABLE_H
 #define USDGEOM_GENERATED_IMAGEABLE_H
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -89,11 +90,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomImageable();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -106,6 +109,7 @@ public:
     /// UsdGeomImageable(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomImageable
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -118,6 +122,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -136,6 +141,7 @@ public:
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: inherited
     /// \n  \ref UsdGeomTokens "Allowed Values": [inherited, invisible]
+    USDGEOM_API
     UsdAttribute GetVisibilityAttr() const;
 
     /// See GetVisibilityAttr(), and also 
@@ -143,6 +149,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateVisibilityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -189,6 +196,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: default
     /// \n  \ref UsdGeomTokens "Allowed Values": [default, render, proxy, guide]
+    USDGEOM_API
     UsdAttribute GetPurposeAttr() const;
 
     /// See GetPurposeAttr(), and also 
@@ -196,6 +204,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreatePurposeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -241,6 +250,7 @@ public:
     /// error to create over an existing, compatible attribute.
     ///
     /// \sa UsdPrim::CreateAttribute(), UsdGeomPrimvar::IsPrimvar()
+    USDGEOM_API
     UsdGeomPrimvar CreatePrimvar(const TfToken& attrName,
                                  const SdfValueTypeName &typeName,
                                  const TfToken& interpolation = TfToken(),
@@ -258,6 +268,7 @@ public:
     /// will not, unless \p name is properly namespace prefixed.
     ///
     /// \sa HasPrimvar()
+    USDGEOM_API
     UsdGeomPrimvar GetPrimvar(const TfToken &name) const;
     
     /// Return valid UsdGeomPrimvar objects for all defined Primvars on
@@ -269,10 +280,12 @@ public:
     /// the attributes at once, and using the pattern described in 
     /// \ref UsdGeomPrimvar_Using_Primvar "Using Primvars" to test individual
     /// attributes.
+    USDGEOM_API
     std::vector<UsdGeomPrimvar> GetPrimvars() const;
 
     /// Like GetPrimvars(), but exclude primvars that have no authored scene
     /// description.
+    USDGEOM_API
     std::vector<UsdGeomPrimvar> GetAuthoredPrimvars() const;
 
     /// Is there defined Primvar \p name on this prim?
@@ -280,6 +293,7 @@ public:
     /// Name lookup will account for Primvar namespacing.
     ///
     /// \sa GetPrimvar()
+    USDGEOM_API
     bool HasPrimvar(const TfToken &name) const;
 
     /// @}
@@ -295,6 +309,7 @@ public:
     /// See \sa UsdGeomModelAPI::GetExtentsHint().
     /// 
     /// \sa GetOrderedPurposeTokens()
+    USDGEOM_API
     static const TfTokenVector &GetOrderedPurposeTokens();
 
     // --------------------------------------------------------------------- //
@@ -330,6 +345,7 @@ public:
     /// \sa MakeInvisible()
     /// \sa ComputeVisibility()
     /// 
+    USDGEOM_API
     void MakeVisible(const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
     /// \brief Makes the imageable invisible if it is visible at the given time.
@@ -345,6 +361,7 @@ public:
     /// \sa MakeVisible()
     /// \sa ComputeVisibility()
     ///
+    USDGEOM_API
     void MakeInvisible(const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
     ///@}
@@ -379,6 +396,7 @@ public:
     /// on a stack as you traverse.
     ///
     /// \sa GetVisibilityAttr()
+    USDGEOM_API
     TfToken ComputeVisibility(UsdTimeCode const &time = UsdTimeCode::Default()) const;
 
     /// Calculate the effective purpose of this prim, as defined by its
@@ -406,6 +424,7 @@ public:
     /// with visibility, on a stack as you traverse.
     ///
     /// \sa GetPurposeAttr()
+    USDGEOM_API
     TfToken ComputePurpose() const;
 
     /// Compute the bound of this prim in world space, at the specified
@@ -421,6 +440,7 @@ public:
     /// will be much, much more efficient to instantiate a UsdGeomBBoxCache
     /// and query it directly;  doing so will reuse sub-computations shared 
     /// by the prims.</b>
+    USDGEOM_API
     GfBBox3d ComputeWorldBound(UsdTimeCode const& time,
                                TfToken const &purpose1=TfToken(),
                                TfToken const &purpose2=TfToken(),
@@ -441,6 +461,7 @@ public:
     /// will be much, much more efficient to instantiate a UsdGeomBBoxCache
     /// and query it directly;  doing so will reuse sub-computations shared 
     /// by the prims.</b>
+    USDGEOM_API
     GfBBox3d ComputeLocalBound(UsdTimeCode const& time,
                                TfToken const &purpose1=TfToken(),
                                TfToken const &purpose2=TfToken(),
@@ -460,6 +481,7 @@ public:
     /// will be much, much more efficient to instantiate a UsdGeomBBoxCache
     /// and query it directly;  doing so will reuse sub-computations shared 
     /// by the prims.</b>
+    USDGEOM_API
     GfBBox3d ComputeUntransformedBound(UsdTimeCode const& time,
                                       TfToken const &purpose1=TfToken(),
                                       TfToken const &purpose2=TfToken(),
@@ -473,6 +495,7 @@ public:
     /// stage, it will be much, much more efficient to instantiate a
     /// UsdGeomXformCache and query it directly; doing so will reuse
     /// sub-computations shared by the prims.</b>
+    USDGEOM_API
     GfMatrix4d ComputeLocalToWorldTransform(UsdTimeCode const &time) const;
 
     /// Compute the transformation matrix for this prim at the given time,
@@ -482,6 +505,7 @@ public:
     /// stage, it will be much, much more efficient to instantiate a
     /// UsdGeomXformCache and query it directly; doing so will reuse
     /// sub-computations shared by the prims.</b>
+    USDGEOM_API
     GfMatrix4d ComputeParentToWorldTransform(UsdTimeCode const &time) const;
 
     /// @}

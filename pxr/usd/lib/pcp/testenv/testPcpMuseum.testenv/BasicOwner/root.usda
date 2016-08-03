@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    hasOwnedSubLayers = True
+    subLayers = [
+        @stronger.usda@,
+        @owned.usda@,
+        @weaker.usda@,
+    ]
+)

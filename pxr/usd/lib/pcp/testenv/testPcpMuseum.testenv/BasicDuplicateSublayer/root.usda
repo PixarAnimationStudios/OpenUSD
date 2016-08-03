@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    """
+    This example has two sublayers, A.usda and B.usda.
+    A.usda also sublayers B.usda, which is fine.
+    Duplicates are allowed unless they form a cycle.
+    """
+    subLayers = [
+        @A.usda@,
+        @B.usda@
+    ]
+)
+
+def "A" 
+{
+}

@@ -30,7 +30,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
-
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/enum.h"
 
 template <class T> class Sdf_MarkerUtils;
@@ -51,7 +51,7 @@ template <class T> class Sdf_MarkerUtils;
 /// For information on shapes, see the VtShape class reference in the C++
 /// documentation.
 ///
-class SdfAttributeSpec : public SdfPropertySpec
+class SDF_API SdfAttributeSpec : public SdfPropertySpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeAttribute,
                      SdfAttributeSpec, SdfPropertySpec);

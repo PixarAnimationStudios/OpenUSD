@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/errorTransport.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/noncopyable.hpp>
 
@@ -57,7 +58,7 @@
  *      }
  * \endcode
  */
-class TfErrorMark : boost::noncopyable
+class TF_API TfErrorMark : boost::noncopyable
 {
   public:
 
@@ -218,6 +219,7 @@ class TfErrorMark : boost::noncopyable
  * To call this function, set _enableTfErrorMarkStackTraces in errorMark.cpp and
  * enable the TF_ERROR_MARK_TRACKING TfDebug code.
  */
+TF_API
 void TfReportActiveErrorMarks();
 
 #endif // TF_ERROR_MARK

@@ -1,0 +1,92 @@
+#usda 1.0
+
+def Xform "Cube"
+{
+    def Cube "A" {
+        ColorFloat[] primvars:displayColor = [(1,0,0)]
+    }
+}
+
+def Xform "Foo"
+{
+    def Xform "X1"
+    {
+        def "C1" (
+            instanceable = true
+            references = </Cube>
+        )
+        {
+            custom Vec3d xformOp:translate = (5, 0, 0)
+            custom double xformOp:rotateX = 20
+            uniform token[] xformOpOrder = ["xformOp:rotateX", "xformOp:translate"]
+        }
+    }
+    def Xform "X2"
+    {
+        def "C2" (
+            instanceable = true
+            references = </Cube>
+        )
+        {
+            custom Vec3d xformOp:translate = (10, 0, 0)
+            custom double xformOp:rotateX = 40
+            uniform token[] xformOpOrder = ["xformOp:rotateX", "xformOp:translate"]
+        }
+    }
+    def Xform "X3"
+    {
+        def "C3" (
+            instanceable = true
+            references = </Cube>
+        )
+        {
+            custom Vec3d xformOp:translate = (15, 0, 0)
+            custom double xformOp:rotateX = 60
+            uniform token[] xformOpOrder = ["xformOp:rotateX", "xformOp:translate"]
+        }
+    }
+
+    def Xform "Bar"
+    {
+        def Cube "C" (
+        )
+        {
+            ColorFloat[] primvars:displayColor = [(1,1,0)]
+        }
+        def Xform "X4"
+        {
+            def "C4" (
+                instanceable = true
+                references = </Cube>
+            )
+            {
+                custom Vec3d xformOp:translate = (5, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        custom Vec3d xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "Bar"
+{
+    def Cube "C"
+    {
+        ColorFloat[] primvars:displayColor = [(0,1,1)]
+    }
+
+    def Xform "X5"
+    {
+        def "C5" (
+            instanceable = true
+            references = </Cube>
+        )
+        {
+        }
+        custom Vec3d xformOp:translate = (5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    custom Vec3d xformOp:translate = (0, 0, -5)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

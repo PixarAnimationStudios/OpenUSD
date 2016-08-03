@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "Test"
+{
+    # Can't change type name from bool to double.
+    bool boolAttr
+    double boolAttr = 1.0
+}

@@ -23,6 +23,9 @@
 //
 /// \file wrapPrimSpec.cpp
 
+#include <boost/python.hpp>
+#include <boost/function.hpp>
+
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -39,9 +42,6 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
-
-#include <boost/python.hpp>
-#include <boost/function.hpp>
 
 using namespace boost::python;
 

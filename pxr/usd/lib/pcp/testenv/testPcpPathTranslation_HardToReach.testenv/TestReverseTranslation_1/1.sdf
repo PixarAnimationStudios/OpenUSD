@@ -1,0 +1,15 @@
+#sdf 1.4.32
+
+def __AnyType__ "M_1" (
+    add references = @2.sdf@</M_2>
+)
+{
+    over "B"
+    {
+    }
+
+    def Scope "C"
+    {
+        custom rel foo = </M_1/B>
+    }
+}

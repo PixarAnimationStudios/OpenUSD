@@ -431,6 +431,7 @@
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/typeFunctions.h"
+#include "pxr/base/tf/api.h"
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
@@ -518,10 +519,10 @@ struct Tf_RefPtr_UniqueChangedCounter {
         return false;
     }
 
-    static bool _RemoveRef(TfRefBase const *refBase,
+    TF_API static bool _RemoveRef(TfRefBase const *refBase,
                            TfRefBase::UniqueChangedListener const &listener);
 
-    static int _AddRef(TfRefBase const *refBase,
+    TF_API static int _AddRef(TfRefBase const *refBase,
                        TfRefBase::UniqueChangedListener const &listener);
 };
 
@@ -889,7 +890,7 @@ public:
 
     //! Accessor to \c T's public members.
     T* operator ->() const {
-        if (ARCH_UNLIKELY(!_refBase))
+        if (ARCH_UNLIKELY(!static_cast<void*>(_refBase)))
             TF_FATAL_ERROR("attempted member lookup on NULL %s",
                            ArchGetDemangled(typeid(TfRefPtr)).c_str());
         return static_cast<T*>(_GetRefBase());
@@ -901,7 +902,7 @@ public:
 
     //! True if the pointer points to an object.
     operator UnspecifiedBoolType() const {
-        return _refBase ? &TfRefPtr::_refBase : NULL;
+        return static_cast<void*>(_refBase) ? &TfRefPtr::_refBase : NULL;
     }
 
     //! True if the pointer points to \c NULL.

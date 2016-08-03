@@ -1,0 +1,23 @@
+#usda 1.0
+
+def "Model"
+{
+    float size.timeSamples = {
+        0: 0,
+        5: 5,
+       10: 10,
+       15: 15,
+       20: 20,
+       25: 25
+    }    
+}
+
+def "Model2"
+{
+    float size.timeSamples = {
+        0: 0,
+        5: 5,
+       15: 15,
+       25: 25
+    }    
+}

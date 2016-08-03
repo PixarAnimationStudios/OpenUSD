@@ -31,6 +31,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/weakPtrFacade.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/usd/sdf/api.h"
 #include <set>
 #include <typeinfo>
 #include <vector>
@@ -188,7 +189,7 @@ SdfCreateHandle(T *p)
 }
 
 template <>
-SdfHandleTo<SdfLayer>::Handle
+SDF_API SdfHandleTo<SdfLayer>::Handle
 SdfCreateHandle(SdfLayer *p);
 
 template <typename T>
@@ -205,11 +206,11 @@ struct Sdf_CastAccess {
     }
 };
 
-bool 
+SDF_API bool 
 Sdf_CanCastToType(
     const SdfSpec& srcSpec, const std::type_info& destType);
 
-bool
+SDF_API bool
 Sdf_CanCastToTypeCheckSchema(
     const SdfSpec& srcSpec, const std::type_info& destType);
 

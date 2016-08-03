@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/vt/valueFromPython.h"
-
-#include <boost/python.hpp>
 
 #include <set>
 #include <utility>

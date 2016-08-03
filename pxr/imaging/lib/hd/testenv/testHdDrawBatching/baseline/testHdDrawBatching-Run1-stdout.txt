@@ -1,0 +1,160 @@
+==== ImmediateDrawBatchTest:
+----- begin -----
+gpuMemoryUsed, 0
+garbageCollected = 0
+drawCalls = 0
+num batches: 5
+----- batched -----
+gpuMemoryUsed, 4376
+primVar, 4240
+topology, 136
+garbageCollected = 0
+drawCalls = 0
+----- executed -----
+drawingShader, 64642
+gpuMemoryUsed, 69018
+primVar, 4240
+topology, 136
+garbageCollected = 0
+drawCalls = 10
+----- clear all -----
+drawingShader, 64642
+gpuMemoryUsed, 64642
+garbageCollected = 1
+drawCalls = 10
+
+==== IndirectDrawBatchTest:
+----- begin -----
+drawingShader, 64642
+gpuMemoryUsed, 64642
+garbageCollected = 0
+drawCalls = 0
+num batches: 5
+----- batched -----
+drawingShader, 96464
+gpuMemoryUsed, 100840
+primVar, 4240
+topology, 136
+garbageCollected = 0
+drawCalls = 0
+----- executed -----
+drawIndirect, 480
+drawIndirectCull, 480
+drawIndirectResult, 20
+drawingShader, 160702
+gpuMemoryUsed, 166058
+primVar, 4240
+topology, 136
+garbageCollected = 0
+drawCalls = 5
+----- clear all -----
+drawingShader, 160702
+gpuMemoryUsed, 160702
+garbageCollected = 1
+drawCalls = 5
+
+==== IndirectDrawBatchMigrationTest:
+----- begin -----
+drawingShader, 160702
+gpuMemoryUsed, 160702
+garbageCollected = 0
+drawCalls = 0
+rebuildBatches = 0
+bufferArrayRangeMerged = 0
+----- draw flat -----
+drawIndirect, 192
+drawIndirectCull, 192
+drawIndirectResult, 4
+drawingShader, 193830
+gpuMemoryUsed, 196266
+primVar, 1664
+topology, 384
+garbageCollected = 0
+drawCalls = 1
+drawBatches = 1
+itemsDrawn = 4
+collectionsRefreshed = 1
+rebuildBatches = 1
+bufferArrayRangeMerged = 0
+----- draw smooth -----
+drawIndirect, 384
+drawIndirectCull, 384
+drawIndirectResult, 12
+drawingShader, 224908
+gpuMemoryUsed, 228120
+primVar, 2048
+topology, 384
+garbageCollected = 0
+drawCalls = 2
+drawBatches = 2
+itemsDrawn = 4
+collectionsRefreshed = 2
+rebuildBatches = 2
+bufferArrayRangeMerged = 2
+----- draw flat -----
+drawIndirect, 576
+drawIndirectCull, 576
+drawIndirectResult, 20
+drawingShader, 241613
+gpuMemoryUsed, 245217
+primVar, 2048
+topology, 384
+garbageCollected = 0
+drawCalls = 2
+drawBatches = 2
+itemsDrawn = 4
+collectionsRefreshed = 2
+rebuildBatches = 3
+bufferArrayRangeMerged = 2
+----- draw smooth -----
+drawIndirect, 384
+drawIndirectCull, 384
+drawIndirectResult, 20
+drawingShader, 241613
+gpuMemoryUsed, 244833
+primVar, 2048
+topology, 384
+garbageCollected = 0
+drawCalls = 2
+drawBatches = 2
+itemsDrawn = 4
+collectionsRefreshed = 2
+rebuildBatches = 3
+bufferArrayRangeMerged = 2
+==== EmptyDrawBatchTest:
+----- begin -----
+drawingShader, 240589
+gpuMemoryUsed, 240589
+garbageCollected = 0
+drawCalls = 0
+----- batched -----
+drawingShader, 257166
+gpuMemoryUsed, 257166
+primVar, 0
+topology, 0
+garbageCollected = 0
+drawCalls = 0
+----- executed -----
+computeShader, 7403
+drawIndirect, 60
+drawIndirectCull, 60
+drawIndirectResult, 4
+drawingShader, 270035
+gpuMemoryUsed, 277898
+primVar, 336
+topology, 0
+garbageCollected = 0
+drawCalls = 1
+----- clear all -----
+computeShader, 7403
+drawIndirect, 60
+drawIndirectCull, 60
+drawIndirectResult, 4
+drawingShader, 270035
+gpuMemoryUsed, 277898
+primVar, 336
+topology, 0
+garbageCollected = 1
+drawCalls = 1
+
+OK

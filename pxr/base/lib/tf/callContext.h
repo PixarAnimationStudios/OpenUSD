@@ -25,6 +25,7 @@
 #define TF_CALL_CONTEXT_H
 
 #include "pxr/base/arch/functionLite.h"
+#include "pxr/base/tf/api.h"
 
 #include <stddef.h>
 
@@ -92,7 +93,7 @@ public:
     mutable bool _hidden;
 };
 
-TfCallContext
+TF_API TfCallContext
 Tf_PythonCallContext(char const *fileName,
                      char const *moduleName,
                      char const *functionName,

@@ -32,7 +32,7 @@
 #include <boost/type_traits/is_abstract.hpp>
 
 // Base class for common stuff.
-class PLUG_API Plug_StaticInterfaceBase {
+class Plug_StaticInterfaceBase {
 public:
     /// Returns \c true if we've tried to initialize the interface pointer,
     /// even if we failed.  This will not attempt to load the plugin or

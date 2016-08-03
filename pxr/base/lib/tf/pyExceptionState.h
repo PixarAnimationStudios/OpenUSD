@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/errorMark.h"
 
@@ -39,6 +40,7 @@ struct TfPyExceptionState {
         _value.release();
         _trace.release();
     }
+    TF_API
     std::string GetExceptionString() const;
     private:
         boost::python::handle<> _type, _value, _trace;

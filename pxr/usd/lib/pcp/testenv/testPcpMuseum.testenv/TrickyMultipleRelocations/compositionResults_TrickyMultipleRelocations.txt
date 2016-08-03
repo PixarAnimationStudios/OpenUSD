@@ -1,0 +1,104 @@
+Loading @testPcpMuseum.testenv/TrickyMultipleRelocations/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.usda            /Char
+    rig.usda             /CharRig
+
+Child names:
+     ['Anim2', 'Rig2']
+
+Prohibited child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim2>
+
+Prim Stack:
+    root.usda            /Char/Anim2
+    rig.usda             /CharRig/Anim
+
+Child names:
+     ['AnimScope']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim2/AnimScope>
+
+Prim Stack:
+    subrig.usda          /SubRig/Anim/AnimScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Char/Anim2/AnimScope.x:
+    subrig.usda          /SubRig/Anim/AnimScope.x
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2>
+
+Prim Stack:
+    root.usda            /Char/Rig2
+    rig.usda             /CharRig/Rig
+
+Child names:
+     ['SubRig2']
+
+Prohibited child names:
+     ['SubRig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2>
+
+Prim Stack:
+    root.usda            /Char/Rig2/SubRig2
+    rig.usda             /CharRig/Rig/SubRig
+    subrig.usda          /SubRig
+
+Child names:
+     ['Anim', 'Rig2']
+
+Prohibited child names:
+     ['Rig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2/Anim>
+
+Prim Stack:
+    subrig.usda          /SubRig/Anim
+
+Prohibited child names:
+     ['AnimScope']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2/Rig2>
+
+Prim Stack:
+    subrig.usda          /SubRig/Rig
+
+Child names:
+     ['RigScope']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2/Rig2/RigScope>
+
+Prim Stack:
+    subrig.usda          /SubRig/Rig/RigScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Char/Rig2/SubRig2/Rig2/RigScope.x:
+    subrig.usda          /SubRig/Rig/RigScope.x
+
+Attribute connections:
+/Char/Rig2/SubRig2/Rig2/RigScope.x:
+    /Char/Anim2/AnimScope.x
+

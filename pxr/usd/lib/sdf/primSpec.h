@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <iosfwd>
@@ -65,7 +66,7 @@ template <class TypePolicy> class Sdf_ListEditor;
 /// \li Insert doc about references and inherits here.
 /// \li Should have validate... methods for name, children, properties
 ///
-class SdfPrimSpec : public SdfSpec
+class SDF_API SdfPrimSpec : public SdfSpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypePrim, SdfPrimSpec, SdfSpec);
 
@@ -588,7 +589,7 @@ public:
     /// The map is organized as target \c SdfPath indexed by source \c SdfPath.
     /// Key and value paths are stored as absolute regardless of how they're
     /// added.
-    SdfRelocatesMapProxy GetRelocates() const;
+	SdfRelocatesMapProxy GetRelocates() const;
     
     /// Set the entire map of namespace relocations specified on this prim.
     /// Use the editing proxy for modifying single paths in the map.
@@ -641,6 +642,7 @@ private:
 ///
 /// The new specs are created with SdfSpecifierOver and an empty type.
 /// primPath must be a valid prim path.
+SDF_API 
 SdfPrimSpecHandle SdfCreatePrimInLayer(const SdfLayerHandle& layer,
                                        const SdfPath& primPath);
 

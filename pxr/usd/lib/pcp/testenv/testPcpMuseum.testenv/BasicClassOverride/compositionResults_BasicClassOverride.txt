@@ -1,0 +1,92 @@
+Loading @testPcpMuseum.testenv/BasicClassOverride/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.usda            /Group
+    group.usda           /Group
+
+Child names:
+     ['Model_1', 'Model_2', 'Model_Special']
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_1>
+
+Prim Stack:
+    root.usda            /_class_Model
+    group.usda           /Group/Model_1
+    group.usda           /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/Group/Model_1.value:
+    root.usda            /_class_Model.value
+    group.usda           /_class_Model.value
+    model.usda           /Model.value
+    model.usda           /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_2>
+
+Prim Stack:
+    root.usda            /Group/Model_2
+    root.usda            /_class_Model
+    group.usda           /Group/Model_2
+    group.usda           /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/Group/Model_2.value:
+    root.usda            /Group/Model_2.value
+    root.usda            /_class_Model.value
+    group.usda           /_class_Model.value
+    model.usda           /Model.value
+    model.usda           /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_Special>
+
+Prim Stack:
+    root.usda            /_class_Model
+    group.usda           /Group/Model_Special
+    group.usda           /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/Group/Model_Special.value:
+    root.usda            /_class_Model.value
+    group.usda           /Group/Model_Special.value
+    group.usda           /_class_Model.value
+    model.usda           /Model.value
+    model.usda           /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </_class_Model>
+
+Prim Stack:
+    root.usda            /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/_class_Model.value:
+    root.usda            /_class_Model.value
+

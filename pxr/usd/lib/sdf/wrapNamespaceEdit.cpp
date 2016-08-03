@@ -22,10 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file wrapNamespaceEdit.cpp
-#include "pxr/usd/sdf/namespaceEdit.h"
-#include "pxr/base/tf/pyCall.h"
-#include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/base/tf/pyEnum.h"
 #include <boost/foreach.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
@@ -33,6 +29,12 @@
 #include <boost/python/scope.hpp>
 #include <boost/python/str.hpp>
 #include <boost/python/tuple.hpp>
+
+#include "pxr/base/tf/pyEnum.h"
+#include "pxr/usd/sdf/namespaceEdit.h"
+#include "pxr/base/tf/pyCall.h"
+#include "pxr/base/tf/pyContainerConversions.h"
+
 
 using namespace boost::python;
 

@@ -21,13 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/base/tf/pyEnum.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 
@@ -180,3 +181,172 @@ wrapErrors()
         PcpErrorVector,
         TfPyContainerConversions::variable_capacity_policy >();
 }
+
+
+#if defined(ARCH_COMPILER_MSVC)
+// There is a bug in the compiler which means we have to provide this
+// implementation. See here for more information:
+// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
+namespace boost
+{
+    template<> 
+    const volatile PcpErrorInvalidVariantSelection* 
+        get_pointer(const volatile PcpErrorInvalidVariantSelection* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorPropertyPermissionDenied* 
+        get_pointer(const volatile PcpErrorPropertyPermissionDenied* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorBase* 
+        get_pointer(const volatile PcpErrorBase* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorTargetPathBase* 
+        get_pointer(const volatile PcpErrorTargetPathBase* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorArcCycle* 
+        get_pointer(const volatile PcpErrorArcCycle* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorArcPermissionDenied* 
+        get_pointer(const volatile PcpErrorArcPermissionDenied* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInconsistentPropertyType* 
+        get_pointer(const volatile PcpErrorInconsistentPropertyType* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInconsistentAttributeType* 
+        get_pointer(const volatile PcpErrorInconsistentAttributeType* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInconsistentAttributeVariability* 
+        get_pointer(const volatile PcpErrorInconsistentAttributeVariability* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInternalAssetPath* 
+        get_pointer(const volatile PcpErrorInternalAssetPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidPrimPath* 
+        get_pointer(const volatile PcpErrorInvalidPrimPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidAssetPathBase* 
+        get_pointer(const volatile PcpErrorInvalidAssetPathBase* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidAssetPath* 
+        get_pointer(const volatile PcpErrorInvalidAssetPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorMutedAssetPath* 
+        get_pointer(const volatile PcpErrorMutedAssetPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidInstanceTargetPath* 
+        get_pointer(const volatile PcpErrorInvalidInstanceTargetPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidExternalTargetPath* 
+        get_pointer(const volatile PcpErrorInvalidExternalTargetPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidTargetPath* 
+        get_pointer(const volatile PcpErrorInvalidTargetPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidSublayerOffset* 
+        get_pointer(const volatile PcpErrorInvalidSublayerOffset* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidReferenceOffset* 
+        get_pointer(const volatile PcpErrorInvalidReferenceOffset* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidSublayerOwnership* 
+        get_pointer(const volatile PcpErrorInvalidSublayerOwnership* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorInvalidSublayerPath* 
+        get_pointer(const volatile PcpErrorInvalidSublayerPath* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorOpinionAtRelocationSource* 
+        get_pointer(const volatile PcpErrorOpinionAtRelocationSource* p)
+    { 
+        return p; 
+    }
+    template<> 
+    const volatile PcpErrorPrimPermissionDenied* 
+        get_pointer(const volatile PcpErrorPrimPermissionDenied* p)
+    { 
+        return p; 
+    }
+
+    template<> 
+    const volatile PcpErrorSublayerCycle* 
+        get_pointer(const volatile PcpErrorSublayerCycle* p)
+    { 
+        return p; 
+    }
+
+    template<> 
+    const volatile PcpErrorTargetPermissionDenied* 
+        get_pointer(const volatile PcpErrorTargetPermissionDenied* p)
+    { 
+        return p; 
+    }
+
+    template<> 
+    const volatile PcpErrorUnresolvedPrimPath* 
+        get_pointer(const volatile PcpErrorUnresolvedPrimPath* p)
+    { 
+        return p; 
+    }
+}
+#endif 

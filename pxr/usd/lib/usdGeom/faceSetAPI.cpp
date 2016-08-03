@@ -428,7 +428,7 @@ UsdGeomFaceSetAPI::AppendFaceGroup(const VtIntArray &indices,
         GetFaceIndices(&faceIndices, time);
     }
 
-    faceCounts.push_back(indices.size());
+    faceCounts.push_back(static_cast<int>(indices.size()));
     faceIndices.reserve(faceIndices.size() + indices.size());
     TF_FOR_ALL(indicesIt, indices) {
         faceIndices.push_back(*indicesIt);

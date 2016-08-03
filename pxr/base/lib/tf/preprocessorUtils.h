@@ -33,6 +33,8 @@
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
 
+#include <pxr/base/arch/defines.h>
+#include <pxr/base/arch/pragmas.h>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -61,6 +63,19 @@
  * The underlying macro argument counting trick originates from a posting
  * on comp.std.c by Laurent Deniau.
  */
+#if defined(ARCH_OS_WINDOWS)
+
+ // On Windows we use an MSVC extension to make this work (and a lot easier)
+ // Original idea from: http://stackoverflow.com/questions/5530505/why-does-this-variadic-argument-count-macro-fail-with-vc
+ //
+#define _TF_NUM_ARGS_EXPAND(x) x
+#define _TF_NUM_ARGS_IMPL(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,N,...) N
+#define TF_NUM_ARGS(...) \
+        _TF_NUM_ARGS_EXPAND(_TF_NUM_ARGS_IMPL(__VA_ARGS__,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0))
+
+
+
+#else
 #define TF_NUM_ARGS(...)                                        \
     _TF_NUM_ARGS_CHECK(__VA_ARGS__)                             \
     BOOST_PP_IIF(BOOST_PP_EQUAL(1, _TF_NUM_ARGS1(__VA_ARGS__)), \
@@ -99,6 +114,7 @@
 #define _TF_NUM_ARGS_TF(...)                                 \
     (__VA_ARGS__ BOOST_PP_REPEAT(BOOST_PP_INC(TF_MAX_ARITY), \
     _TF_NUM_ARGS_REP, _TF))
+#endif
 
 
 /*!
@@ -124,6 +140,57 @@
  * \ingroup group_tf_Preprocessor
  * \brief Exapnds to 1 if the argument is a tuple, and 0 otherwise.
  */
+#if defined(ARCH_OS_WINDOWS)
+
+	ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
+
+ // from: http://marc.info/?l=boost-commit&m=130936289902907
+
+#define TF_PP_IS_TUPLE(x) \
+   _TF_PP_IS_TUPLE_DETAIL_HAS_ONLY_PARENS(x)
+ /**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_HAS_ONLY_PARENS(x) \
+    BOOST_PP_IIF \
+     ( \
+      _TF_PP_IS_TUPLE_DETAIL_HAS_PARENS_BEGIN(x), \
+      _TF_PP_IS_TUPLE_DETAIL_IS_NOT_AFTER, \
+      _TF_PP_IS_TUPLE_DETAIL_GEN_ZERO \
+      ) \
+    (x) \
+/**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_HAS_PARENS_BEGIN(x) \
+    BOOST_PP_DEC \
+      ( \
+      BOOST_PP_VARIADIC_SIZE \
+        ( \
+        _TF_PP_IS_TUPLE_DETAIL_EXPAND x \
+        ) \
+      ) \
+/**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_AFTER_PARENS(x) \
+    _TF_PP_IS_TUPLE_DETAIL_EXPAND_AFTER x \
+/**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_EXPAND(...) \
+    1,1 \
+/**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_IS_NOT_AFTER(x) \
+    BOOST_PP_IS_EMPTY(_TF_PP_IS_TUPLE_DETAIL_EXPAND_AFTER x) \
+/**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_EXPAND_AFTER(...) \
+/**/
+
+# define _TF_PP_IS_TUPLE_DETAIL_GEN_ZERO(x) \
+    0 \
+/**/
+
+#else
+
 #define TF_PP_IS_TUPLE(arg) \
     BOOST_PP_CAT(_TF_PP_IS_TUPLE, BOOST_PP_EXPAND(_TF_PP_IS_TUPLE arg)) )
 
@@ -134,6 +201,8 @@
 
 #define _TF_PP_IS_TUPLE_TRUE() 1
 #define _TF_PP_IS_TUPLE_FALSE(arg) 0
+
+#endif 
 
 /*!
  * \hideinitializer

@@ -21,18 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/export.h"
 #include "pxr/base/arch/testArchAbi.h"
 #include <iostream>
 #include <typeinfo>
 
-#ifdef _WIN32
-#define API __declspec(dllexport)
-#else
-#define API __attribute__((visibility("default")))
-#endif
-
 extern "C" {
 
-API ArchAbiBase2* newDerived() { return new ArchAbiDerived<int>; }
+ARCH_EXPORT ArchAbiBase2* newDerived() { return new ArchAbiDerived<int>; }
 
 }

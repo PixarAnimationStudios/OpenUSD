@@ -31,6 +31,7 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 /// \file pxr/usd/usdShade/tokens.h
@@ -69,6 +70,6 @@
 /// \li <b>shaderProtocol</b> - UsdShadePShader
 /// \li <b>shaderType</b> - UsdShadePShader
 /// \li <b>sloPath</b> - UsdShadePShader
-TF_DECLARE_PUBLIC_TOKENS(UsdShadeTokens, USDSHADE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdShadeTokens, USDSHADE_API, USDSHADE_TOKENS);
 
 #endif

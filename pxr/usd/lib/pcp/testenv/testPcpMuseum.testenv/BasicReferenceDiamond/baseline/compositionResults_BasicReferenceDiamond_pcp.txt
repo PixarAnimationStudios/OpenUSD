@@ -1,0 +1,28 @@
+Loading @testPcpMuseum.testenv/BasicReferenceDiamond/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    A.usda               /A
+    C.usda               /C
+    B.usda               /B
+    C.usda               /C
+
+Property names:
+     ['C_attr', 'B_attr', 'A_attr']
+
+Property stacks:
+/Root.A_attr:
+    A.usda               /A.A_attr
+/Root.B_attr:
+    B.usda               /B.B_attr
+/Root.C_attr:
+    C.usda               /C.C_attr
+    C.usda               /C.C_attr
+

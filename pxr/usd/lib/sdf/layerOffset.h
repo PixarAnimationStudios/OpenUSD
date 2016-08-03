@@ -32,6 +32,9 @@
 #include <iosfwd>
 #include <vector>
 
+#include "pxr/base/arch/attributes.h"
+#include "pxr/usd/sdf/api.h"
+
 ///
 /// \class SdfLayerOffset 
 /// \brief Represents a time offset and scale between layers.
@@ -53,7 +56,7 @@
 /// GetReferenceLayerOffset() methods (the latter is the referenceLayerOffset 
 /// property in Python) of the SdfPrimSpec class.
 ///
-class SdfLayerOffset : public boost::totally_ordered<SdfLayerOffset>
+class SDF_API SdfLayerOffset : public boost::totally_ordered<SdfLayerOffset>
 {
 public:
     /// \name Constructors
@@ -138,6 +141,7 @@ typedef std::vector<SdfLayerOffset> SdfLayerOffsetVector;
 
 ///
 /// Writes the string representation of \a SdfLayerOffset to \a out.
+SDF_API
 std::ostream & operator<<( std::ostream &out,
                            const SdfLayerOffset &layerOffset );
 

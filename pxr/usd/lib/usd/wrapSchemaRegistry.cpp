@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/usd/schemaRegistry.h"
 
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
-
-#include <boost/python.hpp>
 
 using std::string;
 

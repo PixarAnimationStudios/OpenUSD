@@ -28,6 +28,7 @@
 #ifndef SDF_CHANGELIST_H
 #define SDF_CHANGELIST_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -173,10 +174,13 @@ public:
     Entry& GetEntry( const SdfPath & );
 
 private:
+    friend class TfSingleton<SdfChangeList>;
     EntryList _entries;
 };
 
 // Stream-output operator
-std::ostream& operator<<(std::ostream&, const SdfChangeList &);
+SDF_API std::ostream& operator<<(std::ostream&, const SdfChangeList &);
+
+SDF_API_TEMPLATE_CLASS(TfSingleton<SdfChangeList>);
 
 #endif

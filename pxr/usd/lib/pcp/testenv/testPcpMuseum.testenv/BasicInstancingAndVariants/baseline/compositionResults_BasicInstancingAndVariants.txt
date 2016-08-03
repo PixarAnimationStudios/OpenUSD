@@ -1,0 +1,88 @@
+Loading @testPcpMuseum.testenv/BasicInstancingAndVariants/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </InstancedModel>
+
+Prim Stack:
+    root.usda            /InstancedModel
+    root.usda            /InstancedModel{x=a}
+    ref.usda             /Model
+    ref.usda             /Model{y=a}
+
+Variant Selections:
+    {x = a}
+    {y = a}
+
+Child names:
+     ['geom']
+
+Property names:
+     ['x']
+
+Property stacks:
+/InstancedModel.x:
+    root.usda            /InstancedModel{x=a}.x
+    ref.usda             /Model.x
+
+------------------------------------------------------------------------
+Results for composing </InstancedModel/geom>
+
+Prim Stack:
+    ref.usda             /Model{y=a}geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/InstancedModel/geom.x:
+    ref.usda             /Model{y=a}geom.x
+
+------------------------------------------------------------------------
+Results for composing </UninstancedModel>
+
+Prim Stack:
+    root.usda            /UninstancedModel
+    root.usda            /UninstancedModel{x=b}
+    ref.usda             /Model
+    ref.usda             /Model{y=b}
+
+Variant Selections:
+    {x = b}
+    {y = b}
+
+Child names:
+     ['geom', 'from_b_variant']
+
+Property names:
+     ['x']
+
+Property stacks:
+/UninstancedModel.x:
+    root.usda            /UninstancedModel{x=b}.x
+    ref.usda             /Model.x
+
+------------------------------------------------------------------------
+Results for composing </UninstancedModel/geom>
+
+Prim Stack:
+    root.usda            /UninstancedModel{x=b}geom
+    ref.usda             /Model{y=b}geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/UninstancedModel/geom.x:
+    root.usda            /UninstancedModel{x=b}geom.x
+    ref.usda             /Model{y=b}geom.x
+
+------------------------------------------------------------------------
+Results for composing </UninstancedModel/from_b_variant>
+
+Prim Stack:
+    root.usda            /UninstancedModel{x=b}from_b_variant
+

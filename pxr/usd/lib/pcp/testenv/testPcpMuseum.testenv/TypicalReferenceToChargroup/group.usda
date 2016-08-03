@@ -1,0 +1,37 @@
+#usda 1.0
+
+def Prim "Group" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "sim" {
+            custom string standin_name = "sim"
+
+            over "Model" (
+                variants = {
+                    string standin = "sim"
+                }
+            )
+            {
+            }
+        }
+        "render" {
+            custom string standin_name = "render"
+
+            over "Model" (
+                variants = {
+                    string standin = "render"
+                }
+            )
+            {
+            }
+        }
+    }
+
+    def "Model" (
+        add references = @model.usda@</Model>
+    )
+    {
+    }
+}

@@ -21,10 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <boost/python.hpp>
 
 #include "pxr/base/tf/pyEnum.h"
-#include <boost/python.hpp>
+
+#include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 using namespace boost::python;
 

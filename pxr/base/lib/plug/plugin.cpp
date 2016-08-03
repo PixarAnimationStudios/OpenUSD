@@ -25,7 +25,9 @@
 #include "pxr/base/plug/debugCodes.h"
 
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/threads.h"
 #include "pxr/base/js/value.h"
@@ -56,6 +58,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#undef FindResource         // Defined on Windows.
 
 using std::pair;
 using std::string;
@@ -271,7 +275,7 @@ PlugPlugin::_Load()
         }
     } else {
         string dsoError;
-        _handle = TfDlopen(_path.c_str(), RTLD_NOW, &dsoError);
+		_handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
         if ( ! _handle ) {
             TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
                             _path.c_str(), _name.c_str(), dsoError.c_str());

@@ -1,0 +1,35 @@
+Loading @testPcpMuseum.testenv/TrickySpecializesAndRelocates/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    ref.usda             /Ref
+
+Child names:
+     ['Brass_2', 'Metal']
+
+Prohibited child names:
+     ['Brass']
+
+------------------------------------------------------------------------
+Results for composing </Model/Brass_2>
+
+Prim Stack:
+    root.usda            /Model/Brass_2
+    ref.usda             /Ref/Brass
+    root.usda            /Model/Metal
+    ref.usda             /Ref/Metal
+
+------------------------------------------------------------------------
+Results for composing </Model/Metal>
+
+Prim Stack:
+    root.usda            /Model/Metal
+    ref.usda             /Ref/Metal
+

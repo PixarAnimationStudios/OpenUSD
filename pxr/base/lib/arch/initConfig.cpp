@@ -67,3 +67,14 @@ Arch_InitConfig()
 }
 
 }
+
+#include <Windows.h>
+int __stdcall DllMain(void* instance, unsigned long reason, void* reserved)
+{
+    if (DLL_PROCESS_ATTACH == reason)
+    {
+        printf("Arch DLL_PROCESS_ATTACH\n");
+        Arch_InitConfig();
+    }
+    return TRUE;
+}

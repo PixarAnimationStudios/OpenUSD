@@ -1,0 +1,17 @@
+#usda 1.0
+
+def "Model" (
+    add references = @mcat.usda@</Model>
+)
+{
+    custom double a
+}
+
+class "Class" (
+    variants = {
+        string pin = "latest"
+    }
+)
+{
+    custom double a
+}

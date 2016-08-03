@@ -24,6 +24,7 @@
 #ifndef TF_PYERRORINTERNAL_H
 #define TF_PYERRORINTERNAL_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyExceptionState.h"
 #include <boost/python/handle.hpp>
 #include <boost/python/object_fwd.hpp>
@@ -32,10 +33,10 @@ enum Tf_PyExceptionErrorCode {
     TF_PYTHON_EXCEPTION
 };
 
-TfPyExceptionState Tf_PyFetchPythonExceptionState();
-void Tf_PyRestorePythonExceptionState(TfPyExceptionState state);
-boost::python::handle<> Tf_PyGetErrorExceptionClass();
-void Tf_PySetErrorExceptionClass(boost::python::object const &cls);
+TF_API TfPyExceptionState Tf_PyFetchPythonExceptionState();
+TF_API void Tf_PyRestorePythonExceptionState(TfPyExceptionState state);
+TF_API boost::python::handle<> Tf_PyGetErrorExceptionClass();
+TF_API void Tf_PySetErrorExceptionClass(boost::python::object const &cls);
 
 
 

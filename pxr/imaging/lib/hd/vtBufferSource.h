@@ -36,6 +36,7 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/patchIndex.h"
@@ -110,6 +111,7 @@ public:
     /// copied into a new internal buffer.
     ///
     /// We may be able to map this to GPU memory in the glorious future.
+	HDLIB_API
     HdVtBufferSource(TfToken const &name, VtValue const& value,
                      bool staticArray=false);
 

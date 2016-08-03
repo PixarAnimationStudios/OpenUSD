@@ -1,0 +1,8 @@
+#usda 1.0
+
+def DifferentPrimType "GroupB" (
+    add references = @A.usda@</GroupA>
+)
+{
+    custom double B_attr
+}

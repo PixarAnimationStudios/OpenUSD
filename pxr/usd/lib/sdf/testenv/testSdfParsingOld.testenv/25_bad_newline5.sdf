@@ -1,0 +1,29 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    startFrame = 1
+    endFrame = 1
+)
+
+def CamCamera "Test1"
+{
+    def MfScope "Leg"
+    {
+        
+        # ERROR newline before scene desc block for property
+	double aspect
+            ( doc = "doc" = 1.02517
+	double width = 1905.41
+        def MfScope "Thigh"  {
+            double aspect = 1.02517
+            double width = 1905.41
+        }
+    }
+    def MfScope "Arm" {
+	double aspect = 1.02517
+	double width = 1905.41
+    }
+}
+
+
+

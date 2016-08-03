@@ -29,22 +29,28 @@
 
 /// \file pxr/usd/usdRi/rmanUtilities.h
 
+#include "pxr/usd/usdRi/api.h"
+
 class TfToken;
 
 /// Given a \p token representing a UsdGeom interpolate boundary value, returns
 /// corresponding rman enum (converted to int).
+USDRI_API
 int UsdRiConvertToRManInterpolateBoundary(const TfToken &token);
 
 /// Given the integer \p i that corresponds to an rman enum for interpolate
 /// boundary condition, returns the equivalent UsdGeom token.
+USDRI_API
 const TfToken &UsdRiConvertFromRManInterpolateBoundary(int i);
 
 /// Given a \p token representing a UsdGeom face-varying interpolate boundary 
 /// value, returns corresponding rman enum (converted to int).
+USDRI_API
 int UsdRiConvertToRManFaceVaryingLinearInterpolation(const TfToken &token);
 
 /// Given the integer \p i that corresponds to an rman enum for face-varying
 /// interpolate boundary condition, returns the equivalent UsdGeom token.
+USDRI_API
 const TfToken &UsdRiConvertFromRManFaceVaryingLinearInterpolation(int i);
 
 #endif //USDRI_RMANUTILITIES_H

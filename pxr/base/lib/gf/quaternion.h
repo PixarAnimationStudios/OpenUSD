@@ -26,6 +26,7 @@
 
 
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -109,12 +110,14 @@ class GfQuaternion
 
     //!
     // Returns geometric length of this quaternion.
+    GF_API
     double              GetLength() const;
 
     //!
     // Returns a normalized (unit-length) version of this quaternion.
     // direction as this. If the length of this quaternion is smaller
     // than \p eps, this returns the identity quaternion.
+    GF_API
     GfQuaternion        GetNormalized(double eps = GF_MIN_VECTOR_LENGTH) const;
 
     //!
@@ -122,10 +125,12 @@ class GfQuaternion
     // the length before normalization. If the length of this
     // quaternion is smaller than \p eps, this sets the quaternion to
     // identity.
+    GF_API
     double              Normalize(double eps = GF_MIN_VECTOR_LENGTH);
 
     //!
     // Returns the inverse of this quaternion.
+    GF_API
     GfQuaternion        GetInverse() const;
 
     //! Hash.
@@ -155,10 +160,12 @@ class GfQuaternion
 
     //!
     // Post-multiplies quaternion \p q into this quaternion.
+    GF_API
     GfQuaternion &      operator *=(const GfQuaternion &q);
 
     //!
     // Scales this quaternion by \p s .
+    GF_API
     GfQuaternion &      operator *=(double s);
 
     //!
@@ -234,10 +241,10 @@ class GfQuaternion
     // If the interpolant \p alpha
     // is zero, then the result is \p q0, while \p alpha of one yields
     // \p q1.
-    friend GfQuaternion GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1);
+    friend GF_API GfQuaternion GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1);
 
     // Remove this rather ridiculous alias/overload for 2x conformance
-    friend GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1,
+    friend GF_API GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1,
     			double alpha);
 
     
@@ -254,12 +261,12 @@ class GfQuaternion
 };
 
 // Friend functions must be declared.
-GfQuaternion GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1);
-GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1, double alpha);
+GF_API GfQuaternion GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1);
+GF_API GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1, double alpha);
 
 /// Output a GfQuaternion using the format (r + (x, y, z)).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const GfQuaternion& q);
+GF_API std::ostream& operator<<(std::ostream& out, const GfQuaternion& q);
 
 
 #endif // GF_QUATERNION_H

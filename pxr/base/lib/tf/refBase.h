@@ -24,9 +24,12 @@
 #ifndef TF_REFBASE_H
 #define TF_REFBASE_H
 
-
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/refCount.h"
+#include "pxr/base/tf/api.h"
+
+#include <ciso646>
 
 /*!
  * \file refBase.h
@@ -113,13 +116,13 @@ protected:
     /*
      * Prohibit deletion through a TfRefBase pointer.
      */
-    virtual ~TfRefBase();
+    TF_API virtual ~TfRefBase();
 
 private:
     TfRefCount _refCount;
     bool _shouldInvokeUniqueChangedListener;
 
-    static UniqueChangedListener _uniqueChangedListener;
+    TF_API static UniqueChangedListener _uniqueChangedListener;
     template <typename T> friend class TfRefPtr;
     friend struct Tf_RefPtr_UniqueChangedCounter;
     friend struct Tf_RefPtr_Counter;
@@ -139,7 +142,7 @@ private:
  */
 class TfSimpleRefBase : public TfRefBase {
 public:
-    virtual ~TfSimpleRefBase();
+    TF_API virtual ~TfSimpleRefBase();
 };
 
 #endif

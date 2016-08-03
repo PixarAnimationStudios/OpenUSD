@@ -1,0 +1,13 @@
+#usda 1.0
+
+def Prim "A" 
+{
+    double A
+    add double A.connect = </PrimOutsideReferenceRoot.A>
+    custom rel B = </PrimOutsideReferenceRoot>
+}
+
+def "PrimOutsideReferenceRoot" 
+{
+    double A
+}

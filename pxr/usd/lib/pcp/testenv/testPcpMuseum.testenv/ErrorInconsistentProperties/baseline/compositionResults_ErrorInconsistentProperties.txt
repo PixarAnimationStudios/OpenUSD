@@ -1,0 +1,49 @@
+Loading @testPcpMuseum.testenv/ErrorInconsistentProperties/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </InconsistentPropertyType>
+
+Prim Stack:
+    root.usda            /InconsistentPropertyType
+    ref.usda             /InconsistentPropType
+
+Property names:
+     ['x']
+
+Property stacks:
+/InconsistentPropertyType.x:
+    ref.usda             /InconsistentPropType.x
+
+------------------------------------------------------------------------
+Results for composing </InconsistentValueType>
+
+Prim Stack:
+    root.usda            /InconsistentValueType
+    ref.usda             /InconsistentValType
+
+Property names:
+     ['x']
+
+Property stacks:
+/InconsistentValueType.x:
+    ref.usda             /InconsistentValType.x
+
+------------------------------------------------------------------------
+Results for composing </InconsistentVariability>
+
+Prim Stack:
+    root.usda            /InconsistentVariability
+    ref.usda             /InconsistentVar
+
+Property names:
+     ['x']
+
+Property stacks:
+/InconsistentVariability.x:
+    root.usda            /InconsistentVariability.x
+    ref.usda             /InconsistentVar.x
+

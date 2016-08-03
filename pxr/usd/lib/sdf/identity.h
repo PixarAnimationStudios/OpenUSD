@@ -24,6 +24,7 @@
 #ifndef SDF_IDENTITY_H
 #define SDF_IDENTITY_H
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"

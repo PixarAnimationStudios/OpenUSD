@@ -1,0 +1,56 @@
+Loading @testPcpMuseum.testenv/TrickySpecializesAndInherits/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    ref.usda             /Ref
+
+Child names:
+     ['A', 'B', 'C', 'D']
+
+------------------------------------------------------------------------
+Results for composing </Model/A>
+
+Prim Stack:
+    root.usda            /Model/A
+    ref.usda             /Ref/A
+    root.usda            /Model/B
+    root.usda            /Model/C
+    ref.usda             /Ref/B
+    ref.usda             /Ref/C
+    root.usda            /Model/D
+    ref.usda             /Ref/D
+
+------------------------------------------------------------------------
+Results for composing </Model/B>
+
+Prim Stack:
+    root.usda            /Model/B
+    root.usda            /Model/C
+    ref.usda             /Ref/B
+    ref.usda             /Ref/C
+    root.usda            /Model/D
+    ref.usda             /Ref/D
+
+------------------------------------------------------------------------
+Results for composing </Model/C>
+
+Prim Stack:
+    root.usda            /Model/C
+    ref.usda             /Ref/C
+    root.usda            /Model/D
+    ref.usda             /Ref/D
+
+------------------------------------------------------------------------
+Results for composing </Model/D>
+
+Prim Stack:
+    root.usda            /Model/D
+    ref.usda             /Ref/D
+

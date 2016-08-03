@@ -31,6 +31,7 @@
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -105,6 +106,7 @@ public:
     /// elements will be filled in with the corresponding elements from an
     /// identity matrix.
     ///
+    GF_API
     explicit GfMatrix2f(const std::vector< std::vector<double> >& v);
 
     /// Constructor.  Initialize the matrix from a vector of vectors of float.
@@ -113,10 +115,12 @@ public:
     /// elements will be filled in with the corresponding elements from an
     /// identity matrix.
     ///
+    GF_API
     explicit GfMatrix2f(const std::vector< std::vector<float> >& v);
 
     //!
     // This explicit constructor converts a "double" matrix to a "float" matrix.
+    GF_API
     explicit GfMatrix2f(const class GfMatrix2d& m);
 
     /// Sets a row of the matrix from a Vec2.
@@ -172,13 +176,16 @@ public:
     }
 
     /// Sets the matrix to \e s times the identity matrix.
+    GF_API
     GfMatrix2f& SetDiagonal(float s);
 
     /// Sets the matrix to have diagonal (<c>v[0], v[1]</c>).
+    GF_API
     GfMatrix2f& SetDiagonal(const GfVec2f&);
 
     /// Fills a 2x2 array of \c float values with the values in
     /// the matrix, specified in row-major order.
+    GF_API
     float* Get(float m[2][2]);
 
     /// Returns vector components as an array of \c float values.
@@ -213,10 +220,12 @@ public:
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix2d& m) const;
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix2f& m) const;
 
     /// Tests for element-wise matrix inequality. All elements must match
@@ -232,6 +241,7 @@ public:
     }
 
     /// Returns the transpose of the matrix.
+    GF_API
     GfMatrix2f GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
@@ -239,24 +249,27 @@ public:
     /// as defined by the system.) The matrix is considered singular if the 
     /// determinant is less than or equal to the optional parameter \e eps.
     /// If \e det is non-null, <c>*det</c> is set to the determinant.
+    GF_API
     GfMatrix2f GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
+    GF_API
     double GetDeterminant() const;
 
-
     /// Post-multiplies matrix \e m into this matrix.
+    GF_API
     GfMatrix2f& operator *=(const GfMatrix2f& m);
 
     /// Multiplies the matrix by a float.
+    GF_API
     GfMatrix2f& operator *=(double);
 
     ///
     // Returns the product of a matrix and a float.
     friend GfMatrix2f operator *(const GfMatrix2f& m1, double d)
     {
-	GfMatrix2f m = m1;
-	return m *= d;
+	    GfMatrix2f m = m1;
+	    return m *= d;
     }
 
     ///
@@ -267,12 +280,15 @@ public:
     }
 
     /// Adds matrix \e m to this matrix.
+    GF_API
     GfMatrix2f& operator +=(const GfMatrix2f& m);
 
     /// Subtracts matrix \e m from this matrix.
+    GF_API
     GfMatrix2f& operator -=(const GfMatrix2f& m);
 
     /// Returns the unary negation of matrix \e m.
+    GF_API
     friend GfMatrix2f operator -(const GfMatrix2f& m);
 
     /// Adds matrix \e m2 to \e m1
@@ -328,6 +344,6 @@ private:
 
 /// Output a GfMatrix2f
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfMatrix2f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfMatrix2f const &);
 
 #endif // GF_MATRIX2F_H

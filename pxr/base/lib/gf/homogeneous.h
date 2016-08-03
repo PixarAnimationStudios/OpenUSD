@@ -28,6 +28,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/api.h"
 
 /*!
  * \file homogeneous.h
@@ -39,6 +40,7 @@
 // Returns a vector which is \p v homogenized.  If the fourth element of
 // \p v is 0, it is set to 1.
 // \ingroup group_gf_LinearAlgebra
+GF_API
 GfVec4f GfGetHomogenized(const GfVec4f &v);
 
 //!
@@ -46,8 +48,10 @@ GfVec4f GfGetHomogenized(const GfVec4f &v);
 // first three elements of each.  Returns the cross product as a
 // homogenized vector.
 // \ingroup group_gf_LinearAlgebra
+GF_API
 GfVec4f GfHomogeneousCross(const GfVec4f &a, const GfVec4f &b);
 
+GF_API
 GfVec4d GfGetHomogenized(const GfVec4d &v);
 
 //!
@@ -55,6 +59,7 @@ GfVec4d GfGetHomogenized(const GfVec4d &v);
 // first three elements of each.  Returns the cross product as a
 // homogenized vector.
 // \ingroup group_gf_LinearAlgebra
+GF_API
 GfVec4d GfHomogeneousCross(const GfVec4d &a, const GfVec4d &b);
 
 //!

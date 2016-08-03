@@ -54,8 +54,8 @@ HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
     if (not TF_VERIFY(srcId)) return;
     if (not TF_VERIFY(dstId)) return;
 
-    int srcBytesPerElement = src->GetNumComponents() * src->GetComponentSize();
-    int dstBytesPerElement = dst->GetNumComponents() * dst->GetComponentSize();
+    int srcBytesPerElement = (int)(src->GetNumComponents() * src->GetComponentSize());
+    int dstBytesPerElement = (int)(dst->GetNumComponents() * dst->GetComponentSize());
 
     if (not TF_VERIFY(srcBytesPerElement == dstBytesPerElement)) return;
 

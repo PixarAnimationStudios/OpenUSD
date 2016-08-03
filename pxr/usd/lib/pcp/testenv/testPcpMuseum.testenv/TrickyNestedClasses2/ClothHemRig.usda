@@ -1,0 +1,30 @@
+#usda 1.0
+
+def Scope "ClothHemRig"
+{
+    def Scope "rig"
+    {
+        def Scope "PatchWeightRig"
+        {
+            class Scope "PatchWeightsClass"
+            {
+                class MathWeightObject "PatchClass"
+                {
+                }
+
+                def MathWeightObject "Patch0" (
+                    inherits = </ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass>
+                )
+                {
+                }
+            }
+
+            def MfScope "SimPatchWeights" (
+                inherits = </ClothHemRig/rig/PatchWeightRig/PatchWeightsClass>
+            )
+            {
+            }
+        }
+    }
+}
+

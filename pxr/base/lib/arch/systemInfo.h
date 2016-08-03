@@ -24,6 +24,8 @@
 #ifndef ARCH_SYSTEMINFO_H
 #define ARCH_SYSTEMINFO_H
 
+#include "pxr/base/arch/api.h"
+#include <sys/types.h>
 #include <string>
 
 /*!
@@ -36,6 +38,7 @@
  * \brief Return current working directory as a string.
  * \ingroup group_arch_SystemFunctions
  */
+ARCH_API
 std::string ArchGetCwd();
 
 /*!
@@ -47,6 +50,7 @@ std::string ArchGetCwd();
  * login is returned.  If the home directory cannot be determined, the empty
  * string is returned.
  */
+ARCH_API
 std::string ArchGetHomeDirectory(const std::string &login = std::string());
 
 /*!
@@ -55,6 +59,7 @@ std::string ArchGetHomeDirectory(const std::string &login = std::string());
  *
  * If the user name cannot determined, the empty string is returned.
  */
+ARCH_API
 std::string ArchGetUserName();
 
 /*!
@@ -63,6 +68,16 @@ std::string ArchGetUserName();
  *
  * Return the path of the executing binary.
  */
+ARCH_API
 std::string ArchGetExecutablePath();
+
+/*!
+* \brief Get memory page size.
+* \ingroup group_arch_SystemFunctions
+*
+* Return the memory page size.
+*/
+ARCH_API
+size_t ArchGetPageSize();
 
 #endif // ARCH_SYSTEMINFO_H

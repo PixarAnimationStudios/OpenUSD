@@ -1,0 +1,22 @@
+#usda 1.0
+
+def "Reference"
+{
+    def "Geom"
+    {
+    }
+}
+
+def "Instance_1" (
+    instanceable = true
+    references = </Reference>
+)
+{
+}
+
+def "Instance_2" (
+    instanceable = true
+    references = </Reference>
+)
+{
+}

@@ -30,8 +30,14 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
+#if defined(ARCH_OS_WINDOWS)
+#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable:4996)
+#include <csignal>
+#else
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,16 +48,50 @@ crash(int sig) {
         exit(sig);
 }
 
+#if defined(ARCH_OS_WINDOWS)
+bool rmdir(const std::string& strDir)
+{
+    WIN32_FIND_DATA fdFile = {0};
+    std::string strSearch = strDir + "\\*.*" ;
+
+    HANDLE hFind = ::FindFirstFile (strSearch.data (), &fdFile);
+    if(hFind == INVALID_HANDLE_VALUE)
+    {
+        return false;
+    }
+
+    do {    
+        std::string strDelete = strDir + "\\" + fdFile.cFileName;
+        if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            if (fdFile.cFileName == "." || fdFile.cFileName == "..")
+            {
+                continue;
+            }
+            rmdir (strDelete);
+        }
+        else
+        {
+            ::DeleteFile (strDelete.data ());
+        }
+    } while (::FindNextFile (hFind, &fdFile));
+
+    ::FindClose (hFind);
+    ::RemoveDirectory (strDir.data ());
+    return true;
+}
+#endif 
+
 int main()
 {
     (void) signal(SIGABRT,crash);
 
-    std::string firstName = ArchMakeTmpFileName("archFS"),
-        secondName = ArchMakeTmpFileName("archFS"),
-        thirdName = ArchMakeTmpFileName("lockTester");
-    FILE *firstFile, *secondFile;
-    struct stat firstStat, secondStat, firstStatAgain;
+    std::string firstName = ArchMakeTmpFileName("archFS");
+    FILE *firstFile;
 
+    (void)firstStat;
+    (void)secondStat;
+    (void)firstStatAgain;
     // Open a file, check that its length is 0, write to it, close it, and then check that
     // its length is now the number of characters written.
     assert((firstFile = fopen(firstName.c_str(), "w")) != NULL);
@@ -61,26 +101,14 @@ int main()
     fclose(firstFile);
     assert(ArchGetFileLength(firstName.c_str()) == 15);
 
-    // Stat firstFile and secondFile.  The ArchNap()s should have delayed long enough 
-    // that secondFile will appear to have been modified more recently.
-    ArchNap(100);
-    assert((secondFile = fopen(secondName.c_str(), "w")) != NULL);
-    fclose(secondFile);
-    assert(!stat(firstName.c_str(), &firstStat));
-    assert(!stat(secondName.c_str(), &secondStat));
-    assert(!stat(firstName.c_str(), &firstStatAgain));
-    assert(ArchStatCompare(ARCH_STAT_MTIME_EQUAL, &firstStat, &firstStatAgain));
-    assert(ArchStatCompare(ARCH_STAT_MTIME_LESS, &firstStat, &secondStat));
-
-    unlink(firstName.c_str());
-    unlink(secondName.c_str());
-    unlink(thirdName.c_str());
+    ArchUnlinkFile(firstName.c_str());
+    ArchUnlinkFile(secondName.c_str());
+    ArchUnlinkFile(thirdName.c_str());
 
     // create and remove a tmp subdir
     std::string retpath;
     retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");
     assert (retpath != "");
     rmdir(retpath.c_str());
-
     return 0;
 }

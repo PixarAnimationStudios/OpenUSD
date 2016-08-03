@@ -36,12 +36,17 @@
 #include "pxr/base/tf/warning.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/api.h"
 
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/functionLite.h"
 
+
+ARCH_PRAGMA_SHIFT_TO_64_BITS
 #include <tbb/enumerable_thread_specific.h>
+ARCH_PRAGMA_RESTORE
 #include <tbb/atomic.h>
 
 #include <boost/scoped_ptr.hpp>
@@ -97,6 +102,7 @@ public:
     /*! 
      * \brief Returns the name of the given diagnostic code.
      */
+    TF_API
     static std::string GetCodeName(const TfEnum &code);
 
     /*! \class Delegate
@@ -131,7 +137,7 @@ public:
 
 
     //! \brief Return the singleton instance.
-    static This &GetInstance() {
+    TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     }
 
@@ -146,11 +152,13 @@ public:
      * This is bug 3237.
      * SetDelegate will still print a warning when overwriting the delegate.
      */
+    TF_API
     void SetDelegate(DelegateWeakPtr const &delegate);
 
     /*! \brief Set whether errors, warnings and status messages should be
      *        printed out to the terminal.
      */
+    TF_API
     void SetQuiet(bool quiet) { _quiet = quiet; }
     
     /*!
@@ -173,11 +181,13 @@ public:
      * stream.  This should generally not be invoked directly.  Use TfErrorMark
      * instead.
      */
+    TF_API
     ErrorIterator EraseRange(ErrorIterator first, ErrorIterator last);
 
     // Append an error to the list of active errors.  This is generally not
     // meant to be called by user code.  It is public so that the system which
     // translates tf errors to and from python exceptions can manage errors.
+    TF_API
     void AppendError(TfError const &e);
     
     // If called in a main thread, this method will create a TfError,
@@ -186,6 +196,7 @@ public:
     // If called in a non-main thread, this method will print the
     // error to stderr and will not add it to the error list or pass
     // it to the delegate.
+    TF_API
     void PostError(TfEnum errorCode, const char* errorCodeString,
         TfCallContext const &context,  
         const std::string& commentary, TfDiagnosticInfo info,
@@ -197,36 +208,42 @@ public:
     // If called in a non-main thread, this method will print the
     // error to stderr and will not add it to the error list or pass
     // it to the delegate.
+    TF_API
     void PostError(const TfDiagnosticBase& diagnostic);
 
     // If called in a non-main thread, this method will print the warning msg
     // rather than passing it to the delegate.
+    TF_API
     void PostWarning(TfEnum warningCode, const char *warningCodeString,
         TfCallContext const &context, std::string const &commentary,
         TfDiagnosticInfo info, bool quiet) const;
 
     // If called in a non-main thread, this method will print the warning msg
     // rather than passing it to the delegate.
+    TF_API
     void PostWarning(const TfDiagnosticBase& diagnostic) const;
 
     // If called in a non-main thread, this method will print the status msg
     // rather than passing it to the delegate.
+    TF_API
     void PostStatus(TfEnum statusCode, const char *statusCodeString,
         TfCallContext const &context, std::string const &commentary,
         TfDiagnosticInfo info, bool quiet) const;
 
     // If called in a non-main thread, this method will print the status msg
     // rather than passing it to the delegate.
+    TF_API
     void PostStatus(const TfDiagnosticBase& diagnostic) const;
 
     // If called in a non-main thread, this method will print the error msg
     // and handle the fatal error itself rather than passing it to the delegate.
+    TF_API
     void PostFatal(TfCallContext const &context, TfEnum statusCode,
                    std::string const &msg) const;
 
     // Return true if an instance of TfErrorMark exists in the curren thread of
     // exection, false otherwise.
-    bool HasActiveErrorMark() { return _errorMarkCounts.local(); }
+    bool HasActiveErrorMark() { return _errorMarkCounts.local() > 0; }
 
 #if !defined(doxygen)
     /*
@@ -241,18 +258,23 @@ public:
         {
         }
 
+        TF_API
         ErrorIterator Post(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
+        TF_API
         ErrorIterator PostQuietly(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
+        TF_API
         ErrorIterator Post(const std::string& msg) const;
 
+        TF_API
         ErrorIterator PostWithInfo(
                 const std::string& msg,
                 TfDiagnosticInfo info = TfDiagnosticInfo()) const;
 
+        TF_API
         ErrorIterator PostQuietly(const std::string& msg,
                             TfDiagnosticInfo info = TfDiagnosticInfo()) const;
 
@@ -271,18 +293,23 @@ public:
         {
         }
 
+        TF_API
         void Post(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
+        TF_API
         void PostQuietly(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
+        TF_API
         void Post(const std::string &str) const;
 
+        TF_API
         void PostWithInfo(
                 const std::string& msg,
                 TfDiagnosticInfo info = TfDiagnosticInfo()) const;
 
+        TF_API
         void PostQuietly(const std::string& msg) const;
 
       private:
@@ -299,18 +326,23 @@ public:
         {
         }
 
+        TF_API
         void Post(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
+        TF_API
         void PostQuietly(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
+        TF_API
         void Post(const std::string &str) const;
 
+        TF_API
         void PostWithInfo(
                 const std::string& msg,
                 TfDiagnosticInfo info = TfDiagnosticInfo()) const;
 
+        TF_API
         void PostQuietly(const std::string& msg) const;
 
       private:
@@ -400,5 +432,7 @@ private:
     friend class TfErrorTransport;
     friend class TfErrorMark;
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfDiagnosticMgr>);
 
 #endif // TF_DIAGNOSTIC_MGR_H

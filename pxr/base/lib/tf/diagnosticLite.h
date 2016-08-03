@@ -25,6 +25,7 @@
 #define TF_DIAGNOSTICLITE_H
 
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/tf/api.h"
 
 //! Enum describing various diagnostic conditions.
 enum TfDiagnosticType {
@@ -129,10 +130,10 @@ struct Tf_DiagnosticLiteHelper {
     {
     }
     
-    void IssueError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    void IssueFatalError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    void IssueWarning(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    void IssueStatus(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueFatalError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueWarning(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueStatus(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
 
 private:
     TfCallContext _context;

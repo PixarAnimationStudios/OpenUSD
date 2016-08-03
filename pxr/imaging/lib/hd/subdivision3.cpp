@@ -36,15 +36,17 @@
 
 #include "pxr/base/gf/vec4i.h"
 
-#include <opensubdiv3/version.h>
-#include <opensubdiv3/far/patchTable.h>
-#include <opensubdiv3/far/patchTableFactory.h>
-#include <opensubdiv3/far/stencilTable.h>
-#include <opensubdiv3/far/stencilTableFactory.h>
-#include <opensubdiv3/osd/cpuVertexBuffer.h>
-#include <opensubdiv3/osd/cpuEvaluator.h>
-#include <opensubdiv3/osd/glVertexBuffer.h>
-#include <opensubdiv3/osd/mesh.h>
+#include <opensubdiv/version.h>
+#include <opensubdiv/far/patchTable.h>
+#include <opensubdiv/far/patchTableFactory.h>
+#include <opensubdiv/far/stencilTable.h>
+#include <opensubdiv/far/stencilTableFactory.h>
+#include <opensubdiv/osd/cpuVertexBuffer.h>
+ARCH_PRAGMA_MACRO_REDEFINITION
+#include <opensubdiv/osd/cpuEvaluator.h>
+#include <opensubdiv/osd/glVertexBuffer.h>
+ARCH_PRAGMA_RESTORE
+#include <opensubdiv/osd/mesh.h>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -55,14 +57,14 @@ typedef OpenSubdiv::Osd::CpuVertexBuffer Hd_OsdCpuVertexBuffer;
 
 #if OPENSUBDIV_HAS_GLSL_COMPUTE
 
-#include <opensubdiv3/osd/glComputeEvaluator.h>
+#include <opensubdiv/osd/glComputeEvaluator.h>
 #define HD_ENABLE_GPU_SUBDIVISION 1
 typedef OpenSubdiv::Osd::GLStencilTableSSBO Hd_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLComputeEvaluator Hd_OsdGpuEvaluator;
 
 #elif OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
 
-#include <opensubdiv3/osd/glXFBEvaluator.h>
+#include <opensubdiv/osd/glXFBEvaluator.h>
 #define HD_ENABLE_GPU_SUBDIVISION 1
 typedef OpenSubdiv::Osd::GLStencilTableTBO Hd_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLXFBEvaluator Hd_OsdGpuEvaluator;
@@ -545,7 +547,7 @@ Hd_Osd3IndexComputation::Resolve()
 
     if (Hd_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
-        VtArray<GfVec3i> indices(ptableSize/3);
+        VtArray<GfVec3i> indices(static_cast<unsigned int>(ptableSize/3));
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr triIndices(
@@ -556,7 +558,7 @@ Hd_Osd3IndexComputation::Resolve()
     } else if (_subdivision->IsAdaptive() and
                Hd_Subdivision::RefinesToBSplinePatches(scheme)) {
 
-        VtArray<Hd_BSplinePatchIndex> indices(ptableSize/16);
+        VtArray<Hd_BSplinePatchIndex> indices(static_cast<unsigned int>(ptableSize/16));
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr patchIndices(
@@ -566,7 +568,7 @@ Hd_Osd3IndexComputation::Resolve()
         _PopulateBSplinePrimitiveBuffer(patchTable);
     } else {
         // populate refined quad indices.
-        VtArray<GfVec4i> indices(ptableSize/4);
+        VtArray<GfVec4i> indices(static_cast<unsigned int>(ptableSize/4));
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         // refined quads index buffer
@@ -592,7 +594,7 @@ Hd_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 
     int const * numVertsPtr =
         _topology->GetFaceVertexCounts().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
+    int numFaces = static_cast<int>(_topology->GetFaceVertexCounts().size());
 
     // hole faces shouldn't affect ptex id.
     // passing empty array to count num quads.
@@ -631,7 +633,7 @@ Hd_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
     size_t numPatches = patchTable
         ? patchTable->GetPatchParamTable().size()
         : 0;
-    VtVec3iArray primitiveParam(numPatches);
+    VtVec3iArray primitiveParam(static_cast<unsigned int>(numPatches));
 
     // ivec3
     for (size_t i = 0; i < numPatches; ++i) {
@@ -667,7 +669,7 @@ Hd_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
     size_t numPatches = patchTable
         ? patchTable->GetPatchParamTable().size()
         : 0;
-    VtVec4iArray primitiveParam(numPatches);
+    VtVec4iArray primitiveParam(static_cast<unsigned int>(numPatches));
 
     // ivec4
     for (size_t i = 0; i < numPatches; ++i) {

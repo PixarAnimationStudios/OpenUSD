@@ -877,7 +877,7 @@ HdRenderIndex::SyncAll()
             int reprIndex = (int)reprs.size();
             for (size_t i = 0; i < reprs.size(); ++i) {
                 if (reprs[i] == reprSpec) {
-                    reprIndex = i;
+                    reprIndex = (int)i;
                     break;
                 }
             }
@@ -898,7 +898,9 @@ HdRenderIndex::SyncAll()
 
             // PERFORMANCE: this loop can be expensive.
             for (auto const& sdfPath : hdDirtyList->GetDirtyRprims()) {
+				ARCH_PRAGMA_SHIFT_TO_64_BITS
                 dirtyIds[sdfPath] |= (1 << reprIndex);
+				ARCH_PRAGMA_RESTORE
             }
         }
     }

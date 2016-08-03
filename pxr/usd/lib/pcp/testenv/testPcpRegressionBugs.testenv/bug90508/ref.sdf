@@ -1,0 +1,18 @@
+#sdf 1.4.32
+
+class "_class_Model"
+{
+}
+
+def Model "Model" (
+    inherits = </_class_Model>
+)
+{
+    def Scope "Child"
+    {
+        def Scope "Child2"
+        {
+        }
+    }
+}
+

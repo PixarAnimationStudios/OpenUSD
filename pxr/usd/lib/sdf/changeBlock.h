@@ -24,6 +24,8 @@
 #ifndef SDF_CHANGEBLOCK_H
 #define SDF_CHANGEBLOCK_H
 
+#include "pxr/usd/sdf/api.h"
+
 /// \class SdfChangeBlock
 ///
 /// <b>DANGER DANGER DANGER</b>
@@ -63,7 +65,7 @@
 /// inside a changeblock without talking to any downstream libraries.
 /// For example, this is how Csd performs namespace edits.
 ///
-class SdfChangeBlock {
+class SDF_API SdfChangeBlock {
 public:
     SdfChangeBlock();
     ~SdfChangeBlock();

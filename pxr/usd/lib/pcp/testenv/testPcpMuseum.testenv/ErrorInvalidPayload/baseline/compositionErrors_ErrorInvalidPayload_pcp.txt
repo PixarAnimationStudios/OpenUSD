@@ -1,0 +1,10 @@
+------------------------------------------------------------------------
+Errors while composing </BadPayload_NonExistentFile>
+
+Could not open asset @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidPayload/payload_non_existent_file.usda@ for payload on prim @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidPayload/root.usda@</BadPayload_NonExistentFile>.
+
+------------------------------------------------------------------------
+Errors while composing </BadPayload_NonExistentPrim>
+
+Unresolved payload path </NonExistentPrim> on prim @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidPayload/root.usda@</BadPayload_NonExistentPrim>.
+

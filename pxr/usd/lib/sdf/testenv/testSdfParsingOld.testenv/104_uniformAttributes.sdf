@@ -1,0 +1,19 @@
+#sdf 1.4.32
+(
+    """Tests the uniform keyword on attributes"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "bool_tests"
+{
+    custom uniform double foo = 0
+    delete uniform double foo.connect = </bool_tests/Foo/Blah.blah>
+    add uniform double foo.connect = </bool_tests/Foo/Blah.blah>
+    reorder uniform double foo.connect = [
+        </bool_tests/Foo/Blah.blah>,
+        </bool_tests/Foo/Bar.blah>,
+    ]
+    uniform double foo.mapper[ </bool_tests/Foo/Bar.blah> ] = MfSplineMapper
+}
+

@@ -24,6 +24,7 @@
 #ifndef USDSHADE_GENERATED_SUBGRAPH_H
 #define USDSHADE_GENERATED_SUBGRAPH_H
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -67,7 +68,7 @@ class SdfAssetPath;
 /// to a single internal shader output.
 /// 
 ///
-class UsdShadeSubgraph : public UsdTyped
+class USDSHADE_API UsdShadeSubgraph : public UsdTyped
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds

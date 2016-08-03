@@ -48,7 +48,7 @@ enum Usd_ResolveInfoSource
 /// \class Usd_ResolveInfo
 /// Container for information about the source of an attribute's
 /// value, i.e. the 'resolved' location of the attribute.
-struct Usd_ResolveInfo
+class Usd_ResolveInfo
 {
 public:
     Usd_ResolveInfo()

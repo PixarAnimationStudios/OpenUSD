@@ -423,7 +423,7 @@ PcpMapFunction::_Data::_Data(const PathPairVector &sourceToTarget,
                              const SdfLayerOffset &offset)
     : _offset(offset),
     _pairs(new PathPair[sourceToTarget.size()]),
-    _numPairs(sourceToTarget.size())
+    _numPairs(static_cast<unsigned short>(sourceToTarget.size()))
 {
     for (int i=0; i < _numPairs; ++i) {
         _pairs[i] = sourceToTarget[i];

@@ -23,6 +23,8 @@
 //
 #ifndef HD_POINTS_H
 #define HD_POINTS_H
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/enums.h"
@@ -50,15 +52,18 @@ struct HdPointsReprDesc {
 class HdPoints: public HdRprim {
 public:
     HD_MALLOC_TAG_NEW("new HdPoints");
+    HDLIB_API
     HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
              SdfPath const& surfaceShaderId,
              SdfPath const& instancerId = SdfPath());
 
     /// Configure geometric style of drawItems for \p reprName
+    HDLIB_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdPointsReprDesc desc);
 
     /// Return the dirtyBits mask to be tracked for \p reprName
+    HDLIB_API
     static int GetDirtyBitsMask(TfToken const &reprName);
 
 protected:

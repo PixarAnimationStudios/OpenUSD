@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usd/treeIterator.h"
-
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/object.hpp>
@@ -30,6 +28,8 @@
 #include <boost/python/return_arg.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/converter/from_python.hpp>
+
+#include "pxr/usd/usd/treeIterator.h"
 
 using namespace boost::python;
 

@@ -43,8 +43,11 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-
+#include <io.h>
 /* end standard C headers. */
+
+#include <pxr/base/arch/defines.h>
+#include <pxr/base/arch/fileSystem.h>
 
 /* flex integer type definitions */
 
@@ -53,7 +56,7 @@
 
 /* C99 systems have <inttypes.h>. Non-C99 systems may or may not. */
 
-#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L || defined(ARCH_OS_WINDOWS)
 
 /* C99 says to define __STDC_LIMIT_MACROS before including stdint.h,
  * if you want the limit (max/min) macros for int types. 
@@ -2140,7 +2143,7 @@ static void textFileFormatYy_load_buffer_state  (yyscan_t yyscanner)
         b->yy_bs_column = 0;
     }
 
-        b->yy_is_interactive = file ? (isatty( fileno(file) ) > 0) : 0;
+    b->yy_is_interactive = file ? (ArchFileIsaTTY(ArchFileNo(file)) > 0) : 0;
     
 	errno = oerrno;
 }

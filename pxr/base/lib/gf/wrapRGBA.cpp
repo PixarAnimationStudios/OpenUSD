@@ -23,6 +23,7 @@
 //
 #include <boost/python.hpp>
 
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/rgba.h"
 #include "pxr/base/gf/matrix4d.h"
 
@@ -140,9 +141,6 @@ struct RGBA_Pickle_Suite : boost::python::pickle_suite
         return boost::python::make_tuple(c[0], c[1], c[2], c[3]);
     }
 };
-
-bool GfIsClose(const GfRGBA &v1, const GfRGBA &v2, double tolerance);
-
 
 void wrapRGBA()
 {    

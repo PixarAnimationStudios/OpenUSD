@@ -39,6 +39,7 @@
 #include <sstream>
 #include <vector>
 
+#if defined(ARCH_COMPILER_HAS_STATIC_ASSERT)
 namespace {
 // Static assertion on PrimData size.  We want to be warned when its size
 // changes.
@@ -48,6 +49,7 @@ BOOST_MPL_ASSERT_MSG(sizeof(Usd_PrimData) == 64,
                      Size_of_Usd_PrimData_expected_to_be_exactly_64,
                      (Size_is_<sizeof(Usd_PrimData)>));
 }
+#endif
 
 Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
     : _stage(stage)

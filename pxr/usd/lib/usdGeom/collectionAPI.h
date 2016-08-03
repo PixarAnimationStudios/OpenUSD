@@ -27,6 +27,7 @@
 
 
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
@@ -141,11 +142,12 @@ public:
     }
 
     /// Destructor
+    USDGEOM_API
     virtual ~UsdGeomCollectionAPI();
 
 private:
     // Returns true if the collection includes at least one target object.
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    USDGEOM_API virtual bool _IsCompatible(const UsdPrim &prim) const;
 
 public:
 
@@ -165,10 +167,12 @@ public:
 
     /// Returns true if the collection has no targets.
     /// 
+    USDGEOM_API
     bool IsEmpty() const;
 
     /// Sets the paths to target objects that belong to the collection.
     /// 
+    USDGEOM_API
     bool SetTargets(const SdfPathVector &targets) const;
 
     /// Returns the <b>unresolved paths</b> to target objects belonging to the 
@@ -181,6 +185,7 @@ public:
     /// 
     /// \sa UsdRelationship::GetTargets
     /// 
+    USDGEOM_API
     bool GetTargets(SdfPathVector *targets) const;
 
     /// Sets the targetFaceCounts property of the collection at the given 
@@ -196,6 +201,7 @@ public:
     ///
     /// \sa UsdGeomCollectionAPI::GetTargetFaceCounts()
     ///
+    USDGEOM_API
     bool SetTargetFaceCounts(const VtIntArray &targetFaceCounts, 
                              const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
@@ -206,6 +212,7 @@ public:
     /// \sa UsdGeomCollectionAPI::SetTargetFaceCounts()
     /// \sa UsdGeomCollectionAPI::GetFaceIndices()
     ///
+    USDGEOM_API
     bool GetTargetFaceCounts(VtIntArray *targetFaceCounts, 
                              const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
@@ -219,6 +226,7 @@ public:
     /// 
     /// \sa UsdGeomCollectionAPI::GetTargetFaceIndices()
     /// \sa UsdGeomCollectionAPI::SetTargetFaceCounts()
+    USDGEOM_API
     bool SetTargetFaceIndices(const VtIntArray &targetFaceIndices, 
                               const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
@@ -228,6 +236,7 @@ public:
     /// 
     /// \sa UsdGeomCollectionAPI::SetTargetFaceIndices()
     /// 
+    USDGEOM_API
     bool GetTargetFaceIndices(VtIntArray *targetFaceIndices, 
                               const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
@@ -251,6 +260,7 @@ public:
     /// targetFaceCounts and targetFaceIndices are not authored (or even created)
     /// in this case.
     /// 
+    USDGEOM_API
     bool AppendTarget(const SdfPath &target, 
                       const VtIntArray &faceIndices=VtIntArray(),
                       const UsdTimeCode &time=UsdTimeCode::Default()) const;
@@ -273,6 +283,7 @@ public:
     ///
     /// \sa GetTargetFaceCounts()
     ///
+    USDGEOM_API
     UsdAttribute GetTargetFaceCountsAttr() const;
 
     /// Creates the "targetFaceCounts" attribute associated with the collection.
@@ -284,6 +295,7 @@ public:
     ///
     /// \sa GetTargetFaceCountsAttr()
     ///
+    USDGEOM_API
     UsdAttribute CreateTargetFaceCountsAttr(const VtValue &defaultValue=VtValue(),
                                             bool writeSparsely=false) const;
 
@@ -295,6 +307,7 @@ public:
     /// 
     /// \sa GetTargetFaceIndices()
     ///
+    USDGEOM_API
     UsdAttribute GetTargetFaceIndicesAttr() const;
 
     /// Creates the "targetFaceIndices" attribute associated with the collection.
@@ -306,6 +319,7 @@ public:
     ///
     /// \sa GetFaceIndicesAttr()
     ///
+    USDGEOM_API
     UsdAttribute CreateTargetFaceIndicesAttr(const VtValue &defaultValue=VtValue(),
                                              bool writeSparsely=false) const;
 
@@ -314,6 +328,7 @@ public:
     /// 
     /// \sa GetTargets()
     /// 
+    USDGEOM_API
     UsdRelationship GetTargetsRel() const;
 
     /// Creates the relationship that targets the prims included in the 
@@ -321,6 +336,7 @@ public:
     /// 
     /// \sa GetTargetsRel()
     /// 
+    USDGEOM_API
     UsdRelationship CreateTargetsRel() const;
 
     /// @}
@@ -341,6 +357,7 @@ public:
     /// If a collection already exists with the given name, it's targets 
     /// are reset to the specified set of targets, if \p targets is non-empty.
     /// 
+    USDGEOM_API
     static UsdGeomCollectionAPI Create(
         const UsdPrim &prim, 
         const TfToken &name,
@@ -358,6 +375,7 @@ public:
     /// If a collection already exists with the given name, it's targets 
     /// are reset to the specified set of targets, if \p targets is non-empty.
     /// 
+    USDGEOM_API
     static UsdGeomCollectionAPI Create(
         const UsdSchemaBase &schemaObj, 
         const TfToken &name,
@@ -369,9 +387,11 @@ public:
     /// 
     /// This will return both empty and non-empty collections. 
     /// 
+    USDGEOM_API
     static std::vector<UsdGeomCollectionAPI> GetCollections(const UsdPrim &prim);
 
     /// Returns the list of all face-sets on the prim held by \p schemaObj.
+    USDGEOM_API
     static std::vector<UsdGeomCollectionAPI> GetCollections(
         const UsdSchemaBase &schemaObj);
 
@@ -396,6 +416,7 @@ public:
     /// \li The sum all values in the "targetFaceCounts" array should be equal 
     /// to the length of the "targetFaceIndices" array over all timeSamples.
     /// 
+    USDGEOM_API
     bool Validate(std::string *reason) const;
 
     /// @}

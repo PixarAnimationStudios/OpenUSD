@@ -15,6 +15,9 @@ pxr_shared_library(pcp
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
+        
+    PUBLIC_HEADERS
+        api.h
 
     PUBLIC_CLASSES
         arc

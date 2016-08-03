@@ -24,6 +24,7 @@
 #ifndef USDSHADE_GENERATED_SHADER_H
 #define USDSHADE_GENERATED_SHADER_H
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -68,7 +69,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdShadeTokens->rightHanded
 /// as the value.
 ///
-class UsdShadeShader : public UsdTyped
+class USDSHADE_API UsdShadeShader : public UsdTyped
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds

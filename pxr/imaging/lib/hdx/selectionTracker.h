@@ -24,6 +24,7 @@
 #ifndef HDX_SELECTION_TRACKER_H
 #define HDX_SELECTION_TRACKER_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/sdf/path.h"
@@ -95,15 +96,19 @@ private:
 class HdxSelectionTracker
 {
 public:
+    HDXLIB_API
     HdxSelectionTracker();
+    HDXLIB_API
     virtual ~HdxSelectionTracker() = default;
 
     /// Update dirty bits in the ChangeTracker and compute required primvars for
     /// later consumption.
+    HDXLIB_API
     virtual void Sync(HdRenderIndex* index);
 
     /// Populates an array of offsets required for selection highlighting.
     /// Returns true if offsets has anything selected.
+    HDXLIB_API
     virtual bool GetBuffers(HdRenderIndex const* index,
                             VtIntArray* offsets) const;
 
@@ -111,6 +116,7 @@ public:
     /// whenever the result of GetBuffers has changed. Note that this number may
     /// overflow and become negative, thus clients should use a not-equal
     /// comparison.
+    HDXLIB_API
     int GetVersion() const;
 
     void SetSelection(HdxSelectionSharedPtr const &selection) {
@@ -125,6 +131,7 @@ public:
 protected:
     /// Increments the internal selection state version, used for invalidation
     /// via GetVersion().
+    HDXLIB_API
     void _IncrementVersion();
 
 private:

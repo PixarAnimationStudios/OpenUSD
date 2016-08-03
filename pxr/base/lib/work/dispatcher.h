@@ -28,6 +28,7 @@
 ///\file work/dispatcher.h
 
 #include "pxr/base/work/threadLimits.h"
+#include "pxr/base/work/api.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
@@ -69,10 +70,10 @@ class WorkDispatcher
 {
 public:
     /// Construct a new dispatcher.
-    WorkDispatcher();
+	WORK_API WorkDispatcher();
 
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    ~WorkDispatcher();
+	WORK_API ~WorkDispatcher();
 
     WorkDispatcher(WorkDispatcher const &) = delete;
     WorkDispatcher &operator=(WorkDispatcher const &) = delete;
@@ -113,7 +114,7 @@ public:
 #endif // doxygen
 
     /// Block until the work started by Run() completes.
-    void Wait();
+	WORK_API void Wait();
 
     /// Cancel remaining work and return immediately.
     ///
@@ -125,7 +126,7 @@ public:
     ///
     /// This call does not block.  Call Wait() after Cancel() to wait for
     /// pending tasks to complete.
-    void Cancel();
+	WORK_API void Cancel();
 
 private:
     typedef tbb::concurrent_vector<TfErrorTransport> _ErrorTransports;
@@ -164,7 +165,7 @@ private:
 
     // Helper function that removes errors from \p m and stores them in a new
     // entry in \p errors.
-    static void
+	WORK_API static void
     _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
 
     // Task group context and associated root task that allows us to cancel

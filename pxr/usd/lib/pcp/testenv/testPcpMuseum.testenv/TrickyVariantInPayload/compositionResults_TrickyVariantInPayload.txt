@@ -1,0 +1,29 @@
+Loading @testPcpMuseum.testenv/TrickyVariantInPayload/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </A1>
+
+Prim Stack:
+    root.usda            /A1
+    model.usda           /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A1/B>
+
+Prim Stack:
+    root.usda            /A1/B
+    model.usda           /B
+    model.usda           /B{v=v2}
+    model.usda           /A/B
+    model.usda           /A/B{v=v2}
+
+Variant Selections:
+    {v = v2}
+

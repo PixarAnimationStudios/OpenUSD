@@ -1,0 +1,147 @@
+Loading @testPcpMuseum.testenv/TrickyInheritsAndRelocates4/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak>
+
+Prim Stack:
+    root.usda            /FergusCloak
+
+Child names:
+     ['rig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig>
+
+Prim Stack:
+    root.usda            /FergusCloak/rig
+
+Child names:
+     ['LArmRig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig>
+
+Prim Stack:
+    root.usda            /FergusCloak/rig/LArmRig
+    root.usda            /_class_MultiLevelCurveRig
+    CurveTrackRig.usda   /CurveTrackRig
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig
+
+Child names:
+     ['rig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/rig>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig
+    CurveTrackRig.usda   /CurveTrackRig/rig
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig
+
+Child names:
+     ['ConstRig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/rig/ConstRig>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig
+    CurveTrackRig.usda   /CurveTrackRig/rig/ConstRig
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig/ConstRig
+    ConstraintRig.usda   /ConstraintRig
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/rig/ConstRig/Anim>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    ConstraintRig.usda   /ConstraintRig/Anim
+
+Prohibited child names:
+     ['Const']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/Anim>
+
+Prim Stack:
+    CurveTrackRig.usda   /CurveTrackRig/Anim
+
+Prohibited child names:
+     ['Curve']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/Anim>
+
+Prim Stack:
+    root.usda            /FergusCloak/Anim
+
+Child names:
+     ['LArm']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/Anim/LArm>
+
+Prim Stack:
+    CurveTrackRig.usda   /CurveTrackRig/Anim/Curve
+
+Child names:
+     ['Const']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/Anim/LArm/Const>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    ConstraintRig.usda   /ConstraintRig/Anim/Const
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig
+
+Child names:
+     ['ConstRig']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig/ConstRig>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig/ConstRig/Anim>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+
+Child names:
+     ['Const']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const>
+
+Prim Stack:
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+

@@ -25,8 +25,10 @@
 #define ARCH_NAP_H
 
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/api.h"
+
 #if defined(ARCH_OS_WINDOWS)
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 /*!
@@ -44,7 +46,7 @@
  * can do with sginap()).  Call \c ArchThreadYield() instead.
  */
 
-void ArchNap(size_t nhundredths);
+ARCH_API void ArchNap(size_t nhundredths);
 
 
 /*!
@@ -54,7 +56,7 @@ void ArchNap(size_t nhundredths);
  * Returns control to the operating system thread scheduler as a means of
  * temporarily suspending the calling thread.
  */
-
+ARCH_API
 void ArchThreadYield();
 
 

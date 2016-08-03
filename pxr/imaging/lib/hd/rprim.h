@@ -24,6 +24,7 @@
 #ifndef HD_RPRIM_H
 #define HD_RPRIM_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/drawItem.h"
@@ -102,6 +103,7 @@ public:
     int GetInitialDirtyBitsMask() const;
 
     /// Returns the SceneDelegate object that is backing this Rprim.
+	HDLIB_API
     HdSceneDelegate* GetDelegate();
 
 protected:

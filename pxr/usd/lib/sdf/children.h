@@ -26,6 +26,7 @@
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/api.h"
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <vector>
@@ -43,7 +44,7 @@ class SdfSpec;
 // It primarily specifies how to map between keys (such as the name of
 // an object) and values (such as SpecHandles for those objects).
 template<class ChildPolicy>
-class Sdf_Children
+class SDF_API Sdf_Children
 {
 public:
     typedef typename ChildPolicy::KeyPolicy KeyPolicy;

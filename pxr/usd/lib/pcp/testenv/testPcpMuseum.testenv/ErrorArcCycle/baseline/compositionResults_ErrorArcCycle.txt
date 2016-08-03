@@ -1,0 +1,194 @@
+Loading @testPcpMuseum.testenv/ErrorArcCycle/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </GroupRoot>
+
+Prim Stack:
+    root.usda            /GroupRoot
+    A.usda               /GroupA
+    B.usda               /GroupB
+
+Child names:
+     ['ChildA']
+
+Property names:
+     ['B_attr', 'A_attr']
+
+Property stacks:
+/GroupRoot.A_attr:
+    A.usda               /GroupA.A_attr
+/GroupRoot.B_attr:
+    B.usda               /GroupB.B_attr
+
+------------------------------------------------------------------------
+Results for composing </GroupRoot/ChildA>
+
+Prim Stack:
+    A.usda               /GroupA/ChildA
+
+Property names:
+     ['A_attr']
+
+Property stacks:
+/GroupRoot/ChildA.A_attr:
+    A.usda               /GroupA/ChildA.A_attr
+
+------------------------------------------------------------------------
+Results for composing </Parent>
+
+Prim Stack:
+    root.usda            /Parent
+
+Child names:
+     ['Child1', 'Child2']
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child1>
+
+Prim Stack:
+    root.usda            /Parent/Child1
+    root.usda            /Parent/Child2
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child2>
+
+Prim Stack:
+    root.usda            /Parent/Child2
+    root.usda            /Parent/Child1
+
+------------------------------------------------------------------------
+Results for composing </AnotherParent>
+
+Prim Stack:
+    root.usda            /AnotherParent
+
+Child names:
+     ['AnotherChild']
+
+------------------------------------------------------------------------
+Results for composing </AnotherParent/AnotherChild>
+
+Prim Stack:
+    root.usda            /AnotherParent/AnotherChild
+    model.usda           /Model
+
+------------------------------------------------------------------------
+Results for composing </YetAnotherParent>
+
+Prim Stack:
+    root.usda            /YetAnotherParent
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </YetAnotherParent/Child>
+
+Prim Stack:
+    root.usda            /YetAnotherParent/Child
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent1>
+
+Prim Stack:
+    root.usda            /CoRecursiveParent1
+
+Child names:
+     ['Child1']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent1/Child1>
+
+Prim Stack:
+    root.usda            /CoRecursiveParent1/Child1
+    root.usda            /CoRecursiveParent2
+
+Child names:
+     ['Child2']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent1/Child1/Child2>
+
+Prim Stack:
+    root.usda            /CoRecursiveParent2/Child2
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent2>
+
+Prim Stack:
+    root.usda            /CoRecursiveParent2
+
+Child names:
+     ['Child2']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent2/Child2>
+
+Prim Stack:
+    root.usda            /CoRecursiveParent2/Child2
+    root.usda            /CoRecursiveParent1
+
+Child names:
+     ['Child1']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent2/Child2/Child1>
+
+Prim Stack:
+    root.usda            /CoRecursiveParent1/Child1
+
+------------------------------------------------------------------------
+Results for composing </InheritOfChild>
+
+Prim Stack:
+    root.usda            /InheritOfChild
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </InheritOfChild/Child>
+
+Prim Stack:
+    root.usda            /InheritOfChild/Child
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild>
+
+Prim Stack:
+    root.usda            /RelocatedInheritOfChild
+
+Child names:
+     ['Object', 'Child']
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Child>
+
+Prim Stack:
+    root.usda            /RelocatedInheritOfChild/Child
+
+Child names:
+     ['Class']
+
+Prohibited child names:
+     ['Object']
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Child/Class>
+
+Prim Stack:
+    root.usda            /RelocatedInheritOfChild/Child/Class
+
+Child names:
+     ['Object']
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Child/Class/Object>
+
+Prim Stack:
+    root.usda            /RelocatedInheritOfChild/Child/Class/Object
+

@@ -48,15 +48,15 @@ char *Gf_GetPyBufferFmtFor() {
     return str;
 }
 
-template char *Gf_GetPyBufferFmtFor<bool>();
-template char *Gf_GetPyBufferFmtFor<char>();
-template char *Gf_GetPyBufferFmtFor<unsigned char>();
-template char *Gf_GetPyBufferFmtFor<short>();
-template char *Gf_GetPyBufferFmtFor<unsigned short>();
-template char *Gf_GetPyBufferFmtFor<int>();
-template char *Gf_GetPyBufferFmtFor<unsigned int>();
-template char *Gf_GetPyBufferFmtFor<long>();
-template char *Gf_GetPyBufferFmtFor<unsigned long>();
-template char *Gf_GetPyBufferFmtFor<half>();
-template char *Gf_GetPyBufferFmtFor<float>();
-template char *Gf_GetPyBufferFmtFor<double>();
+template GF_API char *Gf_GetPyBufferFmtFor<bool>();
+template GF_API char *Gf_GetPyBufferFmtFor<char>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned char>();
+template GF_API char *Gf_GetPyBufferFmtFor<short>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned short>();
+template GF_API char *Gf_GetPyBufferFmtFor<int>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned int>();
+template GF_API char *Gf_GetPyBufferFmtFor<long>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned long>();
+template GF_API char *Gf_GetPyBufferFmtFor<half>();
+template GF_API char *Gf_GetPyBufferFmtFor<float>();
+template GF_API char *Gf_GetPyBufferFmtFor<double>();

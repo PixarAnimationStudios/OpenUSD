@@ -28,8 +28,14 @@
 #include <string>
 #include <stdlib.h>
 #include <sys/types.h>
+#if defined(ARCH_OS_WINDOWS)
+#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable:4996)
+#include <csignal>
+#else
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 #include <assert.h>
 
 void
@@ -49,7 +55,7 @@ int main()
     (void) signal(SIGABRT,crash);
         
     std::string log = ArchMakeTmpFileName("statusLogTester");
-    FILE *logFile;
+    FILE *logFile = nullptr;
     int childPid;
     int status;
 
@@ -60,15 +66,20 @@ int main()
     
 
     ArchLogStackTrace("Crashing", true, log.c_str());
-    unlink(log.c_str());
+    ArchUnlinkFile(log.c_str());
 
     ArchLogPostMortem("Test Crashing");
+#if defined(ARCH_OS_WINDOWS)
+    status = 0;
+    childPid = 0;
+#else
     // test crashing with and without spawning
     if ( (childPid = fork()) == 0 )   {
         printf("Crash (don't spawn thread)\n");
         ArchTestCrash(false);
         exit(0);
     }
+
 
     assert(childPid == wait(&status));
     assert(status != 0);
@@ -81,6 +92,7 @@ int main()
 
     assert(childPid == wait(&status));
     assert(status != 0);
+#endif
 
     // test GetStackTrace
     std::vector<std::string> stackTrace = ArchGetStackTrace(20);

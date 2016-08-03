@@ -1,0 +1,14 @@
+------------------------------------------------------------------------
+Errors while composing </SublayerRoot>
+
+The relationship target </SublayerRoot/Rig/Scope> from </SublayerRoot.badRelA> in layer @/home/sunya/trees/dev4/amber/lib/pcp/testenv/testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/sub2.usda@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The relationship target </SublayerRoot/Rig/Scope.x> from </SublayerRoot.badRelB> in layer @/home/sunya/trees/dev4/amber/lib/pcp/testenv/testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/sub2.usda@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The attribute connection </SublayerRoot/Rig/Scope.x> from </SublayerRoot.badAttrA> in layer @/home/sunya/trees/dev4/amber/lib/pcp/testenv/testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/sub2.usda@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </Root>
+
+The relationship target </Root/Rig/Scope> from </Root.badRelA> in layer @/home/sunya/trees/dev4/amber/lib/pcp/testenv/testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/root.usda@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The relationship target </Root/Rig/Scope.x> from </Root.badRelB> in layer @/home/sunya/trees/dev4/amber/lib/pcp/testenv/testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/root.usda@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The attribute connection </Root/Rig/Scope.x> from </Root.badAttrA> in layer @/home/sunya/trees/dev4/amber/lib/pcp/testenv/testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/root.usda@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+

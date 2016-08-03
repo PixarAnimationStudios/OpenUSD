@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    """
+    This test illustrates a difference in how Csd and Pcp compose
+    nameChildren order.  Specifically, adding this reference arc
+    from root.usda should not affect the order the children of
+    </Model/LeftRig>, but in Csd it does.  This seems like a bug in Csd,
+    since referencing a model without making any overrides should leave
+    it as-is.
+    """
+)
+
+def "Model" (
+    add references = @model.usda@</Model>
+)
+{
+}

@@ -41,6 +41,8 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 
+#include <boost/type_traits.hpp>
+
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
 #include <boost/python/converter/registered.hpp>
@@ -90,7 +92,7 @@ struct TfMakePyPtr {
         // have a python identity, otherwise the identity might be set
         // during instantiation and our caller will attempt to set it
         // again, which isn't allowed.
-        get_pointer(p);
+        boost::get_pointer(p);
 
         if (PyObject *id = Tf_PyGetPythonIdentity(p))
             return Result(id, false);

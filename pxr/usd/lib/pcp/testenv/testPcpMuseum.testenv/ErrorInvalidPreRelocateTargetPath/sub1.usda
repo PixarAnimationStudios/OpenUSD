@@ -1,0 +1,12 @@
+#usda 1.0
+
+over "SublayerRoot" (
+    relocates = {
+        <Rig/Scope> : <Anim/Scope>
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+}

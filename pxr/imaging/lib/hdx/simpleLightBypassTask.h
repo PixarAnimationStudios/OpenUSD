@@ -24,6 +24,7 @@
 #ifndef HDX_SIMPLE_LIGHT_BYPASS_TASK_H
 #define HDX_SIMPLE_LIGHT_BYPASS_TASK_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -48,6 +49,7 @@ typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSh
 
 class HdxSimpleLightBypassTask : public HdSceneTask {
 public:
+    HDXLIB_API
     HdxSimpleLightBypassTask(HdSceneDelegate* delegate, SdfPath const& id);
 
 protected:
@@ -71,10 +73,13 @@ struct HdxSimpleLightBypassTaskParams
 };
 
 // VtValue requirements
+HDXLIB_API
 std::ostream& operator<<(std::ostream& out,
                          const HdxSimpleLightBypassTaskParams& pv);
+HDXLIB_API
 bool operator==(const HdxSimpleLightBypassTaskParams& lhs,
                 const HdxSimpleLightBypassTaskParams& rhs);
+HDXLIB_API
 bool operator!=(const HdxSimpleLightBypassTaskParams& lhs,
                 const HdxSimpleLightBypassTaskParams& rhs);
 

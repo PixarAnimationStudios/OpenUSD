@@ -1,0 +1,100 @@
+#usda 1.0
+
+# Exchange these names.
+def Scope "B"
+{
+    custom double b
+}
+def Scope "C"
+{
+    custom double c
+}
+
+# Reparent the following under here.
+def Scope "E"
+{
+    def Scope "F"
+    {
+    }
+}
+def Scope "G"
+{
+}
+def Scope "H"
+{
+}
+def Scope "I"
+{
+}
+
+# Reparent a prim under a reparented prim.
+def Scope "J"
+{
+    def Scope "K"
+    {
+    }
+}
+def Scope "L"
+{
+}
+
+# Property tests.
+def Scope "P"
+{
+    custom double b ("b")
+    custom double c ("c")
+    custom double g ("g")
+    custom double h ("h")
+    custom double i ("i")
+    custom double x
+
+    custom rel j
+    add rel j = </S.j> {
+        custom double m ("m")
+        custom double n ("n")
+        custom double p ("p")
+    }
+    custom rel k
+    add rel k = </P.j>
+}
+def Scope "Q"
+{
+    def Scope "R"
+    {
+    }
+}
+def Scope "S"
+{
+    custom rel j
+    custom rel k
+}
+
+# Variants.
+def Scope "V" (
+    variantSets = "v"
+)
+{
+    variantSet "v" = {
+        "one" {
+            custom double u
+
+            def Scope "U"
+            {
+            }
+        }
+        "two" {
+            custom double w
+
+            def Scope "W"
+            {
+            }
+        }
+    }
+}
+
+# Remove this.
+def Scope "X"
+{
+    custom double a
+}
+

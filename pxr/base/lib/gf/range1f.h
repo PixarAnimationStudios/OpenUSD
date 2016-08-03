@@ -29,6 +29,7 @@
 #define GF_RANGE1F_H
 
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -305,10 +306,11 @@ public:
     //
     // The values must match exactly and it does exactly what you
     // might expect when comparing float and double values.
-    inline bool operator ==(const GfRange1d& other) const;
-    inline bool operator !=(const GfRange1d& other) const;
+    GF_API inline bool operator ==(const GfRange1d& other) const;
+    GF_API inline bool operator !=(const GfRange1d& other) const;
 
     //! Compute the squared distance from a point to the range.
+    GF_API
     double GetDistanceSquared(float p) const;
 
 
@@ -329,7 +331,7 @@ public:
 
 /// Output a GfRange1f
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfRange1f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfRange1f const &);
 
 #include "pxr/base/gf/range1d.h"
 

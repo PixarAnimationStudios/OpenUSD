@@ -1,0 +1,40 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def Scope "Scope" (
+    symmetryFunction = 
+)
+{
+    reorder properties = ["attribute", "relationship", "actionParent", "manipulators"]
+    custom double attribute = 0 (
+        symmetryFunction = 
+    )
+    custom rel relationship (
+        permission = public
+        symmetryFunction = 
+    )
+}
+
+def Scope "Scope_1"
+{
+    reorder properties = ["attribute", "relationship", "actionParent", "manipulators"]
+    custom double attribute = 0 (
+        doc = "This attribute has multiline metadata"
+        symmetryFunction = 
+    )
+    custom rel relationship (
+        permission = public
+    )
+}
+
+def Scope "Scope_2"
+{
+    reorder properties = ["attribute", "actionParent", "manipulators"]
+    custom double attribute = 0 (
+        symmetryFunction = 
+    )
+}
+

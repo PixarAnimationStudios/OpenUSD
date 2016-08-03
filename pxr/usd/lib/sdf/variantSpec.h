@@ -26,6 +26,7 @@
 #ifndef SDF_VARIANTSPEC_H
 #define SDF_VARIANTSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include <string>
@@ -47,7 +48,7 @@ class SdfPath;
 /// once created and they are passed by copy-in APIs.  To change a variant 
 /// spec, you make a new one and replace the existing one.
 ///
-class SdfVariantSpec : public SdfSpec
+class SDF_API SdfVariantSpec : public SdfSpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeVariant,
                      SdfVariantSpec, SdfSpec);
@@ -93,7 +94,7 @@ public:
 ///
 /// It creates a variant spec with the given name under the specified variant
 /// set if it doesn't already exist.
-SdfVariantSpecHandle SdfCreateVariantInLayer(
+SDF_API SdfVariantSpecHandle SdfCreateVariantInLayer(
     const SdfLayerHandle &layer,
     const SdfPath &primPath,
     const std::string &variantSetName,

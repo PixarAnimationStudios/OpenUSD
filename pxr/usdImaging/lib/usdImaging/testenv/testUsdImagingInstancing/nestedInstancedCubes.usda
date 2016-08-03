@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    endFrame = 1
+    startFrame = 1
+)
+
+def Xform "Cubes_1" (
+    instanceable = true
+    references = @./instancedCubes.usda@</Cubes>
+)
+{
+    Vec3d xformOp:translate = (10, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:transform"]
+}
+
+def Xform "Cubes_2" (
+    instanceable = true
+    references = @./instancedCubes.usda@</Cubes>
+)
+{
+    Vec3d xformOp:translate = (-10, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:transform"]
+}

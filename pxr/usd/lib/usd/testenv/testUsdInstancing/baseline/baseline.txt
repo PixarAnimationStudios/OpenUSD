@@ -1,0 +1,1051 @@
+========= TestBasic ...
+
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1 [master: </__Master_1>]
+        Prop_2 [master: </__Master_1>]
+        Prop_3
+          geom
+            Scope
+              .x
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+  __Master_1 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Adding prim /Prop/Scope to referenced prop
+Resynced:
+   ['/World/sets/Set_1/Prop_3/Scope', '/__Master_1/Scope']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1 [master: </__Master_1>]
+        Prop_2 [master: </__Master_1>]
+        Prop_3
+          geom
+            Scope
+              .x
+          Scope
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+  __Master_1 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    Scope
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Adding prim /Prop/Scope/Scope2 to referenced prop
+Resynced:
+   ['/World/sets/Set_1/Prop_3/Scope/Scope2', '/__Master_1/Scope/Scope2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1 [master: </__Master_1>]
+        Prop_2 [master: </__Master_1>]
+        Prop_3
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+  __Master_1 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Uninstancing prim /World/sets/Set_1/Prop_2
+Resynced:
+   ['/World/sets/Set_1/Prop_2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1 [master: </__Master_1>]
+        Prop_2
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_3
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+  __Master_1 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Uninstancing prim /World/sets/Set_1/Prop_1
+Resynced:
+   ['/World/sets/Set_1/Prop_1', '/__Master_1']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_2
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_3
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+
+------------------------------------------------------------
+Instancing prim /World/sets/Set_1/Prop_3
+Resynced:
+   ['/World/sets/Set_1/Prop_3', '/__Master_2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_2
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_3 [master: </__Master_2>]
+  __Master_2 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Removing inherit arc from referenced prop
+Resynced:
+   ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', '/World/sets/Set_1/Prop_3', '/__Master_2', '/__Master_3']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_set
+          From_root
+        Prop_2
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_set
+          From_root
+        Prop_3 [master: </__Master_3>]
+  __Master_3 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+
+------------------------------------------------------------
+Readd inherit arc from referenced prop
+Resynced:
+   ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', '/World/sets/Set_1/Prop_3', '/__Master_3', '/__Master_4']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_2
+          geom
+            Scope
+              .x
+          Scope
+            Scope2
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_3 [master: </__Master_4>]
+  __Master_4 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Remove /Prop/Scope/Scope2 from referenced prop
+Resynced:
+   ['/World/sets/Set_1/Prop_1/Scope/Scope2', '/World/sets/Set_1/Prop_2/Scope/Scope2', '/__Master_4/Scope/Scope2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1
+          geom
+            Scope
+              .x
+          Scope
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_2
+          geom
+            Scope
+              .x
+          Scope
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_3 [master: </__Master_4>]
+  __Master_4 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Remove /Prop/Scope from referenced prop
+Resynced:
+   ['/World/sets/Set_1/Prop_1/Scope', '/World/sets/Set_1/Prop_2/Scope', '/__Master_4/Scope']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1
+        Prop_1
+          geom
+            Scope
+              .x
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_2
+          geom
+            Scope
+              .x
+          From_class_in_set
+          From_set
+          From_class_in_root
+          From_root
+        Prop_3 [master: </__Master_4>]
+  __Master_4 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    From_class_in_set
+    From_class_in_root
+
+========= TestNested ...
+
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1 [master: </__Master_2>]
+    Prop_2 [master: </__Master_2>]
+    Prop_3
+      geom
+        Scope
+          .x
+      From_class_in_set
+      From_set
+      From_class_in_root
+  __Master_2 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Adding prim /Prop/Scope to referenced prop
+Resynced:
+   ['/__Master_1/Prop_3/Scope', '/__Master_2/Scope']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1 [master: </__Master_2>]
+    Prop_2 [master: </__Master_2>]
+    Prop_3
+      geom
+        Scope
+          .x
+      Scope
+      From_class_in_set
+      From_set
+      From_class_in_root
+  __Master_2 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    Scope
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Adding prim /Prop/Scope/Scope2 to referenced prop
+Resynced:
+   ['/__Master_1/Prop_3/Scope/Scope2', '/__Master_2/Scope/Scope2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1 [master: </__Master_2>]
+    Prop_2 [master: </__Master_2>]
+    Prop_3
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+  __Master_2 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Uninstancing prim /World/sets/Set_1/Prop_2
+Resynced:
+   ['/__Master_1/Prop_2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1 [master: </__Master_2>]
+    Prop_2
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_3
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+  __Master_2 [prim index: </World/sets/Set_1/Prop_1>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Uninstancing prim /World/sets/Set_1/Prop_1
+Resynced:
+   ['/__Master_1/Prop_1', '/__Master_2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_2
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_3
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+
+------------------------------------------------------------
+Instancing prim /World/sets/Set_1/Prop_3
+Resynced:
+   ['/__Master_1/Prop_3', '/__Master_3']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_2
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_3 [master: </__Master_3>]
+  __Master_3 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Removing inherit arc from referenced prop
+Resynced:
+   ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', '/__Master_3', '/__Master_4']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_set
+    Prop_2
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_set
+    Prop_3 [master: </__Master_4>]
+  __Master_4 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+
+------------------------------------------------------------
+Readd inherit arc from referenced prop
+Resynced:
+   ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', '/__Master_4', '/__Master_5']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_2
+      geom
+        Scope
+          .x
+      Scope
+        Scope2
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_3 [master: </__Master_5>]
+  __Master_5 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+      Scope2
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Remove /Prop/Scope/Scope2 from referenced prop
+Resynced:
+   ['/__Master_1/Prop_1/Scope/Scope2', '/__Master_1/Prop_2/Scope/Scope2', '/__Master_5/Scope/Scope2']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1
+      geom
+        Scope
+          .x
+      Scope
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_2
+      geom
+        Scope
+          .x
+      Scope
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_3 [master: </__Master_5>]
+  __Master_5 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    Scope
+    From_class_in_set
+    From_class_in_root
+
+------------------------------------------------------------
+Remove /Prop/Scope from referenced prop
+Resynced:
+   ['/__Master_1/Prop_1/Scope', '/__Master_1/Prop_2/Scope', '/__Master_5/Scope']
+Changed Info:
+   []
+/
+  _class_Prop
+    From_class_in_root
+    geom
+      Scope
+        .x
+  World
+    sets
+      Set_1 [master: </__Master_1>]
+  __Master_1 [prim index: </World/sets/Set_1>]
+    Prop_1
+      geom
+        Scope
+          .x
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_2
+      geom
+        Scope
+          .x
+      From_class_in_set
+      From_set
+      From_class_in_root
+    Prop_3 [master: </__Master_5>]
+  __Master_5 [prim index: </World/sets/Set_1/Prop_3>]
+    geom
+      Scope
+        .x
+    From_class_in_set
+    From_class_in_root
+
+========= TestPayloads ...
+
+Opening stage with everything loaded initially
+/
+  ModelGroup_1 [master: </__Master_1>]
+  ModelGroup_2 [master: </__Master_1>]
+  Model_1 [master: </__Master_2>]
+  Model_2 [master: </__Master_2>]
+  __Master_1 [prim index: </ModelGroup_1>]
+    Model [master: </__Master_2>]
+  __Master_2 [prim index: </Model_1>]
+    geom
+
+------------------------------------------------------------
+Opening stage with nothing loaded initially
+/
+  ModelGroup_1
+  ModelGroup_2
+  Model_1
+  Model_2
+
+------------------------------------------------------------
+Loading instance /Model_1
+Resynced:
+   ['/Model_1']
+Changed Info:
+   []
+/
+  ModelGroup_1
+  ModelGroup_2
+  Model_1 [master: </__Master_1>]
+  Model_2
+  __Master_1 [prim index: </Model_1>]
+    geom
+
+------------------------------------------------------------
+Loading instance /Model_2
+Resynced:
+   ['/Model_2']
+Changed Info:
+   []
+/
+  ModelGroup_1
+  ModelGroup_2
+  Model_1 [master: </__Master_1>]
+  Model_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_1>]
+    geom
+
+------------------------------------------------------------
+Unloading instance /Model_1
+Resynced:
+   ['/Model_1']
+Changed Info:
+   []
+/
+  ModelGroup_1
+  ModelGroup_2
+  Model_1
+  Model_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_2>]
+    geom
+
+------------------------------------------------------------
+Loading instance /ModelGroup_1
+Resynced:
+   ['/ModelGroup_1', '/ModelGroup_1/Model']
+Changed Info:
+   []
+/
+  ModelGroup_1 [master: </__Master_2>]
+  ModelGroup_2
+  Model_1
+  Model_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_2>]
+    geom
+  __Master_2 [prim index: </ModelGroup_1>]
+    Model [master: </__Master_1>]
+
+------------------------------------------------------------
+Loading instance /ModelGroup_2
+Resynced:
+   ['/ModelGroup_2']
+Changed Info:
+   []
+/
+  ModelGroup_1 [master: </__Master_2>]
+  ModelGroup_2 [master: </__Master_2>]
+  Model_1
+  Model_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_2>]
+    geom
+  __Master_2 [prim index: </ModelGroup_1>]
+    Model [master: </__Master_1>]
+
+------------------------------------------------------------
+Unloading nested instance in ModelGroup
+Resynced:
+   ['/ModelGroup_1/Model']
+Changed Info:
+   []
+/
+  ModelGroup_1 [master: </__Master_2>]
+  ModelGroup_2 [master: </__Master_2>]
+  Model_1
+  Model_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_2>]
+    geom
+  __Master_2 [prim index: </ModelGroup_1>]
+    Model
+
+------------------------------------------------------------
+Unloading instance /ModelGroup_1
+Resynced:
+   ['/ModelGroup_1', '/ModelGroup_1/Model']
+Changed Info:
+   []
+/
+  ModelGroup_1
+  ModelGroup_2 [master: </__Master_2>]
+  Model_1
+  Model_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_2>]
+    geom
+  __Master_2 [prim index: </ModelGroup_2>]
+    Model
+
+========= TestPayloads2 ...
+
+Opening stage with nothing loaded initially
+/
+  Model_1 [master: </__Master_1>]
+  Model_2 [master: </__Master_1>]
+  Model_3 [master: </__Master_1>]
+  Model_4 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_1>]
+
+------------------------------------------------------------
+Loading instance /Model_1
+Resynced:
+   ['/Model_1']
+Changed Info:
+   []
+/
+  Model_1 [master: </__Master_2>]
+  Model_2 [master: </__Master_1>]
+  Model_3 [master: </__Master_1>]
+  Model_4 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_2>]
+  __Master_2 [prim index: </Model_1>]
+    Geom
+
+------------------------------------------------------------
+Unload instance /Model_1, load instance /Model_2
+Resynced:
+   ['/Model_1', '/Model_2']
+Changed Info:
+   []
+/
+  Model_1 [master: </__Master_1>]
+  Model_2 [master: </__Master_2>]
+  Model_3 [master: </__Master_1>]
+  Model_4 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_3>]
+  __Master_2 [prim index: </Model_2>]
+    Geom
+
+------------------------------------------------------------
+Unload instance /Model_2, load instance /Model_3
+Resynced:
+   ['/Model_2', '/Model_3']
+Changed Info:
+   []
+/
+  Model_1 [master: </__Master_1>]
+  Model_2 [master: </__Master_1>]
+  Model_3 [master: </__Master_2>]
+  Model_4 [master: </__Master_1>]
+  __Master_1 [prim index: </Model_1>]
+  __Master_2 [prim index: </Model_3>]
+    Geom
+
+------------------------------------------------------------
+Unload instance /Model_3, load instance /Model_4
+Resynced:
+   ['/Model_3', '/Model_4']
+Changed Info:
+   []
+/
+  Model_1 [master: </__Master_1>]
+  Model_2 [master: </__Master_1>]
+  Model_3 [master: </__Master_1>]
+  Model_4 [master: </__Master_2>]
+  __Master_1 [prim index: </Model_1>]
+  __Master_2 [prim index: </Model_4>]
+    Geom
+
+========= TestDeactivated ...
+
+/
+  Reference
+    Geom
+  Instance_1 [master: </__Master_1>]
+  Instance_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Instance_1>]
+    Geom
+
+------------------------------------------------------------
+Deactivating instance /Instance_1
+Resynced:
+   ['/Instance_1', '/__Master_1']
+Changed Info:
+   []
+/
+  Reference
+    Geom
+  Instance_1
+  Instance_2 [master: </__Master_1>]
+  __Master_1 [prim index: </Instance_2>]
+    Geom
+
+------------------------------------------------------------
+Deactivating instance /Instance_2
+Resynced:
+   ['/Instance_2', '/__Master_1']
+Changed Info:
+   []
+/
+  Reference
+    Geom
+  Instance_1
+  Instance_2
+
+------------------------------------------------------------
+Activating instance /Instance_1
+Resynced:
+   ['/Instance_1', '/__Master_2']
+Changed Info:
+   []
+/
+  Reference
+    Geom
+  Instance_1 [master: </__Master_2>]
+  Instance_2
+  __Master_2 [prim index: </Instance_1>]
+    Geom
+
+------------------------------------------------------------
+Activating instance /Instance_2
+Resynced:
+   ['/Instance_2']
+Changed Info:
+   []
+/
+  Reference
+    Geom
+  Instance_1 [master: </__Master_2>]
+  Instance_2 [master: </__Master_2>]
+  __Master_2 [prim index: </Instance_1>]
+    Geom
+

@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/preprocessor/if.hpp>
@@ -39,7 +40,7 @@
 /// execution that could possibly block.  This class should not be used anywhere
 /// in an inner-loop.  It is meant to be used in high-level scopes where we can
 /// provide descriptions relevant to application users.
-class TfScopeDescription : boost::noncopyable
+class TF_API TfScopeDescription : boost::noncopyable
 {
 public:
     /// \brief Construct with a description.  Push \a description on the stack
@@ -71,7 +72,7 @@ private:
 /// \brief Return a copy of the current description stack as a vector of
 /// strings.  The most recently pushed description is at back(), and the least
 /// recently pushed description is at front().
-std::vector<std::string>
+TF_API std::vector<std::string>
 TfGetCurrentScopeDescriptionStack();
 
 /// \brief Macro that accepts either a single string, or printf-style arguments

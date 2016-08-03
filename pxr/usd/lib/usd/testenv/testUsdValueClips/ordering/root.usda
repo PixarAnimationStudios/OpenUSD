@@ -1,0 +1,8 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sublayer_with_clip_intro.usda@,
+        @./sublayer_with_opinion.usda@
+    ]
+)
+

@@ -26,6 +26,9 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 
+// This is defined on Windows in ComBaseAPI.h
+#undef interface
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((interface, "interface:"))

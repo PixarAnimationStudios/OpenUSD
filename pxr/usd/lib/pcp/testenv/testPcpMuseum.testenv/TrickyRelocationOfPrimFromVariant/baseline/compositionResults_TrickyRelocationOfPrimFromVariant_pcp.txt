@@ -1,0 +1,68 @@
+Loading @testPcpMuseum.testenv/TrickyRelocationOfPrimFromVariant/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.usda            /Char
+    CharRig.usda         /CharRig
+    CharRig.usda         /CharRig{TailRigVersion=Standard}
+
+Variant Selections:
+    {TailRigVersion = Standard}
+
+Child names:
+     ['TailRig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/TailRig>
+
+Prim Stack:
+    CharRig.usda         /CharRig{TailRigVersion=Standard}TailRig
+    TailRig.usda         /TailRig
+
+Prohibited child names:
+     ['Tail']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim>
+
+Prim Stack:
+    CharRig.usda         /CharRig/Anim
+
+Child names:
+     ['Tail']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim/Tail>
+
+Prim Stack:
+    TailRig.usda         /TailRig/Tail
+
+------------------------------------------------------------------------
+Results for composing </Char2>
+
+Prim Stack:
+    root.usda            /Char2
+    CharRig.usda         /CharRig2
+    CharRig.usda         /CharRig2{TailRigVersion=None}
+
+Variant Selections:
+    {TailRigVersion = None}
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char2/Anim>
+
+Prim Stack:
+    CharRig.usda         /CharRig2/Anim
+
+Child names:
+     ['Tail']
+

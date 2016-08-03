@@ -1,0 +1,773 @@
+-------------------------------------------------------
+-- glslfx version 0.1
+#import $TOOLS/hd/shaders/basisCurves.glslfx
+-- configuration
+{"techniques": {"default": {
+"vertexShader" : { "source" : ["Instancing.Transform", "Line.Vertex", "BasisCurves.Vertex.Normal.CameraFacing"] }
+, "fragmentShader" : { "source" : ["Line.Fragment"] }
+}}}
+-------------------------------------------------------
+=======================================================
+  VERTEX SHADER                                        
+=======================================================
+#version 440
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#define HD_SHADER_API 1
+#define MAT4 mat4
+struct hd_ivec3 { int    x, y, z; };
+struct hd_vec3  { float  x, y, z; };
+struct hd_dvec3 { double x, y, z; };
+ivec3 hd_ivec3_get(hd_ivec3 v) { return ivec3(v.x, v.y, v.z); }
+ivec3 hd_ivec3_get(ivec3 v)    { return v; }
+vec3  hd_vec3_get(hd_vec3 v)   { return vec3(v.x, v.y, v.z); }
+vec3  hd_vec3_get(vec3 v)      { return v; }
+dvec3 hd_dvec3_get(hd_dvec3 v) { return dvec3(v.x, v.y, v.z); }
+dvec3 hd_dvec3_get(dvec3 v)    { return v; }
+int hd_int_get(int v)          { return v; }
+int hd_int_get(ivec2 v)        { return v.x; }
+int hd_int_get(ivec3 v)        { return v.x; }
+int hd_int_get(ivec4 v)        { return v.x; }
+#define HD_NUM_PRIMITIVE_VERTS 3
+#define HD_HAS_transform 1
+#define HD_HAS_transformInverse 1
+#define HD_HAS_color 1
+#define HD_HAS_primID 1
+#define HD_HAS_widths 1
+#define HD_INSTANCER_NUM_LEVELS 0
+#define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_HAS_faceVisibility 1
+#define HD_HAS_points 1
+#define HD_HAS_normals 1
+struct hd_drawingCoord {                       
+  int modelCoord;                              
+  int constantCoord;                           
+  int elementCoord;                            
+  int primitiveCoord;                          
+  int fvarCoord;                               
+  int shaderCoord;                             
+  int instanceIndex[HD_INSTANCE_INDEX_WIDTH];  
+  int instanceCoords[HD_INSTANCE_INDEX_WIDTH]; 
+};
+hd_drawingCoord GetDrawingCoord();
+struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
+struct ConstantData9 {
+  mat4 transform;
+  mat4 transformInverse;
+  vec4 color;
+  vec4 primID;
+  float widths;
+};
+layout (location = 0) uniform ConstantData9 *constantPrimVars;
+mat4 HdGet_transform(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].transform;
+}
+mat4 HdGet_transform() { return HdGet_transform(0); }
+mat4 HdGet_transformInverse(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].transformInverse;
+}
+mat4 HdGet_transformInverse() { return HdGet_transformInverse(0); }
+vec4 HdGet_color(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].color;
+}
+vec4 HdGet_color() { return HdGet_color(0); }
+vec4 HdGet_primID(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].primID;
+}
+vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGet_widths(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].widths;
+}
+float HdGet_widths() { return HdGet_widths(0); }
+layout (location = 2) in ivec4 drawingCoord0;
+layout (location = 3) in ivec3 drawingCoord1;
+hd_instanceIndex GetInstanceIndex() {  hd_instanceIndex r; r.indices[0] = 0; return r; }
+flat out hd_drawingCoord vsDrawingCoord;
+flat out hd_drawingCoord gsDrawingCoord;
+hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc; 
+  dc.modelCoord     = drawingCoord0.x; 
+  dc.constantCoord  = drawingCoord0.y; 
+  dc.elementCoord   = drawingCoord0.z; 
+  dc.primitiveCoord = drawingCoord0.w; 
+  dc.fvarCoord      = drawingCoord1.x; 
+  dc.shaderCoord    = drawingCoord1.z; 
+  dc.instanceIndex  = GetInstanceIndex().indices;
+  return dc;
+}
+layout (location = 0) in vec3 points;
+layout (location = 1) in vec3 normals;
+out PrimVars {
+  vec3 points;
+  vec3 normals;
+} outPrimVars;
+vec3 HdGet_points(int localIndex) { return hd_vec3_get(points);}
+vec3 HdGet_points() { return HdGet_points(0); }
+vec3 HdGet_normals(int localIndex) { return hd_vec3_get(normals);}
+vec3 HdGet_normals() { return HdGet_normals(0); }
+void ProcessPrimVars() {
+  vsDrawingCoord = GetDrawingCoord();
+  gsDrawingCoord = GetDrawingCoord();
+  outPrimVars.points = points;
+  outPrimVars.normals = normals;
+}
+
+// ---------------------------------------------------------------------------
+// global defines
+// ---------------------------------------------------------------------------
+// codeGen can override this range (currently not).
+// quadro 4000's max is 189.
+#ifndef HD_GL_POINT_SIZE_MAX
+#define HD_GL_POINT_SIZE_MAX  100.0
+#endif
+#ifndef HD_GL_POINT_SIZE_MIN
+#define HD_GL_POINT_SIZE_MIN  .45
+#endif
+
+// ---------------------------------------------------------------------------
+// render pass states
+// ---------------------------------------------------------------------------
+
+MAT4  GetWorldToViewMatrix() {
+#if defined(HD_HAS_worldToViewMatrix)
+    return MAT4(HdGet_worldToViewMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetWorldToViewInverseMatrix() {
+#if defined(HD_HAS_worldToViewInverseMatrix)
+    return MAT4(HdGet_worldToViewInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetProjectionMatrix() {
+#if defined(HD_HAS_projectionMatrix)
+    return MAT4(HdGet_projectionMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+float GetLightingBlendAmount() {
+#if defined(HD_HAS_lightingBlendAmount)
+    return HdGet_lightingBlendAmount();
+#else
+    return 1;
+#endif
+}
+vec4  GetViewport() {
+#if defined(HD_HAS_viewport)
+    return HdGet_viewport();
+#else
+    return vec4(0,0,1,1);
+#endif
+}
+float GetTessLevel() {
+#if defined(HD_HAS_tessLevel)
+    return HdGet_tessLevel();
+#else
+    return 1;
+#endif
+}
+float GetPointSize(int vertexID) {
+#if defined(HD_HAS_pointSize)
+    return HdGet_pointSize();
+#else
+    return 3.0;
+#endif
+}
+vec4  GetWireframeColor() {
+#if defined(HD_HAS_wireframeColor)
+    return HdGet_wireframeColor();
+#else
+    return vec4(0,0,0,1);
+#endif
+}
+
+bool ShouldCullFace(bool frontFacing, bool doubleSided)
+{
+    const uint HdCullStyleDontCare               = uint(0);
+    const uint HdCullStyleNothing                = uint(1);
+    const uint HdCullStyleBack                   = uint(2);
+    const uint HdCullStyleFront                  = uint(3);
+    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
+    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
+
+#if defined(HD_HAS_cullStyle)
+    uint cullStyle = HdGet_cullStyle();
+#else
+    uint cullStyle = HdCullStyleNothing;
+#endif
+
+    return ((cullStyle == HdCullStyleBack                   && !frontFacing) ||
+            (cullStyle == HdCullStyleFront                  &&  frontFacing) ||
+            (cullStyle == HdCullStyleBackUnlessDoubleSided  && !frontFacing && !doubleSided) ||
+            (cullStyle == HdCullStyleFrontUnlessDoubleSided &&  frontFacing && !doubleSided));
+}
+
+bool IsFlipped(MAT4 m)
+{
+    // The sign of the determinant indicates whether m flips handedness
+#if 0
+    return determinant(m) < 0.0;
+#else
+    // XXX: workaround for the possible shader compiler bug on 319 and 340.
+    // swizzle operation on SSBO doesn't work correctly.
+    return (m[0][0] * m[1][1] * m[2][2] +
+            m[0][1] * m[1][2] * m[2][0] +
+            m[0][2] * m[1][0] * m[2][1] -
+            m[0][0] * m[1][2] * m[2][1] -
+            m[0][1] * m[1][0] * m[2][2] -
+            m[0][2] * m[1][1] * m[2][0]) < 0.0;
+#endif
+}
+
+bool ShouldDiscardByAlpha(vec4 color)
+{
+#if defined(HD_HAS_alphaThreshold)
+    float alphaThreshold = HdGet_alphaThreshold();
+#else
+    float alphaThreshold = 0;
+#endif
+    return (color.a < alphaThreshold);
+}
+
+void ApplyClipPlanes(vec4 Peye);
+
+void RenderColor(vec4 color);
+
+
+
+void ApplyClipPlanes(vec4 Peye)
+{
+#if defined(HD_HAS_clipPlanes)
+#if defined(HD_NUM_clipPlanes) // more than 1 (clipPlanes[N])
+    for (int i=0; i<HD_NUM_clipPlanes; ++i) {
+        gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+    }
+#else                          // only 1      (clipPlanes)
+    gl_ClipDistance[0] = dot(HdGet_clipPlanes(), Peye);
+#endif
+#endif
+}
+
+
+
+// quaternion to matrix. x=real, yzw=imaginary
+MAT4 GetRotationMatrix(vec4 q)
+{
+    MAT4 r;
+    r[0].xyzw = vec4(1 - 2 * (q.z * q.z + q.w * q.w),
+                         2 * (q.y * q.z + q.w * q.x),
+                         2 * (q.y * q.w - q.z * q.x),
+                     0);
+    r[1].xyzw = vec4(    2 * (q.y * q.z - q.w * q.x),
+                     1 - 2 * (q.y * q.y + q.w * q.w),
+                         2 * (q.z * q.w + q.y * q.x),
+                     0);
+    r[2].xyzw = vec4(    2 * (q.y * q.w + q.z * q.x),
+                         2 * (q.z * q.w - q.y * q.x),
+                     1 - 2 * (q.y * q.y + q.z * q.z),
+                     0);
+    r[3] = vec4(0, 0, 0, 1);
+    return r;
+}
+
+// ---------------------------------------------------------------------------
+
+MAT4 GetInstanceTransform(int level)
+{
+    MAT4 m = MAT4(1);
+#ifdef HD_HAS_INSTANCE_instanceTransform
+    m = HdGetInstance_instanceTransform(level, MAT4(1)) * m;
+#endif
+
+    // instance transform elements are applied:
+    //   scale then rotate then translate
+    //   i.e. (T * R * S) * position
+
+#ifdef HD_HAS_INSTANCE_scale
+    vec3 s = HdGetInstance_scale(level, /*default=*/vec3(1));
+    m = MAT4(s.x,   0,   0, 0,
+               0, s.y,   0, 0,
+               0,   0, s.z, 0,
+               0,   0,   0, 1) * m;
+#endif
+
+#ifdef HD_HAS_INSTANCE_rotate // GfQuaternion(real, ix, iy, iz)
+    vec4 q = HdGetInstance_rotate(level, /*default=*/vec4(0));
+    m = GetRotationMatrix(q) * m;
+#endif
+
+#ifdef HD_HAS_INSTANCE_translate
+    vec3 t = HdGetInstance_translate(level, /*default=*/vec3(0));
+    m = MAT4(  1,   0,   0,  0,
+               0,   1,   0,  0,
+               0,   0,   1,  0,
+             t.x, t.y, t.z,  1) * m;
+#endif
+    return m;
+}
+
+MAT4 GetInstanceTransformInverse(int level)
+{
+    MAT4 m = MAT4(1);
+
+#ifdef HD_HAS_INSTANCE_instanceTransform
+    m = inverse(HdGetInstance_instanceTransform(level, MAT4(1))) * m;
+#endif
+
+#ifdef HD_HAS_INSTANCE_translate
+    vec3 it = -HdGetInstance_translate(level, /*default=*/vec3(0)); // negate
+    m = MAT4(   1,    0,    0, 0,
+                0,    1,    0, 0,
+                0,    0,    1, 0,
+             it.x, it.y, it.z, 1) * m;
+#endif
+
+#ifdef HD_HAS_INSTANCE_rotate
+    vec4 q = HdGetInstance_rotate(level, /*default=*/vec4(0));
+    q.yzw = -q.yzw; // inverse rotataion axis
+    m = GetRotationMatrix(q) * m;
+#endif
+
+#ifdef HD_HAS_INSTANCE_scale
+    vec3 is = 1.0/HdGetInstance_scale(level, /*default=*/vec3(1)); // inverse scale
+    m = MAT4(is.x,    0,    0,  0,
+                0, is.y,    0,  0,
+                0,    0, is.z,  0,
+                0,    0,    0,  1) * m;
+#endif
+    return m;
+}
+
+// ---------------------------------------------------------------------------
+
+MAT4 GetInstanceTransform()
+{
+    MAT4 m = MAT4(1);
+#ifdef HD_INSTANCER_NUM_LEVELS
+    for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
+        m = GetInstanceTransform(i) * m;
+#ifdef HD_HAS_instancerTransform
+        m = HdGet_instancerTransform(i) * m;
+#endif
+    }
+#endif
+    return m;
+}
+
+MAT4 GetInstanceTransformInverse()
+{
+    MAT4 m = MAT4(1);
+#ifdef HD_INSTANCER_NUM_LEVELS
+    for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
+        m = m * GetInstanceTransformInverse(i);
+#ifdef HD_HAS_instancerTransformInverse
+        m = m * HdGet_instancerTransformInverse(i);
+#endif
+    }
+#endif
+    return m;
+}
+
+// ---------------------------------------------------------------------------
+
+MAT4 ApplyInstanceTransform(MAT4 m)
+{
+    return GetInstanceTransform() * m;
+}
+
+MAT4 ApplyInstanceTransformInverse(MAT4 m)
+{
+    return m * GetInstanceTransformInverse();
+}
+
+// XXX: move to better namespace
+bool Instance_IsFlipped(MAT4 m)
+{
+    // The sign of the determinant indicates whether m flips handedness
+#if 0
+    return determinant(m) < 0.0;
+#else
+    // XXX: workaround for the possible shader compiler bug on 319 and 340.
+    // swizzle operation on SSBO doesn't work correctly.
+    return (m[0][0] * m[1][1] * m[2][2] +
+            m[0][1] * m[1][2] * m[2][0] +
+            m[0][2] * m[1][0] * m[2][1] -
+            m[0][0] * m[1][2] * m[2][1] -
+            m[0][1] * m[1][0] * m[2][2] -
+            m[0][2] * m[1][1] * m[2][0]) < 0.0;
+#endif
+}
+
+bool IsFlipped()
+{
+#if defined(HD_HAS_isFlipped)
+    bool flip = (HdGet_isFlipped() != 0);
+#elif defined(HD_HAS_transform)
+    bool flip = Instance_IsFlipped(HdGet_transform());
+#else
+    bool flip = false;
+#endif
+
+#ifdef HD_HAS_INSTANCE_scale
+    for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
+        vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
+        flip = flip ^^ ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
+    }
+#endif
+
+    return flip;
+}
+
+
+
+out VertexData
+{
+    vec4 Peye;
+} outData;
+
+void main(void)
+{
+    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    vec4 point     = vec4(HdGet_points().xyz, 1);
+
+    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+
+    ProcessPrimVars();
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+}
+
+
+
+vec3 getNormal(MAT4 transform)
+{
+    // Generate a camera-facing normal in camera/eye space, designed to match
+    // RenderMan.
+    return vec3(0, 0, 1);
+}
+
+
+=======================================================
+  TESS CONTROL SHADER                                  
+=======================================================
+=======================================================
+  TESS EVAL SHADER                                     
+=======================================================
+=======================================================
+  GEOMETRY SHADER                                      
+=======================================================
+=======================================================
+  FRAGMENT SHADER                                      
+=======================================================
+#version 440
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#define HD_SHADER_API 1
+#define MAT4 mat4
+struct hd_ivec3 { int    x, y, z; };
+struct hd_vec3  { float  x, y, z; };
+struct hd_dvec3 { double x, y, z; };
+ivec3 hd_ivec3_get(hd_ivec3 v) { return ivec3(v.x, v.y, v.z); }
+ivec3 hd_ivec3_get(ivec3 v)    { return v; }
+vec3  hd_vec3_get(hd_vec3 v)   { return vec3(v.x, v.y, v.z); }
+vec3  hd_vec3_get(vec3 v)      { return v; }
+dvec3 hd_dvec3_get(hd_dvec3 v) { return dvec3(v.x, v.y, v.z); }
+dvec3 hd_dvec3_get(dvec3 v)    { return v; }
+int hd_int_get(int v)          { return v; }
+int hd_int_get(ivec2 v)        { return v.x; }
+int hd_int_get(ivec3 v)        { return v.x; }
+int hd_int_get(ivec4 v)        { return v.x; }
+#define HD_NUM_PRIMITIVE_VERTS 3
+#define HD_HAS_transform 1
+#define HD_HAS_transformInverse 1
+#define HD_HAS_color 1
+#define HD_HAS_primID 1
+#define HD_HAS_widths 1
+#define HD_INSTANCER_NUM_LEVELS 0
+#define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_HAS_faceVisibility 1
+#define HD_HAS_points 1
+#define HD_HAS_normals 1
+struct hd_drawingCoord {                       
+  int modelCoord;                              
+  int constantCoord;                           
+  int elementCoord;                            
+  int primitiveCoord;                          
+  int fvarCoord;                               
+  int shaderCoord;                             
+  int instanceIndex[HD_INSTANCE_INDEX_WIDTH];  
+  int instanceCoords[HD_INSTANCE_INDEX_WIDTH]; 
+};
+hd_drawingCoord GetDrawingCoord();
+struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
+struct ConstantData9 {
+  mat4 transform;
+  mat4 transformInverse;
+  vec4 color;
+  vec4 primID;
+  float widths;
+};
+layout (location = 0) uniform ConstantData9 *constantPrimVars;
+mat4 HdGet_transform(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].transform;
+}
+mat4 HdGet_transform() { return HdGet_transform(0); }
+mat4 HdGet_transformInverse(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].transformInverse;
+}
+mat4 HdGet_transformInverse() { return HdGet_transformInverse(0); }
+vec4 HdGet_color(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].color;
+}
+vec4 HdGet_color() { return HdGet_color(0); }
+vec4 HdGet_primID(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].primID;
+}
+vec4 HdGet_primID() { return HdGet_primID(0); }
+float HdGet_widths(int localIndex) {
+  int index = GetDrawingCoord().constantCoord;
+  return constantPrimVars[index].widths;
+}
+float HdGet_widths() { return HdGet_widths(0); }
+flat in hd_drawingCoord gsDrawingCoord;
+hd_drawingCoord GetDrawingCoord() { 
+  hd_drawingCoord dc = gsDrawingCoord; 
+  dc.primitiveCoord += gl_PrimitiveID; 
+  return dc; 
+}
+int GetElementID();
+layout (location = 1) uniform float *faceVisibility;
+int GetElementID() {
+  return 0;
+}
+int GetEdgeFlag(int localIndex) {
+  return 0;
+}
+ivec3 GetPatchParam() {
+  return ivec3(0, 0, 0);
+}
+int GetFVarIndex(int localIndex) {
+  return 0;
+}
+float HdGet_faceVisibility(int localIndex) {
+  int index = GetElementID();
+  return float(faceVisibility[index]);
+}
+float HdGet_faceVisibility() { return HdGet_faceVisibility(0); }
+in PrimVars {
+  vec3 points;
+  vec3 normals;
+} inPrimVars;
+vec3 HdGet_points(int localIndex) { return inPrimVars.points;}
+vec3 HdGet_points() { return HdGet_points(0); }
+vec3 HdGet_normals(int localIndex) { return inPrimVars.normals;}
+vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 GetPatchCoord(int index);
+vec4 GetPatchCoord() { return GetPatchCoord(0); }
+
+// ---------------------------------------------------------------------------
+// global defines
+// ---------------------------------------------------------------------------
+// codeGen can override this range (currently not).
+// quadro 4000's max is 189.
+#ifndef HD_GL_POINT_SIZE_MAX
+#define HD_GL_POINT_SIZE_MAX  100.0
+#endif
+#ifndef HD_GL_POINT_SIZE_MIN
+#define HD_GL_POINT_SIZE_MIN  .45
+#endif
+
+// ---------------------------------------------------------------------------
+// render pass states
+// ---------------------------------------------------------------------------
+
+MAT4  GetWorldToViewMatrix() {
+#if defined(HD_HAS_worldToViewMatrix)
+    return MAT4(HdGet_worldToViewMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetWorldToViewInverseMatrix() {
+#if defined(HD_HAS_worldToViewInverseMatrix)
+    return MAT4(HdGet_worldToViewInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetProjectionMatrix() {
+#if defined(HD_HAS_projectionMatrix)
+    return MAT4(HdGet_projectionMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+float GetLightingBlendAmount() {
+#if defined(HD_HAS_lightingBlendAmount)
+    return HdGet_lightingBlendAmount();
+#else
+    return 1;
+#endif
+}
+vec4  GetViewport() {
+#if defined(HD_HAS_viewport)
+    return HdGet_viewport();
+#else
+    return vec4(0,0,1,1);
+#endif
+}
+float GetTessLevel() {
+#if defined(HD_HAS_tessLevel)
+    return HdGet_tessLevel();
+#else
+    return 1;
+#endif
+}
+float GetPointSize(int vertexID) {
+#if defined(HD_HAS_pointSize)
+    return HdGet_pointSize();
+#else
+    return 3.0;
+#endif
+}
+vec4  GetWireframeColor() {
+#if defined(HD_HAS_wireframeColor)
+    return HdGet_wireframeColor();
+#else
+    return vec4(0,0,0,1);
+#endif
+}
+
+bool ShouldCullFace(bool frontFacing, bool doubleSided)
+{
+    const uint HdCullStyleDontCare               = uint(0);
+    const uint HdCullStyleNothing                = uint(1);
+    const uint HdCullStyleBack                   = uint(2);
+    const uint HdCullStyleFront                  = uint(3);
+    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
+    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
+
+#if defined(HD_HAS_cullStyle)
+    uint cullStyle = HdGet_cullStyle();
+#else
+    uint cullStyle = HdCullStyleNothing;
+#endif
+
+    return ((cullStyle == HdCullStyleBack                   && !frontFacing) ||
+            (cullStyle == HdCullStyleFront                  &&  frontFacing) ||
+            (cullStyle == HdCullStyleBackUnlessDoubleSided  && !frontFacing && !doubleSided) ||
+            (cullStyle == HdCullStyleFrontUnlessDoubleSided &&  frontFacing && !doubleSided));
+}
+
+bool IsFlipped(MAT4 m)
+{
+    // The sign of the determinant indicates whether m flips handedness
+#if 0
+    return determinant(m) < 0.0;
+#else
+    // XXX: workaround for the possible shader compiler bug on 319 and 340.
+    // swizzle operation on SSBO doesn't work correctly.
+    return (m[0][0] * m[1][1] * m[2][2] +
+            m[0][1] * m[1][2] * m[2][0] +
+            m[0][2] * m[1][0] * m[2][1] -
+            m[0][0] * m[1][2] * m[2][1] -
+            m[0][1] * m[1][0] * m[2][2] -
+            m[0][2] * m[1][1] * m[2][0]) < 0.0;
+#endif
+}
+
+bool ShouldDiscardByAlpha(vec4 color)
+{
+#if defined(HD_HAS_alphaThreshold)
+    float alphaThreshold = HdGet_alphaThreshold();
+#else
+    float alphaThreshold = 0;
+#endif
+    return (color.a < alphaThreshold);
+}
+
+void ApplyClipPlanes(vec4 Peye);
+
+void RenderColor(vec4 color);
+
+
+
+vec4 ApplyColorOverrides(vec4 color)
+{
+#if defined(HD_HAS_overrideColor)
+    // Mix in override color
+    vec4 overrideColor = HdGet_overrideColor();
+    color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
+#endif
+    return color;
+}
+
+layout (location = 0) out vec4 colorOut;
+
+void RenderColor(vec4 color)
+{
+    colorOut = color;
+}
+
+
+
+vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
+{
+    return (color * dot(normalize(Neye), vec3(0,0,1)));
+}
+
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // lighting
+    color.rgb = SimpleLighting(Peye.xyz, Neye, color.rgb);
+    return color;
+}
+
+
+in VertexData
+{
+    vec4 Peye;
+} inData;
+
+vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color);
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
+
+void main(void)
+{
+    vec4 color = HdGet_color();
+
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+
+    color.rgb = ApplyColorOverrides(color).rgb;
+
+    // We would like to have a better oriented normal here, however to keep the
+    // shader fast, we use this camera-facing approximation.
+    vec3 Neye = vec3(0,0,1);
+
+    vec4 patchCoord = vec4(0);
+    color.rgb = mix(color.rgb,
+                    surfaceShader(vec4(Peye, 1), Neye, color, patchCoord).rgb,
+                    GetLightingBlendAmount());
+
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+
+    RenderColor(color);
+}
+
+OK

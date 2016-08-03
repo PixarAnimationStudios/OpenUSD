@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file wrapRefPtrTracker.cpp
-
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/refPtrTracker.h"
@@ -74,3 +73,18 @@ wrapRefPtrTracker()
         .def("GetTracesReportForWatched", ::_ReportTracesForWatched)
         ;
 }
+
+#if defined(ARCH_COMPILER_MSVC)
+// There is a bug in the compiler which means we have to provide this
+// implementation. See here for more information:
+// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
+namespace boost
+{
+    template<> 
+    const volatile TfRefPtrTracker* 
+        get_pointer(const volatile TfRefPtrTracker* p)
+    { 
+        return p; 
+    }
+}
+#endif 

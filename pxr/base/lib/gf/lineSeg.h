@@ -26,6 +26,8 @@
 
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/api.h"
+
 #include <float.h>
 #include <iosfwd>
 
@@ -74,6 +76,7 @@ class GfLineSeg {
     // Returns the point on the line that is closest to \p point. If
     // \p t is not \c NULL, it will be set to the parametric
     // distance along the line of the closest point.
+    GF_API
     GfVec3d FindClosestPoint(const GfVec3d &point, double *t = NULL) const;
 
     //!
@@ -92,9 +95,11 @@ class GfLineSeg {
     }
 
   private:
+    GF_API
     friend bool GfFindClosestPoints( const GfLine &, const GfLineSeg &,
                                      GfVec3d *, GfVec3d *,
                                      double *, double * );
+    GF_API
     friend bool GfFindClosestPoints( const GfLineSeg &, const GfLineSeg &,
                                      GfVec3d *, GfVec3d *,
                                      double *, double * );
@@ -112,6 +117,7 @@ class GfLineSeg {
 // This returns \c false if the lines were close enough to
 // parallel that no points could be computed; in this case, the
 // other return values are undefined.
+GF_API
 bool GfFindClosestPoints( const GfLine &line, const GfLineSeg &seg,
                           GfVec3d *p1 = nullptr, GfVec3d *p2 = nullptr,
                           double *t1 = nullptr, double *t2 = nullptr );
@@ -125,12 +131,13 @@ bool GfFindClosestPoints( const GfLine &line, const GfLineSeg &seg,
 // This returns \c false if the lines were close enough to
 // parallel that no points could be computed; in this case, the
 // other return values are undefined.
+GF_API
 bool GfFindClosestPoints( const GfLineSeg &seg1, const GfLineSeg &seg2,
                           GfVec3d *p1 = nullptr, GfVec3d *p2 = nullptr,
                           double *t1 = nullptr, double *t2 = nullptr );
 
 /// Output a GfLineSeg.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream &operator<<(std::ostream&, const GfLineSeg&);
+GF_API std::ostream &operator<<(std::ostream&, const GfLineSeg&);
 
 #endif // GF_LINESEG_H

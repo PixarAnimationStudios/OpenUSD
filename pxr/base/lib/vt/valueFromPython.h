@@ -27,6 +27,7 @@
 #define VT_VALUE_FROM_PYTHON_H
 
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/api.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -49,7 +50,7 @@ public:
             not _GetInstance()._rvalueExtractors.empty();
     }
     
-    static VtValue Invoke(PyObject *obj);
+    VT_API static VtValue Invoke(PyObject *obj);
 
     template <class T>
     static void Register(bool registerRvalue) {
@@ -73,7 +74,7 @@ private:
     private:
 	class _HolderBase {
 	public:
-	    virtual ~_HolderBase();
+	    VT_API virtual ~_HolderBase();
 	    virtual VtValue Invoke(PyObject *) const = 0;
 	};
 
@@ -123,12 +124,12 @@ private:
 	
     };
 
-    static Vt_ValueFromPythonRegistry &_GetInstance() {
-	return TfSingleton<Vt_ValueFromPythonRegistry>::GetInstance();
+    VT_API static Vt_ValueFromPythonRegistry &_GetInstance() {
+	    return TfSingleton<Vt_ValueFromPythonRegistry>::GetInstance();
     }
     
-    void _RegisterLValue(_Extractor const &e);
-    void _RegisterRValue(_Extractor const &e);
+	VT_API void _RegisterLValue(_Extractor const &e);
+	VT_API void _RegisterRValue(_Extractor const &e);
     
     std::vector<_Extractor> _lvalueExtractors;
     std::vector<_Extractor> _rvalueExtractors;
@@ -137,6 +138,8 @@ private:
     _LValueExtractorCache _lvalueExtractorCache;
 
 };
+
+VT_API_TEMPLATE_CLASS(TfSingleton<Vt_ValueFromPythonRegistry>);
 
 // Holders are created and inserted into the registry, and currently never die.
 template <class T>

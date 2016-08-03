@@ -24,6 +24,7 @@
 #ifndef HD_RENDER_PASS_H
 #define HD_RENDER_PASS_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/commandBuffer.h"
@@ -47,8 +48,11 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 ///
 class HdRenderPass : boost::noncopyable {
 public:
+	HDLIB_API
     HdRenderPass(HdRenderIndex *index);
+	HDLIB_API
     HdRenderPass(HdRenderIndex *index, const HdRprimCollection &collection);
+	HDLIB_API
     virtual ~HdRenderPass();
 
     /// Returns the HdRprimCollection to be drawn by this RenderPass.
@@ -56,6 +60,7 @@ public:
 
     /// Sets the HdRprimCollection, note that this may invalidate internal
     /// caches used to accelerate drawing.
+	HDLIB_API
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Returns the dirty list (maintained in the change tracker) for
@@ -65,12 +70,15 @@ public:
     }
 
     /// Execute render pass task
+	HDLIB_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 
     /// Sync the render pass resources
+	HDLIB_API
     void Sync();
 
     /// Return the render index
+	HDLIB_API
     HdRenderIndex * const GetRenderIndex() const { return _renderIndex; }
 
 private:

@@ -31,6 +31,7 @@ pxr_shared_library(vt
         wrapArray
 
     PUBLIC_HEADERS
+        api.h
         traits.h
         operators.h
         PRIVATE_CLASSES
@@ -58,31 +59,33 @@ pxr_shared_library(vt
     __init__.py
 )
 
-pxr_build_test(testVtCpp
-    LIBRARIES
-        tf
-        gf
-        vt
-    CPPFILES
-        testenv/testVtCpp.cpp
-)
-pxr_test_scripts(
-    testenv/testVtArray.py
-    testenv/testVtValue.py
-    testenv/testVtFunctions.py
-)
-pxr_register_test(testVtvalue
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
-)
-pxr_register_test(testVtArray
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"
-)
-pxr_register_test(testVtFunctions
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtFunctions"
-)
-pxr_register_test(testVtCpp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtCpp"
-)
+if(UNIX)
+    pxr_build_test(testVtCpp
+        LIBRARIES
+            tf
+            gf
+            vt
+        CPPFILES
+            testenv/testVtCpp.cpp
+    )
+    pxr_test_scripts(
+        testenv/testVtArray.py
+        testenv/testVtValue.py
+        testenv/testVtFunctions.py
+    )
+    pxr_register_test(testVtvalue
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
+    )
+    pxr_register_test(testVtArray
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"
+    )
+    pxr_register_test(testVtFunctions
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtFunctions"
+    )
+    pxr_register_test(testVtCpp
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtCpp"
+    )
+endif()

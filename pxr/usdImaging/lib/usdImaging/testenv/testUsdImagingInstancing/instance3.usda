@@ -1,0 +1,414 @@
+#usda 1.0
+(
+    """
+    This test exercises the case where multiple instances with the same
+    master have different shader bindings authored at each instance.
+    """
+    endFrame = 10
+    startFrame = 1
+)
+
+def Mesh "Mesh" (
+    active = false
+)
+{
+    Vec3f[] extent = [(-2, -2, -2), (2, 2, 2)]
+    token faceVaryingLinearInterpolation = "boundaries"
+    int[] faceVertexCounts = [4]
+    PointIndex[] faceVertexIndices = [0, 1, 3, 2]
+    token interpolateBoundary = "edgeAndCorner"
+    PointFloat[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+    uniform token subdivisionScheme = "catmullClark"
+}
+
+def BasisCurves "Curve" (
+    active = false
+)
+{
+    uniform token basis = "bspline"
+    int[] curveVertexCounts = [10]
+    Vec3f[] extent = [(-3.77021, -1.95556, -1), (2.79944, 9.61911, 1)]
+    uniform token orientation = "rightHanded"
+    PointFloat[] points = [(-2.77021, 5.61911, 0), (-2.64559, 1.85052, 0), (-2.52098, -1.91808, 0), (2.3203, -1.95556, 0), (2.59944, 0.794341, 0), (2.0742, 2.59551, 0), (-0.058857, 2.60262, 0), (-1.44907, 0.768724, 0), (-1.55156, 2.82384, 0), (-1.65406, 4.87896, 0)]
+    ColorFloat[] primvars:displayColor = [(0, 0.5, 1), (0.5, 0, 1), (0.5, 0.5, 0), (0.5, 0, 1), (0, 0.5, 1), (0.5, 0, 1), (0.5, 0.5, 0), (0.5, 0, 1), (0, 0.5, 1), (0.5, 0, 1)] (
+        interpolation = "vertex"
+    )
+    ColorFloat[] primvars:displayColor2 = [(0.1, 0.1, 0), (0, 1, 0), (1, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0)] (
+        interpolation = "vertex"
+    )
+    uniform token type = "cubic"
+    float[] widths = [0.22] (
+        interpolation = "constant"
+    )
+    uniform token wrap = "nonperiodic"
+}
+
+def Points "Points" (
+    active = false
+    customData = {
+        bool zUp = 1
+    }
+)
+{
+    Vec3f[] extent = [(-0.5, -0.5, -0.5), (0.52, 0.52, 0.52)]
+    PointFloat[] points = [(-0.5, -0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, 0.5)]
+    custom int primvars:detail_idx = 1 (
+        elementSize = 1
+        interpolation = "constant"
+    )
+    ColorFloat[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1)] (
+        interpolation = "vertex"
+    )
+    custom int[] primvars:id = [0, 1, 2, 3, 4] (
+        elementSize = 1
+        interpolation = "varying"
+    )
+    custom Vec2f[] primvars:map1_uv = [(0.1, 1), (1, 1), (0.1, 0.1), (1, 0.1), (0.5, 0.5)] (
+        interpolation = "vertex"
+    )
+    custom int primvars:prim_idx = 0 (
+        elementSize = 1
+        interpolation = "constant"
+    )
+    float[] widths = [0.56292385, 0.25219387, 0.86007416, 0.4467854, 0.25168622]
+}
+
+def Cube "Cube" (
+    active = false
+)
+{
+    ColorFloat[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+        interpolation = "vertex"
+    )
+}
+
+def Cone "Cone" (
+    active = false
+)
+{
+    ColorFloat[] primvars:displayColor2 = [(1, 0, 0)] (
+        interpolation = "constant"
+    )
+}
+
+def Sphere "Sphere" (
+    active = false
+)
+{
+    ColorFloat[] primvars:displayColor2 = [(1, 0, 0)] (
+        interpolation = "constant"
+    )
+}
+
+def Capsule "Capsule" (
+    active = false
+)
+{
+    ColorFloat[] primvars:displayColor2 = [(1, 0, 0)] (
+        interpolation = "constant"
+    )
+}
+
+def Xform "Meshes" (
+    active = false
+)
+{
+    def Mesh "Mesh_1" (
+        active = true
+        references = </Mesh>
+    )
+    {
+        ColorFloat[] primvars:displayColor2 = [(0, 0.1, 0.9), (0.9, 0.1, 0), (0.1, 0.9, 0), (0, 0.9, 0.9)] (
+            interpolation = "vertex"
+        )
+        custom Vec2f[] primvars:map1_uv = [(0, 1), (1, 1), (0, 0), (1, 0)] (
+            interpolation = "vertex"
+        )
+        custom float[] primvars:ptexFaceIndex = [0] (
+            interpolation = "uniform"
+        )
+        custom int primvars:ptexFaceOffset = 66 (
+            interpolation = "constant"
+        )
+    }
+
+    def Mesh "Mesh_2" (
+        active = true
+        references = </Mesh>
+    )
+    {
+        ColorFloat[] primvars:displayColor2 = [(0.1, 0.1, 0), (0, 1, 0), (1, 0, 0), (0.9, 0, 0)] (
+            interpolation = "vertex"
+        )
+        custom Vec2f[] primvars:map1_uv = [(0, 1), (0.4, 1), (0, 0), (0.4, 0)] (
+            interpolation = "vertex"
+        )
+        custom float[] primvars:ptexFaceIndex = [0] (
+            interpolation = "uniform"
+        )
+        custom int primvars:ptexFaceOffset = 67 (
+            interpolation = "constant"
+        )
+        custom Vec3d xformOp:translate = (0, 0, -4.25)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "Parent" (
+    active = true
+)
+{
+    def Scope "Looks"
+    {
+        def Look "UvLook"
+        {
+            rel hydraLook:surface = </Parent/Shaders/SurfUvTexture>
+        }
+
+        def Look "PrimvarLook"
+        {
+            rel hydraLook:surface = </Parent/Shaders/SurfPrimvar>
+        }
+
+        def Look "FallbackLook"
+        {
+            rel hydraLook:surface = </Parent/Shaders/SurfFallback>
+        }
+
+        def Look "PtexLook"
+        {
+            rel hydraLook:surface = </Parent/Shaders/SurfPtex>
+        }
+    }
+
+    def Scope "Shaders"
+    {
+        def HydraPbsSurface "SurfPrimvar"
+        {
+            uniform Vec3f diffuseColor = (0.07, 0.521, 0.8)
+            token diffuseColor:primvar = "displayColor2"
+            uniform asset info:source = @/usr/anim/menv30/testing/usdImaging/basicDrawing/shaders-surface.glslfx@
+        }
+
+        def HydraPbsSurface "SurfUvTexture"
+        {
+            uniform Vec3f diffuseColor = (1, 0, 1)
+            uniform asset diffuseColor:texture = @/usr/anim/menv30/testing/usdImaging/basicDrawing/shaders-diffuse-color.jpg@ (
+                uvPrimvar = "map1_uv"
+            )
+            uniform asset info:source = @/usr/anim/menv30/testing/usdImaging/basicDrawing/shaders-surface.glslfx@
+        }
+
+        def HydraPbsSurface "SurfFallback"
+        {
+            uniform Vec3f diffuseColor = (1, 0, 1)
+            uniform asset info:source = @/usr/anim/menv30/testing/usdImaging/basicDrawing/shaders-surface.glslfx@
+        }
+
+        def HydraPbsSurface "SurfPtex"
+        {
+            uniform Vec3f diffuseColor = (1, 0, 1)
+            uniform asset diffuseColor:texture = @/usr/anim/menv30/testing/usdImaging/basicDrawing/shaders-diffuse-color.ptx@
+            uniform asset info:source = @/usr/anim/menv30/testing/usdImaging/basicDrawing/shaders-surface.glslfx@
+        }
+    }
+
+    def Xform "Meshes"
+    {
+        def "Primvars" (
+            active = true
+            instanceable = true
+            references = </Meshes>
+        )
+        {
+            rel look:binding = </Parent/Looks/PrimvarLook>
+        }
+
+        def "UV" (
+            active = true
+            instanceable = true
+            references = </Meshes>
+        )
+        {
+            rel look:binding = </Parent/Looks/UvLook>
+            custom Vec3d xformOp:translate = (-4.25, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def "Fallback" (
+            active = true
+            instanceable = true
+            references = </Meshes>
+        )
+        {
+            rel look:binding = </Parent/Looks/FallbackLook>
+            custom Vec3d xformOp:translate = (4.25, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def "PTex" (
+            active = true
+            instanceable = true
+            references = </Meshes>
+        )
+        {
+            rel look:binding = </Parent/Looks/PtexLook>
+            custom Vec3d xformOp:translate = (8.5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Scope "Curves"
+    {
+        def "Loop" (
+            active = true
+            instanceable = true
+            references = </Curve>
+        )
+        {
+            rel look:binding = </Parent/Looks/PrimvarLook>
+            custom double xformOp:rotateX = 90
+            custom Vec3d xformOp:scale = (0.5, 0.5, 0.5)
+            custom Vec3d xformOp:translate = (-8, 7, 3.9)
+            uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateX", "xformOp:translate"]
+        }
+    }
+
+    def Scope "Points"
+    {
+        def "Points_Primvar" (
+            active = true
+            instanceable = true
+            references = </Points>
+        )
+        {
+            rel look:binding = </Parent/Looks/PrimvarLook>
+            custom Vec3d xformOp:scale = (2, 2, 2)
+            custom Vec3d xformOp:translate = (0, -1, 2)
+            uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+        }
+
+        def "Points_Uv" (
+            active = true
+            instanceable = true
+            references = </Points>
+        )
+        {
+            rel look:binding = </Parent/Looks/UvLook>
+            custom Vec3d xformOp:scale = (2, 2, 2)
+            custom Vec3d xformOp:translate = (0, -1, 4)
+            uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+        }
+    }
+
+    def Scope "Intrinsics"
+    {
+        def Scope "Cube"
+        {
+            def "Cube_Fallback" (
+                active = true
+                instanceable = true
+                references = </Cube>
+            )
+            {
+                rel look:binding = </Parent/Looks/FallbackLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (2.125, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def "Cube_PrimvarVertex" (
+                active = true
+                instanceable = true
+                references = </Cube>
+            )
+            {
+                rel look:binding = </Parent/Looks/PrimvarLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-2.125, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+
+        def Scope "Cone"
+        {
+            def "Cone_Fallback" (
+                active = true
+                instanceable = true
+                references = </Cone>
+            )
+            {
+                rel look:binding = </Parent/Looks/FallbackLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-4.25, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def "Cone_PrimvarUniform" (
+                active = true
+                instanceable = true
+                references = </Cone>
+            )
+            {
+                rel look:binding = </Parent/Looks/PrimvarLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-4.25, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+
+        def Scope "Sphere"
+        {
+            def "Sphere_Fallback" (
+                active = true
+                instanceable = true
+                references = </Sphere>
+            )
+            {
+                rel look:binding = </Parent/Looks/FallbackLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-6.5, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def "Sphere_PrimvarUniform" (
+                active = true
+                instanceable = true
+                references = </Sphere>
+            )
+            {
+                rel look:binding = </Parent/Looks/PrimvarLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-6.5, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+
+        def Scope "Capsule"
+        {
+            def "Capsule_Fallback" (
+                active = true
+                instanceable = true
+                references = </Capsule>
+            )
+            {
+                rel look:binding = </Parent/Looks/FallbackLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-4.25, 0, -2.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def "Capsule_PrimvarUniform" (
+                active = true
+                instanceable = true
+                references = </Capsule>
+            )
+            {
+                rel look:binding = </Parent/Looks/PrimvarLook>
+                custom Vec3d xformOp:scale = (2, 2, 2)
+                custom Vec3d xformOp:translate = (-6.5, 0, -2.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+    }
+}

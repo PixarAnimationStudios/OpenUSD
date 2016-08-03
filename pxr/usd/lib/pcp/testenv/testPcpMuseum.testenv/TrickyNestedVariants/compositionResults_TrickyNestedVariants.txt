@@ -1,0 +1,55 @@
+Loading @testPcpMuseum.testenv/TrickyNestedVariants/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    root.usda            /A{v1=x}
+    ref.usda             /RAx
+
+Variant Selections:
+    {v1 = x}
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A/B>
+
+Prim Stack:
+    root.usda            /A/B
+    root.usda            /A{v1=x}B
+    root.usda            /A{v1=x}B{v2=y}
+    ref.usda             /RBxy
+    ref.usda             /RAx/B
+    ref.usda             /RB
+
+Variant Selections:
+    {v2 = y}
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </A/B/C>
+
+Prim Stack:
+    root.usda            /A/B/C
+    root.usda            /A{v1=x}B/C
+    root.usda            /A{v1=x}B{v2=y}C
+    root.usda            /A{v1=x}B{v2=y}C{v3=z}
+    ref.usda             /RCxyz
+    ref.usda             /RBxy/C
+    ref.usda             /RCx
+    ref.usda             /RAx/B/C
+    ref.usda             /RC
+    ref.usda             /RB/C
+
+Variant Selections:
+    {v3 = z}
+

@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/cleanupEnabler.h"
 #include <boost/python.hpp>
 #include <boost/scoped_ptr.hpp>
+
+#include "pxr/usd/sdf/cleanupEnabler.h"
 
 using namespace boost::python;
 

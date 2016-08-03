@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/patternMatcher.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -28,7 +29,7 @@
 using namespace std;
 
 
-
+#if !defined(ARCH_OS_WINDOWS)
 
 TfPatternMatcher::TfPatternMatcher() :
     _caseSensitive( false ),
@@ -189,3 +190,4 @@ TfPatternMatcher::_GetRegErrorMessage( int code ) const
 }
 
 
+#endif // #if !defined(ARCH_OS_WINDOWS)

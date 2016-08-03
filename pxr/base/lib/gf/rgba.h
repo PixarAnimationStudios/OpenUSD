@@ -27,6 +27,7 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/rgb.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
@@ -233,6 +234,7 @@ class GfRGBA {
 
     //! Tests for equality within a given tolerance, returning true if the
     // difference between each component is less than \p tolerance.
+    GF_API
     friend bool GfIsClose(const GfRGBA &v1, const GfRGBA &v2, double tolerance);
 
     //! \name Color-space conversions.
@@ -240,9 +242,11 @@ class GfRGBA {
     //@{
 
     //! Transform the color into an arbitrary space.
+    GF_API
     GfRGBA Transform(const GfMatrix4d &m) const;
 
     //! Transform the color into an arbitrary space.
+    GF_API
     friend GfRGBA operator *(const GfRGBA &c, const GfMatrix4d &m);
 
     //! Return the complement of a color.
@@ -251,9 +255,11 @@ class GfRGBA {
     }
 
     //! Returns the equivalent of this color in HSV space 
+    GF_API
     void GetHSV(float *hue, float *sat, float *value) const;
 
     //! Sets this RGB to the RGB equivalent of the given HSV color.
+    GF_API
     void SetHSV(float hue, float sat, float value);
 
     //@}
@@ -264,11 +270,13 @@ class GfRGBA {
 };
 
 // Friend functions must be declared.
+GF_API
 bool GfIsClose(const GfRGBA &v1, const GfRGBA &v2, double tolerance);
+GF_API
 GfRGBA operator *(const GfRGBA &c, const GfMatrix4d &m);
 
 /// Output a GfRGBA color using the format (r, g, b, a).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const GfRGBA& c);
+GF_API std::ostream& operator<<(std::ostream& out, const GfRGBA& c);
 
 #endif // TF_RGBA_H

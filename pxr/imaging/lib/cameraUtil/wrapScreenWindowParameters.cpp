@@ -23,11 +23,10 @@
 //
 ///
 /// \file camera/wrapScreenWindowParameters.h
+#include <boost/python.hpp>
 
 
 #include "pxr/imaging/cameraUtil/screenWindowParameters.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

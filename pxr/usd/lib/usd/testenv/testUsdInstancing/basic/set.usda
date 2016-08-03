@@ -1,0 +1,73 @@
+#usda 1.0
+
+class "_class_Prop"
+{
+    def Scope "From_class_in_set"
+    {
+    }
+
+    over "geom"
+    {
+        over "Scope"
+        {
+            double x = 2.5
+        }
+    }
+}
+
+def Scope "Set"
+{
+    def Scope "Prop_1" (
+        references = @./prop.usda@</Prop>
+        instanceable = True
+    )
+    {
+        def Scope "From_set"
+        {
+        }
+
+        over "geom"
+        {
+            over "Scope"
+            {
+                double x = 2.0
+            }
+        }
+    }
+
+    def Scope "Prop_2" (
+        references = @./prop.usda@</Prop>
+        instanceable = True
+    )
+    {
+        def Scope "From_set"
+        {
+        }
+
+        over "geom"
+        {
+            over "Scope"
+            {
+                double x = 2.0
+            }
+        }
+    }
+
+    def Scope "Prop_3" (
+        references = @./prop.usda@</Prop>
+        instanceable = False
+    )
+    {
+        def Scope "From_set"
+        {
+        }
+
+        over "geom"
+        {
+            over "Scope"
+            {
+                double x = 2.0
+            }
+        }
+    }
+}

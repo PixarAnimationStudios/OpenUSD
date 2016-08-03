@@ -25,6 +25,7 @@
 #define _USDUTILS_AUTHORING_H_
 
 #include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/usd/usdUtils/api.h"
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -42,6 +43,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// in \p source will be replaced.
 ///
 /// \return \c true on success, \c false on error.
+USDUTILS_API
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
                                bool skipSublayers = false);

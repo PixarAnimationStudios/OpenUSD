@@ -23,13 +23,12 @@
 //
 ///
 /// \file gf/wrapCamera.h
+#include <boost/python/operators.hpp>
 
 #include "pxr/base/gf/camera.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/pyEnum.h"
-
-#include <boost/python/operators.hpp>
 
 #include <vector>
 

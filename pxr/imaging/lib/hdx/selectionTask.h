@@ -24,6 +24,7 @@
 #ifndef HDX_SELECTION_TASK_H
 #define HDX_SELECTION_TASK_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -50,6 +51,7 @@ struct HdxSelectionTaskParams
 /// enable selection highlighting.
 class HdxSelectionTask : public HdSceneTask {
 public:
+    HDXLIB_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
 protected:
@@ -71,10 +73,13 @@ private:
 };
 
 // VtValue requirements
+HDXLIB_API
 std::ostream& operator<<(std::ostream& out,
                          const HdxSelectionTaskParams& pv);
+HDXLIB_API
 bool operator==(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs);
+HDXLIB_API
 bool operator!=(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs);
 

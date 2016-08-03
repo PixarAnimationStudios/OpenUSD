@@ -25,6 +25,7 @@
 #ifndef GLF_SIMPLE_SHADOW_ARRAY_H
 #define GLF_SIMPLE_SHADOW_ARRAY_H
 
+#include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -40,30 +41,48 @@ class GlfSimpleShadowArray : public TfRefBase,
                              public TfWeakBase,
                              boost::noncopyable {
 public:
+	GLF_API
     GlfSimpleShadowArray(GfVec2i const & size, size_t numLayers);
+	GLF_API
     virtual ~GlfSimpleShadowArray();
 
+	GLF_API
     GfVec2i GetSize() const;
+	GLF_API
     void SetSize(GfVec2i const & size);
 
+	GLF_API
     size_t GetNumLayers() const;
+	GLF_API
     void SetNumLayers(size_t numLayers);
 
+	GLF_API
     GfMatrix4d GetViewMatrix(size_t index) const;
+	GLF_API
     void SetViewMatrix(size_t index, GfMatrix4d const & matrix);
 
+	GLF_API
     GfMatrix4d GetProjectionMatrix(size_t index) const;
+	GLF_API
     void SetProjectionMatrix(size_t index, GfMatrix4d const & matrix);
 
+	GLF_API
     GfMatrix4d GetWorldToShadowMatrix(size_t index) const;
 
+	GLF_API
     GLuint GetShadowMapTexture() const;
+
+	GLF_API
     GLuint GetShadowMapDepthSampler() const;
+	GLF_API
     GLuint GetShadowMapCompareSampler() const;
 
+	GLF_API
     void BeginCapture(size_t index, bool clear);
+	GLF_API
     void EndCapture(size_t index);
 
+	GLF_API
     virtual void Draw(size_t index) const;
 
 private:

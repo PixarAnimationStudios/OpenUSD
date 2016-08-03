@@ -1,0 +1,40 @@
+#usda 1.0
+
+def Scope "Model" (
+    inherits = </_class_Model>
+    relocates = {
+        <Rig/LRig> : <Anim/LAnim>
+    }
+)
+{
+    def Scope "Rig" (
+        references = @rig.usda@</Rig>
+    )
+    {
+    }
+
+    def Scope "Anim"
+    {
+    }
+}
+
+class Scope "_class_Model"
+{
+    over "Rig"
+    {
+        over "SymRig"
+        {
+        }
+
+        over "LRig"
+        {
+        }
+    }
+
+    over "Anim"
+    {
+        over "LAnim"
+        {
+        }
+    }
+}

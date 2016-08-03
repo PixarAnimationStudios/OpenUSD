@@ -1,0 +1,50 @@
+Loading @testPcpMuseum.testenv/BasicReferenceAndClassDiamond/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.usda            /Model_1
+    model.usda           /Model
+
+Child names:
+     ['LocalClass', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass>
+
+Prim Stack:
+    root.usda            /Model_1/LocalClass
+    model.usda           /Model/LocalClass
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model_1/LocalClass.attr:
+    root.usda            /Model_1/LocalClass.attr
+    model.usda           /Model/LocalClass.attr
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.usda            /Model_1/Instance
+    root.usda            /Model_1/LocalClass
+    model.usda           /Model/Instance
+    model.usda           /Model/LocalClass
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model_1/Instance.attr:
+    root.usda            /Model_1/Instance.attr
+    root.usda            /Model_1/LocalClass.attr
+    model.usda           /Model/Instance.attr
+    model.usda           /Model/LocalClass.attr
+

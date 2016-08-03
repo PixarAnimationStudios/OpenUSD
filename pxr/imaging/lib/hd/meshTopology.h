@@ -24,6 +24,7 @@
 #ifndef HD_MESH_TOPOLOGY_H
 #define HD_MESH_TOPOLOGY_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -60,16 +61,20 @@ typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 ///
 class HdMeshTopology : public HdTopology {
 public:
-
+	HDLIB_API
     HdMeshTopology();
+	HDLIB_API
     HdMeshTopology(const HdMeshTopology &, int refineLevel=0);
+	HDLIB_API
     HdMeshTopology(const PxOsdMeshTopology &, int refineLevel=0);
+	HDLIB_API
     HdMeshTopology(
         TfToken scheme,
         TfToken orientation,
         VtIntArray faceVertexCounts,
         VtIntArray faceVertexIndices,
         int refineLevel=0);
+	HDLIB_API
     HdMeshTopology(
         TfToken scheme,
         TfToken orientation,
@@ -77,14 +82,17 @@ public:
         VtIntArray faceVertexIndices,
         VtIntArray holeIndices,
         int refineLevel=0);
+	HDLIB_API
     virtual ~HdMeshTopology();
 
 #if defined(HD_SUPPORT_OPENSUBDIV2)
     /// Returns whether OpenSubdiv 3.0 to be used.
+	HDLIB_API
     static bool IsEnabledOpenSubdiv3();
 #endif
 
     /// Returns whether adaptive subdivision is enabled or not.
+	HDLIB_API
     static bool IsEnabledAdaptive();
 
     PxOsdMeshTopology const & GetPxOsdMeshTopology() const {
@@ -92,13 +100,16 @@ public:
     }
 
     /// Returns the num points by looking vert indices array
+	HDLIB_API
     int ComputeNumPoints() const;
 
     /// Returns the num points by looking vert indices array
+	HDLIB_API
     static int ComputeNumPoints(VtIntArray const &verts);
 
     /// Returns the number of quadrangulated quads.
     /// If degenerated face is found, sets invalidFaceFound as true.
+	HDLIB_API
     static int ComputeNumQuads(VtIntArray const &numVerts,
                                VtIntArray const &holeIndices,
                                bool *invalidFaceFound=NULL);
@@ -129,19 +140,23 @@ public:
     }
 
     /// Returns the hash value of this topology to be used for instancing.
+	HDLIB_API
     virtual ID ComputeHash() const;
 
     /// Equality check between two mesh topologies.
+	HDLIB_API
     bool operator==(HdMeshTopology const &other) const;
 
     /// \name Triangulation
     /// @{
 
     /// Returns the triangle indices (for drawing) buffer source computation.
+	HDLIB_API
     HdBufferSourceSharedPtr GetTriangleIndexBuilderComputation(
         SdfPath const &id);
 
     /// Returns the CPU face-varying triangulate computation
+	HDLIB_API
     HdBufferSourceSharedPtr GetTriangulateFaceVaryingComputation(
         HdBufferSourceSharedPtr const &source,
         SdfPath const &id);
@@ -156,26 +171,32 @@ public:
     /// quadrangulation.
     /// If gpu is true, the quadrangulate table will be transferred to GPU
     /// via the resource registry.
+	HDLIB_API
     Hd_QuadInfoBuilderComputationSharedPtr GetQuadInfoBuilderComputation(
         bool gpu, SdfPath const &id,
         HdResourceRegistry *resourceRegistry=NULL);
 
     /// Returns the quad indices (for drawing) buffer source computation.
+	HDLIB_API
     HdBufferSourceSharedPtr GetQuadIndexBuilderComputation(SdfPath const &id);
 
     /// Returns the CPU quadrangulated buffer source.
+	HDLIB_API
     HdBufferSourceSharedPtr GetQuadrangulateComputation(
         HdBufferSourceSharedPtr const &source, SdfPath const &id);
 
     /// Returns the GPU quadrangulate computation.
+	HDLIB_API
     HdComputationSharedPtr GetQuadrangulateComputationGPU(
         TfToken const &name, GLenum dataType, SdfPath const &id);
 
     /// Returns the CPU face-varying quadrangulate computation
+	HDLIB_API
     HdBufferSourceSharedPtr GetQuadrangulateFaceVaryingComputation(
         HdBufferSourceSharedPtr const &source, SdfPath const &id);
 
     /// Returns the quadrangulation table range on GPU
+	HDLIB_API
     HdBufferArrayRangeSharedPtr const &GetQuadrangulateTableRange() const {
         return _quadrangulateTableRange;
     }
@@ -187,6 +208,7 @@ public:
 
     /// Sets the quadrangulation struct. HdMeshTopology takes an
     /// ownership of quadInfo (caller shouldn't free)
+	HDLIB_API
     void SetQuadInfo(Hd_QuadInfo const *quadInfo);
 
     /// Returns the quadrangulation struct.
@@ -201,6 +223,7 @@ public:
     /// @{
 
     /// Returns the point indices buffer source computation.
+	HDLIB_API
     HdBufferSourceSharedPtr GetPointsIndexBuilderComputation();
 
     /// @}
@@ -250,25 +273,31 @@ public:
 
     /// Returns true if the subdivision on this mesh produces
     /// triangles (otherwise quads)
+	HDLIB_API
     bool RefinesToTriangles() const;
 
     /// Returns true if the subdivision on this mesh produces patches
+	HDLIB_API
     bool RefinesToBSplinePatches() const;
 
     /// Returns the subdivision topology computation. It computes
     /// far mesh and produces refined quad-indices buffer.
+	HDLIB_API
     HdBufferSourceSharedPtr GetOsdTopologyComputation(SdfPath const &debugId);
 
     /// Returns the refined indices builder computation.
     /// this just returns index and primitive buffer, and should be preceded by
     /// topology computation.
+	HDLIB_API
     HdBufferSourceSharedPtr GetOsdIndexBuilderComputation();
 
     /// Returns the subdivision primvar refine computation on CPU.
+	HDLIB_API
     HdBufferSourceSharedPtr GetOsdRefineComputation(
         HdBufferSourceSharedPtr const &source, bool varying);
 
     /// Returns the subdivision primvar refine computation on GPU.
+	HDLIB_API
     HdComputationSharedPtr GetOsdRefineComputationGPU(
         TfToken const &name, GLenum dataType, int numComponents);
 

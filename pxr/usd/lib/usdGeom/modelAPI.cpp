@@ -132,7 +132,7 @@ UsdGeomModelAPI::ComputeExtentsHint(
     static const TfTokenVector &purposeTokens =
         UsdGeomImageable::GetOrderedPurposeTokens();
 
-    VtVec3fArray extents(purposeTokens.size() * 2);
+    VtVec3fArray extents(static_cast<int>(purposeTokens.size()) * 2);
     size_t lastNonEmptyBbox = std::numeric_limits<size_t>::max();
 
     // We should be able execute this loop in parallel since the
@@ -142,7 +142,7 @@ UsdGeomModelAPI::ComputeExtentsHint(
     // we expect purpose 'default' to be the most common purpose value 
     // and in some cases the only purpose value. Computing bounds for 
     // the rest of the purpose values should be very fast.
-    for(int bboxType = (purposeTokens.size() - 1); bboxType >= 0; bboxType--) {
+    for(int bboxType = (static_cast<int>(purposeTokens.size()) - 1); bboxType >= 0; bboxType--) {
 
         // Set the gprim purpose that we are interested in computing the 
         // bbox for. This doesn't cause the cache to be blown.

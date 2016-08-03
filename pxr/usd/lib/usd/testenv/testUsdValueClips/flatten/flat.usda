@@ -1,0 +1,18 @@
+#usda 1.0
+
+def "Model_1" (
+    kind = "model"
+)
+{
+    float size = 1
+    float size.timeSamples = {
+        5: -5,
+        10: -10,
+        15: -15,
+        16: -23,
+        19: -23,
+        22: -26,
+        25: -29,
+    }
+}
+

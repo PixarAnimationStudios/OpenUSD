@@ -1,0 +1,17 @@
+#usda 1.0
+
+def "SublayerRoot" (
+    references = @ref.usda@</Ref>
+)
+{
+    custom rel badRelA = </SublayerRoot/Rig/Scope>
+    custom rel badRelB = </SublayerRoot/Rig/Scope.x>
+    custom rel goodRelA = </SublayerRoot/Anim/Scope>
+    custom rel goodRelB = </SublayerRoot/Anim/Scope.x>
+
+    custom double badAttrA
+    double badAttrA.connect = </SublayerRoot/Rig/Scope.x>
+
+    custom double goodAttrA
+    double goodAttrA.connect = </SublayerRoot/Anim/Scope.x>
+}

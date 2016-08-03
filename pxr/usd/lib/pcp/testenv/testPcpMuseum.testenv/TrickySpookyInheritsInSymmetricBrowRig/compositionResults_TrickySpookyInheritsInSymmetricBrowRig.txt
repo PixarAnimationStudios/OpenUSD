@@ -1,0 +1,151 @@
+Loading @testPcpMuseum.testenv/TrickySpookyInheritsInSymmetricBrowRig/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </FaceRig>
+
+Prim Stack:
+    root.usda            /FaceRig
+
+Child names:
+     ['BrowRig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig
+    BrowRig.usda         /BrowRig
+
+Child names:
+     ['SymBrow', 'LBrow', 'RBrow', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/SymBrow
+    BrowRig.usda         /BrowRig/SymBrow
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow/Anim>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim
+    BrowRig.usda         /BrowRig/SymBrow/Anim
+
+Child names:
+     ['Brow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow/Anim/Brow>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim/Brow
+    BrowRig.usda         /BrowRig/SymBrow/Anim/Brow
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/LBrow>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/LBrow
+    root.usda            /FaceRig/BrowRig/SymBrow
+    BrowRig.usda         /BrowRig/LBrow
+    BrowRig.usda         /BrowRig/SymBrow
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/LBrow/Anim>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/LBrow/Anim
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim
+    BrowRig.usda         /BrowRig/SymBrow/Anim
+
+Prohibited child names:
+     ['Brow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/RBrow>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/RBrow
+    root.usda            /FaceRig/BrowRig/SymBrow
+    BrowRig.usda         /BrowRig/RBrow
+    BrowRig.usda         /BrowRig/SymBrow
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/RBrow/Anim>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/RBrow/Anim
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim
+    BrowRig.usda         /BrowRig/SymBrow/Anim
+
+Prohibited child names:
+     ['Brow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/Anim>
+
+Prim Stack:
+    root.usda            /FaceRig/BrowRig/Anim
+    BrowRig.usda         /BrowRig/Anim
+
+Prohibited child names:
+     ['LBrow', 'RBrow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim>
+
+Prim Stack:
+    root.usda            /FaceRig/Anim
+
+Child names:
+     ['Face']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face>
+
+Prim Stack:
+    root.usda            /FaceRig/Anim/Face
+
+Child names:
+     ['Eyes']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face/Eyes>
+
+Prim Stack:
+    root.usda            /FaceRig/Anim/Face/Eyes
+
+Child names:
+     ['LBrow', 'RBrow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face/Eyes/LBrow>
+
+Prim Stack:
+    root.usda            /FaceRig/Anim/Face/Eyes/LBrow
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim/Brow
+    BrowRig.usda         /BrowRig/SymBrow/Anim/Brow
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face/Eyes/RBrow>
+
+Prim Stack:
+    root.usda            /FaceRig/Anim/Face/Eyes/RBrow
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim/Brow
+    BrowRig.usda         /BrowRig/SymBrow/Anim/Brow
+

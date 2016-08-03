@@ -27,6 +27,7 @@
 
 
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -82,7 +83,7 @@
 ///     transformation prior to processing the rest of the prims ops.  It is
 ///     an error for resetXformStack to appear anywhere other than as the
 ///     first element in \em xformOpOrder.
-TF_DECLARE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_XFORM_OP_TYPES);
+TF_DECLARE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_API, USDGEOM_XFORM_OP_TYPES);
 
 /// \class UsdGeomXformOp
 /// \brief Schema wrapper for UsdAttribute for authoring and computing
@@ -163,6 +164,7 @@ public:
     /// AddXformOp API (or one of Add*Op convenience API) to create and retain 
     /// a copy of an UsdGeomXformOp object.
     /// 
+    USDGEOM_API
     explicit UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp=false);
 
     // -------------------------------------------------------
@@ -173,31 +175,38 @@ public:
     /// implies that creating a UsdGeomXformOp from the attribute will succeed.
     ///
     /// Success implies that \c attr.IsDefined() is true.
+    USDGEOM_API
     static bool IsXformOp(const UsdAttribute &attr);
 
     /// Test whether a given attrbute name represents a valid XformOp, which
     /// implies that creating a UsdGeomXformOp from the corresponding 
     /// UsdAttribute will succeed.
     ///
+    USDGEOM_API
     static bool IsXformOp(const TfToken &attrName);
 
     /// Returns the TfToken used to encode the given \p opType.
+    USDGEOM_API
     static TfToken const &GetOpTypeToken(Type const opType);
 
     /// Returns the Type enum associated with the given \p opTypeToken.
+    USDGEOM_API
     static Type GetOpTypeEnum(TfToken const &opTypeToken);
 
     /// Returns the precision corresponding to the given value typeName.
+    USDGEOM_API
     static Precision GetPrecisionFromValueTypeName(const SdfValueTypeName& typeName);
 
     /// Returns the value typeName token that corresponds to the given 
     /// combination of \p opType and \p precision.
+    USDGEOM_API
     static const SdfValueTypeName &GetValueTypeName(const Type opType,
                                                     const Precision precision);
 
     /// Returns the xformOp's name as it appears in xformOpOrder, given 
     /// the opType, the (optional) suffix and whether it is an inverse 
     /// operation.
+    USDGEOM_API
     static TfToken GetOpName(const Type opType, 
                              const TfToken &opSuffix=TfToken(),
                              bool inverse=false);
@@ -212,6 +221,7 @@ public:
     }
 
     /// Returns the precision level of the xform op.
+    USDGEOM_API
     Precision GetPrecision() const;
 
     /// Returns whether the xformOp represents an inverse operation.
@@ -226,9 +236,11 @@ public:
     /// 
     /// This will be empty for an invalid xformOp.
     /// 
+    USDGEOM_API
     TfToken GetOpName() const;
 
     /// Does this op have the given suffix in its name.
+    USDGEOM_API
     bool HasSuffix(TfToken const &suffix) const;
     
     // ---------------------------------------------------------------
@@ -276,6 +288,7 @@ public:
     /// An error will be issued if \p opType is not one of the values in the enum
     /// \ref UsdGeomXformOp::Type or if \p opVal cannot be converted
     /// to a suitable input to \p opType
+    USDGEOM_API
     static GfMatrix4d GetOpTransform(Type const opType, 
                                      VtValue const &opVal,
                                      bool isInverseOp=false);
@@ -290,6 +303,7 @@ public:
     /// If the op is valid, but has no authored value, the identity 
     /// matrix is returned and no error is issued.
     /// 
+    USDGEOM_API
     GfMatrix4d GetOpTransform(UsdTimeCode time) const;
 
     /// Determine whether there is any possibility that this op's value

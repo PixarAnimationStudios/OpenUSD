@@ -24,7 +24,9 @@
 #ifndef HD_TEXTURE_RESOURCE_H
 #define HD_TEXTURE_RESOURCE_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glext.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
@@ -42,8 +44,10 @@ public:
     typedef size_t ID;
 
     /// Returns the hash value of the texture for \a sourceFile
+    HDLIB_API
     static ID ComputeHash(TfToken const & sourceFile);
 
+    HDLIB_API
     virtual ~HdTextureResource();
 
     virtual bool IsPtex() const = 0;
@@ -59,18 +63,27 @@ public:
 class HdSimpleTextureResource : public HdTextureResource
                               , boost::noncopyable {
 public:
+    HDLIB_API
     HdSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex);
+    HDLIB_API
     HdSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex, 
         HdWrap wrapS, HdWrap wrapT, HdMinFilter minFilter, HdMagFilter magFilter);
+    HDLIB_API
     virtual ~HdSimpleTextureResource();
 
+    HDLIB_API
     virtual bool IsPtex() const;
 
+    HDLIB_API
     virtual GLuint GetTexelsTextureId();
+    HDLIB_API
     virtual GLuint GetTexelsSamplerId();
+    HDLIB_API
     virtual GLuint64EXT GetTexelsTextureHandle();
 
+    HDLIB_API
     virtual GLuint GetLayoutTextureId();
+    HDLIB_API
     virtual GLuint64EXT GetLayoutTextureHandle();
 
 private:

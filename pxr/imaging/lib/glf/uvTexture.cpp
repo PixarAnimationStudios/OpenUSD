@@ -44,7 +44,7 @@ public:
 
     virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths) const
     {
-        return GlfArrayTexture::New(texturePaths, texturePaths.size());
+        return GlfArrayTexture::New(texturePaths, static_cast<unsigned int>(texturePaths.size()));
     }
 };
 

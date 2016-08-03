@@ -1,0 +1,230 @@
+#usda 1.0
+
+def "ModelShading" (
+    add references = [
+        @./char_shading.usda@</LookBindingVariants>,
+        @./char_shading.usda@</ShadingDefs>
+    ]
+)
+{
+}
+
+def "ShadingDefs"
+{
+    def Scope "Shaders"
+    {
+        def Shader "HairWetSurface"
+        {
+        }
+
+        def Shader "HairWetDisp"
+        {
+        }
+
+        def Shader "HairWetPattern"
+        {
+        }
+
+        def Shader "HairDrySurface"
+        {
+        }
+
+        def Shader "HairDryDisp"
+        {
+        }
+
+        def Shader "HairDryPattern"
+        {
+        }
+
+        def Shader "SkinWetSurface"
+        {
+        }
+
+        def Shader "SkinWetDisp"
+        {
+        }
+
+        def Shader "SkinWetPattern"
+        {
+        }
+
+        def Shader "SkinDrySurface"
+        {
+        }
+
+        def Shader "SkinDryDisp"
+        {
+        }
+
+        def Shader "SkinDryPattern"
+        {
+        }
+
+        def Shader "NailsWetSurface"
+        {
+        }
+
+        def Shader "NailsWetDisp"
+        {
+        }
+
+        def Shader "NailsWetPattern"
+        {
+        }
+
+        def Shader "NailsDrySurface"
+        {
+        }
+
+        def Shader "NailsDryDisp"
+        {
+        }
+
+        def Shader "NailsDryPattern"
+        {
+        }
+    }
+
+    def Scope "Looks"
+    {
+        def Look "HairLook" (
+            variants = {
+                string lookVariant = "Dry"
+            }
+            add variantSets = "lookVariant"
+        )
+        {
+            variantSet "lookVariant" = {
+                "Dry" {
+                    rel terminal:displacement = </ShadingDefs/Shaders/HairDryDisp.out>
+                    rel terminal:pattern = </ShadingDefs/Shaders/HairDryPattern.out>
+                    rel terminal:surface = </ShadingDefs/Shaders/HairDrySurface.out>
+
+                }
+                "Wet" {
+                    rel terminal:displacement = </ShadingDefs/Shaders/HairWetDisp.out>
+                    rel terminal:pattern = </ShadingDefs/Shaders/HairWetPattern.out>
+                    rel terminal:surface = </ShadingDefs/Shaders/HairWetSurface.out>
+
+                }
+            }
+        }
+
+        def Look "SkinLook" (
+            variants = {
+                string lookVariant = "Dry"
+            }
+            add variantSets = "lookVariant"
+        )
+        {
+            variantSet "lookVariant" = {
+                "Dry" {
+                    rel terminal:displacement = </ShadingDefs/Shaders/SkinDryDisp.out>
+                    rel terminal:pattern = </ShadingDefs/Shaders/SkinDryPattern.out>
+                    rel terminal:surface = </ShadingDefs/Shaders/SkinDrySurface.out>
+
+                }
+                "Wet" {
+                    rel terminal:displacement = </ShadingDefs/Shaders/SkinWetDisp.out>
+                    rel terminal:pattern = </ShadingDefs/Shaders/SkinWetPattern.out>
+                    rel terminal:surface = </ShadingDefs/Shaders/SkinWetSurface.out>
+
+                }
+            }
+        }
+
+        def Look "NailsLook" (
+            variants = {
+                string lookVariant = "Dry"
+            }
+            add variantSets = "lookVariant"
+        )
+        {
+            variantSet "lookVariant" = {
+                "Dry" {
+                    rel terminal:displacement = </ShadingDefs/Shaders/NailsDryDisp.out>
+                    rel terminal:pattern = </ShadingDefs/Shaders/NailsDryPattern.out>
+                    rel terminal:surface = </ShadingDefs/Shaders/NailsDrySurface.out>
+
+                }
+                "Wet" {
+                    rel terminal:displacement = </ShadingDefs/Shaders/NailsWetDisp.out>
+                    rel terminal:pattern = </ShadingDefs/Shaders/NailsWetPattern.out>
+                    rel terminal:surface = </ShadingDefs/Shaders/NailsWetSurface.out>
+
+                }
+            }
+        }
+    }
+}
+
+over "LookBindingVariants" (
+    variants = {
+        string lookVariant = "Wet"
+    }
+    add variantSets = "lookVariant"
+)
+{
+    variantSet "lookVariant" = {
+        "Dry" {
+            over "Looks"
+            {
+                over "HairLook" (
+                    variants = {
+                        string lookVariant = "Dry"
+                    }
+                )
+                {
+                }
+
+                over "SkinLook" (
+                    variants = {
+                        string lookVariant = "Dry"
+                    }
+                )
+                {
+                }
+
+                over "NailsLook" (
+                    variants = {
+                        string lookVariant = "Dry"
+                    }
+                )
+                {
+                }
+            }
+
+        }
+        "Wet" {
+            over "Looks"
+            {
+                over "HairLook" (
+                    variants = {
+                        string lookVariant = "Wet"
+                    }
+                )
+                {
+                }
+
+                over "SkinLook" (
+                    variants = {
+                        string lookVariant = "Wet"
+                    }
+                )
+                {
+                }
+
+                over "NailsLook" (
+                    variants = {
+                        string lookVariant = "Wet"
+                    }
+                )
+                {
+                }
+            }
+
+        }
+    }
+}
+

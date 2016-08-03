@@ -1,0 +1,42 @@
+#sdf 1.0
+(
+    baseAsset = @./base_a.sdf@
+    subLayers = [
+        @./sub_a.sdf@,
+        @./sub_b.sdf@,
+    ]
+)
+
+def "foo" (
+    assetInfo = {
+        asset meta_a = @./meta_a.sdf@
+        asset[] meta_b = [@./meta_b.sdf@, @./meta_c.sdf@]
+    }
+    payload = @./payload_a.sdf@
+    variantSets = "standin"
+)
+{
+    asset attr_a = @./attr_a.sdf@
+    asset[] attr_b = [@./attr_b.sdf@, @./attr_c.sdf@]
+
+    def "bar" (
+        references = [
+            @./ref_a.sdf@,
+            @./ref_b.sdf@
+        ]
+    )
+    {
+    }
+
+    variantSet "standin" = {
+        "full" (
+            assetInfo = {
+                asset[] v_meta_a = [@./v_meta_a.sdf@, @./v_meta_b.sdf@]
+            }
+            references = @./v_ref_a.sdf@
+        ) {
+            asset v_attr_a = @./v_attr_a.sdf@
+            asset[] v_attr_b = [@./v_attr_b.sdf@, @./v_attr_c.sdf@]
+        }
+    }
+}

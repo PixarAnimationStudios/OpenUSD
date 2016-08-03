@@ -23,6 +23,8 @@
 //
 #include "pxr/base/tf/anyWeakPtr.h"
 
+#include <ciso646>
+
 using std::string;
 using std::type_info;
 

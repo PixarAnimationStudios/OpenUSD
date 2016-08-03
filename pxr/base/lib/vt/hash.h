@@ -24,6 +24,7 @@
 #ifndef VT_HASH_H
 #define VT_HASH_H
 
+#include "pxr/base/vt/api.h"
 #include "pxr/base/tf/hash.h"
 #include <boost/functional/hash.hpp>
 #include <typeinfo>
@@ -32,7 +33,7 @@
 namespace Vt_HashDetail {
 
 // Issue a coding error when we attempt to hash a t.
-void _IssueUnimplementedHashError(std::type_info const &t);
+VT_API void _IssueUnimplementedHashError(std::type_info const &t);
 
 // We make unqualified calls, intending to pick up boost::hash_value if an
 // overload isn't found by ADL.

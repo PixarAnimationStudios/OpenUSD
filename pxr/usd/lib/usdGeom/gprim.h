@@ -24,6 +24,7 @@
 #ifndef USDGEOM_GENERATED_GPRIM_H
 #define USDGEOM_GENERATED_GPRIM_H
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -82,11 +83,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomGprim();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -99,6 +102,7 @@ public:
     /// UsdGeomGprim(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomGprim
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -111,6 +115,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -127,6 +132,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Color3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetDisplayColorAttr() const;
 
     /// See GetDisplayColorAttr(), and also 
@@ -134,6 +140,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateDisplayColorAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -149,6 +156,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->FloatArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetDisplayOpacityAttr() const;
 
     /// See GetDisplayOpacityAttr(), and also 
@@ -156,6 +164,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateDisplayOpacityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -184,6 +193,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Bool
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: False
+    USDGEOM_API
     UsdAttribute GetDoubleSidedAttr() const;
 
     /// See GetDoubleSidedAttr(), and also 
@@ -191,6 +201,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateDoubleSidedAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -204,6 +215,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: rightHanded
     /// \n  \ref UsdGeomTokens "Allowed Values": [rightHanded, leftHanded]
+    USDGEOM_API
     UsdAttribute GetOrientationAttr() const;
 
     /// See GetOrientationAttr(), and also 
@@ -211,6 +223,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateOrientationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -226,11 +239,13 @@ public:
     /// Convenience function to get the displayColor Attribute as a Primvar.
     ///
     /// \sa GetDisplayColorAttr()
+    USDGEOM_API
     UsdGeomPrimvar GetDisplayColorPrimvar() const;
 
     /// Convenience function to get the displayOpacity Attribute as a Primvar.
     ///
     /// \sa GetDisplayOpacityAttr()
+    USDGEOM_API
     UsdGeomPrimvar GetDisplayOpacityPrimvar() const;
 };
 

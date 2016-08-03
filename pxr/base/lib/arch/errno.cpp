@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/defines.h"
 #include <cerrno>
 #include <cstring>
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#endif
 
 std::string
 ArchStrerror()

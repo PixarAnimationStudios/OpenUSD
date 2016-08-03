@@ -53,8 +53,8 @@ int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
 
     return n;
 #elif defined(ARCH_OS_WINDOWS)
-    int n = _vscprintf(format, ap);
-    return vsnprintf_s(str, size /*size of buffer */, n, format, ap);
+	int n = _vscprintf(format, ap);
+	return vsnprintf_s(str, size /*size of buffer */, n, format, ap);
 #else
 #error Unknown system architecture.    
 #endif

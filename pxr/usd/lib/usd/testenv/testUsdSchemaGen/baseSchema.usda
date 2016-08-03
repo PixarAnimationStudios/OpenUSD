@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    "This file describes the USD primitive schemata and drives code generation."
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "usd"
+        string libraryPath      = "pxr/usd/usd"
+        # string libraryPrefix  = "Usd"
+        # string tokensPrefix   = "Usd"
+        # token[] libraryTokens = []
+    }
+)
+{
+}
+
+class "Typed"
+{
+}
+
+class "Model" ()
+{
+    # XXX: This should be a TfToken, but that isn't a menva type.
+    #      We could introuce a tag/hint to drive code gen.
+    #
+    # XXX: Kind is metadata, not an attribute. This is implemented by 
+    #      hand currently.
+    #uniform string kind (doc="The 'kind' metadata of this model, as a token.")
+}

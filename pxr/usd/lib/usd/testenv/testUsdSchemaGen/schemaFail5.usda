@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    "This file is a contrived schema file meant to test that class type and name match"
+    subLayers = [
+        @baseSchema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+# This should fail because class type and name must match
+class NotBase "Base" (
+    inherits = </Typed>
+    doc = "This doc should only exist on the \"Base\" class."
+) {
+    
+    token myVaryingToken = "VariableTokenDefault" (
+        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        doc = "VariableToken attribute docs.")
+    
+}
+

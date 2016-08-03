@@ -27,6 +27,7 @@
 
 
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/parameter.h"
 
@@ -36,7 +37,7 @@
 ///
 /// See \ref UsdShadeSubgraph_Interfaces "Look Interface Attributes" for more 
 /// detail on Look Interfaces and the API for using them.
-class UsdShadeInterfaceAttribute
+class USDSHADE_API UsdShadeInterfaceAttribute
 {
 public:
     // Default constructor returns an invalid InterfaceAttribute.  Exists for 

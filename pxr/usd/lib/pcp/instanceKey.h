@@ -24,6 +24,7 @@
 #ifndef PCP_INSTANCE_KEY_H
 #define PCP_INSTANCE_KEY_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/site.h"
@@ -50,14 +51,14 @@ class PcpPrimIndex;
 class PcpInstanceKey
 {
 public:
-    PcpInstanceKey();
+	PCP_API PcpInstanceKey();
 
     /// Create an instance key for the given prim index.
-    explicit PcpInstanceKey(const PcpPrimIndex& primIndex);
+	PCP_API explicit PcpInstanceKey(const PcpPrimIndex& primIndex);
 
     /// Comparison operators
-    bool operator==(const PcpInstanceKey& rhs) const;
-    bool operator!=(const PcpInstanceKey& rhs) const;
+	PCP_API bool operator==(const PcpInstanceKey& rhs) const;
+	PCP_API bool operator!=(const PcpInstanceKey& rhs) const;
 
     /// Returns hash value for this instance key.
     friend size_t hash_value(const PcpInstanceKey& key) 
@@ -75,7 +76,7 @@ public:
 
     /// Returns string representation of this instance key
     /// for debugging purposes.
-    std::string GetString() const;
+	PCP_API std::string GetString() const;
 
 private:
     struct _Collector;

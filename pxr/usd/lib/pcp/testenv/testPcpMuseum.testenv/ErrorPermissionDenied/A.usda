@@ -1,0 +1,27 @@
+#usda 1.0
+
+def Prim "A" 
+{
+    custom double A_attr
+
+    custom double attr = -1 (
+        permission = private
+    )
+
+    custom rel privateRel = </A.A_attr> {
+        string a = "A"
+    } (permission = private)
+
+    custom rel publicRel = </A.A_attr> {
+        string a = "A" (permission = private)
+    }
+}
+
+def "Parent" 
+{
+    over "Child" (
+        permission = private
+    )
+    {
+    }
+}

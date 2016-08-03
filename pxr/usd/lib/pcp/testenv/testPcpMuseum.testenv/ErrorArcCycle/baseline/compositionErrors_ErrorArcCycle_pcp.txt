@@ -1,0 +1,95 @@
+------------------------------------------------------------------------
+Errors while composing </GroupRoot>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</GroupRoot>
+references:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/A.usda@</GroupA>
+which references:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/B.usda@</GroupB>
+which CANNOT reference:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/A.usda@</GroupA>
+
+
+------------------------------------------------------------------------
+Errors while composing </Parent/Child1>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</Parent/Child1>
+inherits from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</Parent/Child2>
+which CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</Parent/Child1>
+
+
+------------------------------------------------------------------------
+Errors while composing </Parent/Child2>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</Parent/Child2>
+inherits from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</Parent/Child1>
+which CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</Parent/Child2>
+
+
+------------------------------------------------------------------------
+Errors while composing </AnotherParent/AnotherChild>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</AnotherParent/AnotherChild>
+references:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/model.usda@</Model>
+which CANNOT reference:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</AnotherParent>
+
+
+------------------------------------------------------------------------
+Errors while composing </YetAnotherParent/Child>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</YetAnotherParent/Child>
+CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</YetAnotherParent>
+
+
+------------------------------------------------------------------------
+Errors while composing </CoRecursiveParent1/Child1/Child2>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</CoRecursiveParent1/Child1/Child2>
+inherits from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</CoRecursiveParent2/Child2>
+which CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</CoRecursiveParent1>
+
+
+------------------------------------------------------------------------
+Errors while composing </CoRecursiveParent2/Child2/Child1>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</CoRecursiveParent2/Child2/Child1>
+inherits from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</CoRecursiveParent1/Child1>
+which CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</CoRecursiveParent2>
+
+
+------------------------------------------------------------------------
+Errors while composing </InheritOfChild>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</InheritOfChild>
+CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</InheritOfChild/Child>
+
+
+------------------------------------------------------------------------
+Errors while composing </RelocatedInheritOfChild/Child>
+
+Cycle detected:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Child>
+CANNOT inherit from:
+@/home/blevin/trees/dev/menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Child/Class>
+
+

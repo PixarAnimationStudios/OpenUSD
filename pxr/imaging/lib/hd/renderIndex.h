@@ -24,6 +24,7 @@
 #ifndef HD_RENDER_INDEX_H
 #define HD_RENDER_INDEX_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -68,13 +69,17 @@ public:
     typedef std::vector<HdLightSharedPtr> HdLightView;
     typedef std::vector<HdDrawTargetSharedPtr> HdDrawTargetView;
 
+	HDLIB_API
     HdRenderIndex();
+	HDLIB_API
     ~HdRenderIndex();
 
     /// Clear all rprims, instancers, shaders and textures.
+	HDLIB_API
     void Clear();
 
     /// Given a prim id and instance id, returns the prim path of the owner
+	HDLIB_API
     SdfPath GetPrimPathFromPrimIdColor(GfVec4i const& primIdColor,
                                        GfVec4i const& instanceIdColor,
                                        int* instanceIndexOut = NULL) const;
@@ -82,37 +87,45 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Synchronization
     // ---------------------------------------------------------------------- //
-
+	HDLIB_API
     HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
+	HDLIB_API
     HdLightView GetLights();
 
     /// Returns a list of all draw targets in the render index.
+	HDLIB_API
     HdDrawTargetView GetDrawTargets();
 
     /// Synchronize all objects in the DirtyList
+	HDLIB_API
     void Sync(HdDirtyListSharedPtr const &dirtyList);
 
     /// Processes all pending dirty lists 
+	HDLIB_API
     void SyncAll();
 
     /// Synchronize all cameras in the render index
+	HDLIB_API
     void SyncCameras();
 
     /// Synchronize all lights in the render index
+	HDLIB_API
     void SyncLights();
 
     /// Synchronize all draw targets in the render index
+	HDLIB_API
     void SyncDrawTargets();
 
-
     /// Returns a vector of Rprim IDs that are bound to the given DelegateID.
+	HDLIB_API
     SdfPathVector const& GetDelegateRprimIDs(SdfPath const& delegateID) const;
 
     /// For each delegate that has at least one child with dirty bits matching
     /// the given dirtyMask, pushes the delegate ID into the given IDs vector.
     /// The resulting vector is a list of all delegate IDs who have at least one
     /// child that matches the mask.
+	HDLIB_API
     void GetDelegateIDsWithDirtyRprims(int dirtyMask, SdfPathVector* IDs) const;
 
     // ---------------------------------------------------------------------- //
@@ -134,6 +147,7 @@ public:
                      SdfPath const& instancerId = SdfPath());
 
     /// Remove a rprim from index
+	HDLIB_API
     void RemoveRprim(SdfPath const& id);
 
     /// Returns true if rprim \p id exists in index.
@@ -142,12 +156,15 @@ public:
     }
 
     /// Returns the rprim of id
+	HDLIB_API
     HdRprimSharedPtr const &GetRprim(SdfPath const &id) const;
 
     /// Returns true if the given RprimID is a member of the collection.
+	HDLIB_API
     bool IsInCollection(SdfPath const& id, TfToken const& collectionName) const;
 
     /// Returns the subtree rooted under the given path.
+	HDLIB_API
     SdfPathVector GetRprimSubtree(SdfPath const& root) const;
 
     // ---------------------------------------------------------------------- //
@@ -155,11 +172,13 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Insert an instancer into index
+	HDLIB_API
     void InsertInstancer(HdSceneDelegate* delegate,
                          SdfPath const &id,
                          SdfPath const &parentId = SdfPath());
 
     /// Remove an instancer from index
+	HDLIB_API
     void RemoveInstancer(SdfPath const& id);
 
     /// Returns true if instancer \p id exists in index.
@@ -168,6 +187,7 @@ public:
     }
 
     /// Returns the instancer of id
+	HDLIB_API
     HdInstancerSharedPtr GetInstancer(SdfPath const &id) const;
 
     // ---------------------------------------------------------------------- //
@@ -184,6 +204,7 @@ public:
     /// Removes the given shader from the RenderIndex. The client must unbind
     /// or remove any existing Rprims that are bound to this shader before
     /// rendering.
+	HDLIB_API
     void RemoveShader(SdfPath const& id);
 
     /// Returns true if a shader exists in the index with the given \p id.
@@ -192,6 +213,7 @@ public:
     }
 
     /// Returns the shader for the given \p id.
+	HDLIB_API
     HdSurfaceShaderSharedPtr const& GetShader(SdfPath const& id) const;
 
     /// Returns the fallback shader.
@@ -208,6 +230,7 @@ public:
     void InsertTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Removes the given task from the RenderIndex.
+	HDLIB_API
     void RemoveTask(SdfPath const& id);
 
     /// Returns true if a task exists in the index with the given \p id.
@@ -216,6 +239,7 @@ public:
     }
 
     /// Returns the task for the given \p id.
+	HDLIB_API
     HdTaskSharedPtr const& GetTask(SdfPath const& id) const;
 
     // ---------------------------------------------------------------------- //
@@ -227,6 +251,7 @@ public:
     void InsertTexture(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Removes the given texture from the RenderIndex.
+	HDLIB_API
     void RemoveTexture(SdfPath const& id);
 
     /// Returns true if a texture exists in the index with the given \p id.
@@ -235,6 +260,7 @@ public:
     }
 
     /// Returns the texture for the given \p id.
+	HDLIB_API
     HdTextureSharedPtr const& GetTexture(SdfPath const& id) const;
 
     // ---------------------------------------------------------------------- //
@@ -247,9 +273,11 @@ public:
     InsertCamera(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Removes the given camera from the RenderIndex.
+	HDLIB_API
     void RemoveCamera(SdfPath const& id);
 
     /// Returns the camera for the given \p id.
+	HDLIB_API
     HdCameraSharedPtr const& GetCamera(SdfPath const& id) const;
 
     // ---------------------------------------------------------------------- //
@@ -262,9 +290,11 @@ public:
     InsertLight(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Removes the given light from the RenderIndex.
+	HDLIB_API
     void RemoveLight(SdfPath const& id);
 
     /// Returns the light for the given \p id.
+	HDLIB_API
     HdLightSharedPtr const& GetLight(SdfPath const& id) const;
 
     // ---------------------------------------------------------------------- //
@@ -278,8 +308,10 @@ public:
     InsertDrawTarget(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Removes the given draw target from the RenderIndex.
+	HDLIB_API
     void RemoveDrawTarget(SdfPath const& id);
 
+	HDLIB_API
     HdDrawTargetSharedPtr const& GetDrawTarget(SdfPath const& id) const;
 
 private:
@@ -295,36 +327,43 @@ private:
     void _AllocatePrimId(HdRprimSharedPtr prim);
     
     // Insert rprimID into the delegateRprimMap.
+	HDLIB_API
     void _TrackDelegateRprim(HdSceneDelegate* delegate, 
                              SdfPath const& rprimID,
                              HdRprimSharedPtr const& rprim);
 
     // Inserts the shader into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateShader(HdSceneDelegate* delegate, 
                               SdfPath const& shaderId,
                               HdSurfaceShaderSharedPtr const& shader);
 
     // Inserts the task into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateTask(HdSceneDelegate* delegate, 
                             SdfPath const& taskId,
                             HdTaskSharedPtr const& task);
 
     // Inserts the texture into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateTexture(HdSceneDelegate* delegate, 
                               SdfPath const& textureId,
                               HdTextureSharedPtr const& texture);
 
     // Inserts the camera into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateCamera(HdSceneDelegate* delegate, 
                               SdfPath const& cameraId,
                               HdCameraSharedPtr const& camera);
 
     // Inserts the light into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateLight(HdSceneDelegate* delegate, 
                               SdfPath const& lightId,
                               HdLightSharedPtr const& light);
 
     // Inserts the draw target into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateDrawTarget(HdSceneDelegate* delegate,
                                   SdfPath const& drawTargetId,
                                   HdDrawTargetSharedPtr const& drawTarget);

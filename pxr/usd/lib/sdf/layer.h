@@ -41,6 +41,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/usd/sdf/api.h"
 
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -53,7 +54,7 @@
 TF_DECLARE_WEAK_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
 
-class Sdf_AssetInfo;
+struct Sdf_AssetInfo;
 
 /// \class SdfLayer 
 /// \brief A unit of scene description that you combine with other units of 
@@ -88,7 +89,7 @@ class Sdf_AssetInfo;
 /// \li Should have validate... methods for rootPrims
 ///
 
-class SdfLayer : public SdfLayerBase
+class SDF_API SdfLayer : public SdfLayerBase
 {
     typedef SdfLayerBase Parent;
     typedef SdfLayer This;

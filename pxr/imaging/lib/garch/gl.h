@@ -25,11 +25,16 @@
 #define GARCH_GL_H
 
 #include "pxr/base/arch/defines.h"
+
 #if defined(ARCH_OS_DARWIN)
-// Apple installs OpenGL headers in a non-standard location.
-#include <OpenGL/gl.h>
+	// Apple installs OpenGL headers in a non-standard location.
+	#include <OpenGL/gl.h>
+#elif defined(ARCH_OS_WINDOWS)
+	// Windows must include Windows.h prior to gl.h
+	#include <Windows.h>
+	#include <GL/gl.h>
 #else
-#include <GL/gl.h>
+	#include <GL/gl.h>
 #endif
 
 #ifdef ARCH_OS_DARWIN

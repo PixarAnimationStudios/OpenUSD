@@ -25,6 +25,7 @@
 #define HD_RENDER_CONTEXT_CAPS_H
 
 #include <boost/noncopyable.hpp>
+#include "pxr/imaging/hd/api.h"
 #include "pxr/base/tf/singleton.h"
 
 ///
@@ -46,12 +47,13 @@
 ///
 class HdRenderContextCaps : boost::noncopyable {
 public:
-
+    HDLIB_API
     static HdRenderContextCaps &GetInstance();
 
     /// Returns true if the current GL context supports Hydra.
     /// Minimum OpenGL version to run Hydra is currently OpenGL 4.0.
     /// Note that glew needs to be initialized too.
+    HDLIB_API
     bool SupportsHydra() const;
 
     // Max constants
@@ -81,6 +83,8 @@ private:
 
     friend class TfSingleton<HdRenderContextCaps>;
 };
+
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdRenderContextCaps>);
 
 #endif // HD_RENDER_CONTEXT_CAPS_H
 

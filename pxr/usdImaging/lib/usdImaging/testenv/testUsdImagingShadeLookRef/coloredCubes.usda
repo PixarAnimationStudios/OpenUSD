@@ -1,0 +1,90 @@
+#usda 1.0
+(
+    endFrame = 1
+    startFrame = 1
+)
+
+def Xform "Cubes" ()
+{
+     custom Matrix4d xformOp:transform = (  (.7,.5,.5,0), 
+                                            (-.7,.5,.5,0), 
+                                            (0,-.7,.7,0), 
+                                            (0,0,0,1) )
+
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Cube "pCubePrimvar" ()
+    {
+        ColorFloat[] primvars:displayColor = [(1, 0, 0)]
+        float[] primvars:displayOpacity = [1]
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (6, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pCubeSurface" ()
+    {
+        custom rel surface = </SurfaceShaders/surface1>
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 6, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pCubeLook" ()
+    {
+        custom rel look:binding = </Looks/lambert1>
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-6, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pCubeEmpty" ()
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -6, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pPotentCube" ()
+    {
+        ColorFloat[] primvars:displayColor = [(732, -345, 1)]
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 6, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pInvalidLookCube" ()
+    {
+        custom rel look:binding = </Looks/Nonexistent>
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -6, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Scope "SurfaceShaders"
+{
+    def PShader "surface1"
+    {
+        custom ColorFloat displayColor = (0, 1, 0)
+    }
+}
+
+def Scope "Looks"
+{
+    def Scope "Shaders"
+    {
+        def RisBxdf "lambert1"
+        {
+            asset info:filePath = @PxrDiffuse@
+        }
+    }
+
+    def Look "lambert1" (
+        inherits = </_class_Look>
+    )
+    {
+        custom ColorFloat displayColor = (0, 0, 1)
+        custom rel riLook:bxdf
+        add rel riLook:bxdf = </Looks/Shaders/lambert1>
+    }
+}
+
+
+class "_class_Look"
+{
+}

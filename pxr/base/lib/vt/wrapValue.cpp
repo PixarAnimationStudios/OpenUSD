@@ -21,6 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/numeric/conversion/cast.hpp>
+#include <boost/preprocessor.hpp>
+
+#include <boost/python/class.hpp>
+#include <boost/python/copy_const_reference.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/return_arg.hpp>
+#include <boost/python/type_id.hpp>
+#include <boost/python/str.hpp>
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/array.h"
@@ -36,18 +48,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
-
-#include <boost/numeric/conversion/cast.hpp>
-#include <boost/preprocessor.hpp>
-
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/type_id.hpp>
-#include <boost/python/str.hpp>
 
 #include <iostream>
 #include <limits>

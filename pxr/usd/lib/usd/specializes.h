@@ -24,6 +24,7 @@
 #ifndef USD_SPECIALIZES_H
 #define USD_SPECIALIZES_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -42,19 +43,23 @@ class UsdSpecializes {
 public:
 
     /// Add a path to the specializes listOp at the current EditTarget.
+    USD_API
     bool Add(const SdfPath &primPath);
 
     /// Removes the specified path from the specializes listOp at the
     /// current EditTarget.
+    USD_API
     bool Remove(const SdfPath &primPath);
 
     /// Removes the authored specializes listOp edits at the current edit
     /// target.
+    USD_API
     bool Clear();
 
     /// Explicitly set specializes paths, potentially blocking weaker opinions
     /// that add or remove items, returning true on success, false if the edit
     /// could not be performed.
+    USD_API
     bool SetItems(const SdfPathVector& items);
 
     /// Return the prim this object is bound to.

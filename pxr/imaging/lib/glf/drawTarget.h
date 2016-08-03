@@ -27,6 +27,7 @@
 #ifndef GLF_DRAWTARGET_H
 #define GLF_DRAWTARGET_H
 
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/gf/vec2i.h"
@@ -67,7 +68,7 @@ public:
 public:
     
     /// \brief Returns a new instance 
-    static GlfDrawTargetRefPtr New( GfVec2i const & size );
+    GLF_API static GlfDrawTargetRefPtr New( GfVec2i const & size );
 
     /// \brief Returns a new instance
     /// GL framebuffers cannot be shared across contexts, but texture
@@ -77,7 +78,7 @@ public:
     /// (ex. one for each active QT viewer).
     /// This constructor creates a new framebuffer, but populates its map of
     /// attachments by sharing the RefPtr of the source GlfDrawTarget.
-    static GlfDrawTargetRefPtr New( GlfDrawTargetPtr const & drawtarget );
+    GLF_API static GlfDrawTargetRefPtr New( GlfDrawTargetPtr const & drawtarget );
 
     class Attachment : public GlfTexture {
     public:
@@ -135,32 +136,32 @@ public:
     typedef std::map<std::string, AttachmentRefPtr> AttachmentsMap;
     
     /// \brief Add an attachment to the DrawTarget
-    void AddAttachment( std::string const & name, 
+    GLF_API void AddAttachment( std::string const & name, 
                         GLenum format, GLenum type, GLenum internalFormat );
 
     /// \brief Removes the named attachment from the DrawTarget
-    void DeleteAttachment( std::string const & name );
+    GLF_API void DeleteAttachment( std::string const & name );
     
     /// \brief Clears all the attachments for this DrawTarget
-    void ClearAttachments();
+    GLF_API void ClearAttachments();
     
     /// \brief Copies the list of attachments from drawtarget
-    void CloneAttachments( GlfDrawTargetPtr const & drawtarget );
+    GLF_API void CloneAttachments( GlfDrawTargetPtr const & drawtarget );
     
     /// \brief Returns the list of Attachments for this DrawTarget
-    AttachmentsMap const & GetAttachments() const;
+    GLF_API AttachmentsMap const & GetAttachments() const;
     
     /// \brief Returns the attachment with a given name or TfNullPtr;
-    AttachmentRefPtr GetAttachment(std::string const & name);
+    GLF_API AttachmentRefPtr GetAttachment(std::string const & name);
     
     /// \brief write the Attachment buffer to an image file (debugging)
-    bool WriteToFile(std::string const & name,
+    GLF_API bool WriteToFile(std::string const & name,
                      std::string const & filename,
                      GfMatrix4d const & viewMatrix = GfMatrix4d(1),
                      GfMatrix4d const & projectionMatrix = GfMatrix4d(1));
 
     /// \brief Resize the DrawTarget
-    void SetSize( GfVec2i );    
+    GLF_API void SetSize( GfVec2i );    
 
     /// \brief Returns the size of the draw target
     GfVec2i const & GetSize() const {
@@ -168,26 +169,26 @@ public:
     }
 
     /// \brief Returns the framebuffer object Id
-    GLuint GetFramebufferId() const;
+    GLF_API GLuint GetFramebufferId() const;
     
     /// \brief Binds the framebuffer.
-    void Bind();
+    GLF_API void Bind();
 
     /// \brief Unbinds the framebuffer.
-    void Unbind();
+    GLF_API void Unbind();
 
     /// \brief Returns whether the framebuffer is currently bound.
-    bool IsBound() const;
+    GLF_API bool IsBound() const;
 
     /// \brief Updates the contents signature for attached textures
     /// to allow downstream consumers to know that the texture image
     /// data may have changed.
-    void TouchContents();
+    GLF_API void TouchContents();
 
     /// \brief Returns whether the enclosed framebuffer object is complete.
     /// If \a reason is non-NULL, and this framebuffer is not valid,
     /// sets \a reason to the reason why not.
-    bool IsValid(std::string * reason = NULL);
+    GLF_API bool IsValid(std::string * reason = NULL);
 
 protected:
 

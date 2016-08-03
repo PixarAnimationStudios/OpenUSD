@@ -1,0 +1,81 @@
+Loading @testPcpMuseum.testenv/TrickyInheritsInVariants/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    model.usda           /Model
+    model.usda           /Model{complexity=high}
+
+Variant Selections:
+    {complexity = high}
+
+Child names:
+     ['Class', 'Scope']
+
+------------------------------------------------------------------------
+Results for composing </Model/Class>
+
+Prim Stack:
+    model.usda           /Model/Class
+    model.usda           /Model{complexity=high}Class
+    ref.usda             /RefFromHighClass
+
+Child names:
+     ['RefFromHighClassStuff', 'HighClassStuff']
+
+------------------------------------------------------------------------
+Results for composing </Model/Class/RefFromHighClassStuff>
+
+Prim Stack:
+    ref.usda             /RefFromHighClass/RefFromHighClassStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Class/HighClassStuff>
+
+Prim Stack:
+    model.usda           /Model{complexity=high}Class/HighClassStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope>
+
+Prim Stack:
+    model.usda           /Model/Scope
+    model.usda           /Model/Class
+    model.usda           /Model{complexity=high}Class
+    ref.usda             /RefFromHighClass
+    model.usda           /Model{complexity=high}Scope
+    ref.usda             /RefFromHighScope
+
+Child names:
+     ['RefFromHighScopeStuff', 'HighScopeStuff', 'RefFromHighClassStuff', 'HighClassStuff']
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/RefFromHighScopeStuff>
+
+Prim Stack:
+    ref.usda             /RefFromHighScope/RefFromHighScopeStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/HighScopeStuff>
+
+Prim Stack:
+    model.usda           /Model{complexity=high}Scope/HighScopeStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/RefFromHighClassStuff>
+
+Prim Stack:
+    ref.usda             /RefFromHighClass/RefFromHighClassStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/HighClassStuff>
+
+Prim Stack:
+    model.usda           /Model{complexity=high}Class/HighClassStuff
+

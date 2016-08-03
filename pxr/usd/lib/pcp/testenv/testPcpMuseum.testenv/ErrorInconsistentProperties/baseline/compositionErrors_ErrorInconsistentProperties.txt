@@ -1,0 +1,15 @@
+------------------------------------------------------------------------
+Errors while composing </InconsistentPropertyType>
+
+The property </InconsistentPropertyType.x> has inconsistent spec types.  The defining spec is @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInconsistentProperties/ref.usda@</InconsistentPropType.x> and is a relationship spec.  The conflicting spec is @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInconsistentProperties/root.usda@</InconsistentPropertyType.x> and is an attribute spec.  The conflicting spec will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </InconsistentValueType>
+
+The attribute </InconsistentValueType.x> has specs with inconsistent value types.  The defining spec is @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInconsistentProperties/ref.usda@</InconsistentValType.x> with value type 'string'.  The conflicting spec is @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInconsistentProperties/root.usda@</InconsistentValueType.x> with value type 'double'.  The conflicting spec will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </InconsistentVariability>
+
+The attribute </InconsistentVariability.x> has specs with inconsistent variability.  The defining spec is @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInconsistentProperties/ref.usda@</InconsistentVar.x> with variability 'SdfVariabilityUniform'.  The conflicting spec is @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInconsistentProperties/root.usda@</InconsistentVariability.x> with variability 'SdfVariabilityVarying'.  The conflicting variability will be ignored.
+

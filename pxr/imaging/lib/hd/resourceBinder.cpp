@@ -502,7 +502,7 @@ Hd_ResourceBinder::BindBuffer(TfToken const &name,
     int loc              = binding.GetLocation();
     int textureUnit      = binding.GetTextureUnit();
 
-    void const* offsetPtr = reinterpret_cast<const void*>(offset);
+    void const* offsetPtr = reinterpret_cast<const void*>((intptr_t)(offset));
     switch(type) {
     case HdBinding::VERTEX_ATTR:
         glBindBuffer(GL_ARRAY_BUFFER, buffer->GetId());

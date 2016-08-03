@@ -23,6 +23,9 @@
 //
 /// \file wrapLayer.cpp
 
+#include <boost/python.hpp>
+#include <boost/python/overloads.hpp>
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -37,9 +40,6 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include <boost/python.hpp>
-#include <boost/python/overloads.hpp>
 
 using namespace boost::python;
 
@@ -836,3 +836,18 @@ void wrapLayer()
         TfPyContainerConversions::variable_capacity_policy>();
 
 }
+
+#if defined(ARCH_COMPILER_MSVC)
+// There is a bug in the compiler which means we have to provide this
+// implementation. See here for more information:
+// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
+namespace boost
+{
+    template<> 
+    const volatile SdfLayer* 
+        get_pointer(const volatile SdfLayer* p)
+    { 
+        return p; 
+    }
+}
+#endif

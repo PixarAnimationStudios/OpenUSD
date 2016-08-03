@@ -21,20 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/threads.h"
-#include <pthread.h>
 
 // Static initializer to get the main thread id.  We want this to run as early
 // as possible, so we actually capture the main thread's id.  We assume that
 // we're not starting threads before main().
+
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+
+static DWORD _GetMainThreadId()
+{
+	return GetCurrentThreadId();
+}
+
+DWORD _mainThreadId = _GetMainThreadId();
+bool ArchIsMainThread()
+{
+	return GetCurrentThreadId() == _mainThreadId;
+}
+
+#else
+#include <pthread.h>
+
 static pthread_t _GetMainThreadId()
 {
     return pthread_self();
 }
 pthread_t _mainThreadId = _GetMainThreadId();
 
-
 bool ArchIsMainThread()
 {
     return pthread_equal(pthread_self(), _mainThreadId);
 }
+
+#endif

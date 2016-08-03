@@ -1,0 +1,49 @@
+Loading @testPcpMuseum.testenv/TrickyVariantSelectionInVariant/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </SlugJ>
+
+Prim Stack:
+    root.usda            /SlugJ
+    SlugJ_payload.usda   /SlugJ
+    SlugJ_modelInterface.gen.usda /SlugJ
+    SlugJ_modelInterface.gen.usda /SlugJ{shadingVariant=Axel}
+    SlugJ_shaderDisplayDefs.usda /SlugJ
+    SlugJ_shaderDisplayDefs.usda /ShaderBindingVariants
+    SlugJ_shaderDisplayDefs.usda /ShaderBindingVariants{shaderBindingVariant=Wet}
+
+Variant Selections:
+    {shaderBindingVariant = Wet}
+    {shadingVariant = Axel}
+
+Child names:
+     ['Shaders']
+
+------------------------------------------------------------------------
+Results for composing </SlugJ/Shaders>
+
+Prim Stack:
+    SlugJ_shaderDisplayDefs.usda /SlugJ/Shaders
+    SlugJ_shaderDisplayDefs.usda /ShaderBindingVariants{shaderBindingVariant=Wet}Shaders
+
+Child names:
+     ['BGVariant_Surface']
+
+------------------------------------------------------------------------
+Results for composing </SlugJ/Shaders/BGVariant_Surface>
+
+Prim Stack:
+    SlugJ_shaderDisplayDefs.usda /SlugJ/Shaders/BGVariant_Surface
+    SlugJ_shaderDisplayDefs.usda /ShaderBindingVariants{shaderBindingVariant=Wet}Shaders/BGVariant_Surface
+
+Property names:
+     ['activeBinding']
+
+Property stacks:
+/SlugJ/Shaders/BGVariant_Surface.activeBinding:
+    SlugJ_shaderDisplayDefs.usda /ShaderBindingVariants{shaderBindingVariant=Wet}Shaders/BGVariant_Surface.activeBinding
+

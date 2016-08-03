@@ -24,6 +24,7 @@
 #ifndef USDSHADE_GENERATED_LOOK_H
 #define USDSHADE_GENERATED_LOOK_H
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usdShade/subgraph.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -91,7 +92,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdShadeLook : public UsdShadeSubgraph
+class USDSHADE_API UsdShadeLook : public UsdShadeSubgraph
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds

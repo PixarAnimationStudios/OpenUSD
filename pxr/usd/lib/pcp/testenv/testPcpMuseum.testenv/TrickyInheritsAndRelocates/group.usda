@@ -1,0 +1,10 @@
+#usda 1.0
+
+def Scope "Group"
+{
+    def "Model" (
+        add references = @model.usda@</Model>
+    )
+    {
+    }
+}

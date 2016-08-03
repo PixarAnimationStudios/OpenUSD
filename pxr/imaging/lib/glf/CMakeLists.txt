@@ -16,8 +16,10 @@ pxr_shared_library(glf
         tf
         tracelite
         sdf
+        ${Boost_CHRONO_LIBRARY}
         ${Boost_PYTHON_LIBRARY}
         ${Boost_SYSTEM_LIBRARY}
+        ${Boost_THREAD_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${OPENGL_glu_LIBRARY}
         ${OIIO_LIBRARIES}
@@ -68,6 +70,9 @@ pxr_shared_library(glf
         debugCodes
         glContextRegistry
 
+    PUBLIC_HEADERS
+        api.h
+        
     PRIVATE_HEADERS
         rankedTypeMap.h
 

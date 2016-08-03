@@ -1,0 +1,10 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "Foo" 
+{
+    rel myRel (
+        # Bad boolean value
+        hidden = bad
+    )
+}

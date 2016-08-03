@@ -24,6 +24,10 @@
 #ifndef HD_PERF_H
 #define HD_PERF_H
 
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/functionLite.h"
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
@@ -54,7 +58,7 @@ class SdfPath;
 
 // Creates an auto-mallocTag with the function, including template params.
 #define HD_MALLOC_TAG_FUNCTION() \
-    TfAutoMallocTag2 tagFunc("Hd", __PRETTY_FUNCTION__);
+    TfAutoMallocTag2 tagFunc("Hd", __ARCH_PRETTY_FUNCTION__);
 // Creates an auto-mallocTag with the given named tag.
 #define HD_MALLOC_TAG(x) \
     TfAutoMallocTag2 tag2("Hd", x);
@@ -98,60 +102,75 @@ class SdfPath;
 ///
 class HdPerfLog : public boost::noncopyable {
 public:
-
+    HDLIB_API
     static HdPerfLog& GetInstance() {
         return TfSingleton<HdPerfLog>::GetInstance();
     }
 
     /// Tracks a cache hit for the named cache, the id and tag are reported
     /// when debug logging is enabled.
+    HDLIB_API
     void AddCacheHit(TfToken const& name,
                      SdfPath const& id,
                      TfToken const& tag=TfToken());
 
     /// Tracks a cache miss for the named cache, the id and tag are reported
     /// when debug logging is enabled.
+    HDLIB_API
     void AddCacheMiss(TfToken const& name,
                       SdfPath const& id,
                       TfToken const& tag=TfToken());
 
+    HDLIB_API
     void ResetCache(TfToken const& name);
 
     /// Gets the hit ratio (numHits / totalRequests) of a cache performance
     /// counter.
+    HDLIB_API
     double GetCacheHitRatio(TfToken const& name);
 
     /// Gets the number of hit hits for a cache performance counter.
+    HDLIB_API
     size_t GetCacheHits(TfToken const& name);
 
     /// Gets the number of hit misses for a cache performance counter.
+    HDLIB_API
     size_t GetCacheMisses(TfToken const& name);
 
     /// Returns the names of all cache performance counters.
+    HDLIB_API
     TfTokenVector GetCacheNames();
 
     /// Returns a vector of all performance counter names.
+    HDLIB_API
     TfTokenVector GetCounterNames();
 
     /// Increments a named counter by 1.0.
+    HDLIB_API
     void IncrementCounter(TfToken const& name);
 
     /// Decrements a named counter by 1.0.
+    HDLIB_API
     void DecrementCounter(TfToken const& name);
 
     /// Sets the value of a named counter.
+    HDLIB_API
     void SetCounter(TfToken const& name, double value);
 
     /// Adds value to a named counter.
+    HDLIB_API
     void AddCounter(TfToken const& name, double value);
 
     /// Subtracts value to a named counter.
+    HDLIB_API
     void SubtractCounter(TfToken const& name, double value);
 
     /// Returns the current value of a named counter.
+    HDLIB_API
     double GetCounter(TfToken const& name);
 
     /// Reset all conter values to 0.0. Note that this doesn't reset cache counters.
+    HDLIB_API
     void ResetCounters();
 
     /// Enable performance logging.
@@ -198,5 +217,7 @@ private:
     std::mutex _mutex;
     typedef std::lock_guard<std::mutex> _Lock;
 };
+
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdPerfLog>);
 
 #endif // HD_PERF_H

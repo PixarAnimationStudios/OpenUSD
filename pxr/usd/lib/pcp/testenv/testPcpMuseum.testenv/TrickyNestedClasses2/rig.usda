@@ -1,0 +1,22 @@
+#usda 1.0
+
+def Model "KiltRig" (
+    inherits = </_class_ClothRig>
+)
+{
+    over "rig"
+    {
+        def "KiltHemRig" (
+            add references = @ClothHemRig.usda@</ClothHemRig>
+        )
+        {
+        }
+    }
+}
+
+class Model "_class_ClothRig" (
+    references = @ClothRig.usda@</ClothRig>
+)
+{
+}
+

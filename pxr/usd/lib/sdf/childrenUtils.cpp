@@ -485,7 +485,7 @@ Sdf_ChildrenUtils<ChildPolicy>::MoveChildForBatchNamespaceEdit(
             }
         }
 
-        if (oldNameIter - oldSiblingNames.begin() < index) {
+        if (oldNameIter - oldSiblingNames.begin() < static_cast<int>(index)) {
             // Index must be shifted down because we're removing an
             // earlier name.
             --index;

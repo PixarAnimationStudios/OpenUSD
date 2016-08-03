@@ -26,6 +26,8 @@
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
 
+#include "pxr/imaging/glf/diagnostic.h"
+
 using namespace boost::python;
 
 void wrapDiagnostic()

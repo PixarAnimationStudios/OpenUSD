@@ -27,6 +27,11 @@
 #include "pxr/base/arch/export.h"
 
 /*!
+* \brief Macro stringify a symbol.
+*/
+#define ARCH_STRINGIFY(x) #x
+
+/*!
  * \file attributes.h
  * \brief Define function attributes.
  *
@@ -113,6 +118,11 @@
  */
 #   define ARCH_USED_FUNCTION __attribute__((used))
 
+ /*!
+ * \brief Macro to ensure the linker does not strip a symbol.
+ */
+#	define ARCH_NO_STRIP_SYMBOL(x)
+
 /*!
  * \brief Macro to indicate a function should be executed by the dynamic
  *        loader when the dynamic object (library or program) is loaded.
@@ -139,10 +149,21 @@
 #   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)
 #   define ARCH_NOINLINE
 #   define ARCH_UNUSED_ARG
+
+/*!
+* \brief Macro to ensure the linker does not strip a symbol.
+*/
+#	define ARCH_NO_STRIP_SYMBOL(x)	\
+		__pragma(comment(linker, "/INCLUDE:"ARCH_STRINGIFY( x ) ) )
+
 /* ARCH_USED_FUNCTION is deliberately omitted.  If a new compiler is deployed,
  * we want the build to fail rather than generate executables that will fail
  * at runtime in potentially mysterious ways. Similarly ARCH_CONSTRUCTOR
  * and ARCH_DESTRUCTOR. */
+
+#	define ARCH_CONSTRUCTOR(x)
+#	define ARCH_DESTRUCTOR(x)
+
 #endif /* defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG) */
 
 #endif // ARCH_ATTRIBUTES_H 

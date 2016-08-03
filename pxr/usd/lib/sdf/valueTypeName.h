@@ -25,6 +25,7 @@
 #define SDF_VALUETYPENAME_H
 
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/api.h"
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <string>
@@ -70,7 +71,7 @@ public:
 /// \c SdfSchemaBase::FindType() and shouldn't otherwise need the string.
 /// Aliases compare equal, even if registered by different schemas.
 /// 
-class SdfValueTypeName
+class SDF_API SdfValueTypeName
     : boost::equality_comparable<SdfValueTypeName, std::string
     , boost::equality_comparable<SdfValueTypeName, TfToken
     , boost::equality_comparable<SdfValueTypeName
@@ -173,6 +174,6 @@ hash_value(const SdfValueTypeName& typeName)
     return typeName.GetHash();
 }
 
-std::ostream& operator<<(std::ostream&, const SdfValueTypeName& typeName);
+SDF_API std::ostream& operator<<(std::ostream&, const SdfValueTypeName& typeName);
 
 #endif

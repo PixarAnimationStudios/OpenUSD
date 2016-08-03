@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #define NUMERIC_OPERATORS
-#include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/typeHeaders.h"
 
 
 void wrapArrayFloat() {

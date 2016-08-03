@@ -24,6 +24,7 @@
 #ifndef HDX_INTERSECTOR
 #define HDX_INTERSECTOR
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -51,15 +52,17 @@ typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
-void HdxNoDepthMask();
+HDXLIB_API void HdxNoDepthMask();
 
 class HdxIntersector {
 public:
     struct Params;
     class Result;
-    class Hit;
+    struct Hit;
 
+    HDXLIB_API
     HdxIntersector(HdRenderIndexSharedPtr index);
+    HDXLIB_API
     ~HdxIntersector() = default;
 
     /// Given some parameters, populate a collection of resulting hit points,
@@ -68,6 +71,7 @@ public:
     ///
     /// Note that the individual hits will still need to be resolved, however no
     /// further GPU execution is required to resolve them.
+    HDXLIB_API
     bool Query(HdxIntersector::Params const&,
                HdRprimCollection const&,
                HdEngine*,
@@ -75,6 +79,7 @@ public:
 
     /// Set the resolution of the intersector in pixels. Note that setting this
     /// resolution frequently may result in poor preformance.
+    HDXLIB_API
     void SetResolution(GfVec2i const& widthHeight);
 
     enum HitMode {
@@ -126,8 +131,8 @@ public:
         };
 
         // Ordered by ndc depth.
-        bool operator<(Hit const& lhs) const;
-        bool operator==(Hit const& lhs) const;
+        HDXLIB_API bool operator<(Hit const& lhs) const;
+        HDXLIB_API bool operator==(Hit const& lhs) const;
 
         // Depth and position are ignored, used for object/element/instance
         // aggregation.
@@ -145,7 +150,9 @@ public:
 
     class Result {
     public:
+        HDXLIB_API
         Result();
+        HDXLIB_API
         Result(std::unique_ptr<unsigned char[]> primIds,
                std::unique_ptr<unsigned char[]> instanceIds,
                std::unique_ptr<unsigned char[]> elementIds,
@@ -153,9 +160,12 @@ public:
                HdRenderIndexSharedPtr const& index,
                Params params,
                GfVec4i viewport);
+        HDXLIB_API
         ~Result();
 
+        HDXLIB_API
         Result(Result &&);
+        HDXLIB_API
         Result& operator=(Result &&);
 
         inline bool IsValid() const
@@ -166,14 +176,17 @@ public:
         /// Return the nearest single hit point. Not that this method may be
         /// considerably more efficient, as it only needs to construct a single
         /// Hit object.
+        HDXLIB_API
         bool ResolveNearest(HdxIntersector::Hit* hit) const;
 
         /// Return all hit points. Note that this may contain redundant objects,
         /// however it allows access to all depth values for a given object.
+        HDXLIB_API
         bool ResolveAll(HdxIntersector::HitVector* allHits) const;
 
         /// Return the set of unique hit points, keeping only the nearest depth
         /// value.
+        HDXLIB_API
         bool ResolveUnique(HdxIntersector::HitSet* hitSet) const;
 
     private:
@@ -206,7 +219,7 @@ private:
     HdRenderIndexSharedPtr _index;
 };
 
-
+HDXLIB_API
 std::ostream& operator<<(std::ostream& out, HdxIntersector::Hit const & h);
 
 #endif //HDX_INTERSECTOR

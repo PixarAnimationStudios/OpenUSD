@@ -30,7 +30,7 @@
     ((pear, "d'Anjou"))                 \
     ((apple, ( (Fuji) (Pippin) (McIntosh) )))
 
-TF_DECLARE_PUBLIC_TOKENS(tfTestStaticTokens, TF_TEST_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(tfTestStaticTokens, ARCH_EXPORT, TF_TEST_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(tfTestStaticTokens, TF_TEST_TOKENS);
 
 namespace {

@@ -1,0 +1,19 @@
+#sdf 1.4.32
+
+over "AssetPathTest"
+{
+    asset abs = @/usr/anim/menv30/global/unit_defs.menva@
+    asset empty = @@
+    asset overlay = @///global/unit_defs.menva@
+    asset relative1 = @tds/Model.tds@
+    asset relative2 = @../tds/Model.tds@
+    asset repo = @//menv30/global/unit_defs.menva@
+    asset search = @Model/menv30/Model.menva@
+    asset token = @//$STAGEDIR/sim/$MODELINSTANCE.tid@
+    asset wchangeno = @//menv30/global/unit_defs.menva@12345@
+    asset wdate = @//menv30/global/unit_defs.menva@2012/06/20@
+    asset wdatetime = @//menv30/global/unit_defs.menva@2012/06/20:16:18:00@
+    asset wlabel = @//menv30/global/unit_defs.menva@stable-prepro_0.42@
+    asset wversion = @//menv30/global/unit_defs.menva#20@
+}
+

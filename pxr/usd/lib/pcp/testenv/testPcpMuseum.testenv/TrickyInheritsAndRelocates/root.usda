@@ -1,0 +1,89 @@
+#usda 1.0
+(
+    """
+    This museum case exhibits the behavior of inherits in relocated prims. 
+    In particular, it shows that opinions at relocation sources will not
+    be inherited. This is a consequence of the "salted earth" relocation
+    policy.
+
+    These cases with inherits and relocates are a little tricky because they
+    indirectly pull on prims at a relocation source. If we were to directly 
+    compose the prims at the relocation source, we would receive composition 
+    errors -- this is verified by ErrorOpinionAtRelocationSource.
+
+    There are two examples here. In the first, a model in a character group 
+    is renamed via relocations. The model itself has some scope that inherits 
+    a class hierarchy. Overs on this class hierarchy that are (erroneously) 
+    authored at the relocation source in the referencing layer stack
+    should be ignored. In the second, a scope attempts to inherit from a
+    scope relocated from a referenced rig. It shouldn't be able to inherit
+    from the scope at the rig's original location.
+    """
+)
+
+def Scope "Group" (
+    add references = @group.usda@</Group>
+    relocates = {
+        <Model> : <Model_Renamed>
+    }
+)
+{
+    over "Model_Renamed"
+    {
+        over "A"
+        {
+            custom string a_target = "good"
+        }
+
+        over "B"
+        {
+            custom string b_target = "good"
+        }
+    }
+
+    over "Model"
+    {
+        over "A"
+        {
+            custom string a_src = "bad"
+        }
+
+        over "B"
+        {
+            custom string b_src = "bad"
+        }
+    }
+}
+
+def Scope "Rig" (
+    add references = @rig.usda@</Rig>
+    relocates = {
+        <RigClass> : <Anim/RigClass>
+    }
+)
+{
+    over "RigClass"
+    {
+        custom string r_src = "bad"
+    }
+
+    def Scope "Anim"
+    {
+        over "RigClass"
+        {
+            custom string r_target = "good"
+        }
+
+        def Scope "RigInstance" (
+            add inherits = </Rig/Anim/RigClass>
+        )
+        {
+        }
+
+        def Scope "BadRigInstance" (
+            add inherits = </Rig/RigClass>
+        )
+        {
+        }
+    }
+}

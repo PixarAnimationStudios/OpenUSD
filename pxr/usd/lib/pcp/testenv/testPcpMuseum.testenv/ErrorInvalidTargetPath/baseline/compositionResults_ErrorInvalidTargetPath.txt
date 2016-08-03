@@ -1,0 +1,76 @@
+Loading @testPcpMuseum.testenv/ErrorInvalidTargetPath/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    root.usda            /_Class1
+    A.usda               /A
+
+Property names:
+     ['A', 'B', 'prohibitedConnectionToInstance', 'x']
+
+Property stacks:
+/Root.A:
+    A.usda               /A.A
+/Root.B:
+    A.usda               /A.B
+/Root.prohibitedConnectionToInstance:
+    root.usda            /_Class1.prohibitedConnectionToInstance
+/Root.x:
+    root.usda            /Root.x
+
+Attribute connections:
+/Root.prohibitedConnectionToInstance:
+    /Root.x
+
+------------------------------------------------------------------------
+Results for composing </RootWithReferenceUnderVariant>
+
+Prim Stack:
+    root.usda            /RootWithReferenceUnderVariant
+    root.usda            /RootWithReferenceUnderVariant{standin=anim}
+    A.usda               /A
+
+Variant Selections:
+    {standin = anim}
+
+Property names:
+     ['A', 'B']
+
+Property stacks:
+/RootWithReferenceUnderVariant.A:
+    A.usda               /A.A
+/RootWithReferenceUnderVariant.B:
+    A.usda               /A.B
+
+Relationship targets:
+/RootWithReferenceUnderVariant.B:
+    /PrimOutsideReferenceRoot
+
+Attribute connections:
+/RootWithReferenceUnderVariant.A:
+    /PrimOutsideReferenceRoot.A
+
+------------------------------------------------------------------------
+Results for composing </_Class1>
+
+Prim Stack:
+    root.usda            /_Class1
+
+Property names:
+     ['prohibitedConnectionToInstance']
+
+Property stacks:
+/_Class1.prohibitedConnectionToInstance:
+    root.usda            /_Class1.prohibitedConnectionToInstance
+
+Attribute connections:
+/_Class1.prohibitedConnectionToInstance:
+    /Root.x
+

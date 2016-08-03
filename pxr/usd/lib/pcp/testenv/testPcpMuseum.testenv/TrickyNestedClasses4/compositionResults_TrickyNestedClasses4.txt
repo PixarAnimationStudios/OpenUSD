@@ -1,0 +1,147 @@
+Loading @testPcpMuseum.testenv/TrickyNestedClasses4/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig>
+
+Prim Stack:
+    root.usda            /_class_CharRig
+    ref.usda             /CharRig
+
+Child names:
+     ['_Class_ToesRig', 'SymToesRig', 'LToesRig']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/_Class_ToesRig>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/_Class_ToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/SymToesRig>
+
+Prim Stack:
+    ref.usda             /CharRig/SymToesRig
+    ref.usda             /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/SymToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/LToesRig>
+
+Prim Stack:
+    ref.usda             /CharRig/LToesRig
+    ref.usda             /CharRig/SymToesRig
+    ref.usda             /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/LToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.usda            /Rig
+    root.usda            /_class_CharRig
+    ref.usda             /CharRig
+
+Child names:
+     ['_Class_ToesRig', 'SymToesRig', 'LToesRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/_Class_ToesRig>
+
+Prim Stack:
+    root.usda            /Rig/_Class_ToesRig
+    ref.usda             /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/_Class_ToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/_Class_ToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    root.usda            /Rig/_Class_ToesRig/ThumbToeLOCALRig
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymToesRig>
+
+Prim Stack:
+    root.usda            /Rig/_Class_ToesRig
+    ref.usda             /CharRig/SymToesRig
+    ref.usda             /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    root.usda            /Rig/_Class_ToesRig/ThumbToeLOCALRig
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/LToesRig>
+
+Prim Stack:
+    root.usda            /Rig/_Class_ToesRig
+    ref.usda             /CharRig/LToesRig
+    ref.usda             /CharRig/SymToesRig
+    ref.usda             /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/LToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/LToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    root.usda            /Rig/_Class_ToesRig/ThumbToeLOCALRig
+    ref.usda             /CharRig/_Class_ToesRig/_Class_Toe
+

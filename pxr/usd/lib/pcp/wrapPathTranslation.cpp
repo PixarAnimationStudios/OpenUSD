@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/pcp/pathTranslation.h"
 
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/sdf/path.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

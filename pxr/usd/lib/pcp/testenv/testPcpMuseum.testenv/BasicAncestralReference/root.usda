@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    """
+    This example has a prim A with a reference.
+    It has a child B, which also has a reference.
+    In addition, across A's reference (the ancestral reference)
+    this is also an opinion about a child B.
+    """
+)
+
+def "A" (
+    add references = @A.usda@</A>
+)
+{
+    over "B" (
+        add references = @B.usda@</B>
+    )
+    {
+    }
+}

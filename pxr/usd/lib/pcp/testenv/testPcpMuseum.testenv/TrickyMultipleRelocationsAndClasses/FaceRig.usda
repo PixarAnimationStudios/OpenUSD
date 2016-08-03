@@ -1,0 +1,67 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "FaceRig" (
+    relocates = {
+        <EyeLidRig/LEyeLidRig/Anim/Lids>: <Anim/Face/Eyes/LEye/LLids>,
+        <EyeLidRig/REyeLidRig/Anim/Lids>: <Anim/Face/Eyes/REye/RLids>,
+        <EyeRig/LEyeRig/Anim/Eye>: <Anim/Face/Eyes/LEye>,
+        <EyeRig/REyeRig/Anim/Eye>: <Anim/Face/Eyes/REye>,
+    }
+)
+{
+    def Scope "Anim"
+    {
+        def Scope "Face"
+        {
+            def Scope "Eyes"
+            {
+            }
+        }
+    }
+
+    def Scope "EyeLidRig"
+    {
+        class Scope "SymEyeLidRig" (
+            references = @EyeLidRig.usda@</EyeLidRig>
+        )
+        {
+        }
+
+        def Scope "LEyeLidRig" (
+            inherits = </FaceRig/EyeLidRig/SymEyeLidRig>
+        )
+        {
+        }
+
+        def Scope "REyeLidRig" (
+            inherits = </FaceRig/EyeLidRig/SymEyeLidRig>
+        )
+        {
+        }
+    }
+
+    def Scope "EyeRig"
+    {
+        class Scope "SymEyeRig" (
+            references = @EyeRig.usda@</EyeRig>
+        )
+        {
+        }
+
+        def Scope "LEyeRig" (
+            inherits = </FaceRig/EyeRig/SymEyeRig>
+        )
+        {
+        }
+
+        def Scope "REyeRig" (
+            inherits = </FaceRig/EyeRig/SymEyeRig>
+        )
+        {
+        }
+    }
+}

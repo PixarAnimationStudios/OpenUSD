@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/library.h"
 #include "pxr/base/tf/dl.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/registryManager.h"
@@ -57,18 +58,18 @@ TfDlopen(
                             filename.c_str(), flag);
 
     // Clear any existing error.
-    (void*)dlerror();
+    (void*)ArchLibraryError();
 
     // try to dlopen the dynamic library
     bool state = ::_opening;
     ::_opening = true;
-    void* handle = dlopen(filename.c_str(), flag);
+    void* handle = ArchOpenLibrary(filename.c_str(), flag);
     ::_opening = state;
 
     TF_DEBUG(TF_DLOPEN).Msg("TfDlopen: [opened] '%s' (handle=%p)\n",
                             filename.c_str(), handle);
 
-    const char *err = dlerror();
+    const char *err = ArchLibraryError();
     if (err) {
         if (error) {
             *error = err;
@@ -102,7 +103,8 @@ TfDlclose(void* handle)
 
     TF_DEBUG(TF_DLCLOSE).Msg("TfDlclose: handle = %p\n", handle);
 
-    int status = dlclose(handle);
+	int status = ArchLibraryClose(handle);
+
     ::_closing = state;
 
     return status;

@@ -24,6 +24,7 @@
 #ifndef USD_USD_FILE_FORMAT_H
 #define USD_USD_FILE_FORMAT_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -38,7 +39,7 @@ TF_DECLARE_WEAK_PTRS(SdfLayerBase);
     ((Target,       "usd"))         \
     ((FormatArg,    "format"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_USD_FILE_FORMAT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_API, USD_USD_FILE_FORMAT_TOKENS);
 
 /// \class UsdUsdFileFormat
 ///
@@ -94,7 +95,7 @@ private:
     UsdUsdFileFormat();
     virtual ~UsdUsdFileFormat();
     
-    static SdfFileFormatConstPtr 
+    USD_API static SdfFileFormatConstPtr 
     _GetUnderlyingFileFormatForLayer(const SdfLayerBase* layer);
 
     virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;

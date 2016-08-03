@@ -1,0 +1,36 @@
+Loading @testPcpRegressionBugs.testenv/bug74847/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    payload.usda         /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A/B>
+
+Prim Stack:
+    payload.usda         /A/B
+    ref.usda             /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A/B/B>
+
+Prim Stack:
+    ref.usda             /A/B
+    ref.usda             /A/B{deformable=off}
+
+Variant Selections:
+    {deformable = off}
+

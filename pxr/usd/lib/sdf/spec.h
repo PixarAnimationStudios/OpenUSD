@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
@@ -41,7 +42,7 @@
 /// \class SdfSpec
 /// \brief Base class for all Sdf spec classes.
 ///
-class SdfSpec {
+class SDF_API SdfSpec {
     SDF_DECLARE_BASE_SPEC(SdfSchema, SdfSpec);
 
 public:
@@ -186,7 +187,7 @@ public:
     }
 
     /// Returns a field value by name.
-    VtValue GetField(const TfToken &name) const;
+	VtValue GetField(const TfToken &name) const;
 
     /// Returns a field value by name.  If the object is invalid, or the
     /// value doesn't exist, isn't set, or isn't of the given type then
@@ -201,7 +202,7 @@ public:
     }
 
     /// Sets a field value as a boxed VtValue.
-    bool SetField(const TfToken & name, const VtValue& value);
+	bool SetField(const TfToken & name, const VtValue& value);
 
     /// Sets a field value of type T.
     template <typename T>

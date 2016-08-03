@@ -29,9 +29,12 @@
 #include <cstdio>
 #include <stdlib.h>
 #include <sys/types.h>
+#if defined(ARCH_OS_LINUX)
 #include <sys/wait.h>
+##include <unistd.h>
+#endif
 #include <assert.h>
-#include <unistd.h>
+#include <csignal>
 
 void
 crash(int sig) {
@@ -43,6 +46,7 @@ int main()
 {   
     (void) signal(SIGABRT,crash);
 
+#if !defined(ARCH_OS_WINDOWS)
     int childPid;
 
     if ( (childPid = fork()) == 0 )   {
@@ -53,6 +57,7 @@ int main()
     int status;
 
     assert(childPid == wait(&status));
+#endif
     assert(status != 0);
 
     return 0;

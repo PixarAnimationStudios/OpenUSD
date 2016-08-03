@@ -1,0 +1,29 @@
+#usda 1.0
+
+over "Base"
+{
+}
+
+over "Specializes"
+{
+}
+
+def "Ref" (
+    references = @./ref2.usda@</Ref>
+)
+{
+}
+
+class "Specializes_1"
+{
+}
+
+class "Specializes_2"
+{
+}
+
+def "Multi" (
+    specializes = [</Specializes_1>, </Specializes_2>]
+)
+{
+}

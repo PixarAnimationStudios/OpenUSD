@@ -33,6 +33,7 @@
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/scoped_ptr.hpp>
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/hashmap.h"
 #include <boost/utility.hpp>
 

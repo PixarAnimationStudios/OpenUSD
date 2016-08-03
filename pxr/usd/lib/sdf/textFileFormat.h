@@ -31,6 +31,7 @@
 
 #include "pxr/usd/sdf/declareHandles.h" 
 #include "pxr/usd/sdf/fileFormat.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
 #include <string>
@@ -40,7 +41,7 @@
     ((Version, "1.4.32"))           \
     ((Target,  "sdf"))
 
-TF_DECLARE_PUBLIC_TOKENS(SdfTextFileFormatTokens, SDF_TEXT_FILE_FORMAT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(SdfTextFileFormatTokens, SDF_API, SDF_TEXT_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfTextFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
@@ -51,7 +52,7 @@ SDF_DECLARE_HANDLES(SdfSpec);
 ///
 /// Sdf text file format
 ///
-class SdfTextFileFormat : public SdfFileFormat
+class SDF_API SdfTextFileFormat : public SdfFileFormat
 {
 public:
     /// Writes the content of the layer \p layerBase to the stream \p ostr. If

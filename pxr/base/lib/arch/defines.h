@@ -76,16 +76,19 @@
 #define ARCH_COMPILER_CLANG_MAJOR __clang_major__
 #define ARCH_COMPILER_CLANG_MINOR __clang_minor__
 #define ARCH_COMPILER_CLANG_PATCHLEVEL __clang_patchlevel__
+#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #elif defined(__GNUC__)
 #define ARCH_COMPILER_GCC
 #define ARCH_COMPILER_GCC_MAJOR __GNUC__
 #define ARCH_COMPILER_GCC_MINOR __GNUC_MINOR__
 #define ARCH_COMPILER_GCC_PATCHLEVEL __GNUC_PATCHLEVEL__
+#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #elif defined(__ICC)
 #define ARCH_COMPILER_ICC
+#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #elif defined(_MSC_VER)
 #define ARCH_COMPILER_MSVC
-#define ARCH_COMPILER_MSVC_VERSION _MSC_VER
+#define ARCH_COMPILER_MSVC_VERSION	_MSC_VER
 #endif
 
 
@@ -115,6 +118,11 @@
 template <typename T> struct Arch_TypeOfRemoveReference { typedef T type; };
 template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 #define ARCH_TYPEOF(x) typename Arch_TypeOfRemoveReference<decltype((x))>::type
+#elif defined(ARCH_OS_WINDOWS)
+#define ARCH_TYPEOF(x) decltype(x)
+#else
+// This extension is widely supported so fallback to it.
+#define ARCH_TYPEOF __typeof__
 #endif
 
 // The current version of Apple clang does not support the thread_local

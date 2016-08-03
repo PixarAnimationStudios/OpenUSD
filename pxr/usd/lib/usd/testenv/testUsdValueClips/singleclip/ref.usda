@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "Model" (
+    kind = "model"
+)
+{
+    float attr_1 = 1.0
+    float attr_2 = 2.0   
+}

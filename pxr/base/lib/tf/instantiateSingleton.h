@@ -38,24 +38,32 @@
  * \brief Manage a single instance of an object.
  */
 
-
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/demangle.h"
-
+#include <mutex>
 
 template <typename T>
 T&
 TfSingleton<T>::_CreateInstance()
 {
+    static std::once_flag once;
+    std::call_once(once, [](){
+        TfSingleton<T>::_mutex = new std::mutex;
+    });
+
     TfAutoMallocTag2 tag2("Tf", "TfSingleton::_CreateInstance");
     TfAutoMallocTag tag("Create Singleton " + ArchGetDemangled<T>());
 
-    std::lock_guard<std::mutex> lock(TfSingleton<T>::_mutex);
+    std::lock_guard<std::mutex> lock(*TfSingleton<T>::_mutex);
     if (!TfSingleton<T>::_instance) {
         // T's constructor could cause this to be created and set
         // already, so guard against that.
+        ARCH_PRAGMA_MAY_NOT_BE_ALIGNED
         T *inst = new T;
+        ARCH_PRAGMA_RESTORE
         if (!TfSingleton<T>::_instance) {
             TfSingleton<T>::_instance = inst;
         }
@@ -68,7 +76,7 @@ template <typename T>
 void
 TfSingleton<T>::_DestroyInstance()
 {
-    std::lock_guard<std::mutex> lock(TfSingleton<T>::_mutex);
+    std::lock_guard<std::mutex> lock(*TfSingleton<T>::_mutex);
     delete TfSingleton<T>::_instance;
     TfSingleton<T>::_instance = 0;
 }
@@ -82,9 +90,9 @@ TfSingleton<T>::_DestroyInstance()
  * file for class \c T.
  */
 
-#define TF_INSTANTIATE_SINGLETON(T)                                     \
-    template <> std::mutex TfSingleton<T>::_mutex = {};                 \
-    template <> T* TfSingleton<T>::_instance = 0;                       \
-                                                                        \
-    template T& TfSingleton< T >::_CreateInstance();                    \
+#define TF_INSTANTIATE_SINGLETON(T)                               \
+    template <> std::mutex* TfSingleton<T>::_mutex = 0;           \
+    template <> T* TfSingleton<T>::_instance = 0;                 \
+                                                                  \
+    template T& TfSingleton< T >::_CreateInstance();              \
     template void TfSingleton< T >::_DestroyInstance()

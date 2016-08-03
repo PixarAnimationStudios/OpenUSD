@@ -24,6 +24,7 @@
 #ifndef SDF_ABSTRACTDATA_H
 #define SDF_ABSTRACTDATA_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -46,7 +47,7 @@ class SdfAbstractDataValue;
 #define SDF_DATA_TOKENS                  \
         ((TimeSamples, "timeSamples"))
 
-TF_DECLARE_PUBLIC_TOKENS(SdfDataTokens, SDF_DATA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(SdfDataTokens, SDF_API, SDF_DATA_TOKENS);
 
 /// \class SdfAbstractDataSpecId
 ///
@@ -84,7 +85,7 @@ public:
 
     /// Returns string representation of this key. Equivalent to
     /// GetFullSpecPath().GetString().
-    std::string GetString() const;
+	SDF_API std::string GetString() const;
 
     /// Returns true if this object identifies a property spec, false otherwise.
     bool IsProperty() const;
@@ -111,11 +112,11 @@ public:
     ///
     /// The property-owning spec path and this name together form the full spec
     /// path.
-    const TfToken& GetPropertyName() const;
+    SDF_API const TfToken& GetPropertyName() const;
 
 private:
-    const SdfPath& _ComputeFullSpecPath() const;
-    const SdfPath& _ComputePropertyOwningSpecPath() const;
+	SDF_API const SdfPath& _ComputeFullSpecPath() const;
+	SDF_API const SdfPath& _ComputePropertyOwningSpecPath() const;
 
 private:
     const SdfPath* _path;
@@ -141,7 +142,7 @@ private:
 /// consistency guarantees about the scene description it contains.
 /// Instead, it is a basis for building those things.
 ///
-class SdfAbstractData : public TfRefBase, public TfWeakBase
+class SDF_API SdfAbstractData : public TfRefBase, public TfWeakBase
 {
 public:
     SdfAbstractData() {}

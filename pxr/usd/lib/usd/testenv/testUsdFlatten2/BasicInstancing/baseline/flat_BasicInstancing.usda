@@ -1,0 +1,89 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates basic instancing behavior in Pcp.
+    Prims tagged as instances are only allowed to override property
+    values at the instance root; overrides on descendent prims are
+    ignored.
+    """
+)
+
+over "Flattened_Master_1"
+{
+    def "geom"
+    {
+        double x = 3.5
+    }
+
+    def "From_class_in_set"
+    {
+    }
+
+    def "From_class_in_root"
+    {
+    }
+}
+
+class "_class_Prop"
+{
+    double a = 3.5
+
+    def "From_class_in_root"
+    {
+    }
+
+    over "geom"
+    {
+        double x = 3.5
+    }
+}
+
+def "Set_1"
+{
+    def "InstancedProp" (
+        instanceable = true
+        add references = </Flattened_Master_1>
+    )
+    {
+        double a = 3
+    }
+
+    def "UninstancedProp" (
+        instanceable = false
+    )
+    {
+        double a = 3
+
+        def "geom"
+        {
+            double x = 3
+        }
+
+        def "From_class_in_set"
+        {
+        }
+
+        def "From_set"
+        {
+        }
+
+        def "From_class_in_root"
+        {
+        }
+
+        def "From_root"
+        {
+        }
+    }
+}
+
+def "NotAnInstance" (
+    instanceable = true
+)
+{
+    def "Child"
+    {
+    }
+}
+
+

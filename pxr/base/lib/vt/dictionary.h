@@ -28,6 +28,7 @@
 
 #include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/api.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/move.h"
@@ -68,7 +69,7 @@
 ///
 /// For a list of functions that can manipulate VtDictionary objects, see the  
 /// \link group_vtdict_functions VtDictionary Functions \endlink group page .
-class VtDictionary {
+class VT_API VtDictionary {
     typedef std::map<std::string, VtValue> _Map;
     std::unique_ptr<_Map> _dictMap;
 
@@ -321,12 +322,12 @@ private:
 };
 
 /// Equality comparison.
-bool operator==(VtDictionary const &, VtDictionary const &);
-bool operator!=(VtDictionary const &, VtDictionary const &);
+VT_API bool operator==(VtDictionary const &, VtDictionary const &);
+VT_API bool operator!=(VtDictionary const &, VtDictionary const &);
 
 /// Write the contents of a VtDictionary to a stream, formatted like "{ 'key1':
 /// value1, 'key2': value2 }".
-std::ostream &operator<<(std::ostream &, VtDictionary const &);
+VT_API  std::ostream &operator<<(std::ostream &, VtDictionary const &);
 
 //
 // Return a const reference to an empty VtDictionary.
@@ -436,7 +437,7 @@ T VtDictionaryGet( const VtDictionary &dictionary,
 ///
 /// \ingroup group_vtdict_functions
 ///
-VtDictionary
+VT_API VtDictionary
 VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
@@ -452,7 +453,7 @@ VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
 ///
 /// \ingroup group_vtdict_functions
 ///
-void
+VT_API void
 VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
@@ -468,7 +469,7 @@ VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
 ///
 /// \ingroup group_vtdict_functions
 ///
-void
+VT_API void
 VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
                  bool coerceToWeakerOpinionType = false);
 
@@ -493,7 +494,7 @@ VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
 /// \ingroup group_vtdict_functions
 ///
 ///
-VtDictionary
+VT_API VtDictionary
 VtDictionaryOverRecursive(const VtDictionary &strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -517,7 +518,7 @@ VtDictionaryOverRecursive(const VtDictionary &strong, const VtDictionary &weak,
 ///
 /// \ingroup group_vtdict_functions
 ///
-void
+VT_API void
 VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -543,7 +544,7 @@ VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
 ///
 /// \ingroup group_vtdict_functions
 ///
-void
+VT_API void
 VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -556,27 +557,27 @@ struct VtDictionaryHash {
 
 /// Evaluates the specified \p content string as a python dictionary and
 /// returns it as a VtDictionary.
-VtDictionary VtDictionaryFromPythonString(
+VT_API VtDictionary VtDictionaryFromPythonString(
     const std::string& content);
 
 /// Same as VtDictionaryFromPythonString but with more flexible failure
 /// policy.  Returns \c true if successful with the result in \p dict,
 /// otherwise returns \c false.
 /// 
-bool VtDictionaryFromPythonString(
+VT_API bool VtDictionaryFromPythonString(
     const std::string& content, 
     VtDictionary* dict);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and returns the formatted string. The pprint module is used to format the
 /// dictionary.
-std::string VtDictionaryPrettyPrint(
+VT_API std::string VtDictionaryPrettyPrint(
     const VtDictionary& vtdict);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and inserts it into the stream. The pprint module is used to format the
 /// dictionary.
-std::ostream& VtDictionaryPrettyPrint(
+VT_API std::ostream& VtDictionaryPrettyPrint(
     const VtDictionary& vtdict,
     std::ostream& ostream);
 

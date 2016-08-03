@@ -25,6 +25,7 @@
 
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/daemon.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/stackTrace.h"
@@ -44,11 +45,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string>
-#endif
-#if defined(ARCH_OS_WINDOWS)
+#elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #include <ciso646>
 #endif
+#include <atomic>
 
 // We don't want this inlined so ArchDebuggerTrap() is as clean as
 // possible.  The fewer instructions in that function, the more likely
@@ -451,7 +452,7 @@ Arch_InitDebuggerAttach()
     // Parse the contents of the ARCH_DEBUGGER environment variable and
     // store the result.  This way we can avoid using the heap or tricky
     // stack allocations when launching the debugger.
-    char* e = getenv("ARCH_DEBUGGER");
+    const char* e = ArchGetEnv("ARCH_DEBUGGER");
     if (e and e[0]) {
         std::string link;
 

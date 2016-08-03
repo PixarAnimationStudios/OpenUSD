@@ -247,7 +247,7 @@ private:
     }
 };
 
-#elif __cplusplus > 201103L
+#elif __cplusplus > 201103L || defined(ARCH_OS_WINDOWS)
 // Use C++11 unordered_set.
 #include <unordered_set>
 

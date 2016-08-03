@@ -77,7 +77,7 @@ PxOsdMeshTopology::ComputeHash() const {
 
     TRACE_FUNCTION();
 
-    uint32_t hash = _subdivTags.ComputeHash();
+    uint32_t hash = static_cast<uint32_t>(_subdivTags.ComputeHash());
     hash = ArchHash((const char*)&_scheme, sizeof(TfToken), hash);
     hash = ArchHash((const char*)&_orientation, sizeof(TfToken), hash);
     hash = ArchHash((const char*)_faceVertexCounts.cdata(),
@@ -108,7 +108,7 @@ PxOsdMeshTopology::SetHoleIndices(VtIntArray const &holeIndices)
 {
     if (TfDebug::IsEnabled(0)) {
         // make sure faceIndices is given in ascending order.
-        int nFaceIndices = holeIndices.size();
+        int nFaceIndices = static_cast<int>(holeIndices.size());
         for (int i = 1; i < nFaceIndices; ++i) {
             if (holeIndices[i] <= holeIndices[i-1]) {
                 // XXX: would be better to print the prim name.

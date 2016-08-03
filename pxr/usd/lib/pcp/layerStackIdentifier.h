@@ -26,6 +26,7 @@
 #ifndef PCP_LAYER_STACK_IDENTIFIER_H
 #define PCP_LAYER_STACK_IDENTIFIER_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include <boost/operators.hpp>
@@ -37,7 +38,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// \brief Arguments used to identify a layer stack.
 ///
 /// Objects of this type are immutable.
-class PcpLayerStackIdentifier :
+class PCP_API PcpLayerStackIdentifier :
     boost::totally_ordered<PcpLayerStackIdentifier> {
 public:
     typedef PcpLayerStackIdentifier This;
@@ -102,7 +103,7 @@ hash_value(const PcpLayerStackIdentifier& x)
     return x.GetHash();
 }
 
-std::ostream& operator<<(std::ostream&, const PcpLayerStackIdentifier&);
+PCP_API std::ostream& operator<<(std::ostream&, const PcpLayerStackIdentifier&);
 
 /// Manipulator to cause the next PcpLayerStackIdentifier written to the
 /// ostream to write the base name of its layers, rather than the full

@@ -1,0 +1,17 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+'''Test of attribute value parsing.'''
+)
+
+def MfScope "Bad_tuple_tests"
+{
+    matrix4d m0 = (
+    	(1, 0, 0, 0),
+    	(0, 1, 0, 0),
+    	(0, 0, 1, 0),
+    	(0, 0, 0, 1),
+    	(0, 0, 0, 1),
+    )
+}
+

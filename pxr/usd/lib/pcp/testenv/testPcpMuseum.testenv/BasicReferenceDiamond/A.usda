@@ -1,0 +1,8 @@
+#usda 1.0
+
+def Prim "A" (
+    add references = @C.usda@</C>
+)
+{
+    custom double A_attr
+}

@@ -1,0 +1,32 @@
+#usda 1.0
+
+def Prim "HumanRig" (
+    relocates = {
+        <Rig/LArm/Anim>: <Anim/LArm>
+    }
+)
+{
+    def Scope "Anim"
+    {
+        over "LArm" (
+            doc = "This anim scope is relocated out from the LArm instance of the SymArm into the char's anim interface."
+        )
+        {
+        }
+    }
+
+    def Scope "Rig"
+    {
+        class Scope "SymArm" (
+            add references = @armRig.usda@</ArmRig>
+        )
+        {
+        }
+
+        def Scope "LArm" (
+            add inherits = <../SymArm>
+        )
+        {
+        }
+    }
+}

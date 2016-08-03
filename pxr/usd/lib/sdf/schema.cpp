@@ -40,6 +40,7 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/vt/dictionary.h"
 
+#include <deque>
 #include <map>
 #include <set>
 #include <vector>
@@ -376,8 +377,9 @@ TF_DEFINE_PUBLIC_TOKENS(SdfFieldKeys, SDF_FIELD_KEYS);
 // Registration for built-in fields for various spec types.
 //
 
-struct Sdf_SchemaFieldTypeRegistrar
+class Sdf_SchemaFieldTypeRegistrar
 {
+public:
     Sdf_SchemaFieldTypeRegistrar(SdfSchemaBase* schema) : _schema(schema) { }
 
     template <class T>

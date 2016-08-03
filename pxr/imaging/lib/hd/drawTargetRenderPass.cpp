@@ -194,7 +194,7 @@ HdDrawTargetRenderPass::_ClearBuffers()
         const VtValue &clearColor =
             _drawTargetRenderPassState->GetColorClearValue(attachmentNum);
 
-        _ClearBuffer(GL_COLOR, attachmentNum, clearColor);
+        _ClearBuffer(GL_COLOR, (GLint)attachmentNum, clearColor);
     }
 }
 

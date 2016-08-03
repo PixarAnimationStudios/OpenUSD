@@ -1,0 +1,19 @@
+------------------------------------------------------------------------
+Errors while composing </PermissionsAcrossReferences/ChildFromRoot>
+
+The relationship target </PermissionsAcrossReferences/PrivatePrimFromRef> from </PermissionsAcrossReferences/ChildFromRoot.relInRoot> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/root.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </PermissionsAcrossReferences.privateAttrFromRef> from </PermissionsAcrossReferences/ChildFromRoot.relInRoot> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/root.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </PermissionsAcrossInherits/Instance>
+
+The relationship target </ReferenceWithLocalClass/Instance/PrivatePrimFromClass> from </ReferenceWithLocalClass/Instance.relInInstance> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/ref.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </ReferenceWithLocalClass/Instance.privateAttrFromClass> from </ReferenceWithLocalClass/Instance.relInInstance> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/ref.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </PermissionsAcrossInherits/Instance/PrivatePrimFromClass> from </PermissionsAcrossInherits/Instance.relInRootInstance> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/root.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </PermissionsAcrossInherits/Instance.privateAttrFromClass> from </PermissionsAcrossInherits/Instance.relInRootInstance> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/root.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </CulledPermissions_3>
+
+The relationship target </CulledModel/sim/CollisionRig/FiztCollBody> from </CulledModel.colliders> in layer @/pixar/ws/users/blevin/trees/dev/inst/fedora-gcc64-opt-g/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorConnectionPermissionDenied/culled_stable.usda@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+

@@ -28,7 +28,13 @@
 ///\file work/loops.h
 
 #include <boost/function.hpp>
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/pragmas.h"
 #include <tbb/tbb.h>
+
+#include "pxr/base/work/api.h"
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
@@ -41,7 +47,7 @@
 ///     void LoopCallback(size_t begin, size_t end);
 /// 
 ///
-void
+void WORK_API 
 WorkParallelForN(
     size_t n, 
     const boost::function< void (size_t begin, size_t end) > &callback);
@@ -63,7 +69,7 @@ WorkParallelForN(
 template <typename InputIterator, typename Fn>
 inline void
 WorkParallelForEach(
-    InputIterator first, InputIterator last, const Fn &fn)
+    InputIterator first, InputIterator last, Fn &fn)
 {
     tbb::task_group_context ctx(tbb::task_group_context::isolated);
     tbb::parallel_for_each(first, last, fn, ctx);

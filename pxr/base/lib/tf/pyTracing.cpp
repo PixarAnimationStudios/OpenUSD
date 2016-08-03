@@ -33,9 +33,9 @@
 
 // This is from python, needed for PyFrameObject.
 #include <frameobject.h>
-
 #include <list>
 #include <mutex>
+#include <ciso646>
 
 using std::list;
 
@@ -126,7 +126,7 @@ void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info)
         _InvokeTraceFns(info);
 }
 
-
+TF_API
 TfPyTraceFnId TfPyRegisterTraceFn(TfPyTraceFn const &f)
 {
     tbb::spin_mutex::scoped_lock lock(_traceFnMutex);

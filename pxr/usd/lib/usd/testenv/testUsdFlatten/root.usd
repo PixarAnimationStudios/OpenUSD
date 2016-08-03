@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    subLayers = [@ref.usd@ (offset=20; scale=2)]
+    endFrame = 99
+)
+
+over "Foo" {
+    # Should be stronger than time samples
+    float size = 1.0
+}
+
+def "Payload" (payload = @payload.usd@</Payload>)
+{
+}

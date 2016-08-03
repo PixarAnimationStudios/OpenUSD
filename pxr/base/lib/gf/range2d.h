@@ -31,6 +31,7 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -309,21 +310,25 @@ public:
     //
     // The values must match exactly and it does exactly what you
     // might expect when comparing float and double values.
-    inline bool operator ==(const GfRange2f& other) const;
-    inline bool operator !=(const GfRange2f& other) const;
+    GF_API inline bool operator ==(const GfRange2f& other) const;
+    GF_API inline bool operator !=(const GfRange2f& other) const;
 
     //! Compute the squared distance from a point to the range.
+    GF_API
     double GetDistanceSquared(const GfVec2d &p) const;
 
     //! Returns the ith corner of the range, in the following order:
     // SW, SE, NW, NE.
+    GF_API
     GfVec2d GetCorner(size_t i) const;
 
     //! Returns the ith quadrant of the range, in the following order:
     // SW, SE, NW, NE.
+    GF_API
     GfRange2d GetQuadrant(size_t i) const;
 
     //! The unit square.
+    GF_API
     static const GfRange2d UnitSquare;
 
   private:
@@ -345,7 +350,7 @@ public:
 
 /// Output a GfRange2d
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfRange2d const &);
+GF_API std::ostream& operator<<(std::ostream &, GfRange2d const &);
 
 #include "pxr/base/gf/range2f.h"
 

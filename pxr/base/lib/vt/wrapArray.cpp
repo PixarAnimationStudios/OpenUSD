@@ -32,7 +32,7 @@ namespace Vt_WrapArray {
 // GetVtArrayName<VtArray<int> >() -> "VtIntArray".
 #define MAKE_NAME_FUNC(r, unused, elem) \
 template <> \
-string GetVtArrayName< VT_TYPE(elem) >() { \
+VT_API string GetVtArrayName< VT_TYPE(elem) >() { \
     return BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem)); \
 }
 BOOST_PP_SEQ_FOR_EACH(MAKE_NAME_FUNC, ~, VT_ARRAY_VALUE_TYPES)

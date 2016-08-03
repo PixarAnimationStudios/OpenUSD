@@ -32,6 +32,7 @@
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -90,12 +91,15 @@ public:
     explicit GfVec2f(Scl const *p) { Set(p); }
 
     /// Construct from GfVec2d.
+    GF_API
     explicit GfVec2f(class GfVec2d const &other);
 
     /// Implicitly convert from GfVec2h.
+    GF_API
     GfVec2f(class GfVec2h const &other);
 
     /// Implicitly convert from GfVec2i.
+    GF_API
     GfVec2f(class GfVec2i const &other);
  
     /// Create a unit vector along the X-axis.
@@ -160,10 +164,13 @@ public:
 
     // XXX: Add inequality for other vec types...
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2d const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2h const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2i const &other) const;
     
     /// Create a vec with negated elements.
@@ -277,7 +284,7 @@ private:
 
 /// Output a GfVec2f
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfVec2f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfVec2f const &);
 
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2h.h"

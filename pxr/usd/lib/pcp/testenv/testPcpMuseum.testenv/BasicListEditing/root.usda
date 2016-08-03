@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    """
+    This test exercises basic list-editing of prim child names and
+    properties.
+    """
+    subLayers = [
+        @sub1.usda@,
+        @sub2.usda@
+    ]
+)
+
+def Prim "A" (
+    '''This layer results in the order z,a,x,f,y,b,c.'''
+)
+{
+    reorder properties = ["z", "f", "y"]
+    reorder nameChildren = ["z", "f", "y"]
+
+    double f
+
+    over "f" {
+    }
+}

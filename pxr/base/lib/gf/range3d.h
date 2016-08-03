@@ -31,6 +31,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -311,23 +312,27 @@ public:
     //
     // The values must match exactly and it does exactly what you
     // might expect when comparing float and double values.
-    inline bool operator ==(const GfRange3f& other) const;
-    inline bool operator !=(const GfRange3f& other) const;
+    GF_API inline bool operator ==(const GfRange3f& other) const;
+    GF_API inline bool operator !=(const GfRange3f& other) const;
 
     //! Compute the squared distance from a point to the range.
+    GF_API
     double GetDistanceSquared(const GfVec3d &p) const;
 
     //! Returns the ith corner of the range, in the following order:
     // LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
     // D/U is down/up, and B/F is back/front.
+    GF_API
     GfVec3d GetCorner(size_t i) const;
 
     //! Returns the ith octant of the range, in the following order:
     // LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
     // D/U is down/up, and B/F is back/front.
+    GF_API
     GfRange3d GetOctant(size_t i) const;
 
     //! The unit cube.
+    GF_API
     static const GfRange3d UnitCube;
 
   private:
@@ -351,7 +356,7 @@ public:
 
 /// Output a GfRange3d
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfRange3d const &);
+GF_API std::ostream& operator<<(std::ostream &, GfRange3d const &);
 
 #include "pxr/base/gf/range3f.h"
 

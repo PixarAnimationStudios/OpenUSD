@@ -27,7 +27,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/valueTypeName.h"
-
+#include "pxr/base/arch/error.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -39,6 +39,7 @@
 #include "pxr/base/tf/type.h"
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
 
 using std::map;
 using std::string;
@@ -362,18 +363,21 @@ bool SdfBoolFromString( const std::string &str, bool *parseOk )
     if (parseOk)
         *parseOk = true;
 
-    const char* s = str.c_str();
-    if (strcasecmp(s, "false") == 0)
+    std::string s = str.c_str();
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+
+	if (strcmp(s.c_str(), "false") == 0)
+		return false;
+	if (strcmp(s.c_str(), "true") == 0)
+		return true;
+	if (strcmp(s.c_str(), "no") == 0)
+		return false;
+	if (strcmp(s.c_str(), "yes") == 0)
+		return true;
+
+    if (strcmp(s.c_str(), "0") == 0)
         return false;
-    if (strcasecmp(s, "true") == 0)
-        return true;
-    if (strcasecmp(s, "no") == 0)
-        return false;
-    if (strcasecmp(s, "yes") == 0)
-        return true;
-    if (strcmp(s, "0") == 0)
-        return false;
-    if (strcmp(s, "1") == 0)
+    if (strcmp(s.c_str(), "1") == 0)
         return true;
 
     if (parseOk)
@@ -524,4 +528,15 @@ std::ostream&
 operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
+}
+
+
+#include <Windows.h>
+int __stdcall DllMain(void* instance, unsigned long reason, void* reserved)
+{
+    if (DLL_PROCESS_ATTACH == reason)
+    {
+        printf("Sdf DLL_PROCESS_ATTACH\n");
+    }
+    return TRUE;
 }

@@ -26,6 +26,7 @@
 #ifndef SDF_PROXYPOLICIES_H
 #define SDF_PROXYPOLICIES_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/spec.h"
@@ -170,7 +171,7 @@ public:
 /// have a mapper.
 class SdfConnectionMapperViewPredicate {
 public:
-    bool operator()(const SdfHandle<SdfMapperSpec>& x) const;
+    SDF_API bool operator()(const SdfHandle<SdfMapperSpec>& x) const;
 };
 
 /// Value policy for connection mappers.
@@ -189,11 +190,16 @@ public:
     typedef Type::mapped_type mapped_type;
     typedef Type::value_type value_type;
 
+    SDF_API
     static Type CanonicalizeType(const SdfSpecHandle& v, const Type& x);
+
+    SDF_API
     static key_type CanonicalizeKey(const SdfSpecHandle& v,
                                     const key_type& x);
+    SDF_API
     static mapped_type CanonicalizeValue(const SdfSpecHandle& v,
                                          const mapped_type& x);
+    SDF_API
     static value_type CanonicalizePair(const SdfSpecHandle& v,
                                        const value_type& x);
 };

@@ -1,0 +1,9 @@
+Once USD supports it, we should export the specific ordered transform
+on nodes, not just the final 4x4 that we export right now.
+
+Need to export out all maps on geometry, not just UV ones.
+
+Do we get opacity info that we can export?
+
+Need to export animation data, and do it in a separate file.
+

@@ -23,6 +23,8 @@
 //
 #ifndef HD_BASIS_CURVES_H
 #define HD_BASIS_CURVES_H
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/drawingCoord.h"
@@ -51,18 +53,22 @@ struct HdBasisCurvesReprDesc {
 class HdBasisCurves: public HdRprim {
 public:
     HD_MALLOC_TAG_NEW("new HdBasisCurves");
+    HDLIB_API
     HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
                   SdfPath const& surfaceShaderId,
                   SdfPath const& instancerId = SdfPath());
 
     /// Configure geometric style of drawItems for \p reprName
+    HDLIB_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdBasisCurvesReprDesc desc);
 
     /// Return the dirtyBits mask to be tracked for \p reprName
+    HDLIB_API
     static int GetDirtyBitsMask(TfToken const &reprName);
 
     /// Returns whether refinement is always on or not.
+    HDLIB_API
     static bool IsEnabledForceRefinedCurves();
     
 protected:

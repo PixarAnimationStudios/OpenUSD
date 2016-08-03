@@ -27,6 +27,7 @@
 #define SD_ALLOWED_H
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/usd/sdf/api.h"
 #include <string>
 #include <utility>
 #include <boost/operators.hpp>
@@ -87,7 +88,7 @@ public:
 
     /// Returns the reason why the operation is not allowed.  If the
     /// operation is allowed this returns the empty string.
-    const std::string& GetWhyNot() const;
+	SDF_API const std::string& GetWhyNot() const;
 
     /// Returns \c true if allowed, otherwise fills \p whyNot if not \c NULL
     /// and returns \c false.

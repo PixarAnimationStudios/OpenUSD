@@ -1,0 +1,7 @@
+#usda 1.0
+
+over "Sarah"
+{
+    custom color3d color = (0, 0, 1)
+    custom color3d sub2Color = (1, 1, 1)
+}

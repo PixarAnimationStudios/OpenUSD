@@ -24,6 +24,8 @@
 #ifndef GF_MATRIX_DATA_H
 #define GF_MATRIX_DATA_H
 
+#include "pxr/base/gf/api.h"
+
 /// \class GfMatrixData
 ///
 /// A class template used by GfMatrixXX to store values.
@@ -32,12 +34,12 @@ class GfMatrixData {
 public:
 
     /// \brief Return a pointer to a \a row of data.
-    T *operator[](int row) {
+    T *operator[](size_t row) {
         return _data + (row * Columns);
     }
 
     /// \brief Return a const pointer to a \a row of data.
-    T const *operator[](int row) const {
+    T const *operator[](size_t row) const {
         return _data + (row * Columns);
     }
 

@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Model "ClothRig" (
+    inherits = </_class_StdAvarsRig>
+)
+{
+}
+
+class Model "_class_StdAvarsRig"
+{
+}

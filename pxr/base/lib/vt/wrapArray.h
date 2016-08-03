@@ -21,11 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/operators.hpp>
+#include <boost/preprocessor.hpp>
+
+#include <boost/python/class.hpp>
+#include <boost/python/copy_const_reference.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/detail/api_placeholder.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/iterator.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/overloads.hpp>
+#include <boost/python/return_arg.hpp>
+#include <boost/python/slice.hpp>
+#include <boost/python/type_id.hpp>
+
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/operators.h"
 #include "pxr/base/vt/functions.h"
+#include "pxr/base/vt/api.h"
 
 #include "pxr/base/arch/math.h"
 #include "pxr/base/arch/inttypes.h"
@@ -40,22 +57,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include <boost/preprocessor.hpp>
-
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/iterator.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/slice.hpp>
-#include <boost/python/type_id.hpp>
-#include <boost/python/overloads.hpp>
 
 #include <algorithm>
 #include <ostream>
@@ -253,7 +254,7 @@ setitem_slice(VtArray<T> &self, slice idx, object value)
 
 
 template <class T>
-string GetVtArrayName();
+VT_API string GetVtArrayName();
 
 
 // To avoid overhead we stream out certain builtin types directly
@@ -383,6 +384,7 @@ VtArray<T> *VtArray__init__2(unsigned int size, object const &values)
 
 // overloading for operator special methods, to allow tuple / list & array
 // combinations
+#pragma warning (disable: 4804 4146)
 VTOPERATOR_WRAP(+,__add__,__radd__)
 VTOPERATOR_WRAP_NONCOMM(-,__sub__,__rsub__)
 VTOPERATOR_WRAP(*,__mul__,__rmul__)
@@ -395,7 +397,7 @@ VTOPERATOR_WRAP_BOOL(Greater,>)
 VTOPERATOR_WRAP_BOOL(Less,<)
 VTOPERATOR_WRAP_BOOL(GreaterOrEqual,>=)
 VTOPERATOR_WRAP_BOOL(LessOrEqual,<=)
-
+#pragma warning (default: 4804 4146)
 }
 
 
@@ -512,7 +514,7 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
     typedef typename Array::ElementType ElemType;
     TfPyLock lock;
     if (PySequence_Check(obj.ptr())) {
-        size_t len = PySequence_Length(obj.ptr());
+		Py_ssize_t len = PySequence_Length(obj.ptr());
         Array result(len);
         ElemType *elem = result.data();
         for (size_t i = 0; i != len; ++i) {

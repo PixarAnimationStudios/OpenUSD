@@ -24,12 +24,14 @@
 #ifndef GF_PYBUFFER_UTILS_H
 #define GF_PYBUFFER_UTILS_H
 
+#include "pxr/base/gf/api.h"
+
 ////////////////////////////////////////////////////////////////////////
 // Format strings matching Python buffer proto / struct module scheme.
 
 // This function template is explicitly instantiated for T =
 //    bool, [unsigned] (char, short, int, long), half, float, and double.
 template <class T>
-char *Gf_GetPyBufferFmtFor();
+GF_API char *Gf_GetPyBufferFmtFor();
 
 #endif // GF_PYBUFFER_UTILS_H

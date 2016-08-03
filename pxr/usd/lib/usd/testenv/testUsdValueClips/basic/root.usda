@@ -1,0 +1,46 @@
+#usda 1.0
+
+over "_class_Model"
+{
+    float cls = 1.0
+    float cls.timeSamples = {
+        5: 5.0,
+        10: 10.0,
+        15: 15.0,
+        20: 20.0
+    }
+}
+
+def "Model_1" (
+    clipAssetPaths = [@clip.usda@]
+    clipPrimPath = "/Model"
+    clipActive = [(10.0, 0)]
+
+    references = @ref.usda@</Model>
+    payload = @payload.usda@</Model>
+    variantSets = ["vset"]
+    variants = {
+        string vset = "a"
+    }
+)
+{
+    float local = 1.0
+    float local.timeSamples = {
+        5: 5.0,
+        10: 10.0,
+        15: 15.0,
+        20: 20.0
+    }
+
+    variantSet "vset" = {
+        "a" {
+            float var = 1.0
+            float var.timeSamples = {
+                5: 5.0,
+                10: 10.0,
+                15: 15.0,
+                20: 20.0
+            }
+        }
+    }
+}

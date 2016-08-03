@@ -24,6 +24,7 @@
 #ifndef HD_CONVERSIONS_H
 #define HD_CONVERSIONS_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/token.h"
@@ -32,16 +33,22 @@ class HdConversions {
 public:
     /// Returns the size of glDataType.
     /// For example: sizeof(GLuint)
+	HDLIB_API
     static size_t GetComponentSize(int glDataType);
 
+	HDLIB_API
     static GLenum GetGlDepthFunc(HdCompareFunction func);
 
+	HDLIB_API
     static GLenum GetMinFilter(HdMinFilter filter);
 
+	HDLIB_API
     static GLenum GetMagFilter(HdMagFilter filter);
 
+	HDLIB_API
     static GLenum GetWrap(HdWrap wrap);
 
+	HDLIB_API
     static void GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat);
 };
 

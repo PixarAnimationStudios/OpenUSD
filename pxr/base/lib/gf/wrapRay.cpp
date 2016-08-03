@@ -21,6 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/copy_const_reference.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/return_arg.hpp>
+#include <boost/python/tuple.hpp>
+
 #include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/lineSeg.h"
@@ -29,13 +36,6 @@
 
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
 
 #include <string>
 

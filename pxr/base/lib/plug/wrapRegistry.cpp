@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/bind.hpp>
+#include <boost/range.hpp>
+#include <boost/python.hpp>
+
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
 
@@ -29,10 +33,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pySingleton.h"
 #include "pxr/base/tf/stringUtils.h"
-
-#include <boost/bind.hpp>
-#include <boost/range.hpp>
-#include <boost/python.hpp>
 
 #include <algorithm>
 #include <atomic>

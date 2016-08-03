@@ -24,6 +24,7 @@
 #ifndef USD_VARIANTSETS_H
 #define USD_VARIANTSETS_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/prim.h"
@@ -67,35 +68,35 @@ public:
     ///     // 'myFirstVariation' variant of 'myVariantSet'
     /// }
     /// \endcode
-    bool FindOrCreateVariant(const std::string& variantName);
+    USD_API bool FindOrCreateVariant(const std::string& variantName);
 
     /// Return the composed variant names for this VariantSet, ordered
     /// lexicographically.
-    std::vector<std::string> GetVariantNames() const;
+	USD_API std::vector<std::string> GetVariantNames() const;
 
     /// Returns true if this VariantSet already possesses a variant 
     // named \p variantName in any layer.
-    bool HasAuthoredVariant(const std::string& variantName) const;
+	USD_API bool HasAuthoredVariant(const std::string& variantName) const;
 
     /// Return the the variant selection for this VariantSet.  If there is
     /// no selection, return the empty string.
-    std::string GetVariantSelection() const;
+	USD_API std::string GetVariantSelection() const;
 
     /// Returns true if there is a selection authored for this VariantSet
     /// in any layer.
     ///
     /// If requested, the variant selection (if any) will be returned in
     /// \p value .
-    bool HasAuthoredVariantSelection(std::string *value = NULL) const;
+    USD_API bool HasAuthoredVariantSelection(std::string *value = NULL) const;
 
     /// Author a variant selection for this VariantSet, setting it to
     /// \a variantName in the stage's current EditTarget.  Return true if the
     /// selection was successfully authored, false otherwise.
-    bool SetVariantSelection(const std::string &variantName);
+    USD_API bool SetVariantSelection(const std::string &variantName);
 
     /// Clear any selection for this VariantSet from the current EditTarget.
     /// Return true on success, false otherwise.
-    bool ClearVariantSelection();
+    USD_API bool ClearVariantSelection();
 
     /// Return a \a UsdEditTarget that edits the currently selected variant in
     /// this VariantSet in \a layer.  If there is no currently
@@ -109,7 +110,7 @@ public:
     /// an invalid EditTarget if \a layer is not.  We may relax this
     /// restriction in the future, if need arises, but it introduces several
     /// complications in specification and behavior.
-    UsdEditTarget
+    USD_API UsdEditTarget
     GetVariantEditTarget(const SdfLayerHandle &layer = SdfLayerHandle()) const;
 
     /// Helper function for configuring a UsdStage's EditTarget to author
@@ -136,7 +137,7 @@ public:
     /// \endcode
     ///
     /// See GetVariantEditTarget() for discussion of \p layer parameter
-    std::pair<UsdStagePtr, UsdEditTarget>
+    USD_API std::pair<UsdStagePtr, UsdEditTarget>
     GetVariantEditContext(const SdfLayerHandle &layer = SdfLayerHandle()) const;
 
 
@@ -208,15 +209,18 @@ public:
     /// will always succeed, creating the VariantSet first, if necessary.  This
     /// method exists for situations in which you want to create a VariantSet
     /// without necessarily populating it with variants.
+    USD_API
     UsdVariantSet FindOrCreate(const std::string& variantSetName);
 
     // TODO: don't we want remove and reorder, clear, etc. also?
 
     /// Compute a list of all VariantSets authored on the originiating UsdPrim.
     /// Always return true.
+    USD_API
     bool GetNames(std::vector<std::string>* names) const;
 
     /// Return a list of all VariantSets authored on the originiating UsdPrim.
+    USD_API
     std::vector<std::string> GetNames() const;
 
     UsdVariantSet operator[](const std::string& variantSetName) const {
@@ -226,6 +230,7 @@ public:
     /// Return a UsdVariantSet object for \p variantSetName.  This always
     /// succeeds, although the returned VariantSet will be invalid if
     /// the originating prim is invalid
+    USD_API
     UsdVariantSet GetVariantSet(const std::string& variantSetName) const;
 
     /// Does a VariantSet named \p variantSetName exist on the originating
@@ -236,13 +241,16 @@ public:
     /// \p variantSetName is not present in the stage's composed view - it
     /// may have been defined in referenced/inherited scene description, but
     /// pruned from consideration in stronger layers/arcs.
+    USD_API
     bool HasVariantSet(const std::string& variantSetName) const;
 
     /// Return the composed variant selection for the VariantSet named
     /// \a variantSetName.  If there is no selection, (or \p variantSetName
     /// does not exist) return the empty string.
+    USD_API
     std::string GetVariantSelection(const std::string& variantSetName) const;
 
+    USD_API
     bool SetSelection(const std::string& variantSetName,
                       const std::string& variantName);
 

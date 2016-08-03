@@ -1,0 +1,77 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+    endFrame = 1
+    startFrame = 1
+)
+
+def Xform "Sphere" (
+    kind = "model"
+)
+{
+    def Mesh "Mesh"
+    {
+        float3[] extent = [(-7.10811, -7.10811, -7.10811), (7.10811, 7.10811, 7.10811)]
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
+        int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 7, 4, 8, 11, 1, 0, 12, 2, 1, 12, 3, 2, 12, 0, 3, 12, 8, 9, 13, 9, 10, 13, 10, 11, 13, 11, 8, 13]
+        point3f[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619), (0, -1.57832e-15, -7.10811), (0, 1.57832e-15, 7.10811)]
+        float2[] primvars:st = [(0, 0.25), (0.25, 0.25), (0.25, 0.5), (0, 0.5), (0.25, 0.25), (0.5, 0.25), (0.5, 0.5), (0.25, 0.5), (0.5, 0.25), (0.75, 0.25), (0.75, 0.5), (0.5, 0.5), (0.75, 0.25), (1, 0.25), (1, 0.5), (0.75, 0.5), (0, 0.5), (0.25, 0.5), (0.25, 0.75), (0, 0.75), (0.25, 0.5), (0.5, 0.5), (0.5, 0.75), (0.25, 0.75), (0.5, 0.5), (0.75, 0.5), (0.75, 0.75), (0.5, 0.75), (0.75, 0.5), (1, 0.5), (1, 0.75), (0.75, 0.75), (0.25, 0.25), (0, 0.25), (0.125, 0), (0.5, 0.25), (0.25, 0.25), (0.375, 0), (0.75, 0.25), (0.5, 0.25), (0.625, 0), (1, 0.25), (0.75, 0.25), (0.875, 0), (0, 0.75), (0.25, 0.75), (0.125, 1), (0.25, 0.75), (0.5, 0.75), (0.375, 1), (0.5, 0.75), (0.75, 0.75), (0.625, 1), (0.75, 0.75), (1, 0.75), (0.875, 1)] (
+            interpolation = "faceVarying"
+        )
+    }
+
+    def Scope "Looks"
+    {
+        def Look "initialShadingGroup"
+        {
+            color3f interface:displayColor = (0.00902149, 1, 0.0393514)
+            float interface:displayOpacity
+            color3f interface:transparency
+            rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert.diffuseColor>
+            rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert.transmissionColor>
+            rel riLook:bxdf = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert>
+
+            def RisBxdf "initialShadingGroup_lambert"
+            {
+                color3f diffuseColor
+                asset info:filePath = @PxrDiffuse@
+                color3f transmissionColor
+            }
+        }
+
+        def Look "lambert2SG"
+        {
+            color3f interface:displayColor = (0.0592683, 0.167102, 0.7593)
+            float interface:displayOpacity
+            color3f interface:transparency
+            rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/lambert2SG/lambert2SG_lambert.diffuseColor>
+            rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/lambert2SG/lambert2SG_lambert.transmissionColor>
+            rel riLook:bxdf = </Sphere/Looks/lambert2SG/lambert2SG_lambert>
+
+            def RisBxdf "lambert2SG_lambert"
+            {
+                color3f diffuseColor
+                asset info:filePath = @PxrDiffuse@
+                color3f transmissionColor
+            }
+        }
+
+        def Look "lambert3SG"
+        {
+            color3f interface:displayColor = (0.835528, 0, 0)
+            float interface:displayOpacity
+            color3f interface:transparency
+            rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/lambert3SG/lambert3SG_lambert.diffuseColor>
+            rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/lambert3SG/lambert3SG_lambert.transmissionColor>
+            rel riLook:bxdf = </Sphere/Looks/lambert3SG/lambert3SG_lambert>
+
+            def RisBxdf "lambert3SG_lambert"
+            {
+                color3f diffuseColor
+                asset info:filePath = @PxrDiffuse@
+                color3f transmissionColor
+            }
+        }
+    }
+}
+

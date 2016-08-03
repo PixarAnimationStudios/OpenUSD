@@ -1,0 +1,203 @@
+#usda 1.0
+
+class "_class_UnitCube" {
+    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+}
+
+def Xform "Cube" (
+    kind = "component"
+    assInfo = {
+        string name = "Cube"
+    }
+)
+{
+    def Mesh "Child" (
+        inherits=</_class_UnitCube>
+    )
+    {
+    }
+}
+
+def "Cube_instanced" (
+    add references = </Cube>
+    instanceable = true
+)
+{
+    
+}
+
+def "Cube_uninstanced" (
+    add references = </Cube>
+    instanceable = false
+)
+{
+    
+}
+
+def Xform "_parent" (kind = "group")
+{
+    custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (1,1,1,1))
+
+    matrix4d xformOp:transform.timeSamples = {
+        1: ((1,0,0,0), (0,1,0,0), (0,0,1,0), (2,2,2,1)),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Xform "primWithLocalXform" (kind = "component")
+    {
+        custom float3[] extentsHint = [(-1.5, -1.5, -1.5), (-0.5, -0.5, -0.5),
+                                      (-0.5, -2.5, -3.5), (0.5, -1.5, -2.5),
+                                      (1.5, -2.5, -3.5), (2.5, -1.5, -2.5),
+                                      (-2.5, -2.5, -3.5), (-1.5, -1.5, -2.5)]
+        float3[] extentsHint.timeSamples = {
+            0: [(-1.5, -1.5, -1.5), (-0.5, -0.5, -0.5),
+                (-0.5, -2.5, -3.5), (0.5, -1.5, -2.5),
+                (1.5, -2.5, -3.5), (2.5, -1.5, -2.5),
+                (-2.5, -2.5, -3.5), (-1.5, -1.5, -2.5)],
+        }
+
+        custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (1,1,1,1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Mesh "Child" (
+            inherits=</_class_UnitCube>
+            instanceable=true
+        ) 
+        {
+            custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (-1,-1,-1,1))
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def Xform "InvisibleChild"
+        {
+            token visibility = "invisible"
+            custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (-1,-1,-1,1))
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Mesh "NestedVisible" (inherits=</_class_UnitCube>)
+            {
+                custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (7,0,0,1))
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+                color3f modelingColor = (0,1,0)
+            }
+
+            def Mesh "NestedInvisible" (
+                inherits=</_class_UnitCube>
+                instanceable = true
+            )
+            {
+                token visibility = "invisible"
+                custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (7,0,0,1))
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+                color3f modelingColor = (0,0,1)
+            }
+        }
+
+        def Mesh "PurposeIsGuide" (inherits=</_class_UnitCube>)
+        {
+            token purpose = "guide"
+            custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (-2,-2,-3,1))
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+            color3f modelingColor = (1,1,0)
+        }
+
+        def Mesh "PurposeIsRender" (inherits=</_class_UnitCube>) 
+        {
+            token purpose = "render"
+            custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (0, -2,-3,1))
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+            color3f modelingColor = (1,0,1)
+        }
+
+        def Mesh "PurposeIsProxy" (inherits=</_class_UnitCube>) 
+        {
+            token purpose = "proxy"
+            custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (2,-2,-3,1))
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+            color3f modelingColor = (0,1,1)
+        }
+
+        def Mesh "InactiveMesh" (
+            inherits=</_class_UnitCube>
+            active=false
+        )
+        {
+        }
+    }
+}
+
+def "instanced_parent" (
+    instanceable = true
+    references = </_parent>
+)
+{
+    custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (1,1,1,1))
+
+    matrix4d xformOp:transform.timeSamples = {
+        1: ((1,0,0,0), (0,1,0,0), (0,0,1,0), (11,18,82,1)),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def "uninstanced_parent" (
+    instanceable = false
+    references = </_parent>
+)
+{
+    custom matrix4d xformOp:transform = ((1,0,0,0), (0,1,0,0), (0,0,1,0), (1,1,1,1))
+
+    matrix4d xformOp:transform.timeSamples = {
+        1: ((1,0,0,0), (0,1,0,0), (0,0,1,0), (11,18,82,1)),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+over "PureOverPrim" {
+    
+}
+
+def "TypelessDef" {
+    
+}
+
+def Xform "World" (
+    kind = "group"
+    assetInfo = {
+        string name = "PrimPivot"
+    }
+)
+{
+    def Xform "anim" (
+        kind = "group"
+        assetInfo = {
+            string name = "PrimPivot"
+        }
+    ) {
+        def Xform "ModelGroup" (
+            kind = "chargroup"
+            assetInfo = {
+                string name = "ModelGroup"
+            }
+        ) {
+            def Scope "Model_1" (
+                kind = "char"
+                assetInfo = {
+                    string name = "Model"
+                }
+            )
+            {
+            }
+        }
+        def Scope "Model_2" (
+            kind = "char"
+            assetInfo = {
+                string name = "Model"
+            }
+        )
+        {
+        }
+    }
+}

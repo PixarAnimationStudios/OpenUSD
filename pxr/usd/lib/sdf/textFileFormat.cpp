@@ -36,6 +36,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/arch/fileSystem.h"
 
 #include <boost/assign.hpp>
 #include <ostream>
@@ -101,7 +102,7 @@ SdfTextFileFormat::CanRead(const string& filePath) const
     bool canRead = false;
 
     const string& cookie = GetFileCookie();
-    if (FILE *f = fopen(filePath.c_str(), "rt")) {
+    if (FILE *f = ArchOpenFile(filePath.c_str(), "rt")) {
         char aLine[512];
 
         if (fgets(aLine, sizeof(aLine), f)) {
@@ -121,7 +122,7 @@ public:
     explicit Sdf_ScopedFilePointer(
         const string& filePath,
         const string& mode = string("rt"))
-        : _fp(fopen(filePath.c_str(), mode.c_str()))
+        : _fp(ArchOpenFile(filePath.c_str(), mode.c_str()))
     { }
 
     ~Sdf_ScopedFilePointer() {
@@ -252,7 +253,7 @@ _WriteLayerToMenva(
             {
                 _WriteAssetPath(header, 2, l->GetSubLayerPaths()[i]);
                 _WriteLayerOffset(header, 0, false /* multiLine */, 
-                                  l->GetSubLayerOffset(i));
+                                  l->GetSubLayerOffset(static_cast<int>(i)));
                 _Write(header, 0, (i < c-1) ? ",\n" : "\n");
             }
             _Write(header, 1, "]\n");

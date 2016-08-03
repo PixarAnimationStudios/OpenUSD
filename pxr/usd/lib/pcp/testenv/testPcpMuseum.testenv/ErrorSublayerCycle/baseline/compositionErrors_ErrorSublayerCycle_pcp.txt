@@ -1,0 +1,6 @@
+------------------------------------------------------------------------
+Errors while computing Layer Stack
+
+Sublayer hierarchy with root layer @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorSublayerCycle/B.usda@ has cycles. Detected when layer @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorSublayerCycle/A.usda@ was seen in the layer stack for the second time.
+Sublayer hierarchy with root layer @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorSublayerCycle/A.usda@ has cycles. Detected when layer @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorSublayerCycle/B.usda@ was seen in the layer stack for the second time.
+

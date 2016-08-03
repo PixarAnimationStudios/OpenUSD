@@ -28,6 +28,7 @@
 ///\file work/detachedTask.h
 
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/work/api.h"
 
 #include <tbb/task.h>
 
@@ -48,13 +49,13 @@ private:
     Fn _fn;
 };
 
+WORK_API tbb::task_group_context &Work_GetDetachedTaskGroupContext();
+
 /// \brief Invoke \p fn asynchronously, discard any errors it produces, and
 /// provide no way to wait for it to complete.
 template <class Fn>
 void WorkRunDetachedTask(Fn &&fn)
 {
-    tbb::task_group_context &Work_GetDetachedTaskGroupContext();
-
     using FnType = typename std::remove_reference<Fn>::type;
     tbb::task::enqueue(
         *new (tbb::task::allocate_root(Work_GetDetachedTaskGroupContext()))

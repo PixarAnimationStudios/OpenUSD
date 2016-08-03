@@ -31,6 +31,7 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 /// \file pxr/usd/usdGeom/tokens.h
@@ -287,6 +288,6 @@
 /// \li <b>xformOpOrder</b> - UsdGeomXformable
 /// \li <b>y</b> - Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
 /// \li <b>z</b> - Possible value for UsdGeomCone::GetAxisAttr(), Default value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Default value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr(), Default value for UsdGeomCylinder::GetAxisAttr()
-TF_DECLARE_PUBLIC_TOKENS(UsdGeomTokens, USDGEOM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdGeomTokens, USDGEOM_API, USDGEOM_TOKENS);
 
 #endif

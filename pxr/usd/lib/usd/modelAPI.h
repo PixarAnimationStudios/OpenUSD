@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/api.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -61,7 +62,7 @@ class SdfAssetPath;
 /// \todo GetModelInstanceName()
 /// 
 ///
-class UsdModelAPI : public UsdSchemaBase
+class USD_API UsdModelAPI : public UsdSchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -285,6 +286,6 @@ protected:
     (version)                   \
     (payloadAssetDependencies)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdModelAPIAssetInfoKeys, USDMODEL_ASSET_INFO_KEYS);
+TF_DECLARE_PUBLIC_TOKENS(UsdModelAPIAssetInfoKeys, USD_API, USDMODEL_ASSET_INFO_KEYS);
 
 #endif

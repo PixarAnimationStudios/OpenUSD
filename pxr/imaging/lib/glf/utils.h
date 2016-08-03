@@ -28,6 +28,7 @@
 #define GLF_UTILS_H
 
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glext.h"
 
 #include <string>
 

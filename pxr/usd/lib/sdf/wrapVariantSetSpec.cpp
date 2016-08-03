@@ -23,13 +23,14 @@
 //
 /// \file wrapVariantSetSpec.cpp
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

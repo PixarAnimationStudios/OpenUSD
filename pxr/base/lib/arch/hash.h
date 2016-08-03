@@ -25,6 +25,7 @@
 #define ARCH_HASH_H
 
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/api.h"
 
 ///
 /// Hash \a len bytes of \a data.
@@ -34,8 +35,8 @@
 /// passing it on as \p seed.  Note that this is *not* equivalent to hashing the
 /// contiguous pieces as a whole.  Support for that may be added in future.
 ///
-uint32_t ArchHash(const char *data, size_t len);
-uint32_t ArchHash(const char *data, size_t len, uint32_t seed);
+ARCH_API uint32_t ArchHash(const char *data, size_t len);
+ARCH_API uint32_t ArchHash(const char *data, size_t len, uint32_t seed);
 
 uint64_t ArchHash64(const char *data, size_t len);
 uint64_t ArchHash64(const char *data, size_t len, uint64_t seed);

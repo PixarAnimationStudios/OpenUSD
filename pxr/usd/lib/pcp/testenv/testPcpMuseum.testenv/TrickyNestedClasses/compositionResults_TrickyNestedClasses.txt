@@ -1,0 +1,148 @@
+Loading @testPcpMuseum.testenv/TrickyNestedClasses/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </CharRig>
+
+Prim Stack:
+    root.usda            /CharRig
+
+Child names:
+     ['Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig
+
+Child names:
+     ['HandsRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig
+    HandsRig.usda        /HandsRig
+
+Child names:
+     ['_Class_HandRig', 'SymHandRig', 'LHandRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/_Class_HandRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig
+    HandsRig.usda        /HandsRig/_Class_HandRig
+    HandRig.usda         /HandRig
+
+Child names:
+     ['IndexRig', '_Class_FingerRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/_Class_HandRig/IndexRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/IndexRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/IndexRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.usda         /HandRig/IndexRig
+    HandRig.usda         /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.usda         /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/SymHandRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig
+    HandsRig.usda        /HandsRig/SymHandRig
+    HandsRig.usda        /HandsRig/_Class_HandRig
+    HandRig.usda         /HandRig
+
+Child names:
+     ['IndexRig', '_Class_FingerRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/SymHandRig/IndexRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig/IndexRig
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/IndexRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/SymHandRig/IndexRig
+    HandsRig.usda        /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/IndexRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.usda         /HandRig/IndexRig
+    HandRig.usda         /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.usda         /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/LHandRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/LHandRig
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig
+    HandsRig.usda        /HandsRig/LHandRig
+    HandsRig.usda        /HandsRig/SymHandRig
+    HandsRig.usda        /HandsRig/_Class_HandRig
+    HandRig.usda         /HandRig
+
+Child names:
+     ['IndexRig', '_Class_FingerRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/LHandRig/IndexRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/LHandRig/IndexRig
+    root.usda            /CharRig/Rig/HandsRig/LHandRig/_Class_FingerRig
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig/IndexRig
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/IndexRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/LHandRig/IndexRig
+    HandsRig.usda        /HandsRig/LHandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/SymHandRig/IndexRig
+    HandsRig.usda        /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/IndexRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.usda         /HandRig/IndexRig
+    HandRig.usda         /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/LHandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/HandsRig/LHandRig/_Class_FingerRig
+    root.usda            /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.usda            /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/LHandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.usda        /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.usda         /HandRig/_Class_FingerRig
+

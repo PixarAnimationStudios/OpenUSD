@@ -32,6 +32,7 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/api.h"
 
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <x86intrin.h>
@@ -101,7 +102,7 @@ ArchGetTickTime()
  *	
  * \endcode
  */
-
+ARCH_API
 int64_t ArchTicksToNanoseconds(uint64_t nTicks);
 
 /*!
@@ -109,6 +110,7 @@ int64_t ArchTicksToNanoseconds(uint64_t nTicks);
  * by \c ArchGetTickTime(), to seconds.
  * \ingroup group_arch_SystemFunctions
  */
+ARCH_API
 double ArchTicksToSeconds(uint64_t nTicks);
 
 /*!
@@ -116,6 +118,7 @@ double ArchTicksToSeconds(uint64_t nTicks);
  * ArchGetTickTime().
  * \ingroup group_arch_SystemFunctions
  */
+ARCH_API
 uint64_t ArchSecondsToTicks(double seconds);
     
 /*!
@@ -123,6 +126,7 @@ uint64_t ArchSecondsToTicks(double seconds);
  * obtained from ArchTickTime()
  * \ingroup group_arch_SystemFunctions
  */
+ARCH_API
 double ArchGetNanosecondsPerTick();
 
 #endif // ARCH_TIMING_H

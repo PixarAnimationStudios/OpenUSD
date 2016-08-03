@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "EyeRig"
+{
+    def Scope "Anim"
+    {
+        def Scope "Eye"
+        {
+            custom double value = 9
+        }
+    }
+
+    def Scope "Mover" (prefix = "$Side")
+    {
+        custom double input
+        double input.connect = </EyeRig/Anim/Eye.value>
+    }
+}

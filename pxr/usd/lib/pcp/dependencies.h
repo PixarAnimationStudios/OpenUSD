@@ -196,7 +196,7 @@ private:
         bool spooky);
 
 private:
-    boost::scoped_ptr<class Pcp_DependenciesData> _data;
+    boost::scoped_ptr<struct Pcp_DependenciesData> _data;
 };
 
 #endif

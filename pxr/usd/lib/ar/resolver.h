@@ -29,7 +29,7 @@
 #include <string>
 
 class ArResolverContext;
-class ArAssetInfo;
+struct ArAssetInfo;
 class VtValue;
 
 /// \class ArResolver

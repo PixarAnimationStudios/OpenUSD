@@ -25,6 +25,8 @@
 #define GF_LINE_H
 
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/api.h"
+
 #include <float.h>
 #include <iosfwd>
 
@@ -79,6 +81,7 @@ class GfLine {
     // Returns the point on the line that is closest to \p point. If
     // \p t is not \c NULL, it will be set to the parametric
     // distance along the line of the returned point.
+    GF_API
     GfVec3d FindClosestPoint(const GfVec3d &point, double *t = NULL) const;
 
     //!
@@ -97,6 +100,7 @@ class GfLine {
     }
 
   private:
+    GF_API
     friend bool GfFindClosestPoints( const GfLine &, const GfLine &,
                                      GfVec3d *, GfVec3d *,
                                      double *, double * );
@@ -114,12 +118,13 @@ class GfLine {
 // This returns \c false if the lines were close enough to
 // parallel that no points could be computed; in this case, the
 // other return values are undefined.
+GF_API
 bool GfFindClosestPoints(const GfLine &l1, const GfLine &l2,
                          GfVec3d *p1 = nullptr, GfVec3d *p2 = nullptr,
                          double *t1 = nullptr, double *t2 = nullptr);
 
 /// Output a GfLine.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream &operator<<(std::ostream&, const GfLine&);
+GF_API std::ostream &operator<<(std::ostream&, const GfLine&);
 
 #endif // GF_LINE_H

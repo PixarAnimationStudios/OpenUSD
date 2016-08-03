@@ -24,6 +24,7 @@
 #ifndef HD_SHADER_PARAM_H
 #define HD_SHADER_PARAM_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -42,26 +43,32 @@ class HdShaderParam {
 public:
     typedef size_t ID;
 
+    HDLIB_API
     HdShaderParam(TfToken const& name, 
                   VtValue const& fallbackValue,
                   SdfPath const& connection=SdfPath(),
                   TfTokenVector const& samplerCoords=TfTokenVector(),
                   bool isPtex = false);
 
+    HDLIB_API
     ~HdShaderParam();
 
     /// Computes a hash for all shader parameters. This hash also includes 
     /// ShaderParam connections (texture, primvar, etc).
+    HDLIB_API
     static ID ComputeHash(HdShaderParamVector const &shaders);
 
     TfToken const& GetName() const { return _name; }
 
     // i.e. GL_FLOAT, etc.
+    HDLIB_API
     int GetGLElementType() const;
 
     // i.e. GL_FLOAT_MAT4, etc.
+    HDLIB_API
     int GetGLComponentType() const;
 
+    HDLIB_API
     TfToken GetGLTypeName() const;
 
     VtValue const& GetFallbackValue() const { return _fallbackValue; }
@@ -79,8 +86,10 @@ public:
     }
 
     // XXX: we don't want this, we need a better way of supplying this answer.
+    HDLIB_API
     bool IsPtex() const;
 
+    HDLIB_API
     TfTokenVector const& GetSamplerCoordinates() const;
 
 private:

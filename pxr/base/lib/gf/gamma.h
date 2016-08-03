@@ -24,6 +24,8 @@
 #ifndef GF_GAMMA_H
 #define GF_GAMMA_H
 
+#include "pxr/base/gf/api.h"
+
 class GfVec3f;
 class GfVec3d;
 class GfVec4f;
@@ -36,21 +38,26 @@ class GfVec4d;
 
 /// Return a new vector with each component of \p v
 /// raised to the power \p gamma
+GF_API
 GfVec3f GfApplyGamma(const GfVec3f &v, double gamma);
 
 /// Return a new vector with each component of \p v
 /// raised to the power \p gamma
+GF_API
 GfVec3d GfApplyGamma(const GfVec3d &v, double gamma);
 
 /// Return a new vector with the first three components of \p v
 /// raised to the power \p gamma and the fourth component unchanged.
+GF_API
 GfVec4f GfApplyGamma(const GfVec4f &v, double gamma);
 
 /// Return a new vector with the first three components of \p v
 /// raised to the power \p gamma and the fourth component unchanged.
+GF_API
 GfVec4d GfApplyGamma(const GfVec4d &v, double gamma);
 
 /// Return the system display gamma
+GF_API
 double GfGetDisplayGamma();
 
 /// Given a vec, \p v, representing an energy-linear RGB(A) color,
@@ -63,7 +70,7 @@ T GfConvertLinearToDisplay(const T& v);
 /// gamma space, return an energy-linear vec of the same type.
 /// This is instantiated for GfVec3f, GfVec4d, GfVec3d, and GfVec4d
 template <class T>
-T GfConvertDisplayToLinear(const T& v);
+GF_API T GfConvertDisplayToLinear(const T& v);
 
 
 #endif /* GF_GAMMA_H */

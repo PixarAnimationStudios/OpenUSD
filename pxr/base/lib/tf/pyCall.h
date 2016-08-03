@@ -95,7 +95,7 @@ Return operator()(BOOST_PP_ENUM_BINARY_PARAMS(N, A, a))
         try {
             return boost::python::call<Return>
                 (_callable.ptr() BOOST_PP_ENUM_TRAILING_PARAMS(N, a));
-        } catch (boost::python::error_already_set const &e) {
+        } catch (boost::python::error_already_set const &) {
             // Convert any exception to TF_ERRORs.
             TfPyConvertPythonExceptionToTfErrors();
             PyErr_Clear();

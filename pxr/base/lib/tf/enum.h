@@ -24,9 +24,11 @@
 #ifndef TF_ENUM_H
 #define TF_ENUM_H
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/safeTypeCompare.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/operators.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
@@ -34,6 +36,7 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include <ciso646>
 #include <iosfwd>
 #include <string>
 #include <typeinfo>
@@ -186,14 +189,14 @@ public:
     template <class T>
     typename boost::enable_if<boost::is_enum<T>, bool>::type
     operator==(T value) const {
-        return int(value) == _value and IsA<T>();
+        return int(value) == _value && IsA<T>();
     }
 
     //! False if \c *this has been assigned with \c value.
     template <class T>
     typename boost::enable_if<boost::is_enum<T>, bool>::type
     operator!=(T value) const {
-        return int(value) != _value or not IsA<T>();
+        return int(value) != _value || !IsA<T>();
     }
 
     //! Compare a literal enum value \a val of enum type \a T with TfEnum \a e.
@@ -274,7 +277,7 @@ public:
      * If there is no such name registered, an empty string is
      * returned.
      */
-    static std::string  GetName(TfEnum val);
+    TF_API static std::string  GetName(TfEnum val);
 
     /*!
      * \brief Returns the fully-qualified name for an enumerated value.
@@ -283,7 +286,7 @@ public:
      * \c "Season::WINTER") associated with the given value. If there is
      * no such name registered, an empty string is returned.
      */
-    static std::string  GetFullName(TfEnum val);
+    TF_API static std::string  GetFullName(TfEnum val);
 
     /*!
      * \brief Returns the display name for an enumerated value.
@@ -291,7 +294,7 @@ public:
      * This returns a user interface-suitable string for the given
      * enumerated value.
      */
-    static std::string  GetDisplayName(TfEnum val);
+    TF_API static std::string  GetDisplayName(TfEnum val);
 
     /*!
      * \brief Returns a vector of all the names associated with an enum type.
@@ -309,7 +312,7 @@ public:
     }
     
     //! \overload
-    static std::vector<std::string> GetAllNames(const std::type_info &ti);
+    TF_API static std::vector<std::string> GetAllNames(const std::type_info &ti);
 
     /*!
      * \brief Returns a vector of all the names associated with an enum type.
@@ -334,6 +337,7 @@ public:
      * the enum that has the type name \c typeName.  If no such
      * enum is registered, returns NULL.
      */
+    TF_API
     static const std::type_info *GetTypeFromName(const std::string& typeName);
 
     /*!
@@ -356,6 +360,7 @@ public:
      * This is a template-independent version of \c GetValueFromName().
      *
      */
+    TF_API
     static TfEnum GetValueFromName(const std::type_info& ti,
                                    const std::string &name,
                                    bool *foundIt = NULL);
@@ -371,6 +376,7 @@ public:
      * otherwise. Also, since this is not a templated function, it has
      * to return a generic value type, so we use \c TfEnum.
      */
+    TF_API
     static TfEnum       GetValueFromFullName(const std::string &fullname,
                                              bool *foundIt = NULL);
 
@@ -380,6 +386,7 @@ public:
      * If any enum whose demangled type name is \p typeName has been
      * added via \c TF_ADD_ENUM_NAME(), this function returns true.
      */
+    TF_API
     static bool IsKnownEnumType(const std::string& typeName);
 
     //@}
@@ -392,6 +399,7 @@ public:
      *
      * Instead, call AddName(), which does exactly the same thing.
      */
+    TF_API
     static void _AddName(TfEnum val, const std::string &valName,
                          const std::string &displayName="");
 
@@ -423,7 +431,7 @@ private:
 
     // Internal constructor for size_t values.
     explicit TfEnum(size_t value)
-        : _typeInfo(&typeid(size_t)), _value(value)
+        : _typeInfo(&typeid(size_t)), _value(static_cast<int>(value))
     {
     }
 
@@ -436,7 +444,7 @@ private:
 
 //! \brief Output a TfEnum value.
 // \ingroup group_tf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const TfEnum & e);
+TF_API std::ostream& operator<<(std::ostream& out, const TfEnum & e);
 
 
 /*!

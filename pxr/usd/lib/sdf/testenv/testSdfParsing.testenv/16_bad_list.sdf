@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+startFrame = 1;
+endFrame = 1
+)
+def Camera "overview_cam"  {
+    int[] camx = [[1, 2, 3], [3, 4, 5, 6], [5, 6, 7]];
+}

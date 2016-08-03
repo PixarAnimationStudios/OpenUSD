@@ -27,6 +27,7 @@
 
 
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/common.h"
 
@@ -83,6 +84,7 @@
 /// an error, in which case returns an empty TfToken
 ///
 /// \sa UsdGeomUpAxis_group
+USDGEOM_API
 TfToken UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage);
 
 
@@ -93,6 +95,7 @@ TfToken UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage);
 ///
 /// \return true if upAxis was successfully set.
 /// \sa UsdGeomUpAxis_group
+USDGEOM_API
 bool UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis);
 
 
@@ -111,6 +114,7 @@ bool UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis);
 /// we will issue a warning during the first call to this function, and ignore
 /// all of them, so that we devolve to deterministic behavior of Y up axis
 /// until the problem is rectified.
+USDGEOM_API
 TfToken UsdGeomGetFallbackUpAxis();
 
 /// @}

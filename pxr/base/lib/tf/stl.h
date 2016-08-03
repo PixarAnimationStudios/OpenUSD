@@ -29,6 +29,7 @@
  * \ingroup group_tf_Stl
  */
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/iterator.h"
 
@@ -197,6 +198,7 @@ inline void TfReset(T &obj) {
     T().swap(obj);
 }
 
+TF_API size_t Tf_GetEmptyHashMapBucketCount();
 /*!
  * \brief Specialize for TfHashMap to make minimally sized hashes.
  */
@@ -208,7 +210,6 @@ inline void TfReset(TfHashMap<Key, Value, Hash, Equal, Alloc> &hash){
     // we just clear().  Note that this assumes that the number of
     // buckets does not depend on the template parameter types which
     // is reasonable.
-    extern size_t Tf_GetEmptyHashMapBucketCount();
     static size_t emptyCount = Tf_GetEmptyHashMapBucketCount();
 
     if (hash.bucket_count() > emptyCount)
@@ -217,12 +218,13 @@ inline void TfReset(TfHashMap<Key, Value, Hash, Equal, Alloc> &hash){
         hash.clear();
 }
 
+TF_API size_t Tf_GetEmptyHashSetBucketCount();
+
 /*!
  * \brief Specialize for TfHashSet to make minimally sized hashes.
  */
 template <class Value, class Hash, class Equal, class Alloc>
 inline void TfReset(TfHashSet<Value, Hash, Equal, Alloc> &hash) {
-    extern size_t Tf_GetEmptyHashSetBucketCount();
     static size_t emptyCount = Tf_GetEmptyHashSetBucketCount();
 
     // See comment above about issues with TfHashSet(0).

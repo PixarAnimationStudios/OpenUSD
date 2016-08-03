@@ -165,7 +165,7 @@ Hd_AdjacencyBuilderComputation::Resolve()
 
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
+    int numFaces = (int)_topology->GetFaceVertexCounts().size();
     // compute numPoints from topology indices
     int numPoints = HdMeshTopology::ComputeNumPoints(
         _topology->GetFaceVertexIndices());
@@ -248,7 +248,7 @@ Hd_AdjacencyBuilderForGPUComputation::Resolve()
     std::vector<int> const &adjacency = _adjacency->GetEntry();
 
     // create buffer source
-    VtIntArray array(adjacency.size());
+    VtIntArray array(static_cast<unsigned int>(adjacency.size()));
     for (size_t i = 0; i < adjacency.size(); ++i) {
         array[i] = adjacency[i];
     }

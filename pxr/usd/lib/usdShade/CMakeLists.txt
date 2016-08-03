@@ -20,6 +20,9 @@ pxr_shared_library(usdShade
         subgraph
         tokens
         utils
+        
+    PUBLIC_HEADERS
+        api.h
 
     CPPFILES
         moduleDeps.cpp

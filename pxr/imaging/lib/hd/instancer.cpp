@@ -270,7 +270,7 @@ HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 
     int nTotal = 1;
     for (int i = 0; i < instancerNumLevels; ++i) {
-        nTotal *= instanceIndicesArray[i].size();
+        nTotal *= (int)instanceIndicesArray[i].size();
     }
     int instanceIndexWidth = 1 + instancerNumLevels;
     VtIntArray instanceIndices(nTotal * instanceIndexWidth);

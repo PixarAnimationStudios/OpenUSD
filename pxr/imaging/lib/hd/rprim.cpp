@@ -215,7 +215,7 @@ HdRprim::_PopulateConstantPrimVars(HdDrawItem *drawItem,
         if (not _instancerID.IsEmpty()) {
             // gather all instancer transforms in the instancing hierarchy
             VtMatrix4dArray rootTransforms = _GetInstancerTransforms();
-            VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
+            VtMatrix4dArray rootInverseTransforms(static_cast<unsigned int>(rootTransforms.size()));
             bool leftHanded = transform.IsLeftHanded();
             for (size_t i = 0; i < rootTransforms.size(); ++i) {
                 rootInverseTransforms[i] = rootTransforms[i].GetInverse();

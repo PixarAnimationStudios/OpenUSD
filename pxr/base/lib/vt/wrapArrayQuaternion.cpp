@@ -26,10 +26,13 @@
 #define MULTIPLICATION_OPERATOR
 #define DOUBLE_MULT_OPERATOR
 #define DOUBLE_DIV_OPERATOR
-#include "pxr/base/vt/typeHeaders.h"
+
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/typeHeaders.h"
+
 
 
 void wrapArrayQuaternion() {
     BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_QUATERNION_VALUE_TYPES);
 }
+

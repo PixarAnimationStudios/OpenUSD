@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/sdf/api.h"
 
 SDF_DECLARE_HANDLES(SdfAttributeSpec);
 SDF_DECLARE_HANDLES(SdfMapperSpec);

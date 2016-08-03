@@ -24,6 +24,8 @@
 #ifndef TF_PYLOCK_H
 #define TF_PYLOCK_H
 
+#include "pxr/base/tf/api.h"
+
 #include <Python.h>
 
 ///
@@ -114,25 +116,25 @@
 class TfPyLock {
 public:
     //! Acquires the Python GIL and swaps in callers thread state.
-    TfPyLock();
+    TF_API TfPyLock();
 
     //! Releases Python GIL and restores prior threads state.
-    ~TfPyLock();
+    TF_API ~TfPyLock();
 
     //! (Re)acquires GIL and thread state, if previously released.
-    void Acquire();
+    TF_API void Acquire();
 
     //! Explictly releases GIL and thread state.
-    void Release();
+    TF_API void Release();
 
     //! Unlock the GIL temporarily to allow other threads to use python.
     //! Typically this is used to unblock threads during operations like
     //! blocking I/O.  The lock must be acquired when called.
-    void BeginAllowThreads();
+    TF_API void BeginAllowThreads();
 
     //! End allowing other threads, reacquiring the lock state.
     //! \a BeginAllowThreads must have been successfully called first.
-    void EndAllowThreads();
+    TF_API void EndAllowThreads();
 
 private:
     // Non-acquiring constructor for TfPyEnsureGILUnlockedObj's use.
@@ -151,7 +153,7 @@ struct TfPyEnsureGILUnlockedObj
 {
     // Do nothing if the current thread does not have the GIL, otherwise unlock
     // the GIL, and relock upon destruction.
-    TfPyEnsureGILUnlockedObj();
+    TF_API TfPyEnsureGILUnlockedObj();
 private:
     TfPyLock _lock;
 };

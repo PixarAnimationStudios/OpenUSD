@@ -72,12 +72,14 @@
 /// The following variables provide the clauses that can be combined and 
 /// negated to produce predicates:
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/bitUtils.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <bitset>
+#include <ciso646>
 
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
@@ -314,6 +316,7 @@ public:
     /// Every expression may be formulated as either a disjunction or a
     /// conjuction, but allowing both affords increased expressiveness.
     ///
+    USD_API
     class Usd_PrimFlagsDisjunction operator!() const;
 
 private:
@@ -417,6 +420,7 @@ public:
     /// Every expression may be formulated as either a disjunction or a
     /// conjuction, but allowing both affords increased expressiveness.
     ///
+    USD_API
     class Usd_PrimFlagsConjunction operator!() const;
 
 private:

@@ -1,0 +1,10 @@
+#usda 1.0
+
+def Scope "SlugJ" (
+    add references = [
+        @SlugJ_modelInterface.gen.usda@</SlugJ>,
+        @SlugJ_shaderDisplayDefs.usda@</SlugJ>
+    ]
+)
+{
+}

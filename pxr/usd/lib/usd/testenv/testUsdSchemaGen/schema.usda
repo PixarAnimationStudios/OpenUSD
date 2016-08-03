@@ -1,0 +1,128 @@
+#usda 1.0
+(
+    "This file is a contrived schema file."
+    subLayers = [
+        @baseSchema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdContrived"
+        string libraryPath      = "pxr/usd/usdContrived"
+        # string libraryPrefix  = "Usd"
+        # string tokensPrefix   = "Usd"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string value = "/non-identifier-tokenValue!"
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+class "Base" (
+    inherits = </Typed>
+    doc = "This doc should only exist on the \"Base\" class."
+) {
+    
+    token myVaryingToken = "VariableTokenDefault" (
+        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        doc = "VariableToken attribute docs.")
+    
+    uniform bool myUniformBool = false (
+        doc = "Uniform bool, default false")
+        
+    # Validating that we DO want to support custom schema properties 
+    # even in Typed schemas!
+    custom double myDouble
+
+    float myFloat = 1.0
+
+    color3f myColorFloat = (1.0, 1.0, 1.0)
+
+    normal3f[] myNormals
+
+    point3f[] myPoints
+
+    vector3f[] myVelocities
+
+    uint unsignedInt
+    uchar unsignedChar
+    uint64[] unsignedInt64Array
+
+}
+
+class Derived "Derived" (
+    inherits = </Base>
+    doc = """\\em Emphasized! \\section Test_Section Test Section"""
+) {
+
+    float3 pivotPosition = (0, 0, 0) (
+         doc = """Rotation pivot position for this prim's transformation. 
+         Provided as advisory data only for use by authoring applications,
+         and should have no effect on the transformation encoded in the
+         'transform' attribute.""")
+
+    float3[] myVecfArray
+    
+    int[] holeIndices = [] (
+        doc = """The face indices (indexing into the 'faceVertexCounts'
+        attribute) of all faces that should be made invisible.""")
+
+    int[] cornerIndices = [] (
+        doc = """The vertex indices of all vertices that are sharp corners.""")
+
+    float[] cornerSharpnesses = [] (
+        doc = """The sharpness values for corners: each corner gets a single
+        sharpness value (Usd.Mesh.SHARPNESS_INFINITE for a perfectly sharp
+        corner), so the size of this array must match that of
+        'cornerIndices'""")
+
+    int[] creaseLengths = [] (
+        doc = """The length of this array specifies the number of creases on the
+        surface. Each element gives the number of (must be adjacent) vertices in
+        each crease, whose indices are linearly laid out in the 'creaseIndices'
+        attribute. Since each crease must be at least one edge long, each
+        element of this array should be greater than one.""")
+
+    matrix4d transform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        doc = """Double-precision transformation matrix, which should encode
+        the entire local transformation for a prim.""")
+         
+    rel binding (
+        doc = """This is my awesome relationship."""
+    )
+
+    asset[]  testingAsset
+
+    float namespaced:property = 1.0
+
+    token justDefault = "newToken" (
+        doc = """newToken should be included in the global token set.""")
+}
+
+class TestPxHairman "TestPxHairman" (
+    customData = {
+        string className = "TestHairman"
+    }
+)
+{
+    custom float temp
+    float riStatements:attributes:user:Gofur_GeomOnHairdensity (
+        doc = """This exercises custom API naming."""
+        customData = {
+            string apiName = "Gofur_GeomOnHairdensity"
+        }
+    )
+
+    rel relCanShareApiNameWithAttr (
+        doc = """This exercises custom API naming."""
+        customData = {
+            string apiName = "Gofur_GeomOnHairdensity"
+        }
+    )
+}

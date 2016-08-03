@@ -26,6 +26,7 @@
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
@@ -192,7 +193,7 @@ class GfRGB {
 
     //! Tests for equality within a given tolerance, returning true if the
     // difference between each component is less than \p tolerance.
-    friend bool GfIsClose(const GfRGB &v1, const GfRGB &v2, double tolerance);
+    friend GF_API bool GfIsClose(const GfRGB &v1, const GfRGB &v2, double tolerance);
 
     //! Returns \code (1-alpha) * a + alpha * b \endcode
     // similar to GfLerp for other vector types.
@@ -205,9 +206,11 @@ class GfRGB {
     //@{
 
     //! Transform the color into an arbitrary space.
+    GF_API
     GfRGB Transform(const GfMatrix4d &m) const;
 
     //! Transform the color into an arbitrary space.
+    GF_API
     friend GfRGB operator *(const GfRGB &c, const GfMatrix4d &m);
 
     //! Return the complement of a color.
@@ -234,17 +237,21 @@ class GfRGB {
                            _rgb[2]*coeffs._rgb[2];
                 }
 
-    //! Returns the equivalent of this color in HSV space 
+    //! Returns the equivalent of this color in HSV space
+    GF_API
     void GetHSV(float *hue, float *sat, float *value) const;
 
     //! Sets this RGB to the RGB equivalent of the given HSV color.
+    GF_API
     void SetHSV(float hue, float sat, float value);
 
     //! Given an RGB base and HSV offset, get an RGB color.
+    GF_API
     static GfRGB GetColorFromOffset(const GfRGB &offsetBase, 
                                     const GfRGB &offsetHSV);
 
     //! Given an HSV offset color and an RGB base, get the HSV offset
+    GF_API
     static GfRGB GetOffsetFromColor(const GfRGB &offsetBase,
                                     const GfRGB &offsetColor);
 
@@ -256,11 +263,11 @@ class GfRGB {
 };
 
 // Friend functions must be declared.
-bool GfIsClose(const GfRGB &v1, const GfRGB &v2, double tolerance);
-GfRGB operator *(const GfRGB &c, const GfMatrix4d &m);
+GF_API bool GfIsClose(const GfRGB &v1, const GfRGB &v2, double tolerance);
+GF_API GfRGB operator *(const GfRGB &c, const GfMatrix4d &m);
 
 /// Output a GfRGB color using the format (r, g, b).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const GfRGB& c);
+GF_API std::ostream& operator<<(std::ostream& out, const GfRGB& c);
 
 #endif // GF_RGB_H

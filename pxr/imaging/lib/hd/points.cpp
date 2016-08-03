@@ -157,7 +157,7 @@ HdPoints::_PopulateVertexPrimVars(HdDrawItem *drawItem,
             // we need this later to figure out if the number of points is changing
             // and we need to force a garbage collection to resize the buffer
             if (*nameIt == HdTokens->points) {
-                pointsIndexInSourceArray = sources.size();
+                pointsIndexInSourceArray = (int)sources.size();
             }
 
             // XXX: do we need special treatment for width as basicCurves?
