@@ -44,7 +44,7 @@ class SdfSpec;
 // It primarily specifies how to map between keys (such as the name of
 // an object) and values (such as SpecHandles for those objects).
 template<class ChildPolicy>
-class SDF_API Sdf_Children
+class Sdf_Children
 {
 public:
     typedef typename ChildPolicy::KeyPolicy KeyPolicy;
@@ -53,40 +53,52 @@ public:
     typedef typename ChildPolicy::FieldType FieldType;
     typedef Sdf_Children<ChildPolicy> This;
 
+    SDF_API
     Sdf_Children();
 
+    SDF_API
     Sdf_Children(const Sdf_Children<ChildPolicy> &other);
 
+    SDF_API
     Sdf_Children(const SdfLayerHandle &layer,
         const SdfPath &parentPath, const TfToken &childrenKey,
         const KeyPolicy& keyPolicy = KeyPolicy());
 
     /// Return whether this object is valid.
+    SDF_API
     bool IsValid() const;
 
     /// Return the number of children that this object contains.
+    SDF_API
     size_t GetSize() const;
 
     /// Return the child at the specified index.
+    SDF_API
     ValueType GetChild(size_t index) const;
 
     /// Find the index of the specified key, or return the size if it's not found.
+    SDF_API
     size_t Find(const KeyType &key) const;
     
     /// Find the key that corresponds to \a value, or return a default
     /// constructed key if it's not found.
+    SDF_API
     KeyType FindKey(const ValueType &value) const;
 
     /// Return true if this object and \a other are equivalent.
+    SDF_API
     bool IsEqualTo(const This &other) const;
 
     /// Replace this object's children with the ones in \a values.
+    SDF_API
     bool Copy(const std::vector<ValueType> & values, const std::string &type);
     
     /// Insert a new child at the specified \a index.
+    SDF_API
     bool Insert(const ValueType& value, size_t index, const std::string &type);
 
     /// Erase the child with the specified key.
+    SDF_API
     bool Erase(const KeyType& key, const std::string &type);
 
 private:

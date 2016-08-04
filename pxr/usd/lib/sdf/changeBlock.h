@@ -65,9 +65,11 @@
 /// inside a changeblock without talking to any downstream libraries.
 /// For example, this is how Csd performs namespace edits.
 ///
-class SDF_API SdfChangeBlock {
+class SdfChangeBlock {
 public:
+    SDF_API
     SdfChangeBlock();
+    SDF_API
     ~SdfChangeBlock();
 };
 

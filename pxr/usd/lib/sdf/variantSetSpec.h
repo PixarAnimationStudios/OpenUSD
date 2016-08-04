@@ -55,7 +55,7 @@
 /// over the target prim, and then the referencing prim is composited over 
 /// the result.
 ///
-class SDF_API SdfVariantSetSpec : public SdfSpec
+class SdfVariantSetSpec : public SdfSpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeVariantSet,
                      SdfVariantSetSpec, SdfSpec);
@@ -66,6 +66,7 @@ public:
     /// @{
 
     /// \brief Constructs a new instance.
+    SDF_API
     static SdfVariantSetSpecHandle
     New(const SdfPrimSpecHandle& prim, const std::string& name);
 
@@ -75,9 +76,11 @@ public:
     /// @{
 
     /// Returns the name of this variant set.
+    SDF_API
     std::string GetName() const;
 
     /// Returns the name of this variant set.
+    SDF_API
     TfToken GetNameToken() const;
 
     /// @}
@@ -85,6 +88,7 @@ public:
     /// @{
 
     /// Returns the prim that this variant set belongs to.
+    SDF_API
     SdfPrimSpecHandle GetOwner() const;
 
     /// @}
@@ -92,15 +96,18 @@ public:
     /// @{
 
     /// Returns the variants as a map.
+    SDF_API
     SdfVariantView GetVariants() const;
 
     /// Returns the variants as a vector.
+    SDF_API
     SdfVariantSpecHandleVector GetVariantList() const;
 
     /// \brief Removes \p variant from the list of variants.
     ///
     /// If the variant set does not currently own \p variant, no action
     /// is taken.
+    SDF_API
     void RemoveVariant(const SdfVariantSpecHandle& variant);
 
     /// @}

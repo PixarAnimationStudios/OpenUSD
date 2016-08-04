@@ -43,7 +43,7 @@ class PcpPropertyIndex;
 /// \class PcpNodeIterator
 /// Object used to iterate over nodes in the prim index graph in strong-to-weak
 /// order.
-class PCP_API PcpNodeIterator
+class PcpNodeIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeIterator, 
                  /* ValueType = */ PcpNodeRef,
@@ -53,6 +53,7 @@ class PCP_API PcpNodeIterator
 {
 public:
     /// Constructs an invalid iterator.
+    PCP_API
     PcpNodeIterator();
 
     // Returns a compressed Sd site.  For internal use only.
@@ -63,14 +64,21 @@ public:
 
 private:
     friend class PcpPrimIndex;
+    PCP_API
     PcpNodeIterator(PcpPrimIndex_Graph* graph, size_t nodeIdx);
 
     friend class boost::iterator_core_access;
+    PCP_API
     void increment();
+    PCP_API
     void decrement();
+    PCP_API
     void advance(difference_type n);
+    PCP_API
     difference_type distance_to(const PcpNodeIterator& other) const;
+    PCP_API
     bool equal(const PcpNodeIterator& other) const;
+    PCP_API
     reference dereference() const;
 
 private:

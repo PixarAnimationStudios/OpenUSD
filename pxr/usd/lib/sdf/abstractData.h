@@ -142,22 +142,25 @@ private:
 /// consistency guarantees about the scene description it contains.
 /// Instead, it is a basis for building those things.
 ///
-class SDF_API SdfAbstractData : public TfRefBase, public TfWeakBase
+class SdfAbstractData : public TfRefBase, public TfWeakBase
 {
 public:
     SdfAbstractData() {}
+    SDF_API
     virtual ~SdfAbstractData(); 
 
     /// Copy the data in \p source into this data object.
     ///
     /// The default implementation does a spec-by-spec, field-by-field
     /// copy of \p source into this object.
+    SDF_API
     virtual void CopyFrom(const SdfAbstractDataConstPtr& source);
 
     /// Returns true if this data object has no specs, false otherwise.
     ///
     /// The default implementation uses a visitor to check if any specs
     /// exist.
+    SDF_API
     virtual bool IsEmpty() const;
 
     /// Returns true if this data object contains the same specs and fields
@@ -167,12 +170,14 @@ public:
     /// comparison.
     // XXX: What are the right semmantics for this? 
     //      Does it matter if the underlying implementation matches?
+    SDF_API
     virtual bool Equals(const SdfAbstractDataRefPtr &rhs) const;
 
     /// Writes the contents of this data object to \p out. This is primarily
     /// for debugging purposes.
     ///
     /// The default implementation writes out each field for each spec.
+    SDF_API
     virtual void WriteToStream(std::ostream& out) const;
 
     /// \name Spec API
@@ -180,18 +185,22 @@ public:
 
     /// Create a new spec at \a id with the given \a specType. If the spec
     /// already exists the spec type will be changed.
+    SDF_API
     virtual void CreateSpec(const SdfAbstractDataSpecId &id, 
                             SdfSpecType specType) = 0;
 
     /// Return true if this data has a spec for \a id.
+    SDF_API
     virtual bool HasSpec(const SdfAbstractDataSpecId &id) const = 0;
 
     /// Erase the spec at \a id and any fields that are on it.
     /// Note that this does not erase child specs.
+    SDF_API
     virtual void EraseSpec(const SdfAbstractDataSpecId &id) = 0;
 
     /// Move the spec at \a oldId to \a newId, including all the
     /// fields that are on it. This does not move any child specs.
+    SDF_API
     virtual void MoveSpec(const SdfAbstractDataSpecId &oldId, 
                           const SdfAbstractDataSpecId &newId) = 0;
 
@@ -203,6 +212,7 @@ public:
     /// \p visitor. The order in which specs are visited is undefined. 
     /// The visitor may not modify the SdfAbstractData object it is visiting.
     /// \sa SdfAbstractDataSpecVisitor
+    SDF_API
     void VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const;
 
     /// @}
@@ -262,16 +272,19 @@ public:
     // at \p keyPath in that dictionary.  Return false otherwise.  If
     // \p keyPath names an entire sub-dictionary, set \p value to that entire
     // sub-dictionary and return true.
+    SDF_API
     virtual bool HasDictKey(const SdfAbstractDataSpecId& id,
                             const TfToken &fieldName,
                             const TfToken &keyPath,
                             SdfAbstractDataValue* value) const;
+    SDF_API
     virtual bool HasDictKey(const SdfAbstractDataSpecId& id,
                             const TfToken &fieldName,
                             const TfToken &keyPath,
                             VtValue *value = NULL) const;
 
     // Same as HasDictKey but return empty VtValue on failure.
+    SDF_API
     virtual VtValue GetDictValueByKey(const SdfAbstractDataSpecId& id,
                                       const TfToken &fieldName,
                                       const TfToken &keyPath) const;
@@ -280,10 +293,12 @@ public:
     // by \p id and \p fieldName.  If the field itself is not dictionary-valued,
     // replace the field with a new dictionary and set the element at \p keyPath
     // in it.  If \p value is empty, invoke EraseDictValueByKey instead.
+    SDF_API
     virtual void SetDictValueByKey(const SdfAbstractDataSpecId& id,
                                    const TfToken &fieldName,
                                    const TfToken &keyPath,
                                    const VtValue &value);
+    SDF_API
     virtual void SetDictValueByKey(const SdfAbstractDataSpecId& id,
                                    const TfToken &fieldName,
                                    const TfToken &keyPath,
@@ -292,6 +307,7 @@ public:
     // If \p id and \p fieldName identify a dictionary-valued field with an
     // element at \p keyPath, remove that element from the dictionary.  If this
     // leaves the dictionary empty, Erase() the entire field.
+    SDF_API
     virtual void EraseDictValueByKey(const SdfAbstractDataSpecId& id,
                                      const TfToken &fieldName,
                                      const TfToken &keyPath);
@@ -299,6 +315,7 @@ public:
     // If \p id, \p fieldName, and \p keyPath identify a (sub) dictionary,
     // return a vector of the keys in that dictionary, otherwise return an empty
     // vector.
+    SDF_API
     virtual std::vector<TfToken> ListDictKeys(const SdfAbstractDataSpecId& id,
                                               const TfToken &fieldName,
                                               const TfToken &keyPath) const;

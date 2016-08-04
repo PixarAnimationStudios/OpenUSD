@@ -69,7 +69,7 @@
 ///
 /// For a list of functions that can manipulate VtDictionary objects, see the  
 /// \link group_vtdict_functions VtDictionary Functions \endlink group page .
-class VT_API VtDictionary {
+class VtDictionary {
     typedef std::map<std::string, VtValue> _Map;
     std::unique_ptr<_Map> _dictMap;
 
@@ -180,61 +180,80 @@ public:
     }
 
     /// Creates a copy of the supplied \p VtDictionary
+    VT_API
     VtDictionary(VtDictionary const& other);
 
     /// Creates a new VtDictionary by moving the supplied \p VtDictionary.
+    VT_API
     VtDictionary(VtDictionary && other) = default;
 
     /// Copy assignment operator
+    VT_API
     VtDictionary& operator=(VtDictionary const& other);
 
     /// Move assignment operator
+    VT_API
     VtDictionary& operator=(VtDictionary && other) = default;
 
     /// Returns a reference to the \p VtValue that is associated with a 
     /// particular key.
+    VT_API
     VtValue& operator[](const std::string& key);
 
     /// Counts the number of elements whose key is \p key. 
+    VT_API
     size_type count(const std::string& key) const;
 
     /// Erases the element whose key is \p key. 
+    VT_API
     size_type erase(const std::string& key);
 
     /// Erases the element pointed to by \p it. 
+    VT_API
     void erase(iterator it);
 
     /// Erases all elements in a range.
+    VT_API
     void erase(iterator f, iterator l);
 
     /// Erases all of the elements. 
+    VT_API
     void clear();
 
     /// Finds an element whose key is \p key. 
+    VT_API
     iterator find(const std::string& key);
 
     /// Finds an element whose key is \p key. 
+    VT_API
     const_iterator find(const std::string& key) const;
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
+    VT_API
     iterator begin();
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
+    VT_API
     const_iterator begin() const;
 
     /// Returns an \p iterator pointing to the end of the \p VtDictionary. 
+    VT_API
     iterator end();
     
     /// Returns an \p iterator pointing to the end of the \p VtDictionary. 
+    VT_API
     const_iterator end() const;
 
     /// Returns the size of the VtDictionary. 
+    VT_API
     size_type size() const;
 	
     /// \c true if the \p VtDictionary's size is 0. 
+    VT_API
     bool empty() const;
     
     /// Swaps the contents of two \p VtDictionaries. 
+    VT_API
     void swap(VtDictionary& dict); 
 
     // Global overload for swap for unqualified calls in generic code.
@@ -261,6 +280,7 @@ public:
     }
 
     /// Inserts \p obj into the \p VtDictionary. 
+    VT_API
     std::pair<iterator, bool> insert(const value_type& obj);
 
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
@@ -268,6 +288,7 @@ public:
     /// produced by calling TfStringTokenize() with \p keyPath and
     /// \p delimiters.  \p keyPath may identify a leaf element or an entire
     /// sub-dictionary.  Return null if no such element at \p keyPath exists.
+    VT_API
     VtValue const *
     GetValueAtPath(std::string const &keyPath,
                    char const *delimiters = ":") const;
@@ -275,6 +296,7 @@ public:
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
     /// may identify a leaf element or an entire sub-dictionary.  Return null if
     /// no such element at \p keyPath exists.
+    VT_API
     VtValue const *
     GetValueAtPath(std::vector<std::string> const &keyPath) const;
 
@@ -284,6 +306,7 @@ public:
     /// sub-dictionaries as necessary according to the path elements in
     /// \p keyPath.  If \p keyPath identifies a full sub-dictionary, replace the
     /// entire sub-dictionary with \p value.
+    VT_API
     void SetValueAtPath(std::string const &keyPath,
                         VtValue const &value, char const *delimiters = ":");
 
@@ -291,6 +314,7 @@ public:
     /// necessary according to the path elements in \p keyPath.  If \p keyPath
     /// identifies a full sub-dictionary, replace the entire sub-dictionary with
     /// \p value.
+    VT_API
     void SetValueAtPath(std::vector<std::string> const &keyPath,
                         VtValue const &value);
 
@@ -299,12 +323,14 @@ public:
     /// TfStringTokenize() with \p keyPath and \p delimiters.  If no such
     /// element exists at \p keyPath, do nothing.  If \p keyPath identifies a
     /// sub-dictionary, erase the entire sub-dictionary.
+    VT_API
     void EraseValueAtPath(std::string const &keyPath,
         char const *delimiters = ":");
 
     /// Erase the value at \a keyPath.  If no such element exists at \p keyPath,
     /// do nothing.  If \p keyPath identifies a sub-dictionary, erase the entire
     /// sub-dictionary.
+    VT_API
     void EraseValueAtPath(std::vector<std::string> const &keyPath);
 
 private:
@@ -332,7 +358,7 @@ VT_API  std::ostream &operator<<(std::ostream &, VtDictionary const &);
 //
 // Return a const reference to an empty VtDictionary.
 //
-VtDictionary const &VtGetEmptyDictionary();
+VT_API VtDictionary const &VtGetEmptyDictionary();
 
 /// Returns true if \p dictionary contains \p key and the corresponding value
 /// is of type \p T.

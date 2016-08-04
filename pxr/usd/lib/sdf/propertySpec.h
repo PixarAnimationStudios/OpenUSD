@@ -52,7 +52,7 @@
 /// NOTE: Do not use Python reserved words and keywords as attribute names.
 /// This will cause attribute resolution to fail.
 ///
-class SDF_API SdfPropertySpec : public SdfSpec
+class SdfPropertySpec : public SdfSpec
 {
     SDF_DECLARE_ABSTRACT_SPEC(SdfSchema, SdfPropertySpec, SdfSpec);
 
@@ -62,9 +62,11 @@ public:
     /// @{
 
     /// \brief Returns the property's name.
+    SDF_API
     const std::string &GetName() const;
 
     /// \brief Returns the property's name, as a token.
+    SDF_API
     TfToken GetNameToken() const;
 
     /// \brief Returns true if setting the property spec's name to \p newName
@@ -72,6 +74,7 @@ public:
     ///
     /// Returns false if it won't, and sets \p whyNot with a string
     /// describing why not.
+    SDF_API
     bool CanSetName(const std::string &newName, std::string *whyNot) const;
 
     /// \brief Sets the property's name.
@@ -81,11 +84,13 @@ public:
     ///
     /// Setting \p validate to false, will skip validation of the newName
     /// (that is, CanSetName will not be called).
+    SDF_API
     bool SetName(const std::string &newName, bool validate = true);
 
     /// \brief Returns true if the given name is considered a valid name for a
     /// property.  A valid name is not empty, and does not use invalid
     /// characters (such as '/', '[', or '.').
+    SDF_API
     static bool IsValidName(const std::string &name);
 
     /// @}
@@ -93,6 +98,7 @@ public:
     /// @{
 
     /// \brief Returns the owner prim or relationship of this property.
+    SDF_API
     SdfSpecHandle GetOwner() const;
 
     /// @}
@@ -110,6 +116,7 @@ public:
     /// But if you need to possibly store this data on attributes or
     /// relationships or as annotations on reference arcs, then custom data
     /// is an appropriate choice.
+    SDF_API
     SdfDictionaryProxy GetCustomData() const;
 
     /// \brief Returns the asset info dictionary for this property.
@@ -124,11 +131,13 @@ public:
     /// \note It is only valid to author assetInfo on attributes that are of 
     /// type SdfAssetPath.
     /// 
+    SDF_API
     SdfDictionaryProxy GetAssetInfo() const;
 
     /// \brief Sets a property custom data entry.
     ///
     /// If \p value is empty, then this removes the given custom data entry.
+    SDF_API
     void SetCustomData(const std::string &name, const VtValue &value);
 
     /// \brief Sets a asset info entry for this property.
@@ -137,87 +146,106 @@ public:
     /// 
     /// \sa GetAssetInfo()
     ///
+    SDF_API
     void SetAssetInfo(const std::string& name, const VtValue& value);
 
     /// \brief Returns the displayGroup string for this property spec.
     ///
     /// The default value for displayGroup is empty string.
+    SDF_API
     std::string GetDisplayGroup() const;
 
     /// Sets the displayGroup string for this property spec.
+    SDF_API
     void SetDisplayGroup(const std::string &value);
 
     /// \brief Returns the displayName string for this property spec.
     ///
     /// The default value for displayName is empty string.
+    SDF_API
     std::string GetDisplayName() const;
 
     /// Sets the displayName string for this property spec.
+    SDF_API
     void SetDisplayName(const std::string &value);
 
     /// \brief Returns the documentation string for this property spec.
     ///
     /// The default value for documentation is empty string.
+    SDF_API
     std::string GetDocumentation() const;
 
     /// Sets the documentation string for this property spec.
+    SDF_API
     void SetDocumentation(const std::string &value);
 
     /// \brief Returns whether this property spec will be hidden in browsers.
     ///
     /// The default value for hidden is false.
+    SDF_API
     bool GetHidden() const;
 
     /// Sets whether this property spec will be hidden in browsers.
+    SDF_API
     void SetHidden(bool value);
 
     /// \brief Returns the property's permission restriction.
     ///
     /// The default value for permission is SdfPermissionPublic.
+    SDF_API
     SdfPermission GetPermission() const;
 
     /// Sets the property's permission restriction.
+    SDF_API
     void SetPermission(SdfPermission value);
 
     /// \brief Returns the prefix string for this property spec.
     ///
     /// The default value for prefix is "".
+    SDF_API
     std::string GetPrefix() const;
 
     /// Sets the prefix string for this property spec.
+    SDF_API
     void SetPrefix(const std::string &value);
 
     /// \brief Returns the property's symmetric peer.
     ///
     /// The default value for the symmetric peer is an empty string.
+    SDF_API
     std::string GetSymmetricPeer() const;
 
     /// \brief Sets the property's symmetric peer.
     ///
     /// If \p peerName is empty, then this removes any symmetric peer for the
     /// given property.
+    SDF_API
     void SetSymmetricPeer(const std::string &peerName);
 
     /// \brief Returns the property's symmetry arguments.
     ///
     /// The default value for symmetry arguments is an empty dictionary.
+    SDF_API
     SdfDictionaryProxy GetSymmetryArguments() const;
 
     /// \brief Sets a property symmetry argument.
     ///
     /// If \p value is empty, then this removes the argument with the given
     /// \p name.
+    SDF_API
     void SetSymmetryArgument(const std::string &name, const VtValue &value);
 
     /// \brief Returns the property's symmetry function.
     ///
     /// The default value for the symmetry function is an empty token.
+    SDF_API
     TfToken GetSymmetryFunction() const;
 
     /// \brief Sets the property's symmetry function.
     ///
     /// If \p functionName is empty, then this removes any symmetry function
     /// for the given property.
+    SDF_API
     void SetSymmetryFunction(const TfToken &functionName);
 
     /// @}
@@ -225,32 +253,39 @@ public:
     /// @{
 
     /// \brief Returns the entire set of time samples.
+    SDF_API
     SdfTimeSampleMap GetTimeSampleMap() const;
 
     /// Returns the TfType representing the value type this property holds.
+    SDF_API
     TfType GetValueType() const;
 
     /// \brief Returns the name of the value type that this property holds.
     ///
     /// Returns the typename used to represent the types of value held by
     /// this attribute.
+    SDF_API
     SdfValueTypeName GetTypeName() const;
 
     /// \brief Returns the attribute's default value.
     ///
     /// If it doesn't have a default value, an empty VtValue is returned.
+    SDF_API
     VtValue GetDefaultValue() const;
 
     /// \brief Sets the attribute's default value.
     ///
     /// Returns true if successful, false otherwise.  Fails if \p defaultValue
     /// has wrong type.
+    SDF_API
     bool SetDefaultValue(const VtValue &defaultValue);
 
     /// Returns true if a default value is set for this attribute.
+    SDF_API
     bool HasDefaultValue() const;
 
     /// Clear the attribute's default value.
+    SDF_API
     void ClearDefaultValue();
 
     /// @}
@@ -260,15 +295,19 @@ public:
     /// \brief Returns the comment string for this property spec.
     ///
     /// The default value for comment is "".
+    SDF_API
     std::string GetComment() const;
 
     /// Sets the comment string for this property spec.
+    SDF_API
     void SetComment(const std::string &value);
 
     /// Returns true if this spec declares a custom property
+    SDF_API
     bool IsCustom() const;
 
     /// Sets whether this spec declares a custom property
+    SDF_API
     void SetCustom(bool custom);
 
     /// \brief Returns the variability of the property.
@@ -299,6 +338,7 @@ public:
     ///         Prims determine the values of their Computed attributes through
     ///         Prim-specific computation.  They may not be connected.
     /// </ul>
+    SDF_API
     SdfVariability GetVariability() const;
 
     /// \brief Returns true if this PropertySpec has no significant data other 
@@ -312,6 +352,7 @@ public:
     /// never considered inert because even a spec with only required fields 
     /// will cause instantiation of on-demand properties.
     ///
+    SDF_API
     bool HasOnlyRequiredFields() const;
 
 private:

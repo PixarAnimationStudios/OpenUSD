@@ -36,10 +36,11 @@ class VtValue;
 /// Interface for the asset resolution system. An asset resolver is 
 /// responsible for resolving asset information (including the asset's
 /// physical path) from a logical path.
-class AR_API ArResolver 
+class ArResolver 
     : public boost::noncopyable
 {
 public:
+    AR_API
     virtual ~ArResolver();
 
     // --------------------------------------------------------------------- //
@@ -49,6 +50,7 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Configures the resolver for a given asset path
+    AR_API
     virtual void ConfigureResolverForAsset(const std::string& path) = 0;
 
     /// Returns the path formed by anchoring \p path to \p anchorPath.
@@ -62,34 +64,43 @@ public:
     ///
     /// If \p path is empty or not a relative path, it will be 
     /// returned as-is.
+    AR_API
     virtual std::string AnchorRelativePath(
         const std::string& anchorPath, 
         const std::string& path) = 0; 
 
     /// Returns true if the given path is a relative path.
+    AR_API
     virtual bool IsRelativePath(const std::string& path) = 0;
 
     /// Returns true if the given path is a repository path.
+    AR_API
     virtual bool IsRepositoryPath(const std::string& path) = 0;
 
     /// Returns whether this path is a search path.
+    AR_API
     virtual bool IsSearchPath(const std::string& path) = 0;
 
     /// Returns the normalized extension for the given \p path. 
+    AR_API
     virtual std::string GetExtension(const std::string& path) = 0;
 
     /// Returns a normalized version of the given \p path
+    AR_API
     virtual std::string ComputeNormalizedPath(const std::string& path) = 0;
 
     /// Returns the computed repository path using the current resolver 
+    AR_API
     virtual std::string ComputeRepositoryPath(const std::string& path) = 0;
 
     /// Returns the local path for the given \p path.
+    AR_API
     virtual std::string ComputeLocalPath(const std::string& path) = 0;
 
     /// Returns the resolved filesystem path for the file identified by
     /// the given \p path if it exists. If the file does not exist,
     /// returns an empty string.
+    AR_API
     virtual std::string Resolve(const std::string& path) = 0;
 
     /// @}
@@ -103,6 +114,7 @@ public:
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
+    AR_API
     virtual ArResolverContext CreateDefaultContext() = 0;
 
     /// Return a default ArResolverContext that may be bound to this resolver
@@ -111,6 +123,7 @@ public:
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
+    AR_API
     virtual ArResolverContext CreateDefaultContextForAsset(
         const std::string& filePath) = 0;
 
@@ -120,13 +133,16 @@ public:
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
+    AR_API
     virtual ArResolverContext CreateDefaultContextForDirectory(
         const std::string& fileDirectory) = 0;
 
     /// Refresh any caches associated with the given context.
+    AR_API
     virtual void RefreshContext(const ArResolverContext& context) = 0;
 
     /// Returns the currently-bound asset resolver context.
+    AR_API
     virtual ArResolverContext GetCurrentContext() = 0;
 
     /// @}
@@ -147,11 +163,13 @@ public:
     /// additional information about the asset.
     ///
     /// \see Resolve(const std::string&).
+    AR_API
     virtual std::string ResolveWithAssetInfo(
         const std::string& path, 
         ArAssetInfo* assetInfo) = 0;
 
     /// Update \p assetInfo with respect to the given \p fileVersion
+    AR_API
     virtual void UpdateAssetInfo(
         const std::string& identifier,
         const std::string& filePath,
@@ -163,6 +181,7 @@ public:
     /// 
     /// If this function returns false and \p whyNot is not \c nullptr,
     /// it will be filled in with an explanation.
+    AR_API
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) = 0;
@@ -172,6 +191,7 @@ public:
     ///
     /// If this function returns false and \p whyNot is not \c nullptr,
     /// it will be filled in with an explanation.
+    AR_API
     virtual bool CanCreateNewLayerWithIdentifier(
         const std::string& identifier, 
         std::string* whyNot) = 0;

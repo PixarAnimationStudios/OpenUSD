@@ -333,18 +333,21 @@ struct Plug_RegistrationMetadata;
 /// \endcode
 ///
 
-class PLUG_API PlugRegistry : public TfWeakBase, boost::noncopyable {
+class PlugRegistry : public TfWeakBase, boost::noncopyable {
 public:
     typedef PlugRegistry This;
     typedef std::vector<TfType> TypeVector;
 
     /// Returns the singleton \c PlugRegistry instance.
+    PLUG_API
     static PlugRegistry & GetInstance();
 
     /// Registers all plug-ins discovered at \a pathToPlugInfo.
+    PLUG_API
     PlugPluginPtrVector RegisterPlugins(const std::string & pathToPlugInfo);
 
     /// Registers all plug-ins discovered in any of \a pathsToPlugInfo.
+    PLUG_API
     PlugPluginPtrVector
     RegisterPlugins(const std::vector<std::string> & pathsToPlugInfo);
 
@@ -353,6 +356,7 @@ public:
     /// function if you expect that \c name may name a type provided by a
     /// plugin.  Calling this function will incur plugin discovery (but not
     /// loading) if plugin discovery has not yet occurred.
+    PLUG_API
     static TfType FindTypeByName(std::string const &typeName);
 
     /// Retrieve the \c TfType that derives from \c base and has the given alias
@@ -361,6 +365,7 @@ public:
     /// you expect that the derived type may be provided by a plugin.  Calling
     /// this function will incur plugin discovery (but not loading) if plugin
     /// discovery has not yet occurred.
+    PLUG_API
     static TfType
     FindDerivedTypeByName(TfType base, std::string const &typeName);
 
@@ -380,6 +385,7 @@ public:
     /// function if you expect that plugins may provide types derived from \a
     /// base.  Otherwise, use \a TfType::GetDirectlyDerivedTypes.
     ///
+    PLUG_API
     static std::vector<TfType>
     GetDirectlyDerivedTypes(TfType base);
 
@@ -387,6 +393,7 @@ public:
     /// \a base.  Use this function if you expect that plugins may provide types
     /// derived from \a base.  Otherwise, use \a TfType::GetAllDerivedTypes.
     ///
+    PLUG_API
     static void
     GetAllDerivedTypes(TfType base, std::set<TfType> *result);
 
@@ -402,27 +409,33 @@ public:
 
     /// Returns the plug-in for the given type, or a
     /// null pointer if the is no registered plug-in.
+    PLUG_API
     PlugPluginPtr GetPluginForType(TfType t) const;
 
     /// Returns all registered plug-ins.
+    PLUG_API
     PlugPluginPtrVector GetAllPlugins() const;
 
     /// Returns the plugin that contains the given address if any,
     /// otherwise returns \c NULL.  Naturally, this only works for
     /// shared library plugins.
+    PLUG_API
     PlugPluginPtr GetPluginWithAddress(void* address) const;
 
     /// Returns the plugin at the given filesystem path if any,
     /// otherwise returns \c NULL.
+    PLUG_API
     PlugPluginPtr GetPluginWithPath(const std::string& path) const;
 
     /// Looks for a string associated with \a type and \a key and returns it, or
     /// an empty string if \a type or \a key are not found.
+    PLUG_API
     std::string GetStringFromPluginMetaData(TfType type, 
                                             const std::string &key) const;
 
     /// Looks for a JsValue associated with \a type and \a key and returns it,
     /// or a null JsValue if \a type or \a key are not found.
+    PLUG_API
     JsValue GetDataFromPluginMetaData(TfType type,
                                       const std::string &key) const;
 

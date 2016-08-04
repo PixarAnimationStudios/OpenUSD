@@ -48,7 +48,7 @@ class SdfPath;
 /// once created and they are passed by copy-in APIs.  To change a variant 
 /// spec, you make a new one and replace the existing one.
 ///
-class SDF_API SdfVariantSpec : public SdfSpec
+class SdfVariantSpec : public SdfSpec
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeVariant,
                      SdfVariantSpec, SdfSpec);
@@ -59,6 +59,7 @@ public:
     /// @{
 
     /// \brief Constructs a new instance.
+    SDF_API
     static SdfVariantSpecHandle New(const SdfVariantSetSpecHandle& owner,
                                     const std::string& name);
 
@@ -68,9 +69,11 @@ public:
     /// @{
 
     /// \brief Returns the name of this variant.
+    SDF_API
     std::string GetName() const;
 
     /// \brief Returns the name of this variant.
+    SDF_API
     TfToken GetNameToken() const;
 
     /// @}
@@ -78,9 +81,11 @@ public:
     /// @{
 
     /// \brief Return the SdfVariantSetSpec that owns this variant.
+    SDF_API
     SdfVariantSetSpecHandle GetOwner() const;
 
     /// \brief Get the prim spec owned by this variant.
+    SDF_API
     SdfPrimSpecHandle GetPrimSpec() const;
 };
 

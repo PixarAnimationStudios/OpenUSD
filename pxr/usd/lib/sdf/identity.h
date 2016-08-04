@@ -26,6 +26,7 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include <boost/intrusive_ptr.hpp>
@@ -43,9 +44,11 @@ SDF_DECLARE_HANDLES(SdfLayer);
 class Sdf_Identity : public boost::noncopyable {
 public:
     /// Returns the layer that this identity refers to.
+    SDF_API
     const SdfLayerHandle &GetLayer() const;
 
     /// Returns the path that this identity refers to.
+    SDF_API
     const SdfPath &GetPath() const;
 
 private:
@@ -55,7 +58,9 @@ private:
 
     friend class Sdf_IdentityRegistry;
 
+    SDF_API
     Sdf_Identity(Sdf_IdentityRegistry *registry, const SdfPath &path);
+    SDF_API
     ~Sdf_Identity();
 
     void _Forget();

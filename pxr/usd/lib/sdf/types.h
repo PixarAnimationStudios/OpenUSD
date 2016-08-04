@@ -28,24 +28,6 @@
 #ifndef SDF_TYPES_H
 #define SDF_TYPES_H
 
-#include <boost/mpl/joint_view.hpp>
-#include <boost/mpl/transform_view.hpp>
-#include <boost/mpl/vector.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/list/fold_left.hpp>
-#include <boost/preprocessor/list/for_each.hpp>
-#include <boost/preprocessor/list/size.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
-#include <boost/preprocessor/selection/max.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/seq/seq.hpp>
-#include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/static_assert.hpp>
-
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -81,6 +63,23 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include <boost/mpl/joint_view.hpp>
+#include <boost/mpl/transform_view.hpp>
+#include <boost/mpl/vector.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/list/fold_left.hpp>
+#include <boost/preprocessor/list/for_each.hpp>
+#include <boost/preprocessor/list/size.hpp>
+#include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/selection/max.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/seq/seq.hpp>
+#include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/static_assert.hpp>
 #include <iosfwd>
 #include <list>
 #include <map>
@@ -413,7 +412,7 @@ struct SDF_VALUE_TRAITS_TYPE(elem) {                                        \
         BOOST_STATIC_ASSERT(                                                \
             BOOST_PP_LIST_SIZE(SDF_VALUE_TUPLE_DIM(elem)) <= 2);            \
         BOOST_PP_LIST_FOR_EACH(                                             \
-            _SDF_ADD_DIMENSION, ~, SDF_VALUE_TUPLE_DIM(elem));              \
+                _SDF_ADD_DIMENSION, ~, SDF_VALUE_TUPLE_DIM(elem));          \
         return dimensions;                                                  \
     }                                                                       \
 };                                                                          \
@@ -428,6 +427,34 @@ struct SdfValueTypeTraits<VtArray<SDF_VALUE_CPP_TYPE(elem)> >               \
     : public SDF_VALUE_TRAITS_TYPE(elem) {                                  \
     static const bool IsValueType = true;                                   \
 };                                                                          \
+
+#define SDF_DECLARE_VALUE_TYPE_S(r, unused, elem)                           \
+struct SDF_VALUE_TRAITS_TYPE(elem) {                                        \
+    typedef SDF_VALUE_CPP_TYPE(elem) Type;                                  \
+    typedef VtArray< SDF_VALUE_CPP_TYPE(elem) > ShapedType;                 \
+    static std::string Name() {                                             \
+        return BOOST_PP_STRINGIZE(SDF_VALUE_TYPENAME(elem));                \
+    }                                                                       \
+    static std::string ShapedName() {                                       \
+        return Name() + std::string("[]");                                  \
+    }                                                                       \
+    static SdfTupleDimensions Dimensions() {                                \
+        SdfTupleDimensions dimensions;                                      \
+        return dimensions;                                                  \
+    }                                                                       \
+};                                                                          \
+                                                                            \
+template <>                                                                 \
+struct SdfValueTypeTraits<SDF_VALUE_CPP_TYPE(elem)>                         \
+    : public SDF_VALUE_TRAITS_TYPE(elem) {                                  \
+    static const bool IsValueType = true;                                   \
+};                                                                          \
+template <>                                                                 \
+struct SdfValueTypeTraits<VtArray<SDF_VALUE_CPP_TYPE(elem)> >               \
+    : public SDF_VALUE_TRAITS_TYPE(elem) {                                  \
+    static const bool IsValueType = true;                                   \
+};                                                                          \
+
 
 BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE_S, ~, _SDF_SCALAR_VALUE_TYPES);
 BOOST_PP_SEQ_FOR_EACH(SDF_DECLARE_VALUE_TYPE, ~, _SDF_DIMENSIONED_VALUE_TYPES);
@@ -493,17 +520,17 @@ BOOST_PP_COMMA() SDF_VALUE_TRAITS_TYPE(elem)
 typedef boost::mpl::vector<
     SDF_VALUE_TRAITS_TYPE(BOOST_PP_SEQ_HEAD(_SDF_SCALAR_VALUE_TYPES))
     BOOST_PP_SEQ_FOR_EACH(_SDF_WRITE_VALUE_TRAITS_TYPE, ~,
-                          BOOST_PP_SEQ_TAIL(_SDF_SCALAR_VALUE_TYPES))
-    > Sdf_ScalarValueTraitsTypesVector;
+        BOOST_PP_SEQ_TAIL(_SDF_SCALAR_VALUE_TYPES))
+> Sdf_ScalarValueTraitsTypesVector;
 typedef boost::mpl::vector<
     SDF_VALUE_TRAITS_TYPE(BOOST_PP_SEQ_HEAD(_SDF_DIMENSIONED_VALUE_TYPES))
     BOOST_PP_SEQ_FOR_EACH(_SDF_WRITE_VALUE_TRAITS_TYPE, ~,
-                          BOOST_PP_SEQ_TAIL(_SDF_DIMENSIONED_VALUE_TYPES))
-    > Sdf_DimensionedValueTraitsTypesVector;
+        BOOST_PP_SEQ_TAIL(_SDF_DIMENSIONED_VALUE_TYPES))
+> Sdf_DimensionedValueTraitsTypesVector;
 
 typedef boost::mpl::joint_view<
     Sdf_ScalarValueTraitsTypesVector, Sdf_DimensionedValueTraitsTypesVector
-    > SdfValueTraitsTypesVector;
+> SdfValueTraitsTypesVector;
 
 #undef _SDF_WRITE_VALUE_TRAITS_TYPE
 
@@ -525,18 +552,18 @@ struct SdfGetShapedCppType {
 /// by Sdf.
 typedef boost::mpl::transform_view<
     SdfValueTraitsTypesVector, SdfGetCppType
-    > SdfValueCppTypesVector;
+> SdfValueCppTypesVector;
 
 /// A sequence of the shaped C++ types associated with the value types.
 typedef boost::mpl::transform_view<
     SdfValueTraitsTypesVector, SdfGetShapedCppType
-    > SdfValueShapedCppTypesVector;
+> SdfValueShapedCppTypesVector;
 
 /// A sequence of all the underlying C++ types associated with the value
 /// types.
 typedef boost::mpl::joint_view<
     SdfValueCppTypesVector, SdfValueShapedCppTypesVector
-    > SdfValueAllCppTypesVector;
+> SdfValueAllCppTypesVector;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -551,7 +578,7 @@ SDF_DECLARE_HANDLES(SdfVariantSetSpec);
 SDF_DECLARE_HANDLES(SdfVariantSpec);
 
 typedef std::map<std::string, SdfVariantSetSpecHandle> 
-    SdfVariantSetSpecHandleMap;
+SdfVariantSetSpecHandleMap;
 
 /// Writes the string representation of \c SdfSpecifier to \a out.
 SDF_API 
@@ -560,12 +587,12 @@ std::ostream & operator<<( std::ostream &out, const SdfSpecifier &spec );
 /// Writes the string representation of \c SdfRelocatesMap to \a out.
 SDF_API 
 std::ostream & operator<<( std::ostream &out,
-                           const SdfRelocatesMap &reloMap );
+    const SdfRelocatesMap &reloMap );
 
 /// Writes the string representation of \c SdfTimeSampleMap to \a out.
 SDF_API 
 std::ostream & operator<<( std::ostream &out,
-                           const SdfTimeSampleMap &sampleMap );
+    const SdfTimeSampleMap &sampleMap );
 
 SDF_API 
 std::ostream &VtStreamOut(const SdfVariantSelectionMap &, std::ostream &);
@@ -583,16 +610,16 @@ class SdfUnregisteredValue :
 {
 public:
     /// Wraps an empty VtValue
-	SDF_API SdfUnregisteredValue();
+    SDF_API SdfUnregisteredValue();
 
     /// Wraps a std::string
-	SDF_API explicit SdfUnregisteredValue(const std::string &value);
+    SDF_API explicit SdfUnregisteredValue(const std::string &value);
 
     /// Wraps a VtDictionary
-	SDF_API explicit SdfUnregisteredValue(const VtDictionary &value);
+    SDF_API explicit SdfUnregisteredValue(const VtDictionary &value);
 
     /// Wraps a SdfUnregisteredValueListOp
-	SDF_API explicit SdfUnregisteredValue(const SdfUnregisteredValueListOp &value);
+    SDF_API explicit SdfUnregisteredValue(const SdfUnregisteredValueListOp &value);
 
     /// Returns the wrapped VtValue specified in the constructor
     const VtValue& GetValue() const {
@@ -605,7 +632,7 @@ public:
     }
 
     /// Returns true if the wrapped VtValues are equal
-	SDF_API bool operator==(const SdfUnregisteredValue &other) const;
+    SDF_API bool operator==(const SdfUnregisteredValue &other) const;
 
 private:
     VtValue _value;
@@ -652,7 +679,7 @@ public:
 
     ~Sdf_ValueTypeNamesType();
     struct _Init {
-		SDF_API static const Sdf_ValueTypeNamesType* New();
+        SDF_API static const Sdf_ValueTypeNamesType* New();
     };
 
     // For Pixar internal backwards compatibility.
@@ -666,7 +693,7 @@ private:
 };
 
 extern SDF_API TfStaticData<const Sdf_ValueTypeNamesType,
-	Sdf_ValueTypeNamesType::_Init> SdfValueTypeNames;
+    Sdf_ValueTypeNamesType::_Init> SdfValueTypeNames;
 
 /// \class SdfValueBlock
 /// A special value type that can be used to explicitly author an

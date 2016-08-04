@@ -56,13 +56,14 @@
 /// GetReferenceLayerOffset() methods (the latter is the referenceLayerOffset 
 /// property in Python) of the SdfPrimSpec class.
 ///
-class SDF_API SdfLayerOffset : public boost::totally_ordered<SdfLayerOffset>
+class SdfLayerOffset : public boost::totally_ordered<SdfLayerOffset>
 {
 public:
     /// \name Constructors
     /// @{
 
     /// Constructs a new SdfLayerOffset instance.
+    SDF_API
     explicit SdfLayerOffset(double offset = 0.0, double scale = 1.0);
 
     /// @}
@@ -84,20 +85,24 @@ public:
 
     /// Returns \c true if this is an identity transformation, with
     /// an offset of 0.0 and a scale of 1.0.
+    SDF_API
     bool IsIdentity() const;
 
     /// Returns \c true if this offset is valid, i.e. both the offset and
     /// scale are finite (not infinite or NaN).  Note that a valid layer
     /// offset's inverse may be invalid.
+    SDF_API
     bool IsValid() const;
 
     /// Gets the inverse offset, which performs the opposite transformation.
+    SDF_API
     SdfLayerOffset GetInverse() const;
 
     /// \name Hashing
     /// @{
 
     /// Returns hash for this offset.
+    SDF_API
     size_t GetHash() const;
 
     /// Hash functor for hash maps and sets.
@@ -117,17 +122,21 @@ public:
     /// @{
 
     /// Returns whether the offsets are equal.
+    SDF_API
     bool operator==(const SdfLayerOffset &rhs) const;
 
     /// Returns whether this offset is less than another.  The meaning
     /// of less than is somewhat arbitrary.
+    SDF_API
     bool operator<(const SdfLayerOffset &rhs) const;
 
     /// Composes this with the offset \e rhs, such that the resulting
     /// offset is equivalent to first applying \e rhs and then \e *this.
+    SDF_API
     SdfLayerOffset operator*(const SdfLayerOffset &rhs) const;
 
     /// Applies the offset to the given value.
+    SDF_API
     double operator*(double rhs) const;
 
     /// @}
