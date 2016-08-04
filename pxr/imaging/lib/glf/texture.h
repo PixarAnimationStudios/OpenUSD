@@ -43,10 +43,7 @@
     (texels)                                    \
     (layout)
 
-// XXX - why do we need this here?
-ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 TF_DECLARE_PUBLIC_TOKENS(GlfTextureTokens, GLF_API, GLF_TEXTURE_TOKENS);
-ARCH_PRAGMA_RESTORE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 
