@@ -50,17 +50,4 @@ void wrapPlatformDebugContext()
     ;
 }
 
-#if defined(ARCH_COMPILER_MSVC)
-// There is a bug in the compiler which means we have to provide this
-// implementation. See here for more information:
-// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
-namespace boost
-{
-    template<> 
-    const volatile GlfQGLPlatformDebugContext* 
-        get_pointer(const volatile GlfQGLPlatformDebugContext* p)
-    { 
-        return p; 
-    }
-}
-#endif
+TF_REFPTR_CONST_VOLATILE_GET(GlfQGLPlatformDebugContext)

@@ -56,38 +56,7 @@ void wrap_TestPlugBase()
     wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
 }
 
-#if defined(ARCH_COMPILER_MSVC)
-// There is a bug in the compiler which means we have to provide this
-// implementation. See here for more information:
-// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
-namespace boost
-{
-    template<> 
-    const volatile _TestPlugBase1* 
-        get_pointer(const volatile _TestPlugBase1* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile _TestPlugBase2* 
-        get_pointer(const volatile _TestPlugBase2* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile _TestPlugBase3* 
-        get_pointer(const volatile _TestPlugBase3* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile _TestPlugBase4* 
-        get_pointer(const volatile _TestPlugBase4* p)
-    { 
-        return p; 
-    }
-}
-#endif
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase1)
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase2)
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase3)
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase4)

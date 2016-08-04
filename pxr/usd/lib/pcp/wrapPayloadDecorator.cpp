@@ -136,23 +136,5 @@ wrapPayloadDecorator()
         ;
 }
 
-#if defined(ARCH_COMPILER_MSVC)
-// There is a bug in the compiler which means we have to provide this
-// implementation. See here for more information:
-// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
-namespace boost
-{
-    template<> 
-    const volatile PcpPayloadDecorator* 
-        get_pointer(const volatile PcpPayloadDecorator* p)
-    { 
-        return p; 
-    }
-    template<> 
-    const volatile Pcp_PolymorphicPayloadDecorator* 
-        get_pointer(const volatile Pcp_PolymorphicPayloadDecorator* p)
-    { 
-        return p; 
-    }
-}
-#endif 
+TF_REFPTR_CONST_VOLATILE_GET(PcpPayloadDecorator)
+TF_REFPTR_CONST_VOLATILE_GET(Pcp_PolymorphicPayloadDecorator)

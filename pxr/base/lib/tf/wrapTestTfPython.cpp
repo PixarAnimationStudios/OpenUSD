@@ -531,45 +531,8 @@ void wrapTf_TestTfPython()
 
 }
 
-#if defined(ARCH_COMPILER_MSVC)
-// There is a bug in the compiler which means we have to provide this
-// implementation. See here for more information:
-// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
-namespace boost
-{
-    template<> 
-    const volatile Tf_ClassWithVarArgInit* 
-        get_pointer(const volatile Tf_ClassWithVarArgInit* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile Tf_TestBase* 
-        get_pointer(const volatile Tf_TestBase* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile Tf_TestDerived* 
-        get_pointer(const volatile Tf_TestDerived* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile polymorphic_Tf_TestBase<class Tf_TestBase>* 
-        get_pointer(const volatile polymorphic_Tf_TestBase<class Tf_TestBase>* p)
-    { 
-        return p; 
-    }
-
-    template<> 
-    const volatile polymorphic_Tf_TestDerived<class Tf_TestDerived>* 
-        get_pointer(const volatile polymorphic_Tf_TestDerived<class Tf_TestDerived>* p)
-    { 
-        return p; 
-    }
-}
-#endif 
+TF_REFPTR_CONST_VOLATILE_GET(Tf_ClassWithVarArgInit)
+TF_REFPTR_CONST_VOLATILE_GET(Tf_TestBase)
+TF_REFPTR_CONST_VOLATILE_GET(Tf_TestDerived)
+TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestBase<class Tf_TestBase>)
+TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestDerived<class Tf_TestDerived>)
