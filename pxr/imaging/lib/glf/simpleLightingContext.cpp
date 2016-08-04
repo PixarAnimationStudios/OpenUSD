@@ -33,6 +33,7 @@
 #include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/imaging/glf/uniformBlock.h"
 
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -281,7 +282,9 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             int32_t useLighting;
             int32_t useColorMaterialDiffuse;
             int32_t padding[2];
+			ARCH_PRAGMA_ZERO_SIZED_STRUCT
             LightSource lightSource[0];
+			ARCH_PRAGMA_RESTORE
         };
 
         // 16byte aligned
@@ -295,7 +298,9 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
         };
 
         struct Shadow {
+			ARCH_PRAGMA_ZERO_SIZED_STRUCT
             ShadowMatrix shadow[0];
+			ARCH_PRAGMA_RESTORE
         };
 
         size_t lightingSize = sizeof(Lighting) + sizeof(LightSource) * numLights;
@@ -351,11 +356,11 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             }
         }
 
-        _lightingUniformBlock->Update(lightingData, lightingSize);
+        _lightingUniformBlock->Update(lightingData, static_cast<int>(lightingSize));
         _lightingUniformBlockValid = true;
 
         if (shadowExists) {
-            _shadowUniformBlock->Update(shadowData, shadowSize);
+            _shadowUniformBlock->Update(shadowData, static_cast<int>(shadowSize));
             _shadowUniformBlockValid = true;
         }
     }
@@ -432,7 +437,7 @@ void
 GlfSimpleLightingContext::SetStateFromOpenGL()
 {
     // import classic GL light's parameters into shaded lights
-    SetUseLighting(glIsEnabled(GL_LIGHTING));
+    SetUseLighting(glIsEnabled(GL_LIGHTING) == GL_TRUE);
 
     GfMatrix4d worldToViewMatrix;
     glGetDoublev(GL_MODELVIEW_MATRIX, worldToViewMatrix.GetArray());

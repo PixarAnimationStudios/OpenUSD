@@ -24,6 +24,7 @@
 #ifndef USD_STAGECACHECONTEXT_H
 #define USD_STAGECACHECONTEXT_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/stacked.h"
 
 #include <boost/utility/enable_if.hpp>
@@ -116,8 +117,9 @@ enum UsdStageCacheContextBlockType
 /// UsdStageCacheContext objects that exist in one thread's stack do not
 /// influence calls to UsdStage::Open() from a different thread.
 ///
-struct UsdStageCacheContext : public TfStacked<UsdStageCacheContext>
+class UsdStageCacheContext : public TfStacked<UsdStageCacheContext, true>
 {
+public:
     /// \brief Bind a cache for calls to UsdStage::Open() to read from and write
     /// to.
     explicit UsdStageCacheContext(UsdStageCache &cache)
@@ -151,5 +153,7 @@ private:
     bool _isReadOnlyCache;
     UsdStageCacheContextBlockType _blockType;
 };
+
+// USD_API_TEMPLATE_CLASS(TfStacked<UsdStageCacheContext>);
 
 #endif // USD_STAGECACHECONTEXT_H

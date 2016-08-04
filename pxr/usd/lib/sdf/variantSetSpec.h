@@ -26,6 +26,7 @@
 #ifndef SDF_VARIANTSETSPEC_H
 #define SDF_VARIANTSETSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
@@ -65,6 +66,7 @@ public:
     /// @{
 
     /// \brief Constructs a new instance.
+    SDF_API
     static SdfVariantSetSpecHandle
     New(const SdfPrimSpecHandle& prim, const std::string& name);
 
@@ -74,9 +76,11 @@ public:
     /// @{
 
     /// Returns the name of this variant set.
+    SDF_API
     std::string GetName() const;
 
     /// Returns the name of this variant set.
+    SDF_API
     TfToken GetNameToken() const;
 
     /// @}
@@ -84,6 +88,7 @@ public:
     /// @{
 
     /// Returns the prim that this variant set belongs to.
+    SDF_API
     SdfPrimSpecHandle GetOwner() const;
 
     /// @}
@@ -91,15 +96,18 @@ public:
     /// @{
 
     /// Returns the variants as a map.
+    SDF_API
     SdfVariantView GetVariants() const;
 
     /// Returns the variants as a vector.
+    SDF_API
     SdfVariantSpecHandleVector GetVariantList() const;
 
     /// \brief Removes \p variant from the list of variants.
     ///
     /// If the variant set does not currently own \p variant, no action
     /// is taken.
+    SDF_API
     void RemoveVariant(const SdfVariantSpecHandle& variant);
 
     /// @}

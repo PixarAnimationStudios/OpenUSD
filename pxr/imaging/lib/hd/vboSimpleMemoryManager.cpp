@@ -89,8 +89,9 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
 
     // populate BufferResources
     TF_FOR_ALL(it, bufferSpecs) {
-        int stride = HdConversions::GetComponentSize(it->glDataType) *
-            it->numComponents;
+        int stride = static_cast<int>(
+			HdConversions::GetComponentSize(it->glDataType) *
+            it->numComponents);
         _AddResource(it->name,
                      it->glDataType,
                      it->numComponents,
@@ -199,7 +200,8 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     TF_FOR_ALL (bresIt, GetResources()) {
         HdBufferResourceSharedPtr const &bres = bresIt->second;
 
-        int bytesPerElement = bres->GetNumComponents() * bres->GetComponentSize();
+        int bytesPerElement = bres->GetNumComponents() * 
+							  static_cast<int>(bres->GetComponentSize());
         GLsizeiptr bufferSize = bytesPerElement * numElements;
 
         if (glGenBuffers) {
@@ -321,7 +323,8 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
 
     if (glBufferSubData != NULL) {
         int bytesPerElement =
-            VBO->GetNumComponents() * VBO->GetComponentSize();
+            VBO->GetNumComponents() * 
+			static_cast<unsigned int>(VBO->GetComponentSize());
         // overrun check. for graceful handling of erroneous assets,
         // issue warning here and continue to copy for the valid range.
         size_t dstSize = _numElements * bytesPerElement;

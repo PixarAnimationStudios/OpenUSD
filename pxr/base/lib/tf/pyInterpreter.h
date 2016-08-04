@@ -28,6 +28,7 @@
 #ifndef TF_PYINTERPRETER_H
 #define TF_PYINTERPRETER_H
 
+#include "pxr/base/tf/api.h"
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <string>
@@ -36,6 +37,7 @@
 /// \brief Starts up the python runtime.  The program name and arguments
 /// are set automatically.  sys.argv has no arguments 
 /// other than an argv[0] matching the program name.
+TF_API
 extern void TfPyInitialize();
 
 ///
@@ -43,6 +45,7 @@ extern void TfPyInitialize();
 ///
 /// Starts the interpreter if necessary.  Deals with necessary 
 /// thread state setup.
+TF_API
 extern int TfPyRunSimpleString(const std::string & cmd);
 
 ///
@@ -55,6 +58,7 @@ extern int TfPyRunSimpleString(const std::string & cmd);
 ///
 /// Starts the interpreter if necessary.  Deals with necessary 
 /// thread state setup.
+TF_API
 extern boost::python::handle<>
 TfPyRunString(const std::string & cmd, int start,
               boost::python::object const &globals = boost::python::object(),
@@ -70,6 +74,7 @@ TfPyRunString(const std::string & cmd, int start,
 ///
 /// Starts the interpreter if necessary.  Deals with necessary 
 /// thread state setup.
+TF_API
 extern boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
             boost::python::object const &globals = boost::python::object(),
@@ -81,6 +86,7 @@ TfPyRunFile(const std::string &filename, int start,
 ///
 /// Starts the interpreter if necessary.  Deals with necessary 
 /// thread state setup.
+TF_API
 extern std::string TfPyGetModulePath(const std::string & moduleName);
 
 #endif // TF_PYINTERPRETER_H

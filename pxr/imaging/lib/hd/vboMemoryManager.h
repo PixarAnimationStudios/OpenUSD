@@ -30,6 +30,7 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -238,6 +239,8 @@ protected:
         }
     };
 };
+
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdVBOMemoryManager>);
 
 #endif  // HD_VBO_MEMORY_MANAGER_H
 

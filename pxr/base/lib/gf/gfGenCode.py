@@ -243,7 +243,7 @@ def ValidateFiles(srcDir, dstDir):
             diffs.append(diff)
             continue
 
-    if missing or diffs:
+    if missing:
         msg = []
         if missing:
             msg.append('*** Missing Generated Files: ' + ', '.join(missing))

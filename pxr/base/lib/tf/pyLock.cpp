@@ -23,6 +23,7 @@
 //
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/diagnosticLite.h"
+#include <ciso646>
 
 TfPyLock::TfPyLock()
     : _acquired(false)
@@ -126,7 +127,8 @@ TfPyLock::EndAllowThreads()
 
 // See https://github.com/pankajp/pygilstate_check
 //
-extern PyThreadState *_PyThreadState_Current;
+PyAPI_DATA(PyThreadState *) _PyThreadState_Current;
+
 TfPyEnsureGILUnlockedObj::TfPyEnsureGILUnlockedObj()
     : _lock(TfPyLock::_ConstructUnlocked)
 {

@@ -113,7 +113,7 @@ HdVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
 
     // populate BufferResources
     TF_FOR_ALL(it, bufferSpecs) {
-        int stride = HdConversions::GetComponentSize(it->glDataType) *
+        int stride = (int)HdConversions::GetComponentSize(it->glDataType) *
             it->numComponents;
         _AddResource(it->name,
                      it->glDataType,
@@ -251,7 +251,7 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
     if (totalNumElements == 0)
         return;
 
-    _totalCapacity = totalNumElements;
+    _totalCapacity = static_cast<int>(totalNumElements);
 
     // resize each BufferResource
     HdBufferResourceNamedList const& resources = GetResources();
@@ -260,8 +260,8 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
         HdBufferResourceSharedPtr const &curRes =
                 curRangeOwner->GetResources()[bresIdx].second;
 
-        int bytesPerElement =
-            bres->GetNumComponents() * bres->GetComponentSize();
+        int bytesPerElement = static_cast<int>(
+            bres->GetNumComponents() * bres->GetComponentSize());
         TF_VERIFY(bytesPerElement > 0);
         GLsizeiptr bufferSize = bytesPerElement * _totalCapacity;
 
@@ -517,7 +517,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     if (glBufferSubData) {
         int bytesPerElement =
-            VBO->GetNumComponents() * VBO->GetComponentSize();
+            VBO->GetNumComponents() * static_cast<int>(VBO->GetComponentSize());
 
         // overrun check. for graceful handling of erroneous assets,
         // issue warning here and continue to copy for the valid range.

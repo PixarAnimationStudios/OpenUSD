@@ -28,13 +28,15 @@
 #ifndef PXOSD_REFINER_CACHE_H
 #define PXOSD_REFINER_CACHE_H
 
+#include "pxr/imaging/pxOsd/api.h"
+
 #include "meshTopology.h"
 #include "refinerFactory.h"
 
-#include <opensubdiv3/far/stencilTable.h>
-#include <opensubdiv3/far/stencilTableFactory.h>
-#include <opensubdiv3/far/patchTable.h>
-#include <opensubdiv3/far/patchTableFactory.h>
+#include <opensubdiv/far/stencilTable.h>
+#include <opensubdiv/far/stencilTableFactory.h>
+#include <opensubdiv/far/patchTable.h>
+#include <opensubdiv/far/patchTableFactory.h>
 
 
 #include "pxr/base/tf/diagnostic.h"
@@ -105,7 +107,7 @@ private:
                 PxOsdMeshTopology::ID hash = topology.ComputeHash();
                 int valsToHash[2] = {level, (int)bilinearStencils};
                 return ArchHash((char const*) valsToHash,
-                                sizeof(int) * 2, hash);
+                                sizeof(int) * 2, static_cast<uint32_t>(hash));
             }
 
         bool operator==(CacheEntry const& x) const
@@ -151,5 +153,7 @@ private:
     PxOsdRefinerCache const& operator=(PxOsdRefinerCache const&);
     friend class TfSingleton<PxOsdRefinerCache>;
 };
+
+PXOSD_API_TEMPLATE_CLASS(TfSingleton<PxOsdRefinerCache>);
 
 #endif // PXOSD_REFINER_CACHE_H

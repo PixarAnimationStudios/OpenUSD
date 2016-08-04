@@ -23,6 +23,9 @@
 //
 /// \file wrapRelationshipSpec.cpp
 
+#include <boost/python.hpp>
+#include <boost/python/slice.hpp>
+
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/path.h"
@@ -35,9 +38,6 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
 
 using namespace boost::python;
 

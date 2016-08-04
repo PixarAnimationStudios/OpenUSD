@@ -30,6 +30,7 @@
 
 #include <atomic>
 #include <string>
+#include <ciso646>
 
 /*!
  * \class TfEnvSetting
@@ -164,6 +165,8 @@ TfGetEnvSetting(TfEnvSetting<T>& setting) {
 bool Tf_ChooseEnvSettingType(bool);
 int Tf_ChooseEnvSettingType(int);
 std::string Tf_ChooseEnvSettingType(char const *);
+
+class Tf_EnvSettingRegistry;
 
 #define TF_DEFINE_ENV_SETTING(envVar, defValue, description)                  \
     std::atomic< decltype(Tf_ChooseEnvSettingType(defValue))*>                \

@@ -355,8 +355,8 @@ _GetNonVariantPathElementCount(const SdfPath &path)
         cur = cur.GetParentPath();
         for (; cur.ContainsPrimVariantSelection(); cur = cur.GetParentPath())
             result += (not cur.IsPrimVariantSelectionPath());
-        return result + cur.GetPathElementCount();
+        return result + static_cast<int>(cur.GetPathElementCount());
     } else {
-        return path.GetPathElementCount();
+        return static_cast<int>(path.GetPathElementCount());
     }
 }

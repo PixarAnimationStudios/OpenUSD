@@ -24,5 +24,6 @@
 /// \file glPlatformContext.cpp
 
 #include "pxr/imaging/garch/glPlatformContext.h"
+#include <ciso646>
 
 // nothing

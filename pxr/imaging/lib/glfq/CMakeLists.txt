@@ -34,6 +34,9 @@ pxr_shared_library(glfq
         glDebugContext
         glPlatformDebugContext
 
+    PUBLIC_HEADERS
+        api.h
+        
     CPPFILES
         moduleDeps.cpp
         ${COCOA_SRC}

@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file wrapRefPtrTracker.cpp
-
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/refPtrTracker.h"
@@ -74,3 +73,5 @@ wrapRefPtrTracker()
         .def("GetTracesReportForWatched", ::_ReportTracesForWatched)
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(TfRefPtrTracker)

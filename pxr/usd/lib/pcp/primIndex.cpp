@@ -1777,7 +1777,7 @@ _EvalNodeReferences(
                  /* origin = */ node,
                  PcpLayerStackSite( refLayerStack, refPath ),
                  mapExpr,
-                 /* arcSiblingNum = */ refArcNum,
+                 /* arcSiblingNum = */ static_cast<int>(refArcNum),
                  directNodeShouldContributeSpecs,
                  /* includeAncestralOpinions = */ false,
                  /* requirePrimAtTarget = */ true,
@@ -2276,7 +2276,7 @@ _AddClassBasedArcs(
             /* parent = */ node,
             /* origin = */ node,
             mapExpr,
-            arcNum,
+			static_cast<int>(arcNum),
             /* ignoreIfSameAsSite = */ PcpLayerStackSite(),
             /* requirePrimAtTarget = */ true,
             indexer);
@@ -3269,7 +3269,7 @@ _EvalNodeVariants(
 
     // Compose the selection for each variant set.
     // Variant sets are ordered strong-to-weak.
-    for (int vsetNum=0, numVsets=vsetNames.size();
+    for (size_t vsetNum=0, numVsets=vsetNames.size();
          vsetNum < numVsets; ++vsetNum) {
 
         const std::string & vset = vsetNames[vsetNum];
@@ -3351,7 +3351,7 @@ _EvalNodeVariants(
                  /* origin = */ node,
                  PcpLayerStackSite( node.GetLayerStack(), varPath ),
                  identityMapExpr,
-                 /* arcSiblingNum = */ vsetNum, 
+                 /* arcSiblingNum = */ static_cast<int>(vsetNum), 
                  /* directNodeShouldContributeSpecs = */ true,
                  /* includeAncestralOpinions = */ false,
                  /* requirePrimAtTarget = */ true,

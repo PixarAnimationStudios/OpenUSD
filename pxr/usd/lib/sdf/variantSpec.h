@@ -26,6 +26,7 @@
 #ifndef SDF_VARIANTSPEC_H
 #define SDF_VARIANTSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include <string>
@@ -58,6 +59,7 @@ public:
     /// @{
 
     /// \brief Constructs a new instance.
+    SDF_API
     static SdfVariantSpecHandle New(const SdfVariantSetSpecHandle& owner,
                                     const std::string& name);
 
@@ -67,9 +69,11 @@ public:
     /// @{
 
     /// \brief Returns the name of this variant.
+    SDF_API
     std::string GetName() const;
 
     /// \brief Returns the name of this variant.
+    SDF_API
     TfToken GetNameToken() const;
 
     /// @}
@@ -77,9 +81,11 @@ public:
     /// @{
 
     /// \brief Return the SdfVariantSetSpec that owns this variant.
+    SDF_API
     SdfVariantSetSpecHandle GetOwner() const;
 
     /// \brief Get the prim spec owned by this variant.
+    SDF_API
     SdfPrimSpecHandle GetPrimSpec() const;
 };
 
@@ -93,7 +99,7 @@ public:
 ///
 /// It creates a variant spec with the given name under the specified variant
 /// set if it doesn't already exist.
-SdfVariantSpecHandle SdfCreateVariantInLayer(
+SDF_API SdfVariantSpecHandle SdfCreateVariantInLayer(
     const SdfLayerHandle &layer,
     const SdfPath &primPath,
     const std::string &variantSetName,

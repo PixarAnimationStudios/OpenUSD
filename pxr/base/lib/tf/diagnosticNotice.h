@@ -43,17 +43,22 @@ class TfDiagnosticNotice {
 public:
 
     //! Return if warnings/error are echoed to stderr.
+    TF_API
     static bool GetStderrOutputState();
 
     //! Set stderr output state, returning the previous state.
+    TF_API
     static bool SetStderrOutputState(bool state);
 
     /// \brief Base notification class for TfDiagnosticMgr.
     class Base : public TfNotice {
     public:
+        TF_API
         Base();
+        TF_API
         TfDiagnosticBase const& GetDiagnosticData() const;
 
+        TF_API
         ~Base();
 
         bool IsFatal() const {
@@ -78,7 +83,9 @@ public:
     /// \brief Notification sent when an error is issued.
     class IssuedError: public Base {
       public:
+        TF_API
         IssuedError(const TfError &error);
+        TF_API
         virtual ~IssuedError();
 
         const TfError &GetError() const { return _error; }
@@ -90,7 +97,9 @@ public:
     /// \brief Notification sent when a warning is issued.
     class IssuedWarning : public Base {
       public:
+        TF_API
         IssuedWarning(const TfWarning &warning);
+        TF_API
         virtual ~IssuedWarning();
 
         const TfWarning &GetWarning() const { return _warning; }
@@ -102,7 +111,9 @@ public:
     /// \brief Notification sent when a status message is issued.
     class IssuedStatus : public Base {
       public:
+        TF_API
         IssuedStatus(const TfStatus &status);
+        TF_API
         virtual ~IssuedStatus();
 
         const TfStatus &GetStatus() const { return _status; }
@@ -114,9 +125,12 @@ public:
     /// \brief Notification sent when a fatal error is encountered.
     class IssuedFatalError : public Base {
       public:
+        TF_API
         IssuedFatalError(const std::string &msg, const TfCallContext &context);
+        TF_API
         virtual ~IssuedFatalError();
 
+        TF_API
         void SetData(TfDiagnosticBase const&);
         
         const std::string &GetMessage() const { return _msg; }

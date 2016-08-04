@@ -31,6 +31,8 @@
 #include <boost/python/slice.hpp>
 #include <boost/python/stl_iterator.hpp>
 
+#include <ciso646>
+
 using namespace boost::python;
 using std::string;
 using std::vector;
@@ -49,8 +51,8 @@ TfPyProcessOptionalArgs(
 {
     std::pair<tuple, dict> rval;
 
-    const unsigned int numArgs = len(args);
-    const unsigned int numExpectedArgs = expectedArgs.size();
+    const unsigned int numArgs = static_cast<unsigned int>(len(args));
+    const unsigned int numExpectedArgs = static_cast<unsigned int>(expectedArgs.size());
 
     if (not allowExtraArgs) {
         if (numArgs > numExpectedArgs) {

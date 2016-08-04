@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/garch/gl.h"
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/engine.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
@@ -41,20 +42,25 @@ TF_DECLARE_WEAK_PTRS(UsdImagingRefEngine);
 class UsdImagingRefEngine : public UsdImagingEngine, public TfWeakBase {
     typedef UsdImagingRefEngine This;
 public:
-
+    USDIMAGING_API
     UsdImagingRefEngine(const SdfPathVector& excludedPaths);
 
+    USDIMAGING_API
     ~UsdImagingRefEngine();
 
     // Entry point for kicking off a render
+    USDIMAGING_API
     virtual void Render(const UsdPrim& root, RenderParams params);
 
+    USDIMAGING_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
+    USDIMAGING_API
     virtual void InvalidateBuffers();
 
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromPrimIdColor(
         GfVec4i const& primIdColor,
         GfVec4i const& instanceIdColor,

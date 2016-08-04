@@ -25,6 +25,7 @@
 #ifndef GLF_PTEXTEXTURE_H
 #define GLF_PTEXTEXTURE_H
 
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -55,21 +56,28 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 
 class GlfPtexTexture : public GlfTexture {
 public:
+    GLF_API
     virtual ~GlfPtexTexture();
 
     ///
     /// \brief Creates a new instance.
+    GLF_API
     static GlfPtexTextureRefPtr New(const TfToken &imageFilePath);
 
+    GLF_API
     static bool IsPtexTexture(std::string const & imageFilePath);
 
     /// GlfTexture overrides
+    GLF_API
     virtual BindingVector GetBindings(TfToken const & identifier,
                                       GLuint samplerName) const;
+    GLF_API
     virtual VtDictionary GetTextureInfo() const;
 
+    GLF_API
     virtual bool IsMinFilterSupported(GLenum filter);
 
+    GLF_API
     virtual bool IsMagFilterSupported(GLenum filter);
 
     // get/set guttering control variables

@@ -24,6 +24,7 @@
 #ifndef USD_EDITCONTEXT_H
 #define USD_EDITCONTEXT_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -65,14 +66,14 @@ class UsdEditContext : boost::noncopyable
 public:
     /// Construct without modifying \a stage's current EditTarget.  Save
     /// \a stage's current EditTarget to restore on destruction.
-    explicit UsdEditContext(const UsdStagePtr &stage);
+    USD_API explicit UsdEditContext(const UsdStagePtr &stage);
 
     /// Construct and save \a stage's current EditTarget to restore on
     /// destruction, then invoke stage->SetEditTarget(editTarget).
     /// 
     /// If \a editTarget is invalid, a coding error will be issued by the
     /// \a stage, and its EditTarget will not be modified.
-    UsdEditContext(const UsdStagePtr &stage, const UsdEditTarget &editTarget);
+	USD_API UsdEditContext(const UsdStagePtr &stage, const UsdEditTarget &editTarget);
 
     /// \overload
     /// This ctor is handy to construct an edit context from the return
@@ -81,11 +82,11 @@ public:
     /// 
     /// If \a editTarget is invalid, a coding error will be issued by the
     /// \a stage, and its EditTarget will not be modified.
-    UsdEditContext(const std::pair<UsdStagePtr, UsdEditTarget > &stageTarget);
+	USD_API UsdEditContext(const std::pair<UsdStagePtr, UsdEditTarget > &stageTarget);
 
     /// Restore the stage's original EditTarget if this context's stage is
     /// valid.  Otherwise do nothing.
-    ~UsdEditContext();
+	USD_API ~UsdEditContext();
 
 private:
     // The stage this context is bound to.
@@ -99,8 +100,10 @@ private:
 // code.
 struct UsdPyEditContext
 {
+    USD_API
     explicit UsdPyEditContext(
         const std::pair<UsdStagePtr, UsdEditTarget> &stageTarget);
+    USD_API
     explicit UsdPyEditContext(const UsdStagePtr &stage,
                               const UsdEditTarget &editTarget=UsdEditTarget());
 private:

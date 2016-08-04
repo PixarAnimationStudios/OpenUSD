@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/usd/sdf/api.h"
 
 #include "pxr/base/plug/notice.h"
 #include "pxr/base/tf/hash.h"
@@ -68,12 +69,12 @@ public:
             const TfToken& name, 
             const VtValue& fallbackValue);
 
-        const TfToken& GetName() const;
-        const VtValue& GetFallbackValue() const;
+        SDF_API const TfToken& GetName() const;
+		SDF_API const VtValue& GetFallbackValue() const;
 
-        bool IsPlugin() const;
-        bool IsReadOnly() const;
-        bool HoldsChildren() const;
+		SDF_API bool IsPlugin() const;
+		SDF_API bool IsReadOnly() const;
+		SDF_API bool HoldsChildren() const;
         
         /// Validation functions that return true if a given value passes
         /// the registered validator or if no validator has been set.
@@ -162,27 +163,28 @@ public:
     class SpecDefinition {
     public:
         /// Returns all fields for this spec.
-        TfTokenVector GetFields() const;
+		SDF_API TfTokenVector GetFields() const;
 
         /// Returns all value fields marked as required for this spec.
-        TfTokenVector GetRequiredFields() const;
+		SDF_API TfTokenVector GetRequiredFields() const;
 
-        /// Returns all value fields marked as metadata for this spec.
+		SDF_API /// Returns all value fields marked as metadata for this spec.
         TfTokenVector GetMetadataFields() const;
 
         /// Returns whether the given field is valid for this spec.
-        bool IsValidField(const TfToken& name) const;
+		SDF_API bool IsValidField(const TfToken& name) const;
 
         /// Returns whether the given field is metadata for this spec.
-        bool IsMetadataField(const TfToken& name) const;
+		SDF_API bool IsMetadataField(const TfToken& name) const;
 
         /// Returns the display group for this metadata field.  Returns the
         /// empty token if this field is not a metadata field or if this
         /// metadata field has no display group.
-        TfToken GetMetadataFieldDisplayGroup(const TfToken& name) const;
+		SDF_API 
+		TfToken GetMetadataFieldDisplayGroup(const TfToken& name) const;
 
         /// Returns whether the given field is required for this spec.
-        bool IsRequiredField(const TfToken& name) const;
+		SDF_API bool IsRequiredField(const TfToken& name) const;
 
 
     private:
@@ -197,10 +199,12 @@ public:
 
     /// Returns the field definition for the given field. 
     /// Returns NULL if no definition exists for given field.
+	SDF_API 
     const FieldDefinition* GetFieldDefinition(const TfToken &fieldKey) const;
     
     /// Returns the spec definition for the given spec type.
     /// Returns NULL if no definition exists for the given spec type.
+	SDF_API 
     const SpecDefinition* GetSpecDefinition(SdfSpecType type) const;
 
     /// Convenience functions for accessing specific field information.
@@ -208,36 +212,42 @@ public:
 
     /// Return whether the specified field has been registered. Also
     /// optionally return the fallback value.
+	SDF_API 
     bool IsRegistered(const TfToken &fieldKey, VtValue *fallback=NULL) const;
 
     /// Returns whether the given field is a 'children' field -- that is, it
     /// indexes certain children beneath the owning spec.
+	SDF_API 
     bool HoldsChildren(const TfToken &fieldKey) const;
 
     /// Return the fallback value for the specified \p fieldKey or the
     /// empty value if \p fieldKey is not registered.
+	SDF_API 
     const VtValue& GetFallback(const TfToken &fieldKey) const;
 
     /// Coerce \p value to the correct type for the specified field.
+	SDF_API 
     VtValue CastToTypeOf(const TfToken &fieldKey, const VtValue &value) const;
 
     /// Return whether the given field is valid for the given spec type.
+	SDF_API 
     bool IsValidFieldForSpec(const TfToken &fieldKey, SdfSpecType specType) const;
 
     /// Returns all fields registered for the given spec type.
-    TfTokenVector GetFields(SdfSpecType specType) const;
+	SDF_API TfTokenVector GetFields(SdfSpecType specType) const;
 
     /// Returns all metadata fields registered for the given spec type.
-    TfTokenVector GetMetadataFields(SdfSpecType specType) const;
+	SDF_API TfTokenVector GetMetadataFields(SdfSpecType specType) const;
 
     /// Return the metadata field display group for metadata \a metadataField on
     /// \a specType.  Return the empty token if \a metadataField is not a
     /// metadata field, or if it has no display group.
+	SDF_API 
     TfToken GetMetadataFieldDisplayGroup(SdfSpecType specType,
                                          TfToken const &metadataField) const;
 
     /// Returns all required fields registered for the given spec type.
-    TfTokenVector GetRequiredFields(SdfSpecType specType) const;
+	SDF_API TfTokenVector GetRequiredFields(SdfSpecType specType) const;
 
     /// Return true if \p fieldName is a required field name for at least one
     /// spec type, return false otherwise.  The main use of this function is to
@@ -286,19 +296,23 @@ public:
     std::vector<SdfValueTypeName> GetAllTypes() const;
 
     /// Return the type name object for the given type name string.
-    SdfValueTypeName FindType(const std::string& typeName) const;
+	SDF_API 
+	SdfValueTypeName FindType(const std::string& typeName) const;
 
     /// Return the type name object for the given type and optional role.
+	SDF_API 
     SdfValueTypeName FindType(const TfType& type,
                               const TfToken& role = TfToken()) const;
 
     /// Return the type name object for the value's type and optional role.
+	SDF_API 
     SdfValueTypeName FindType(const VtValue& value,
                               const TfToken& role = TfToken()) const;
 
     /// Return the type name object for the given type name string if it
     /// exists otherwise create a temporary type name object.  Clients
     /// should not normally need to call this.
+	SDF_API
     SdfValueTypeName FindOrCreateType(const std::string& typeName) const;
 
     /// @}
@@ -498,7 +512,7 @@ public:
     }
 
 private:
-    friend class TfSingleton<SdfSchema>;
+    friend class SDF_API TfSingleton<SdfSchema>;
     SdfSchema();
     virtual ~SdfSchema();
 
@@ -507,8 +521,10 @@ private:
     void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
 
     const Sdf_ValueTypeNamesType* _NewValueTypeNames() const;
-    friend class Sdf_ValueTypeNamesType::_Init;
+    friend struct Sdf_ValueTypeNamesType::_Init;
 };
+
+SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
 
 ///
 /// The following fields are pre-registered by Sdf. 
@@ -583,7 +599,7 @@ private:
     ((VariantChildren, "variantChildren"))                   \
     ((VariantSetChildren, "variantSetChildren"))
 
-TF_DECLARE_PUBLIC_TOKENS(SdfFieldKeys, SDF_FIELD_KEYS);
-TF_DECLARE_PUBLIC_TOKENS(SdfChildrenKeys, SDF_CHILDREN_KEYS);
+TF_DECLARE_PUBLIC_TOKENS(SdfFieldKeys, SDF_API, SDF_FIELD_KEYS);
+TF_DECLARE_PUBLIC_TOKENS(SdfChildrenKeys, SDF_API, SDF_CHILDREN_KEYS);
 
 #endif

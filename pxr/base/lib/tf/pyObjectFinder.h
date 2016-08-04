@@ -24,6 +24,7 @@
 #ifndef TF_PYOBJECTFINDER_H
 #define TF_PYOBJECTFINDER_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyIdentity.h"
 
 #include <boost/python/handle.hpp>
@@ -32,7 +33,7 @@
 #include <typeinfo>
 
 struct Tf_PyObjectFinderBase {
-    virtual ~Tf_PyObjectFinderBase();
+    TF_API virtual ~Tf_PyObjectFinderBase();
     virtual boost::python::object Find(void const *objPtr) const = 0;
 };
 
@@ -49,6 +50,7 @@ struct Tf_PyObjectFinder : public Tf_PyObjectFinderBase {
 };
 
 
+TF_API
 void Tf_RegisterPythonObjectFinderInternal(std::type_info const &type,
                                            Tf_PyObjectFinderBase const *finder);
 
@@ -58,7 +60,7 @@ void Tf_RegisterPythonObjectFinder() {
                                           new Tf_PyObjectFinder<T, PtrType>());
 }
 
-boost::python::object
+TF_API boost::python::object
 Tf_FindPythonObject(void const *objPtr, std::type_info const &type);
 
 

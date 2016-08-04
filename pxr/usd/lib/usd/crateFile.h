@@ -24,11 +24,16 @@
 #ifndef USD_CRATEFILE_H
 #define USD_CRATEFILE_H
 
+#include <boost/container/flat_map.hpp>
+#include <boost/functional/hash.hpp>
+
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/crateData.h"
 
 #include "shared.h"
 #include "crateValueInliners.h"
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
@@ -36,11 +41,9 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
-#include <boost/container/flat_map.hpp>
-#include <boost/functional/hash.hpp>
-
 #include <tbb/spin_rw_mutex.h>
 
+#include <ciso646>
 #include <cstdint>
 #include <iosfwd>
 #include <string>
@@ -75,8 +78,9 @@ enum class TypeEnum : int;
 // (zero vectors, identity matrices, etc).  For values that aren't stored
 // inline, the 6 data bytes are the offset from the start of the file to the
 // value's location.
-struct ValueRep : _BitwiseReadWrite {
+class ValueRep : _BitwiseReadWrite {
 
+public:
     friend class CrateFile;
 
     ValueRep() = default;
@@ -142,7 +146,8 @@ private:
     uint64_t data;
 };
 
-struct TimeSamples {
+class TimeSamples {
+public:
     typedef Usd_Shared<vector<double>> SharedTimes;
 
     TimeSamples() : valueRep(0), valuesFileOffset(0) {}
@@ -219,7 +224,7 @@ struct Index : _BitwiseReadWrite {
 
 inline size_t hash_value(const Index &i) { return i.value; }
 
-std::ostream &operator<<(std::ostream &os, const Index &i);
+USD_API std::ostream &operator<<(std::ostream &os, const Index &i);
 
 // Various specific indexes.
 struct FieldIndex : Index { using Index::Index; };
@@ -265,6 +270,8 @@ class CrateFile
         void operator()(char *mapStart) const;
         int64_t fileSize;
     };
+	// NB: void* is actually a boost::iostreams::mapped_file, however,
+	// we want to hide it due to dllexport.
     typedef std::unique_ptr<char, _Munmapper> _UniqueMap;
 
     struct _Fcloser {
@@ -508,7 +515,7 @@ private:
     static _BootStrap _ReadBootStrap(ByteStream src, int64_t fileSize);
 
     template <class Reader>
-    _TableOfContents _ReadTOC(Reader src, class _BootStrap const &b) const;
+    _TableOfContents _ReadTOC(Reader src, struct _BootStrap const &b) const;
 
     template <class Reader> void _ReadFieldSets(Reader src);
     template <class Reader> void _ReadFields(Reader src);

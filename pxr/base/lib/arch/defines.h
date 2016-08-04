@@ -85,7 +85,7 @@
 #define ARCH_COMPILER_ICC
 #elif defined(_MSC_VER)
 #define ARCH_COMPILER_MSVC
-#define ARCH_COMPILER_MSVC_VERSION _MSC_VER
+#define ARCH_COMPILER_MSVC_VERSION	_MSC_VER
 #endif
 
 
@@ -115,17 +115,28 @@
 template <typename T> struct Arch_TypeOfRemoveReference { typedef T type; };
 template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 #define ARCH_TYPEOF(x) typename Arch_TypeOfRemoveReference<decltype((x))>::type
+#elif defined(ARCH_OS_WINDOWS)
+#define ARCH_TYPEOF(x) decltype(x)
+#else
+// This extension is widely supported so fallback to it.
+#define ARCH_TYPEOF __typeof__
 #endif
 
 // The current version of Apple clang does not support the thread_local
 // keyword.
 #if !(defined(ARCH_OS_DARWIN) && defined(ARCH_COMPILER_CLANG))
 #define ARCH_HAS_THREAD_LOCAL
+#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #endif
 
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
+#endif
+
+// Some static asserts are not supported due to difference in size types.
+#if defined(ARCH_OS_LINUX)
+    #define ARCH_COMPILER_HAS_STATIC_ASSERT
 #endif
 
 #endif // ARCH_DEFINES_H 

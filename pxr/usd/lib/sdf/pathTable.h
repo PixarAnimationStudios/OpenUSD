@@ -27,7 +27,8 @@
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/pointerAndBits.h"
-
+#include "pxr/base/tf/pyLock.h"
+#include "pxr/base/work/loops.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -605,7 +606,7 @@ private:
 
         // Allocate a new bucket list of twice the size.  Minimum nonzero number
         // of buckets is 8.
-        _mask = std::max(7UL, (_mask << 1) + 1);
+        _mask = std::max(size_t(7), (_mask << 1) + 1);
         _BucketVec newBuckets(_mask + 1);
 
         // Move items to a new bucket list

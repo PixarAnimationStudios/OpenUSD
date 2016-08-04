@@ -24,7 +24,9 @@
 #include "crateFile.h"
 
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -72,8 +74,6 @@
 #include <tuple>
 #include <type_traits>
 
-#include <sys/mman.h>
-
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
@@ -86,7 +86,7 @@ WriteToFd(int fd, void const *bytes, ssize_t nbytes, int64_t pos) {
     // written, or we get an error return.
 
     // Write and check if all got written (most common case).
-    ssize_t nwritten = pwrite(fd, bytes, nbytes, pos);
+    ssize_t nwritten = ArchPositionWrite(fd, bytes, nbytes, pos);
     if (ARCH_LIKELY(nwritten == nbytes))
         return nwritten;
 
@@ -98,7 +98,7 @@ WriteToFd(int fd, void const *bytes, ssize_t nbytes, int64_t pos) {
         nbytes -= nwritten;
         pos += nwritten;
         bytes = static_cast<char const *>(bytes) + nwritten;
-        nwritten = pwrite(fd, bytes, nbytes, pos);
+        nwritten = ArchPositionWrite(fd, bytes, nbytes, pos);
         if (ARCH_LIKELY(nwritten == nbytes))
             return total + nwritten;
     }
@@ -187,7 +187,7 @@ static constexpr ValueRep ValueRepForArray(uint64_t payload = 0) {
 int64_t
 _GetFileSize(FILE *f)
 {
-    const int fd = fileno(f);
+    const int fd = ArchFileNo(f);
     struct stat fileInfo;
     if (fstat(fd, &fileInfo) != 0) {
         TF_RUNTIME_ERROR("Error retrieving file size");
@@ -290,9 +290,9 @@ private:
 };
 
 struct _PreadStream {
-    explicit _PreadStream(FILE *file) : _cur(0), _fd(fileno(file)) {}
+    explicit _PreadStream(FILE *file) : _cur(0), _fd(ArchFileNo(file)) {}
     inline void Read(void *dest, size_t nBytes) {
-        _cur += pread(_fd, dest, nBytes, _cur);
+        _cur += ArchPositionRead(_fd, dest, nBytes, _cur);
     }
     inline off_t Tell() const { return _cur; }
     inline void Seek(off_t offset) { _cur = offset; }
@@ -330,7 +330,8 @@ struct CrateFile::_PackingContext
 {
     _PackingContext(CrateFile *crate, FILE *file) 
         : file(file)
-        , filefd(fileno(file)) {
+        , filefd(ArchFileNo(file)) {
+
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
         WorkArenaDispatcher wd;
@@ -348,13 +349,13 @@ struct CrateFile::_PackingContext
         // Ensure that pathToPathIndex is correctly populated.
         wd.Run([this, crate]() {
                 for (size_t i = 0; i != crate->_paths.size(); ++i)
-                    pathToPathIndex[crate->_paths[i]] = PathIndex(i);
+                    pathToPathIndex[crate->_paths[i]] = PathIndex(static_cast<uint32_t>(i));
             });
 
         // Ensure that fieldToFieldIndex is correctly populated.
         wd.Run([this, crate]() {
                 for (size_t i = 0; i != crate->_fields.size(); ++i)
-                    fieldToFieldIndex[crate->_fields[i]] = FieldIndex(i);
+                    fieldToFieldIndex[crate->_fields[i]] = FieldIndex(static_cast<uint32_t>(i));
             });
         
         // Ensure that fieldsToFieldSetIndex is correctly populated.
@@ -375,14 +376,14 @@ struct CrateFile::_PackingContext
         // Ensure that tokenToTokenIndex is correctly populated.
         wd.Run([this, crate]() {
                 for (size_t i = 0; i != crate->_tokens.size(); ++i)
-                    tokenToTokenIndex[crate->_tokens[i]] = TokenIndex(i);
+                    tokenToTokenIndex[crate->_tokens[i]] = TokenIndex(static_cast<uint32_t>(i));
             });
 
         // Ensure that stringToStringIndex is correctly populated.
         wd.Run([this, crate]() {
                 for (size_t i = 0; i != crate->_strings.size(); ++i)
                     stringToStringIndex[
-                        crate->GetString(StringIndex(i))] = StringIndex(i);
+                        crate->GetString(StringIndex(static_cast<uint32_t>(i)))] = StringIndex(static_cast<uint32_t>(i));
             });
 
         // Set file pos to start of the structural sections in the current TOC.
@@ -1019,12 +1020,14 @@ CrateFile::_MmapFile(char const *fileName, FILE *file)
     _UniqueMap map;
     auto fileSize = _GetFileSize(file);
     if (fileSize > 0) {
+#if !defined(ARCH_OS_WINDOWS)
         map = _UniqueMap(
             static_cast<char *>(
-                mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fileno(file), 0)),
+                mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, ArchFileNo(file), 0)),
             _Munmapper(fileSize));
         if (not map)
             TF_RUNTIME_ERROR("Couldn't mmap file '%s'", fileName);
+#endif
     }
     return map;
 }
@@ -1060,7 +1063,7 @@ CrateFile::Open(string const &fileName)
 
     if (TfGetenvBool("USDC_DEBUG_DUMP", false))
         result->DebugPrint();
-    
+
     return result;
 }
 
@@ -1753,7 +1756,7 @@ CrateFile::_AddPath(const SdfPath &path)
                   path.GetElementToken());
 
         // Add to the vector and insert the index.
-        iresult.first->second = PathIndex(_paths.size());
+        iresult.first->second = PathIndex(static_cast<uint32_t>(_paths.size()));
         _paths.emplace_back(path);
     }
     return iresult.first->second;
@@ -1771,7 +1774,7 @@ CrateFile::_AddFieldSet(const std::vector<FieldValuePair> &fields)
     if (iresult.second) {
         // Not yet present.  Copy the fields to _fieldSets, terminate, and store
         // the start index.
-        iresult.first->second = FieldSetIndex(_fieldSets.size());
+        iresult.first->second = FieldSetIndex(static_cast<uint32_t>(_fieldSets.size()));
         _fieldSets.insert(_fieldSets.end(),
                           fieldIndexes.begin(), fieldIndexes.end());
         _fieldSets.push_back(FieldIndex());
@@ -1786,7 +1789,7 @@ CrateFile::_AddField(const FieldValuePair &fv)
     auto iresult = _packCtx->fieldToFieldIndex.emplace(field, FieldIndex());
     if (iresult.second) {
         // Not yet present.
-        iresult.first->second = FieldIndex(_fields.size());
+        iresult.first->second = FieldIndex(static_cast<uint32_t>(_fields.size()));
         _fields.push_back(field);
     }
     return iresult.first->second;
@@ -1798,7 +1801,7 @@ CrateFile::_AddToken(const TfToken &token)
     auto iresult = _packCtx->tokenToTokenIndex.emplace(token, TokenIndex());
     if (iresult.second) {
         // Not yet present.
-        iresult.first->second = TokenIndex(_tokens.size());
+        iresult.first->second = TokenIndex(static_cast<uint32_t>(_tokens.size()));
         _tokens.emplace_back(token);
     }
     return iresult.first->second;
@@ -1819,7 +1822,7 @@ CrateFile::_AddString(const string &str)
     auto iresult = _packCtx->stringToStringIndex.emplace(str, StringIndex());
     if (iresult.second) {
         // Not yet present.
-        iresult.first->second = StringIndex(_strings.size());
+        iresult.first->second = StringIndex(static_cast<uint32_t>(_strings.size()));
         _strings.push_back(_AddToken(TfToken(str)));
     }
     return iresult.first->second;
@@ -2009,9 +2012,11 @@ CrateFile::_IsKnownSection(char const *name) {
 void
 CrateFile::_Munmapper::operator()(char *mapStart) const
 {
+#if !defined(ARCH_OS_WINDOWS)
     if (mapStart) {
         munmap(mapStart, fileSize);
     }
+#endif
 }
 
 void
@@ -2037,7 +2042,9 @@ CrateFile::_Section::_Section(char const *inName, int64_t start, int64_t size)
 {
     memset(name, 0, sizeof(name));
     if (TF_VERIFY(strlen(inName) <= _SectionNameMaxLength))
+		ARCH_PRAGMA_DEPRECATED_POSIX_NAME
         strcpy(name, inName);
+		ARCH_PRAGMA_RESTORE
 }
 
 std::ostream &
@@ -2060,5 +2067,3 @@ operator<<(std::ostream &os, Index const &i) {
 }
 
 } // Usd_CrateFile
-
-

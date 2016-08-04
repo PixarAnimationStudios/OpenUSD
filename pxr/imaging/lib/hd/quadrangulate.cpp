@@ -52,9 +52,9 @@ Hd_QuadInfoBuilderComputation::Resolve()
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
     int const * holeFacesPtr = _topology->GetHoleIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    int numVertIndices = _topology->GetFaceVertexIndices().size();
-    int numHoleFaces = _topology->GetHoleIndices().size();
+    int numFaces = (int)_topology->GetFaceVertexCounts().size();
+    int numVertIndices = (int)_topology->GetFaceVertexIndices().size();
+    int numHoleFaces = (int)_topology->GetHoleIndices().size();
     // compute numPoints from topology indices
     int numPoints = HdMeshTopology::ComputeNumPoints(
         _topology->GetFaceVertexIndices());
@@ -161,9 +161,9 @@ Hd_QuadIndexBuilderComputation::Resolve()
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
     int const * holeFacesPtr = _topology->GetHoleIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    int numVertIndices = _topology->GetFaceVertexIndices().size();
-    int numHoleFaces = _topology->GetHoleIndices().size();
+    int numFaces = (int)_topology->GetFaceVertexCounts().size();
+    int numVertIndices = (int)_topology->GetFaceVertexIndices().size();
+    int numHoleFaces = (int)_topology->GetHoleIndices().size();
 
     // count num quads
     bool invalidTopology = false;
@@ -328,7 +328,7 @@ Hd_QuadrangulateTableComputation::Resolve()
     // see the comment on HdMeshTopology::Quadrangulate()
     if (not quadInfo->IsAllQuads()) {
         int quadInfoStride = quadInfo->maxNumVert + 2;
-        int numNonQuads = quadInfo->numVerts.size();
+        int numNonQuads = (int)quadInfo->numVerts.size();
 
         // create a buffer source for gpu quadinfo table
         VtIntArray array(quadInfoStride * numNonQuads);
@@ -550,7 +550,7 @@ _QuadrangulateFaceVarying(HdBufferSourceSharedPtr const &source,
     bool invalidTopology = false;
     int numFVarValues = 0;
     int holeIndex = 0;
-    int numHoleFaces = holeFaces.size();
+    int numHoleFaces = (int)holeFaces.size();
     for (int i = 0; i < faceVertexCounts.size(); ++i) {
         int nVerts = faceVertexCounts[i];
         if (nVerts < 3) {
@@ -799,8 +799,8 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
     // components in interleaved vertex array are always same data type.
     // i.e. it can't handle an interleaved array which interleaves
     // float/double, float/int etc.
-    uniform.primVarOffset = primVar->GetOffset() / primVar->GetComponentSize();
-    uniform.primVarStride = primVar->GetStride() / primVar->GetComponentSize();
+    uniform.primVarOffset = (int)(primVar->GetOffset() / primVar->GetComponentSize());
+    uniform.primVarStride = (int)(primVar->GetStride() / primVar->GetComponentSize());
     uniform.numComponents = primVar->GetNumComponents();
 
     // transfer uniform buffer

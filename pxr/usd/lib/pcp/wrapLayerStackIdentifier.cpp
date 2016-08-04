@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file wrapLayerStackIdentifier.cpp
+#include <boost/python.hpp>
 
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

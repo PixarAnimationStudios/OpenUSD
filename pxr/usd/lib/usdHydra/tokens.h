@@ -31,6 +31,7 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usdHydra/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 /// \file pxr/usd/usdHydra/tokens.h
@@ -107,6 +108,6 @@
 /// \li <b>uv</b> - UsdHydraUvTexture
 /// \li <b>wrapS</b> - UsdHydraUvTexture
 /// \li <b>wrapT</b> - UsdHydraUvTexture
-TF_DECLARE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_API, USDHYDRA_TOKENS);
 
 #endif

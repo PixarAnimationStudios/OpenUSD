@@ -487,20 +487,20 @@ UsdImagingEngine::TestIntersectionBatch(
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 
-    GLubyte primId[width*height*4];
+    std::unique_ptr<GLubyte[]> primId (new GLubyte[width*height*4]);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("primId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId.get());
 
-    GLubyte instanceId[width*height*4];
+    std::unique_ptr<GLubyte[]> instanceId (new GLubyte[width*height*4]);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId.get());
 
-    GLfloat depths[width*height];
+    std::unique_ptr<GLfloat[]> depths (new GLfloat[width*height]);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths.get());
 
     glPopAttrib(); /* GL_VIEWPORT_BIT |
                       GL_ENABLE_BIT |
@@ -520,7 +520,7 @@ UsdImagingEngine::TestIntersectionBatch(
             
             // primIdx construction mirrors the underlying prim code,
             // ignoring the A component.
-            int32_t primIdx = ((primId[i*4+0] & 0xff) <<  0) | 
+            int32_t primIdx =(int32_t) ((primId[i*4+0] & 0xff) <<  0) | 
                               ((primId[i*4+1] & 0xff) <<  8) |
                               ((primId[i*4+2] & 0xff) << 16);
             

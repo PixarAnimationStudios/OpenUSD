@@ -24,7 +24,7 @@
 #ifndef ARCH_ERROR_H
 #define ARCH_ERROR_H
 
-#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/functionLite.h"
 #include <stddef.h>
 
@@ -49,6 +49,7 @@
  * \remark
  * This function is usually called via the ARCH_ERROR macro.
  */
+ARCH_API
 void Arch_Error(const char* msg, const char* funcName,
                 size_t lineNo, const char* fileName);
 

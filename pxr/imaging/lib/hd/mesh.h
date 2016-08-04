@@ -24,6 +24,7 @@
 #ifndef HD_MESH_H
 #define HD_MESH_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/changeTracker.h"
@@ -70,6 +71,7 @@ public:
 
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
+	HDLIB_API
     HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
            SdfPath const& surfaceShaderId,
            SdfPath const& instancerId = SdfPath());

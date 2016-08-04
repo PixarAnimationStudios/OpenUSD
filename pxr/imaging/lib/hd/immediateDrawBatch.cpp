@@ -394,7 +394,7 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
     if (fvarBarCurrent)
         binder.UnbindBufferArray(fvarBarCurrent);
     for (size_t i = 0; i < instanceBarCurrents.size(); ++i) {
-        binder.UnbindInstanceBufferArray(instanceBarCurrents[i], i);
+        binder.UnbindInstanceBufferArray(instanceBarCurrents[i], (int)i);
     }
     if (instanceIndexBarCurrent)
         binder.UnbindBufferArray(instanceIndexBarCurrent);

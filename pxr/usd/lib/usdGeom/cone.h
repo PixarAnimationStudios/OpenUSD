@@ -24,6 +24,7 @@
 #ifndef USDGEOM_GENERATED_CONE_H
 #define USDGEOM_GENERATED_CONE_H
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -83,11 +84,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomCone();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -100,6 +103,7 @@ public:
     /// UsdGeomCone(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomCone
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -125,6 +129,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDGEOM_API
     static UsdGeomCone
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -136,6 +141,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -151,6 +157,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 2.0
+    USDGEOM_API
     UsdAttribute GetHeightAttr() const;
 
     /// See GetHeightAttr(), and also 
@@ -158,6 +165,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateHeightAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -173,6 +181,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 1.0
+    USDGEOM_API
     UsdAttribute GetRadiusAttr() const;
 
     /// See GetRadiusAttr(), and also 
@@ -180,6 +189,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -193,6 +203,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: Z
     /// \n  \ref UsdGeomTokens "Allowed Values": [X, Y, Z]
+    USDGEOM_API
     UsdAttribute GetAxisAttr() const;
 
     /// See GetAxisAttr(), and also 
@@ -200,6 +211,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateAxisAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -213,6 +225,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float3Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: [(-1, -1, -1), (1, 1, 1)]
+    USDGEOM_API
     UsdAttribute GetExtentAttr() const;
 
     /// See GetExtentAttr(), and also 
@@ -220,6 +233,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateExtentAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

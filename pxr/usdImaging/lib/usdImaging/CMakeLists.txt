@@ -68,6 +68,7 @@ pxr_shared_library(usdImaging
         ${optionalPublicClasses}
 
     PUBLIC_HEADERS
+        api.h
         version.h
 
     PRIVATE_CLASSES

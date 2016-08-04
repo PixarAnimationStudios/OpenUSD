@@ -24,10 +24,14 @@
 #ifndef TF_PATHUTILS_H
 #define TF_PATHUTILS_H
 
-
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/tf/api.h"
 #include <string>
 #include <vector>
+
+#if !defined(ARCH_OS_WINDOWS)
 #include <glob.h>
+#endif
 
 /*!
  * \file pathUtils.h
@@ -54,6 +58,7 @@
  * occur while computing the real path. If no error occurs, the string is
  * cleared.
  */
+TF_API
 std::string TfRealPath(std::string const& path,
                        bool allowInaccessibleSuffix = false,
                        std::string* error = 0);
@@ -64,6 +69,7 @@ std::string TfRealPath(std::string const& path,
  * eliminiating '.', and '..' components of the path.  This emulates the
  * behavior of os.path.normpath in Python.
  */
+TF_API
 std::string TfNormPath(std::string const& path);
 
 /*! \brief Return the index delimiting the longest accessible prefix of \a path.
@@ -85,7 +91,7 @@ std::string TfNormPath(std::string const& path);
  * reason for the error. If the error string is set, the returned index is the
  * path separator before the element at which the error occurred.
  */
-std::string::size_type
+TF_API std::string::size_type
 TfFindLongestAccessiblePrefix(std::string const &path, std::string* error = 0);
 
 /*! \brief Returns the canonical absolute path of the specified
@@ -98,7 +104,7 @@ TfFindLongestAccessiblePrefix(std::string const &path, std::string* error = 0);
  * not exist at all, and still result in an absolute path, rather
  * than an empty string.
  */
-std::string TfAbsPath(std::string const& path);
+TF_API std::string TfAbsPath(std::string const& path);
 
 /*! \brief Returns the source path for a symbolic link.
  *
@@ -106,6 +112,7 @@ std::string TfAbsPath(std::string const& path);
  */
 std::string TfReadLink(std::string const& path);
 
+#if !defined(ARCH_OS_WINDOWS)
 /*! \brief Expands one or more shell glob patterns.
  *
  * This is a wrapper to glob(3), which manages the C structures
@@ -127,6 +134,6 @@ std::vector<std::string> TfGlob(std::vector<std::string> const& paths,
  */
 std::vector<std::string> TfGlob(std::string const& path,
                                 unsigned int flags=GLOB_NOCHECK|GLOB_MARK);
-
+#endif // #if defined(ARCH_OS_WINDOWS)
 
 #endif /* TF_PATHUTILS_H */

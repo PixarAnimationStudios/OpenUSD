@@ -66,12 +66,12 @@ T GfConvertDisplayToLinear(const T& v) {
     return GfApplyGamma(v,_DisplayGamma);
 }
 
-template GfVec3f GfConvertLinearToDisplay<GfVec3f>(const GfVec3f&);
-template GfVec3d GfConvertLinearToDisplay<GfVec3d>(const GfVec3d&);
-template GfVec4f GfConvertLinearToDisplay<GfVec4f>(const GfVec4f&);
-template GfVec4d GfConvertLinearToDisplay<GfVec4d>(const GfVec4d&);
-template GfVec3f GfConvertDisplayToLinear<GfVec3f>(const GfVec3f&);
-template GfVec3d GfConvertDisplayToLinear<GfVec3d>(const GfVec3d&);
-template GfVec4f GfConvertDisplayToLinear<GfVec4f>(const GfVec4f&);
-template GfVec4d GfConvertDisplayToLinear<GfVec4d>(const GfVec4d&);
+template GF_API GfVec3f GfConvertLinearToDisplay<GfVec3f>(const GfVec3f&);
+template GF_API GfVec3d GfConvertLinearToDisplay<GfVec3d>(const GfVec3d&);
+template GF_API GfVec4f GfConvertLinearToDisplay<GfVec4f>(const GfVec4f&);
+template GF_API GfVec4d GfConvertLinearToDisplay<GfVec4d>(const GfVec4d&);
+template GF_API GfVec3f GfConvertDisplayToLinear<GfVec3f>(const GfVec3f&);
+template GF_API GfVec3d GfConvertDisplayToLinear<GfVec3d>(const GfVec3d&);
+template GF_API GfVec4f GfConvertDisplayToLinear<GfVec4f>(const GfVec4f&);
+template GF_API GfVec4d GfConvertDisplayToLinear<GfVec4d>(const GfVec4d&);
 

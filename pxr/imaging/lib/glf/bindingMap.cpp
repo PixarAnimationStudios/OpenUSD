@@ -42,7 +42,7 @@ GlfBindingMap::GetSamplerUnit(TfToken const & name)
     int samplerUnit = -1;
     if (not TfMapLookup(_samplerBindings, name, &samplerUnit)) {
         // XXX error check < MAX_TEXTURE_IMAGE_UNITS
-        samplerUnit = _samplerBindings.size();
+        samplerUnit = static_cast<int>(_samplerBindings.size());
         _samplerBindings[name] = samplerUnit;
     }
     TF_VERIFY(samplerUnit >= 0);

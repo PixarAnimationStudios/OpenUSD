@@ -24,6 +24,7 @@
 #ifndef USD_REFERENCES_H
 #define USD_REFERENCES_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -132,20 +133,24 @@ public:
     /// explanation of expectations on \p ref and what return values and errors
     /// to expect, and \ref Usd_OM_ListOps for details on list editing and
     /// composition of listOps.
+    USD_API
     bool Add(const SdfReference& ref);
 
     /// \overload 
+    USD_API
     bool Add(const std::string &identifier,
              const SdfPath &primPath,
              const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
     /// \overload
     /// \sa \ref Usd_DefaultPrim_References "References Without Prim Paths"
+    USD_API
     bool Add(const std::string &identifier,
              const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
     /// Add an internal reference to the specified prim.
     /// \sa \ref Usd_Internal_References "Internal References"
+    USD_API
     bool AddInternal(const SdfPath &primPath,
                      const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
@@ -154,6 +159,7 @@ public:
     /// reference completely, as it may be added or set in another layer in
     /// the same LayerStack as the current EditTarget.
     /// \sa \ref Usd_OM_ListOps 
+    USD_API
     bool Remove(const SdfReference& ref);
 
     /// Removes the authored reference listOp edits at the current EditTarget.
@@ -161,6 +167,7 @@ public:
     /// actually increase the number of composed references, if the listOp
     /// being cleared contained the "remove" operator.
     /// \sa \ref Usd_OM_ListOps 
+    USD_API
     bool Clear();
 
     /// Explicitly set the references, potentially blocking weaker opinions
@@ -169,6 +176,7 @@ public:
     /// explanation of expectations on \p ref and what return values and errors
     /// to expect, and \ref Usd_OM_ListOps for details on list editing and
     /// composition of listOps.
+    USD_API
     bool SetItems(const SdfReferenceVector& items);
 
     /// Return the prim this object is bound to.

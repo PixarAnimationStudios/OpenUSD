@@ -32,14 +32,6 @@
 /// \brief SdfSpec Python wrapping utilities.
 ///
 
-#include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/base/tf/tf.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/pyError.h"
-#include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/arch/demangle.h"
-
 #include <boost/bind.hpp>
 #include <boost/preprocessor.hpp>
 #include <boost/python/def_visitor.hpp>
@@ -48,6 +40,14 @@
 #include <boost/python/raw_function.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/tuple.hpp>
+
+#include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/arch/demangle.h"
 
 #include <string>
 
@@ -96,7 +96,7 @@ namespace Sdf_PySpecDetail {
 
 namespace bp = boost::python;
 
-bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
+SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 
 template <typename CTOR>
 struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
@@ -207,13 +207,13 @@ SdfMakePySpecConstructor(T *func, const std::string &doc = std::string())
 namespace Sdf_PySpecDetail {
 
 // Create the repr for a spec using Sdf.Find().
-std::string _SpecRepr(const bp::object&, const SdfSpec*);
+SDF_API std::string _SpecRepr(const bp::object&, const SdfSpec*);
 
 // Registration for spec types to functions to create a holder with the spec
 // corresponding to the spec type.
 typedef PyObject* (*_HolderCreator)(const SdfSpec&);
-void _RegisterHolderCreator(const std::type_info&, _HolderCreator);
-PyObject* _CreateHolder(const std::type_info&, const SdfSpec&);
+SDF_API void _RegisterHolderCreator(const std::type_info&, _HolderCreator);
+SDF_API PyObject* _CreateHolder(const std::type_info&, const SdfSpec&);
 
 template <class _SpecType>
 struct _ConstHandleToPython {

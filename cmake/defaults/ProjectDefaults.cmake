@@ -55,4 +55,4 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Enable CTest
-enable_testing()
+# enable_testing()

@@ -79,8 +79,8 @@ HdGLUtils::ReadBuffer(GLint vbo,
 {
     if (glBufferSubData == NULL) return VtValue();
 
-    int bytesPerElement = numComponents *
-        HdConversions::GetComponentSize(glDataType);
+    int bytesPerElement = (int)(numComponents *
+        HdConversions::GetComponentSize(glDataType));
     if (stride == 0) stride = bytesPerElement;
     TF_VERIFY(stride >= bytesPerElement);
 

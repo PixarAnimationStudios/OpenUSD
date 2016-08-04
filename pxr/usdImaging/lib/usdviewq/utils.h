@@ -24,6 +24,7 @@
 #ifndef USDVIEWQ_UTILS_H
 #define USDVIEWQ_UTILS_H
 
+#include "pxr/usdImaging/usdviewq/api.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -55,6 +56,7 @@ public:
     //      Furthermore, this method is not intended to be used publically,
     //      ultimately Usd will have better core support for fast prim
     //      filtering by typeName. 
+    USDVIEWQ_API
     static
     std::vector<UsdPrim> _GetAllPrimsOfType(UsdStagePtr const &stage, 
                                             TfType const& schemaType);
@@ -62,6 +64,7 @@ public:
     /// Fetch prim-related data in batch to to speed up Qt treeview item
     /// population.  Takes a time argument so that we can evaluate the prim's
     /// visibiity if it is imageable.
+    USDVIEWQ_API
     static UsdviewqUtils::PrimInfo GetPrimInfo(UsdPrim prim, UsdTimeCode time);
 
 };

@@ -24,6 +24,7 @@
 #ifndef PCP_PRIM_INDEX_H
 #define PCP_PRIM_INDEX_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
@@ -87,10 +88,10 @@ swap(PcpPrimIndexDependencies &l, PcpPrimIndexDependencies &r) { l.swap(r); }
 class PcpPrimIndex
 {
 public:
-    PcpPrimIndex();
+	PCP_API PcpPrimIndex();
 
     /// Copy-construct a prim index.
-    PcpPrimIndex(const PcpPrimIndex& rhs);
+	PCP_API PcpPrimIndex(const PcpPrimIndex& rhs);
 
     /// Assignment.
     PcpPrimIndex &operator=(const PcpPrimIndex &rhs) {
@@ -99,53 +100,53 @@ public:
     }
 
     /// Swap the contents of this prim index with \p index.
-    void Swap(PcpPrimIndex& rhs);
+	PCP_API void Swap(PcpPrimIndex& rhs);
 
     /// Same as Swap(), but standard name.
     inline void swap(PcpPrimIndex &rhs) { Swap(rhs); }
 
-    void SetGraph(const PcpPrimIndex_GraphRefPtr& graph);
-    PcpPrimIndex_GraphPtr GetGraph() const;
+	PCP_API void SetGraph(const PcpPrimIndex_GraphRefPtr& graph);
+	PCP_API PcpPrimIndex_GraphPtr GetGraph() const;
 
     /// Returns the root node of the prim index graph.
-    PcpNodeRef GetRootNode() const;
+	PCP_API PcpNodeRef GetRootNode() const;
 
     /// Returns the path of the prim whose opinions are represented by this 
     /// prim index.
-    const SdfPath& GetPath() const;
+	PCP_API const SdfPath& GetPath() const;
 
     /// Returns true if this prim index contains any scene description
     /// opinions.
-    bool HasSpecs() const;
+	PCP_API bool HasSpecs() const;
 
     /// Returns true if the prim has an authored payload arc.
     /// The payload contents are only resolved and included
     /// if this prim's path is in the payload inclusion set
     /// provided in PcpPrimIndexInputs.
-    bool HasPayload() const;
+	PCP_API bool HasPayload() const;
 
     /// Returns true if this prim index was composed in USD mode.
     /// \see PcpCache::IsUsd().
-    bool IsUsd() const;
+	PCP_API bool IsUsd() const;
 
     /// Returns true if this prim index is instanceable.
     /// Instanceable prim indexes with the same instance key are
     /// guaranteed to have the same set of opinions, but may not have
     /// local opinions about name children.
     /// \see PcpInstanceKey
-    bool IsInstanceable() const;
+	PCP_API bool IsInstanceable() const;
 
     /// Get the set of asset paths used by direct arcs in this prim.
     /// This set does not include asset paths used by ancestral arcs
     /// (from namespace ancestors), which may also contribute opinions
     /// to this prim.  It also includes any asset paths that were
     /// requested by arcs, but could not be resolved.
-    std::vector<std::string> GetUsedAssetPaths() const;
+	PCP_API std::vector<std::string> GetUsedAssetPaths() const;
 
     /// Record a used asset path.
     /// Only meant for internal use while constructing a PcpPrimIndex.
-    void AddUsedAssetPath(const std::string& assetPath);
-    void AddUsedAssetPaths(const std::vector<std::string>& assetPaths);
+	PCP_API void AddUsedAssetPath(const std::string& assetPath);
+	PCP_API void AddUsedAssetPaths(const std::vector<std::string>& assetPaths);
 
     /// \name Iteration
     /// @{
@@ -155,15 +156,15 @@ public:
     /// strong-to-weak order.
     /// 
     /// By default, this returns a range encompassing the entire index.
-    PcpNodeRange GetNodeRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
+	PCP_API PcpNodeRange GetNodeRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
 
     /// Returns range of iterators that encompasses all prims, in
     /// strong-to-weak order.
-    PcpPrimRange GetPrimRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
+	PCP_API PcpPrimRange GetPrimRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
 
     /// Returns range of iterators that encompasses all prims from the
     /// site of \p node. \p node must belong to this prim index.
-    PcpPrimRange GetPrimRangeForNode(const PcpNodeRef& node) const;
+	PCP_API PcpPrimRange GetPrimRangeForNode(const PcpNodeRef& node) const;
 
     /// @}
 
@@ -172,12 +173,13 @@ public:
 
     /// Returns the node that brings opinions from \p primSpec into
     /// this prim index. If no such node exists, returns an invalid PcpNodeRef.
+	PCP_API 
     PcpNodeRef GetNodeProvidingSpec(const SdfPrimSpecHandle& primSpec) const;
 
     /// Returns the node that brings opinions from the Sd prim spec at \p layer
     /// and \p path into this prim index. If no such node exists, returns an
     /// invalid PcpNodeRef.
-    PcpNodeRef GetNodeProvidingSpec(
+	PCP_API PcpNodeRef GetNodeProvidingSpec(
         const SdfLayerHandle& layer, const SdfPath& path) const;
 
     /// @}
@@ -191,7 +193,7 @@ public:
     }
 
     /// Prints various statistics about this prim index.
-    void PrintStatistics() const;
+	PCP_API void PrintStatistics() const;
 
     /// Dump the prim index contents to a string.
     ///
@@ -199,19 +201,19 @@ public:
     /// nodes will include information about the originating inherit node.
     /// If \p includeMaps is \c true, output for each node will include the
     /// mappings to the parent and root node.
-    std::string DumpToString(
+	PCP_API std::string DumpToString(
         bool includeInheritOriginInfo = true,
         bool includeMaps = true) const;
 
     /// Dump the prim index in dot format to the file named \p filename.
     /// See Dump(...) for information regarding arguments.
-    void DumpToDotGraph(
+	PCP_API void DumpToDotGraph(
         const std::string& filename,
         bool includeInheritOriginInfo = true,
         bool includeMaps = false) const;
 
     /// Verify that this is index is well-formed.
-    void Validate();
+	PCP_API void Validate();
 
     /// @}
 
@@ -221,13 +223,13 @@ public:
 
     /// Compute the prim child names for the given path. \p errors will 
     /// contain any errors encountered while performing this operation.
-    void ComputePrimChildNames(TfTokenVector *nameOrder,
+	PCP_API void ComputePrimChildNames(TfTokenVector *nameOrder,
                                PcpTokenSet *prohibitedNameSet) const;
 
     /// Compute the prim property names for the given path. \p errors will
     /// contain any errors encountered while performing this operation.  The
     /// \p nameOrder vector must not contain any duplicate entries.
-    void ComputePrimPropertyNames(TfTokenVector *nameOrder) const;
+	PCP_API void ComputePrimPropertyNames(TfTokenVector *nameOrder) const;
 
     /// Compose the authored prim variant selections.
     ///
@@ -236,20 +238,20 @@ public:
     /// if they are invalid.
     ///
     /// \note This result is not cached, but computed each time.
-    SdfVariantSelectionMap ComposeAuthoredVariantSelections() const;
+	PCP_API SdfVariantSelectionMap ComposeAuthoredVariantSelections() const;
 
     /// Return the variant selecion applied for the named variant set.
     /// If none was applied, this returns an empty string.
     /// This can be different from the authored variant selection;
     /// for example, if the authored selection is invalid.
-    std::string GetSelectionAppliedForVariantSet(
+	PCP_API std::string GetSelectionAppliedForVariantSet(
         const std::string &variantSet) const;
 
     /// @}
 
 private:
     friend class PcpPrimIterator;
-    friend class Pcp_PrimIndexer;
+    friend struct Pcp_PrimIndexer;
     friend void Pcp_BuildPrimStack(
         PcpPrimIndex*, SdfSiteVector*, PcpNodeRefVector*);
 
@@ -277,7 +279,8 @@ inline void swap(PcpPrimIndex &l, PcpPrimIndex &r) { l.swap(r); }
 
 /// \class PcpPrimIndexOutputs
 /// Outputs of the prim indexing procedure.
-struct PcpPrimIndexOutputs {
+class PcpPrimIndexOutputs {
+public:
     /// Prim index describing the composition structure for the associated
     /// prim.
     PcpPrimIndex primIndex;

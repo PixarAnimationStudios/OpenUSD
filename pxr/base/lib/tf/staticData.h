@@ -131,12 +131,12 @@ public:
     
     /// Return true if the underlying data object is created and initialized.
     /// Return false otherwise.
-    inline bool IsInitialized() const { return _data; }
+    inline bool IsInitialized() const { return static_cast<void*>(_data); }
 
 private:
     T *_TryToCreateData() const {
         // Allocate an instance.
-        T *tmp = Factory::New();
+        T *tmp = const_cast<T*>(Factory::New());
 
         // Try to atomically set the pointer from null to tmp.
         T *n = nullptr;

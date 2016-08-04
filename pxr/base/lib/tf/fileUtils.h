@@ -29,7 +29,7 @@
  * \ingroup group_tf_File
  * \brief Definitions of basic file utilities in tf.
  */
-
+#include "pxr/base/tf/api.h"
 #include <string>
 #include <vector>
 #include <boost/function.hpp>
@@ -40,6 +40,7 @@
  * lstat(). if \p resolveSymlinks is true, the path is checked using stat(),
  * which resolves all symbolic links in the path.
  */
+TF_API
 bool TfPathExists(std::string const& path, bool resolveSymlinks = false);
 
 /*! \brief Returns true if the path exists and is a directory.
@@ -48,6 +49,7 @@ bool TfPathExists(std::string const& path, bool resolveSymlinks = false);
  * lstat(). if \p resolveSymlinks is true, the path is checked using stat(),
  * which resolves all symbolic links in the path.
  */
+TF_API
 bool TfIsDir(std::string const& path, bool resolveSymlinks = false);
 
 /*! \brief Returns true if the path exists and is a file.
@@ -56,10 +58,12 @@ bool TfIsDir(std::string const& path, bool resolveSymlinks = false);
  * lstat(). if \p resolveSymlinks is true, the path is checked using stat(),
  * which resolves all symbolic links in the path.
  */
+TF_API
 bool TfIsFile(std::string const& path, bool resolveSymlinks = false);
 
 /*! \brief Returns true if the path exists and is a symbolic link.
  */
+TF_API
 bool TfIsLink(std::string const& path);
 
 /*! \brief Returns true if the file or directory at \p path is writable.
@@ -70,10 +74,12 @@ bool TfIsLink(std::string const& path);
  * directory path is writable. If the file or directory does not exist, this
  * function returns false.
  */
+TF_API
 bool TfIsWritable(std::string const& path);
 
 /*! \brief Returns true if the path is an empty directory.
  */
+TF_API
 bool TfIsDirEmpty(std::string const& path);
 
 /*! \brief Creates a symbolic link from \p src to \p dst.
@@ -82,6 +88,7 @@ bool TfSymlink(std::string const& src, std::string const& dst);
 
 /*! \brief Deletes a file at path.
  */
+TF_API
 bool TfDeleteFile(std::string const& path);
 
 /*! \brief Creates a directory.
@@ -91,6 +98,7 @@ bool TfDeleteFile(std::string const& path);
  * already exists, or an error occurs while creating the directory, this
  * method returns false.
  */
+TF_API
 bool TfMakeDir(std::string const& path, int mode=-1);
 
 /*! \brief Creates a directory hierarchy.
@@ -100,6 +108,7 @@ bool TfMakeDir(std::string const& path, int mode=-1);
  * directories.  If no mode is specified, the default mode of \c TfMakeDir is
  * used.
  */
+TF_API
 bool TfMakeDirs(std::string const& path, int mode=-1);
 
 /*! \brief Function type for TfWalkDirs.
@@ -199,6 +208,7 @@ void TfRmTree(std::string const& path,
  * in the listing.  If \p recursive is true, the directory listing will
  * include all subdirectory structure of \p path.
  */
+TF_API
 std::vector<std::string> TfListDir(std::string const& path,
                                    bool recursive = false);
 
@@ -213,7 +223,7 @@ std::vector<std::string> TfListDir(std::string const& path,
  * It is safe to pass NULL for any of \p dirnames, \p filenames, and \p
  * symlinknames.  In that case those elements are not reported
  */
-bool
+TF_API bool
 TfReadDir(std::string const &dirPath,
           std::vector<std::string> *dirnames,
           std::vector<std::string> *filenames,
@@ -228,6 +238,6 @@ TfReadDir(std::string const &dirPath,
  * If \p create is true, an empty file gets created, otherwise the touch
  * call fails if the file does not already exist. 
  */
-bool TfTouchFile(std::string const &fileName, bool create=true);
+TF_API bool TfTouchFile(std::string const &fileName, bool create=true);
 
 #endif

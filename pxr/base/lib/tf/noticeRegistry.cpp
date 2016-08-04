@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/noticeRegistry.h"
-
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
@@ -369,3 +368,5 @@ Tf_NoticeRegistry::_DecrementBlockCount()
     --_globalBlockCount;
     --_perThreadBlockCount.local();
 }
+
+

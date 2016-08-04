@@ -49,3 +49,5 @@ void wrapPlatformDebugContext()
         .def("makeCurrent", &This::makeCurrent)
     ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(GlfQGLPlatformDebugContext)

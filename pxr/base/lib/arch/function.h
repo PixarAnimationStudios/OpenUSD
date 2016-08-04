@@ -33,6 +33,7 @@
  * anyone other than lib/tf.
  */
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/functionLite.h"
 
 #include <string>
@@ -45,6 +46,7 @@
  * \c prettyFunction is __ARCH_PRETTY_FUNCTION__, and attempts to
  * reconstruct a well formatted function name.
  */
+ARCH_API
 std::string ArchGetPrettierFunctionName(const std::string &function,
                                         const std::string &prettyFunction);
 

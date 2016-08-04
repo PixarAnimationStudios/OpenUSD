@@ -26,6 +26,9 @@
 #ifndef SDF_PYLISTPROXY_H
 #define SDF_PYLISTPROXY_H
 
+#include <boost/python.hpp>
+#include <boost/python/slice.hpp>
+
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listProxy.h"
 #include "pxr/base/arch/demangle.h"
@@ -34,8 +37,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <stdexcept>
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
 
 template <class T>
 class SdfPyWrapListProxy {

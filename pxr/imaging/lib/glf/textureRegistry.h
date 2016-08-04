@@ -26,6 +26,8 @@
 #ifndef GLF_TEXTURE_REGISTRY_H
 #define GLF_TEXTURE_REGISTRY_H
 
+#include "pxr/imaging/glf/api.h"
+
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/singleton.h"
@@ -50,25 +52,25 @@ class GlfTextureFactoryBase;
 class GlfTextureRegistry : boost::noncopyable
 {
   public:
-    static GlfTextureRegistry & GetInstance();
+    GLF_API static GlfTextureRegistry & GetInstance();
 
-    GlfTextureHandleRefPtr GetTextureHandle(const TfToken &texture);
-    GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures);
-    GlfTextureHandleRefPtr GetTextureHandle(GlfTextureRefPtr texture);
+    GLF_API GlfTextureHandleRefPtr GetTextureHandle(const TfToken &texture);
+    GLF_API GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures);
+    GLF_API GlfTextureHandleRefPtr GetTextureHandle(GlfTextureRefPtr texture);
 
     // garbage collection methods
-    void RequiresGarbageCollection();
-    void GarbageCollectIfNeeded();
+    GLF_API void RequiresGarbageCollection();
+    GLF_API void GarbageCollectIfNeeded();
 
     // Returns true if the registry contains a texture sampler for \a texture;
-    bool HasTexture(const TfToken &texture) const;
+    GLF_API bool HasTexture(const TfToken &texture) const;
 
     // diagnostics
-    std::vector<VtDictionary> GetTextureInfos() const;
+    GLF_API std::vector<VtDictionary> GetTextureInfos() const;
 
     // Resets the registry contents. Clients that call this are expected to
     // manage their texture handles accordingly.
-    void Reset();
+    GLF_API void Reset();
 
 private:
     friend class TfSingleton< GlfTextureRegistry >;
@@ -121,5 +123,7 @@ private:
 
     bool _requiresGarbageCollection;
 };
+
+GLF_API_TEMPLATE_CLASS(TfSingleton<GlfTextureRegistry>);
 
 #endif // GLF_TEXTURE_REGISTRY_H

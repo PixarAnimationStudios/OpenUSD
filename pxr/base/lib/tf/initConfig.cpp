@@ -26,6 +26,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/error.h"
 
 #include <string>
 
@@ -73,4 +74,16 @@ Tf_InitConfigPost()
     Tf_DebugInitFromEnvironment();
 }
 
+}
+
+#include <Windows.h>
+int __stdcall DllMain(void* instance, unsigned long reason, void* reserved)
+{
+    if (DLL_PROCESS_ATTACH == reason)
+    {
+        printf("Tf DLL_PROCESS_ATTACH\n");
+        Tf_InitConfigPost();
+        Tf_DebugInitFromEnvironment();
+    }
+    return TRUE;
 }

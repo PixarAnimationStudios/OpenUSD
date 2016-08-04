@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usd/primFlags.h"
-
 #include <boost/python/class.hpp>
 #include <boost/python/implicit.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/scope.hpp>
 #include <boost/functional/hash.hpp>
+
+#include "pxr/usd/usd/primFlags.h"
 
 #include <string>
 

@@ -26,7 +26,7 @@
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec2i.h"
-
+#include "pxr/base/gf/api.h"
 #include <boost/functional/hash.hpp>
 
 #include <iosfwd>
@@ -134,7 +134,7 @@ public:
      * \c GetNormalized() swaps left and right to ensure a non-negative width,
      * and similarly for top and bottom.
      */
-
+    GF_API
     GfRect2i GetNormalized() const;
 
     /*!
@@ -364,6 +364,6 @@ private:
 
 /// Output a GfRect2i using the format [(x y):(x y)].
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream&, const GfRect2i&);
+GF_API std::ostream& operator<<(std::ostream&, const GfRect2i&);
 
 #endif

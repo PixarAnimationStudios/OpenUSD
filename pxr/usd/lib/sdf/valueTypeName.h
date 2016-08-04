@@ -25,6 +25,7 @@
 #define SDF_VALUETYPENAME_H
 
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/api.h"
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <string>
@@ -77,58 +78,73 @@ class SdfValueTypeName
     > > > {
 public:
     /// Constructs an invalid type name.
+    SDF_API
     SdfValueTypeName();
 
     /// Returns the type name as a token.  This should not be used for
     /// comparison purposes.
+    SDF_API
     TfToken GetAsToken() const;
 
     /// Returns the \c TfType of the type.
+    SDF_API
     const TfType& GetType() const;
 
     /// Returns the type's role.
+    SDF_API
     const TfToken& GetRole() const;
 
     /// Returns the default value for the type.
+    SDF_API
     const VtValue& GetDefaultValue() const;
 
     /// Returns the default unit enum for the type.
+    SDF_API
     const TfEnum& GetDefaultUnit() const;
 
     /// Returns the scalar version of this type name if it's an array type
     /// name, otherwise returns this type name.  If there is no scalar type
     /// name then this returns the invalid type name.
+    SDF_API
     SdfValueTypeName GetScalarType() const;
 
     /// Returns the array version of this type name if it's an scalar type
     /// name, otherwise returns this type name.  If there is no array type
     /// name then this returns the invalid type name.
+    SDF_API
     SdfValueTypeName GetArrayType() const;
 
     /// Returns \c true iff this type is a scalar.  The invalid type is
     /// considered neither scalar nor array.
+    SDF_API
     bool IsScalar() const;
 
     /// Returns \c true iff this type is an array.  The invalid type is
     /// considered neither scalar nor array.
+    SDF_API
     bool IsArray() const;
 
     /// Returns the dimensions of the scalar value, e.g. 3 for a 3D point.
+    SDF_API
     SdfTupleDimensions GetDimensions() const;
 
     /// Returns \c true if this type name is equal to \p rhs.  Aliases
     /// compare equal.
+    SDF_API
     bool operator==(const SdfValueTypeName& rhs) const;
 
     /// Returns \c true if this type name is equal to \p rhs.  Aliases
     /// compare equal.  Avoid relying on this overload.
+    SDF_API
     bool operator==(const std::string& rhs) const;
 
     /// Returns \c true if this type name is equal to \p rhs.  Aliases
     /// compare equal.  Avoid relying on this overload.
+    SDF_API
     bool operator==(const TfToken& rhs) const;
 
     /// Returns a hash value for this type name.
+    SDF_API
     size_t GetHash() const;
 
 #if !defined(doxygen)
@@ -137,6 +153,7 @@ public:
 #endif
 
     /// Returns \c false iff this is a valid type.
+    SDF_API
     bool operator!() const;
 
     /// Returns \c true iff this is a valid type.
@@ -147,12 +164,14 @@ public:
 
     /// Returns all aliases of the type name as tokens.  These should not
     /// be used for comparison purposes.
+    SDF_API
     std::vector<TfToken> GetAliasesAsTokens() const;
 
 private:
     friend class Sdf_ValueTypeRegistry;
     friend class Sdf_ValueTypePrivate;
 
+    SDF_API
     explicit SdfValueTypeName(const Sdf_ValueTypeImpl*);
 
 private:
@@ -173,6 +192,6 @@ hash_value(const SdfValueTypeName& typeName)
     return typeName.GetHash();
 }
 
-std::ostream& operator<<(std::ostream&, const SdfValueTypeName& typeName);
+SDF_API std::ostream& operator<<(std::ostream&, const SdfValueTypeName& typeName);
 
 #endif

@@ -26,6 +26,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include <boost/functional/hash.hpp>
+#include <sstream>
 
 static
 std::string

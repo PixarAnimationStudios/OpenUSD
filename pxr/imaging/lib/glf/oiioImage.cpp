@@ -27,16 +27,19 @@
 // use gf types to read and write metadata
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
+ARCH_PRAGMA_MACRO_REDEFINITION // due to WIN32_LEAN_AND_MEAN, VC_EXTRALEAN and Python copysign
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/typedesc.h>
+ARCH_PRAGMA_RESTORE
 
 OIIO_NAMESPACE_USING
 
@@ -308,7 +311,7 @@ Glf_OIIOImage::GetType() const
 int
 Glf_OIIOImage::GetBytesPerPixel() const
 {
-    return _imagebuf.spec().pixel_bytes();
+    return static_cast<int>(_imagebuf.spec().pixel_bytes());
 }
 
 /* virtual */

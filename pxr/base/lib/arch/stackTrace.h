@@ -25,6 +25,8 @@
 #define ARCH_STACKTRACE_H
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/api.h"
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <functional>
@@ -58,6 +60,7 @@
  * because we are trying to use only async-safe function from here on and
  * malloc() is not async-safe.
  */
+ARCH_API
 void ArchLogPostMortem(const char* reason, const char* message = nullptr);
 
 /*!
@@ -80,6 +83,7 @@ void ArchLogPostMortem(const char* reason, const char* message = nullptr);
  *
  * \sa ArchLogPostMortem
  */
+ARCH_API
 void ArchSetPostMortem(const char* command, const char *const argv[]);
 
 /*!
@@ -90,6 +94,7 @@ void ArchSetPostMortem(const char* command, const char *const argv[]);
  * the path to a file containing a stack trace in \p crashStackTrace.
  *
  */
+ARCH_API
 void ArchLogSessionInfo(const char *crashStackTrace=NULL);
 
 /*!
@@ -116,6 +121,7 @@ void ArchLogSessionInfo(const char *crashStackTrace=NULL);
  *
  * \sa ArchLogSessionInfo
  */
+ARCH_API
 void ArchSetLogSession(const char* command,
                        const char* const argv[],
                        const char* const crashArgv[]);
@@ -129,6 +135,7 @@ void ArchSetLogSession(const char* command,
  * and records the current timestamp, to send up-time
  * to the DB upon exiting.
  */
+ARCH_API
 void ArchEnableSessionLogging();
 
 // Again, 2 versions, one for 2x and one for 3x.
@@ -140,6 +147,7 @@ void ArchEnableSessionLogging();
  * Prints out a stack trace to the given stream (\c man \c stdio).  Will call 
  * ArchLoadSymbols() if symbols have not yet been loaded.
  */
+ARCH_API
 void ArchPrintStackTrace(FILE *fout, const std::string& programName,
 			 const std::string& reason);
 
@@ -151,6 +159,7 @@ void ArchPrintStackTrace(FILE *fout, const std::string& programName,
  * Prints out a stack trace to the given stream (\c man \c stdio).  Will call 
  * ArchLoadSymbols() if symbols have not yet been loaded.
  */
+ARCH_API
 void ArchPrintStackTrace(FILE *fout, const std::string& reason);
 
 
@@ -160,6 +169,7 @@ void ArchPrintStackTrace(FILE *fout, const std::string& reason);
  *
  * see above
  */
+ARCH_API
 void ArchPrintStackTrace(std::ostream& out, 
 			 const std::string& programName,
 			 const std::string& reason);
@@ -170,6 +180,7 @@ void ArchPrintStackTrace(std::ostream& out,
  *
  * see above
  */
+ARCH_API
 void ArchPrintStackTrace(std::ostream& out, const std::string& reason);
 
 /*!
@@ -186,6 +197,7 @@ typedef std::function<std::string(uintptr_t address)> ArchStackTraceCallback;
  * typically including the name of the function containing the address.
  * \p cb may be \c NULL to use a default implementation.
  */
+ARCH_API
 void ArchSetStackTraceCallback(const ArchStackTraceCallback& cb);
 
 /*!
@@ -194,6 +206,7 @@ void ArchSetStackTraceCallback(const ArchStackTraceCallback& cb);
  *
  * \sa ArchSetStackTraceCallback
  */
+ARCH_API
 void ArchGetStackTraceCallback(ArchStackTraceCallback* cb);
 
 /*!
@@ -202,6 +215,7 @@ void ArchGetStackTraceCallback(ArchStackTraceCallback* cb);
  *
  * The timestamp for this value is set when the Arch library is initialized.
  */
+ARCH_API
 time_t ArchGetAppLaunchTime();
 
 /*!
@@ -212,6 +226,7 @@ time_t ArchGetAppLaunchTime();
  * automatically caught and stored to an internal database when a fatal
  * crash occurs. 
  */
+ARCH_API
 void ArchSetFatalStackLogging( bool flag );
 
 /*!
@@ -220,6 +235,7 @@ void ArchSetFatalStackLogging( bool flag );
  *
  * This is set to false by default.
  */
+ARCH_API
 bool ArchGetFatalStackLogging();
 
 /*!
@@ -228,6 +244,7 @@ bool ArchGetFatalStackLogging();
  *
  * The default value is initialized to ArchGetExecutablePath().
  */
+ARCH_API
 void ArchSetProgramNameForErrors( const char * progName );
 
 /*!
@@ -236,6 +253,7 @@ void ArchSetProgramNameForErrors( const char * progName );
  *
  * Defaults to ArchGetExecutablePath().
  */
+ARCH_API
 const char * ArchGetProgramNameForErrors();
 
 /*!
@@ -244,6 +262,7 @@ const char * ArchGetProgramNameForErrors();
  * \ingroup group_arch_Diagnostics
  *
  */
+ARCH_API
 void ArchSetProgramInfoForErrors( const std::string& key, const std::string& value );
 
 /*!
@@ -251,6 +270,7 @@ void ArchSetProgramInfoForErrors( const std::string& key, const std::string& val
  * \ingroup group_arch_Diagnostics
  *
  */
+ARCH_API
 std::string ArchGetProgramInfoForErrors(const std::string& key);
 
 
@@ -262,6 +282,7 @@ std::string ArchGetProgramInfoForErrors(const std::string& key);
  * removes it by invoking this function again with text==NULL.
  * \ingroup group_arch_Diagnostics
  */
+ARCH_API
 void ArchSetExtraLogInfoForErrors(const std::string &key, char const *text);
 
 /*!
@@ -277,6 +298,7 @@ void ArchSetExtraLogInfoForErrors(const std::string &key, char const *text);
  * written to.  And if \c fatal is true, then the stack trace will  be added
  * to the stack_trace database table.
  */
+ARCH_API
 void ArchLogStackTrace(const std::string& progName, const std::string& reason,
 		       bool fatal = false, 
 		       const std::string& sessionLog = "");
@@ -294,6 +316,7 @@ void ArchLogStackTrace(const std::string& progName, const std::string& reason,
  * written to.  And if \c fatal is true, then the stack trace will  be added
  * to the stack_trace database table.
  */
+ARCH_API
 void ArchLogStackTrace(const std::string& reason,
                        bool fatal = false, 
                        const std::string& sessionLog = "");
@@ -305,6 +328,7 @@ void ArchLogStackTrace(const std::string& reason,
  * This function will return a vector of strings containing the
  * current stack.  The vector will be of maximum size \p maxDepth.
  */
+ARCH_API
 std::vector<std::string> ArchGetStackTrace(size_t maxDepth);
 
 
@@ -316,6 +340,7 @@ std::vector<std::string> ArchGetStackTrace(size_t maxDepth);
  * stack into the vector \c frames.
  *
  */
+ARCH_API
 void ArchGetStackFrames(size_t maxDepth, std::vector<uintptr_t> *frames);
 
 /*!
@@ -328,6 +353,7 @@ void ArchGetStackFrames(size_t maxDepth, std::vector<uintptr_t> *frames);
  * last at depth \p numFramesToSkipAtTop + \p maxDepth - 1.
  *
  */
+ARCH_API
 void ArchGetStackFrames(size_t maxDepth, size_t numFramesToSkipAtTop,
                         std::vector<uintptr_t> *frames);
 
@@ -336,6 +362,7 @@ void ArchGetStackFrames(size_t maxDepth, size_t numFramesToSkipAtTop,
  * \ingroup group_arch_Diagnostics
  *
  */
+ARCH_API
 void ArchPrintStackFrames(std::ostream& out,
                           const std::vector<uintptr_t> &frames);
 
@@ -356,6 +383,7 @@ typedef void (*ArchCrashHandlerSystemCB)(void* userData);
  * to alarm, and this function uses non-locking fork and exec if available
  * so should not generally be used except following a catastrophe.
  */
+ARCH_API
 int ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
 			    int timeout, ArchCrashHandlerSystemCB callback, 
 			    void* userData);
@@ -369,6 +397,7 @@ int ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
  * remains alive during the crash.  It aborts if it fails to crash.
  *
  */
+ARCH_API
 void ArchTestCrash(bool spawnthread);
 
 #if defined(ARCH_OS_DARWIN)

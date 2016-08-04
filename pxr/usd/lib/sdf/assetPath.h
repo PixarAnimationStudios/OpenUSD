@@ -28,8 +28,12 @@
 
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
+#include <ciso646>
 #include <iosfwd>
 #include <string>
+
+#include "pxr/base/arch/defines.h"
+#include "pxr/usd/sdf/api.h"
 
 /// Contains an asset path and an optional resolved path.
 ///
@@ -42,13 +46,13 @@ public:
     ///
 
     /// Construct an empty asset path.
-    SdfAssetPath();
+	SDF_API SdfAssetPath();
 
     /// Construct asset path with no associated resolved path.
-    explicit SdfAssetPath(const std::string &path);
+	SDF_API explicit SdfAssetPath(const std::string &path);
 
     /// Construct an asset path with an associated resolved path.
-    SdfAssetPath(const std::string &path, const std::string &resolvedPath);
+	SDF_API SdfAssetPath(const std::string &path, const std::string &resolvedPath);
 
     /// @}
 
@@ -62,7 +66,7 @@ public:
     }
 
     /// Ordering first by asset path, then by resolved path.
-    bool operator<(const SdfAssetPath &rhs) const;
+	SDF_API bool operator<(const SdfAssetPath &rhs) const;
 
     /// Hash function
     size_t GetHash() const {
@@ -114,7 +118,7 @@ private:
 ///       path is ignored for the purpose of this operator.  This means that
 ///       two SdfAssetPath that do not compare equal may produce
 ///       indistinguishable ostream output.
-std::ostream& operator<<(std::ostream& out, const SdfAssetPath& ap);
+SDF_API std::ostream& operator<<(std::ostream& out, const SdfAssetPath& ap);
 
 /// @}
 

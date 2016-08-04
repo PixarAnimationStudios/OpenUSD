@@ -24,6 +24,10 @@
 
 %{
 
+#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/compat.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdf/allowed.h"
@@ -40,7 +44,7 @@
 
 #include "pxr/base/tracelite/trace.h"
 
-
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -56,8 +60,11 @@
 
 #include <sstream>
 #include <string>
+
+#if !defined(ARCH_OS_WINDOWS)
 #include <sys/mman.h>
 #include <unistd.h>
+#endif
 #include <vector>
 
 // See this page for info as to why this is here.  Especially note the last
@@ -3116,12 +3123,12 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
       _paddingBuffer(NULL), _paddingBufferSize(0),
       _scanner(scanner)
 {
-    const int fd = fileno(file);
+    const int fd = ArchFileNo(file);
 
     struct stat fileInfo;
     if (fstat(fd, &fileInfo) != 0) {
         TF_RUNTIME_ERROR("Error retrieving file size for @%s@: %s", 
-                         name.c_str(), strerror(errno));
+                         name.c_str(), ArchStrerror(errno));
         return;
     }
 
@@ -3146,7 +3153,7 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
              PROT_READ | PROT_WRITE, mmapFlags, fd, 0));
     if (fileSpace == MAP_FAILED) {
         TF_RUNTIME_ERROR("Failed to mmap file @%s@: %s", 
-                         name.c_str(), strerror(errno));
+                         name.c_str(), ArchStrerror(errno).c_str());
         return;
     }
 
@@ -3163,7 +3170,7 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
     // To avoid this, we try to create an anonymous mmap for the padding that 
     // is contiguous with the last page. flex will see the two mmap'd space
     // as one contiguous buffer and can then access the padding bytes safely.
-    const size_t pageSize = sysconf(_SC_PAGESIZE);
+    const size_t pageSize = ArchGetPageSize();
     const size_t numberOfPagesUsedByFile = (fileSize - 1 + pageSize) / pageSize;
     const size_t totalBytesUsedByPages = numberOfPagesUsedByFile * pageSize;
 
@@ -3178,7 +3185,7 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
             // the mmap'd file.
             TF_WARN("Can't mmap extra space for @%s@: %s. "
                     "Copying entire layer into memory.", 
-                    name.c_str(), strerror(errno));
+                    name.c_str(), ArchStrerror(errno).c_str());
             _flexBuffer = textFileFormatYy_scan_bytes(_fileBuffer, fileSize, _scanner);
             return;
         }
@@ -3186,7 +3193,6 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
         _paddingBuffer = paddingSpace;
         _paddingBufferSize = paddingBytesRequired;
     }
-
     _flexBuffer = textFileFormatYy_scan_buffer(_fileBuffer, _fileBufferSize, _scanner);
 }
 

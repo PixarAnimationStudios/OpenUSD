@@ -24,6 +24,7 @@
 #ifndef ARCH_SYMBOLS_H
 #define ARCH_SYMBOLS_H
 
+#include "pxr/base/arch/api.h"
 #include <string>
 
 /*!
@@ -44,6 +45,7 @@
  * Any of the arguments except \p address can be \c NULL if the result isn't
  * needed.  This will return \c false if \c NULL is passed to \p address.
  */
+ARCH_API
 bool ArchGetAddressInfo(void* address,
                         std::string* objectPath, void** baseAddress,
                         std::string* symbolName, void** symbolAddress);

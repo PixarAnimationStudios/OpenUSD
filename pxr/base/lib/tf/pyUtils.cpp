@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
-#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
@@ -33,10 +33,9 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/registryManager.h"
 
-#include <boost/python.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-
+#include <ciso646>
 #include <vector>
+#include <boost/python/object/class_detail.hpp>
 
 using namespace boost::python;
 
@@ -206,7 +205,7 @@ TfPyNormalizeIndex(int index, unsigned int size, bool throwError)
 }
 
 
-void
+TF_API void
 Tf_PyWrapOnceImpl(
     boost::python::type_info const &type,
     boost::function<void()> const &wrapFunc,
@@ -306,12 +305,12 @@ TfPyGetStackFrames(vector<uintptr_t> *frames)
     try {
         object tbModule(handle<>(PyImport_ImportModule("traceback")));
         object stack = tbModule.attr("format_stack")();
-        long size = len(stack);
+        size_t size = len(stack);
         frames->reserve(size);
         // Reverse the order of stack frames so that the stack is ordered 
         // like the output of ArchGetStackFrames() (deepest function call at 
         // the top of stack).
-        for (long i = size-1; i >= 0; --i) {
+        for (long i = static_cast<long>(size)-1; i >= 0; --i) {
             string *s = new string(extract<string>(stack[i]));
             frames->push_back((uintptr_t)s);
         }
@@ -341,8 +340,8 @@ _GetOsEnviron()
     // out to be problematic, we may want to consider the other approach.
     boost::python::object
         module(boost::python::handle<>(PyImport_ImportModule("os")));
-    boost::python::object environ(module.attr("environ"));
-    return environ;
+    boost::python::object environObj(module.attr("environ"));
+    return environObj;
 }
 
 bool
@@ -356,8 +355,8 @@ TfPySetenv(const std::string & name, const std::string & value)
     TfPyLock lock;
 
     try {
-        object environ(_GetOsEnviron());
-        environ[name] = value;
+        object environObj(_GetOsEnviron());
+		environObj[name] = value;
         return true;
     }
     catch (boost::python::error_already_set&) {
@@ -378,10 +377,10 @@ TfPyUnsetenv(const std::string & name)
     TfPyLock lock;
 
     try {
-        object environ(_GetOsEnviron());
-        object has_key(environ.attr("has_key"));
+        object environObj(_GetOsEnviron());
+        object has_key(environObj.attr("has_key"));
         if (has_key(name)) {
-            environ[name].del();
+			environObj[name].del();
         }
         return true;
     }

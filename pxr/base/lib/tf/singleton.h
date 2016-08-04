@@ -25,7 +25,8 @@
 #define TF_SINGLETON_H
 
 #include "pxr/base/arch/hints.h"
-
+#include "pxr/base/arch/pragmas.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
 #include <mutex>
@@ -146,7 +147,7 @@ public:
      * This call tests whether or not the singleton currently exists.
      */
     static bool CurrentlyExists() {
-        return _instance;
+        return _instance ? true : false;
     }
 
     /*!
@@ -196,7 +197,9 @@ private:
     static T& _CreateInstance();
     static void _DestroyInstance();
     static T* _instance;
-    static std::mutex _mutex;
+    ARCH_PRAGMA_NEEDS_EXPORT_INTERFACE
+    static std::mutex* _mutex;
+    ARCH_PRAGMA_RESTORE
 };
 
 

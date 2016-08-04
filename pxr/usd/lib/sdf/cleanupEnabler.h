@@ -27,6 +27,7 @@
 #define SDF_CLEANUP_ENABLER_H
 
 #include "pxr/base/tf/stacked.h"
+#include "pxr/usd/sdf/api.h"
 
 /// \class SdfCleanupEnabler
 /// \brief An RAII class which, when an instance is alive, enables scheduling of
@@ -66,12 +67,14 @@ class SdfCleanupEnabler :
 {
 public:
 
-    SdfCleanupEnabler();
+    SDF_API SdfCleanupEnabler();
 
-    ~SdfCleanupEnabler();
+    SDF_API ~SdfCleanupEnabler();
 
     /// Returns whether cleanup is currently being scheduled.
-    static bool IsCleanupEnabled();
+    SDF_API static bool IsCleanupEnabled();
 };
+
+SDF_API_TEMPLATE_CLASS(TfStacked<SdfCleanupEnabler>);
 
 #endif  // #ifndef SDF_CLEANUP_ENABLER_H

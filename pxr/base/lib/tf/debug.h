@@ -30,6 +30,7 @@
  * \ingroup group_tf_DebuggingOutput
  */
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
@@ -270,8 +271,8 @@ public:
 
 #if !defined(doxygen)
     struct Helper {
-        static void Msg(const std::string& msg);
-        static void Msg(const char* msg, ...) ARCH_PRINTF_FUNCTION(1,2);
+        static TF_API void Msg(const std::string& msg);
+        static TF_API void Msg(const char* msg, ...) ARCH_PRINTF_FUNCTION(1,2);
     };
 #endif
 
@@ -314,12 +315,14 @@ public:
      * with an '*' as is otherwise a prefix of a debug symbols.  The names of all
      * debug symbols set by this call are returned as a vector.
      */
+    TF_API
     static std::vector<std::string> SetDebugSymbolsByName(const std::string& pattern,
                                                           bool value);
 
     /*!
      * \brief True if the specified debug symbol is set.
      */
+    TF_API
     static bool IsDebugSymbolNameEnabled(const std::string& name);
 
     /*!
@@ -328,11 +331,13 @@ public:
      * A single string describing all registered debug symbols along with short
      * descriptions is returned.
      */
+    TF_API
     static std::string GetDebugSymbolDescriptions();
 
     /*!
      * \brief Get a listing of all debug symbols.
      */
+    TF_API
     static std::vector<std::string> GetDebugSymbolNames();
 
     /*!
@@ -342,6 +347,7 @@ public:
      * description string that is embedded in the return value of
      * GetDebugSymbolDescriptions.
      */
+    TF_API
     static std::string GetDebugSymbolDescription(const std::string& name);
 
     /*!
@@ -352,6 +358,7 @@ public:
      * the environment variable TF_DEBUG_OUTPUT_FILE is set to 'stderr', then
      * output is issued to stderr by default.
      */
+    TF_API
     static void SetOutputFile(FILE *file);
     
     struct _Node;
@@ -374,6 +381,7 @@ public:
      * Public, to be used in TF_DEBUG_ENVIRONMENT_SYMBOL() macro,
      * but not meant to be used otherwise.
      */
+    TF_API
     static void _RegisterDebugSymbol(TfEnum val, _Node* addr,
                                      const char* descrip);
 
@@ -381,6 +389,7 @@ public:
      * This function is only meant for use by TfRegistryManager.
      * It's relatively expensive, and not meant for large-scale use.
      */
+    TF_API
     static bool _CheckEnvironmentForMatch(const std::string& enumName);
 
     // Unfortunately, we need to make both _Traits and _Node, below
@@ -419,6 +428,7 @@ private:
 
     friend class Tf_DebugSymbolRegistry;
     
+    TF_API
     static void _ComplainAboutInvalidSymbol(const char*);
     static void _SetNodes(_Node* ptr, size_t nNodes, bool state);
     static void _SetParentChild(_Node* parent, _Node* child);

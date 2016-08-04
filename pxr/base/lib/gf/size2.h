@@ -26,6 +26,7 @@
 
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/api.h"
 #include <iosfwd>
 
 /*!
@@ -180,17 +181,18 @@ public:
     }
 
     //! Output operator
+    GF_API
     friend std::ostream &operator<<(std::ostream &o, GfSize2 const &v);
 
     //! Conversion to GfVec2i
     operator GfVec2i() const {
-	return GfVec2i(_vec[0],_vec[1]);
+	return GfVec2i(static_cast<int>(_vec[0]), static_cast<int>(_vec[1]));
     }
  private:
     size_t _vec[2];
 };
 
 // Friend functions must be declared
-std::ostream &operator<<(std::ostream &o, GfSize2 const &v);
+GF_API std::ostream &operator<<(std::ostream &o, GfSize2 const &v);
 
 #endif /* GF_SIZE2_H */

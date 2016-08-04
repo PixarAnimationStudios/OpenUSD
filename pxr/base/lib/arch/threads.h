@@ -24,6 +24,7 @@
 #ifndef ARCH_THREADS_H
 #define ARCH_THREADS_H
 
+#include "pxr/base/arch/api.h"
 
 /*!
  * \file threads.h
@@ -35,6 +36,6 @@
  * \brief Return true if the calling thread is the main thread, false
  * otherwise.
  */
-bool ArchIsMainThread();
+ARCH_API bool ArchIsMainThread();
 
 #endif // ARCH_THREADS_H

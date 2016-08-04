@@ -24,6 +24,8 @@
 ///
 /// \file camera/wrapConformWindow.h
 
+#include <boost/python.hpp>
+
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
 #include "pxr/base/gf/camera.h"
@@ -32,8 +34,6 @@
 #include "pxr/base/gf/range2d.h"
 
 #include "pxr/base/tf/pyEnum.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

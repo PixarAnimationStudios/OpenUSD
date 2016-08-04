@@ -24,6 +24,8 @@
 #ifndef TF_PY_ARG_H
 #define TF_PY_ARG_H
 
+#include "pxr/base/tf/api.h"
+
 #include <boost/python/dict.hpp>
 #include <boost/python/tuple.hpp>
 #include <string>
@@ -76,6 +78,7 @@ typedef std::vector<TfPyArg> TfPyArgs;
 /// If \p allowExtraArgs is \c false, any unrecognized keyword or positional
 /// arguments will cause a Python TypeError to be emitted. Otherwise, 
 /// unmatched arguments will be added to the returned tuple or dict.
+TF_API
 std::pair<boost::python::tuple, boost::python::dict>
 TfPyProcessOptionalArgs(
     const boost::python::tuple& args, 
@@ -86,6 +89,7 @@ TfPyProcessOptionalArgs(
 /// Create a doc string for a function with the given \p functionName,
 /// \p requiredArguments and \p optionalArguments. An extra \p description
 /// may also be supplied.
+TF_API
 std::string TfPyCreateFunctionDocString(
     const std::string& functionName,
     const TfPyArgs& requiredArguments = TfPyArgs(), 

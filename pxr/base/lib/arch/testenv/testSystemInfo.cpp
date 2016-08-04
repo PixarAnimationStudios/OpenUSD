@@ -21,12 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/env.h"
 #include "pxr/base/arch/systemInfo.h"
-
+#if defined(ARCH_OS_WINDOWS)
+#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable:4996)
+#include <csignal>
+#endif
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <time.h>
 
 using std::string;
 

@@ -21,6 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/dict.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/list.hpp>
+#include <boost/python/to_python_converter.hpp>
+#include <boost/python/converter/from_python.hpp>
+#include <boost/python/converter/registered.hpp>
+#include <boost/python/converter/rvalue_from_python_data.hpp>
+#include <boost/python/detail/api_placeholder.hpp>
+
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
@@ -30,15 +39,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tracelite/trace.h"
-
-#include <boost/python/dict.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/converter/from_python.hpp>
-#include <boost/python/converter/registered.hpp>
-#include <boost/python/converter/rvalue_from_python_data.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
 
 using namespace boost::python;
 

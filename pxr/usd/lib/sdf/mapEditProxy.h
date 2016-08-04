@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/mapEditor.h"
 #include "pxr/usd/sdf/spec.h"
+#include "pxr/usd/sdf/api.h"
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 #include "pxr/base/tf/diagnostic.h"
@@ -110,8 +111,8 @@ public:
 /// \sa SdfIdentityMapEditProxyValuePolicy
 ///
 template <class T, class _ValuePolicy = SdfIdentityMapEditProxyValuePolicy<T> >
-class SdfMapEditProxy :
-    boost::totally_ordered<SdfMapEditProxy<T, _ValuePolicy>, T> {
+class SdfMapEditProxy
+{
 public:
     typedef T Type;
     typedef _ValuePolicy ValuePolicy;

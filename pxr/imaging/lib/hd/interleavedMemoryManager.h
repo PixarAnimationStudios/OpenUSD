@@ -27,6 +27,7 @@
 #include <boost/shared_ptr.hpp>
 #include <list>
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -227,6 +228,8 @@ protected:
     friend class TfSingleton<HdInterleavedUBOMemoryManager>;
 };
 
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdInterleavedUBOMemoryManager>);
+
 class HdInterleavedSSBOMemoryManager : public HdInterleavedMemoryManager {
 public:
     /// Factory for creating HdBufferArray managed by
@@ -246,5 +249,7 @@ public:
 protected:
     friend class TfSingleton<HdInterleavedSSBOMemoryManager>;
 };
+
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdInterleavedSSBOMemoryManager>);
 
 #endif  // HD_INTERLEAVED_VBO_MEMORY_MANAGER_H

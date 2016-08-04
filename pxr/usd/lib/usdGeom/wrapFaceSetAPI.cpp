@@ -21,13 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usd/conversions.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
 using namespace boost::python;
 
 #include <string>

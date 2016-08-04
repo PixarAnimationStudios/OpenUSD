@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #define ADDITION_OPERATOR
-#include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
-
+#include "pxr/base/vt/typeHeaders.h"
 
 void wrapArrayRange() {
     BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_RANGE_VALUE_TYPES);
 }
+

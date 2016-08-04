@@ -28,6 +28,7 @@
 #ifndef SDF_NOTICE_H
 #define SDF_NOTICE_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
@@ -43,7 +44,7 @@ public:
     /// purposes.
     class Base : public TfNotice {
     public:
-        ~Base();
+        SDF_API ~Base();
     };
 
     /// Base class for LayersDidChange and LayersDidChangeSentPerLayer
@@ -56,6 +57,7 @@ public:
             {}
 
         /// A list of layers changed.
+        SDF_API
         SdfLayerHandleVector GetLayers() const;
 
         /// A map of layers to the changes that occurred to them.
@@ -81,7 +83,7 @@ public:
         LayersDidChangeSentPerLayer(const SdfLayerChangeListMap &changeMap,
                                     size_t serialNumber)
             : BaseLayersDidChange(changeMap, serialNumber) {}
-        virtual ~LayersDidChangeSentPerLayer();
+        SDF_API virtual ~LayersDidChangeSentPerLayer();
     };
 
     /// Global notice sent to indicate that layer contents have changed.
@@ -91,7 +93,7 @@ public:
         LayersDidChange(const SdfLayerChangeListMap &changeMap,
                         size_t serialNumber)
             : BaseLayersDidChange(changeMap, serialNumber) {}
-        virtual ~LayersDidChange();
+        SDF_API virtual ~LayersDidChange();
     };
 
     /// Sent when the (scene spec) info of a layer have changed.
@@ -99,7 +101,7 @@ public:
     public:
         LayerInfoDidChange( const TfToken &key ) :
             _key(key) {}
-        ~LayerInfoDidChange();
+        SDF_API ~LayerInfoDidChange();
 
         /// Return the key affected.
         const TfToken & key() const { return _key; }
@@ -110,8 +112,10 @@ public:
     /// Sent when the identifier of a layer has changed.
     class LayerIdentifierDidChange : public Base {
     public:
+        SDF_API
         LayerIdentifierDidChange(const std::string& oldIdentifier,
                                  const std::string& newIdentifier);
+        SDF_API
         ~LayerIdentifierDidChange();
 
         /// Returns the old identifier for the layer.
@@ -128,26 +132,26 @@ public:
     /// Sent after a menv layer has been loaded from a file.
     class LayerDidReplaceContent : public Base {
     public:
-        ~LayerDidReplaceContent();
+        SDF_API ~LayerDidReplaceContent();
     };
 
     /// Sent after a layer is reloaded.
     class LayerDidReloadContent : public LayerDidReplaceContent {
     public:
-        virtual ~LayerDidReloadContent();
+        SDF_API virtual ~LayerDidReloadContent();
     };
     
     /// Sent after a layer is saved to file.
     class LayerDidSaveLayerToFile : public Base {
     public:
-        ~LayerDidSaveLayerToFile();
+        SDF_API ~LayerDidSaveLayerToFile();
     };
 
     /// Similar behavior to LayersDidChange, but only gets sent if a change
     /// in the dirty status of a layer occurs.
     class LayerDirtinessChanged : public Base {
     public:
-        ~LayerDirtinessChanged();
+        SDF_API ~LayerDirtinessChanged();
     };
 
     /// Sent after a layer has been added or removed from the set of
@@ -160,7 +164,7 @@ public:
             , _wasMuted(wasMuted)
         { }
 
-        ~LayerMutenessChanged();
+        SDF_API ~LayerMutenessChanged();
 
         /// Returns the path of the layer that was muted or unmuted.
         const std::string& GetLayerPath() const { return _layerPath; }

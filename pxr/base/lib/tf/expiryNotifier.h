@@ -25,6 +25,7 @@
 #define TF_EXPIRYNOTIFIER_H
 
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/api.h"
 
 /*!
  * \brief Set the extra notifier function.
@@ -50,11 +51,11 @@
 
 class Tf_ExpiryNotifier {
 public:
-    static void Invoke(void const *p);
-    static void SetNotifier(void (*func)(void const *));
+    TF_API static void Invoke(void const *p);
+    TF_API static void SetNotifier(void (*func)(void const *));
 
-    static void Invoke2(void const *p);
-    static void SetNotifier2(void (*func)(void const *));
+    TF_API static void Invoke2(void const *p);
+    TF_API static void SetNotifier2(void (*func)(void const *));
 private:
 
     static void (*_func)(void const *);

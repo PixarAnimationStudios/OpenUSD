@@ -24,6 +24,7 @@
 #include "pxr/base/arch/errno.h"
 #include <cassert>
 #include <cstdio>
+#include <ciso646>
 
 int main(int argc, char *argv[])
 {

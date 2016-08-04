@@ -24,6 +24,7 @@
 #ifndef HD_QUADRANGULATE_H
 #define HD_QUADRANGULATE_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
@@ -117,7 +118,8 @@ class HdMeshTopology;
     //                   pointsOffset
     //                       <----- numAdditionalPoints  ---->
 
-struct Hd_QuadInfo {
+class Hd_QuadInfo {
+public:
     Hd_QuadInfo() : pointsOffset(0), numAdditionalPoints(0), maxNumVert(0) { }
 
     /// Returns true if the mesh is all-quads.

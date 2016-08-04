@@ -26,6 +26,7 @@
 
 #include "pxr/base/gf/line2d.h"
 #include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/api.h"
 #include <float.h>
 
 /*!
@@ -73,6 +74,7 @@ class GfLineSeg2d {
     // Returns the point on the line that is closest to \p point. If
     // \p t is not \c NULL, it will be set to the parametric
     // distance along the line of the closest point.
+    GF_API
     GfVec2d FindClosestPoint(const GfVec2d &point, double *t = NULL) const;
 
     //!
@@ -91,9 +93,11 @@ class GfLineSeg2d {
     }
 
   private:
+    GF_API
     friend bool GfFindClosestPoints( const GfLine2d &, const GfLineSeg2d &,
                                      GfVec2d *, GfVec2d *,
                                      double *t1, double *t2 );
+    GF_API
     friend bool GfFindClosestPoints( const GfLineSeg2d &, const GfLineSeg2d &,
                                      GfVec2d *, GfVec2d *,
                                      double *, double * );
@@ -111,6 +115,7 @@ class GfLineSeg2d {
 // This returns \c false if the lines were close enough to
 // parallel that no points could be computed; in this case, the
 // other return values are undefined.
+GF_API
 bool GfFindClosestPoints( const GfLine2d &line, const GfLineSeg2d &seg,
                           GfVec2d *p1 = nullptr, GfVec2d *p2 = nullptr,
                           double *t1 = nullptr, double *t2 = nullptr );
@@ -124,6 +129,7 @@ bool GfFindClosestPoints( const GfLine2d &line, const GfLineSeg2d &seg,
 // This returns \c false if the lines were close enough to
 // parallel that no points could be computed; in this case, the
 // other return values are undefined.
+GF_API
 bool GfFindClosestPoints( const GfLineSeg2d &seg1, const GfLineSeg2d &seg2,
                           GfVec2d *p1 = nullptr, GfVec2d *p2 = nullptr,
                           double *t1 = nullptr, double *t2 = nullptr );

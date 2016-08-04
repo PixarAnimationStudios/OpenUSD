@@ -22,21 +22,28 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/pathUtils.h"
-
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/errno.h"
 
 #include <boost/bind.hpp>
 #include <boost/scoped_array.hpp>
 
 #include <algorithm>
 #include <errno.h>
-#include <glob.h>
 #include <limits.h>
 #include <string>
 #include <sys/stat.h>
 #include <utility>
 #include <vector>
+#include <ciso646>
+
+#if !defined(ARCH_OS_WINDOWS)
+#include <glob.h>
+#else
+#include <Windows.h>
+#endif
 
 using std::pair;
 using std::string;
@@ -48,6 +55,20 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
     if (path.empty())
         return string();
 
+#if defined(ARCH_OS_WINDOWS)
+	char fullPath[ARCH_PATH_MAX];
+
+	if (!GetFullPathName(path.c_str(), ARCH_PATH_MAX, fullPath, NULL))
+	{
+		if (error)
+		{
+			*error = "Call to GetFullPathName failed";
+		}
+		return string();
+	}
+
+	return std::string(fullPath);
+#else
     string localError;
     if (not error)
         error = &localError;
@@ -65,13 +86,18 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
         suffix = string(path, split);
     }
 
-    char resolved[PATH_MAX];
+    char resolved[ARCH_PATH_MAX];
     return TfAbsPath(TfSafeString(realpath(prefix.c_str(), resolved)) + suffix);
+#endif
 }
 
 string::size_type
 TfFindLongestAccessiblePrefix(string const &path, string* error)
 {
+#if defined(ARCH_OS_WINDOWS)
+    printf("TfFindLongestAccessiblePrefix not yet implemented on Windows.\n");
+    return path.size();
+#else
     typedef string::size_type size_type;
     static const size_type npos = string::npos;
 
@@ -93,7 +119,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
             struct stat st;
             if (lstat(checkPath.c_str(), &st) == -1) {
                 if (errno != ENOENT and err->empty())
-                    *err = strerror(errno);
+                    *err = ArchStrerror(errno).c_str();
                 return false;
             }
 
@@ -105,7 +131,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
                         if (errno == ENOENT)
                             *err = "encountered dangling symbolic link";
                         else
-                            *err = strerror(errno);
+                            *err = ArchStrerror(errno).c_str();
                     }
                     return false;
                 }
@@ -135,6 +161,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
     if (result == splitPoints.end())
         return path.length();
     return *(result - 1);
+#endif
 }
 
 namespace { // Helpers for TfNormPath.
@@ -308,6 +335,16 @@ TfNormPath(string const &inPath)
 string
 TfAbsPath(string const& path)
 {
+#if defined(ARCH_OS_WINDOWS)
+	char buffer[ARCH_PATH_MAX];
+	if (GetFullPathName(path.c_str(), ARCH_PATH_MAX, buffer, nullptr)) {
+		return string(buffer);
+	} else {
+		printf("TfAbsPath failed on %s with error code %d\n", 
+			path.c_str(), GetLastError());
+		return path;
+	}
+#else
     if (path.empty()) {
         return path;
     }
@@ -315,9 +352,9 @@ TfAbsPath(string const& path)
         return TfNormPath(path);
     }
 
-    boost::scoped_array<char> cwd(new char[PATH_MAX]);
+    boost::scoped_array<char> cwd(new char[ARCH_PATH_MAX]);
 
-    if (getcwd(cwd.get(), PATH_MAX) == NULL) {
+    if (getcwd(cwd.get(), ARCH_PATH_MAX) == NULL) {
         // CODE_COVERAGE_OFF hitting this would require creating a directory,
         // chdir'ing into it, deleting that directory, *then* calling this
         // function.
@@ -326,26 +363,32 @@ TfAbsPath(string const& path)
     }
 
     return TfNormPath(TfSafeString(cwd.get()) + "/" + path);
+#endif
 }
 
 string
 TfReadLink(string const& path)
 {
+#if defined(ARCH_OS_WINDOWS)
+	return path;
+#else
     if (path.empty()) {
         return path;
     }
 
-    boost::scoped_array<char> buf(new char[PATH_MAX]);
+    boost::scoped_array<char> buf(new char[ARCH_PATH_MAX]);
     ssize_t len;
 
-    if ((len = readlink(path.c_str(), buf.get(), PATH_MAX)) == -1) {
+    if ((len = readlink(path.c_str(), buf.get(), ARCH_PATH_MAX)) == -1) {
         return string();
     }
     buf.get()[len] = '\0';
 
     return TfSafeString(buf.get());
+#endif
 }
 
+#if !defined(ARCH_OS_WINDOWS)
 vector<string>
 TfGlob(vector<string> const& paths, unsigned int flags)
 {
@@ -382,3 +425,5 @@ TfGlob(string const& path, unsigned int flags)
         ? vector<string>()
         : TfGlob(vector<string>(1, path), flags);
 }
+
+#endif

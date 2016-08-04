@@ -24,12 +24,15 @@
 #ifndef GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
 #define GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
 
+#include "pxr/imaging/glfq/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/weakBase.h"
 
 #include <boost/scoped_ptr.hpp>
 
+#if !defined(ARCH_OS_WINDOWS)
 class GlfQGLPlatformDebugContextPrivate;
+#endif
 
 TF_DECLARE_WEAK_PTRS(GlfQGLPlatformDebugContext);
 
@@ -37,21 +40,32 @@ TF_DECLARE_WEAK_PTRS(GlfQGLPlatformDebugContext);
 ///
 class GlfQGLPlatformDebugContext : public TfWeakBase {
 public:
+    GLFQ_API
     GlfQGLPlatformDebugContext(int majorVersion,
                                int minorVersion,
                                bool coreProfile,
                                bool directRenderering);
+
+    GLFQ_API
     virtual ~GlfQGLPlatformDebugContext();
 
+    GLFQ_API
     static bool IsEnabledDebugOutput();
+
+    GLFQ_API
     static bool IsEnabledCoreProfile();
 
+    GLFQ_API
     void makeCurrent();
+
+    GLFQ_API
     void *chooseMacVisual();
 
 public:
+#if !defined(ARCH_OS_WINDOWS)
     boost::scoped_ptr<GlfQGLPlatformDebugContextPrivate> _private;
     bool _coreProfile;
+#endif
 };
 
 #endif // GLFQ_GLPLATFORM_DEBUG_CONTEXT_H

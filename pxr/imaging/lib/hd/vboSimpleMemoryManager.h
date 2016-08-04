@@ -25,6 +25,7 @@
 #define HD_VBO_SIMPLE_MEMORY_MANAGER_H
 
 #include "pxr/base/tf/singleton.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/bufferArray.h"
@@ -201,5 +202,6 @@ protected:
     };
 };
 
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdVBOSimpleMemoryManager>);
 
 #endif  // HD_VBO_SIMPLE_MEMORY_MANAGER_H

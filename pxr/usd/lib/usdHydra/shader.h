@@ -72,11 +72,13 @@ public:
     }
 
     /// Destructor.
+    USDHYDRA_API
     virtual ~UsdHydraShader();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDHYDRA_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -89,6 +91,7 @@ public:
     /// UsdHydraShader(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDHYDRA_API
     static UsdHydraShader
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -101,6 +104,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDHYDRA_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -113,6 +117,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Asset
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: @@
+    USDHYDRA_API
     UsdAttribute GetFilenameAttr() const;
 
     /// See GetFilenameAttr(), and also 
@@ -120,6 +125,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDHYDRA_API
     UsdAttribute CreateFilenameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

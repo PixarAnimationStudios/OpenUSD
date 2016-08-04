@@ -24,6 +24,7 @@
 #ifndef PCP_SITE_H
 #define PCP_SITE_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -36,21 +37,21 @@ TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 class PcpLayerStackSite;
 
 /// A site specifies a path in a layer stack of scene description.
-struct PcpSite : boost::totally_ordered<PcpSite> {
+class PcpSite : boost::totally_ordered<PcpSite> {
 public:
     PcpLayerStackIdentifier layerStackIdentifier;
     SdfPath path;
 
-    PcpSite();
+	PCP_API PcpSite();
 
-    PcpSite( const PcpLayerStackIdentifier &, const SdfPath & path );
-    PcpSite( const PcpLayerStackPtr &, const SdfPath & path );
-    PcpSite( const SdfLayerHandle &, const SdfPath & path );
-    explicit PcpSite( const PcpLayerStackSite & );
+	PCP_API PcpSite( const PcpLayerStackIdentifier &, const SdfPath & path );
+	PCP_API PcpSite( const PcpLayerStackPtr &, const SdfPath & path );
+	PCP_API PcpSite( const SdfLayerHandle &, const SdfPath & path );
+	PCP_API explicit PcpSite( const PcpLayerStackSite & );
 
-    bool operator==(const PcpSite &rhs) const;
+	PCP_API bool operator==(const PcpSite &rhs) const;
     
-    bool operator<(const PcpSite &rhs) const;
+	PCP_API bool operator<(const PcpSite &rhs) const;
 
     struct Hash {
         size_t operator()(const PcpSite &) const;
@@ -58,7 +59,7 @@ public:
 };
 
 /// A site specifies a path in a layer stack of scene description.
-struct PcpLayerStackSite : boost::totally_ordered<PcpLayerStackSite> {
+class PcpLayerStackSite : boost::totally_ordered<PcpLayerStackSite> {
 public:
     PcpLayerStackPtr layerStack;
     SdfPath path;
@@ -76,8 +77,8 @@ public:
     };
 };
 
-std::ostream& operator<<(std::ostream&, const PcpSite&);
-std::ostream& operator<<(std::ostream&, const PcpLayerStackSite&);
+PCP_API std::ostream& operator<<(std::ostream&, const PcpSite&);
+PCP_API std::ostream& operator<<(std::ostream&, const PcpLayerStackSite&);
 
 static inline
 size_t

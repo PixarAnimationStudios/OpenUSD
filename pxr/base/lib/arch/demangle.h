@@ -34,6 +34,7 @@
  * \ingroup group_arch_Strings
  */
 
+#include "pxr/base/arch/api.h"
 #include <string>
 #include <typeinfo>
 #include <typeindex>
@@ -53,7 +54,7 @@
  */
 
 
-bool ArchDemangle(std::string* typeName);
+ARCH_API bool ArchDemangle(std::string* typeName);
 
 /*!
  * \brief Return demangled RTTI generated-type name.
@@ -112,6 +113,6 @@ ArchGetDemangled() {
     return ArchGetDemangled(typeid(T).name());
 }
 
-void Arch_DemangleFunctionName(std::string* functionName);
+ARCH_API void Arch_DemangleFunctionName(std::string* functionName);
 
 #endif	// ARCH_DEMANGLE_H 

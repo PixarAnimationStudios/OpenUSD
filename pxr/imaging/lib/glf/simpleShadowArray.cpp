@@ -211,7 +211,7 @@ GlfSimpleShadowArray::_AllocTextureArray()
     glBindTexture(GL_TEXTURE_2D_ARRAY, _texture);
 
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
-                 _size[0], _size[1], _numLayers, 0, 
+                 _size[0], _size[1], static_cast<GLsizei>(_numLayers), 0, 
                  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
     GLfloat border[] = {1, 1, 1, 1};
@@ -281,7 +281,7 @@ GlfSimpleShadowArray::_BindFramebuffer(size_t index)
 
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
     glFramebufferTextureLayer(GL_FRAMEBUFFER,
-                              GL_DEPTH_ATTACHMENT, _texture, 0, index);
+                              GL_DEPTH_ATTACHMENT, _texture, 0, static_cast<GLint>(index));
 }
 
 void

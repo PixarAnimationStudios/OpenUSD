@@ -36,6 +36,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <ciso646>
 
 using std::string;
 using std::vector;

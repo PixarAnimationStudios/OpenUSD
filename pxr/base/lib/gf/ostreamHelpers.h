@@ -62,7 +62,7 @@ inline Gf_OstreamHelperValue<double> Gf_OstreamHelperP(double v) {
 inline std::ostream &
 operator<<(std::ostream &out, const Gf_OstreamHelperValue<float> &data)
 {
-    int oldPrecision = out.precision(std::numeric_limits<float>::digits10);
+    std::streamsize oldPrecision = out.precision(std::numeric_limits<float>::digits10);
     out << data.value;
     out.precision(oldPrecision);
     return out;
@@ -72,7 +72,7 @@ operator<<(std::ostream &out, const Gf_OstreamHelperValue<float> &data)
 inline std::ostream &
 operator<<(std::ostream &out, const Gf_OstreamHelperValue<double> &data)
 {
-    int oldPrecision = out.precision(std::numeric_limits<double>::digits10);
+	std::streamsize oldPrecision = out.precision(std::numeric_limits<double>::digits10);
     out << data.value;
     out.precision(oldPrecision);
     return out;

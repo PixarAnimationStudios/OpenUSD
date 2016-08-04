@@ -369,7 +369,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
 
     _mallocTagID = TfMallocTag::IsInitialized() ?
-        strdup(::_StageTag(rootLayer->GetIdentifier()).c_str()) :
+        ::_StageTag(rootLayer->GetIdentifier()).c_str() :
         ::_dormantMallocTagID;
 
     _cache->SetVariantFallbacks(GetGlobalVariantFallbacks());
@@ -382,9 +382,6 @@ UsdStage::~UsdStage()
         _rootLayer ? _rootLayer->GetIdentifier().c_str() : "<null>",
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
     Close();
-    if (_mallocTagID != ::_dormantMallocTagID){
-        free(const_cast<char*>(_mallocTagID));
-    }
 }
 
 void
@@ -3185,7 +3182,7 @@ UsdStage::_ComposePrimIndexesInParallel(
     _cache->ComputePrimIndexesInParallel(
         primIndexPaths,
         &errs, _NameChildrenPred(_instanceCache.get()),
-        "Usd", _mallocTagID);
+        "Usd", _mallocTagID.c_str());
     if (not errs.empty()) {
         _ReportPcpErrors(errs, context);
     }
@@ -5070,7 +5067,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                         return;
                     }
                 }
-                ARCH_PRAGMA_POP_NOERROR_MAYBE_UNINITIALIZED;
+				ARCH_PRAGMA_RESTORE;
             }    
         }
     }
@@ -5173,7 +5170,7 @@ UsdStage::_GetValueFromResolveInfo(const Usd_ResolveInfo &info,
 }
 
 template <class T>
-bool 
+USD_API bool 
 UsdStage::_GetValueFromResolveInfo(const Usd_ResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
                                    T* value) const
@@ -6176,17 +6173,17 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template bool UsdStage::_GetValue(                                  \
-        UsdTimeCode, const UsdAttribute&,                                   \
+        UsdTimeCode, const UsdAttribute&,                               \
         SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
     template bool UsdStage::_GetValue(                                  \
-        UsdTimeCode, const UsdAttribute&,                                   \
+        UsdTimeCode, const UsdAttribute&,                               \
         SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                \
                                                                         \
-    template bool UsdStage::_GetValueFromResolveInfo(                   \
-        const Usd_ResolveInfo&, UsdTimeCode, const UsdAttribute&,           \
+    template USD_API bool UsdStage::_GetValueFromResolveInfo(           \
+        const Usd_ResolveInfo&, UsdTimeCode, const UsdAttribute&,       \
         SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
-    template bool UsdStage::_GetValueFromResolveInfo(                   \
-        const Usd_ResolveInfo&, UsdTimeCode, const UsdAttribute&,           \
+    template USD_API bool UsdStage::_GetValueFromResolveInfo(           \
+        const Usd_ResolveInfo&, UsdTimeCode, const UsdAttribute&,       \
         SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                      
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)

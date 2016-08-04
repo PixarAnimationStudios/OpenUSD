@@ -197,17 +197,21 @@ GlfQGLPlatformDebugContext::GlfQGLPlatformDebugContext(int majorVersion,
                                                        int minorVersion,
                                                        bool coreProfile,
                                                        bool directRendering)
+#if !defined(ARCH_OS_WINDOWS)
     : _private(NULL)
     , _coreProfile(coreProfile)
 
+#endif
 {
     if (not GlfQGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
+#if !defined(ARCH_OS_WINDOWS)
     _private.reset(new GlfQGLPlatformDebugContextPrivate(majorVersion,
                                                          minorVersion,
                                                          coreProfile,
                                                          directRendering));
+#endif
 }
 
 GlfQGLPlatformDebugContext::~GlfQGLPlatformDebugContext()
@@ -219,6 +223,7 @@ GlfQGLPlatformDebugContext::~GlfQGLPlatformDebugContext()
 void
 GlfQGLPlatformDebugContext::makeCurrent()
 {
+#if !defined(ARCH_OS_WINDOWS)
     if (not GlfQGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
@@ -228,8 +233,10 @@ GlfQGLPlatformDebugContext::makeCurrent()
     }
 
     _private->MakeCurrent();
+#endif
 }
 
+#if defined(ARCH_OS_DARWIN)
 void*
 GlfQGLPlatformDebugContext::chooseMacVisual()
 {
@@ -241,3 +248,4 @@ GlfQGLPlatformDebugContext::chooseMacVisual()
     }
     return nullptr;
 }
+#endif

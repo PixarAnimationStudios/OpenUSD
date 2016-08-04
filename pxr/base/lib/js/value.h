@@ -36,6 +36,9 @@
 #include <type_traits>
 #include <vector>
 
+#undef GetObject            // Defined on Windows.
+
+
 /// \class JsValue
 ///
 /// A discriminated union type for JSON values. A JsValue may contain one of
@@ -52,7 +55,7 @@
 /// \li null
 /// \ul
 ///
-class JS_API JsValue
+class JsValue
 {
 public:
     /// Type held by this JSON value.
@@ -67,73 +70,73 @@ public:
     };
 
     /// Constructs a null value.
-    JsValue();
+	JS_API JsValue();
 
     /// Constructs a value holding the given object.
-    JsValue(const JsObject& value);
+    JS_API JsValue(const JsObject& value);
 
     /// Constructs a value holding the given array.
-    JsValue(const JsArray& value);
+    JS_API JsValue(const JsArray& value);
 
     /// Constructs a value holding the given char array as a std::string.
-    explicit JsValue(const char* value);
+    JS_API explicit JsValue(const char* value);
 
     /// Constructs a value holding the given std::string.
-    explicit JsValue(const std::string& value);
+    JS_API explicit JsValue(const std::string& value);
 
     /// Constructs a value holding a bool.
-    explicit JsValue(bool value);
+    JS_API explicit JsValue(bool value);
 
     /// Constructs a value holding a signed integer.
-    explicit JsValue(int value);
+    JS_API explicit JsValue(int value);
 
     /// Constructs a value holding a 64-bit signed integer.
-    explicit JsValue(int64_t value);
+    JS_API explicit JsValue(int64_t value);
 
     /// Constructs a value holding a 64-bit unsigned integer.
-    explicit JsValue(uint64_t value);
+    JS_API explicit JsValue(uint64_t value);
 
     /// Constructs a value holding a double.
-    explicit JsValue(double value);
+    JS_API explicit JsValue(double value);
 
     /// Returns the object held by this value. If this value is not holding an
     /// object, this method raises a coding error and an empty object is
     /// returned.
-    const JsObject& GetObject() const;
+	JS_API const JsObject& GetObject() const;
 
     /// Returns the array held by this value. If this value is not holding an
     /// array, this method raises a coding error and an empty array is
     /// returned.
-    const JsArray& GetArray() const;
+	JS_API const JsArray& GetArray() const;
 
     /// Returns the string held by this value. If this value is not holding a
     /// string, this method raises a coding error and an empty string is
     /// returned.
-    const std::string& GetString() const;
+	JS_API const std::string& GetString() const;
 
     /// Returns the bool held by this value. If this value is not holding a
     /// bool, this method raises a coding error and false is returned.
-    bool GetBool() const;
+	JS_API bool GetBool() const;
 
     /// Returns the integer held by this value. If this value is not holding
     /// an int, this method raises a coding error and zero is returned. If the
     /// value is holding a 64-bit integer larger than the platform int may
     /// hold, the value is truncated.
-    int GetInt() const;
+	JS_API int GetInt() const;
 
     /// Returns the 64-bit integer held by this value. If this value is not
     /// holding a 64-bit integer, this method raises a coding error and zero
     /// is returned.
-    int64_t GetInt64() const;
+    JS_API int64_t GetInt64() const;
 
     /// Returns the 64-bit unsigned integer held by this value. If this value
     /// is not holding a 64-bit unsigned integer, this method raises a coding
     /// error and zero is returned.
-    uint64_t GetUInt64() const;
+    JS_API uint64_t GetUInt64() const;
 
     /// Returns the double held by this value. If this value is not holding a
     /// double, this method raises a coding error and zero is returned.
-    double GetReal() const;
+	JS_API double GetReal() const;
 
     /// Returns the value corresponding to the C++ type specified in the
     /// template parameter if it is holding such a value. Calling this
@@ -163,31 +166,31 @@ public:
     std::vector<T> GetArrayOf() const;
 
     /// Returns the type of this value.
-    Type GetType() const;
+    JS_API Type GetType() const;
 
     /// Returns a display name for the type of this value.
-    std::string GetTypeName() const;
+	JS_API std::string GetTypeName() const;
 
     /// Returns true if this value is holding an object type.
-    bool IsObject() const;
+	JS_API bool IsObject() const;
 
     /// Returns true if this value is holding an array type.
-    bool IsArray() const;
+	JS_API bool IsArray() const;
 
     /// Returns true if this value is holding a string type.
-    bool IsString() const;
+	JS_API bool IsString() const;
 
     /// Returns true if this value is holding a boolean type.
-    bool IsBool() const;
+	JS_API bool IsBool() const;
 
     /// Returns true if this value is holding an integer type.
-    bool IsInt() const;
+	JS_API bool IsInt() const;
 
     /// Returns true if this value is holding a real type.
-    bool IsReal() const;
+	JS_API bool IsReal() const;
 
     /// Returns true if this value is holding a 64-bit unsigned integer.
-    bool IsUInt64() const;
+	JS_API bool IsUInt64() const;
 
     /// Returns true if this value is holding a type that corresponds
     /// to the C++ type specified as the template parameter.
@@ -202,18 +205,18 @@ public:
     bool IsArrayOf() const;
 
     /// Returns true if this value is null, false otherwise.
-    bool IsNull() const;
+	JS_API bool IsNull() const;
 
     /// Evaluates to true if this value is not null.
-    explicit operator bool() const;
+    JS_API explicit operator bool() const;
 
     /// Returns true of both values hold the same type and the underlying held
     /// values are equal.
-    bool operator==(const JsValue& other) const;
+    JS_API bool operator==(const JsValue& other) const;
 
     /// Returns true if values are of different type, or the underlying held
     /// values are not equal.
-    bool operator!=(const JsValue& other) const;
+    JS_API bool operator!=(const JsValue& other) const;
 
 private:
     template <typename T> 

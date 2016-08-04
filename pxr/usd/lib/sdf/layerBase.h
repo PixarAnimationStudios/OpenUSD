@@ -32,6 +32,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
+#include "pxr/usd/sdf/api.h"
 #include <boost/noncopyable.hpp>
 #include <map>
 #include <string>
@@ -50,7 +51,7 @@ class SdfLayerBase : public TfRefBase, public TfWeakBase, boost::noncopyable
 {
 public:
     /// Returns the file format used by this layer.
-    SdfFileFormatConstPtr GetFileFormat() const;
+    SDF_API SdfFileFormatConstPtr GetFileFormat() const;
 
     /// Type for specifying additional file format-specific arguments to
     /// layer API.
@@ -58,7 +59,7 @@ public:
 
     /// Returns the file format-specific arguments used during the construction
     /// of this layer.
-    const FileFormatArguments& GetFileFormatArguments() const;
+    SDF_API const FileFormatArguments& GetFileFormatArguments() const;
 
     /// Returns the schema this layer adheres to. This schema provides details
     /// about the scene description that may be authored in this layer.

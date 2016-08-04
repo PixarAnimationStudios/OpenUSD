@@ -164,7 +164,7 @@ HdDispatchBuffer::HdDispatchBuffer(TfToken const &role, int count,
     _entireResource = HdBufferResourceSharedPtr(
         new HdBufferResource(
             role, GL_INT, /*numComponent=*/1, /*arraySize=*/1,
-            /*offset=*/0, stride));
+            /*offset=*/0, (int)stride));
     _entireResource->SetAllocation(newId, dataSize);
 
     // create a buffer array range, which aggregates all views
@@ -210,7 +210,7 @@ HdDispatchBuffer::AddBufferResourceView(
     // add a binding view (resource binder iterates and automatically binds)
     HdBufferResourceSharedPtr view =
         _AddResource(name, glDataType, numComponents, /*arraySize=*/1,
-                     offset, stride);
+                     offset, (int)stride);
 
     // this is just a view, not consuming memory
     view->SetAllocation(_entireResource->GetId(), /*size=*/0);

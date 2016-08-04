@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/preprocessorUtils.h"
-
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
 
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -53,6 +53,8 @@ for i in range(1, 32+1):
 #define _TF_ARG_ERROR(a, b, c)
 #define _TF_ARG_TUPLE_OVERFLOW(a, b, c)
 
+#if !defined(ARCH_OS_WINDOWS)
+
 BOOST_PP_IIF(BOOST_PP_EQUAL(1,                                          \
     BOOST_PP_EXPAND(BOOST_PP_CAT(TF_ARG_, _MAX_ARGS) BOOST_PP_LPAREN()  \
     BOOST_PP_REPEAT(BOOST_PP_SUB(_MAX_ARGS, 2), _TF_NUM_ARGS_REP, _TF)  \
@@ -62,4 +64,4 @@ BOOST_PP_IIF(BOOST_PP_EQUAL(1,                                          \
 BOOST_PP_IIF(BOOST_PP_GREATER_EQUAL(_MAX_ARGS, BOOST_PP_LIMIT_TUPLE), \
              BOOST_PP_TUPLE_EAT(1), _TF_ARG_TUPLE_OVERFLOW)(...)
 
-
+#endif

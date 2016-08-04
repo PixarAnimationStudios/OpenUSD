@@ -21,13 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/pragmas.h"
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/error.h"
-#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/stackTrace.h"
+#include "pxr/base/arch/env.h"
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(ARCH_OS_WINDOWS)
+#include <WinSock2.h> // for timeval
+#include <LmCons.h>
+#include <Direct.h>
+ARCH_PRAGMA_MACRO_REDEFINITION
+#include <Shlobj.h> 
+ARCH_PRAGMA_RESTORE
+#include <Time.h>
+#else
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/time.h>
+#endif
 #include <fstream>
 #include <string>
 #include <string.h>
@@ -36,38 +49,25 @@
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/error.h"
+#include "pxr/base/arch/fileSystem.h"
 #if defined(ARCH_OS_DARWIN)
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
 #endif
 
-#ifdef _POSIX_VERSION
-#include <limits.h>                     /* for PATH_MAX */
-#else
-#include <sys/param.h>                  /* for MAXPATHLEN */
-#endif
-
-#ifndef PATH_MAX
-#ifdef _POSIX_VERSION
-#define PATH_MAX _POSIX_PATH_MAX
-#else
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 1024
-#endif
-#endif
-#endif
-
-using std::string;
+using namespace std; 
 
 string
 ArchGetCwd()
 {
-    char space[4096];
-    if (getcwd(space, 4096))
-	return string(space);
-
+#if defined(ARCH_OS_WINDOWS)
+	char space[ARCH_PATH_MAX];
+	if (::_getcwd(space, ARCH_PATH_MAX))
+		return string(space);
+#else
+	char space[4096];
+	if (getcwd(space, 4096))
+		return string(space);
 
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 
@@ -90,7 +90,7 @@ ArchGetCwd()
 #else
 #error Unknown architecture.
 #endif    
-
+#endif
     ARCH_WARNING("can't determine working directory");
     return ".";
 }
@@ -98,8 +98,15 @@ ArchGetCwd()
 string
 ArchGetHomeDirectory(const std::string &login)
 {
+#if defined(ARCH_OS_WINDOWS)
+	char path[ARCH_PATH_MAX];
+	if (SUCCEEDED(::SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, path)))
+	{
+		return string(path);
+	}
+#else
     if (login.empty()) {
-        const char* home = getenv("HOME");
+        const char* home = ArchGetEnv("HOME");
         if (home && home[0] != '\0')
             return home;
     }
@@ -118,7 +125,7 @@ ArchGetHomeDirectory(const std::string &login)
         : getpwnam_r(login.c_str(), pwdPtr, buf, sizeof(buf), &tmpPtr);
     if (result == 0 and tmpPtr)
         return pwd.pw_dir;
-
+#endif
     return "";
 }
 
@@ -127,12 +134,19 @@ ArchGetUserName()
 {
     const char* envVarNames[] = {"LOGNAME", "USER", "LNAME", "USERNAME"};
     for (size_t i = 0; i < sizeof(envVarNames) / sizeof(*envVarNames); ++i) {
-        if (const char* user = getenv(envVarNames[i])) {
+        if (const char* user = ArchGetEnv(envVarNames[i])) {
             if (user && user[0] != '\0')
                 return user;
         }
     }
 
+#if defined(ARCH_OS_WINDOWS)
+	char name [UNLEN + 1];
+	DWORD size = UNLEN + 1;
+
+    if (!::GetUserName(name, &size))
+        return string(name);
+#else
     // Convert the effective user ID into a string. If we can't do it, 
     // fall back to user name.
     char buffer[2048];
@@ -140,7 +154,7 @@ ArchGetUserName()
 
     if (getpwuid_r(geteuid(), &pwd, buffer, sizeof(buffer), &resultPwd) == 0)
         return pwd.pw_name;
-
+#endif
     return "";
 }
 
@@ -165,9 +179,25 @@ ArchGetExecutablePath()
     linebuffer[0] = 0;
     _NSGetExecutablePath(linebuffer, &bufsize);
     return linebuffer;
+#elif defined(ARCH_OS_WINDOWS) 
+	char path[ARCH_PATH_MAX];
+	if (::GetModuleFileName(NULL, path, ARCH_PATH_MAX))
+		return string(path);
+	return string();
 #else
 
 #error Unknown architecture.    
 
+#endif
+}
+
+size_t ArchGetPageSize()
+{
+#if defined(ARCH_OS_WINDOWS)
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return si.dwPageSize;
+#else
+    return sysconf(_SC_PAGESIZE);
 #endif
 }

@@ -28,6 +28,7 @@
 #error This include file can only be included in C++ programs.
 #endif
 
+#include <ciso646>
 #include <type_traits>
 
 template <class Src, class Dst>

@@ -24,6 +24,7 @@
 #ifndef USD_COMMON_H
 #define USD_COMMON_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -48,17 +49,17 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdStage);
 typedef UsdStagePtr UsdStageWeakPtr;
 
 /// Return a human-readable description.
-std::string UsdDescribe(const UsdObject &);
+USD_API std::string UsdDescribe(const UsdObject &);
 /// \overload
-std::string UsdDescribe(const UsdStageRefPtr &);
+USD_API std::string UsdDescribe(const UsdStageRefPtr &);
 /// \overload
-std::string UsdDescribe(const UsdStageWeakPtr &);
+USD_API std::string UsdDescribe(const UsdStageWeakPtr &);
 /// \overload
-std::string UsdDescribe(const UsdStage *);
+USD_API std::string UsdDescribe(const UsdStage *);
 /// \overload
-std::string UsdDescribe(const UsdStage &);
+USD_API std::string UsdDescribe(const UsdStage &);
 /// \overload
-std::string UsdDescribe(const UsdStageCache &);
+USD_API std::string UsdDescribe(const UsdStageCache &);
 
 // XXX:
 // Currently used for querying composed values from ascii layers, so VtValue is
@@ -69,6 +70,6 @@ typedef std::map<class TfToken, VtValue,
 
 /// Returns true if the pipeline is configured to process / generate 
 /// USD only and stop generating tidScenes.
-bool UsdIsRetireLumosEnabled();
+USD_API bool UsdIsRetireLumosEnabled();
 
 #endif

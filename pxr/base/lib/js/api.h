@@ -32,8 +32,12 @@
 #else
 #   if defined(JS_EXPORTS)
 #       define JS_API ARCH_EXPORT
+#       define JS_API_TEMPLATE_CLASS(...)
+#       define JS_API_TEMPLATE_STRUCT(...)
 #   else
 #       define JS_API ARCH_IMPORT
+#       define JS_API_TEMPLATE_CLASS(...) extern template class JS_API __VA_ARGS__
+#       define JS_API_TEMPLATE_STRUCT(...) extern template struct JS_API __VA_ARGS__
 #   endif
 #   define JS_LOCAL ARCH_HIDDEN
 #endif

@@ -26,6 +26,8 @@
 #ifndef SDF_PYLISTEDITORPROXY_H
 #define SDF_PYLISTEDITORPROXY_H
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/listEditorProxy.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/pyListProxy.h"
@@ -37,7 +39,6 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
 
 class Sdf_PyListEditorUtils {
 public:

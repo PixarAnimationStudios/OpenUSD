@@ -32,6 +32,7 @@
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -91,12 +92,15 @@ public:
     explicit GfVec3f(Scl const *p) { Set(p); }
 
     /// Construct from GfVec3d.
+    GF_API
     explicit GfVec3f(class GfVec3d const &other);
 
     /// Implicitly convert from GfVec3h.
+    GF_API
     GfVec3f(class GfVec3h const &other);
 
     /// Implicitly convert from GfVec3i.
+    GF_API
     GfVec3f(class GfVec3i const &other);
  
     /// Create a unit vector along the X-axis.
@@ -170,10 +174,13 @@ public:
 
     // XXX: Add inequality for other vec types...
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3d const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3h const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3i const &other) const;
     
     /// Create a vec with negated elements.
@@ -292,6 +299,7 @@ public:
     /// a number of iterations.  If it did not converge, the returned vectors
     /// will be as close as possible to orthogonal within the iteration limit.
     /// Colinear vectors will be unaltered, and the method will return false.
+    GF_API
     static bool OrthogonalizeBasis(
         GfVec3f *tx, GfVec3f *ty, GfVec3f *tz,
         const bool normalize,
@@ -301,6 +309,7 @@ public:
     /// are mutually orthogonal.  If the length L of *this is smaller than
     /// \c eps, then v1 and v2 will have magnitude L/eps.  As a result,
     /// the function delivers a continuous result as *this shrinks in length.
+    GF_API
     void BuildOrthonormalFrame(GfVec3f *v1, GfVec3f *v2,
 			       float eps = GF_MIN_VECTOR_LENGTH) const;
 
@@ -311,7 +320,7 @@ private:
 
 /// Output a GfVec3f
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfVec3f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfVec3f const &);
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3h.h"
@@ -400,11 +409,11 @@ GfIsClose(GfVec3f const &v1, GfVec3f const &v2, double tolerance)
 }
 
 
-bool
+GF_API bool
 GfOrthogonalizeBasis(GfVec3f *tx, GfVec3f *ty, GfVec3f *tz,
                      bool normalize, double eps = GF_MIN_ORTHO_TOLERANCE);
 
-void
+GF_API void
 GfBuildOrthonormalFrame(GfVec3f const &v0,
                         GfVec3f* v1,
                         GfVec3f* v2,
@@ -428,7 +437,7 @@ operator^(GfVec3f const &v1, GfVec3f const &v2)
 }
 
 /// Spherical linear interpolation in three dimensions.
-GfVec3f
+GF_API GfVec3f
 GfSlerp(double alpha, GfVec3f const &v0, GfVec3f const &v1);
 
  

@@ -113,6 +113,7 @@ pxr_shared_library(hd
     PUBLIC_HEADERS
         enums.h
         version.h
+        api.h
 
     PRIVATE_CLASSES
         basisCurvesComputations

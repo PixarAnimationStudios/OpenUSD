@@ -38,7 +38,7 @@ template <typename T> VtArray<T>
 InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wrap,
     TfToken basis, VtArray<T> const & authoredValues)
 {
-    VtArray<T> outputValues(numVerts);
+    VtArray<T> outputValues((unsigned int)numVerts);
 
     int vStep;
     size_t srcIndex = 0;
@@ -140,7 +140,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
         }
     }
 
-    VtVec2iArray finalIndices(indices.size());
+    VtVec2iArray finalIndices((unsigned int)indices.size());
     VtIntArray const &curveIndices = _topology->GetCurveIndices();
 
     // If have topology has indices set, map the generated indices
@@ -152,7 +152,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
     else
     {
         size_t lineCount = indices.size();
-        int maxIndex = curveIndices.size() - 1;
+        int maxIndex = (int)(curveIndices.size()) - 1;
 
         for (size_t lineNum = 0; lineNum < lineCount; ++lineNum)
         {
@@ -196,7 +196,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
         }
     }
 
-    VtVec2iArray finalIndices(indices.size());
+    VtVec2iArray finalIndices((unsigned int)indices.size());
     VtIntArray const &curveIndices = _topology->GetCurveIndices();
 
     // If have topology has indices set, map the generated indices
@@ -208,7 +208,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
     else
     {
         size_t lineCount = indices.size();
-        int maxIndex = curveIndices.size() - 1;
+        int maxIndex = (int)(curveIndices.size()) - 1;
 
         for (size_t lineNum = 0; lineNum < lineCount; ++lineNum)
         {
@@ -313,7 +313,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
         vertexIndex += count;
     }
 
-    VtVec4iArray finalIndices(indices.size());
+    VtVec4iArray finalIndices((unsigned int)indices.size());
     VtIntArray const &curveIndices = _topology->GetCurveIndices();
 
     // If have topology has indices set, map the generated indices
@@ -325,7 +325,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
     else
     {
         size_t lineCount = indices.size();
-        int maxIndex = curveIndices.size() - 1;
+        int maxIndex = static_cast<int>(curveIndices.size()) - 1;
 
         for (size_t lineNum = 0; lineNum < lineCount; ++lineNum)
         {
@@ -407,7 +407,7 @@ Hd_BasisCurvesWidthsInterpolaterComputation::Resolve()
     HD_TRACE_FUNCTION();
     // We need to interpolate widths depending on the primvar type
     size_t numVerts = _topology->CalculateNeededNumberOfControlPoints();
-    VtArray<float> widths(numVerts);
+    VtArray<float> widths((unsigned int)numVerts);
     size_t size = _authoredWidths.size();
 
     if(size <= 1) {
@@ -476,7 +476,7 @@ Hd_BasisCurvesNormalsInterpolaterComputation::Resolve()
 
     // We need to interpolate normals depending on the primvar type
     size_t numVerts = _topology->CalculateNeededNumberOfControlPoints();
-    VtVec3fArray normals(numVerts);
+    VtVec3fArray normals((unsigned int)numVerts);
     size_t size = _authoredNormals.size();
 
     if(size == 1) {

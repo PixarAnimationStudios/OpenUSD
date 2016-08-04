@@ -26,6 +26,7 @@
 #ifndef SDF_MAPPERARGSPEC_H
 #define SDF_MAPPERARGSPEC_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/base/vt/value.h"
@@ -57,6 +58,7 @@ public:
     /// the name \p name and value \p value.
     ///
     /// Mapper args must be created in the context of an existing mapper.
+    SDF_API
     static SdfMapperArgSpecHandle New(const SdfMapperSpecHandle& owner, 
                                       const std::string& name, 
                                       const VtValue& value);
@@ -65,15 +67,19 @@ public:
     /// @{
 
     /// Returns the mapper that owns this arg.
+    SDF_API
     SdfMapperSpecHandle GetMapper() const;
 
     /// Returns the name for the mapper arg.
+    SDF_API
     const std::string& GetName() const;
 
     /// Returns the name for the mapper arg.
+    SDF_API
     const TfToken& GetNameToken() const;
 
     /// Sets the name of this mapper arg.
+    SDF_API
     void SetName(const std::string& name);
 
     /// @}
@@ -81,9 +87,11 @@ public:
     /// @{
 
     /// Returns the value of the mapper arg.
+    SDF_API
     VtValue GetValue() const;
 
     /// Sets the value of the mapper arg.
+    SDF_API
     void SetValue(const VtValue& value);
 
     /// @}

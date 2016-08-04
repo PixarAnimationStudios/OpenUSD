@@ -25,6 +25,7 @@
 #define ARCH_VSNPRINTF_H
 
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/api.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>
@@ -50,6 +51,7 @@
  * \c TfStringPrintf().
  */
 
+ARCH_API
 int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
 #ifndef doxygen
     ARCH_PRINTF_FUNCTION(3, 0)
@@ -75,6 +77,7 @@ int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
  * themselve into \c ArchStringPrintf() as in the above example
  * (i.e. \c caller.c_str() as opposed to just passing \c caller).
  */
+ARCH_API
 std::string ArchStringPrintf(const char *fmt, ...)
 #ifndef doxygen
     ARCH_PRINTF_FUNCTION(1, 2)
@@ -92,6 +95,7 @@ std::string ArchStringPrintf(const char *fmt, ...)
  * A functions that calls \c ArchVStringPrintf() should call \c va_end(ap)
  * itself afterwards.
  */
+ARCH_API
 std::string ArchVStringPrintf(const char *fmt, va_list ap)
 #ifndef doxygen
     ARCH_PRINTF_FUNCTION(1, 0)

@@ -28,6 +28,7 @@
 #include "pxr/base/tf/expiryNotifier.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/traits.h"
+#include "pxr/base/tf/api.h"
 
 /*!
  * \file weakBase.h
@@ -74,9 +75,9 @@ public:
 
     //TF_ENABLE_CLASS_ALLOCATOR(Tf_Remnant);
 
-    virtual ~Tf_Remnant();
+    TF_API virtual ~Tf_Remnant();
 
-    void _Forget() {
+    TF_API void _Forget() {
         _alive = false;
 
         if (_notify2)
@@ -90,7 +91,7 @@ public:
 
     // Must return an object's address whose lifetime is as long or longer than
     // this object.  Default implementation returns 'this'.
-    virtual void const *_GetUniqueIdentifier() const;
+    TF_API virtual void const *_GetUniqueIdentifier() const;
 
     // Note: this initializes a class member -- the parameter is a non-const
     // reference.
@@ -128,7 +129,7 @@ public:
 
     // Mark this remnant to call the expiry notification callback function when
     // it dies.  See ExpiryNotifier.h
-    virtual void EnableNotification() const;
+    TF_API virtual void EnableNotification() const;
 
 protected:
     friend class TfWeakBase;
@@ -174,7 +175,7 @@ public:
     // Don't call this.  Really.
     void EnableNotification2() const;
 
-    void const* GetUniqueIdentifier() const;
+    TF_API void const* GetUniqueIdentifier() const;
     
 protected:
     /*

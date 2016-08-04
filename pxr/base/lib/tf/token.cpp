@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/token.h"
 
 #include "pxr/base/tf/hashset.h"
@@ -221,7 +222,7 @@ private:
             TfAutoMallocTag noname("TfToken");
             _RepPtr rep = &(*_sets[setNum].insert(TfToken::_Rep(s)).first);
             rep->_isCounted = not makeImmortal;
-            rep->_setNum = setNum;
+            rep->_setNum = static_cast<unsigned char>(setNum);
             if (not makeImmortal)
                 rep->_refCount = 1;
             return _RepPtrAndBits(rep, not makeImmortal);
@@ -335,7 +336,7 @@ operator <<(std::ostream &stream, const TfToken& token)
     return stream << token.GetText();
 }
 
-void TfDumpTokenStats()
+TF_API void TfDumpTokenStats()
 {
     Tf_TokenRegistry::_GetInstance()._DumpStats();
 }

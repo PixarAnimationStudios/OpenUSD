@@ -5,7 +5,6 @@ set(DIRS
     usdedit
     usdstitch
     usdstitchclips
-    sdfdump
 )
 
 foreach(d ${DIRS})

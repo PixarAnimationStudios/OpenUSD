@@ -21,15 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/iterator.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+
 #include "pxr/base/gf/multiInterval.h"
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/iterator.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
 #include <string>
 
 using namespace boost::python;

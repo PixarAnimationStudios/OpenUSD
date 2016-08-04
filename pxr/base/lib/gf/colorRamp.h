@@ -27,6 +27,7 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/rgb.h"
 #include "pxr/base/tf/tf.h"
+#include "pxr/base/gf/api.h"
 #include <stdio.h>
 
 //!
@@ -102,6 +103,7 @@ public:
 
     //! \brief
     // Evaluate the ramp at the given value.  x is in [0..1].
+    GF_API
     GfRGB Eval(const double x) const;
 
     bool operator ==(const GfColorRamp &ramp) const {

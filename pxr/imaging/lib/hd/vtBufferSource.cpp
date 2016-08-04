@@ -423,7 +423,7 @@ HdVtBufferSource::HdVtBufferSource(TfToken const &name,
         // Hold a pointer to the internal storage of the VtArray (_value).
         if (matrices.size() > 0) _data = matrices.cdata();
     } else {
-        VtArray<GfMatrix4f> fmatrices(matrices.size());
+        VtArray<GfMatrix4f> fmatrices(static_cast<unsigned int>(matrices.size()));
         for (size_t i = 0; i < matrices.size(); ++i) {
             GfMatrix4d const &matrix = matrices[i];
             GfMatrix4f fmatrix(
@@ -460,8 +460,8 @@ HdVtBufferSource::GetDefaultMatrixType()
 int
 HdVtBufferSource::GetNumElements() const
 {
-    return _size / (_numComponents *
-                    HdConversions::GetComponentSize(_glComponentDataType));
+    return static_cast<int>(_size / (_numComponents *
+                    HdConversions::GetComponentSize(_glComponentDataType)));
 }
 
 bool

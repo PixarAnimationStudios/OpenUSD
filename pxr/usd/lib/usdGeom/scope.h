@@ -24,6 +24,7 @@
 #ifndef USDGEOM_GENERATED_SCOPE_H
 #define USDGEOM_GENERATED_SCOPE_H
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -75,11 +76,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomScope();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -92,6 +95,7 @@ public:
     /// UsdGeomScope(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomScope
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -117,6 +121,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDGEOM_API
     static UsdGeomScope
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -128,6 +133,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:

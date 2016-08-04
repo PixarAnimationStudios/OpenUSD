@@ -24,6 +24,9 @@
 #ifndef TF_PATTERNMATCHER_H
 #define TF_PATTERNMATCHER_H
 
+#include "pxr/base/arch/defines.h"
+
+#if !defined(ARCH_OS_WINDOWS)
 
 #include <boost/noncopyable.hpp>
 
@@ -146,5 +149,5 @@ class TfPatternMatcher : public boost::noncopyable {
 
 
 
-
+#endif //#if !defined(ARCH_OS_WINDOWS)
 #endif // TF_PATTERNMATCHER_H

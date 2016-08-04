@@ -143,7 +143,7 @@ HdMeshTopology::ComputeNumPoints(VtIntArray const &verts)
     HD_TRACE_FUNCTION();
 
     // compute numPoints from topology indices
-    int numIndices = verts.size();
+    int numIndices = (int)verts.size();
     int numPoints = 0;
     int const * vertsPtr = verts.cdata();
     for (int i= 0;i <numIndices; ++i) {
@@ -161,8 +161,8 @@ HdMeshTopology::ComputeNumQuads(VtIntArray const &numVerts,
 {
     HD_TRACE_FUNCTION();
 
-    int numFaces = numVerts.size();
-    int numHoleFaces = holeFaces.size();
+    int numFaces = (int)numVerts.size();
+    int numHoleFaces = (int)holeFaces.size();
     int numQuads = 0;
     int const *numVertsPtr = numVerts.cdata();
     int const * holeFacesPtr = holeFaces.cdata();

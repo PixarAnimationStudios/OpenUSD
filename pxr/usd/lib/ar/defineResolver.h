@@ -46,8 +46,9 @@ TF_REGISTRY_FUNCTION(TfType) {                                      \
     t.SetFactory<ArResolverFactory<c> >();                          \
 }
 
-class AR_API ArResolverFactoryBase : public TfType::FactoryBase {
+class ArResolverFactoryBase : public TfType::FactoryBase {
 public:
+    AR_API
     virtual ArResolver* New() const = 0;
 };
 

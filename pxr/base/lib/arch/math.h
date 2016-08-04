@@ -32,12 +32,15 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
-#include <math.h>
 #include <cmath>
 
 #if defined(ARCH_OS_WINDOWS)
+#define _USE_MATH_DEFINES	// For M_PI
 #include <float.h>
+#include <math.h>
 #endif
+
+#include <cmath>
 
 /*!
  * \brief This is the smallest value e such that 1+e^2 == 1, using floats.
@@ -129,13 +132,17 @@ inline double ArchBitPatternToDouble(uint64_t v) {
  * \brief Computes the sine and cosine of the specified value as a float.
  * \ingroup group_arch_Math
  */
-inline void ArchSinCosf(float v, float *s, float *c) { sincosf(v, s, c); }
+inline void ArchSinCosf(float v, float *s, float *c) { 
+	sincosf(v, s, c); 
+}
 
 /*!
  * \brief Computes the sine and cosine of the specified value as a double.
  * \ingroup group_arch_Math
  */
-inline void ArchSinCos(double v, double *s, double *c) { sincos(v, s, c); }
+inline void ArchSinCos(double v, double *s, double *c) { 
+	sincos(v, s, c); 
+}
 
 #elif defined(ARCH_OS_DARWIN) || defined(ARCH_OS_WINDOWS)
 

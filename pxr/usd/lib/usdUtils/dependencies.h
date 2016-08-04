@@ -27,6 +27,8 @@
 #ifndef USDUTILS_DEPENDENCIES_H
 #define USDUTILS_DEPENDENCIES_H
 
+#include "pxr/usd/usdUtils/api.h"
+
 #include <string>
 #include <vector>
 
@@ -35,6 +37,7 @@
 /// the \p sublayers vector, references, whether prim references or values
 /// from asset path attributes, are returned in the \p references vector.
 /// Payload paths are returned in \p payloads.
+USDUTILS_API
 void UsdUtilsExtractExternalReferences(
     const std::string& filePath,
     std::vector<std::string>* subLayers,

@@ -426,7 +426,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
 
     boost::optional<ExternalTime> translatedLower, translatedUpper;
 
-    for (int i1 = m1, i2 = m2; i1 >= 0 and i2 >= 0; --i1, --i2) {
+    for (int i1 = static_cast<int>(m1), i2 = static_cast<int>(m2); i1 >= 0 and i2 >= 0; --i1, --i2) {
         const TimeMapping& map1 = times[i1];
         const TimeMapping& map2 = times[i2];
 

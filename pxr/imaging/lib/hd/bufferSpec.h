@@ -41,7 +41,8 @@ typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
 ///    2: name = colors, glDataType = GL_FLOAT, numComponents = 4
 ///
 
-struct HdBufferSpec {
+class HdBufferSpec {
+public:
     /// Constructor.
     HdBufferSpec(TfToken const &name, GLenum glDataType, int numComponents,
                  int arraySize=1) :

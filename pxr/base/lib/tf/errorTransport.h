@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/api.h"
 
 /*!
  * \class TfErrorTransport
@@ -38,8 +39,9 @@
  * (e.g. the parent thread) invokes TfErrorTransport::Post() to post all
  * contained errors to its own thread's error list.
  */
-struct TfErrorTransport
+class TfErrorTransport
 {
+public:
     typedef TfDiagnosticMgr::ErrorList ErrorList;
 
     /*!
@@ -80,7 +82,7 @@ private:
         _errorList.splice(_errorList.begin(), src, first, last);
     }
 
-    void _PostImpl();
+    void TF_API _PostImpl();
     
     ErrorList _errorList;
 };

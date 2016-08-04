@@ -24,6 +24,7 @@
 #ifndef USDSHADE_GENERATED_SUBGRAPH_H
 #define USDSHADE_GENERATED_SUBGRAPH_H
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -94,11 +95,13 @@ public:
     }
 
     /// Destructor.
+    USDSHADE_API
     virtual ~UsdShadeSubgraph();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDSHADE_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -111,6 +114,7 @@ public:
     /// UsdShadeSubgraph(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDSHADE_API
     static UsdShadeSubgraph
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -136,6 +140,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDSHADE_API
     static UsdShadeSubgraph
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -147,6 +152,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDSHADE_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -200,6 +206,7 @@ public:
     ///
     /// \todo clarify error behavior if typeName does not match existing,
     /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
+    USDSHADE_API
     UsdShadeInterfaceAttribute CreateInterfaceAttribute(
             const TfToken& interfaceAttrName,
             const SdfValueTypeName& typeName);
@@ -213,11 +220,13 @@ public:
     /// UsdShadeInterfaceAtribute(prim->GetAttribute(interfaceAttrName))
     /// \endcode
     /// will not, unless \p interfaceAttrName is properly namespace prefixed.
+    USDSHADE_API
     UsdShadeInterfaceAttribute GetInterfaceAttribute(
             const TfToken& interfaceAttrName) const;
 
     /// Returns all interface attributes that drive parameters of a
     /// \p renderTarget shading network.
+    USDSHADE_API
     std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes(
             const TfToken& renderTarget) const;
 
@@ -227,12 +236,14 @@ public:
 
     /// Create and set a custom terminal of a subgraph
     /// 
+    USDSHADE_API
     UsdRelationship CreateTerminal(
         const TfToken& terminalName,
         const SdfPath& targetPath) const;
 
     /// Get a terminal of a subgraph
     /// 
+    USDSHADE_API
     UsdRelationship GetTerminal(
         const TfToken& terminalName) const;
 };

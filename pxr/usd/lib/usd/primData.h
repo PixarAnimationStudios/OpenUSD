@@ -26,6 +26,7 @@
 
 /// \file primData.h
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/sdf/types.h"
@@ -137,7 +138,7 @@ public:
     bool MayHaveOpinionsInClips() const { return _flags[Usd_PrimClipsFlag]; }
 
     /// Return this prim's composed specifier.
-    SdfSpecifier GetSpecifier() const;
+	USD_API SdfSpecifier GetSpecifier() const;
 
 public:
 
@@ -146,7 +147,7 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Return this prim's parent prim.  Return NULL if this is a root prim.
-    Usd_PrimDataConstPtr GetParent() const;
+	USD_API Usd_PrimDataConstPtr GetParent() const;
 
     // --------------------------------------------------------------------- //
     // PrimIndex access.
@@ -168,7 +169,7 @@ public:
     ///
     /// In either of the above two cases, this prim index will not have the 
     /// same path as the prim's path.
-    const class PcpPrimIndex &GetPrimIndex() const;
+	USD_API const class PcpPrimIndex &GetPrimIndex() const;
 
     /// Return a const reference to the source PcpPrimIndex for this prim.
     ///
@@ -176,7 +177,7 @@ public:
     /// this is the prim index for the instance that was chosen to serve
     /// as the master for all other instances.  This prim index will not
     /// have the same path as the prim's path.
-    const class PcpPrimIndex &GetSourcePrimIndex() const;
+	USD_API const class PcpPrimIndex &GetSourcePrimIndex() const;
 
     // --------------------------------------------------------------------- //
     // Tree Structure
@@ -217,8 +218,8 @@ public:
     // --------------------------------------------------------------------- //
 private:
 
-    Usd_PrimData(UsdStage *stage, const SdfPath& path);
-    ~Usd_PrimData();
+	USD_API Usd_PrimData(UsdStage *stage, const SdfPath& path);
+	USD_API ~Usd_PrimData();
 
     // Compute and store cached flags.
     void _ComposeAndCacheFlags(Usd_PrimDataConstPtr parent, bool isMasterPrim);
@@ -306,7 +307,7 @@ private:
             delete prim;
     }
 
-    friend void Usd_IssueFatalPrimAccessError(Usd_PrimData const *p);
+	USD_API friend void Usd_IssueFatalPrimAccessError(Usd_PrimData const *p);
     friend std::string Usd_DescribePrimData(const Usd_PrimData *p);
 
     friend inline bool Usd_IsDead(Usd_PrimData const *p) {

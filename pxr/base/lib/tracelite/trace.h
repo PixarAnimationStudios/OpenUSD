@@ -28,6 +28,7 @@
 
 #include "pxr/base/arch/functionLite.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tracelite/api.h"
 
 #include <atomic>
 #include <string>
@@ -98,7 +99,7 @@ typedef void (*TraceliteEndFunction)(void*);
  *
  * This call is not thread-safe (the simplest use is to only call it from the main thread). 
  */
-void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
+TRACELITE_API void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
 			   TraceliteBeginFunction beginFunction,
 			   TraceliteEndFunction endFunction);
 
@@ -115,7 +116,7 @@ void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
  *
  * This call is not thread-safe (the simplest use is to only call it from the main thread). 
  */
-int TraceliteEnable(bool state);
+int TRACELITE_API TraceliteEnable(bool state);
 
 class Tracelite_ScopeAuto {
 public:
@@ -124,7 +125,7 @@ public:
         _wasActive = false;
         if (ARCH_UNLIKELY(Tracelite_ScopeAuto::_active)) {
             _wasActive = true;
-            if (ARCH_UNLIKELY(!*siteData))
+            if (ARCH_UNLIKELY(!static_cast<void*>(*siteData)))
                 _Initialize(siteData, key);
 
             (*_beginFunction)(_space, *siteData);
@@ -136,7 +137,7 @@ public:
 	_wasActive = false;
 	if (ARCH_UNLIKELY(Tracelite_ScopeAuto::_active)) {
 	    _wasActive = true;
-	    if (ARCH_UNLIKELY(!*siteData))
+	    if (ARCH_UNLIKELY(!static_cast<void*>(*siteData)))
 		_Initialize(siteData, key1, key2);
 
 	    (*_beginFunction)(_space, *siteData);
@@ -151,13 +152,13 @@ public:
     
     
 private:
-    static void _Initialize(std::atomic<TraceScopeHolder*>* siteData,
+    TRACELITE_API static void _Initialize(std::atomic<TraceScopeHolder*>* siteData,
                             const std::string& key);
-    static void _Initialize(std::atomic<TraceScopeHolder*>* siteData,
+    TRACELITE_API static void _Initialize(std::atomic<TraceScopeHolder*>* siteData,
                             char const* key1, char const* key2);
 
-    friend int TraceliteEnable(bool);
-    friend void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
+	TRACELITE_API friend int TraceliteEnable(bool);
+	TRACELITE_API friend void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
 				      TraceliteBeginFunction beginFunction,
 				      TraceliteEndFunction endFunction);
     union {
@@ -165,9 +166,9 @@ private:
 	unsigned char _space[TRACELITE_STACKDATA_SIZE];
     };
 
-    static TraceliteBeginFunction _beginFunction;
-    static TraceliteEndFunction _endFunction;
-    static bool _active;
+    TRACELITE_API static TraceliteBeginFunction _beginFunction;
+    TRACELITE_API static TraceliteEndFunction _endFunction;
+    TRACELITE_API static bool _active;
     bool _wasActive;
 };
 

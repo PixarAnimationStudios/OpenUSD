@@ -25,12 +25,15 @@
 #define GF_INTERVAL_H
 
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/api.h" 
 
 #include <boost/functional/hash.hpp>
 
 #include <float.h>
 #include <iosfwd>
 #include <limits>
+
+#include <ciso646>
 
 /*!
  * \file interval.h
@@ -420,6 +423,6 @@ private:
 
 /// Output a GfInterval using the format (x, y).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream &operator<<(std::ostream&, const GfInterval&);
+GF_API std::ostream &operator<<(std::ostream&, const GfInterval&);
 
 #endif /* GF_INTERVAL_H */

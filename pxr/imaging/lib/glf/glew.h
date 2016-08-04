@@ -29,7 +29,9 @@
 
 #include <GL/glew.h>
 
+#include "pxr/imaging/glf/api.h"
+
 /// \brief A thread safe wrapper around glewInit()
-void GlfGlewInit();
+GLF_API void GlfGlewInit();
 
 #endif

@@ -25,6 +25,8 @@
 #define GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H
 
 #include <Ptexture.h>
+
+#include <ciso646>
 #include <stdlib.h>
 #include <stdint.h>
 #include <vector>

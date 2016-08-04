@@ -26,6 +26,8 @@
 #ifndef VT_ARRAY_H
 #define VT_ARRAY_H
 
+#include <boost/operators.hpp>
+
 #include "pxr/base/vt/hash.h"
 #include "pxr/base/vt/operators.h"
 #include "pxr/base/vt/streamOut.h"
@@ -38,7 +40,6 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/container/vector.hpp>
-#include <boost/operators.hpp>
 #include <boost/preprocessor.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/iterator_adaptors.hpp>
@@ -380,12 +381,14 @@ class VtArray {
         return not (*this == other);
     }
 
+#pragma warning (disable: 4804 4146)
     VTOPERATOR_CPPARRAY(+)
     VTOPERATOR_CPPARRAY(-)
     VTOPERATOR_CPPARRAY(*)
     VTOPERATOR_CPPARRAY(/)
     VTOPERATOR_CPPARRAY(%)
     VTOPERATOR_CPPARRAY_UNARY(-)
+#pragma warning (default: 4804 4146)
 
   public:
     // XXX -- Public so VtValue::_ArrayHelper<T,U>::GetReserved() has access.
@@ -484,6 +487,7 @@ template <typename T>
 struct VtIsArray< VtArray <T> > : public VtTrueType {};
 
 // free functions for operators combining scalar and array types
+#pragma warning (disable: 4804 4146)
 VTOPERATOR_CPPSCALAR(+)
 VTOPERATOR_CPPSCALAR(-)
 VTOPERATOR_CPPSCALAR(*)
@@ -491,5 +495,6 @@ VTOPERATOR_CPPSCALAR_DOUBLE(*)
 VTOPERATOR_CPPSCALAR(/)
 VTOPERATOR_CPPSCALAR_DOUBLE(/)
 VTOPERATOR_CPPSCALAR(%)
+#pragma warning (default: 4804 4146)
 
 #endif // VT_ARRAY_H

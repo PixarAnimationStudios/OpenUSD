@@ -37,7 +37,7 @@ SdfFileFormatArgumentsFromPython(
     typedef SdfLayer::FileFormatArguments::mapped_type ArgValueType;
 
     const boost::python::object items = dict.items();
-    for (int i = 0; i < len(items); ++i) {
+    for (boost::python::ssize_t i = 0; i < len(items); ++i) {
         boost::python::extract<ArgKeyType> keyExtractor(items[i][0]);
         if (not keyExtractor.check()) {
             if (errMsg) {

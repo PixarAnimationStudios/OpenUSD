@@ -26,6 +26,7 @@
 #ifndef SDF_CLEANUP_TRACKER_H
 #define SDF_CLEANUP_TRACKER_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
 
@@ -61,5 +62,6 @@ private:
     friend class TfSingleton<Sdf_CleanupTracker>;
 };
 
+SDF_API_TEMPLATE_CLASS(TfSingleton<Sdf_CleanupTracker>);
 
 #endif // SDF_CLEANUP_TRACKER_H

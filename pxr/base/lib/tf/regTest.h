@@ -129,6 +129,7 @@ public:
     bool Register(const char* name, RegFuncWithArgs);
 
 private:
+    friend class TfSingleton<TfRegTest>;
     int _Main(int argc, char *argv[]);
 
     void _PrintTestNames();
@@ -138,6 +139,8 @@ private:
     _Hash _functionTable;
     _HashWithArgs _functionTableWithArgs;
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfRegTest>);
 
 /*!
  * \hideinitializer

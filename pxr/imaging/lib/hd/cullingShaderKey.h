@@ -24,6 +24,7 @@
 #ifndef HD_CULLING_SHADER_KEY_H
 #define HD_CULLING_SHADER_KEY_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/garch/gl.h"
@@ -31,7 +32,11 @@
 
 struct Hd_CullingShaderKey
 {
+
+	HDLIB_API
     Hd_CullingShaderKey(bool instancing, bool tinyCull, bool counting);
+
+	HDLIB_API
     ~Hd_CullingShaderKey();
 
     TfToken const &GetGlslfxFile() const { return glslfx; }

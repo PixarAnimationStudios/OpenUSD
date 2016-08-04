@@ -23,6 +23,8 @@
 //
 /// \file sdf/pyMarkerProxy.h
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
@@ -31,7 +33,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
 #include <deque>
 #include <map>
 

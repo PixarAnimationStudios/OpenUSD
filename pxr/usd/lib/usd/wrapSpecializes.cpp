@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usd/specializes.h"
-
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
+
+#include "pxr/usd/usd/specializes.h"
 
 using std::string;
 

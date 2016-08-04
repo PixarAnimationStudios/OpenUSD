@@ -24,6 +24,8 @@
 #ifndef PCP_PATH_TRANSLATION_H
 #define PCP_PATH_TRANSLATION_H
 
+#include "pxr/usd/pcp/api.h"
+
 /// \file
 /// \brief Path translation.
 
@@ -46,7 +48,7 @@ class SdfPath;
 /// In Sd/Csd terminology, this is forward path translation from the 
 /// namespace of the prim spec represented by \p sourceNode to the composed 
 /// scene namespace.
-SdfPath
+PCP_API SdfPath
 PcpTranslatePathFromNodeToRoot(
     const PcpNodeRef& sourceNode, 
     const SdfPath& pathInNodeNamespace,
@@ -67,7 +69,7 @@ PcpTranslatePathFromNodeToRoot(
 /// In Sd/Csd terminology, this is reverse path translation from the
 /// namespace of the composed scene to the namespace of the prim spec 
 /// represented by \p destNode.
-SdfPath
+PCP_API SdfPath
 PcpTranslatePathFromRootToNode(
     const PcpNodeRef& destNode,
     const SdfPath& pathInRootNamespace,
@@ -79,7 +81,7 @@ PcpTranslatePathFromRootToNode(
 /// be included in the translated path. This is functionally equivalent to
 /// calling StripAllVariantSelections() on the result of the referenced
 /// function, but is more efficient.
-SdfPath
+PCP_API SdfPath
 PcpTranslateTargetPathFromRootToNode(
     const PcpNodeRef& destNode,
     const SdfPath& pathInRootNamespace,
@@ -87,7 +89,7 @@ PcpTranslateTargetPathFromRootToNode(
 
 /// \brief Convenience function like \a PcpTranslatePathFromRootToNode, but
 /// takes a function rather than a node.
-SdfPath
+PCP_API SdfPath
 PcpTranslatePathFromRootToNodeUsingFunction(
     const PcpMapFunction &mapToRoot,
     const SdfPath &pathInRootNamespace,
@@ -95,7 +97,7 @@ PcpTranslatePathFromRootToNodeUsingFunction(
 
 /// \brief Convenience function like \a PcpTranslatePathFromNodeToRoot, but
 /// takes a function rather than a node.
-SdfPath
+PCP_API SdfPath
 PcpTranslatePathFromNodeToRootUsingFunction(
     const PcpMapFunction &mapToRoot,
     const SdfPath &pathInNodeNamespace,

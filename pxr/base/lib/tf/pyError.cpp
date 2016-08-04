@@ -34,6 +34,7 @@
 #include <boost/python/tuple.hpp>
 
 #include <vector>
+#include <ciso646>
 
 using namespace boost::python;
 using std::vector;

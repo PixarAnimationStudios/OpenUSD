@@ -25,6 +25,8 @@
 #define TF_OSTREAMMETHODS_H
 
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/arch/defines.h"
+#include <ciso646>
 #include <iostream>
 #include <vector>
 #include <list>

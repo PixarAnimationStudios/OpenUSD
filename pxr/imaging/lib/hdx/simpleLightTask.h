@@ -24,6 +24,7 @@
 #ifndef HDX_SIMPLE_LIGHT_TASK_H
 #define HDX_SIMPLE_LIGHT_TASK_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/light.h"
@@ -49,6 +50,7 @@ TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 
 class HdxSimpleLightTask : public HdSceneTask {
 public:
+    HDXLIB_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
 protected:
@@ -110,9 +112,9 @@ struct HdxSimpleLightTaskParams
 };
 
 // VtValue requirements
-std::ostream& operator<<(std::ostream& out, const HdxSimpleLightTaskParams& pv);
-bool operator==(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
-bool operator!=(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
+HDXLIB_API std::ostream& operator<<(std::ostream& out, const HdxSimpleLightTaskParams& pv);
+HDXLIB_API bool operator==(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
+HDXLIB_API bool operator!=(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
 
 struct HdxShadowParams
 {
@@ -132,8 +134,8 @@ struct HdxShadowParams
 };
 
 // VtValue requirements
-std::ostream& operator<<(std::ostream& out, const HdxShadowParams& pv);
-bool operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
-bool operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
+HDXLIB_API std::ostream& operator<<(std::ostream& out, const HdxShadowParams& pv);
+HDXLIB_API bool operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
+HDXLIB_API bool operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
 
 #endif //HDX_SIMPLE_LIGHT_TASK_H

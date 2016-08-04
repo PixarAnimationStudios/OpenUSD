@@ -135,3 +135,6 @@ wrapPayloadDecorator()
             pure_virtual(&PolymorphicThis::_IsFieldRelevantForDecoration))
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(PcpPayloadDecorator)
+TF_REFPTR_CONST_VOLATILE_GET(Pcp_PolymorphicPayloadDecorator)

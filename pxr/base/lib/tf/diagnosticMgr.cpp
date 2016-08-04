@@ -86,6 +86,7 @@ static
 void
 Tf_UnhandledAbort()
 {
+#if !defined(ARCH_OS_WINDOWS)
     // Remove signal handler.
     struct sigaction act;
     act.sa_handler = SIG_DFL;
@@ -93,6 +94,7 @@ Tf_UnhandledAbort()
     sigemptyset(&act.sa_mask);
     sigaction(SIGABRT, &act, NULL);
     abort();
+#endif
 }
 
 TF_INSTANTIATE_SINGLETON(TfDiagnosticMgr);
@@ -325,7 +327,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
 
         // Abort, but avoid the signal handler, since we've already logged the
         // session info in TfLogStackTrace.
-        Tf_UnhandledAbort();
+		Tf_UnhandledAbort();
     }
 }
 

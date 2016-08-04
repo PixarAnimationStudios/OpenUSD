@@ -32,7 +32,7 @@
 
 class Sdf_ValueTypeImpl;
 
-struct Sdf_ValueTypePrivate {
+class Sdf_ValueTypePrivate {
 public:
     struct Empty { };
 

@@ -1,3 +1,5 @@
+# This branch contains in-progress work on the Windows port for USD. It should be considered experimental at this time and may not build or work as expected. #
+---
 Universal Scene Description
 ===========================
 

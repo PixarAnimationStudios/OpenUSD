@@ -27,6 +27,7 @@
 #define TF_PYMODULE_H
 
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -46,15 +47,16 @@
 // Forward declare the function that will be provided that does the wrapping.
 static void WrapModule();
 
+TF_API
 void Tf_PyInitWrapModule(void (*wrapModule)(),
                          const char* packageModule,
                          const char* packageName,
                          const char* packageTag,
                          const char* packageTag2);
 
-void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
+TF_PY_API void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
-    Tf_PyInitWrapModule(
+    ::Tf_PyInitWrapModule(
         WrapModule,
         BOOST_PP_STRINGIZE(MFB_PACKAGE_MODULE),
         BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),
@@ -73,7 +75,7 @@ void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 // block produces that function.
 //
 extern "C"
-ARCH_EXPORT
+TF_PY_API
 void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
     boost::python::detail::init_module
         (BOOST_PP_STRINGIZE(BOOST_PP_CAT(_,MFB_PACKAGE_NAME)),
@@ -94,7 +96,7 @@ void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
 // function that doesn't get called.
 //
 extern "C"
-ARCH_EXPORT
+TF_PY_API
 void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
     boost::python::detail::init_module
         (BOOST_PP_STRINGIZE(BOOST_PP_CAT(lib,MFB_PACKAGE_NAME)),

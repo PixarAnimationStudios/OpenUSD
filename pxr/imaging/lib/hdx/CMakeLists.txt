@@ -36,6 +36,7 @@ pxr_shared_library(hdx
     PUBLIC_HEADERS
         shadowMatrixComputation.h
         version.h
+        api.h
 
     PRIVATE_CLASSES
         unitTestDelegate

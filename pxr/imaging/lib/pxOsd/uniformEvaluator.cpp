@@ -23,11 +23,11 @@
 //
 #include "uniformEvaluator.h"
 
-#include <opensubdiv3/far/stencilTable.h>
-#include <opensubdiv3/far/stencilTableFactory.h>
-#include <opensubdiv3/far/patchParam.h>
-#include <opensubdiv3/far/patchTable.h>
-#include <opensubdiv3/far/patchTableFactory.h>
+#include <opensubdiv/far/stencilTable.h>
+#include <opensubdiv/far/stencilTableFactory.h>
+#include <opensubdiv/far/patchParam.h>
+#include <opensubdiv/far/patchTable.h>
+#include <opensubdiv/far/patchTableFactory.h>
 
 #include <fstream>
 #include <iostream>
@@ -112,7 +112,7 @@ PxOsdUniformEvaluator::Initialize(
     }
     
 
-    int numRefinedQuads = _refinedQuadIndices.size()/4;
+    int numRefinedQuads = static_cast<int>(_refinedQuadIndices.size())/4;
     _subfaceUvs.resize(_refinedQuadIndices.size());
     vector<float>::iterator uvIt = _subfaceUvs.begin();
 

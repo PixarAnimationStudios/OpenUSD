@@ -26,6 +26,7 @@
 #ifndef GLF_UVTEXTURE_H
 #define GLF_UVTEXTURE_H
 
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/baseTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -49,14 +50,14 @@ public:
     /// If given, \p cropTop, \p cropBottom, \p cropLeft, and \p cropRight
     /// specifies the number of pixels to crop from the indicated border of
     /// the source image.
-    static GlfUVTextureRefPtr New(
+    GLF_API static GlfUVTextureRefPtr New(
         TfToken const &imageFilePath,
         unsigned int cropTop    = 0,
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
         unsigned int cropRight  = 0);
 
-    static GlfUVTextureRefPtr New(
+    GLF_API static GlfUVTextureRefPtr New(
         std::string const &imageFilePath,
         unsigned int cropTop    = 0,
         unsigned int cropBottom = 0,

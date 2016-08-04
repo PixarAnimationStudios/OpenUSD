@@ -24,6 +24,7 @@
 #ifndef HDX_TOKENS_H
 #define HDX_TOKENS_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -43,7 +44,7 @@
     (selOffsetMinMax)           \
     (selValue)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDXLIB_API, HDX_TOKENS);
 
 
 #define HDX_PRIMITIVE_TOKENS    \
@@ -57,11 +58,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
     (shadowTask)                \
     (drawTargetTask)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_PRIMITIVE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDXLIB_API, HDX_PRIMITIVE_TOKENS);
 
 #define HDX_OPTION_TOKENS    \
     (taskSetAlphaToCoverage)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_OPTION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDXLIB_API, HDX_OPTION_TOKENS);
 
 #endif //HDX_TOKENS_H

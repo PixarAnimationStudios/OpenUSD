@@ -99,31 +99,31 @@ public:
 
     //! Return true *only* if this expiry checker is watching a weak pointer
     // which has expired.
-    bool IsInvalid() const;
+	TF_API bool IsInvalid() const;
 
     //! Return the unique identifier of the WeakPtr this AnyWeakPtr conrtains
-    void const *GetUniqueIdentifier() const;
+	TF_API void const *GetUniqueIdentifier() const;
 
     //! Return the TfWeakBase object of the WeakPtr we are holding
-    TfWeakBase const *GetWeakBase() const;
+	TF_API TfWeakBase const *GetWeakBase() const;
 
     //! bool operator
-    operator bool() const;
+	TF_API operator bool() const;
 
     //! operator !
-    bool operator !() const;
+	TF_API bool operator !() const;
 
     //! equality operator
-    bool operator ==(const TfAnyWeakPtr &rhs) const;
+	TF_API bool operator ==(const TfAnyWeakPtr &rhs) const;
 
     //! comparison operator
-    bool operator <(const TfAnyWeakPtr &rhs) const;
+	TF_API bool operator <(const TfAnyWeakPtr &rhs) const;
 
     //! returns the type_info of the underlying WeakPtr
-    const std::type_info & GetTypeInfo() const;
+	TF_API const std::type_info & GetTypeInfo() const;
 
     //! Returns the TfType of the underlying WeakPtr.
-    TfType const& GetType() const;
+	TF_API TfType const& GetType() const;
 
     //! Return a hash value for this instance.
     size_t GetHash() const {
@@ -142,11 +142,12 @@ public:
     template <class WeakPtr>
     friend WeakPtr TfAnyWeakPtrDynamicCast(const TfAnyWeakPtr &anyWeak, WeakPtr*);
 
+    TF_API
     boost::python::api::object _GetPythonObject() const;
 
     // This is using the standard type-erasure pattern.
     struct _PointerHolderBase {
-        virtual ~_PointerHolderBase();
+        TF_API virtual ~_PointerHolderBase();
         virtual void Clone(_Data *target) const = 0; 
         virtual bool IsInvalid() const = 0;
         virtual void const * GetUniqueIdentifier() const = 0;
@@ -161,18 +162,18 @@ public:
     };
 
     struct _EmptyHolder : _PointerHolderBase {
-        virtual ~_EmptyHolder();
-        virtual void Clone(_Data *target) const; 
-        virtual bool IsInvalid() const;
-        virtual void const * GetUniqueIdentifier() const;
-        virtual TfWeakBase const *GetWeakBase() const;
-        virtual operator bool() const;
-        virtual bool _IsConst() const;
-        virtual boost::python::api::object GetPythonObject() const;
-        virtual const std::type_info & GetTypeInfo() const;
-        virtual TfType const& GetType() const;
-        virtual const void* _GetMostDerivedPtr() const;
-        virtual bool _IsPolymorphic() const;
+        TF_API virtual ~_EmptyHolder();
+        TF_API virtual void Clone(_Data *target) const; 
+        TF_API virtual bool IsInvalid() const;
+        TF_API virtual void const * GetUniqueIdentifier() const;
+        TF_API virtual TfWeakBase const *GetWeakBase() const;
+        TF_API virtual operator bool() const;
+        TF_API virtual bool _IsConst() const;
+        TF_API virtual boost::python::api::object GetPythonObject() const;
+        TF_API virtual const std::type_info & GetTypeInfo() const;
+        TF_API virtual TfType const& GetType() const;
+        TF_API virtual const void* _GetMostDerivedPtr() const;
+        TF_API virtual bool _IsPolymorphic() const;
     };
     
     template <typename Ptr>

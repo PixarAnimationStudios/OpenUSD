@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/plug/testPlugBase.h"
-
+#include "pxr/base/plug/info.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
@@ -51,10 +51,10 @@ _TestPlugBase<N>::Manufacture(const std::string & subclass)
 
 // XXX -- These shouldn't be in the library or used by the Python module,
 //        let alone exported.
-template class PLUG_API _TestPlugBase<1>;
-template class PLUG_API _TestPlugBase<2>;
-template class PLUG_API _TestPlugBase<3>;
-template class PLUG_API _TestPlugBase<4>;
+template class _TestPlugBase<1>;
+template class _TestPlugBase<2>;
+template class _TestPlugBase<3>;
+template class _TestPlugBase<4>;
 
 // This derived class should be discovered as an available subclass
 // of _TestPlugBase1 even though it is compiled into the base library.

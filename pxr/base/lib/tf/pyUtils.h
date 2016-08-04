@@ -34,6 +34,7 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/api.h"
 
 #include <typeinfo>
 #include <string>
@@ -50,40 +51,40 @@
     std::string(BOOST_PP_STRINGIZE(MFB_PACKAGE_MODULE) ".")
 
 //! \brief Returns true if python is initialized.
-bool TfPyIsInitialized();
+TF_API bool TfPyIsInitialized();
 
 /// \brief Raises a python index error and throws a C++ exception.  Intended to
 /// be used in wrapper code.
-void TfPyThrowIndexError(std::string const &msg);
+TF_API void TfPyThrowIndexError(std::string const &msg);
 
 /// \brief Raises a python runtime error and throws a C++ exception.  Intended
 /// to be used in wrapper code.
-void TfPyThrowRuntimeError(std::string const &msg);
+TF_API void TfPyThrowRuntimeError(std::string const &msg);
 
 /// \brief Raises a python StopIteration exception and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowStopIteration(std::string const &msg);
+TF_API void TfPyThrowStopIteration(std::string const &msg);
 
 /// \brief Raises a python key error and throws a C++ exception.  Intended for
 /// use in wrapper code.
-void TfPyThrowKeyError(std::string const &msg);
+TF_API void TfPyThrowKeyError(std::string const &msg);
 
 /// \brief Raises a python value error and throws a C++ exception.  Intended
 /// to be used in wrapper code.
-void TfPyThrowValueError(std::string const &msg);
+TF_API void TfPyThrowValueError(std::string const &msg);
 
 /// \brief Raises a python type error and throws a C++ exception.  Intended
 /// to be used in wrapper code.
-void TfPyThrowTypeError(std::string const &msg);
+TF_API void TfPyThrowTypeError(std::string const &msg);
 
 /// \brief Return true iff \a obj is None.
-bool TfPyIsNone(boost::python::object const &obj);
+TF_API bool TfPyIsNone(boost::python::object const &obj);
 
 /// \brief Return true iff \a obj is None.
-bool TfPyIsNone(boost::python::handle<> const &obj);
+TF_API bool TfPyIsNone(boost::python::handle<> const &obj);
 
 // Helper for \c TfPyObject().
-void Tf_PyObjectError(bool printError);
+TF_API void Tf_PyObjectError(bool printError);
 
 /// \brief Return a python object for the given C++ object, loading the
 /// appropriate wrapper code if necessary.  Spams users if complainOnFailure is true and conversion fails.
@@ -119,7 +120,7 @@ boost::python::object TfPyObject(PyObject* t, bool complainOnFailure = true) {
 /// \brief Return repr(t).
 //
 // Calls PyObject_Repr on the given python object.
-std::string TfPyObjectRepr(boost::python::object const &t);
+TF_API std::string TfPyObjectRepr(boost::python::object const &t);
 
 /// \brief Return repr(t).
 //
@@ -160,15 +161,16 @@ TfPyEvaluate(
 
 /// \brief Return a positive index in the range [0,size).  If \a throwError is
 // true, this will throw an index error if the resulting index is out of range.
+TF_API 
 int TfPyNormalizeIndex(int index, unsigned int size, bool throwError = false);
 
 /// \brief Return the name of the class of \a obj.
-std::string TfPyGetClassName(boost::python::object const &obj);
+TF_API std::string TfPyGetClassName(boost::python::object const &obj);
 
 
 /// \brief Return the python class object for \a type if \a type has been
 /// wrapped.  Otherwise return None.
-boost::python::object
+TF_API boost::python::object
 TfPyGetClassObject(std::type_info const &type);
 
 /// \brief Return the python class object for T if T has been wrapped.
@@ -201,7 +203,7 @@ TfPyWrapOnce(boost::function<void()> const &wrapFunc)
         return;
     }
 
-    void Tf_PyWrapOnceImpl(
+    TF_API void Tf_PyWrapOnceImpl(
         boost::python::type_info const &,
         boost::function<void()> const&,
         bool *);
@@ -306,7 +308,7 @@ bool TfPyUnsetenv(const std::string & name);
 
 // Private helper method to TfPyEvaluateAndExtract.
 //
-bool Tf_PyEvaluateWithErrorCheck(
+TF_API bool Tf_PyEvaluateWithErrorCheck(
     const std::string & expr, boost::python::object * obj);
 
 /// Safely evaluates \p expr and extracts the return object of type T.

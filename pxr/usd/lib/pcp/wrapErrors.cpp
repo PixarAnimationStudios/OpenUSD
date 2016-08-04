@@ -21,13 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/base/tf/pyEnum.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 
@@ -180,3 +181,30 @@ wrapErrors()
         PcpErrorVector,
         TfPyContainerConversions::variable_capacity_policy >();
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidVariantSelection)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorPropertyPermissionDenied)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorBase)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorTargetPathBase)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorArcCycle)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorArcPermissionDenied)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentPropertyType)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentAttributeType)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentAttributeVariability)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInternalAssetPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidPrimPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidAssetPathBase)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidAssetPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorMutedAssetPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidInstanceTargetPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidExternalTargetPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidTargetPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidSublayerOffset)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidReferenceOffset)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidSublayerOwnership)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidSublayerPath)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorOpinionAtRelocationSource)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorPrimPermissionDenied)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorSublayerCycle)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorTargetPermissionDenied)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorUnresolvedPrimPath)

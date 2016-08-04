@@ -278,15 +278,15 @@ _GetCommonOpTypesForOpOrder(const vector<UsdGeomXformOp>& xformOps,
     // translatePivotInvert below. Initialize the rest to invalid.
     commonOpTypes.push_back(UsdGeomXformOp::TypeTranslate);
     commonOpTypes.push_back(UsdGeomXformOp::TypeTranslate);
-    *translateIndex = currentIndex++;
-    *translatePivotIndex = currentIndex++;
+    *translateIndex = static_cast<int>(currentIndex++);
+    *translatePivotIndex = static_cast<int>(currentIndex++);
     *rotateIndex = -1;
     *translateIdentityIndex = -1;
     *scaleIndex = -1;
 
     if (hasRotateOp) {
         commonOpTypes.push_back(rotateOpType);
-        *rotateIndex = currentIndex++;
+        *rotateIndex = static_cast<int>(currentIndex++);
     }
 
     if (numInverseTranslateOps > 1) {
@@ -296,16 +296,16 @@ _GetCommonOpTypesForOpOrder(const vector<UsdGeomXformOp>& xformOps,
         // case they'll accumulate to identity in the translateIdentityIndex
         // position.
         commonOpTypes.push_back(UsdGeomXformOp::TypeTranslate);
-        *translateIdentityIndex = currentIndex++;
+        *translateIdentityIndex = static_cast<int>(currentIndex++);
     }
 
     if (hasScaleOp) {
         commonOpTypes.push_back(UsdGeomXformOp::TypeScale);
-        *scaleIndex = currentIndex++;
+        *scaleIndex = static_cast<int>(currentIndex++);
     }
 
     commonOpTypes.push_back(UsdGeomXformOp::TypeTranslate);
-    *translatePivotInvertIndex = currentIndex++;
+    *translatePivotInvertIndex = static_cast<int>(currentIndex++);
 
     return commonOpTypes;
 }
@@ -421,8 +421,8 @@ UsdGeomXformCommonAPI::GetXformVectorsByAccumulation(
     // accumulating transforms as we go. We scan backwards so that we
     // accumulate the inverse pivot first and can then use that to determine
     // where to split the translates at the front between pivot and non-pivot.
-    int xformOpIndex = _xformOps.size() - 1;
-    int commonOpTypeIndex = commonOpTypes.size() - 1;
+    int xformOpIndex = static_cast<int>(_xformOps.size()) - 1;
+    int commonOpTypeIndex = static_cast<int>(commonOpTypes.size()) - 1;
 
     while (xformOpIndex >= 0 and commonOpTypeIndex >= translateIndex) {
         const UsdGeomXformOp xformOp = _xformOps[xformOpIndex];
@@ -617,7 +617,7 @@ UsdGeomXformCommonAPI::_ValidateAndComputeXformOpIndices(
             // Unknown opname. Hence, incompatible.
             return false;
         } else {
-            it->second = index;
+            it->second = static_cast<int>(index);
         }
     }
     

@@ -26,6 +26,7 @@
 #ifndef GLF_UVTEXTURESTORAGE_H
 #define GLF_UVTEXTURESTORAGE_H
 
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/baseTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -45,7 +46,7 @@ public:
     /// Creates a new texture instance based on input storageData
     /// \p width, and \p height specify the size
     ///
-    static GlfUVTextureStorageRefPtr New(
+    GLF_API static GlfUVTextureStorageRefPtr New(
         unsigned int width,
         unsigned int height, 
         const VtValue &storageData);

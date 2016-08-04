@@ -365,7 +365,7 @@ Hd_UnitTestDelegate::UpdateInstancerPrototypes(float time)
     // update instancer prototypes
     TF_FOR_ALL (it, _instancers) {
         // rotate prototype indices
-        int numInstances = it->second.prototypeIndices.size();
+        int numInstances = static_cast<int>(it->second.prototypeIndices.size());
         if (numInstances > 0) {
             int firstPrototype = it->second.prototypeIndices[0];
             for (int i = 1; i < numInstances; ++i) {
@@ -522,7 +522,7 @@ Hd_UnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
         // XXX use const_ptr
         for (size_t i = 0; i < instancer->prototypeIndices.size(); ++i) {
             if (instancer->prototypeIndices[i] == static_cast<int>(prototypeIndex)) {
-                indices.push_back(i);
+                indices.push_back(static_cast<int>(i));
             }
         }
     }
@@ -1025,9 +1025,9 @@ Hd_UnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            _BuildArray(&points[0], static_cast<int>(points.size())),
+            _BuildArray(&numVerts[0], static_cast<int>(numVerts.size())),
+            _BuildArray(&verts[0], static_cast<int>(verts.size())),
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1047,7 +1047,7 @@ Hd_UnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
-    VtVec4fArray colorArray(numVerts.size());
+    VtVec4fArray colorArray(static_cast<int>(numVerts.size()));
     for (size_t i = 0; i < numVerts.size(); ++i) {
         colorArray[i] = GfVec4f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
@@ -1057,9 +1057,9 @@ Hd_UnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            _BuildArray(&points[0], static_cast<int>(points.size())),
+            _BuildArray(&numVerts[0], static_cast<int>(numVerts.size())),
+            _BuildArray(&verts[0], static_cast<int>(verts.size())),
             subdivTags,
             VtValue(colorArray),
             Hd_UnitTestDelegate::UNIFORM,
@@ -1082,7 +1082,7 @@ Hd_UnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
-    VtVec4fArray colorArray(points.size());
+    VtVec4fArray colorArray(static_cast<int>(points.size()));
     for (size_t i = 0; i < points.size(); ++i) {
         colorArray[i] = GfVec4f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
@@ -1092,9 +1092,9 @@ Hd_UnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            _BuildArray(&points[0], static_cast<int>(points.size())),
+            _BuildArray(&numVerts[0], static_cast<int>(numVerts.size())),
+            _BuildArray(&verts[0], static_cast<int>(verts.size())),
             subdivTags,
             VtValue(colorArray),
             Hd_UnitTestDelegate::VERTEX,
@@ -1117,7 +1117,7 @@ Hd_UnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int 
     PxOsdSubdivTags subdivTags;
     _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
 
-    VtVec4fArray colorArray(verts.size());
+    VtVec4fArray colorArray(static_cast<int>(verts.size()));
     for (size_t i = 0; i < verts.size(); ++i) {
         colorArray[i] = GfVec4f(fabs(sin(0.1*i)),
                                 fabs(cos(0.3*i)),
@@ -1127,9 +1127,9 @@ Hd_UnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int 
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            _BuildArray(&points[0], static_cast<int>(points.size())),
+            _BuildArray(&numVerts[0], static_cast<int>(numVerts.size())),
+            _BuildArray(&verts[0], static_cast<int>(verts.size())),
             subdivTags,
             VtValue(colorArray),
             Hd_UnitTestDelegate::FACEVARYING,
@@ -1178,7 +1178,7 @@ Hd_UnitTestDelegate::AddCurves(
     if (authoredNormals)
         authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
 
-    for(uint i = 0;i < sizeof(points) / sizeof(points[0]); ++ i) {
+    for(size_t i = 0;i < sizeof(points) / sizeof(points[0]); ++ i) {
         GfVec4f tmpPoint = GfVec4f(points[i][0], points[i][1], points[i][2], 1.0f);
         tmpPoint = tmpPoint * transform;
         points[i] = GfVec3f(tmpPoint[0], tmpPoint[1], tmpPoint[2]);

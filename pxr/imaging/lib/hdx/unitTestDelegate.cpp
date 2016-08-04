@@ -499,7 +499,7 @@ Hdx_UnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
         // XXX use const_ptr
         for (size_t i = 0; i < instancer->prototypeIndices.size(); ++i) {
             if (static_cast<size_t>(instancer->prototypeIndices[i]) == prototypeIndex) {
-                indices.push_back(i);
+                indices.push_back(static_cast<int>(i));
             }
         }
     }

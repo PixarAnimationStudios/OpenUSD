@@ -31,6 +31,7 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usdRi/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 /// \file pxr/usd/usdRi/tokens.h
@@ -83,6 +84,6 @@
 /// \li <b>riLookPatterns</b> - UsdRiLookAPI
 /// \li <b>riLookSurface</b> - UsdRiLookAPI
 /// \li <b>riLookVolume</b> - UsdRiLookAPI
-TF_DECLARE_PUBLIC_TOKENS(UsdRiTokens, USDRI_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdRiTokens, USDRI_API, USDRI_TOKENS);
 
 #endif

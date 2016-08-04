@@ -26,12 +26,16 @@
 
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/timeStamp.h"
+#include "pxr/base/tf/api.h"
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/hash.h"
 
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <string>
+
+#include <ciso646>
 
 /*!
  * \file hash.h
@@ -87,7 +91,7 @@ class TfRefBase;
 template <template <class> class X, class T>
 class TfWeakPtrFacade;
 
-struct TfHash {
+class TfHash {
 private:
     inline size_t _Mix(size_t val) const {
         return val + (val >> 3);
@@ -119,9 +123,9 @@ public:
         return ptr.GetHash();
     }
 
-    size_t operator()(const TfEnum& e) const;
+    TF_API size_t operator()(const TfEnum& e) const;
 
-    size_t operator()(const TfType& t) const;
+    TF_API size_t operator()(const TfType& t) const;
 
     size_t operator()(TfTimeStamp stamp) const {
         return _Mix(size_t(stamp.Get()));

@@ -41,6 +41,18 @@ function(pxr_python_bins)
             DESTINATION ${installDir}
             RENAME ${file}
         )
+
+		# Windows by default cannot execute Python files so here
+		# we create a batch file wrapper that invokes the python
+		# files.
+		if(WIN32)
+			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython ${file} %*")
+			install(PROGRAMS
+				"${CMAKE_BINARY_DIR}/${pyFile}.cmd"
+				DESTINATION ${installDir}
+				RENAME "${file}.cmd"
+			)
+		endif()
     endforeach()
 endfunction() # pxr_install_python_bins
 
@@ -135,6 +147,14 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
 
+    if(WIN32)
+        if(MSVC)
+            set_target_properties(
+                ${LIBRARY_NAME}
+                PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+        endif()
+    endif()
+
     if(sl_PYTHON_FILES)
         _install_python(${LIBRARY_NAME}
             FILES ${sl_PYTHON_FILES}
@@ -169,12 +189,23 @@ function(pxr_shared_library LIBRARY_NAME)
             set(rpath "$ORIGIN/../../../../${PXR_INSTALL_SUBDIR}/lib:${rpath}")
         endif()
 
-        set_target_properties(${LIBRARY_NAME} 
-            PROPERTIES 
-                PREFIX ""
-                FOLDER "${PXR_PREFIX}/_python"
-                INSTALL_RPATH ${rpath}
-        )
+        if(WIN32)
+            set_target_properties(${LIBRARY_NAME} 
+                PROPERTIES 
+                    PREFIX ""
+                    SUFFIX ".pyd"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
+            )
+        else()
+            set_target_properties(${LIBRARY_NAME} 
+                PROPERTIES 
+                    PREFIX ""
+                    SUFFIX ".pyd"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
+            )
+        endif()
     else()
         _get_install_dir(lib LIB_INSTALL_PREFIX)
         _get_share_install_dir(SHARE_INSTALL_PREFIX)
@@ -259,6 +290,7 @@ function(pxr_shared_library LIBRARY_NAME)
         EXPORT pxrTargets
         LIBRARY DESTINATION ${LIB_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${LIB_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${LIB_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 
@@ -744,7 +776,7 @@ endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
     cmake_parse_arguments(bt
-        "" 
+        ""
         "SRC;DEST"
         ""
         ${ARGN}
@@ -758,13 +790,13 @@ endfunction() # pxr_install_test_dir
 
 function(pxr_register_test TEST_NAME)
     cmake_parse_arguments(bt
-        "PYTHON" 
+        "PYTHON"
         "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;EXPECTED_RETURN_CODE;TESTENV"
         "ENV"
         ${ARGN}
     )
 
-    # This harness is a filter which allows us to manipulate the test run, 
+    # This harness is a filter which allows us to manipulate the test run,
     # e.g. by changing the environment, changing the expected return code, etc.
     set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
 
@@ -799,7 +831,7 @@ function(pxr_register_test TEST_NAME)
     endif()
 
     if (bt_EXPECTED_RETURN_CODE)
-        set(testWrapperCmd ${testWrapperCmd} 
+        set(testWrapperCmd ${testWrapperCmd}
             --expected-return-code=${bt_EXPECTED_RETURN_CODE})
     endif()
 
@@ -846,7 +878,7 @@ function(pxr_katana_nodetypes NODE_TYPES)
         set(importLines "import ${nodeType}\n")
     endforeach()
 
-    install(PROGRAMS 
+    install(PROGRAMS
         ${pyFiles}
         DESTINATION ${installDir}
     )

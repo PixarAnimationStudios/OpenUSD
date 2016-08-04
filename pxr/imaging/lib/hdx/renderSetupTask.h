@@ -24,6 +24,7 @@
 #ifndef HDX_RENDER_SETUP_TASK_H
 #define HDX_RENDER_SETUP_TASK_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/enums.h"
@@ -134,8 +135,8 @@ struct HdxRenderTaskParams : public HdTaskParams
 
 
 // VtValue requirements
-std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv);
-bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
-bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
+HDXLIB_API std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv);
+HDXLIB_API bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
+HDXLIB_API bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
 
 #endif //HDX_RENDER_SETUP_TASK_H

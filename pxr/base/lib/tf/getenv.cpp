@@ -21,23 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/pragmas.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <cstdlib>
 #include <cstring>
 #include <ctype.h>
 #include <string>
-#include <strings.h>
+#include <ciso646>
+#include <algorithm>
 
 using std::string;
-
-
-
 
 string
 TfGetenv(const string& envName, const string& defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+    const char* value = ArchGetEnv(envName.c_str());
 
     if (!value || value[0] == '\0')
         return defaultValue;
@@ -48,7 +49,7 @@ TfGetenv(const string& envName, const string& defaultValue)
 int
 TfGetenvInt(const string& envName, int defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+	const char* value = ArchGetEnv(envName.c_str());
 
     if (!value || value[0] == '\0')
         return defaultValue;
@@ -59,22 +60,26 @@ TfGetenvInt(const string& envName, int defaultValue)
 bool
 TfGetenvBool(const string& envName, bool defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+    const char* value = ArchGetEnv(envName.c_str());
 
     if (!value || value[0] == '\0')
         return defaultValue;
-    else {
-        return strcasecmp(value, "true") == 0 or
-            strcasecmp(value, "yes") == 0 or
-            strcasecmp(value, "on") == 0 or
-            strcmp(value, "1") == 0;
-    }
+    else
+    {
+        for (char *iter = (char*)value; *iter != '\0'; ++iter)
+            *iter = tolower(*iter);
+
+		return strcmp(value, "true") == 0 or
+               strcmp(value, "yes") == 0 or
+               strcmp(value, "on") == 0 or
+               strcmp(value, "1") == 0;
+	}
 }
 
 double
 TfGetenvDouble(const string& envName, double defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+	const char* value = ArchGetEnv(envName.c_str());
 
     if (!value || value[0] == '\0')
         return defaultValue;

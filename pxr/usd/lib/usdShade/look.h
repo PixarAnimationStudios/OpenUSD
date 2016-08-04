@@ -24,6 +24,7 @@
 #ifndef USDSHADE_GENERATED_LOOK_H
 #define USDSHADE_GENERATED_LOOK_H
 
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usdShade/subgraph.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -118,11 +119,13 @@ public:
     }
 
     /// Destructor.
+    USDSHADE_API
     virtual ~UsdShadeLook();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDSHADE_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -135,6 +138,7 @@ public:
     /// UsdShadeLook(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDSHADE_API
     static UsdShadeLook
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -160,6 +164,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDSHADE_API
     static UsdShadeLook
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -171,6 +176,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDSHADE_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -193,6 +199,7 @@ public:
     ///
     /// Any UsdPrim can have a binding to at most a \em single UsdShadeLook .
     /// \return true on success
+    USDSHADE_API
     bool Bind(UsdPrim& prim) const;
 
     /// Ensure that, when resolved up to and including the current UsdEditTarget
@@ -203,6 +210,7 @@ public:
     /// such that a weaker binding will "shine through".  For that behavior,
     /// use GetBindingRel().ClearTargets()
     /// \return true on success
+    USDSHADE_API
     static bool Unbind(UsdPrim& prim);
 
     /// Direct access to the binding relationship for \p prim, if it has
@@ -217,11 +225,13 @@ public:
     /// will then be the client's responsibility to ensure that only a
     /// single Look prim is targetted.  In general, use 
     /// UsdRelationship::SetTargets() rather than UsdRelationship::AddTarget()
+    USDSHADE_API
     static UsdRelationship GetBindingRel(const UsdPrim& prim);
 
     /// Follows the relationship returned by GetBindingRel and returns a
     /// valid UsdShadeLook if the relationship targets exactly one such prim.
     ///
+    USDSHADE_API
     static UsdShadeLook GetBoundLook(const UsdPrim &prim);
 
     /// @}
@@ -296,12 +306,14 @@ public:
     /// default selection, or possibly UsdVariantSet::ClearVariantSelection()
     /// on the UsdShadeLook::GetLookVariant() UsdVariantSet.
     /// \sa UsdVariantSet::GetVariantEditContext()
+    USDSHADE_API
     std::pair<UsdStagePtr, UsdEditTarget>
     GetEditContextForVariant(const TfToken &lookVariantName,
                              const SdfLayerHandle &layer = SdfLayerHandle()) const;
     
     /// Return a UsdVariantSet object for interacting with the look variant
     /// variantSet
+    USDSHADE_API
     UsdVariantSet GetLookVariant() const;
 
     /// Create a variantSet on \p masterPrim that will set the lookVariant on
@@ -332,6 +344,7 @@ public:
     ///
     /// Return \c true on success. It is an error if any of \p looks
     /// have a different set of variants for the lookVariant than the others.
+    USDSHADE_API
     static bool CreateMasterLookVariant(
         const UsdPrim &masterPrim,
         const std::vector<UsdPrim> &lookPrims,
@@ -353,24 +366,30 @@ public:
 
     /// Get the path to the base Look of this Look.
     /// If there is no base Look, an empty Look is returned
+    USDSHADE_API
     UsdShadeLook GetBaseLook() const;
 
     /// Get the base Look of this Look.
     /// If there is no base look, an empty path is returned
+    USDSHADE_API
     SdfPath GetBaseLookPath() const;
 
     /// Set the base Look of this Look.
     /// An empty Look is equivalent to clearing the base Look.
+    USDSHADE_API
     void SetBaseLook(const UsdShadeLook& baseLook) const;
 
     /// Set the path to the base Look of this Look.
     /// An empty path is equivalent to clearing the base look.
+    USDSHADE_API
     void SetBaseLookPath(const SdfPath& baseLookPath) const;
 
     /// Clear the base Look of this Look.
+    USDSHADE_API
     void ClearBaseLook() const;
 
     // Check if this Look has a base Look
+    USDSHADE_API
     bool HasBaseLook() const;
 
     /// @}
@@ -409,16 +428,19 @@ public:
     /// If a "look" face-set already exists, it is returned. If not, it
     /// creates one and returns it.
     /// 
+    USDSHADE_API
     static UsdGeomFaceSetAPI CreateLookFaceSet(const UsdPrim &prim);
 
     /// Returns the "look" face-set if it exists on the given prim. If not, 
     /// returns an invalid UsdGeomFaceSetAPI object.
     /// 
+    USDSHADE_API
     static UsdGeomFaceSetAPI GetLookFaceSet(const UsdPrim &prim);
 
     /// Returns true if the given prim has a "look" face-set. A "look" 
     /// face-set must be a partition for it to be considered valid.
     /// 
+    USDSHADE_API
     static bool HasLookFaceSet(const UsdPrim &prim);
 
     /// @}
@@ -434,19 +456,23 @@ public:
     /// Get the main terminal of a look: the surface. Different renderers
     /// will interpret this terminal in their own way
     /// 
+    USDSHADE_API
     UsdRelationship GetSurfaceTerminal() const;
 
     /// Create and set the main terminal of a look: the surface. Different renderers
     /// will interpret this terminal in their own way
     /// 
+    USDSHADE_API
     UsdRelationship CreateSurfaceTerminal(const SdfPath& targetPath) const;
 
     /// Get the displacement terminal of a look
     /// 
+    USDSHADE_API
     UsdRelationship GetDisplacementTerminal() const;
 
     /// Create and set the displacement terminal of a look
     /// 
+    USDSHADE_API
     UsdRelationship CreateDisplacementTerminal(const SdfPath& targetPath) const;
     /// @}
 };

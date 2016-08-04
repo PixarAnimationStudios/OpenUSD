@@ -26,6 +26,7 @@
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/usd/pcp/api.h"
 #include <boost/noncopyable.hpp>
 
 class PcpPayloadContext;
@@ -62,6 +63,7 @@ public:
     /// Decorate the SdfLayer arguments \p args with additional arguments
     /// that will be used when opening the layer specified in the payload 
     /// \p payload.
+    PCP_API
     void DecoratePayload(
         const SdfPayload& payload, 
         const PcpPayloadContext& context,
@@ -72,14 +74,15 @@ public:
     ///
     /// This is used during change processing to determine whether a scene
     /// description change affects a prim's payload arcs.
+    PCP_API
     bool IsFieldRelevantForDecoration(
         const SdfLayerHandle& layer,
         const SdfPath& path,
         const TfToken& field);
 
 protected:
-    PcpPayloadDecorator();
-    virtual ~PcpPayloadDecorator();
+    PCP_API PcpPayloadDecorator();
+    PCP_API virtual ~PcpPayloadDecorator();
 
     /// Virtual implementation functions. See corresponding public
     /// API for documentation.

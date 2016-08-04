@@ -24,6 +24,7 @@
 #ifndef _USDUTILS_STITCH_H_
 #define _USDUTILS_STITCH_H_
 
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
 SDF_DECLARE_HANDLES(SdfLayer);
@@ -91,6 +92,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// Verification is done post stitching to warn the user if time samples 
 /// outside of the range were provided or if a begin frame is missing to 
 /// corresponding end frame or vise-versa.
+USDUTILS_API
 void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer, 
                           const SdfLayerHandle& weakLayer,
                           bool ignoreTimeSamples = false);
@@ -101,6 +103,7 @@ void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
 /// we will follow our traditional rule: If \p strongObj has the key 
 /// already, nothing changes, if it does not and \p weakObj does, 
 /// we will copy \p weakObj's info over.
+USDUTILS_API
 void UsdUtilsStitchInfo(const SdfSpecHandle& strongObj, 
                         const SdfSpecHandle& weakObj,
                         bool ignoreTimeSamples = false);

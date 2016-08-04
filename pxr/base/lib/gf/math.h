@@ -25,6 +25,7 @@
 #define GF_MATH_H
 
 #include "pxr/base/arch/math.h"
+#include "pxr/base/gf/api.h"
 
 /*!
  * \file gf/math.h
@@ -177,9 +178,11 @@ inline float GfClamp(float value, float min, float max) {
  * Otherwise, for positive \p a, the value returned is \c fmod(a,b),
  * and for negative \p a, the value returned is \c fmod(a,b)+b.
  */
+GF_API
 double GfMod(double a, double b);
 //! \overload
 // \ingroup group_gf_BasicMath
+GF_API
 float GfMod(float a, float b);
 
 /*!

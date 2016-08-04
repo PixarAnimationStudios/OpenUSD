@@ -101,7 +101,9 @@
 /* Line 189 of yacc.c  */
 #line 25 "pxr/usd/sdf/textFileFormat.yy"
 
-
+#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdf/allowed.h"
@@ -118,7 +120,7 @@
 
 #include "pxr/base/tracelite/trace.h"
 
-
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -134,8 +136,10 @@
 
 #include <sstream>
 #include <string>
+#if !defined(ARCH_OS_WINDOWS)
 #include <sys/mman.h>
 #include <unistd.h>
+#endif
 #include <vector>
 
 // See this page for info as to why this is here.  Especially note the last
@@ -184,7 +188,7 @@ void textFileFormatYyerror(Sdf_TextParserContext *context, const char *s);
 
 extern int textFileFormatYylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern char *textFileFormatYyget_text(yyscan_t yyscanner);
-extern int textFileFormatYyget_leng(yyscan_t yyscanner);
+extern size_t textFileFormatYyget_leng(yyscan_t yyscanner);
 extern int textFileFormatYylex_init(yyscan_t *yyscanner);
 extern int textFileFormatYylex_destroy(yyscan_t yyscanner);
 extern void textFileFormatYyset_extra(Sdf_TextParserContext *context, 
@@ -3048,13 +3052,6 @@ yydestruct (yymsg, yytype, yyvaluep, context)
   if (!yymsg)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
-
-  switch (yytype)
-    {
-
-      default:
-	break;
-    }
 }
 
 /* Prevent warnings from -Wmissing-prototypes.  */
@@ -6011,15 +6008,16 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
       _paddingBuffer(NULL), _paddingBufferSize(0),
       _scanner(scanner)
 {
-    const int fd = fileno(file);
+    const int fd = ArchFileNo(file);
 
     struct stat fileInfo;
     if (fstat(fd, &fileInfo) != 0) {
         TF_RUNTIME_ERROR("Error retrieving file size for @%s@: %s", 
-                         name.c_str(), strerror(errno));
+                         name.c_str(), ArchStrerror(errno).c_str());
         return;
     }
 
+#if !defined(ARCH_OS_WINDOWS)
     // flex requires 2 bytes of NUL padding at the end of any buffers it
     // is given. We can't guarantee that the file we're mmap'ing will meet
     // this requirement, so we're going to fake it.
@@ -6039,9 +6037,10 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
     char* fileSpace = static_cast<char*>(
         mmap(NULL, fileBufferSize,
              PROT_READ | PROT_WRITE, mmapFlags, fd, 0));
+
     if (fileSpace == MAP_FAILED) {
         TF_RUNTIME_ERROR("Failed to mmap file @%s@: %s", 
-                         name.c_str(), strerror(errno));
+                         name.c_str(), ArchStrerror(errno).c_str());
         return;
     }
 
@@ -6058,7 +6057,7 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
     // To avoid this, we try to create an anonymous mmap for the padding that 
     // is contiguous with the last page. flex will see the two mmap'd space
     // as one contiguous buffer and can then access the padding bytes safely.
-    const size_t pageSize = sysconf(_SC_PAGESIZE);
+    const size_t pageSize = ArchGetPageSize();
     const size_t numberOfPagesUsedByFile = (fileSize - 1 + pageSize) / pageSize;
     const size_t totalBytesUsedByPages = numberOfPagesUsedByFile * pageSize;
 
@@ -6073,7 +6072,7 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
             // the mmap'd file.
             TF_WARN("Can't mmap extra space for @%s@: %s. "
                     "Copying entire layer into memory.", 
-                    name.c_str(), strerror(errno));
+                    name.c_str(), ArchStrerror(errno).c_str());
             _flexBuffer = textFileFormatYy_scan_bytes(_fileBuffer, fileSize, _scanner);
             return;
         }
@@ -6083,6 +6082,7 @@ Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file,
     }
 
     _flexBuffer = textFileFormatYy_scan_buffer(_fileBuffer, _fileBufferSize, _scanner);
+#endif
 }
 
 Sdf_MMappedFlexBuffer::~Sdf_MMappedFlexBuffer()
@@ -6091,6 +6091,7 @@ Sdf_MMappedFlexBuffer::~Sdf_MMappedFlexBuffer()
         textFileFormatYy_delete_buffer(_flexBuffer, _scanner);
     }
 
+#if !defined(ARCH_OS_WINDOWS)
     if (_fileBuffer) {
         munmap(_fileBuffer, _fileBufferSize);
     }
@@ -6098,6 +6099,7 @@ Sdf_MMappedFlexBuffer::~Sdf_MMappedFlexBuffer()
     if (_paddingBuffer) {
         munmap(_paddingBuffer, _paddingBufferSize);
     }
+#endif
 }
 
 #ifdef SDF_PARSER_DEBUG_MODE

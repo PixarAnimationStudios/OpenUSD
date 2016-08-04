@@ -23,6 +23,8 @@
 //
 /// \file wrapPropertySpec.cpp
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -31,8 +33,6 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

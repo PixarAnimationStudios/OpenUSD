@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/rmanUtilities.h"
-
-#include "pxr/base/tf/token.h"
-
 #include <boost/python/def.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/return_by_value.hpp>
+
+#include "pxr/usd/usdRi/rmanUtilities.h"
+
+#include "pxr/base/tf/token.h"
 
 using namespace boost::python;
 

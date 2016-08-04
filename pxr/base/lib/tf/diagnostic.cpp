@@ -125,7 +125,7 @@ Tf_TerminateHandler()
         std::set_terminate(::_BadThrowHandler);
         throw;
     }
-    catch (std::bad_alloc& exc) {
+    catch (std::bad_alloc&) {
         std::set_terminate(Tf_TerminateHandler);
         reason = "allocation failed (you've run out of memory)";
         type = "bad_alloc";
@@ -162,6 +162,7 @@ std::string TfGetProgramNameForErrors()
     return ArchGetProgramNameForErrors();
 }
 
+#if !defined(ARCH_OS_WINDOWS)
 // Called when we get a fatal signal.
 static void
 _fatalSignalHandler(int signo, siginfo_t*, void* uctx)
@@ -205,11 +206,12 @@ _fatalSignalHandler(int signo, siginfo_t*, void* uctx)
     // Simulate the exit status of being killed by signal signo
     _exit(128 + signo);
 }
-
+#endif
 
 void
 TfInstallTerminateAndCrashHandlers()
 {
+#if !defined(ARCH_OS_WINDOWS)
     std::set_terminate(Tf_TerminateHandler);
 
     // Catch segvs and bus violations
@@ -236,4 +238,5 @@ TfInstallTerminateAndCrashHandlers()
     sigaction(SIGBUS,  &act, NULL);
     sigaction(SIGFPE,  &act, NULL);
     sigaction(SIGABRT, &act, NULL);
+#endif
 }

@@ -309,6 +309,7 @@ struct Pcp_Statistics
         }
 
         // Assert sizes of structs we want to keep a close eye on.
+#if defined(ARCH_COMPILER_HAS_STATIC_ASSERT)
         BOOST_STATIC_ASSERT(sizeof(PcpMapFunction) == 8);
         BOOST_STATIC_ASSERT(sizeof(PcpMapExpression) == 8);
 
@@ -329,6 +330,7 @@ struct Pcp_Statistics
 
         BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph::_Node) == 48);
         BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph::_SharedData) == 32);
+#endif
     }
 
     static void PrintPrimIndexStats(

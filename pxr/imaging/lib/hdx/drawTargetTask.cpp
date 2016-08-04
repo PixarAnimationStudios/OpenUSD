@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/functionLite.h"
+
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdx/drawTargetTask.h"
@@ -54,7 +57,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     HD_MALLOC_TAG_FUNCTION();
 
     TRACE_FUNCTION();
-    TfAutoMallocTag2 tag("GlimRg", __PRETTY_FUNCTION__);
+    TfAutoMallocTag2 tag("GlimRg", __ARCH_PRETTY_FUNCTION__);
 
     HdChangeTracker::DirtyBits bits = _GetTaskDirtyBits();
 

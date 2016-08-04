@@ -24,6 +24,9 @@
 #ifndef TF_POINTERANDBITS_H
 #define TF_POINTERANDBITS_H
 
+#include "pxr/base/arch/defines.h"
+
+#include <ciso646>
 #include <cstdint>
 #include <utility>
 
@@ -43,11 +46,19 @@ constexpr bool Tf_IsPow2(uintptr_t val) {
 /// The bits may be set and retrieved as any integral type.  The pointer value
 /// and the bits value may be set and retrieved independently.
 ///
+/// Note about cross-platform compatibility. The C++ standard says:
+///		An alignof expression yields the alignment requirement of its operand
+///		type. The operand shall be a type-id representing a complete object
+///		type, or an array thereof, or a reference to one of those types.
+/// GCC appears to interpret "complete object type" to include abstract
+/// classes, but Microsoft Visual C++ does not. However, providing a reference
+/// appears to appease the Microsoft Visual C++ compiler.
+///
 template <class T>
 class TfPointerAndBits
 {
     static constexpr bool _SupportsAtLeastOneBit() {
-        return alignof(T) > 1 and Tf_IsPow2(alignof(T));
+        return alignof(T&) > 1 and Tf_IsPow2(alignof(T&));
     }
 
 public:
@@ -67,11 +78,11 @@ public:
     }
 
     constexpr uintptr_t GetMaxValue() const {
-        return alignof(T) - 1;
+        return alignof(T&) - 1;
     }
 
     constexpr uintptr_t GetNumBitsValues() const {
-        return alignof(T);
+        return alignof(T&);
     }
 
     /// \brief Assignment.  Leaves bits unmodified.
@@ -95,6 +106,14 @@ public:
     Integral BitsAs() const {
         return static_cast<Integral>(_GetBits());
     }
+
+#if defined(ARCH_OS_WINDOWS)
+	/// \brief Retrieve the stored bits as the integral type \a Integral.
+	template <>
+	bool BitsAs<bool>() const {
+		return _GetBits() > 0;
+	}
+#endif
 
     /// \brief Set the stored bits.  No static range checking is performed.
     template <class Integral>

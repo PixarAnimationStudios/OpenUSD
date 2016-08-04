@@ -24,13 +24,8 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/staticData.h"
 
-
-TF_MAKE_STATIC_DATA((TfHashMap<int, int>), _emptyHashMap) {
-    *_emptyHashMap = TfHashMap<int, int>(0);
-}
-TF_MAKE_STATIC_DATA(TfHashSet<int>, _emptyHashSet) {
-    *_emptyHashSet = TfHashSet<int>(0);
-}
+TfHashMap<int, int>* _emptyHashMap = new TfHashMap<int, int>(0);
+TfHashSet<int>* _emptyHashSet = new TfHashSet<int>(0);
 
 size_t
 Tf_GetEmptyHashMapBucketCount()

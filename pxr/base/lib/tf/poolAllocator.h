@@ -28,6 +28,8 @@
 #include <tbb/spin_mutex.h>
 #include <vector>
 
+#include "pxr/base/tf/api.h"
+
 /*!
  * \file poolAllocator.h
  * \ingroup group_tf_Memory
@@ -67,14 +69,14 @@ public:
      *                      bytes at a time when obtaining more memory.
      *
      */
-    TfPoolAllocator(size_t elementSize, size_t bytesPerChunk);
+    TF_API TfPoolAllocator(size_t elementSize, size_t bytesPerChunk);
 
     /*!
      * Destructor.  The pool allocator will return all memory in its pool
      * on destruction regardless of whether or not the individual data created
      * by this pool allocator was previously returned.
      */
-    ~TfPoolAllocator();
+    TF_API ~TfPoolAllocator();
 
     /*!
      * \brief Enable or disable "lock on Alloc/Free"
@@ -148,13 +150,13 @@ public:
      * Thus, the sucess of the reclamation is critically dependent
      * on how fragmented the memory state is.
      */
-    size_t Reclaim();
+    TF_API size_t Reclaim();
 
     /*
      * \brief Return number of bytes in use for this pool, and
      * unused space in bytesUnallocated.
      */
-    size_t GetBytesInUse(size_t* bytesUnallocated) const;
+    TF_API size_t GetBytesInUse(size_t* bytesUnallocated) const;
 
     /*
      * \brief Returns the address of element \p index fort this pool, ONLY if 
@@ -165,14 +167,14 @@ public:
      * when elementSize is small. It is an 100% overhead to store an eight bytes
      * pointer somewhere else when elementSize is eight bytes.
      */
-    void *GetElement(size_t index) const;
+    TF_API void *GetElement(size_t index) const;
 
 private:
     struct _PoolNode {
         _PoolNode* next;
     };
 
-    _PoolNode* _Refill();
+    TF_API _PoolNode* _Refill();
     
     tbb::spin_mutex          _fastMutex;
     _PoolNode *              _freeList;

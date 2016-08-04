@@ -233,7 +233,7 @@ JsParseString(
                     nlpos = i;
                 }
             }
-            error->column = eoff - nlpos;
+            error->column = static_cast<unsigned int>(eoff - nlpos);
             error->reason = rj::GetParseError_En(result.Code());
         }
         return JsValue();

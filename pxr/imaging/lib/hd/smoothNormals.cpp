@@ -202,11 +202,11 @@ Hd_SmoothNormalsComputationGPU::Execute(
     // components in interleaved vertex array are always same data type.
     // i.e. it can't handle an interleaved array which interleaves
     // float/double, float/int etc.
-    uniform.pointsOffset = points->GetOffset() / points->GetComponentSize();
-    uniform.pointsStride = points->GetStride() / points->GetComponentSize();
+    uniform.pointsOffset = static_cast<int>(points->GetOffset() / points->GetComponentSize());
+    uniform.pointsStride = static_cast<int>(points->GetStride() / points->GetComponentSize());
     // interleaved offset/stride to normals
-    uniform.normalsOffset = normals->GetOffset() / points->GetComponentSize();
-    uniform.normalsStride = normals->GetStride() / points->GetComponentSize();
+    uniform.normalsOffset = static_cast<int>(normals->GetOffset() / points->GetComponentSize());
+    uniform.normalsStride = static_cast<int>(normals->GetStride() / points->GetComponentSize());
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();

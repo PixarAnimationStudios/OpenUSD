@@ -24,6 +24,7 @@
 #ifndef TF_PYIDENTITY_H
 #define TF_PYIDENTITY_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -66,20 +67,25 @@ struct Tf_PyIdentityHelper
 {
     // Set the identity of ptr (which derives from TfPtrBase) to be the
     // python object \a obj.  
+    TF_API
     static void Set(void const *id, PyObject *obj);
 
     // Return a new reference to the python object associated with ptr.  If
     // there is none, return 0.
+    TF_API
     static PyObject *Get(void const *id);
 
+    TF_API
     static void Erase(void const *id);
 
     // Acquire a reference to the python object associated with ptrBase
     // if not already acquired.
+    TF_API
     static void Acquire(void const *id);
 
     // Release a reference to the python object associated with ptrBase
     // if we own a reference.
+    TF_API
     static void Release(void const *id);
     
 };
@@ -98,8 +104,11 @@ struct Tf_PyOwnershipPtrMap
 {
     typedef TfHashMap<TfRefBase const *, void const *, TfHash>
     _CacheType;
+    TF_API
     static void Insert(TfRefBase *refBase, void const *uniqueId);
+    TF_API
     static void const *Lookup(TfRefBase const *refBase);
+    TF_API
     static void Erase(TfRefBase *refBase);
   private:
     static _CacheType _cache;

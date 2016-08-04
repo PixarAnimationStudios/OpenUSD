@@ -55,6 +55,7 @@
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/site.h"
+#include "pxr/usd/pcp/api.h"
 
 #include "pxr/base/tf/denseHashSet.h"
 
@@ -74,35 +75,50 @@ struct PcpSourceReferenceInfo {
 /// A vector of reference arc information.
 typedef std::vector<PcpSourceReferenceInfo> PcpSourceReferenceInfoVector;
 
+PCP_API
 void PcpComposeSiteReferences( const PcpLayerStackSite & site,
                                SdfReferenceVector *result,
                                PcpSourceReferenceInfoVector *info );
+PCP_API
 void PcpComposeSitePayload( const PcpLayerStackSite & site,
                             SdfPayload *result,
                             SdfLayerHandle *sourceLayer );
+PCP_API
 SdfPermission PcpComposeSitePermission( const PcpLayerStackSite & site );
+PCP_API
 void PcpComposeSitePrimSites( const PcpLayerStackSite & site, 
                               SdfSiteVector *result );
+PCP_API
 void PcpComposeSitePrimSpecs( const PcpLayerStackSite & site, 
                               SdfPrimSpecHandleVector *result );
+PCP_API
 void PcpComposeSiteRelocates( const PcpLayerStackSite & site,
                               SdfRelocatesMap *result );
+PCP_API
 bool PcpComposeSiteHasPrimSpecs( const PcpLayerStackSite& site );
+PCP_API
 bool PcpComposeSiteHasSymmetry( const PcpLayerStackSite & site );
+PCP_API
 void PcpComposeSiteInherits( const PcpLayerStackSite & site,
                               SdfPathVector *result );
+PCP_API
 void PcpComposeSiteSpecializes( const PcpLayerStackSite & site,
                                 SdfPathVector *result );
+PCP_API
 void PcpComposeSiteVariantSets( const PcpLayerStackSite & site,
                                 std::vector<std::string> *result );
+PCP_API
 void PcpComposeSiteVariantSetOptions( const PcpLayerStackSite & site,
                                       const std::string &vsetName,
                                       std::set<std::string> *result );
+PCP_API
 bool PcpComposeSiteVariantSelection( const PcpLayerStackSite & site,
                                      const std::string & vsetName,
                                      std::string *result );
+PCP_API
 void PcpComposeSiteVariantSelections( const PcpLayerStackSite & site,
                                       SdfVariantSelectionMap *result );
+PCP_API
 bool PcpComposeSiteHasVariantSelections( const PcpLayerStackSite & site );
 
 #endif

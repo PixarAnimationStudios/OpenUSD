@@ -25,6 +25,7 @@
 #define SUBTRACTION_OPERATOR
 #define UNARY_NEG_OPERATOR
 #define DOUBLE_MULT_OPERATOR
+
 // Vec types support *, but as a dot product, so return is a double rather than
 // a Vec, so we can't use it on two Vecs, just on Vec * double
 // (sure we could create special overloading for
@@ -37,9 +38,8 @@
 // Vecs also don't generally support division.  As a special case, the non-int
 // vec types support division by a double, but since it's not all Vecs we can't
 // define Vec / double.
-#include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
-
+#include "pxr/base/vt/typeHeaders.h"
 
 void wrapArrayVec() {
     BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_VEC_VALUE_TYPES);

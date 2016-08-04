@@ -277,5 +277,4 @@ void wrapError() {
             return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
         ;
-    
 }

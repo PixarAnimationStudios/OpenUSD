@@ -35,6 +35,7 @@
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -127,6 +128,7 @@ public:
     /// elements will be filled in with the corresponding elements from an
     /// identity matrix.
     ///
+    GF_API
     explicit GfMatrix4f(const std::vector< std::vector<double> >& v);
 
     /// Constructor.  Initialize the matrix from a vector of vectors of float.
@@ -135,6 +137,7 @@ public:
     /// elements will be filled in with the corresponding elements from an
     /// identity matrix.
     ///
+    GF_API
     explicit GfMatrix4f(const std::vector< std::vector<float> >& v);
 
     /// Constructor.  Initialize the matrix from 4 row vectors of
@@ -143,6 +146,7 @@ public:
     /// uninitialized elements will be filled in with the
     /// corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit GfMatrix4f(const std::vector<double>& r0,
                         const std::vector<double>& r1,
                         const std::vector<double>& r2,
@@ -154,6 +158,7 @@ public:
     /// uninitialized elements will be filled in with the
     /// corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit GfMatrix4f(const std::vector<float>& r0,
                         const std::vector<float>& r1,
                         const std::vector<float>& r2,
@@ -161,10 +166,12 @@ public:
 
     /// Constructor. Initializes a transformation matrix to perform the indicated
     /// rotation and translation.
+    GF_API
     GfMatrix4f(const GfMatrix3f& rotmx,
                const GfVec3f& translate);
     //!
     // This explicit constructor converts a "double" matrix to a "float" matrix.
+    GF_API
     explicit GfMatrix4f(const class GfMatrix4d& m);
 
     /// Sets a row of the matrix from a Vec4.
@@ -240,13 +247,16 @@ public:
     }
 
     /// Sets the matrix to \e s times the identity matrix.
+    GF_API
     GfMatrix4f& SetDiagonal(float s);
 
     /// Sets the matrix to have diagonal (<c>v[0], v[1], v[2], v[3]</c>).
+    GF_API
     GfMatrix4f& SetDiagonal(const GfVec4f&);
 
     /// Fills a 4x4 array of \c float values with the values in
     /// the matrix, specified in row-major order.
+    GF_API
     float* Get(float m[4][4]);
 
     /// Returns vector components as an array of \c float values.
@@ -281,10 +291,12 @@ public:
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix4d& m) const;
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix4f& m) const;
 
     /// Tests for element-wise matrix inequality. All elements must match
@@ -300,6 +312,7 @@ public:
     }
 
     /// Returns the transpose of the matrix.
+    GF_API
     GfMatrix4f GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
@@ -307,9 +320,11 @@ public:
     /// as defined by the system.) The matrix is considered singular if the 
     /// determinant is less than or equal to the optional parameter \e eps.
     /// If \e det is non-null, <c>*det</c> is set to the determinant.
+    GF_API
     GfMatrix4f GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
+    GF_API
     double GetDeterminant() const;
 
     /// Sets a row of the matrix from a Vec3.
@@ -352,14 +367,17 @@ public:
     /// translation part of the matrix unchanged.  If \a issueWarning is true,
     /// this method will issue a warning if the iteration does not converge,
     /// otherwise it will be silent.
+    GF_API
     bool Orthonormalize(bool issueWarning=true);
 
     /// Returns an orthonormalized copy of the matrix.
+    GF_API
     GfMatrix4f GetOrthonormalized(bool issueWarning=true) const;
 
     /// Returns the sign of the determinant of the upper 3x3 matrix, i.e. 1 for
     /// a right-handed matrix, -1 for a left-handed matrix, and 0 for a
     /// singular matrix.
+    GF_API
     double GetHandedness() const;
 
     /// Returns true if the vectors in the upper 3x3 matrix form a right-handed
@@ -375,17 +393,19 @@ public:
     }
 
     /// Post-multiplies matrix \e m into this matrix.
+    GF_API
     GfMatrix4f& operator *=(const GfMatrix4f& m);
 
     /// Multiplies the matrix by a float.
+    GF_API
     GfMatrix4f& operator *=(double);
 
     ///
     // Returns the product of a matrix and a float.
     friend GfMatrix4f operator *(const GfMatrix4f& m1, double d)
     {
-	GfMatrix4f m = m1;
-	return m *= d;
+	    GfMatrix4f m = m1;
+	    return m *= d;
     }
 
     ///
@@ -396,12 +416,15 @@ public:
     }
 
     /// Adds matrix \e m to this matrix.
+    GF_API
     GfMatrix4f& operator +=(const GfMatrix4f& m);
 
     /// Subtracts matrix \e m from this matrix.
+    GF_API
     GfMatrix4f& operator -=(const GfMatrix4f& m);
 
     /// Returns the unary negation of matrix \e m.
+    GF_API
     friend GfMatrix4f operator -(const GfMatrix4f& m);
 
     /// Adds matrix \e m2 to \e m1
@@ -451,16 +474,19 @@ public:
     }
 
     /// Sets matrix to specify a uniform scaling by \e scaleFactor.
+    GF_API
     GfMatrix4f& SetScale(float scaleFactor);
 
     /// Returns the matrix with any scaling or shearing removed,
     /// leaving only the rotation and translation.
     /// If the matrix cannot be decomposed, returns the original matrix.
+    GF_API
     GfMatrix4f RemoveScaleShear() const;
 
 private:
     /// Returns the determinant of the 3x3 submatrix specified by the
     /// three given row and column indices (0-3 for each).
+    GF_API
     double _GetDeterminant3(size_t row1, size_t row2, size_t row3,
        size_t col1, size_t col2, size_t col3) const;
 
@@ -474,6 +500,6 @@ private:
 
 /// Output a GfMatrix4f
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfMatrix4f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfMatrix4f const &);
 
 #endif // GF_MATRIX4F_H

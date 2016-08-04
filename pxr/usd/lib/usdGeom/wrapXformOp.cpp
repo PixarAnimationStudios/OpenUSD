@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/implicit.hpp>
+
 #include "pxr/usd/usdGeom/xformOp.h"
 
 #include "pxr/usd/usd/conversions.h"
@@ -29,10 +33,6 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/implicit.hpp>
 
 using namespace boost::python;
 

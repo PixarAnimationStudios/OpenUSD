@@ -24,9 +24,12 @@
 #ifndef HD_INSTANCE_REGISTRY_H
 #define HD_INSTANCE_REGISTRY_H
 
+#include "pxr/base/arch/pragmas.h"
+
 #include <mutex>
 #include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
+
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -128,9 +131,11 @@ public:
 
     /// Returns a const iterator being/end of dictionary. Mainly used for
     /// resource auditing.
+    ARCH_PRAGMA_SHIFT_TO_64_BITS
     typedef typename INSTANCE::Dictionary::const_iterator const_iterator;
     const_iterator begin() const { return _dictionary.begin(); }
     const_iterator end() const { return _dictionary.end(); }
+    ARCH_PRAGMA_RESTORE
 
 private:
     template <typename T>

@@ -90,14 +90,6 @@ UsdAttributeQuery::GetAttribute() const
     return _attr;
 }
 
-template <typename T>
-bool 
-UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
-{
-    return _attr._GetStage()->_GetValueFromResolveInfo(
-        _resolveInfo, time, _attr, value);
-}
-
 template <>
 bool
 UsdAttributeQuery::_Get(VtArray<SdfAssetPath>* assetPaths, 

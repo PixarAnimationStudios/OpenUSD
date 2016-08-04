@@ -24,11 +24,12 @@
 #ifndef TF_TOKEN_H
 #define TF_TOKEN_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/traits.h"
-
+#include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/hashset.h"
 #include <atomic>
 #include <iosfwd>
@@ -114,32 +115,32 @@ public:
     // This constructor involves a string hash and a lookup in the global
     // table, and so should not be done more often than necessary.  When
     // possible, create a token once and reuse it many times.
-    explicit TfToken(std::string const& s);
+	TF_API explicit TfToken(std::string const& s);
     //! \overload
     // Create a token for \p s, and make it immortal.  If \p s exists in the
     // token table already and is not immortal, make it immortal.  Immortal
     // tokens are faster to copy than mortal tokens, but they will never expire
     // and release their memory.
-    TfToken(std::string const& s, _ImmortalTag);
+	TF_API TfToken(std::string const& s, _ImmortalTag);
 
     //! Acquire a token for the given string.
     //
     // This constructor involves a string hash and a lookup in the global
     // table, and so should not be done more often than necessary.  When
     // possible, create a token once and reuse it many times.
-    explicit TfToken(char const* s);
+	TF_API explicit TfToken(char const* s);
     //! \overload
     // Create a token for \p s, and make it immortal.  If \p s exists in the
     // token table already and is not immortal, make it immortal.  Immortal
     // tokens are faster to copy than mortal tokens, but they will never expire
     // and release their memory.
-    TfToken(char const* s, _ImmortalTag);
+	TF_API TfToken(char const* s, _ImmortalTag);
 
     //! Find the token for the given string, if one exists.
     //
     // If a token has previous been created for the given string, this
     // will return it.  Otherwise, the empty token will be returned.
-    static TfToken Find(std::string const& s);
+	TF_API static TfToken Find(std::string const& s);
 
     //! Return a size_t hash for this token.
     //
@@ -215,11 +216,11 @@ public:
 
     //! Equality operator for \c char strings.  Not as fast as direct
     // token to token equality testing
-    bool operator==(std::string const& o) const;
+	TF_API bool operator==(std::string const& o) const;
 
     //! Equality operator for \c char strings.  Not as fast as direct
     // token to token equality testing
-    bool operator==(const char *) const;
+	TF_API bool operator==(const char *) const;
 
     //! \overload
     friend bool operator==(std::string const& o, TfToken const& t) {
@@ -283,7 +284,7 @@ public:
     bool IsEmpty() const { return !_rep; }
 
     //! Stream insertion.
-    friend std::ostream &operator <<(std::ostream &stream, TfToken const&);
+    friend TF_API std::ostream &operator <<(std::ostream &stream, TfToken const&);
 
 private:
     // Add global swap overload.
@@ -330,7 +331,7 @@ private:
         }
     }
     
-    void _PossiblyDestroyRep() const;
+    void TF_API _PossiblyDestroyRep() const;
     
     struct _Rep {
         _Rep() {}
@@ -371,13 +372,16 @@ private:
     };
 
     friend struct TfTokenFastArbitraryLessThan;
-    friend class Tf_TokenRegistry;
+    friend struct Tf_TokenRegistry;
+    friend class TfSingleton<TfToken>;
     
-    static std::string const& _GetEmptyString();
-    static char const* _emptyStr;
+	TF_API static std::string const& _GetEmptyString();
+	TF_API static char const* _emptyStr;
 
     mutable TfPointerAndBits<const _Rep> _rep;
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfToken>);
 
 
 //!
@@ -392,7 +396,7 @@ struct TfTokenFastArbitraryLessThan {
 
 //!
 // Convert the vector of strings \p sv into a vector of \c TfToken
-std::vector<TfToken>
+TF_API std::vector<TfToken>
 TfToTokenVector(const std::vector<std::string> &sv);
 
 //!

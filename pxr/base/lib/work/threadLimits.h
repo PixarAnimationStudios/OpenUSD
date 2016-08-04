@@ -24,6 +24,8 @@
 #ifndef WORK_THREAD_LIMITS_H
 #define WORK_THREAD_LIMITS_H
 
+#include "pxr/base/work/api.h"
+
 ///
 ///\file work/threadLimits.h
 
@@ -36,13 +38,13 @@
 /// WorkGetMaximumConcurrencyLimit() if WorkSetConcurrencyLimit() was called
 /// with such a value.
 ///
-unsigned WorkGetConcurrencyLimit();
+WORK_API unsigned WorkGetConcurrencyLimit();
 
 /// Return the number of physical execution cores available to the program.
 /// This is either the number of physical cores on the machine or the number of
 /// cores specified by the process's affinity mask, whichever is smaller.
 ///
-unsigned WorkGetMaximumConcurrencyLimit();
+WORK_API unsigned WorkGetMaximumConcurrencyLimit();
 
 /// Set the concurrencty limit to max(1, \p n).  
 ///
@@ -53,7 +55,7 @@ unsigned WorkGetMaximumConcurrencyLimit();
 /// where the number of allowed threads is dictated, for example, by a hosting
 /// environment.  Lower-level library code should never call this function.
 ///
-void WorkSetConcurrencyLimit(unsigned n);
+WORK_API void WorkSetConcurrencyLimit(unsigned n);
 
 /// Sanitize \p n as described below and set the concurrency limit accordingly.
 /// This function is useful for interpreting command line arguments.
@@ -69,7 +71,7 @@ void WorkSetConcurrencyLimit(unsigned n);
 /// abs(\p n) is greater than the number of physical cores, then call
 /// WorkSetConcurrencyLimit(1), effectively disabling concurrency.
 ///
-void WorkSetConcurrencyLimitArgument(int n);
+WORK_API void WorkSetConcurrencyLimitArgument(int n);
 
 /// Set the concurrency limit to be the maximum recommended for the hardware
 /// on which it's running.  Equivalent to:
@@ -77,6 +79,6 @@ void WorkSetConcurrencyLimitArgument(int n);
 /// WorkSetConcurrencyLimit(WorkGetMaximumConcurrencyLimit()).
 /// \endcode
 ///
-void WorkSetMaximumConcurrencyLimit();
+WORK_API void WorkSetMaximumConcurrencyLimit();
 
 #endif

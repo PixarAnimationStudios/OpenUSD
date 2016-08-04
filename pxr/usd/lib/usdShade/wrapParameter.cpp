@@ -21,6 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/implicit.hpp>
+#include <boost/python/tuple.hpp>
+
 #include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -28,11 +33,6 @@
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/implicit.hpp>
-#include <boost/python/tuple.hpp>
 
 #include <vector>
 

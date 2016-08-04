@@ -24,6 +24,7 @@
 #ifndef TF_TYPE_H
 #define TF_TYPE_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/cxxCast.h"
 #include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyLock.h"
@@ -65,7 +66,7 @@ class Tf_TypeRegistry;
 ///   TfType, unlike \c std::type_info.
 /// - totally ordered -- can use as a \c std::map key
 ///
-class TfType : boost::totally_ordered<TfType>
+class TF_API TfType : boost::totally_ordered<TfType>
 {
     struct _TypeInfo;
 
@@ -76,7 +77,7 @@ public:
     /// Base class of all factory types.
     class FactoryBase {
     public:
-        virtual ~FactoryBase();
+        TF_API virtual ~FactoryBase();
     };
 
 private:
@@ -130,7 +131,7 @@ public:
     struct PyPolymorphicBase
     {
     protected:
-        virtual ~PyPolymorphicBase();
+		TF_API virtual ~PyPolymorphicBase();
     };
 
 private:
@@ -703,7 +704,7 @@ private:
 
 //! \brief Output a TfType, using the machine-independent type name.
 // \ingroup group_tf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const TfType &t);
+TF_API std::ostream& operator<<(std::ostream& out, const TfType &t);
 
 
 /// Metafunction returning sizeof(T) for a type T (or 0 if T is a void type).

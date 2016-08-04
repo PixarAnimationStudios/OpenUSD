@@ -32,6 +32,7 @@
 
 
 #include    <string>
+#include	"pxr/base/tf/api.h"
 
 
 
@@ -45,6 +46,7 @@
  * then \c defaultValue is returned.
  */
 
+TF_API
 std::string TfGetenv(const std::string& envName,
                      const std::string& defaultValue = "");
 
@@ -74,7 +76,7 @@ int TfGetenvInt(const std::string& envName, int defaultValue);
  * All other values yield a return value of \c false.
  */
 
-bool TfGetenvBool(const std::string&, bool defaultValue);
+TF_API bool TfGetenvBool(const std::string&, bool defaultValue);
 
 /*!
  * \brief Return an environment variable as a double.

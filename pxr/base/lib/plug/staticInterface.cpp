@@ -26,6 +26,7 @@
 #include "pxr/base/plug/staticInterface.h"
 #include "pxr/base/plug/interfaceFactory.h"
 #include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/info.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
 #include <mutex>

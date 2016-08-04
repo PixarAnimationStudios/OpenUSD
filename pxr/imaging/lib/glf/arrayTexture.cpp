@@ -205,7 +205,7 @@ GlfArrayTexture::_CreateTexture(
                 0,                           /* level          */
                 0,                           /* xOffset        */
                 0,                           /* yOffset        */
-                i,                           /* zOffset        */
+                (GLint)i,                    /* zOffset        */
                 texData->ResizedWidth(),     /* width          */
                 texData->ResizedHeight(),    /* height         */
                 1,                           /* depth          */

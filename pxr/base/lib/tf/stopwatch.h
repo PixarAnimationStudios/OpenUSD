@@ -26,6 +26,7 @@
 
 
 #include "pxr/base/arch/timing.h"
+#include "pxr/base/tf/api.h"
 
 #include <iosfwd>
 #include <string>
@@ -64,7 +65,7 @@ public:
      * provision is made for multiple stopwatches with the same name.  So
      * if you want to retrieve it, make sure you name it uniquely.
      */
-    TfStopwatch(const std::string& name = std::string(),
+	TF_API TfStopwatch(const std::string& name = std::string(),
                 bool share = false);
 
     /*!
@@ -72,12 +73,12 @@ public:
      *
      * We have a copies copy constructor because copies are never shared.
      */
-    TfStopwatch(const TfStopwatch& other);
+	TF_API TfStopwatch(const TfStopwatch& other);
 
     /*!
      * \brief Destroy a stopwatch.
      */
-    virtual ~TfStopwatch();
+	TF_API virtual ~TfStopwatch();
 
     /*!
      * \brief Record the current time for use by the next \c Stop() call.
@@ -139,7 +140,7 @@ public:
      *
      * \c GetNamedStopwatch returns an unshared copy of the named stopwatch.
      */
-    static TfStopwatch GetNamedStopwatch(const std::string& name);
+	TF_API static TfStopwatch GetNamedStopwatch(const std::string& name);
     
     /*!
      * \brief Return the accumulated time in nanoseconds.
@@ -196,6 +197,7 @@ public:
      * not, it does no harm to request a named stopwatch that does not
      * exist.
      */
+    TF_API
     static std::vector<std::string> GetStopwatchNames();
 
     //! Is this stopwatch shared?
@@ -209,7 +211,7 @@ public:
      * We have a custom assignment operator because copies are never
      * shared.
      */
-    TfStopwatch& operator=(const TfStopwatch& other);
+	TF_API TfStopwatch& operator=(const TfStopwatch& other);
 
 private:
     uint64_t    _nTicks;
@@ -227,7 +229,7 @@ private:
  * The elapsed time in the stopwatch is output in seconds.  Note that
  * the timer need not be stopped.
  */
-std::ostream& operator<<(std::ostream& out, const TfStopwatch& s);
+TF_API std::ostream& operator<<(std::ostream& out, const TfStopwatch& s);
 
 
 #endif

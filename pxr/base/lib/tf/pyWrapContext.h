@@ -65,5 +65,6 @@ class Tf_PyWrapContextManager : public boost::noncopyable {
     std::vector<std::string> _contextStack;
 };
 
+TF_API_TEMPLATE_CLASS(TfSingleton<Tf_EnumRegistry>);
 
 #endif // TF_PYWRAPCONTEXT_H

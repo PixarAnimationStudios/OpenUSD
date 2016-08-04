@@ -26,8 +26,12 @@
 #ifndef SDF_CHANGEMANAGER_H
 #define SDF_CHANGEMANAGER_H
 
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/usd/sdf/spec.h"
+
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/singleton.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -50,34 +54,34 @@ class SdfSpec;
 ///
 class Sdf_ChangeManager : boost::noncopyable {
 public:
-    static Sdf_ChangeManager& Get() {
+    SDF_API static Sdf_ChangeManager& Get() {
         return TfSingleton<Sdf_ChangeManager>::GetInstance();
     }
 
     // Queue notifications.
-    void DidReplaceLayerContent(const SdfLayerHandle &layer);
-    void DidReloadLayerContent(const SdfLayerHandle &layer);
-    void DidChangeLayerIdentifier(const SdfLayerHandle &layer,
+    SDF_API void DidReplaceLayerContent(const SdfLayerHandle &layer);
+    SDF_API void DidReloadLayerContent(const SdfLayerHandle &layer);
+    SDF_API void DidChangeLayerIdentifier(const SdfLayerHandle &layer,
                                   const std::string &oldIdentifier);
-    void DidChangeField(const SdfLayerHandle &layer,
+    SDF_API void DidChangeField(const SdfLayerHandle &layer,
                         const SdfPath & path, const TfToken &field,
                         const VtValue & oldValue, const VtValue & newValue );
-    void DidChangeAttributeTimeSamples(const SdfLayerHandle &layer,
+    SDF_API void DidChangeAttributeTimeSamples(const SdfLayerHandle &layer,
                                        const SdfPath &attrPath);
 
     // Spec changes.
-    void DidMoveSpec(const SdfLayerHandle &layer,
+    SDF_API void DidMoveSpec(const SdfLayerHandle &layer,
                      const SdfPath & oldPath, const SdfPath & newPath);
-    void DidAddSpec(const SdfLayerHandle &layer, const SdfPath &path, 
+    SDF_API void DidAddSpec(const SdfLayerHandle &layer, const SdfPath &path, 
                     bool inert);
-    void DidRemoveSpec(const SdfLayerHandle &layer, const SdfPath &path,
+    SDF_API void DidRemoveSpec(const SdfLayerHandle &layer, const SdfPath &path,
                        bool inert);
-    void RemoveSpecIfInert(const SdfSpec&);
+    SDF_API void RemoveSpecIfInert(const SdfSpec&);
 
     // Open/close change blocks. SdfChangeBlock provides stack-based management
     // of change blocks and should be preferred over this API.
-    void OpenChangeBlock();
-    void CloseChangeBlock();
+    SDF_API void OpenChangeBlock();
+    SDF_API void CloseChangeBlock();
 
 private:
     Sdf_ChangeManager();
@@ -101,5 +105,7 @@ private:
 
     friend class TfSingleton<Sdf_ChangeManager>;
 };
+
+SDF_API_TEMPLATE_CLASS(TfSingleton<Sdf_ChangeManager>);
 
 #endif

@@ -51,7 +51,7 @@ using std::vector;
 static inline size_t
 _GetBitmaskForSpecType(SdfSpecType specType)
 {
-    return (1 << specType);
+    return (1ull << specType);
 }
 
 struct Sdf_SpecTypeInfo
@@ -248,7 +248,7 @@ _CanCast(SdfSpecType fromType, const TfType& toType)
     }
 
     const size_t allowedBitmask = 
-        TfMapLookupByValue(specTypeInfo.specTypeToBitmask, toType, 0);
+        TfMapLookupByValue(specTypeInfo.specTypeToBitmask, toType, size_t(0));
     return allowedBitmask & _GetBitmaskForSpecType(fromType);
 }
 

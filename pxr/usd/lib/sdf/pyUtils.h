@@ -24,8 +24,10 @@
 #ifndef SDF_PY_UTILS_H
 #define SDF_PY_UTILS_H
 
-#include "pxr/usd/sdf/layer.h"
 #include <boost/python/dict.hpp>
+
+#include "pxr/usd/sdf/api.h"
+#include "pxr/usd/sdf/layer.h"
 #include <string>
 
 /// Convert the Python dictionary \p dict to an SdfLayer::FileFormatArguments
@@ -34,7 +36,7 @@
 /// If a non-string key or value is encountered, \p errMsg will be filled in
 /// (if given) and this function will return false. Otherwise, this function
 /// will return true.
-bool
+SDF_API bool
 SdfFileFormatArgumentsFromPython(
     const boost::python::dict& dict,
     SdfLayer::FileFormatArguments* args,

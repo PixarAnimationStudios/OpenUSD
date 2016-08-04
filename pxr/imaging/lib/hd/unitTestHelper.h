@@ -24,6 +24,7 @@
 #ifndef HD_UNIT_TEST_HELPER
 #define HD_UNIT_TEST_HELPER
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
@@ -42,24 +43,31 @@
 ///
 class Hd_TestDriver {
 public:
+    HDLIB_API
     Hd_TestDriver();
+    HDLIB_API
     Hd_TestDriver(TfToken const &reprName);
 
     /// Draw
+    HDLIB_API
     void Draw(bool withGuides=false);
 
     /// Draw with external renderPass
+    HDLIB_API
     void Draw(HdRenderPassSharedPtr const &renderPass);
 
     /// Set camera to renderpass
+    HDLIB_API
     void SetCamera(GfMatrix4d const &modelViewMatrix,
                    GfMatrix4d const &projectionMatrix,
                    GfVec4d const &viewport);
 
     /// Set cull style
+    HDLIB_API
     void SetCullStyle(HdCullStyle cullStyle);
 
     /// Returns the renderpass
+    HDLIB_API
     HdRenderPassSharedPtr const &GetRenderPass(bool withGuides=false);
 
     /// Returns the renderPassState
@@ -71,6 +79,7 @@ public:
     Hd_UnitTestDelegate& GetDelegate() { return _delegate; }
 
     /// Switch repr
+    HDLIB_API
     void SetRepr(TfToken const &reprName);
 
 private:

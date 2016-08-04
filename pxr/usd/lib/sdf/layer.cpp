@@ -47,6 +47,7 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -742,8 +743,8 @@ SdfLayer::_Reload(bool force)
             // XXX 2014-09-02 Reset layer to initial data?
             return _ReloadSkipped;
         } else {
-            TF_RUNTIME_ERROR("Unable to stat file '%s': %s",
-                realPath.c_str(), strerror(errno));
+			TF_RUNTIME_ERROR("Unable to stat file '%s': %s",
+				realPath.c_str(), ArchStrerror(errno).c_str());
             return _ReloadFailed;
         }
 
@@ -1560,7 +1561,7 @@ SdfLayer::InsertSubLayerPath(const string& path, int index)
     SdfSubLayerProxy proxy = GetSubLayerPaths();
 
     if (index == -1) {
-        index = proxy.size();
+        index = static_cast<int>(proxy.size());
     }
 
     proxy.Insert(index, path);
@@ -2478,11 +2479,11 @@ SdfLayer::UpdateExternalReference(
     SdfSubLayerProxy subLayers = GetSubLayerPaths();
     size_t index = subLayers.Find(oldLayerPath);
     if (index != (size_t)-1) {
-        RemoveSubLayerPath(index);
+        RemoveSubLayerPath(static_cast<int>(index));
 
         // If new layer path given, do rename, otherwise it's a delete.
         if (not newLayerPath.empty()) {
-            InsertSubLayerPath(newLayerPath, index);
+            InsertSubLayerPath(newLayerPath, static_cast<int>(index));
         }
 
         return true; // sublayers are unique, do no more...

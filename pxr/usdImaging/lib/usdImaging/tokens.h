@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_TOKENS_H
 #define USDIMAGING_TOKENS_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #define USDIMAGING_TOKENS   \
@@ -42,13 +43,13 @@
     (usdVaryingXform)       \
     (uvPrimvar)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
 
 #define USDIMAGING_COLLECTION_TOKENS                    \
     (geometryAndGuides)                                 \
     (geometryAndInteractiveGuides)                      \
     (geometryAndRenderGuides)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionTokens, USDIMAGING_COLLECTION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionTokens, USDIMAGING_API, USDIMAGING_COLLECTION_TOKENS);
 
 #endif //USDIMAGING_TOKENS_H

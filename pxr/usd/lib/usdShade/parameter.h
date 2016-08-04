@@ -28,6 +28,7 @@
 
 
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usdShade/api.h"
 
 #include <vector>
 
@@ -54,9 +55,11 @@ public:
     /// As described in UsdShadeShader::CreateParameter(), the determination
     /// of array-ness is given by the SdfValueTypeNames \em typeName with
     /// which the Parameter was created.
+    USDSHADE_API
     bool IsArray() const;
     
     /// \brief Set the value for the shade parameter.
+    USDSHADE_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// \brief Specify an alternative, renderer-specific type to use when
@@ -67,18 +70,21 @@ public:
     /// are of renderman custom struct types.
     ///
     /// \return true on success
+    USDSHADE_API
     bool SetRenderType(TfToken const& renderType) const;
 
     /// \brief Return this parameter's specialized renderType, or an empty
     /// token if none was authored.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     TfToken GetRenderType() const;
 
     /// \brief Return true if a renderType has been specified for this
     /// parameter.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     bool HasRenderType() const;
 
     /// @}
@@ -118,6 +124,7 @@ public:
     ///        instead a parameter (assuming your renderer supports it)
     ///        with a value of \c true.
     /// \sa GetConnectedSource(), GetConnectedSources()
+    USDSHADE_API
     bool ConnectToSource(
             UsdShadeShader const &source, 
             TfToken const &outputName,
@@ -144,6 +151,7 @@ public:
     /// SetConnectedArraySize(),
     ///
     /// \sa ConnectToSource(), SetConnectedArraySize()
+    USDSHADE_API
     bool ConnectElementToSource(
             size_t elementIndex, 
             UsdShadeShader const &source, 
@@ -156,6 +164,7 @@ public:
     /// array-valued, true otherwise.
     ///
     /// \sa DisconnectSources(), ConnectElementToSource()
+    USDSHADE_API
     bool DisconnectElement(size_t elementIndex) const;
     
     /// \brief Disconnects (all, for array parameters) sources for this 
@@ -170,6 +179,7 @@ public:
     /// each element, whether or not it has previously been connected.
     ///
     /// \sa ConnectToSource().
+    USDSHADE_API
     bool DisconnectSources() const;
 
     /// \brief Clears (all, for array parameters) sources for this 
@@ -179,6 +189,7 @@ public:
     /// rather than this function.
     ///
     /// \sa DisconnectSources(), UsdRelationship::ClearTargets()
+    USDSHADE_API
     bool ClearSources() const;
 
     /// \brief If this parameter is connected, retrieve the \p source prim
@@ -202,6 +213,7 @@ public:
     /// \note The python wrapping for this method returns a 
     /// (source, ouputName) tuple if the parameter is singly-connected, else
     /// \c None
+    USDSHADE_API
     bool GetConnectedSource(
             UsdShadeShader *source, 
             TfToken *outputName) const;
@@ -223,6 +235,7 @@ public:
     ///
     /// \note The python wrapping for this method returns a tuple of 
     /// (sources, outputNames) lists, or None if parameter is unconnected.
+    USDSHADE_API
     bool GetConnectedSources(
             std::vector<UsdShadeShader> *sources, 
             std::vector<TfToken> *outputNames) const;
@@ -242,6 +255,7 @@ public:
     ///      // process unconnected parameter
     /// }
     /// \endcode
+    USDSHADE_API
     bool IsConnected() const;
 
     /// \brief Explicitly state the number of connectable elements in an array
@@ -262,6 +276,7 @@ public:
     ///
     /// If this Parameter is not array-typed, nothing will be authored, and
     /// the method returns \c false.
+    USDSHADE_API
     bool SetConnectedArraySize(size_t numElts) const;
     
     /// \brief Return the number of connectable array-elements present for
@@ -275,6 +290,7 @@ public:
     /// which case the returned size is one.
     ///
     /// \sa ConnectElementToSource(), GetConnectedSources()
+    USDSHADE_API
     size_t GetConnectedArraySize() const;
     
     /// @}
@@ -301,6 +317,7 @@ public:
     /// produces an \em invalid Parameter otherwise (i.e. 
     /// \ref UsdShadeParameter_bool_type "unspecified-bool-type()" will return
     /// false).
+    USDSHADE_API
     explicit UsdShadeParameter(const UsdAttribute &attr);
 
     /// Test whether a given UsdAttribute represents a valid Parameter, which

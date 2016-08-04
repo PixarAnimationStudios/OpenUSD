@@ -25,7 +25,7 @@
 #define TF_ITERATOR_H
 
 #include "pxr/base/arch/hints.h"
-
+#include <ciso646>
 #include "pxr/base/tf/diagnosticLite.h"
 
 #include <type_traits>

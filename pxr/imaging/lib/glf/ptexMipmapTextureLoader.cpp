@@ -31,6 +31,8 @@
 #include <cstring>
 #include <cassert>
 
+#include "pxr/base/arch/defines.h"
+
 // sample neighbor pixels and populate around blocks
 void
 GlfPtexMipmapTextureLoader::Block::guttering(
@@ -40,6 +42,7 @@ GlfPtexMipmapTextureLoader::Block::guttering(
     unsigned char *pptr, int bpp,
     int stride)
 {
+#if !defined(ARCH_OS_WINDOWS)
     int lineBufferSize = std::max(wid, hei) * bpp;
     unsigned char * lineBuffer = new unsigned char[lineBufferSize];
 
@@ -148,6 +151,7 @@ GlfPtexMipmapTextureLoader::Block::guttering(
         }
     }
     delete[] accumPixel;
+#endif
 }
 
 void
