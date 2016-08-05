@@ -147,6 +147,14 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
 
+    if(WIN32)
+        if(MSVC)
+            set_target_properties(
+                ${LIBRARY_NAME}
+                PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+        endif()
+    endif()
+
     if(sl_PYTHON_FILES)
         _install_python(${LIBRARY_NAME}
             FILES ${sl_PYTHON_FILES}
@@ -187,6 +195,7 @@ function(pxr_shared_library LIBRARY_NAME)
                     PREFIX ""
                     SUFFIX ".pyd"
                     FOLDER "${PXR_PREFIX}/_python"
+                    LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
             )
         else()
             set_target_properties(${LIBRARY_NAME} 
