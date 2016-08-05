@@ -64,17 +64,10 @@
  * on comp.std.c by Laurent Deniau.
  */
 #if defined(ARCH_OS_WINDOWS)
+    #include <boost/preprocessor/variadic/size.hpp>
 
- // On Windows we use an MSVC extension to make this work (and a lot easier)
- // Original idea from: http://stackoverflow.com/questions/5530505/why-does-this-variadic-argument-count-macro-fail-with-vc
- //
-#define _TF_NUM_ARGS_EXPAND(x) x
-#define _TF_NUM_ARGS_IMPL(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,N,...) N
-#define TF_NUM_ARGS(...) \
-        _TF_NUM_ARGS_EXPAND(_TF_NUM_ARGS_IMPL(__VA_ARGS__,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0))
-
-
-
+    #define TF_NUM_ARGS(...) \
+        BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)
 #else
 #define TF_NUM_ARGS(...)                                        \
     _TF_NUM_ARGS_CHECK(__VA_ARGS__)                             \
@@ -141,54 +134,13 @@
  * \brief Exapnds to 1 if the argument is a tuple, and 0 otherwise.
  */
 #if defined(ARCH_OS_WINDOWS)
+    #include <boost/vmd/is_tuple.hpp>
+    ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 
-	ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
+    #define _TF_NUM_ARGS_EXPAND(x) x
 
- // from: http://marc.info/?l=boost-commit&m=130936289902907
-
-#define TF_PP_IS_TUPLE(x) \
-   _TF_PP_IS_TUPLE_DETAIL_HAS_ONLY_PARENS(x)
- /**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_HAS_ONLY_PARENS(x) \
-    BOOST_PP_IIF \
-     ( \
-      _TF_PP_IS_TUPLE_DETAIL_HAS_PARENS_BEGIN(x), \
-      _TF_PP_IS_TUPLE_DETAIL_IS_NOT_AFTER, \
-      _TF_PP_IS_TUPLE_DETAIL_GEN_ZERO \
-      ) \
-    (x) \
-/**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_HAS_PARENS_BEGIN(x) \
-    BOOST_PP_DEC \
-      ( \
-      BOOST_PP_VARIADIC_SIZE \
-        ( \
-        _TF_PP_IS_TUPLE_DETAIL_EXPAND x \
-        ) \
-      ) \
-/**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_AFTER_PARENS(x) \
-    _TF_PP_IS_TUPLE_DETAIL_EXPAND_AFTER x \
-/**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_EXPAND(...) \
-    1,1 \
-/**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_IS_NOT_AFTER(x) \
-    BOOST_PP_IS_EMPTY(_TF_PP_IS_TUPLE_DETAIL_EXPAND_AFTER x) \
-/**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_EXPAND_AFTER(...) \
-/**/
-
-# define _TF_PP_IS_TUPLE_DETAIL_GEN_ZERO(x) \
-    0 \
-/**/
-
+    #define TF_PP_IS_TUPLE(sequence) \
+        BOOST_VMD_IS_TUPLE(sequence)
 #else
 
 #define TF_PP_IS_TUPLE(arg) \
