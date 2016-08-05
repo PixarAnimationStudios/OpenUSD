@@ -76,16 +76,13 @@
 #define ARCH_COMPILER_CLANG_MAJOR __clang_major__
 #define ARCH_COMPILER_CLANG_MINOR __clang_minor__
 #define ARCH_COMPILER_CLANG_PATCHLEVEL __clang_patchlevel__
-#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #elif defined(__GNUC__)
 #define ARCH_COMPILER_GCC
 #define ARCH_COMPILER_GCC_MAJOR __GNUC__
 #define ARCH_COMPILER_GCC_MINOR __GNUC_MINOR__
 #define ARCH_COMPILER_GCC_PATCHLEVEL __GNUC_PATCHLEVEL__
-#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #elif defined(__ICC)
 #define ARCH_COMPILER_ICC
-#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #elif defined(_MSC_VER)
 #define ARCH_COMPILER_MSVC
 #define ARCH_COMPILER_MSVC_VERSION	_MSC_VER
@@ -129,11 +126,17 @@ template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 // keyword.
 #if !(defined(ARCH_OS_DARWIN) && defined(ARCH_COMPILER_CLANG))
 #define ARCH_HAS_THREAD_LOCAL
+#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #endif
 
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
+#endif
+
+// Some static asserts are not supported due to difference in size types.
+#if defined(ARCH_OS_LINUX)
+    #define ARCH_COMPILER_HAS_STATIC_ASSERT
 #endif
 
 #endif // ARCH_DEFINES_H 
