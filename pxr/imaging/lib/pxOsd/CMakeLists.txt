@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE pxOsd)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(pxOsd
     LIBRARIES
         tf
@@ -22,5 +26,8 @@ pxr_shared_library(pxOsd
         subdivTags
         tokens
         uniformEvaluator
+
+    CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
 
 )

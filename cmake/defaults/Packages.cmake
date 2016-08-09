@@ -60,7 +60,9 @@ find_library(M_LIB m)
 find_package(Jinja2)
 
 if (NOT PXR_MALLOC_LIBRARY)
-    message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified") 
+    if (NOT WIN32)
+        message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified")
+    endif()
 endif()
 
 # Developer Options Package Requirements

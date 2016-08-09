@@ -6,6 +6,10 @@ if (NOT QT4_FOUND)
     return()
 endif()
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usdviewq
     LIBRARIES
         tf
@@ -20,6 +24,7 @@ pxr_shared_library(usdviewq
         utils
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         
     PUBLIC_HEADERS

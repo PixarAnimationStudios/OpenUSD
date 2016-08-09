@@ -39,8 +39,3 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("gf"), TfToken("pxr.Gf"), reqs);
 }
-
-int __stdcall DllMain(void* instance, unsigned long reason, void* reserved)
-{
-    return 1;
-}

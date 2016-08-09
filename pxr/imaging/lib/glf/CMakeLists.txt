@@ -6,6 +6,10 @@ if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(glf
     LIBRARIES
         arch
@@ -78,6 +82,7 @@ pxr_shared_library(glf
 
     CPPFILES
         dictionary.cpp
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         oiioImage.cpp
 

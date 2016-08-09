@@ -363,11 +363,15 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
     }
 
     // Fail if pathname is not absolute.
+#if defined(ARCH_OS_WINDOWS)
+    // XXX: Need a real TfIsAbsPath...
+#else
     if (pathname[0] != '/') {
         TF_RUNTIME_ERROR("Plugin info file %s is not absolute",
                          pathname.c_str());
         return;
     }
+#endif
 
     // Scan pattern for wildcards.
     std::string::size_type i = pathname.find('*');
@@ -379,7 +383,6 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
 
 #if defined(ARCH_OS_WINDOWS)
 	#pragma message("Globbing pathname patterns not yet supported on Windows")
-	printf("Globbing pathname patterns not yet supported on Windows\n");
 #else
     // Can we glob?
     i = pathname.find("**");

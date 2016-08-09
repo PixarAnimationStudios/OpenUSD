@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE cameraUtil)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(cameraUtil
     LIBRARIES
         tf
@@ -11,6 +15,7 @@ pxr_shared_library(cameraUtil
         screenWindowParameters
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         
     PUBLIC_HEADERS

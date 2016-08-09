@@ -201,10 +201,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
                 const std::string& prefix, std::string* pathname)
 {
 #if defined(ARCH_OS_WINDOWS)
-	// PATH_MAX is defined in base/lib/arch/systemInfo.cpp but not in
-	// base/lib/arch/defines.h, so we have to use the Windows define.
-
-	char filename[MAX_PATH];
+	char filename[ARCH_PATH_MAX];
 	UINT ret = ::GetTempFileName(tmpdir.c_str(), prefix.c_str(), 0, filename);
 	if (ret == 0)
 	{
@@ -234,11 +231,9 @@ ArchMakeTmpFile(const std::string& tmpdir,
 		*pathname = filename;
 	}
 
-	// XXX: We have to do something about this API.  It returns a file
-	// descriptor, that's not ideal.  At least some clients don't care
-	// about it being open.
 	int fd = 0;
-	return _sopen_s(&fd, filename, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	_sopen_s(&fd, filename, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    return fd;
 #else
     // Format the template.
     std::string sTemplate =

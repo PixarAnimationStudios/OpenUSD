@@ -46,7 +46,7 @@ function(pxr_python_bins)
 		# we create a batch file wrapper that invokes the python
 		# files.
 		if(WIN32)
-			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython ${file} %*")
+			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython ${file} %*")
 			install(PROGRAMS
 				"${CMAKE_BINARY_DIR}/${pyFile}.cmd"
 				DESTINATION ${installDir}
@@ -108,6 +108,32 @@ function(pxr_cpp_bin BIN_NAME)
 
 endfunction()
 
+function(pxr_add_filename_property LIBRARY_NAME FILELIST)
+    foreach(cppfile ${FILELIST})
+
+        get_filename_component(fileExt "${cppfile}" EXT)
+
+        if("${fileExt}" STREQUAL "")
+            get_filename_component(
+                cppModuleName
+                "${cppfile}"
+                NAME_WE)
+
+            set_source_files_properties(${cppfile}.cpp PROPERTIES COMPILE_FLAGS
+                                -D__FILENAME__=${LIBRARY_NAME}${cppModuleName})
+
+        elseif(fileExt MATCHES .cpp)
+            get_filename_component(
+                cppModuleName
+                "${cppfile}"
+                NAME_WE)
+
+            set_source_files_properties(${cppfile} PROPERTIES COMPILE_FLAGS
+                                -D__FILENAME__=${LIBRARY_NAME}${cppModuleName})
+        endif()
+    endforeach()
+endfunction()
+
 function(pxr_shared_library LIBRARY_NAME)
     set(options PYTHON_LIBRARY)
     set(multiValueArgs
@@ -146,6 +172,16 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PUBLIC_HEADERS} ${${LIBRARY_NAME}_PUBLIC_HEADERS}
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
+
+    if(sl_CPPFILES)
+        pxr_add_filename_property(${LIBRARY_NAME} "${sl_CPPFILES}")
+    endif()
+    if(sl_PRIVATE_CLASSES)
+        pxr_add_filename_property(${LIBRARY_NAME} "${sl_PRIVATE_CLASSES}")
+    endif()
+    if(sl_PUBLIC_CLASSES)
+        pxr_add_filename_property(${LIBRARY_NAME} "${sl_PUBLIC_CLASSES}")
+    endif()
 
     if(WIN32)
         if(MSVC)
@@ -190,6 +226,7 @@ function(pxr_shared_library LIBRARY_NAME)
         endif()
 
         if(WIN32)
+			add_definitions(-D_BUILDING_PYD=1)
             set_target_properties(${LIBRARY_NAME} 
                 PROPERTIES 
                     PREFIX ""
@@ -232,9 +269,14 @@ function(pxr_shared_library LIBRARY_NAME)
         set(installLocation ${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX})
     endif()
 
+	if(WIN32)
+		set(_PxrUserLocation "$ENV{ProgramData}\\usd\\plugins")
+	else()
+		set(_PxrUserLocation "/usr/local/share/usd/plugins")
+	endif()
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
+            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
     )
 
     # Always bake the rpath.

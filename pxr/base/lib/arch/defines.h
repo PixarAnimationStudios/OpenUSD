@@ -126,7 +126,6 @@ template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 // keyword.
 #if !(defined(ARCH_OS_DARWIN) && defined(ARCH_COMPILER_CLANG))
 #define ARCH_HAS_THREAD_LOCAL
-#define ARCH_COMPILER_HAS_STATIC_ASSERT
 #endif
 
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.
