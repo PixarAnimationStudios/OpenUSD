@@ -64,10 +64,10 @@ template struct Arch_CtorE<void>;
     Arch_CtorType  tf_ctor_ ## name = (Arch_CtorType )&name;            \
     static void name(__VA_ARGS__)
 
-#define ARCH_CONSTRUCTOR(priority, name)                                \
+#define ARCH_CONSTRUCTOR(priority, tag, name)                           \
     __pragma(section(ARCH_PRIORITY_CAT(.pxr$b, priority), read))        \
     __declspec(allocate(ARCH_PRIORITY_CAT(.pxr$b, priority)))           \
-    Arch_CtorType  tf_ctor_ ## name = (Arch_CtorType )&name;            \
+    Arch_CtorType  tf_ctor_ ## tag = (Arch_CtorType )&name;             \
 
 #define ARCH_DESTRUCTOR(priority, name, ...)                            \
     static void name(__VA_ARGS__);                                      \

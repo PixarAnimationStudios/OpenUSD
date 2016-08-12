@@ -24,6 +24,8 @@
 #ifndef PXRUSDKATANA_BLINDDATAREADER_H
 #define PXRUSDKATANA_BLINDDATAREADER_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class UsdKatanaBlindDataObject;
 
@@ -33,7 +35,7 @@ class UsdKatanaBlindDataObject;
 /// otherwise expressable with the available usd schemas.  
 ///
 /// Usage of this is not recommended.
-void
+USDKATANA_API void
 PxrUsdKatanaReadBlindData(
         const UsdKatanaBlindDataObject& kbd,
         PxrUsdKatanaAttrMap& attrs);

@@ -80,7 +80,7 @@ Tf_Stat(string const& path, bool resolveSymlinks, struct stat* st = 0)
     if (resolveSymlinks) {
         printf("Tf_IsStat: symlink resolving not yet implemented for windows\n");
     }
-    return false;
+    return stat(path.c_str(), st) == 0;
 #else
     int result = resolveSymlinks ?
         stat(path.c_str(), st) : lstat(path.c_str(), st);

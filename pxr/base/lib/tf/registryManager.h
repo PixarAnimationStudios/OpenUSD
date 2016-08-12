@@ -153,31 +153,20 @@ private:
 #define TF_REGISTRY_PRIORITY 200
 
 #if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
-    #define TF_REGISTRY_ADD_ATTRIBUTES (name)                               \
-        ARCH_USED_FUNCTION ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY)           \
-        static void name()
-
     #define TF_REGISTRY_LOAD_MARKER static Tf_RegistryInit tf_registry_init(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME))
 
     // Private.
     TF_REGISTRY_LOAD_MARKER;
-#else
-
-    #define TF_REGISTRY_ADD_ATTRIBUTES(name)                                \
-        static void name();                                                 \
-        ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY, name);
-
 #endif
-
 
 // ---
 // Unique name for function called to add the registry function.  This will
 // be called by the dynamic loader so it should have type void(*)(void).
 #define TF_REGISTRY_ADDER_NAME(KEY_TYPE, TAG) \
-TF_PP_CAT(_Tf_RegistryAdd_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))
+    TF_PP_CAT(_Tf_RegistryAdd_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))
 
 #define TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
-static void TF_PP_CAT(_Tf_RegistryAdd_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))()
+    static void TF_PP_CAT(_Tf_RegistryAdd_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))()
 
 // Define a registry function outside of a template.  Follow the macro with
 // the body of the function inside braces.  KEY_TYPE and TAG must be types.
@@ -186,30 +175,58 @@ static void TF_PP_CAT(_Tf_RegistryAdd_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))(
 //        This is probably not portable.  An alternative might be to use
 //        a static function in a template class parameterized by the two
 //        types.
-#define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG) \
-TF_REGISTRY_ADD_ATTRIBUTES static void _Tf_RegistryAdd(KEY_TYPE*, TAG*); \
-static void _Tf_RegistryFunction(KEY_TYPE*, TAG*); \
-static void _Tf_RegistryAdd(KEY_TYPE*, TAG*) \
-{ \
-    Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
-                         (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
-                         BOOST_PP_STRINGIZE(KEY_TYPE)); \
-} \
-static void _Tf_RegistryFunction(KEY_TYPE*, TAG*)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+    #define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG) \
+        ARCH_USED_FUNCTION ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY) static void _Tf_RegistryAdd(KEY_TYPE*, TAG*); \
+        static void _Tf_RegistryFunction(KEY_TYPE*, TAG*); \
+        static void _Tf_RegistryAdd(KEY_TYPE*, TAG*) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        } \
+        static void _Tf_RegistryFunction(KEY_TYPE*, TAG*)
+#else
+    #define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG) \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE*, TAG*); \
+        ARCH_CONSTRUCTOR(200, KEY_TYPE ## TAG, TF_REGISTRY_ADDER_NAME(KEY_TYPE, TAG)); \
+        static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))(KEY_TYPE*, TAG*); \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE*, TAG*) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        } \
+        static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, TAG)))(KEY_TYPE*, TAG*)
+#endif
 
 // Define a registry function outside of a template.  Follow the macro with
 // the body of the function inside braces.  KEY_TYPE must be a type and NAME
 // must be a valid C++ name.
-#define TF_REGISTRY_DEFINE(KEY_TYPE, NAME) \
-TF_REGISTRY_ADD_ATTRIBUTES(TF_PP_CAT(_Tf_RegistryAdd_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))) \
-static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))(void*, void*); \
-TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, NAME) \
-{ \
-    Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
-                         TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME))), \
-                         ArchGetDemangled(typeid(KEY_TYPE)).c_str()); \
-} \
-static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))(void*, void*)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+    #define TF_REGISTRY_DEFINE(KEY_TYPE, SCOPE, NAME) \
+        ARCH_USED_FUNCTION ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY) TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, NAME); \
+        static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))(void*, void*); \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, NAME) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME))), \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        } \
+        static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))(void*, void*)
+#else
+    #define TF_REGISTRY_DEFINE(KEY_TYPE, NAME) \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, NAME); \
+        ARCH_CONSTRUCTOR(200, KEY_TYPE ## NAME, TF_REGISTRY_ADDER_NAME(KEY_TYPE, NAME)); \
+        static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))(void*, void*); \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, NAME) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME))), \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        } \
+        static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NAME)))(void*, void*)
+#endif
 
 //
 // Macros for adding registry functions inside class templates.
@@ -217,32 +234,56 @@ static void TF_PP_CAT(_Tf_RegistryFunction_, TF_PP_CAT(KEY_TYPE, TF_PP_CAT(_, NA
 
 // Define a registry function inline in a template.  Follow the macro with
 // the body of the function inside braces.
-#define TF_REGISTRY_TEMPLATE_DEFINE(KEY_TYPE, TAG) \
-TF_REGISTRY_ADD_ATTRIBUTES \
-TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
-{ \
-    Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
-                         (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
-                         BOOST_PP_STRINGIZE(KEY_TYPE)); \
-} \
-static ARCH_HIDDEN void _Tf_RegistryFunction(KEY_TYPE*, TAG*)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+    #define TF_REGISTRY_TEMPLATE_DEFINE(KEY_TYPE, SCOPE, TAG) \
+        ARCH_USED_FUNCTION ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY) \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        } \
+        static ARCH_HIDDEN void _Tf_RegistryFunction(KEY_TYPE*, TAG*)
+#else
+    #define TF_REGISTRY_TEMPLATE_DEFINE(KEY_TYPE, SCOPE, TAG) \
+        ARCH_CONSTRUCTOR_TEMPLATE_DEFINE(TF_REGISTRY_PRIORITY, SCOPE, KEY_TYPE ## TAG)  \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        } \
+        static ARCH_HIDDEN void _Tf_RegistryFunction(KEY_TYPE*, TAG*)
+#endif
 
 // Declare a registry function in a template.
 // Use \c TF_REGISTRY_TEMPLATE_SIGNATURE to define the function out-of-line,
 // e.g. template<> void MyTemplateClass<MyType>::TF_REGISTRY_TEMPLATE_SIGNATURE(Key, Tag)
-#define TF_REGISTRY_TEMPLATE_DECLARE(KEY_TYPE, TAG) \
-static ARCH_HIDDEN void _Tf_RegistryFunction(KEY_TYPE*, TAG*); \
-TF_REGISTRY_ADD_ATTRIBUTES \
-TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
-{ \
-    Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
-                         (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
-                         BOOST_PP_STRINGIZE(KEY_TYPE)); \
-}
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+    #define TF_REGISTRY_TEMPLATE_DECLARE(KEY_TYPE, TAG) \
+        static ARCH_HIDDEN void _Tf_RegistryFunction(KEY_TYPE*, TAG*); \
+        ARCH_USED_FUNCTION ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY) \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        }
+#else
+    #define TF_REGISTRY_TEMPLATE_DECLARE(KEY_TYPE, TAG) \
+        static ARCH_HIDDEN void _Tf_RegistryFunction(KEY_TYPE*, TAG*); \
+        ARCH_CONSTRUCTOR(TF_REGISTRY_PRIORITY, KEY_TYPE) \
+        TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
+        { \
+            Tf_RegistryInit::Add(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME), \
+                                 (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction, \
+                                 BOOST_PP_STRINGIZE(KEY_TYPE)); \
+        }
+#endif
 
 // Function name and signature for registry function in a template.
 #define TF_REGISTRY_TEMPLATE_SIGNATURE(KEY_TYPE, TAG) \
-_Tf_RegistryFunction(KEY_TYPE*, TAG*)
+    _Tf_RegistryFunction(KEY_TYPE*, TAG*)
 
 /*!
  * \brief Define a function that is called on demand by \c TfRegistryManager.

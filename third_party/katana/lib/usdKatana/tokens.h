@@ -31,6 +31,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/base/tf/staticTokens.h"
+#include "usdKatana/api.h"
 
 /// \file usdKatana/tokens.h
 
@@ -68,6 +69,6 @@
 /// \li <b>katanaPrimName</b> - UsdKatanaLookAPI
 /// \li <b>katanaType</b> - UsdKatanaBlindDataObject
 /// \li <b>katanaVisible</b> - UsdKatanaBlindDataObject
-TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_API, USDKATANA_TOKENS);
 
 #endif

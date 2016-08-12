@@ -27,8 +27,10 @@
 #include <boost/thread/locks.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
-boost::upgrade_mutex& UsdKatanaGetStageLock();
-boost::upgrade_mutex& UsdKatanaGetRendererCacheLock();
-boost::upgrade_mutex& UsdKatanaGetSessionCacheLock();
+#include "usdKatana/api.h"
+
+USDKATANA_API boost::upgrade_mutex& UsdKatanaGetStageLock();
+USDKATANA_API boost::upgrade_mutex& UsdKatanaGetRendererCacheLock();
+USDKATANA_API boost::upgrade_mutex& UsdKatanaGetSessionCacheLock();
 
 #endif //USDKATANA_LOCKS_H

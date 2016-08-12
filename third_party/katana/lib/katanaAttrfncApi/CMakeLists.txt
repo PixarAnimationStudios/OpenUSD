@@ -8,6 +8,12 @@ file(GLOB cppFiles
     ${KATANA_API_SOURCE_DIR}/FnAttributeFunction/plugin/*.cpp
 )
 
+add_definitions(
+    /DFNATTRIBUTE_STATIC
+    /DFNATTRIBUTEFUNCTION_STATIC
+    /DFNPLUGINMANAGER_STATIC
+)
+
 pxr_static_library(${PXR_PACKAGE}
     INCLUDE_DIRS
         ${KATANA_API_INCLUDE_DIRS}

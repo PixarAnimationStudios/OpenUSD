@@ -24,6 +24,7 @@
 #ifndef PXRUSDKATANA_USDIN_ARGS_H
 #define PXRUSDKATANA_USDIN_ARGS_H
 
+#include "usdKatana/api.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/base/tf/refPtr.h"
 
@@ -73,8 +74,10 @@ public:
     }
 
     // bounds computation is kind of important, so we centralize it here.
+    USDKATANA_API
     std::vector<GfBBox3d> ComputeBounds(const UsdPrim& prim);
 
+    USDKATANA_API
     UsdPrim GetRootPrim() const;
 
     UsdStageRefPtr GetStage() const {
@@ -101,7 +104,7 @@ public:
         return _ignoreLayerRegex;
     }
 
-    double GetCurrentTime() const {
+    double GetCurrentTimeD() const {
         return _currentTime;
     }
 

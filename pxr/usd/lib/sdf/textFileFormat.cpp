@@ -121,7 +121,7 @@ class Sdf_ScopedFilePointer : boost::noncopyable
 public:
     explicit Sdf_ScopedFilePointer(
         const string& filePath,
-        const string& mode = string("rt"))
+        const string& mode = string("r+b"))
         : _fp(ArchOpenFile(filePath.c_str(), mode.c_str()))
     { }
 

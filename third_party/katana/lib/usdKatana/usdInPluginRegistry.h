@@ -24,6 +24,7 @@
 #ifndef PXRUSDKATANA_USDIN_PLUGINREGISTRY_H
 #define PXRUSDKATANA_USDIN_PLUGINREGISTRY_H
 
+#include "usdKatana/api.h"
 #include "usdKatana/usdInPrivateData.h"
 
 #include "pxr/usd/usd/prim.h"
@@ -69,6 +70,7 @@ public:
 
     /// \brief Registers \p opName to handle \p kind (and possibly other kinds
     /// that are descendents of \p kind in the kind hierarchy).
+    USDKATANA_API
     static void RegisterKind(
             const TfToken& kind,
             const std::string& opName);
@@ -76,12 +78,14 @@ public:
     /// \brief Registers \p opName to extend or override \p the core op for 
     /// kind (and possibly other kinds that are descendents of \p 
     /// kind in the kind hierarchy).
+    USDKATANA_API
     static void RegisterKindForSite(
             const TfToken& kind,
             const std::string& opName);
 
     /// \brief Returns true if there are any site-specific ops registered
     /// for at least one \p kind.
+    USDKATANA_API
     static bool HasKindsForSite();
 
     /// \brief Finds a reader if one exists for \p usdTypeName.
@@ -90,6 +94,7 @@ public:
     /// \code
     /// usdPrim.GetTypeName()
     /// \endcode
+    USDKATANA_API
     static bool FindUsdType(
             const TfToken& usdTypeName,
             std::string* opName);
@@ -100,12 +105,14 @@ public:
     /// \code
     /// usdPrim.GetTypeName()
     /// \endcode
+    USDKATANA_API
     static bool FindUsdTypeForSite(
             const TfToken& usdTypeName,
             std::string* opName);
 
     /// \brief Finds a reader if one exists for \p kind.  This will walk up the
     /// kind hierarchy and find the nearest applicable one.
+    USDKATANA_API
     static bool FindKind(
             const TfToken& kind,
             std::string* opName);
@@ -113,6 +120,7 @@ public:
     /// \brief Finds a reader that extends or overrides the core op, if one 
     /// exists, for \p kind.  This will walk up the kind hierarchy and find the 
     /// nearest applicable one.
+    USDKATANA_API
     static bool FindKindForSite(
             const TfToken& kind,
             std::string* opName);
@@ -139,7 +147,9 @@ private:
 class T : public FnKat::GeolibOp\
 {\
 public:\
+    USDKATANA_API   \
     static void setup(FnKat::GeolibSetupInterface& interface);\
+    USDKATANA_API   \
     static void cook(FnKat::GeolibCookInterface& interface);\
 };\
 

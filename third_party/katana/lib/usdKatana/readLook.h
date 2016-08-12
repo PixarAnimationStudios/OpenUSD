@@ -24,6 +24,8 @@
 #ifndef PXRUSDKATANA_READLOOK_H
 #define PXRUSDKATANA_READLOOK_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdShadeLook;
@@ -31,7 +33,7 @@ class UsdShadeLook;
 /// \brief read \p Look into \p attrs.  If \p flatten is specified, we treat it
 /// as if it is a "standalone" material (i.e. no "material" inheritance in the
 /// katana sense).
-void
+USDKATANA_API void
 PxrUsdKatanaReadLook(
         const UsdShadeLook& Look,
         bool flatten,

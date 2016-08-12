@@ -1,5 +1,9 @@
 set(PXR_PACKAGE usdKatana)
 
+# warning C4838: conversion from 'double' to 'float' requires a
+# narrowing conversion
+add_definitions("/wd4838")
+
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         plug
@@ -19,6 +23,9 @@ pxr_shared_library(${PXR_PACKAGE}
         katanaAttrfncApi
         ${Boost_SYSTEM_LIBRARY} 
         ${Boost_THREAD_LIBRARY} 
+
+    PUBLIC_HEADERS
+        api.h
 
     PUBLIC_CLASSES
         attrMap

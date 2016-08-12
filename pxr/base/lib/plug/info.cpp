@@ -38,6 +38,8 @@
 #include <regex>
 #include <set>
 
+#undef GetObject
+
 namespace {
 
 typedef boost::function<bool (const std::string&)> AddVisitedPathCallback;
@@ -363,15 +365,11 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
     }
 
     // Fail if pathname is not absolute.
-#if defined(ARCH_OS_WINDOWS)
-    // XXX: Need a real TfIsAbsPath...
-#else
-    if (pathname[0] != '/') {
+    if (TfIsRelativePath(pathname)) {
         TF_RUNTIME_ERROR("Plugin info file %s is not absolute",
                          pathname.c_str());
         return;
     }
-#endif
 
     // Scan pattern for wildcards.
     std::string::size_type i = pathname.find('*');
@@ -381,9 +379,6 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
         return;
     }
 
-#if defined(ARCH_OS_WINDOWS)
-	#pragma message("Globbing pathname patterns not yet supported on Windows")
-#else
     // Can we glob?
     i = pathname.find("**");
     if (i == std::string::npos) {
@@ -394,6 +389,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
         BOOST_FOREACH(const std::string& match, TfGlob(pathname, 0)) {
             context->taskArena.Run(boost::bind(_ReadPlugInfo, context, match));
         }
+
         return;
     }
 
@@ -427,7 +423,6 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
         Msg("Recursively walking plugin info path %s\n", pathname.c_str());
     context->taskArena.Run(boost::bind(_TraverseDirectory, 
                                        context, dirname, re));
-#endif
 }
 
 // Helper for running tasks.

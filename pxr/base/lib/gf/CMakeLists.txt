@@ -146,9 +146,7 @@ pxr_shared_library(gf
 # source files are up to date with the contents of the templates used to
 # generate them. If not, a diff displaying the difference will be printed to
 # stdout and the build will fail.
-if (WIN32)
-    message(WARNING "Skipping validation of sdf generated code because of Windows")
-elseif (NOT ${PXR_VALIDATE_GENERATED_CODE})
+if (NOT ${PXR_VALIDATE_GENERATED_CODE})
     message(WARNING "Skipping validation of gf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
 elseif(NOT JINJA2_FOUND)
     message(WARNING "Skipping validation of gf generated code because of missing dependency: jinja2")

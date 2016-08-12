@@ -25,6 +25,7 @@
 #define TF_PATHUTILS_H
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/api.h"
 #include <string>
 #include <vector>
@@ -112,7 +113,11 @@ TF_API std::string TfAbsPath(std::string const& path);
  */
 std::string TfReadLink(std::string const& path);
 
-#if !defined(ARCH_OS_WINDOWS)
+/*! \brief Determines if a path is absolute.
+*
+*/
+TF_API bool TfIsRelativePath(std::string const& path);
+
 /*! \brief Expands one or more shell glob patterns.
  *
  * This is a wrapper to glob(3), which manages the C structures
@@ -122,8 +127,9 @@ std::string TfReadLink(std::string const& path);
  * the glob pattern with a trailing slash.  GLOB_NOCHECK returns any
  * unexpanded patterns in the result.
  */
+TF_API
 std::vector<std::string> TfGlob(std::vector<std::string> const& paths,
-                                unsigned int flags=GLOB_NOCHECK|GLOB_MARK);
+                                unsigned int flags=ARCH_GLOB_DEFAULT);
 
 /*! \brief Expands a shell glob pattern.
  *
@@ -132,8 +138,8 @@ std::vector<std::string> TfGlob(std::vector<std::string> const& paths,
  * the vector form of TfGlob, if flags is not set, the default
  * glob flags are GLOB_MARK and GLOB_NOCHECK.
  */
+TF_API
 std::vector<std::string> TfGlob(std::string const& path,
-                                unsigned int flags=GLOB_NOCHECK|GLOB_MARK);
-#endif // #if defined(ARCH_OS_WINDOWS)
+                                unsigned int flags=ARCH_GLOB_DEFAULT);
 
 #endif /* TF_PATHUTILS_H */

@@ -332,7 +332,7 @@ _AddExtraAttributesOrNamespaces(
         PxrUsdKatanaAttrMap& attrs)
 {
     const std::string& rootLocation = data.GetUsdInArgs()->GetRootLocationPath();
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
 
     const PxrUsdKatanaUsdInArgs::StringListMap& extraAttributesOrNamespaces =
         data.GetUsdInArgs()->GetExtraAttributesOrNamespaces();
@@ -510,7 +510,7 @@ PxrUsdKatanaReadPrim(
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs)
 {
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
 
     //
     // Set the 'kind' attribute to match the model kind.
@@ -533,7 +533,7 @@ PxrUsdKatanaReadPrim(
     //
 
     FnKat::GroupBuilder statementsBuilder;
-    PxrUsdKatanaReadPrimPrmanStatements(prim, data.GetUsdInArgs()->GetCurrentTime(), statementsBuilder);
+    PxrUsdKatanaReadPrimPrmanStatements(prim, data.GetUsdInArgs()->GetCurrentTimeD(), statementsBuilder);
     FnKat::GroupAttribute statements = statementsBuilder.build();
     if (statements.getNumberOfChildren() > 0)
     {

@@ -32,9 +32,9 @@
 #define ARCH_STRINGIFY(x) #x
 
 /*!
-* \brief Macro to use for empty substitution.
+* \brief Macro to use for substitution.
 */
-#define ARCH_NOARG
+#define ARCH_PP_EXPAND(x) x
 
 /*!
  * \file attributes.h

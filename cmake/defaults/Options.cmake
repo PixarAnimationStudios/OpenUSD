@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" OFF)
+option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" ON)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
 option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" OFF)

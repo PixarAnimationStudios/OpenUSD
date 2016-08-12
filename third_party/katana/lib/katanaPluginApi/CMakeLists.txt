@@ -1,6 +1,28 @@
 # This library builds source files from the Katana installation
 set(PXR_PACKAGE katanaPluginApi)
 
+add_definitions(
+    /DFNASSET_STATIC
+    /DFNATTRIBUTE_STATIC
+    /DFNATTRIBUTEMODIFIER_STATIC
+    /DFNCONFIG_STATIC
+    /DFNDEFAULTATTRIBUTEPRODUCER_STATIC
+    /DFNLOGGING_STATIC
+    /DFNRENDEROUTPUTLOCATION_STATIC
+    /DFNSCENEGRAPHGENERATOR_STATIC
+    /DFNSCENEGRAPHITERATOR_STATIC
+    /DPYSTRING_STATIC
+)
+
+# https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
+add_definitions("/wd4251")
+
+# https://msdn.microsoft.com/en-us/library/3tdb471s.aspx
+add_definitions("/wd4275")
+
+# https://msdn.microsoft.com/en-us/library/b6801kcy.aspx
+add_definitions("/wd4800")
+
 pxr_static_library(${PXR_PACKAGE}
     INCLUDE_DIRS
         ${KATANA_API_INCLUDE_DIRS}

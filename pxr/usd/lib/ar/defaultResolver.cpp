@@ -86,7 +86,7 @@ Ar_DefaultResolver::ConfigureResolverForAsset(const std::string& path)
 bool
 Ar_DefaultResolver::IsRelativePath(const std::string& path)
 {
-    return (not path.empty() and path[0] != '/');
+    return (not path.empty() and TfIsRelativePath(path));
 }
 
 bool

@@ -24,12 +24,14 @@
 #ifndef PXRUSDKATANA_NURBSPATCH_H
 #define PXRUSDKATANA_NURBSPATCH_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomNurbsPatch;
 
 /// \brief read \p nurbspatch into \p attrs.
-void
+USDKATANA_API void
 PxrUsdKatanaReadNurbsPatch(
         const UsdGeomNurbsPatch& nurbsPatch,
         const PxrUsdKatanaUsdInPrivateData& data,

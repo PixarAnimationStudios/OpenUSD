@@ -26,16 +26,21 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/api.h"
+#include "pxr/base/arch/inttypes.h"
+#include <memory>
+#include <cstdio>
+#include <string>
+#include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <string>
-#include <set>
 
 #if defined(ARCH_OS_LINUX)
 #include <sys/statfs.h>
+#include <glob.h>
 #elif defined(ARCH_OS_DARWIN)
 #include <sys/mount.h>
+#include <glob.h>
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #include <io.h>
@@ -47,6 +52,12 @@
 #else
 #include <sys/param.h>                  /* for MAXPATHLEN */
 #endif
+#endif
+
+#if !defined(ARCH_OS_WINDOWS)
+    #define ARCH_GLOB_DEFAULT   GLOB_NOCHECK|GLOB_MARK
+#else
+    #define ARCH_GLOB_DEFAULT   0
 #endif
 
 /*!
@@ -69,6 +80,12 @@
 #endif
 #endif
 #endif
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+    #define ARCH_PATH_SEP   ";"
+#else
+    #define ARCH_PATH_SEP   ":"
 #endif
 
 /*!
@@ -150,7 +167,8 @@ int ArchStatCompare(enum ArchStatComparisonOp op,
  *
  * Returns -1 if the file cannot be opened/read.
  */
-ARCH_API int ArchGetFileLength(const char* fileName);
+ARCH_API int64_t ArchGetFileLength(const char* fileName);
+ARCH_API int64_t ArchGetFileLength(FILE *file);
 
 /*!
  * \brief Returns true if the data in \c stat struct \p st indicates that the
@@ -178,7 +196,7 @@ ARCH_API double ArchGetModificationTime(const struct stat& st);
  * This function returns the access time with as much precision as is
  * available in the stat structure for the current platform.
  */
-double ArchGetAccessTime(const struct stat& st);
+ARCH_API double ArchGetAccessTime(const struct stat& st);
 
 /*!
  * \brief Returns the status change time (ctime) in seconds from the stat struct.
@@ -187,7 +205,7 @@ double ArchGetAccessTime(const struct stat& st);
  * This function returns the status change time with as much precision as is
  * available in the stat structure for the current platform.
  */
-double ArchGetStatusChangeTime(const struct stat& st);
+ARCH_API double ArchGetStatusChangeTime(const struct stat& st);
 
 /*!
  * \brief Return the path to a temporary directory for this platform.
@@ -276,20 +294,54 @@ std::string ArchMakeTmpSubdir(const std::string& tmpdir,
 ARCH_API
 std::set<std::string> ArchGetAutomountDirectories();
 
-/*!
-* \brief Read from a file descriptor at a given offset
-*
-* Returns the number of bytes read if successful; -1 otherwise.
-*/
-ARCH_API
-_off_t ArchPositionRead(int fd, void *buf, size_t count, off_t offset);
+// Helper 'deleter' for use with std::unique_ptr for file mappings.
+#if defined(ARCH_OS_WINDOWS)
+struct Arch_Unmapper {
+    ARCH_API void operator()(char *mapStart) const;
+    ARCH_API void operator()(char const *mapStart) const;
+};
+#else // assume POSIX
+struct Arch_Unmapper {
+    Arch_Unmapper() : _length(~0) {}
+    explicit Arch_Unmapper(size_t length) : _length(length) {}
+    ARCH_API void operator()(char *mapStart) const;
+    ARCH_API void operator()(char const *mapStart) const;
+private:
+    size_t _length;
+};
+#endif
 
-/*!
-* \brief Write to a file descriptor at a given offset
-*
-* Returns the number of bytes written if successful; -1 otherwise.
-*/
+/// ArchConstFileMapping and ArchMutableFileMapping are std::unique_ptr<char
+/// const *, ...> and std::unique_ptr<char *, ...> respectively.  The functions
+/// ArchMapFileReadOnly() and ArchMapFileReadWrite() return them and provide
+/// access to memory-mapped file contents.
+using ArchConstFileMapping = std::unique_ptr<char const, Arch_Unmapper>;
+using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
+
+/// Privately map the passed \p file into memory and return a unique_ptr to the
+/// read-only mapped contents.  The contents may not be modified.
 ARCH_API
-_off_t ArchPositionWrite(int fd, const void *buf, size_t count, off_t offset);
+ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
+
+/// Privately map the passed \p file into memory and return a unique_ptr to the
+/// copy-on-write mapped contents.  If modified, the affected pages are
+/// dissociated from the underlying file and become backed by the system's swap
+/// or page-file storage.  Edits are not carried through to the underlying file.
+ARCH_API
+ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
+
+/// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
+/// file position indicator for \p file is not changed.  Return the number of
+/// bytes read, or zero if at end of file.  Return -1 in case of an error, with
+/// errno set appropriately.
+ARCH_API
+int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
+
+/// Write up to \p count bytes from \p buffer to \p file at \p offset.  The file
+/// position indicator for \p file is not changed.  Return the number of bytes
+/// written, possibly zero if none written.  Return -1 in case of an error, with
+/// errno set appropriately.
+ARCH_API
+int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
 
 #endif // ARCH_FILESYSTEM_H

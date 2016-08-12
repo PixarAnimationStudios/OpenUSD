@@ -1799,8 +1799,9 @@ class MainWindow(QtGui.QMainWindow):
     @classmethod
     def _outputBaseDirectory(cls):
         import os
+        from os.path import expanduser
 
-        baseDir = os.getenv('HOME') + "/.usdview/"
+        baseDir = expanduser("~") + "/.usdview/"
 
         if not os.path.exists(baseDir):
             os.makedirs(baseDir)

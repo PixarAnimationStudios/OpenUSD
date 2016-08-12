@@ -57,7 +57,7 @@ PxrUsdKatanaGeomGetPAttr(
         return FnKat::Attribute();
     }
 
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
     const std::vector<double>& motionSampleTimes = data.GetMotionSampleTimes(pointsAttr);
 
     // Flag to check if we discovered the topology is varying, in
@@ -113,7 +113,7 @@ PxrUsdKatanaGeomGetDisplayColorAttr(
     // Eval color.
     VtArray<GfVec3f> color;
     if (not gprim.GetDisplayColorPrimvar().ComputeFlattened(
-            &color, data.GetUsdInArgs()->GetCurrentTime())) {
+            &color, data.GetUsdInArgs()->GetCurrentTimeD())) {
         return FnKat::Attribute();
     }
 
@@ -178,7 +178,7 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         // Resolve the value
         VtValue vtValue;
         if (not primvar->ComputeFlattened(
-                &vtValue, data.GetUsdInArgs()->GetCurrentTime()))
+                &vtValue, data.GetUsdInArgs()->GetCurrentTimeD()))
         {
             continue;
         }
@@ -253,7 +253,7 @@ PxrUsdKatanaGeomGetNormalAttr(
         return FnKat::Attribute();
     }
 
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
     const std::vector<double>& motionSampleTimes =
             data.GetMotionSampleTimes(normalsAttr);
 

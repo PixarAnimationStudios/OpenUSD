@@ -95,7 +95,7 @@ _BuildMatrixAttr(
     if (not constraintAttr)
         return FnKat::Attribute();
 
-    double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
     const std::vector<double>& motionSampleTimes = 
         data.GetMotionSampleTimes(constraintAttr);
 

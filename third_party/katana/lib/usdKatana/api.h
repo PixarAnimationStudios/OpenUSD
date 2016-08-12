@@ -21,20 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDKATANA_READBASISCURVES_H
-#define PXRUSDKATANA_READBASISCURVES_H
+#ifndef USDKATANA_API_H
+#define USDKATANA_API_H
 
-#include "usdKatana/api.h"
+#include "pxr/base/arch/export.h"
 
-class PxrUsdKatanaAttrMap;
-class PxrUsdKatanaUsdInPrivateData;
-class UsdGeomBasisCurves;
+#if defined(USDKATANA_STATIC)
+#   define USDKATANA_API
+#   define USDKATANA_LOCAL
+#else
+#   if defined(USDKATANA_EXPORTS)
+#       define USDKATANA_API ARCH_EXPORT	
+#       define USDKATANA_API_TEMPLATE_CLASS(...)
+#       define USDKATANA_API_TEMPLATE_STRUCT(...)
+#   else
+#       define USDKATANA_API ARCH_IMPORT
+#       define USDKATANA_API_TEMPLATE_CLASS(...) extern template class USDKATANA_API __VA_ARGS__
+#       define USDKATANA_API_TEMPLATE_STRUCT(...) extern template struct USDKATANA_API __VA_ARGS__
+#   endif
+#   define USDKATANA_LOCAL ARCH_HIDDEN
+#endif
 
-/// \brief read \p basiscurves into \p attrs.
-USDKATANA_API void
-PxrUsdKatanaReadBasisCurves(
-        const UsdGeomBasisCurves& basisCurves,
-        const PxrUsdKatanaUsdInPrivateData& data,
-        PxrUsdKatanaAttrMap& attrs);
-
-#endif // PXRUSDKATANA_READBASISCURVES_H
+#endif
