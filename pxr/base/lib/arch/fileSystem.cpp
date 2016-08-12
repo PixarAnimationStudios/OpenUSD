@@ -42,41 +42,6 @@
 using std::string;
 using std::set;
 
-int
-ArchGetFilesystemStats(const char *path, struct statfs *buf)
-{
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-    return statfs(path, buf) != -1;
-#else
-#error Unknown system architecture.
-#endif
-}
-
-int
-ArchStatCompare(enum ArchStatComparisonOp op,
-		const struct stat *stat1,
-		const struct stat *stat2)
-{
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-    switch (op) {
-      case ARCH_STAT_MTIME_EQUAL:
-	return (stat1->st_mtime == stat2->st_mtime);
-      case ARCH_STAT_MTIME_LESS:
-	return (stat1->st_mtime < stat2->st_mtime);
-      case ARCH_STAT_SAME_FILE:
-	return (stat1->st_dev == stat2->st_dev &&
-		stat1->st_ino == stat2->st_ino);
-      default:
-        // CODE_COVERAGE_OFF
-        ARCH_ERROR("Unknown comparison operator");
-	return 0;
-        // CODE_COVERAGE_ON
-    }
-#else
-#error Unknown system architecture.
-#endif
-}
-
 bool
 ArchStatIsWritable(const struct stat *st)
 {

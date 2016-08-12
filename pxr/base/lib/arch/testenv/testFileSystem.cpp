@@ -46,11 +46,8 @@ int main()
 {
     (void) signal(SIGABRT,crash);
 
-    std::string firstName = ArchMakeTmpFileName("archFS"),
-        secondName = ArchMakeTmpFileName("archFS"),
-        thirdName = ArchMakeTmpFileName("lockTester");
-    FILE *firstFile, *secondFile;
-    struct stat firstStat, secondStat, firstStatAgain;
+    std::string firstName = ArchMakeTmpFileName("archFS");
+    FILE *firstFile;
 
     // Open a file, check that its length is 0, write to it, close it, and then check that
     // its length is now the number of characters written.
@@ -61,20 +58,7 @@ int main()
     fclose(firstFile);
     assert(ArchGetFileLength(firstName.c_str()) == 15);
 
-    // Stat firstFile and secondFile.  The ArchNap()s should have delayed long enough 
-    // that secondFile will appear to have been modified more recently.
-    ArchNap(100);
-    assert((secondFile = fopen(secondName.c_str(), "w")) != NULL);
-    fclose(secondFile);
-    assert(!stat(firstName.c_str(), &firstStat));
-    assert(!stat(secondName.c_str(), &secondStat));
-    assert(!stat(firstName.c_str(), &firstStatAgain));
-    assert(ArchStatCompare(ARCH_STAT_MTIME_EQUAL, &firstStat, &firstStatAgain));
-    assert(ArchStatCompare(ARCH_STAT_MTIME_LESS, &firstStat, &secondStat));
-
     unlink(firstName.c_str());
-    unlink(secondName.c_str());
-    unlink(thirdName.c_str());
 
     // create and remove a tmp subdir
     std::string retpath;

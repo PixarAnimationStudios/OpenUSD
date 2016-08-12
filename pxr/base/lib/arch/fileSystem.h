@@ -44,31 +44,6 @@
  */
 
 /*!
- * \brief This enum is used to specify a comparison operator for
- * \c ArchStatCompare().
- * \ingroup group_arch_SystemFunctions
- */
-
-enum ArchStatComparisonOp {
-    ARCH_STAT_MTIME_EQUAL,	/*!< Modification times are equal */
-    ARCH_STAT_MTIME_LESS,	/*!< Modification time for \c stat1 is less */
-    ARCH_STAT_SAME_FILE		/*!< Both refer to same file */
-};
-    
-/*!
- * \brief Compares two \c stat structures.
- * \ingroup group_arch_SystemFunctions
- *
- * Compares two \c stat structures with a given comparison
- * operation, returning non-zero if the operation is true with respect
- * to \p stat1 and \p stat2.
- */
-
-int ArchStatCompare(enum ArchStatComparisonOp op,
-		    const struct stat *stat1,
-		    const struct stat *stat2);
-
-/*!
  * \brief Return the length of a file in bytes.
  * \ingroup group_arch_SystemFunctions
  *
