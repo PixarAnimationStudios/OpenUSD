@@ -30,7 +30,7 @@
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
 #include <boost/shared_ptr.hpp>
-#include <opensubdiv3/far/stencilTable.h>
+#include <opensubdiv/far/stencilTable.h>
 
 class PxOsdStencilPerVertex {
 public:    
