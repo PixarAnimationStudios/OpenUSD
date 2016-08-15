@@ -36,6 +36,7 @@
 
 class TfAnyWeakPtr;
 class TfEnum;
+class TfToken;
 class TfType;
 
 template <class T> class TfWeakPtr;
@@ -136,6 +137,10 @@ public:
     size_t operator()(int i) const {
         return _Mix(i);
     }
+
+    // Provide an overload for TfToken to prevent hashing via TfToken's implicit
+    // conversion to std::string.
+    size_t operator()(const TfToken& t) const;
 };
 
 struct TfHashCharPtr {
