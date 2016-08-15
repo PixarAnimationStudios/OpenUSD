@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #ifndef JS_JSON_H
 #define JS_JSON_H
 
 /// \file js/json.h
+/// Top-level entrypoints for reading and writing JSON.
 
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/value.h"

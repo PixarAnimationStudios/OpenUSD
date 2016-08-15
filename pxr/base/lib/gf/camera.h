@@ -24,6 +24,9 @@
 #ifndef GF_CAMERA_H
 #define GF_CAMERA_H
 
+/// \file gf/camera.h
+/// \ingroup group_gf_BasicGeometry
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/range1f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -33,7 +36,8 @@
 class GfFrustum;
 
 /// \class GfCamera
-/// Object-based representation of a camera.
+/// \ingroup group_gf_BasicGeometry
+/// \brief Object-based representation of a camera.
 ///
 /// This class provides a thin wrapper on the camera data model,
 /// with a small number of computations.

@@ -71,7 +71,7 @@
 /// Functions/classes for libtf internal use only
 
 /*!
-\page tf_page_front Tools Foundations (Tf)
+\page tf_page_front Tf: Tools Foundations
 \if ( PIXAR_MFB_BUILD )
 \mainpage Tf : Tools Foundations
 \publicLib

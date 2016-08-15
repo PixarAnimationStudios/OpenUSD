@@ -28,7 +28,13 @@
 /// Macros having to do with symbol visibility
 
 /*!
-\mainpage 
+\page arch_page_front Arch: Architecture Dependent
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Arch: Architecture Dependent
+\publicLib
+\endif
+
+\section arch_overview Overview
 
 The ARCH library is a repository for all architecture-dependent
 code. It isolates all platform dependencies (and confusing \#ifdefs)
