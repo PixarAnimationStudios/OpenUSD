@@ -87,6 +87,8 @@ public:
     typedef typename Parent::value_type        value_type;
     typedef typename Parent::value_vector_type value_vector_type;
 
+    virtual ~Sdf_VectorListEditor() = default;
+
     Sdf_VectorListEditor(const SdfSpecHandle& owner, 
                          const TfToken& field, SdfListOpType op,
                          const TypePolicy& typePolicy = TypePolicy());

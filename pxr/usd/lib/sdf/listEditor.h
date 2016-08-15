@@ -209,6 +209,8 @@ protected:
     {
     }
 
+    virtual ~Sdf_ListEditor() = default;
+
     const SdfSpecHandle& _GetOwner() const
     {
         return _owner;

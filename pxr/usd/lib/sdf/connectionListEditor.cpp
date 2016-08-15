@@ -86,6 +86,9 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
     }
 }
 
+template <class ChildPolicy>
+Sdf_ConnectionListEditor<ChildPolicy>::~Sdf_ConnectionListEditor() = default;
+
 ////////////////////////////////////////
 // Sdf_AttributeConnectionListEditor
 ////////////////////////////////////////
@@ -96,6 +99,8 @@ Sdf_AttributeConnectionListEditor::Sdf_AttributeConnectionListEditor(
     : Parent(owner, SdfFieldKeys->ConnectionPaths, typePolicy)
 {
 }
+
+Sdf_AttributeConnectionListEditor::~Sdf_AttributeConnectionListEditor() = default;
 
 void 
 Sdf_AttributeConnectionListEditor::_OnEdit(
@@ -117,6 +122,8 @@ Sdf_RelationshipTargetListEditor::Sdf_RelationshipTargetListEditor(
     : Parent(owner, SdfFieldKeys->TargetPaths, typePolicy)
 {
 }
+
+Sdf_RelationshipTargetListEditor::~Sdf_RelationshipTargetListEditor() = default;
 
 void 
 Sdf_RelationshipTargetListEditor::_OnEdit(

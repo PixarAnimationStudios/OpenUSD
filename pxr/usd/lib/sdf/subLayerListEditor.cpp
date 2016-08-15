@@ -39,6 +39,8 @@ Sdf_SubLayerListEditor::Sdf_SubLayerListEditor(
 {
 }
 
+Sdf_SubLayerListEditor::~Sdf_SubLayerListEditor() = default;
+
 void 
 Sdf_SubLayerListEditor::_OnEdit(
     SdfListOpType op,

@@ -54,6 +54,8 @@ public:
     Sdf_ListOpListEditor(const SdfSpecHandle& owner, const TfToken& listField,
                          const TypePolicy& typePolicy = TypePolicy());
 
+    virtual ~Sdf_ListOpListEditor() = default;
+
     virtual bool IsExplicit() const;
     virtual bool IsOrderedOnly() const;
 

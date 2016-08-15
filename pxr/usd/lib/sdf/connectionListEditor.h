@@ -43,12 +43,13 @@ class Sdf_ConnectionListEditor
     : public Sdf_ListOpListEditor<SdfPathKeyPolicy>
 {
 protected:
+    virtual ~Sdf_ConnectionListEditor();
+
     Sdf_ConnectionListEditor(
         const SdfSpecHandle& connectionOwner,
         const TfToken& connectionListField,             
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
     
-protected:
     void _OnEdit(SdfListOpType op,
         SdfSpecType specType,
         const std::vector<SdfPath>& oldItems,
@@ -64,6 +65,8 @@ class Sdf_AttributeConnectionListEditor
     : public Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>
 {
 public:
+    virtual ~Sdf_AttributeConnectionListEditor();
+
     Sdf_AttributeConnectionListEditor(
         const SdfSpecHandle& owner,
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
@@ -81,6 +84,8 @@ class Sdf_RelationshipTargetListEditor
     : public Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>
 {
 public:
+    virtual ~Sdf_RelationshipTargetListEditor();
+
     Sdf_RelationshipTargetListEditor(
         const SdfSpecHandle& owner,
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
