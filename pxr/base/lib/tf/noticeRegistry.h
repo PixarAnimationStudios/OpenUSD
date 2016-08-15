@@ -24,6 +24,9 @@
 #ifndef TF_NOTICE_REGISTRY_H
 #define TF_NOTICE_REGISTRY_H
 
+/// \file tf/noticeRegistry.h
+/// \ingroup group_tf_Notification
+
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/hash.h"
@@ -37,38 +40,30 @@
 #include <tbb/spin_mutex.h>
 #include <atomic>
 
-/*!
- * \file noticeRegistry.h
- * \ingroup group_tf_Notification
- */
-
-
-
-/*!
- * \class Tf_NoticeRegistry NoticeRegistry.h pxr/base/tf/noticeRegistry.h
- * \ingroup group_tf_Notification
- * \internal
- * \brief Internal class representing the singleton notification
- * registry.
- *
- * Implementation notes.
- *
- * The registry is maintained as a hash map that carries TfNotice class
- * to a list of call back entries (each of type \c TfNotice::_DelivererBase*).
- *
- * Currently, each list has a mutex which is used for getting/setting the head
- * of the list.  When an item on the list needs to be removed (either from
- * a TfNotice::Revoke() call or because the listenening object has expired),
- * the item is removed from the list IF nobody else is using the registry.
- *
- * Otherwise, the item is left as an inactive item on the list; at some point,
- * we should maintain a free-list of items that need pruning, and remove them
- * when the registry's user count indicates it is not being used.  This is left
- * to do: but note that items should accumulate slowly in the registry, since
- * multiple active traversals (either by different threads, or because of
- * reentrancy) should be rare.
- */
-
+/// \class Tf_NoticeRegistry
+/// \ingroup group_tf_Notification
+/// \internal
+///
+/// Internal class representing the singleton notification registry.
+///
+/// Implementation notes.
+///
+/// The registry is maintained as a hash map that carries TfNotice class to a
+/// list of call back entries (each of type \c TfNotice::_DelivererBase*).
+///
+/// Currently, each list has a mutex which is used for getting/setting the
+/// head of the list.  When an item on the list needs to be removed (either
+/// from a TfNotice::Revoke() call or because the listenening object has
+/// expired), the item is removed from the list IF nobody else is using the
+/// registry.
+///
+/// Otherwise, the item is left as an inactive item on the list; at some
+/// point, we should maintain a free-list of items that need pruning, and
+/// remove them when the registry's user count indicates it is not being used.
+/// This is left to do: but note that items should accumulate slowly in the
+/// registry, since multiple active traversals (either by different threads,
+/// or because of reentrancy) should be rare.
+///
 class Tf_NoticeRegistry : boost::noncopyable {
 public:
 
@@ -81,35 +76,25 @@ public:
 
     void _EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes);
     
-    /*
-     * Register a particular deliverer, return the key created for the
-     * registration.
-     */
+    // Register a particular deliverer, return the key created for the
+    // registration.
     TfNotice::Key _Register(TfNotice::_DelivererBase* deliverer);
 
-    /*
-     * Send notice n to all interested listeners.
-     */
+    // Send notice n to all interested listeners.
     size_t _Send(const TfNotice &n, const TfType &noticeType,
                  const TfWeakBase *s, const void *senderUniqueId,
                  const std::type_info &senderType);
 
-    /*
-     * Remove listener instance indicated by \p key.  This is pass by
-     * reference so we can mark the key as having been revoked.
-     */
+    // Remove listener instance indicated by \p key.  This is pass by
+    // reference so we can mark the key as having been revoked.
     void _Revoke(TfNotice::Key& key);
 
-    /*
-     * Abort if casting of a notice failed; warn if it succeeded
-     * but TfSafeDynamic_cast was required.
-     */
+    // Abort if casting of a notice failed; warn if it succeeded but
+    // TfSafeDynamic_cast was required.
     void _VerifyFailedCast(const std::type_info& toType,
                            const TfNotice& notice, const TfNotice* castNotice);
     
-    /*
-     * Return reference to singleton object.
-     */
+    // Return reference to singleton object.
     static Tf_NoticeRegistry& _GetInstance() {
         return TfSingleton<Tf_NoticeRegistry>::GetInstance();
     }
@@ -139,15 +124,14 @@ private:
                     const std::type_info &senderType,
                     const std::vector<TfNotice::WeakProbePtr> &probes);
     void _EndSend(const std::vector<TfNotice::WeakProbePtr> &probes);
-    /*
-     * It is safe to add a new item onto an STL list during traversal
-     * by multiple threads; the only thing to guard against is a race
-     * when setting/getting the head of the list.
-     *
-     * Removal is trickier: if we can remove something right away, we do (i.e. if
-     * nobody but us is traversing the registry).  Otherwise, we just mark the
-     * item on the list as inactive.
-     */
+
+    // It is safe to add a new item onto an STL list during traversal by
+    // multiple threads; the only thing to guard against is a race when
+    // setting/getting the head of the list.
+    //
+    // Removal is trickier: if we can remove something right away, we do (i.e.
+    // if nobody but us is traversing the registry).  Otherwise, we just mark
+    // the item on the list as inactive.
 
     class _DelivererContainer {
     public:
@@ -232,7 +216,6 @@ private:
         _Lock lock(_userCountMutex);
         _userCount += amount;
     }
-    
 
     _DelivererTable _delivererTable;
     _Mutex _tableMutex;
@@ -257,9 +240,5 @@ private:
     std::atomic<size_t> _globalBlockCount;
     tbb::enumerable_thread_specific<size_t> _perThreadBlockCount;
 };
-
-
-
-
 
 #endif

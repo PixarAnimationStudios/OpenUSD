@@ -24,61 +24,19 @@
 #ifndef TF_HASH_H
 #define TF_HASH_H
 
+/// \file tf/hash.h
+/// \ingroup group_tf_String
+
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/timeStamp.h"
-
 #include "pxr/base/arch/hash.h"
-
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <string>
 
-/*!
- * \file hash.h
- * \ingroup group_tf_String
- */
-
 class TfAnyWeakPtr;
 class TfEnum;
 class TfType;
-
-/*!
- * \class TfHash Hash.h pxr/base/tf/hash.h
- * \ingroup group_tf_String
- * \brief Provides hash function on STL string types and other types.
- *
- * The \c TfHash class is a functor as defined by the STL standard:
- * currently, it is defined for:
- *   \li std::string
- *   \li TfRefPtr
- *   \li TfWeakPtr
- *   \li TfEnum
- *   \li TfTimeStamp
- *   \li const void*
- *   \li int
- *
- * The \c TfHash class can be used to implement a
- * \c TfHashMap with \c string keys as follows:
- * \code
- *     TfHashMap<string, int, TfHash> m;
- *     m["abc"] = 1;
- * \endcode
- *
- * \c TfHash()(const char*) is disallowed to avoid confusion of whether
- * the pointer or the string is being hashed.  If you want to hash a
- * C-string use \c TfHashCString and if you want to hash a \c char* use
- * \c TfHashCharPtr.
- *
- * One can also declare, for any types \c S and  \c T,
- * \code
- *     TfHashMap<TfRefPtr<S>, T, TfHash> m1;
- *     TfHashMap<TfWeakPtr<S>, T, TfHash> m2;
- *     TfHashMap<TfEnum, T, TfHash> m3;
- *     TfHashMap<TfTimeStamp, T, TfHash> m4;
- *     TfHashMap<const void*, T, TfHash> m5;
- *     TfHashMap<int, T, TfHash> m6;
- * \endcode
- */
 
 template <class T> class TfWeakPtr;
 template <class T> class TfRefPtr;
@@ -87,6 +45,43 @@ class TfRefBase;
 template <template <class> class X, class T>
 class TfWeakPtrFacade;
 
+/// \class TfHash
+/// \ingroup group_tf_String
+///
+/// Provides hash function on STL string types and other types.
+///
+/// The \c TfHash class is a functor as defined by the STL standard:
+/// currently, it is defined for:
+///   \li std::string
+///   \li TfRefPtr
+///   \li TfWeakPtr
+///   \li TfEnum
+///   \li TfTimeStamp
+///   \li const void*
+///   \li int
+///
+/// The \c TfHash class can be used to implement a
+/// \c TfHashMap with \c string keys as follows:
+/// \code
+///     TfHashMap<string, int, TfHash> m;
+///     m["abc"] = 1;
+/// \endcode
+///
+/// \c TfHash()(const char*) is disallowed to avoid confusion of whether
+/// the pointer or the string is being hashed.  If you want to hash a
+/// C-string use \c TfHashCString and if you want to hash a \c char* use
+/// \c TfHashCharPtr.
+///
+/// One can also declare, for any types \c S and  \c T,
+/// \code
+///     TfHashMap<TfRefPtr<S>, T, TfHash> m1;
+///     TfHashMap<TfWeakPtr<S>, T, TfHash> m2;
+///     TfHashMap<TfEnum, T, TfHash> m3;
+///     TfHashMap<TfTimeStamp, T, TfHash> m4;
+///     TfHashMap<const void*, T, TfHash> m5;
+///     TfHashMap<int, T, TfHash> m6;
+/// \endcode
+///
 struct TfHash {
 private:
     inline size_t _Mix(size_t val) const {

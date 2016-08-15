@@ -24,8 +24,7 @@
 #ifndef WORK_DETACHEDTASK_H
 #define WORK_DETACHEDTASK_H
 
-///
-///\file work/detachedTask.h
+/// \file work/detachedTask.h
 
 #include "pxr/base/tf/errorMark.h"
 
@@ -48,8 +47,8 @@ private:
     Fn _fn;
 };
 
-/// \brief Invoke \p fn asynchronously, discard any errors it produces, and
-/// provide no way to wait for it to complete.
+/// Invoke \p fn asynchronously, discard any errors it produces, and provide
+/// no way to wait for it to complete.
 template <class Fn>
 void WorkRunDetachedTask(Fn &&fn)
 {

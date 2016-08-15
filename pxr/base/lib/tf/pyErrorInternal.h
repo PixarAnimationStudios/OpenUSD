@@ -37,6 +37,4 @@ void Tf_PyRestorePythonExceptionState(TfPyExceptionState state);
 boost::python::handle<> Tf_PyGetErrorExceptionClass();
 void Tf_PySetErrorExceptionClass(boost::python::object const &cls);
 
-
-
 #endif // TF_PYERRORINTERNAL_H

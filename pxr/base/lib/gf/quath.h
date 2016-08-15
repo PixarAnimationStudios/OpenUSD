@@ -28,6 +28,9 @@
 #ifndef GF_QUATH_H
 #define GF_QUATH_H
 
+/// \file gf/quath.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/half.h"
@@ -39,95 +42,75 @@
 template <>
 struct GfIsGfQuat<class GfQuath> { static const bool value = true; };
 
-/*!
- * \file quath.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-//!
-// \class GfQuath quath.h "pxr/base/gf/quath.h"
-// \ingroup group_gf_LinearAlgebra
-// \brief Basic type: a quaternion, a complex number with a real coefficient and
-// three imaginary coefficients, stored as a 3-vector.
-//
+/// \class GfQuath
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type: a quaternion, a complex number with a real coefficient and
+/// three imaginary coefficients, stored as a 3-vector.
+///
 class GfQuath
 {
   public:
     typedef half ScalarType;
     typedef GfVec3h ImaginaryType;
 
-    //!
-    // Default constructor leaves the quaternion undefined.
+    /// Default constructor leaves the quaternion undefined.
     GfQuath() {}
 
-    //!
-    // Initialize the real coefficient to \p realVal and the imaginary
-    // coefficients to zero.
-    //
-    // Since quaternions typically must be normalized, reasonable values for
-    // \p realVal are -1, 0, or 1.  Other values are legal but are likely to be
-    // meaningless.
-    //
+    /// Initialize the real coefficient to \p realVal and the imaginary
+    /// coefficients to zero.
+    ///
+    /// Since quaternions typically must be normalized, reasonable values for
+    /// \p realVal are -1, 0, or 1.  Other values are legal but are likely to
+    /// be meaningless.
+    ///
     explicit GfQuath (half realVal) : _imaginary(0), _real(realVal) {}
 
-    //!
-    // Initialize the real and imaginary coefficients.
+    /// Initialize the real and imaginary coefficients.
     GfQuath(half real, half i, half j, half k)
         : _imaginary(i, j, k), _real(real)
     {
     }
 
-    //!
-    // Initialize the real and imaginary coefficients.
+    /// Initialize the real and imaginary coefficients.
     GfQuath(half real, const GfVec3h &imaginary)
         : _imaginary(imaginary), _real(real)
     {
     }
 
-    //!
-    // Construct from GfQuatd.
+    /// Construct from GfQuatd.
     explicit GfQuath(class GfQuatd const &other);
-    //!
-    // Construct from GfQuatf.
+    /// Construct from GfQuatf.
     explicit GfQuath(class GfQuatf const &other);
 
-    //!
-    // Return the identity quaternion, with real coefficient 1 and an imaginary
-    // coefficients all zero.
+    /// Return the identity quaternion, with real coefficient 1 and an
+    /// imaginary coefficients all zero.
     static GfQuath GetIdentity() { return GfQuath(1.0); }
 
-    //!
-    // Return the real coefficient.
+    /// Return the real coefficient.
     half GetReal() const { return _real; }
 
-    //!
-    // Set the real coefficient.
+    /// Set the real coefficient.
     void SetReal(half real) { _real = real; }
 
-    //!
-    // Return the imaginary coefficient.
+    /// Return the imaginary coefficient.
     const GfVec3h &GetImaginary() const { return _imaginary; }
 
-    //!
-    // Set the imaginary coefficients.
+    /// Set the imaginary coefficients.
     void SetImaginary(const GfVec3h &imaginary) {
         _imaginary = imaginary;
     }
 
-    //!
-    // Set the imaginary coefficients.
+    /// Set the imaginary coefficients.
     void SetImaginary(half i, half j, half k) {
         _imaginary.Set(i, j, k);
     }
 
-    //!
-    // Return geometric length of this quaternion.
+    /// Return geometric length of this quaternion.
     half GetLength() const { return GfSqrt(_GetLengthSquared()); }
 
-    //!
-    // Return a normalized (unit-length) version of this quaternion.  If the
-    // length of this quaternion is smaller than \p eps, return the identity
-    // quaternion.
+    /// length of this quaternion is smaller than \p eps, return the identity
+    /// quaternion.
     GfQuath
     GetNormalized(half eps = GF_MIN_VECTOR_LENGTH) const {
         GfQuath ret(*this);
@@ -135,153 +118,133 @@ class GfQuath
         return ret;
     }
 
-    //!
-    // Normalizes this quaternion in place to unit length, returning
-    // the length before normalization. If the length of this
-    // quaternion is smaller than \p eps, this sets the quaternion to
-    // identity.
+    /// Normalizes this quaternion in place to unit length, returning the
+    /// length before normalization. If the length of this quaternion is
+    /// smaller than \p eps, this sets the quaternion to identity.
     half Normalize(half eps = GF_MIN_VECTOR_LENGTH);
 
-    //!
-    // Return this quaternion's conjugate, which is the quaternion with the same
-    // real coefficient and negated imaginary coefficients.
+    /// Return this quaternion's conjugate, which is the quaternion with the
+    /// same real coefficient and negated imaginary coefficients.
     GfQuath GetConjugate() const {
         return GfQuath(GetReal(), -GetImaginary());
     }
 
-    //!
-    // Return this quaternion's inverse, or reciprocal.  This is the
-    // quaternion's conjugate divided by it's squared length.
+    /// Return this quaternion's inverse, or reciprocal.  This is the
+    /// quaternion's conjugate divided by it's squared length.
     GfQuath GetInverse() const {
         return GetConjugate() / _GetLengthSquared();
     }
 
-    //!
-    // Hash.
+    /// Hash.
     friend inline size_t hash_value(const GfQuath &q) {
         size_t h = hash_value(q.GetReal());
         boost::hash_combine(h, q.GetImaginary());
         return h;
     }
 
-    //!
-    // Component-wise negation.
+    /// Component-wise negation.
     GfQuath operator-() const {
         return GfQuath(-GetReal(), -GetImaginary());
     }
 
-    //!
-    // Component-wise quaternion equality test. The real and imaginary parts
-    // must match exactly for quaternions to be considered equal.
+    /// Component-wise quaternion equality test. The real and imaginary parts
+    /// must match exactly for quaternions to be considered equal.
     bool operator==(const GfQuath &q) const {
-	return (GetReal() == q.GetReal() &&
+        return (GetReal() == q.GetReal() &&
                 GetImaginary() == q.GetImaginary());
     }
 
-    //!
-    // Component-wise quaternion inequality test. The real and imaginary parts
-    // must match exactly for quaternions to be considered equal.
+    /// Component-wise quaternion inequality test. The real and imaginary
+    /// parts must match exactly for quaternions to be considered equal.
     bool operator!=(const GfQuath &q) const {
         return !(*this == q);
     }
 
-    //!
-    // Post-multiply quaternion \p q into this quaternion.
+    /// Post-multiply quaternion \p q into this quaternion.
     GfQuath &operator *=(const GfQuath &q);
 
-    //!
-    // Multiply this quaternion's coefficients by \p s .
+    /// Multiply this quaternion's coefficients by \p s.
     GfQuath &operator *=(half s) {
         _real *= s;
         _imaginary *= s;
         return *this;
     }
 
-    //!
-    // Divide this quaternion's coefficients by \p s .
+    /// Divide this quaternion's coefficients by \p s.
     GfQuath &operator /=(half s) {
         _real /= s;
         _imaginary /= s;
         return *this;
     }
 
-    //!
-    // Add quaternion \p q to this quaternion.
+    /// Add quaternion \p q to this quaternion.
     GfQuath &operator +=(const GfQuath &q) {
         _real += q._real;
         _imaginary += q._imaginary;
         return *this;
     }
 
-    //!
-    // Component-wise unary difference operator
+    /// Component-wise unary difference operator.
     GfQuath &operator -=(const GfQuath &q)  {
         _real -= q._real;
         _imaginary -= q._imaginary;
         return *this;
     }
 
-    //!
-    // Component-wise binary sum operator
+    /// Component-wise binary sum operator.
     friend GfQuath
     operator +(const GfQuath &q1, const GfQuath &q2) {
-	return GfQuath(q1) += q2;
+        return GfQuath(q1) += q2;
     }
 
-    //!
-    // Component-wise binary difference operator
+    /// Component-wise binary difference operator.
     friend GfQuath
     operator -(const GfQuath &q1, const GfQuath &q2) {
-	return GfQuath(q1) -= q2;
+        return GfQuath(q1) -= q2;
     }
 
-    //!
-    // Returns the product of quaternions \p q1 and \p q2 .
+    /// Returns the product of quaternions \p q1 and \p q2.
     friend GfQuath
     operator *(const GfQuath &q1, const GfQuath &q2) {
-	return GfQuath(q1) *= q2;
+        return GfQuath(q1) *= q2;
     }
 
-    //!
-    // Returns the product of quaternion \p q and scalar \p s .
+    /// Returns the product of quaternion \p q and scalar \p s.
     friend GfQuath
     operator *(const GfQuath &q, half s) {
-	return GfQuath(q) *= s;
+        return GfQuath(q) *= s;
     }
 
-    //!
-    // Returns the product of quaternion \p q and scalar \p s .
+    /// Returns the product of quaternion \p q and scalar \p s.
     friend GfQuath
     operator *(half s, const GfQuath &q) {
-	return GfQuath(q) *= s;
+        return GfQuath(q) *= s;
     }
 
-    //!
-    // Returns the product of quaternion \p q and scalar 1 / \p s .
+    /// Returns the product of quaternion \p q and scalar 1 / \p s.
     friend GfQuath
     operator /(const GfQuath &q, half s) {
-	return GfQuath(q) /= s;
+        return GfQuath(q) /= s;
     }
 
   private:
-    //! Imaginary part
+    /// Imaginary part
     GfVec3h _imaginary;
 
-    //! Real part
+    /// Real part
     half _real;
 
-    //! Returns the square of the length
+    /// Returns the square of the length
     half
     _GetLengthSquared() const {
         return _real * _real + GfDot(_imaginary, _imaginary);
     }
 };
 
-//!
-// Spherically linearly interpolate between \p q0 and \p q1.
-//
-// If the interpolant \p alpha is zero, then the result is \p q0, while
-// \p alpha of one yields \p q1.
+/// Spherically linearly interpolate between \p q0 and \p q1.
+///
+/// If the interpolant \p alpha is zero, then the result is \p q0, while
+/// \p alpha of one yields \p q1.
 GfQuath
 GfSlerp(double alpha, const GfQuath& q0, const GfQuath& q1);
 
@@ -292,4 +255,4 @@ GfSlerp(const GfQuath& q0, const GfQuath& q1, double alpha);
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfQuath const &);
 
-#endif // GF_QUATERNION_H
+#endif // GF_QUATH_H

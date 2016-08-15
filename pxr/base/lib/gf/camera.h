@@ -32,12 +32,12 @@
 
 class GfFrustum;
 
-/// 
 /// \class GfCamera
-/// \brief Object-based represention of a camera.
+/// Object-based representation of a camera.
 ///
 /// This class provides a thin wrapper on the camera data model,
 /// with a small number of computations.
+///
 class GfCamera
 {
 public:

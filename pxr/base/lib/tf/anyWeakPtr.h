@@ -24,11 +24,9 @@
 #ifndef TF_ANYWEAKPTR_H
 #define TF_ANYWEAKPTR_H
 
-/*!
- * \file anyWeakPtr.h
- * \brief Type independent WeakPtr holder class
- * \ingroup group_tf_Memory
- */
+/// \file tf/anyWeakPtr.h
+/// \ingroup group_tf_Memory
+/// Type independent WeakPtr holder class
 
 #include "pxr/base/tf/cxxCast.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -43,12 +41,10 @@
 #include <type_traits>
 #include <utility>
 
-/*!
- * \class TfAnyWeakPtr
- *
- * \brief Provides the ability to hold an arbitrary TfWeakPtr in a
- * non-type-specific manner in order to observe whether it has expired or not
- */
+/// \class TfAnyWeakPtr
+///
+/// Provides the ability to hold an arbitrary TfWeakPtr in a non-type-specific
+/// manner in order to observe whether it has expired or not
 class TfAnyWeakPtr : boost::totally_ordered<TfAnyWeakPtr>
 {
     struct _Data {
@@ -58,7 +54,7 @@ class TfAnyWeakPtr : boost::totally_ordered<TfAnyWeakPtr>
 public:
     typedef TfAnyWeakPtr This;
 
-    //! Construct an AnyWeakPtr watching \a ptr.
+    /// Construct an AnyWeakPtr watching \a ptr.
     template <class Ptr, class = typename
               std::enable_if<Tf_SupportsWeakPtr<
                                  typename Ptr::DataType>::value>::type>
@@ -68,17 +64,17 @@ public:
         new (&_ptrStorage) _PointerHolder<Ptr>(ptr);
     }
 
-    //! Construct an AnyWeakPtr not watching any \a ptr.
+    /// Construct an AnyWeakPtr not watching any \a ptr.
     TfAnyWeakPtr() {
         static_assert(sizeof(_EmptyHolder) <= sizeof(_Data),
                       "Ptr is too big to fit in a TfAnyWeakPtr");
         new (&_ptrStorage) _EmptyHolder;
     }
 
-    //! Construct and implicitly convert from TfNullPtr.
+    /// Construct and implicitly convert from TfNullPtr.
     TfAnyWeakPtr(TfNullPtrType) : TfAnyWeakPtr() {}
 
-    //! Construct and implicitly convert from std::nullptr_t.
+    /// Construct and implicitly convert from std::nullptr_t.
     TfAnyWeakPtr(std::nullptr_t) : TfAnyWeakPtr() {}
 
     TfAnyWeakPtr(TfAnyWeakPtr const &other) {
@@ -97,35 +93,35 @@ public:
         _Get()->~_PointerHolderBase();
     }
 
-    //! Return true *only* if this expiry checker is watching a weak pointer
-    // which has expired.
+    /// Return true *only* if this expiry checker is watching a weak pointer
+    /// which has expired.
     bool IsInvalid() const;
 
-    //! Return the unique identifier of the WeakPtr this AnyWeakPtr conrtains
+    /// Return the unique identifier of the WeakPtr this AnyWeakPtr conrtains
     void const *GetUniqueIdentifier() const;
 
-    //! Return the TfWeakBase object of the WeakPtr we are holding
+    /// Return the TfWeakBase object of the WeakPtr we are holding
     TfWeakBase const *GetWeakBase() const;
 
-    //! bool operator
+    /// bool operator
     operator bool() const;
 
-    //! operator !
+    /// operator !
     bool operator !() const;
 
-    //! equality operator
+    /// equality operator
     bool operator ==(const TfAnyWeakPtr &rhs) const;
 
-    //! comparison operator
+    /// comparison operator
     bool operator <(const TfAnyWeakPtr &rhs) const;
 
-    //! returns the type_info of the underlying WeakPtr
+    /// returns the type_info of the underlying WeakPtr
     const std::type_info & GetTypeInfo() const;
 
-    //! Returns the TfType of the underlying WeakPtr.
+    /// Returns the TfType of the underlying WeakPtr.
     TfType const& GetType() const;
 
-    //! Return a hash value for this instance.
+    /// Return a hash value for this instance.
     size_t GetHash() const {
         return reinterpret_cast<uintptr_t>(GetUniqueIdentifier()) >> 3;
     }
@@ -286,9 +282,5 @@ TfAnyWeakPtr::_PointerHolder<Ptr>::_IsConst() const
 {
     return TfTraits::Type<typename Ptr::DataType>::isConst;
 }
-
-
-
-
 
 #endif

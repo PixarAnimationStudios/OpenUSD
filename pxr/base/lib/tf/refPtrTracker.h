@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file refPtrTracker.h
-
 #ifndef TF_REFPTRTRACKER_H
 #define TF_REFPTRTRACKER_H
+
+/// \file tf/refPtrTracker.h
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
@@ -39,7 +39,8 @@ class TfRefBase;
 template <class T> class TfRefPtr;
 
 /// \class TfRefPtrTracker
-/// \brief Provides tracking of \c TfRefPtr objects to particular objects.
+///
+/// Provides tracking of \c TfRefPtr objects to particular objects.
 ///
 /// Clients can enable, at compile time, tracking of \c TfRefPtr objects that
 /// point to particular instances of classes derived from \c TfRefBase.

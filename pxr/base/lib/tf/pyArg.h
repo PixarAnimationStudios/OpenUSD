@@ -30,9 +30,11 @@
 #include <vector>
 
 /// \class TfPyArg
-/// Class representing a function argument. This is similar to 
-/// boost::python::arg, except it's not opaque and provides more
-/// fields for documentation purposes.
+///
+/// Class representing a function argument.
+///
+/// This is similar to \c boost::python::arg, except it's not opaque and
+/// provides more fields for documentation purposes.
 class TfPyArg
 {
 public:
@@ -45,7 +47,7 @@ public:
         : _name(name), _typeDoc(typeDoc), _defaultValueDoc(defaultValueDoc)
     { }
 
-    /// Returns argument name
+    /// Returns argument name.
     const std::string& GetName() const
     { return _name; }
 
@@ -69,12 +71,12 @@ typedef std::vector<TfPyArg> TfPyArgs;
 /// positional arguments and a dictionary of keyword arguments.
 ///
 /// This function will match the given positional arguments in \p args with
-/// the ordered list of allowed arguments in \p optionalArgs. Arguments
-/// that are matched up in this way will be stored as (name, value) pairs
-/// and merged with \p kwargs in the returned dictionary.
+/// the ordered list of allowed arguments in \p optionalArgs. Arguments that
+/// are matched up in this way will be stored as (name, value) pairs and
+/// merged with \p kwargs in the returned dictionary.
 ///
 /// If \p allowExtraArgs is \c false, any unrecognized keyword or positional
-/// arguments will cause a Python TypeError to be emitted. Otherwise, 
+/// arguments will cause a Python TypeError to be emitted. Otherwise,
 /// unmatched arguments will be added to the returned tuple or dict.
 std::pair<boost::python::tuple, boost::python::dict>
 TfPyProcessOptionalArgs(

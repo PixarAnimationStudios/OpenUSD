@@ -32,17 +32,13 @@
 
 #define TF_INSTANTIATESINGLETON_H
 
-/*!
- * \file instantiateSingleton.h
- * \ingroup group_tf_ObjectCreation
- * \brief Manage a single instance of an object.
- */
-
+/// \file tf/instantiateSingleton.h
+/// \ingroup group_tf_ObjectCreation
+/// Manage a single instance of an object.
 
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/demangle.h"
-
 
 template <typename T>
 T&
@@ -73,18 +69,17 @@ TfSingleton<T>::_DestroyInstance()
     TfSingleton<T>::_instance = 0;
 }
 
-/*!
- * \hideinitializer
- * \brief Source file definition that a type is being used as a singleton.
- *
- * To use a type \c T in conjunction with \c TfSingleton, add
- * TF_INSTANTIATE_SINGLETON(T) in one source file (typically the .cpp)
- * file for class \c T.
- */
-
+/// Source file definition that a type is being used as a singleton.
+///
+/// To use a type \c T in conjunction with \c TfSingleton, add
+/// TF_INSTANTIATE_SINGLETON(T) in one source file (typically the .cpp) file
+/// for class \c T.
+///
+/// \hideinitializer
 #define TF_INSTANTIATE_SINGLETON(T)                                     \
     template <> std::mutex TfSingleton<T>::_mutex = {};                 \
     template <> T* TfSingleton<T>::_instance = 0;                       \
                                                                         \
     template T& TfSingleton< T >::_CreateInstance();                    \
     template void TfSingleton< T >::_DestroyInstance()
+

@@ -21,18 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file js/converter.h
-
 #ifndef JS_CONVERTER_H
 #define JS_CONVERTER_H
+
+/// \file js/converter.h
 
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/diagnostic.h"
 #include <boost/foreach.hpp>
 #include <boost/utility/enable_if.hpp>
 
-// \struct Js_ValueToInt
 // Converts a \c JsValue \p value holding an \c int value to a \c ValueType
 // holding an \c int64_t.
 template <class ValueType, class MapType, bool UseInt64 = true>

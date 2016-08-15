@@ -24,36 +24,28 @@
 #ifndef TF_SAFETYPECOMPARE_H
 #define TF_SAFETYPECOMPARE_H
 
+/// \file tf/safeTypeCompare.h
+/// \ingroup group_tf_RuntimeTyping
+/// Safely compare C++ RTTI type structures.
+
 #include <typeinfo>
 
-/*!
- * \file safeTypeCompare.h
- * \ingroup group_tf_RuntimeTyping
- * \brief Safely compare C++ RTTI type structures.
- */
-
-/*!
- * \brief Safely compare \c std::type_info structures.
- *
- * Returns \c true if \p t1 and \p t2 denote the same type.
- */
-
+/// Safely compare \c std::type_info structures.
+///
+/// Returns \c true if \p t1 and \p t2 denote the same type.
 inline bool TfSafeTypeCompare(const std::type_info& t1, const std::type_info& t2) {
     return t1 == t2;
 }
 
-/*!
- * \brief Safely perform a dynamic cast.
- *
- * Usage should mirror regular \c dynamic_cast:
- * \code
- *     Derived* d = TfSafeDynamic_cast<Derived*>(basePtr);
- * \endcode
- *  
- * Note that this function also works with \c TfRefPtr and \c TfWeakPtr managed
- * objects.
- */
-
+/// Safely perform a dynamic cast.
+///
+/// Usage should mirror regular \c dynamic_cast:
+/// \code
+///     Derived* d = TfSafeDynamic_cast<Derived*>(basePtr);
+/// \endcode
+///  
+/// Note that this function also works with \c TfRefPtr and \c TfWeakPtr
+/// managed objects.
 template <typename TO, typename FROM>
 TO
 TfSafeDynamic_cast(FROM* ptr) {

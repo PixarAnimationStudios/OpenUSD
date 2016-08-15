@@ -24,6 +24,9 @@
 #ifndef TF_REGISTRYMANAGER_H
 #define TF_REGISTRYMANAGER_H
 
+/// \file tf/registryManager.h
+/// \ingroup group_tf_Initialization
+
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
@@ -33,86 +36,75 @@
 
 #include <typeinfo>
 
-/*!
- * \file registryManager.h
- * \ingroup group_tf_Initialization
- */
-
-/*!
- * \class TfRegistryManager RegistryManager.h pxr/base/tf/registryManager.h
- * \ingroup group_tf_Initialization
- * \brief Manage initialization of registries.
- *
- * See \ref page_tf_RegistryManager for a detailed description.
- */
-
+/// \class TfRegistryManager
+/// \ingroup group_tf_Initialization
+///
+/// Manage initialization of registries.
+///
+/// See \ref page_tf_RegistryManager for a detailed description.
+///
 class TfRegistryManager : boost::noncopyable {
 public:
     // The type of a registration function.  The arguments are not used.
     typedef void (*RegistrationFunctionType)(void*, void*);
     typedef boost::function<void ()> UnloadFunctionType;
 
-    //! Return the singleton \c TfRegistryManager instance.
+    /// Return the singleton \c TfRegistryManager instance.
     static TfRegistryManager& GetInstance();
 
-    /*!
-     * \brief Request that any initialization for service \c T be performed.
-     *
-     * Calling \c SubscribeTo<T>() causes all existing \c
-     * TF_REGISTRY_FUNCTION() functions of type \c T to be run.  Once
-     * this call is made, when new code is dynamically loaded then any
-     * \c TF_REGISTRY_FUNCTION() functions of type \c T in the new code
-     * will automatically be run when the code is loaded.
-     */
+    /// Request that any initialization for service \c T be performed.
+    ///
+    /// Calling \c SubscribeTo<T>() causes all existing \c
+    /// TF_REGISTRY_FUNCTION() functions of type \c T to be run.  Once
+    /// this call is made, when new code is dynamically loaded then any
+    /// \c TF_REGISTRY_FUNCTION() functions of type \c T in the new code
+    /// will automatically be run when the code is loaded.
     template <class T>
     void SubscribeTo() {
         _SubscribeTo(typeid(T));
     }
 
-    /*!
-     * \brief Cancel any previous subscriptions to service \c T.
-     *
-     * After this call, newly added code will no longer have \c
-     * TF_REGISTRY_FUNCTION() functions of type \c T run.
-     */
+    /// Cancel any previous subscriptions to service \c T.
+    ///
+    /// After this call, newly added code will no longer have \c
+    /// TF_REGISTRY_FUNCTION() functions of type \c T run.
     template <class T>
     void UnsubscribeFrom() {
         _UnsubscribeFrom(typeid(T));
     }
 
-    /*!
-     * \brief Add an action to be performed at code unload time.
-     *
-     * When a \c TF_REGISTRY_FUNCTION() is run, it often needs to register an
-     * inverse action to be taken when the code containing that function is
-     * unloaded.  For example, a plugin that adds information to a registry will
-     * typically want to remove that information when the registry is unloaded.
-     *
-     * Calling \c AddFunctionForUnload() requests that the given function be run
-     * if the code from which the funtion is called is unloaded.  However, this
-     * is detectable only if this call is made from within the call chain of
-     * some \c TF_REGISTRY_FUNCTION() function.  In this case, \c
-     * AddFunctionForUnload() returns true.  Otherwise, false is returned and
-     * the function is never run.
-     *
-     * Note however that by default, no unload functions are run when code is
-     * being unloaded because exit() has been called.  This is an optimization,
-     * because most registries don't need to be deconstructed at exit time.
-     * This behavior can be changed by calling \c RunUnloadersAtExit().
-     */
+    /// Add an action to be performed at code unload time.
+    ///
+    /// When a \c TF_REGISTRY_FUNCTION() is run, it often needs to register an
+    /// inverse action to be taken when the code containing that function is
+    /// unloaded.  For example, a plugin that adds information to a registry
+    /// will typically want to remove that information when the registry is
+    /// unloaded.
+    ///
+    /// Calling \c AddFunctionForUnload() requests that the given function be
+    /// run if the code from which the funtion is called is unloaded.
+    /// However, this is detectable only if this call is made from within the
+    /// call chain of some \c TF_REGISTRY_FUNCTION() function.  In this case,
+    /// \c AddFunctionForUnload() returns true.  Otherwise, false is returned
+    /// and the function is never run.
+    ///
+    /// Note however that by default, no unload functions are run when code is
+    /// being unloaded because exit() has been called.  This is an
+    /// optimization, because most registries don't need to be deconstructed
+    /// at exit time. This behavior can be changed by calling \c
+    /// RunUnloadersAtExit().
     bool AddFunctionForUnload(const UnloadFunctionType&);
 
-    /*!
-     * \brief Run unload functions program exit time.
-     *
-     * The functions added by \c AddFunctionForUnload() are normally not run
-     * when a program exits.  For debugging purposes (e.g. checking for memory
-     * leaks) it may be desirable to run the functions even at program exit
-     * time.  This call will force functions to be run at program exit time.
-     *
-     * Note that this call does not cause construction of the singleton
-     * \c TfRegistryManager object if it does not already exist.
-     */
+    /// Run unload functions program exit time.
+    ///
+    /// The functions added by \c AddFunctionForUnload() are normally not run
+    /// when a program exits.  For debugging purposes (e.g. checking for
+    /// memory leaks) it may be desirable to run the functions even at program
+    /// exit time.  This call will force functions to be run at program exit
+    /// time.
+    ///
+    /// Note that this call does not cause construction of the singleton \c
+    /// TfRegistryManager object if it does not already exist.
     static void RunUnloadersAtExit();
 
 private:
@@ -163,7 +155,6 @@ private:
 
 // Private.
 TF_REGISTRY_LOAD_MARKER;
-
 
 // ---
 // Unique name for function called to add the registry function.  This will
@@ -236,75 +227,74 @@ TF_REGISTRY_ADDER_SIGNATURE(KEY_TYPE, TAG) \
 #define TF_REGISTRY_TEMPLATE_SIGNATURE(KEY_TYPE, TAG) \
 _Tf_RegistryFunction(KEY_TYPE*, TAG*)
 
-/*!
- * \brief Define a function that is called on demand by \c TfRegistryManager.
- *
- * This is a simpler form of TF_REGISTRY_FUNCTION_WITH_TAG() that provides
- * a tag for you, based on the MFB package, file name, and line number being
- * compiled.  For most cases (private registry functions inside .cpp files)
- * this should do.
- *
- * A very common use is to symbolically define enum names (see \c TfEnum):
- * \code
- * TF_REGISTRY_FUNCTION(TfEnum)
- * {
- *        // Bit-depth types.
- *        TF_ADD_ENUM_NAME(ELEM_BITDEPTH_8);
- *        TF_ADD_ENUM_NAME(ELEM_BITDEPTH_10);
- *        TF_ADD_ENUM_NAME(ELEM_BITDEPTH_32);
- *
- *        // Destination types.
- *        TF_ADD_ENUM_NAME(ELEM_DESTINATION_DISKFARM);
- *        TF_ADD_ENUM_NAME(ELEM_DESTINATION_JOBDIR);
- * 
- *        // Renderer types.
- *        TF_ADD_ENUM_NAME(ELEM_RENDERER_GRAIL);
- *        TF_ADD_ENUM_NAME(ELEM_RENDERER_PRMAN);
- * }
- * \endcode
- */
+/// Define a function that is called on demand by \c TfRegistryManager.
+///
+/// This is a simpler form of TF_REGISTRY_FUNCTION_WITH_TAG() that provides
+/// a tag for you, based on the MFB package, file name, and line number being
+/// compiled.  For most cases (private registry functions inside .cpp files)
+/// this should do.
+///
+/// A very common use is to symbolically define enum names (see \c TfEnum):
+/// \code
+/// TF_REGISTRY_FUNCTION(TfEnum)
+/// {
+///        // Bit-depth types.
+///        TF_ADD_ENUM_NAME(ELEM_BITDEPTH_8);
+///        TF_ADD_ENUM_NAME(ELEM_BITDEPTH_10);
+///        TF_ADD_ENUM_NAME(ELEM_BITDEPTH_32);
+///
+///        // Destination types.
+///        TF_ADD_ENUM_NAME(ELEM_DESTINATION_DISKFARM);
+///        TF_ADD_ENUM_NAME(ELEM_DESTINATION_JOBDIR);
+/// 
+///        // Renderer types.
+///        TF_ADD_ENUM_NAME(ELEM_RENDERER_GRAIL);
+///        TF_ADD_ENUM_NAME(ELEM_RENDERER_PRMAN);
+/// }
+/// \endcode
+///
+/// \hideinitializer
 #define TF_REGISTRY_FUNCTION(KEY_TYPE) \
     TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, __LINE__)
 
-/*!
- * \brief Define a function that is called on demand by \c TfRegistryManager.
- *
- * Here is an example of using this macro:
- * \code
- * #include "pxr/base/tf/registryManager.h"
- *
- * TF_REGISTRY_FUNCTION_WITH_TAG(XyzRegistry, MyTag)
- * {
- *      // calls to, presumably, XyzRegistry:
- *      ...
- * }
- *\endcode
- *
- * Given the above, a call to \c TfRegistryManager::SubscribeTo<XyzRegistry>()
- * will cause the above function to be immediately run.  (If the above function
- * has not yet been loaded, but is loaded in the future, it will be run then.)
- * The second type, \c MyType, is unimportant, but cannot be repeated with the
- * first type (i.e. there can be at most one call to \c TF_REGISTRY_FUNCTION()
- * for a given pair of types).
- *
- * In contrast to the typical static-constructor design, the code within a
- * TF_REGISTRY_FUNCTION() function is (usually) not run before main();
- * specifically, it is not run unless and until a call to SubscribeTo<T>()
- * occurs.  This is important: if there are no subscribers, the code may never
- * be run.
- *
- * Note two restrictions: the type-names \p KEY_TYPE and \c TAG passed
- * to this macro must be untemplated, and not qualified with a
- * namespace. (Translation: the name as given must consist solely of letters and
- * numbers: no "\<", "\>" or ":" characters are allowed.)  KEY_TYPE may be inside
- * a namespace but must not be explicitly qualified; you must use 'using
- * namespace &lt;foo\>::KEY_TYPE' before calling this macro.  Every use of \c
- * TF_REGISTRY_FUNCTION() must use a different pair for \c KEY_TYPE and \c
- * TAG or a multiply defined symbol will result at link time.  Note
- * that this means the same KEY_TYPE in two or more namespaces may not be
- * registered in more than one namespace.
- *
- */
+/// Define a function that is called on demand by \c TfRegistryManager.
+///
+/// Here is an example of using this macro:
+/// \code
+/// #include "pxr/base/tf/registryManager.h"
+///
+/// TF_REGISTRY_FUNCTION_WITH_TAG(XyzRegistry, MyTag)
+/// {
+///      // calls to, presumably, XyzRegistry:
+///      ...
+/// }
+///\endcode
+///
+/// Given the above, a call to \c TfRegistryManager::SubscribeTo<XyzRegistry>()
+/// will cause the above function to be immediately run.  (If the above function
+/// has not yet been loaded, but is loaded in the future, it will be run then.)
+/// The second type, \c MyType, is unimportant, but cannot be repeated with the
+/// first type (i.e. there can be at most one call to \c TF_REGISTRY_FUNCTION()
+/// for a given pair of types).
+///
+/// In contrast to the typical static-constructor design, the code within a
+/// TF_REGISTRY_FUNCTION() function is (usually) not run before main();
+/// specifically, it is not run unless and until a call to SubscribeTo<T>()
+/// occurs.  This is important: if there are no subscribers, the code may never
+/// be run.
+///
+/// Note two restrictions: the type-names \p KEY_TYPE and \c TAG passed
+/// to this macro must be untemplated, and not qualified with a
+/// namespace. (Translation: the name as given must consist solely of letters and
+/// numbers: no "\<", "\>" or ":" characters are allowed.)  KEY_TYPE may be inside
+/// a namespace but must not be explicitly qualified; you must use 'using
+/// namespace &lt;foo\>::KEY_TYPE' before calling this macro.  Every use of \c
+/// TF_REGISTRY_FUNCTION() must use a different pair for \c KEY_TYPE and \c
+/// TAG or a multiply defined symbol will result at link time.  Note
+/// that this means the same KEY_TYPE in two or more namespaces may not be
+/// registered in more than one namespace.
+///
+/// \hideinitializer
 #define TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, TAG) \
     TF_REGISTRY_DEFINE(KEY_TYPE, TAG)
 

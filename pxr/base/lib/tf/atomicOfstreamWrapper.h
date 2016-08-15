@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file Tf/AtomicOfstreamWrapper.h
-
 #ifndef TF_ATOMIC_OSTREAM_WRAPPER_H
 #define TF_ATOMIC_OSTREAM_WRAPPER_H
+
+/// \file tf/atomicOfstreamWrapper.h
+/// Atomic file writer with ofstream interface.
 
 #include <boost/noncopyable.hpp>
 #include <fstream>

@@ -24,15 +24,10 @@
 #ifndef GF_DECLARE_H
 #define GF_DECLARE_H
 
-
-
-/*!
- * \file declare.h
- * \brief Declares Gf types.
- *
- * This file provides typedefs for Gf types.
- *
- */
+/// \file gf/declare.h
+/// Declares Gf types.
+///
+/// This file provides typedefs for Gf types.
 
 class half;
 class GfBBox3d;
@@ -82,8 +77,5 @@ class GfVec4d;
 class GfVec4f;
 class GfVec4h;
 class GfVec4i;
-
-
-
 
 #endif

@@ -24,22 +24,24 @@
 #ifndef TF_MOVE_H
 #define TF_MOVE_H
 
+/// \file tf/move.h
+
 #include <algorithm>
 
-//! A tag type used to indicate move semantics
+/// A tag type used to indicate move semantics
 enum TfMoveTagType {
     TfMoveTag
 };
 
-//! This function may be overloaded to optimize moving \a value to \a location,
-//! allowing the arbitrary modification of \a value.  \a location is a pointer
-//! to space correctly sized and aligned to store a \p T instance.  When this
-//! function is called no actual object of type \a T exists there.
-//! Implementations should placement-new or otherwise create an object of type
-//! \a T at that location.  This function is allowed to modify \a value in order
-//! to move its contents to the new object created in \a location.  The default
-//! implementation placement-news a value-initialized \p T instance in
-//! \p location, then does an unqualified call to swap(*location, value).
+/// This function may be overloaded to optimize moving \a value to \a
+/// location, allowing the arbitrary modification of \a value.  \a location is
+/// a pointer to space correctly sized and aligned to store a \p T instance.
+/// When this function is called no actual object of type \a T exists there.
+/// Implementations should placement-new or otherwise create an object of type
+/// \a T at that location.  This function is allowed to modify \a value in
+/// order to move its contents to the new object created in \a location.  The
+/// default implementation placement-news a value-initialized \p T instance in
+/// \p location, then does an unqualified call to swap(*location, value).
 template <class T>
 void TfMoveTo(T *location, T &value) {
     using std::swap;

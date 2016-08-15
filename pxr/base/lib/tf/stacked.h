@@ -25,7 +25,6 @@
 #define TF_STACKED_H
 
 #include "pxr/base/tf/diagnostic.h"
-
 #include "pxr/base/arch/demangle.h"
 
 #include <boost/mpl/if.hpp>
@@ -35,7 +34,6 @@
 
 #include <atomic>
 #include <vector>
-
 
 /// \class TfStackedAccess
 ///

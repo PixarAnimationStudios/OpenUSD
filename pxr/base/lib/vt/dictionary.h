@@ -26,6 +26,8 @@
 #ifndef VT_DICTIONARY_H
 #define VT_DICTIONARY_H
 
+/// \file vt/dictionary.h
+
 #include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
 
@@ -49,16 +51,12 @@
 #  define VT_DICTIONARY_MAX_ARITY 7
 #endif // VT_DICTIONARY_MAX_ARITY
 
-
-/// \file vt/dictionary.h
-
-
 /// \defgroup group_vtdict_functions VtDictionary Functions
 /// Functions for manipulating VtDictionary objects.
  
-///
 /// \class VtDictionary
-/// \brief A map with string keys and VtValue values.
+///
+/// A map with string keys and VtValue values.
 ///
 /// VtDictionary converts to and from a python dictionary as long
 /// as each element contains either
@@ -68,6 +66,7 @@
 ///
 /// For a list of functions that can manipulate VtDictionary objects, see the  
 /// \link group_vtdict_functions VtDictionary Functions \endlink group page .
+///
 class VtDictionary {
     typedef std::map<std::string, VtValue> _Map;
     std::unique_ptr<_Map> _dictMap;
@@ -351,7 +350,7 @@ VtDictionaryIsHolding( const VtDictionary &dictionary,
 }
 
 
-/// \brief Return a value held in a VtDictionary by reference.
+/// Return a value held in a VtDictionary by reference.
 ///
 /// If \p key is in \p dictionary and the corresponding value is of type
 /// \p T, returns a reference to the value.
@@ -359,8 +358,8 @@ VtDictionaryIsHolding( const VtDictionary &dictionary,
 /// \remark If \p key is not in \p dictionary, or the value for \p key is of
 /// the wrong type, a fatal error occurs, so clients should always call
 /// VtDictionaryIsHolding first.
-/// \ingroup group_vtdict_functions
 ///
+/// \ingroup group_vtdict_functions
 template <typename T>
 const T &
 VtDictionaryGet( const VtDictionary &dictionary,
@@ -398,9 +397,8 @@ struct Vt_DefaultGenerator {
 // VtDictionaryGet.
 extern Vt_DefaultGenerator VtDefault;
 
-
-/// \brief Return a value held in a VtDictionary, or a default value either if
-/// the supplied key is missing or if the types do not match.
+/// Return a value held in a VtDictionary, or a default value either if the
+/// supplied key is missing or if the types do not match.
 ///
 /// For example, this code will get a bool value under key "key" if "key" has a
 /// boolean value in the dictionary.   If there is no such key, or the value
@@ -409,8 +407,8 @@ extern Vt_DefaultGenerator VtDefault;
 /// \code
 ///     bool val = VtDictionaryGet<bool>(dict, "key", VtDefault = false);
 /// \endcode
-/// \ingroup group_vtdict_functions
 ///
+/// \ingroup group_vtdict_functions
 template <class T, class U>
 T VtDictionaryGet( const VtDictionary &dictionary,
                    const std::string &key,
@@ -424,125 +422,114 @@ T VtDictionaryGet( const VtDictionary &dictionary,
 
 
 
-/// \brief Creates a dictionary containing \p strong composed over \p weak.
+/// Creates a dictionary containing \p strong composed over \p weak.
 ///
-/// The new dictionary will contain all key-value pairs from
-/// \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The new dictionary will contain all key-value pairs from \p strong
+/// together with the key-value pairs from \p weak whose keys are not in \p
+/// strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
 VtDictionary
 VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p strong to become \p strong composed over \p weak.
+/// Updates \p strong to become \p strong composed over \p weak.
 ///
-/// The updated contents of \p strong will be all key-value pairs
-/// from \p stong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p strong will be all key-value pairs from \p
+/// stong together with the key-value pairs from \p weak whose keys are not in
+/// \p strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
 void
 VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p weak to become \p strong composed over \p weak.
+/// Updates \p weak to become \p strong composed over \p weak.
 ///
-/// The updated contents of \p weak will be all key-value pairs
-/// from \p stong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p weak will be all key-value pairs from \p stong
+/// together with the key-value pairs from \p weak whose keys are not in \p
+/// strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
 void
 VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
                  bool coerceToWeakerOpinionType = false);
 
-/// \brief Returns a dictionary containing \p strong recursively
-/// composed over \p weak.
+/// Returns a dictionary containing \p strong recursively composed over \p
+/// weak.
 ///
-/// The new dictionary will be all key-value pairs
-/// from \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The new dictionary will be all key-value pairs from \p strong together
+/// with the key-value pairs from \p weak whose keys are not in \p strong.
 ///
-/// If a value for a key is in turn a dictionary, and both \a strong and \a weak
-/// have values for that key, then the result  may not contain strong's 
-/// exact value for the subdict.
-/// Rather, the result will contain a subdict that is the result of a 
-/// recursive call to this method.  Hence, the subdict, too, will
-/// contain values from \a weak that are not found in \a strong.
+/// If a value for a key is in turn a dictionary, and both \a strong and \a
+/// weak have values for that key, then the result  may not contain strong's
+/// exact value for the subdict. Rather, the result will contain a subdict
+/// that is the result of a recursive call to this method.  Hence, the
+/// subdict, too, will contain values from \a weak that are not found in \a
+/// strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-///
 VtDictionary
 VtDictionaryOverRecursive(const VtDictionary &strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p strong to become \p strong composed recursively over 
-/// \p weak.
+/// Updates \p strong to become \p strong composed recursively over \p weak.
 ///
-/// The updated contents of \p strong will be all key-value pairs
-/// from \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p strong will be all key-value pairs from \p
+/// strong together with the key-value pairs from \p weak whose keys are not
+/// in \p strong.
 ///
-/// If a value for a key is in turn a dictionary, and both \a strong and \a weak
-/// have values for that key, then \a strong's subdict may not be left 
-/// untouched.  Rather, the dictionary will 
-/// be replaced by the result of a recursive call to this method in which
-/// \a strong's subdictionary will have entries added if they are contained
-/// in \a weak but not in \a strong
+/// If a value for a key is in turn a dictionary, and both \a strong and \a
+/// weak have values for that key, then \a strong's subdict may not be left
+/// untouched.  Rather, the dictionary will be replaced by the result of a
+/// recursive call to this method in which \a strong's subdictionary will have
+/// entries added if they are contained in \a weak but not in \a strong
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
 void
 VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p weak to become \p strong composed recursively over 
-/// \p weak.
+/// Updates \p weak to become \p strong composed recursively over \p weak.
 ///
-/// The updated contents of \p weak will be all key-value pairs
-/// from \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p weak will be all key-value pairs from \p strong
+/// together with the key-value pairs from \p weak whose keys are not in \p
+/// strong.
 ///
-/// If a value is in turn a dictionary, the dictionary in \a weak may not 
-/// be replaced wholesale by that of \a strong. Rather, the dictionary will 
-/// be replaced by the result of a recursive call to this method in which
-/// \a weak's subdictionary is recursively overlayed by \a strong's 
+/// If a value is in turn a dictionary, the dictionary in \a weak may not be
+/// replaced wholesale by that of \a strong. Rather, the dictionary will be
+/// replaced by the result of a recursive call to this method in which \a
+/// weak's subdictionary is recursively overlayed by \a strong's
 /// subdictionary.
 ///
-/// The result is that no key/value pairs of \a will be lost in 
-/// nested dictionaries. Rather, only non-dictionary values will be overwritten
+/// The result is that no key/value pairs of \a will be lost in nested
+/// dictionaries. Rather, only non-dictionary values will be overwritten
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
 void
 VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak,
                           bool coerceToWeakerOpinionType = false);
@@ -599,21 +586,17 @@ bool VtDictionaryPrettyPrintToFile(
 #include "pxr/base/vt/dictionary.h"
 */
 
-
 #endif /* VT_DICTIONARY_H */
-
 
 #else // BOOST_PP_IS_ITERATING
 
-
 #define N BOOST_PP_ITERATION()
 
-
-/// \brief In-place creation of a VtDictionary.
+/// In-place creation of a VtDictionary.
 ///
 /// Creates a VtDictionary from a set of VtKeyValue pairs.
-/// \ingroup group_vtdict_functions
 ///
+/// \ingroup group_vtdict_functions
 inline VtDictionary VtMakeDictionary(
     BOOST_PP_ENUM_PARAMS(N, const VtKeyValue &keyValue))
 {
@@ -638,6 +621,5 @@ inline VtDictionary VtMakeDictionary(
 }
 
 #undef N
-
 
 #endif // BOOST_PP_IS_ITERATING

@@ -24,8 +24,8 @@
 #ifndef TF_TEMPLATE_STRING_H
 #define TF_TEMPLATE_STRING_H
 
-///
-/// \file Tf/TemplateString.h
+/// \file tf/templateString.h
+
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -132,5 +132,3 @@ private:
 };
 
 #endif /* TF_TEMPLATE_STRING_H */
-
-

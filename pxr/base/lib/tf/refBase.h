@@ -24,52 +24,46 @@
 #ifndef TF_REFBASE_H
 #define TF_REFBASE_H
 
+/// \file tf/refBase.h
+/// \ingroup group_tf_Memory
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/refCount.h"
 
-/*!
- * \file refBase.h
- * \ingroup group_tf_Memory
- */
-
-
-
 template <class T> class TfRefPtr;
 template <class T> class TfWeakPtr;
 
-/*!
- * \class TfRefBase RefBase.h pxr/base/tf/refBase.h
- * \ingroup group_tf_Memory
- * \brief Enable a concrete base class for use with \c TfRefPtr.
- *
- * You should be familiar with the \c TfRefPtr type before reading further.
- *
- * A class (but not an interface class) is enabled for reference
- * counting via the \c TfRefPtr type by publicly deriving from \c
- * TfRefBase.
- *
- * For example,
- * \code
- *     #include "pxr/base/tf/refPtr.h"
- *
- *     class Simple : public TfRefBase {
- *     public:
- *         TfRefPtr<Simple> New() {
- *             return TfCreateRefPtr(new Simple);
- *         }
- *     private:
- *         Simple();
- *     };
- * \endcode
- *
- * The class \c Simple can now only be manipulated in terms of
- * a \c TfRefPtr<Simple>.
- *
- * To disable the cost of the "unique changed" system, derive
- * from TfSimpleRefBase instead.
- */
-
+/// \class TfRefBase
+/// \ingroup group_tf_Memory
+///
+/// Enable a concrete base class for use with \c TfRefPtr.
+///
+/// You should be familiar with the \c TfRefPtr type before reading further.
+///
+/// A class (but not an interface class) is enabled for reference
+/// counting via the \c TfRefPtr type by publicly deriving from \c
+/// TfRefBase.
+///
+/// For example,
+/// \code
+///     #include "pxr/base/tf/refPtr.h"
+///
+///     class Simple : public TfRefBase {
+///     public:
+///         TfRefPtr<Simple> New() {
+///             return TfCreateRefPtr(new Simple);
+///         }
+///     private:
+///         Simple();
+///     };
+/// \endcode
+///
+/// The class \c Simple can now only be manipulated in terms of
+/// a \c TfRefPtr<Simple>.
+///
+/// To disable the cost of the "unique changed" system, derive
+/// from TfSimpleRefBase instead.
+///
 class TfRefBase {
 public:
 
@@ -82,12 +76,12 @@ public:
 
     TfRefBase() : _shouldInvokeUniqueChangedListener(false) { }
 
-    //! Return the current reference count of this object.
+    /// Return the current reference count of this object.
     size_t GetCurrentCount() const {
         return GetRefCount().Get();
     }
 
-    //! Return true if only one \c TfRefPtr points to this object.
+    /// Return true if only one \c TfRefPtr points to this object.
     bool IsUnique() const {
         return GetRefCount().Get() == 1;
     }
@@ -128,15 +122,15 @@ private:
     TfCreateRefPtrFromProtectedWeakPtr(TfWeakPtr<T> const &);
 };
 
-/*!
- * \class TfSimpleRefBase SimpleRefBase.h pxr/base/tf/refBase.h
- * \ingroup group_tf_Memory
- * \brief Enable a concrete base class for use with \c TfRefPtr that
- * inhibits the "unique changed" facility of TfRefPtr.
- *
- * Derive from this class if you don't plan on wrapping your
- * reference-counted object via boost::python.
- */
+/// \class TfSimpleRefBase
+/// \ingroup group_tf_Memory
+///
+/// Enable a concrete base class for use with \c TfRefPtr that inhibits the
+/// "unique changed" facility of TfRefPtr.
+///
+/// Derive from this class if you don't plan on wrapping your
+/// reference-counted object via boost::python.
+///
 class TfSimpleRefBase : public TfRefBase {
 public:
     virtual ~TfSimpleRefBase();

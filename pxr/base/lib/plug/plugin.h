@@ -41,9 +41,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PlugPlugin);
 
 class TfType;
 
+/// \class PlugPlugin
 ///
-/// \class PlugPlugin plugin.h pxr/base/plug/plugin.h
-/// \brief Defines an interface to registered plugins.
+/// Defines an interface to registered plugins.
 ///
 /// Plugins are registered using the interfaces in \c PlugRegistry.
 ///
@@ -52,12 +52,11 @@ class TfType;
 /// the plugin and to retrieve information about the
 /// classes implemented by the plugin.
 ///
-
 class PLUG_API PlugPlugin : public TfRefBase, public TfWeakBase {
 public:
     virtual ~PlugPlugin();
 
-    /// \brief Loads the plugin.
+    /// Loads the plugin.
     /// This is a noop if the plugin is already loaded.
     bool Load();
 
@@ -187,9 +186,9 @@ private:
     friend class PlugThisPlugin;
 };
 
-/// 
 /// \class PlugThisPlugin
-/// \brief An object that refers to the plugin it's in.
+///
+/// An object that refers to the plugin it's in.
 ///
 /// If you have a plugin that wants access to its own plugInfo metadata
 /// (especially its resources) then make a \b static instance of this

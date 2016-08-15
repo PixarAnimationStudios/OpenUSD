@@ -24,8 +24,7 @@
 #ifndef WORK_THREAD_LIMITS_H
 #define WORK_THREAD_LIMITS_H
 
-///
-///\file work/threadLimits.h
+/// \file work/threadLimits.h
 
 /// Return the current concurrency limit, always >= 1.
 ///

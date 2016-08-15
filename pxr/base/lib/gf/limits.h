@@ -24,22 +24,18 @@
 #ifndef GF_LIMITS_H
 #define GF_LIMITS_H
 
-/*!
- * \file limits.h
- * \ingroup group_gf_BasicMath
- * \brief Defines useful mathematical limits.
- */
+/// \file gf/limits.h
+/// \ingroup group_gf_BasicMath
+/// Defines useful mathematical limits.
 
-//!
-// This constant is used to determine whether the length of a vector
-// is too small to handle accurately.
-// \ingroup group_gf_BasicMath
+/// This constant is used to determine whether the length of a vector is too
+/// small to handle accurately.
+/// \ingroup group_gf_BasicMath
 #define GF_MIN_VECTOR_LENGTH  1e-10
 
-//!
-// This constant is used to determine when a set of basis vectors is close
-// to orthogonal.
-// \ingroup group_gf_LinearAlgebra
+/// This constant is used to determine when a set of basis vectors is close to
+/// orthogonal.
+/// \ingroup group_gf_LinearAlgebra
 #define GF_MIN_ORTHO_TOLERANCE 1e-6
 
 #endif

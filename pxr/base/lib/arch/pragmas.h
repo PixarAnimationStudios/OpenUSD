@@ -24,16 +24,14 @@
 #ifndef ARCH_PRAGMAS_H
 #define ARCH_PRAGMAS_H
 
-#include "pxr/base/arch/defines.h"
-
-///
 /// \file arch/pragmas.h
-/// \brief Pragmas for controlling compiler-specific behaviors.
-
+/// Pragmas for controlling compiler-specific behaviors.
+///
 /// This header contains pragmas used to control compiler-specific behaviors.
 /// Behaviors that are not supported or required by a certain compiler should
 /// be implemented as a no-op.
-///
+
+#include "pxr/base/arch/defines.h"
 
 #if defined(ARCH_COMPILER_GCC)
 

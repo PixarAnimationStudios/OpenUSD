@@ -28,6 +28,9 @@
 #ifndef GF_RANGE2D_H
 #define GF_RANGE2D_H
 
+/// \file gf/range2d.h
+/// \ingroup group_gf_BasicGeometry
+
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/traits.h"
@@ -38,312 +41,301 @@
 #include <cstddef>
 #include <iosfwd>
 
-/*!
- * \file range2d.h
- * \ingroup group_gf_BasicGeometry
- */
-
 class GfRange2d;
 class GfRange2f;
 
 template <>
 struct GfIsGfRange<class GfRange2d> { static const bool value = true; };
 
-//!
-// \class GfRange2d range2d.h "pxr/base/gf/range2d.h"
-// \ingroup group_gf_BasicGeometry
-// \brief Basic type: 2-dimensional floating point range.
-//
-// This class represents a 2-dimensional range (or interval)
-// All operations are component-wise and conform to interval mathematics.
-// An empty range is one where max < min.  The default empty is
-// [FLT_MAX,-FLT_MAX]
-
+/// \class GfRange2d
+/// \ingroup group_gf_BasicGeometry
+///
+/// Basic type: 2-dimensional floating point range.
+///
+/// This class represents a 2-dimensional range (or interval) All
+/// operations are component-wise and conform to interval mathematics. An
+/// empty range is one where max < min.
+/// The default empty is [FLT_MAX,-FLT_MAX]
 class GfRange2d
 {
 public:
 
-    //! Helper typedef.
+    /// Helper typedef.
     typedef GfVec2d MinMaxType;
 
     static const size_t dimension = GfVec2d::dimension;
     typedef GfVec2d::ScalarType ScalarType;
 
-    //!   Sets the range to an empty interval
-    // \warning Only found in libtess (once) and libgpt (once) Deprecated?
+    /// Sets the range to an empty interval
+    // TODO check whether this can be deprecated.
     void inline SetEmpty() {
         _min[0] = _min[1] =  FLT_MAX;
         _max[0] = _max[1] = -FLT_MAX;
     }
 
-    //! The default constructor creates an empty range.
+    /// The default constructor creates an empty range.
     GfRange2d() {
         SetEmpty();
     }
 
-    //! This constructor initializes the minimum and maximum points.
+    /// This constructor initializes the minimum and maximum points.
     GfRange2d(const GfVec2d &min, const GfVec2d &max)
         : _min(min), _max(max)
     {
     }
 
-    //! Returns the minimum value of the range.
+    /// Returns the minimum value of the range.
     const GfVec2d &GetMin() const { return _min; }
 
-    //! Returns the maximum value of the range.
+    /// Returns the maximum value of the range.
     const GfVec2d &GetMax() const { return _max; }
 
-    //! Returns the size of the range.
+    /// Returns the size of the range.
     GfVec2d GetSize() const { return _max - _min; }
 
-    //! Sets the minimum value of the range.
+    /// Sets the minimum value of the range.
     void SetMin(const GfVec2d &min) { _min = min; }
 
-    //! Sets the maximum value of the range.
+    /// Sets the maximum value of the range.
     void SetMax(const GfVec2d &max) { _max = max; }
 
-    //! Returns whether the range is empty (max < min).
+    /// Returns whether the range is empty (max < min).
     bool IsEmpty() const {
         return _min[0] > _max[0] || _min[1] > _max[1];
     }
 
-    //! Modifies the range if necessary to surround the given value.
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Modifies the range if necessary to surround the given value.
+    /// \deprecated Use UnionWith() instead.
     void ExtendBy(const GfVec2d &point) { UnionWith(point); }
 
-    //! Modifies the range if necessary to surround the given range.
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Modifies the range if necessary to surround the given range.
+    /// \deprecated Use UnionWith() instead.
     void ExtendBy(const GfRange2d &range) { UnionWith(range); }
 
-    //!
-    // Returns true if the \p point is located inside the range.
-    // As with all operations of this type, the range is assumed to include its
-    // extrema.
+    /// Returns true if the \p point is located inside the range. As with all
+    /// operations of this type, the range is assumed to include its extrema.
     bool Contains(const GfVec2d &point) const {
         return (point[0] >= _min[0] && point[0] <= _max[0]
              && point[1] >= _min[1] && point[1] <= _max[1]);
     }
 
-    //!
-    // Returns true if the \p range is located entirely inside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
+    /// Returns true if the \p range is located entirely inside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
     bool Contains(const GfRange2d &range) const {
-	return Contains(range._min) && Contains(range._max);
+        return Contains(range._min) && Contains(range._max);
     }
 
-    //!
-    // Returns true if the \p point is located inside the range.
-    // As with all operations of this type, the range is assumed to include its
-    // extrema.
-    // \warning Deprecated - use \c Contains instead.
+    /// Returns true if the \p point is located inside the range. As with all
+    /// operations of this type, the range is assumed to include its extrema.
+    /// \deprecated Use Contains() instead.
     bool IsInside(const GfVec2d &point) const {
         return Contains(point);
     }
 
-    //!
-    // Returns true if the \p range is located entirely inside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
-    // \warning Deprecated - use \c Contains instead.
+    /// Returns true if the \p range is located entirely inside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
+    /// \deprecated Use Contains() instead.
     bool IsInside(const GfRange2d &range) const {
-	return Contains(range);
+        return Contains(range);
     }
 
-    //!
-    // Returns true if the \p range is located entirely outside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
+    /// Returns true if the \p range is located entirely outside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
     bool IsOutside(const GfRange2d &range) const {
         return ((range._max[0] < _min[0] || range._min[0] > _max[0])
              || (range._max[1] < _min[1] || range._min[1] > _max[1]));
     }
 
-    //! Returns the smallest \c GfRange2d which contains both \p a and \p b
+    /// Returns the smallest \c GfRange2d which contains both \p a and \p b.
     static GfRange2d GetUnion(const GfRange2d &a, const GfRange2d &b) {
-	GfRange2d res = a;
-	_FindMin(res._min,b._min);
-	_FindMax(res._max,b._max);
-	return res;
+        GfRange2d res = a;
+        _FindMin(res._min,b._min);
+        _FindMax(res._max,b._max);
+        return res;
     }
 
-    //! Extend \p this to include \p b
+    /// Extend \p this to include \p b.
     const GfRange2d &UnionWith(const GfRange2d &b) {
-	_FindMin(_min,b._min);
-	_FindMax(_max,b._max);
-	return *this;
+        _FindMin(_min,b._min);
+        _FindMax(_max,b._max);
+        return *this;
     }
 
-    //! Extend \p this to include \p b
+    /// Extend \p this to include \p b.
     const GfRange2d &UnionWith(const GfVec2d &b) {
-	_FindMin(_min,b);
-	_FindMax(_max,b);
-	return *this;
+        _FindMin(_min,b);
+        _FindMax(_max,b);
+        return *this;
     }
 
-    //! Returns the smallest \c GfRange2d which contains both \p a and \p b
-    // \warning Deprecated - use \c GetUnion instead.
+    /// Returns the smallest \c GfRange2d which contains both \p a and \p b
+    /// \deprecated Use GetUnion() instead.
     static GfRange2d Union(const GfRange2d &a, const GfRange2d &b) {
         return GetUnion(a, b);
     }
 
-    //! Extend \p this to include \p b
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Extend \p this to include \p b.
+    /// \deprecated Use UnionWith() instead.
     const GfRange2d &Union(const GfRange2d &b) {
         return UnionWith(b);
     }
 
-    //! Extend \p this to include \p b
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Extend \p this to include \p b.
+    /// \deprecated Use UnionWith() instead.
     const GfRange2d &Union(const GfVec2d &b) {
         return UnionWith(b);
     }
 
-    //! Returns a \c GfRange2d that describes the intersection of \p a and \p b
+    /// Returns a \c GfRange2d that describes the intersection of \p a and \p b.
     static GfRange2d GetIntersection(const GfRange2d &a, const GfRange2d &b) {
-	GfRange2d res = a;
-	_FindMax(res._min,b._min);
-	_FindMin(res._max,b._max);
-	return res;
+        GfRange2d res = a;
+        _FindMax(res._min,b._min);
+        _FindMin(res._max,b._max);
+        return res;
     }
 
-    //! Returns a \c GfRange2d that describes the intersection of \p a and \p b
-    // \warning Deprecated - use \c GetIntersection instead.
+    /// Returns a \c GfRange2d that describes the intersection of \p a and \p b.
+    /// \deprecated Use GetIntersection() instead.
     static GfRange2d Intersection(const GfRange2d &a, const GfRange2d &b) {
         return GetIntersection(a, b);
     }
 
-    //! Modifies this range to hold its intersection with \p b and returns the
-    //  result
+    /// Modifies this range to hold its intersection with \p b and returns the
+    /// result
     const GfRange2d &IntersectWith(const GfRange2d &b) {
-	_FindMax(_min,b._min);
-	_FindMin(_max,b._max);
-	return *this;
+        _FindMax(_min,b._min);
+        _FindMin(_max,b._max);
+        return *this;
     }
 
-    //! Modifies this range to hold its intersection with \p b and returns the
-    //  result
-    // \warning Deprecated - use \c IntersectWith instead.
+    /// Modifies this range to hold its intersection with \p b and returns the
+    /// result.
+    /// \deprecated Use IntersectWith() instead.
     const GfRange2d &Intersection(const GfRange2d &b) {
         return IntersectWith(b);
     }
 
-    //! unary sum.
+    /// unary sum.
     GfRange2d operator +=(const GfRange2d &b) {
-	_min += b._min;
-	_max += b._max;
-	return *this;
+        _min += b._min;
+        _max += b._max;
+        return *this;
     }
 
-    //! unary difference.
+    /// unary difference.
     GfRange2d operator -=(const GfRange2d &b) {
-	_min -= b._max;
-	_max -= b._min;
-	return *this;
+        _min -= b._max;
+        _max -= b._min;
+        return *this;
     }
 
-    //! unary multiply
+    /// unary multiply.
     GfRange2d operator *=(double m) {
-	if (m > 0) {
-	    _min *= m;
-	    _max *= m;
-	} else {
-	    GfVec2d tmp = _min;
-	    _min = _max * m;
-	    _max = tmp * m;
-	}
-	return *this;
+        if (m > 0) {
+            _min *= m;
+            _max *= m;
+        } else {
+            GfVec2d tmp = _min;
+            _min = _max * m;
+            _max = tmp * m;
+        }
+        return *this;
     }
-    //! unary division.
+
+    /// unary division.
     GfRange2d operator /=(double m) {
-	return *this *= (1.0 / m);
+        return *this *= (1.0 / m);
     }
 
-    //! binary sum.
+    /// binary sum.
     GfRange2d operator +(const GfRange2d &b) const {
-	return GfRange2d(_min + b._min, _max + b._max);
+        return GfRange2d(_min + b._min, _max + b._max);
     }
 
 
-    //! binary difference.
+    /// binary difference.
     GfRange2d operator -(const GfRange2d &b) const {
-	return GfRange2d(_min - b._max, _max - b._min);
+        return GfRange2d(_min - b._max, _max - b._min);
     }
 
-    //! scalar multiply.
+    /// scalar multiply.
     friend GfRange2d operator *(double m, const GfRange2d &r) {
-	return (m > 0 ? 
-		GfRange2d(r._min*m, r._max*m) : 
-		GfRange2d(r._max*m, r._min*m));
+        return (m > 0 ? 
+            GfRange2d(r._min*m, r._max*m) : 
+            GfRange2d(r._max*m, r._min*m));
     }
 
-    //! scalar multiply.
+    /// scalar multiply.
     friend GfRange2d operator *(const GfRange2d &r, double m) {
-	return (m > 0 ? 
-		GfRange2d(r._min*m, r._max*m) : 
-		GfRange2d(r._max*m, r._min*m));
+        return (m > 0 ? 
+            GfRange2d(r._min*m, r._max*m) : 
+            GfRange2d(r._max*m, r._min*m));
     }
 
-    //! scalar divide.
+    /// scalar divide.
     friend GfRange2d operator /(const GfRange2d &r, double m) {
-	return r * (1.0 / m);
+        return r * (1.0 / m);
     }
 
-    //! hash.
+    /// hash.
     friend inline size_t hash_value(const GfRange2d &r) {
         size_t h = 0;
         boost::hash_combine(h, r._min);
         boost::hash_combine(h, r._max);
         return h;
-    }        
-
-    //! The min and max points must match exactly for equality.
-    bool operator ==(const GfRange2d &b) const {
-	return (_min == b._min && _max == b._max);
     }
+
+    /// The min and max points must match exactly for equality.
+    bool operator ==(const GfRange2d &b) const {
+        return (_min == b._min && _max == b._max);
+    }
+
     bool operator !=(const GfRange2d &b) const {
         return !(*this == b);
     }
 
-    //! Compare this range to a GfRange2f.
-    //
-    // The values must match exactly and it does exactly what you
-    // might expect when comparing float and double values.
+    /// Compare this range to a GfRange2f.
+    ///
+    /// The values must match exactly and it does exactly what you might
+    /// expect when comparing float and double values.
     inline bool operator ==(const GfRange2f& other) const;
     inline bool operator !=(const GfRange2f& other) const;
 
-    //! Compute the squared distance from a point to the range.
+    /// Compute the squared distance from a point to the range.
     double GetDistanceSquared(const GfVec2d &p) const;
 
-    //! Returns the ith corner of the range, in the following order:
-    // SW, SE, NW, NE.
+    /// Returns the ith corner of the range, in the following order:
+    /// SW, SE, NW, NE.
     GfVec2d GetCorner(size_t i) const;
 
-    //! Returns the ith quadrant of the range, in the following order:
-    // SW, SE, NW, NE.
+    /// Returns the ith quadrant of the range, in the following order:
+    /// SW, SE, NW, NE.
     GfRange2d GetQuadrant(size_t i) const;
 
-    //! The unit square.
+    /// The unit square.
     static const GfRange2d UnitSquare;
 
   private:
-    //! Minimum and maximum points.
+    /// Minimum and maximum points.
     GfVec2d _min, _max;
 
-    //! Extends minimum point if necessary to contain given point
+    /// Extends minimum point if necessary to contain given point.
     static void _FindMin(GfVec2d &dest, const GfVec2d &point) {
         if (point[0] < dest[0]) dest[0] = point[0];
         if (point[1] < dest[1]) dest[1] = point[1];
     }
 
-    //! Extends maximum point if necessary to contain given point
+    /// Extends maximum point if necessary to contain given point.
     static void _FindMax(GfVec2d &dest, const GfVec2d &point) {
         if (point[0] > dest[0]) dest[0] = point[0];
         if (point[1] > dest[1]) dest[1] = point[1];
     }
 };
 
-/// Output a GfRange2d
+/// Output a GfRange2d.
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfRange2d const &);
 
