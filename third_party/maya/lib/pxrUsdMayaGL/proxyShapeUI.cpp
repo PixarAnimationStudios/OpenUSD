@@ -21,13 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/proxyShapeUI.h"
+#include "pxrUsdMayaGL/proxyShapeUI.h"
+
+#include "pxrUsdMayaGL/batchRenderer.h"
 #include "usdMaya/proxyShape.h"
 
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
-#include <maya/MGlobal.h>
+#include <maya/MDrawInfo.h>
+#include <maya/MDrawRequest.h>
+#include <maya/MDrawRequestQueue.h>
+#include <maya/MPointArray.h>
+#include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
+
 
 void*
 UsdMayaProxyShapeUI::creator()
