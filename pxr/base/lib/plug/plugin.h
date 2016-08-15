@@ -108,7 +108,7 @@ public:
     /// verifying that file exists.  If verification fails an empty path
     /// is returned.  Relative paths are relative to the plugin's resource
     /// path.
-    std::string FindResource(const std::string& path, bool verify = true) const;
+    std::string FindPluginResource(const std::string& path, bool verify = true) const;
 
 private:
     enum _Type { LibraryType, PythonType, ResourceType };
@@ -219,8 +219,8 @@ private:
 /// plugin's resource path.
 PLUG_API
 std::string
-PlugFindResource(const PlugPluginPtr& plugin,
-                 const std::string& path, bool verify = true);
+PlugFindPluginResource(const PlugPluginPtr& plugin,
+                       const std::string& path, bool verify = true);
 
 /// Find a plugin's resource by absolute or relative path optionally
 /// verifying that file exists.  If \c plugin.Get() is \c NULL or
@@ -228,7 +228,7 @@ PlugFindResource(const PlugPluginPtr& plugin,
 /// relative to the plugin's resource path.
 PLUG_API
 std::string
-PlugFindResource(const PlugThisPlugin& plugin,
-                 const std::string& path, bool verify = true);
+PlugFindPluginResource(const PlugThisPlugin& plugin,
+                       const std::string& path, bool verify = true);
 
 #endif // PLUG_PLUGIN_H

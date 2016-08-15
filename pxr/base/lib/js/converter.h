@@ -93,9 +93,9 @@ private:
     static ValueType _ToValueType(const JsValue& value) {
         switch (value.GetType()) {
         case JsValue::ObjectType:
-            return ValueType(_ObjectToMap(value.GetObject()));
+            return ValueType(_ObjectToMap(value.GetJsObject()));
         case JsValue::ArrayType:
-            return ValueType(_ArrayToVector(value.GetArray()));
+            return ValueType(_ArrayToVector(value.GetJsArray()));
         case JsValue::BoolType:
             return ValueType(value.GetBool());
         case JsValue::StringType:

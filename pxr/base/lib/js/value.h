@@ -36,6 +36,11 @@
 #include <type_traits>
 #include <vector>
 
+// Value API Version
+// 1 (or undefined) - Initial version.
+// 2 - Changed Get{Array,Object} to GetJs{Array,Object}.
+#define JS_VALUE_API_VERSION 2
+
 /// \class JsValue
 ///
 /// A discriminated union type for JSON values. A JsValue may contain one of
@@ -99,12 +104,12 @@ public:
     /// Returns the object held by this value. If this value is not holding an
     /// object, this method raises a coding error and an empty object is
     /// returned.
-    const JsObject& GetObject() const;
+    const JsObject& GetJsObject() const;
 
     /// Returns the array held by this value. If this value is not holding an
     /// array, this method raises a coding error and an empty array is
     /// returned.
-    const JsArray& GetArray() const;
+    const JsArray& GetJsArray() const;
 
     /// Returns the string held by this value. If this value is not holding a
     /// string, this method raises a coding error and an empty string is
@@ -226,8 +231,8 @@ private:
         return T();
     }
 
-    const JsObject& _Get(JsObject*) const { return GetObject(); }
-    const JsArray& _Get(JsArray*) const { return GetArray(); }
+    const JsObject& _Get(JsObject*) const { return GetJsObject(); }
+    const JsArray& _Get(JsArray*) const { return GetJsArray(); }
     const std::string& _Get(std::string*) const { return GetString(); }
     bool _Get(bool*) const { return GetBool(); }
     int _Get(int*) const { return GetInt(); }
@@ -258,7 +263,7 @@ private:
 template <typename T>
 inline std::vector<T> JsValue::GetArrayOf() const
 {
-    const JsArray& array = GetArray();
+    const JsArray& array = GetJsArray();
     std::vector<T> result(array.size());
     std::transform(array.begin(), array.end(), result.begin(),
                    [](const JsValue& v) { return v.Get<T>(); });
@@ -271,7 +276,7 @@ inline bool JsValue::IsArrayOf() const
     if (not IsArray()) {
         return false;
     }
-    const JsArray& array = GetArray();
+    const JsArray& array = GetJsArray();
     return std::all_of(array.begin(), array.end(),
                        [](const JsValue& v) { return v.Is<T>(); });
 }
