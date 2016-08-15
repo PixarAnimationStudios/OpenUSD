@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -31,56 +31,56 @@
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdShadeLook,
-        TfType::Bases< UsdShadeMaterial > >();
+    TfType::Define<UsdShadeMaterial,
+        TfType::Bases< UsdShadeSubgraph > >();
     
     // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("Look") to find
-    // TfType<UsdShadeLook>, which is how IsA queries are answered.
-    TfType::AddAlias<UsdSchemaBase, UsdShadeLook>("Look");
+    // UsdSchemaBase. This enables one to call TfType::FindByName("Material") to find
+    // TfType<UsdShadeMaterial>, which is how IsA queries are answered.
+    TfType::AddAlias<UsdSchemaBase, UsdShadeMaterial>("Material");
 }
 
 /* virtual */
-UsdShadeLook::~UsdShadeLook()
+UsdShadeMaterial::~UsdShadeMaterial()
 {
 }
 
 /* static */
-UsdShadeLook
-UsdShadeLook::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdShadeMaterial
+UsdShadeMaterial::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (not stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdShadeLook();
+        return UsdShadeMaterial();
     }
-    return UsdShadeLook(stage->GetPrimAtPath(path));
+    return UsdShadeMaterial(stage->GetPrimAtPath(path));
 }
 
 /* static */
-UsdShadeLook
-UsdShadeLook::Define(
+UsdShadeMaterial
+UsdShadeMaterial::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
-    static TfToken usdPrimTypeName("Look");
+    static TfToken usdPrimTypeName("Material");
     if (not stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdShadeLook();
+        return UsdShadeMaterial();
     }
-    return UsdShadeLook(
+    return UsdShadeMaterial(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* static */
 const TfType &
-UsdShadeLook::_GetStaticTfType()
+UsdShadeMaterial::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdShadeLook>();
+    static TfType tfType = TfType::Find<UsdShadeMaterial>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdShadeLook::_IsTypedSchema()
+UsdShadeMaterial::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -88,18 +88,18 @@ UsdShadeLook::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdShadeLook::_GetTfType() const
+UsdShadeMaterial::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdShadeLook::GetSchemaAttributeNames(bool includeInherited)
+UsdShadeMaterial::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdShadeMaterial::GetSchemaAttributeNames(true);
+        UsdShadeSubgraph::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
@@ -115,16 +115,23 @@ UsdShadeLook::GetSchemaAttributeNames(bool includeInherited)
 
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usd/editContext.h"
+#include "pxr/base/tf/envSetting.h"
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (look)
-    ((bindingRelationshipName, "look:binding"))
-    ((lookVariantName, "lookVariant"))
+    (material)
+    ((bindingRelationshipName, "material:binding"))
+    ((legacyBindingRelationshipName, "look:binding"))
+    ((materialVariantName, "materialVariant"))
     ((derivesFromName, "derivesFrom"))
     ((surfaceTerminal, "surface"))
     ((displacementTerminal, "displacement"))
 );
+
+TF_DEFINE_ENV_SETTING(
+    USD_HONOR_LEGACY_USD_LOOK, true,
+    "If on, keep reading look bindings when material bindings are missing.");
+
 
 static 
 UsdRelationship
@@ -135,7 +142,7 @@ _CreateBindingRel(UsdPrim& prim)
 }
 
 bool 
-UsdShadeLook::Bind(UsdPrim& prim) const
+UsdShadeMaterial::Bind(UsdPrim& prim) const
 {
     // We cannot enforce this test because we do not always know at authoring
     // time what we are binding to.
@@ -146,6 +153,14 @@ UsdShadeLook::Bind(UsdPrim& prim) const
     //     return;
     // }
     ;
+
+    // delete old relationship, if any
+    UsdRelationship oldRel = 
+        prim.GetRelationship(_tokens->legacyBindingRelationshipName);
+    if (oldRel) {
+        oldRel.BlockTargets();
+    }
+
     if (UsdRelationship rel = _CreateBindingRel(prim)){
         SdfPathVector  targets(1, GetPath());
         return rel.SetTargets(targets);
@@ -155,44 +170,58 @@ UsdShadeLook::Bind(UsdPrim& prim) const
 }
 
 bool 
-UsdShadeLook::Unbind(UsdPrim& prim)
+UsdShadeMaterial::Unbind(UsdPrim& prim)
 {
+    // delete old relationship too, if any
+    UsdRelationship oldRel = 
+        prim.GetRelationship(_tokens->legacyBindingRelationshipName);
+    if (oldRel) {
+        oldRel.BlockTargets();
+    }
+
     return _CreateBindingRel(prim).BlockTargets();
 }
 
 UsdRelationship
-UsdShadeLook::GetBindingRel(const UsdPrim& prim)
+UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 {
-    return prim.GetRelationship(_tokens->bindingRelationshipName);
+    UsdRelationship rel = prim.GetRelationship(_tokens->bindingRelationshipName);
+    if (TfGetEnvSetting(USD_HONOR_LEGACY_USD_LOOK)) {
+        if (not rel) {
+            // honor legacy assets using UsdShadeLook
+            return prim.GetRelationship(_tokens->legacyBindingRelationshipName);
+        }
+    }
+    return rel;
 }
 
-UsdShadeLook
-UsdShadeLook::GetBoundLook(const UsdPrim &prim)
+UsdShadeMaterial
+UsdShadeMaterial::GetBoundMaterial(const UsdPrim &prim)
 {
-    if (UsdRelationship rel = UsdShadeLook::GetBindingRel(prim)) {
+    if (UsdRelationship rel = UsdShadeMaterial::GetBindingRel(prim)) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
         if ((targetPaths.size() == 1) and targetPaths.front().IsPrimPath()) {
-            return UsdShadeLook(
+            return UsdShadeMaterial(
                 prim.GetStage()->GetPrimAtPath(targetPaths.front()));
         }
     }
-    return UsdShadeLook();
+    return UsdShadeMaterial();
 }
 
 std::pair<UsdStagePtr, UsdEditTarget >
-UsdShadeLook::GetEditContextForVariant(const TfToken &lookVariation,
+UsdShadeMaterial::GetEditContextForVariant(const TfToken &materialVariation,
                                        const SdfLayerHandle &layer) const
 {
     // First make sure localLayer belongs to the prim's stage
     UsdPrim         prim = GetPrim();
     UsdStageWeakPtr stage = prim.GetStage();
     
-    UsdVariantSet lookVariant = prim.GetVariantSet(_tokens->lookVariantName);
+    UsdVariantSet materialVariant = prim.GetVariantSet(_tokens->materialVariantName);
     UsdEditTarget target = stage->GetEditTarget();
-    if (lookVariant.FindOrCreateVariant(lookVariation) and
-        lookVariant.SetVariantSelection(lookVariation)) {
-        target = lookVariant.GetVariantEditTarget(layer);
+    if (materialVariant.FindOrCreateVariant(materialVariation) and
+        materialVariant.SetVariantSelection(materialVariation)) {
+        target = materialVariant.GetVariantEditTarget(layer);
     }
 
     return std::make_pair(GetPrim().GetStage(), target);
@@ -216,15 +245,15 @@ _GetRootPath(const UsdPrim & prim)
 }
 
 UsdVariantSet
-UsdShadeLook::GetLookVariant() const
+UsdShadeMaterial::GetMaterialVariant() const
 {
-    return GetPrim().GetVariantSet(_tokens->lookVariantName);
+    return GetPrim().GetVariantSet(_tokens->materialVariantName);
 }
 
 /* static */
 bool
-UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
-                                      const std::vector<UsdPrim> &looks,
+UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
+                                      const std::vector<UsdPrim> &materials,
                                       const TfToken &masterVariantSetName)
 {
     if (not masterPrim){
@@ -232,57 +261,57 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
         return false;
     }
     TfToken  masterSetName = masterVariantSetName.IsEmpty() ? 
-        _tokens->lookVariantName : masterVariantSetName;
+        _tokens->materialVariantName : masterVariantSetName;
     UsdStagePtr  stage = masterPrim.GetStage();
-    std::vector<std::string>  allLookVariants;
+    std::vector<std::string>  allMaterialVariants;
     
     // Error Checking!
-    if (looks.size() == 0){
-        TF_CODING_ERROR("No look prims specified on which to operate.");
+    if (materials.size() == 0){
+        TF_CODING_ERROR("No material prims specified on which to operate.");
         return false;
     }
-    TF_FOR_ALL(look, looks){
-        if (not *look){
-            TF_CODING_ERROR("Unable to process invalid look: %s",
-                            look->GetDescription().c_str());
+    TF_FOR_ALL(material, materials){
+        if (not *material){
+            TF_CODING_ERROR("Unable to process invalid material: %s",
+                            material->GetDescription().c_str());
             return false;
         }
-        if (stage != look->GetStage()){
-            TF_CODING_ERROR("All look prims to be controlled by masterPrim "
+        if (stage != material->GetStage()){
+            TF_CODING_ERROR("All material prims to be controlled by masterPrim "
                             "%s must originate on the same UsdStage as "
                             "masterPrim.  Prim %s does not.",
                             masterPrim.GetPath().GetText(),
-                            look->GetPrimPath().GetText());
+                            material->GetPrimPath().GetText());
             return false;
         }
 
-        std::vector<std::string>   lookVariants = 
-            look->GetVariantSet(_tokens->lookVariantName).GetVariantNames();
-        if (lookVariants.size() == 0){
-            TF_CODING_ERROR("All Look prims to be switched by master "
-                            "lookVariant must actually possess a "
-                            "non-empty lookVariant themselves.  %s does not.",
-                            look->GetPrimPath().GetText());
+        std::vector<std::string>   materialVariants = 
+            material->GetVariantSet(_tokens->materialVariantName).GetVariantNames();
+        if (materialVariants.size() == 0){
+            TF_CODING_ERROR("All Material prims to be switched by master "
+                            "materialVariant must actually possess a "
+                            "non-empty materialVariant themselves.  %s does not.",
+                            material->GetPrimPath().GetText());
             return false;
         }
         
-        if (allLookVariants.size() == 0){
-            allLookVariants.swap(lookVariants);
+        if (allMaterialVariants.size() == 0){
+            allMaterialVariants.swap(materialVariants);
         }
-        else if (allLookVariants != lookVariants){
-            TF_CODING_ERROR("All Look prims to be switched by master "
-                            "lookVariant must possess the SAME look variants. "
+        else if (allMaterialVariants != materialVariants){
+            TF_CODING_ERROR("All Material prims to be switched by master "
+                            "materialVariant must possess the SAME material variants. "
                             "%s has a different set of variants.",
-                            look->GetPrimPath().GetText());
+                            material->GetPrimPath().GetText());
             return false;
         }
     }
 
     UsdVariantSet masterSet = masterPrim.GetVariantSet(masterSetName);
-    TF_FOR_ALL(varName, allLookVariants){
+    TF_FOR_ALL(varName, allMaterialVariants){
         if (not masterSet.FindOrCreateVariant(*varName)){
-            TF_RUNTIME_ERROR("Unable to create Look variant %s on prim %s. "
-                             "Aborting master lookVariant creation.",
+            TF_RUNTIME_ERROR("Unable to create Material variant %s on prim %s. "
+                             "Aborting master materialVariant creation.",
                              varName->c_str(),
                              masterPrim.GetPath().GetText());
             return false;
@@ -292,34 +321,34 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
         {
             UsdEditContext  ctxt(masterSet.GetVariantEditContext());
             
-            TF_FOR_ALL(look, looks){
-                if (not *look){
+            TF_FOR_ALL(material, materials){
+                if (not *material){
                     // Somehow, switching the variant caused this prim
                     // to expire.
                     TF_RUNTIME_ERROR("Switching master variant %s to %s "
-                                     "caused one or more look prims to "
+                                     "caused one or more material prims to "
                                      "expire.  First such: %s.",
                                      masterSetName.GetText(),
                                      varName->c_str(),
-                                     look->GetDescription().c_str());
+                                     material->GetDescription().c_str());
                     return false;
                 }
 
                 // Here's the heart of the whole thing
-                if (look->GetPath().HasPrefix(masterPrim.GetPath())){
-                    look->GetVariantSet(_tokens->lookVariantName).
+                if (material->GetPath().HasPrefix(masterPrim.GetPath())){
+                    material->GetVariantSet(_tokens->materialVariantName).
                         SetVariantSelection(*varName);
                 }
                 else {
-                    SdfPath derivedPath = look->GetPrimPath().
-                        ReplacePrefix(_GetRootPath(*look), masterPrim.GetPath());
+                    SdfPath derivedPath = material->GetPrimPath().
+                        ReplacePrefix(_GetRootPath(*material), masterPrim.GetPath());
                     if (UsdPrim over = stage->OverridePrim(derivedPath)) {
-                        over.GetVariantSet(_tokens->lookVariantName).
+                        over.GetVariantSet(_tokens->materialVariantName).
                             SetVariantSelection(*varName);
                     }
                     else {
-                        TF_RUNTIME_ERROR("Unable to create over for Look prim "
-                                         "%s, so cannot set its lookVariant",
+                        TF_RUNTIME_ERROR("Unable to create over for Material prim "
+                                         "%s, so cannot set its materialVariant",
                                          derivedPath.GetText());
                         return false;
                     }
@@ -331,18 +360,18 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
     return true;
 }
 
-UsdShadeLook
-UsdShadeLook::GetBaseLook() const 
+UsdShadeMaterial
+UsdShadeMaterial::GetBaseMaterial() const 
 {
-    SdfPath basePath = GetBaseLookPath();
+    SdfPath basePath = GetBaseMaterialPath();
     if (!basePath.IsEmpty()) {
-        return UsdShadeLook(GetPrim().GetStage()->GetPrimAtPath(basePath));
+        return UsdShadeMaterial(GetPrim().GetStage()->GetPrimAtPath(basePath));
     }
-    return UsdShadeLook();
+    return UsdShadeMaterial();
 }
 
 SdfPath
-UsdShadeLook::GetBaseLookPath() const 
+UsdShadeMaterial::GetBaseMaterialPath() const 
 {
     UsdRelationship baseRel = GetPrim().GetRelationship(
             _tokens->derivesFromName);
@@ -357,13 +386,13 @@ UsdShadeLook::GetBaseLookPath() const
 }
 
 void
-UsdShadeLook::SetBaseLookPath(const SdfPath& baseLookPath) const 
+UsdShadeMaterial::SetBaseMaterialPath(const SdfPath& baseMaterialPath) const 
 {
     UsdRelationship baseRel = GetPrim().CreateRelationship(
         _tokens->derivesFromName, /* custom = */ false);
 
-    if (!baseLookPath.IsEmpty()) {
-        SdfPathVector targets(1, baseLookPath);
+    if (!baseMaterialPath.IsEmpty()) {
+        SdfPathVector targets(1, baseMaterialPath);
         baseRel.SetTargets(targets);
     } else {
         baseRel.ClearTargets(false);
@@ -371,39 +400,39 @@ UsdShadeLook::SetBaseLookPath(const SdfPath& baseLookPath) const
 }
 
 void
-UsdShadeLook::SetBaseLook(const UsdShadeLook& baseLook) const 
+UsdShadeMaterial::SetBaseMaterial(const UsdShadeMaterial& baseMaterial) const 
 {
-    UsdPrim basePrim = baseLook.GetPrim();
+    UsdPrim basePrim = baseMaterial.GetPrim();
     if (basePrim.IsValid()) {
         SdfPath basePath = basePrim.GetPath();
-        SetBaseLookPath(basePath);
+        SetBaseMaterialPath(basePath);
     } else {
-        SetBaseLookPath(SdfPath());
+        SetBaseMaterialPath(SdfPath());
     }
 }
 
 void
-UsdShadeLook::ClearBaseLook() const 
+UsdShadeMaterial::ClearBaseMaterial() const 
 {
-    SetBaseLookPath(SdfPath());
+    SetBaseMaterialPath(SdfPath());
 }
 
 bool
-UsdShadeLook::HasBaseLook() const 
+UsdShadeMaterial::HasBaseMaterial() const 
 {
-    return !GetBaseLookPath().IsEmpty();
+    return !GetBaseMaterialPath().IsEmpty();
 }
 
 /* static */
 UsdGeomFaceSetAPI 
-UsdShadeLook::CreateLookFaceSet(const UsdPrim &prim)
+UsdShadeMaterial::CreateMaterialFaceSet(const UsdPrim &prim)
 {
-    if (HasLookFaceSet(prim))
-        return UsdGeomFaceSetAPI(prim, _tokens->look);
+    if (HasMaterialFaceSet(prim))
+        return UsdGeomFaceSetAPI(prim, _tokens->material);
 
-    // No face can be bound to more than one Look, hence set isPartition to 
+    // No face can be bound to more than one Material, hence set isPartition to 
     // true.
-    UsdGeomFaceSetAPI faceSet(prim, _tokens->look);
+    UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
     faceSet.SetIsPartition(true);
 
     return faceSet;
@@ -411,19 +440,43 @@ UsdShadeLook::CreateLookFaceSet(const UsdPrim &prim)
 
 /* static */
 UsdGeomFaceSetAPI 
-UsdShadeLook::GetLookFaceSet(const UsdPrim &prim) 
+UsdShadeMaterial::GetMaterialFaceSet(const UsdPrim &prim) 
 {
-    if (HasLookFaceSet(prim))
-        return UsdGeomFaceSetAPI(prim, _tokens->look);
+    if (HasMaterialFaceSet(prim))
+        return UsdGeomFaceSetAPI(prim, _tokens->material);
 
     return UsdGeomFaceSetAPI();
 }
 
 /* static */
 bool 
-UsdShadeLook::HasLookFaceSet(const UsdPrim &prim)
+UsdShadeMaterial::HasMaterialFaceSet(const UsdPrim &prim)
 {
-    UsdGeomFaceSetAPI faceSet(prim, _tokens->look);
+    UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
     bool isPartition=false;
     return faceSet.GetIsPartitionAttr().Get(&isPartition) and isPartition;
+}
+
+UsdRelationship
+UsdShadeMaterial::GetSurfaceTerminal() const
+{
+    return GetTerminal(_tokens->surfaceTerminal);
+}
+
+UsdRelationship
+UsdShadeMaterial::CreateSurfaceTerminal(const SdfPath& targetPath) const
+{
+    return CreateTerminal(_tokens->surfaceTerminal, targetPath);
+}
+
+UsdRelationship
+UsdShadeMaterial::GetDisplacementTerminal() const
+{
+    return GetTerminal(_tokens->displacementTerminal);
+}
+
+UsdRelationship
+UsdShadeMaterial::CreateDisplacementTerminal(const SdfPath& targetPath) const
+{
+    return CreateTerminal(_tokens->displacementTerminal, targetPath);
 }

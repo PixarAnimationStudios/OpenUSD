@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
@@ -46,12 +46,12 @@ using namespace boost::python;
 WRAP_CUSTOM;
 
 
-void wrapUsdShadeLook()
+void wrapUsdShadeMaterial()
 {
-    typedef UsdShadeLook This;
+    typedef UsdShadeMaterial This;
 
-    class_<This, bases<UsdShadeMaterial> >
-        cls("Look");
+    class_<This, bases<UsdShadeSubgraph> >
+        cls("Material");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -100,65 +100,65 @@ void wrapUsdShadeLook()
 #include "pxr/usd/usd/editContext.h"
 
 static UsdPyEditContext
-_GetEditContextForVariant(const UsdShadeLook &self,
-                          const TfToken &lookVariantName,
+_GetEditContextForVariant(const UsdShadeMaterial &self,
+                          const TfToken &materialVariantName,
                           const SdfLayerHandle layer) {
     return UsdPyEditContext(
-        self.GetEditContextForVariant(lookVariantName, layer));
+        self.GetEditContextForVariant(materialVariantName, layer));
 }
 
 WRAP_CUSTOM {
     _class
-        .def("Bind", &UsdShadeLook::Bind)
-        .def("Unbind", &UsdShadeLook::Unbind)
+        .def("Bind", &UsdShadeMaterial::Bind)
+        .def("Unbind", &UsdShadeMaterial::Unbind)
         .staticmethod("Unbind")
-        .def("GetBindingRel", &UsdShadeLook::GetBindingRel)
+        .def("GetBindingRel", &UsdShadeMaterial::GetBindingRel)
         .staticmethod("GetBindingRel")
-        .def("GetBoundLook", &UsdShadeLook::GetBoundLook)
-        .staticmethod("GetBoundLook")
-        .def("GetLookVariant", &UsdShadeLook::GetLookVariant)
-        .def("CreateMasterLookVariant",
-             &UsdShadeLook::CreateMasterLookVariant,
-             (arg("masterPrim"), arg("lookPrims"),
+        .def("GetBoundMaterial", &UsdShadeMaterial::GetBoundMaterial)
+        .staticmethod("GetBoundMaterial")
+        .def("GetMaterialVariant", &UsdShadeMaterial::GetMaterialVariant)
+        .def("CreateMasterMaterialVariant",
+             &UsdShadeMaterial::CreateMasterMaterialVariant,
+             (arg("masterPrim"), arg("materialPrims"),
               arg("masterVariantSetName")=TfToken()))
-        .staticmethod("CreateMasterLookVariant")
+        .staticmethod("CreateMasterMaterialVariant")
         .def("GetEditContextForVariant", _GetEditContextForVariant,
-             (arg("lookVariantName"), arg("layer")=SdfLayerHandle()))
+             (arg("materialVariantName"), arg("layer")=SdfLayerHandle()))
 
-        .def("GetBaseLookPath",
-             &UsdShadeLook::GetBaseLookPath)
-         .def("GetBaseLook",
-              &UsdShadeLook::GetBaseLook)
-        .def("SetBaseLookPath",
-             &UsdShadeLook::SetBaseLookPath,
+        .def("GetBaseMaterialPath",
+             &UsdShadeMaterial::GetBaseMaterialPath)
+         .def("GetBaseMaterial",
+              &UsdShadeMaterial::GetBaseMaterial)
+        .def("SetBaseMaterialPath",
+             &UsdShadeMaterial::SetBaseMaterialPath,
              (arg("baseLookPath")))
-         .def("SetBaseLook",
-              &UsdShadeLook::SetBaseLook,
-              (arg("baseLook")))
-        .def("ClearBaseLook",
-             &UsdShadeLook::ClearBaseLook)
-        .def("HasBaseLook",
-             &UsdShadeLook::HasBaseLook)
+         .def("SetBaseMaterial",
+              &UsdShadeMaterial::SetBaseMaterial,
+              (arg("baseMaterial")))
+        .def("ClearBaseMaterial",
+             &UsdShadeMaterial::ClearBaseMaterial)
+        .def("HasBaseMaterial",
+             &UsdShadeMaterial::HasBaseMaterial)
 
-        .def("CreateLookFaceSet", &UsdShadeLook::CreateLookFaceSet)
-            .staticmethod("CreateLookFaceSet")
+        .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)
+            .staticmethod("CreateMaterialFaceSet")
 
-        .def("GetLookFaceSet", &UsdShadeLook::GetLookFaceSet)
-            .staticmethod("GetLookFaceSet")
+        .def("GetMaterialFaceSet", &UsdShadeMaterial::GetMaterialFaceSet)
+            .staticmethod("GetMaterialFaceSet")
 
-        .def("HasLookFaceSet", &UsdShadeLook::HasLookFaceSet)
-            .staticmethod("HasLookFaceSet")
+        .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
+            .staticmethod("HasMaterialFaceSet")
 
         .def("CreateSurfaceTerminal", 
-             &UsdShadeLook::CreateSurfaceTerminal,
+             &UsdShadeMaterial::CreateSurfaceTerminal,
              (arg("targetPath")))
         .def("GetSurfaceTerminal",
-             &UsdShadeLook::GetSurfaceTerminal)
+             &UsdShadeMaterial::GetSurfaceTerminal)
 
         .def("CreateDisplacementTerminal", 
-             &UsdShadeLook::CreateDisplacementTerminal,
+             &UsdShadeMaterial::CreateDisplacementTerminal,
              (arg("targetPath")))
         .def("GetDisplacementTerminal",
-             &UsdShadeLook::GetDisplacementTerminal)
+             &UsdShadeMaterial::GetDisplacementTerminal)
         ;
 }
