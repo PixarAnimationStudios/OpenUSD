@@ -25,6 +25,7 @@
 # This file contains a set of flags/settings shared between our 
 # GCC and Clang configs. This allows clangdefaults and gccdefaults
 # to remain minimal, marking the points where divergence is required.
+include(Options)
 
 # By default, Release flavor builds in cmake set NDEBUG, which
 # breaks things internally.  Turn it off.
@@ -40,6 +41,10 @@ _add_warning_flag("no-unused-local-typedefs")
 
 # Turn on C++11, pxr won't build without it. 
 set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "-std=c++11")
+
+if (${PXR_MAYA_TBB_BUG_WORKAROUND})
+    set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wl,-Bsymbolic")
+endif()
 
 if (${PXR_STRICT_BUILD_MODE})
     _add_warning_flag("error")
