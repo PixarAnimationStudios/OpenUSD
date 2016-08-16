@@ -508,11 +508,12 @@ private:
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _DirtyMap;
     _DirtyMap _dirtyMap;
 
+    typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
+    _ShaderMap _shaderMap;
+
     typedef TfHashSet<SdfPath, SdfPath::Hash> _TextureSet;
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _ShaderSet;
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _TextureSet _texturePaths;
-    _ShaderSet _shaderPaths;
     _InstancerSet _instancerPrimPaths;
 
     // Retrieves the dirty bits for a given usdPath and allows mutation of the
