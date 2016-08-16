@@ -179,6 +179,18 @@ ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
 /// or page-file storage.  Edits are not carried through to the underlying file.
 ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
+/// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
+/// file position indicator for \p file is not changed.  Return the number of
+/// bytes read, or zero if at end of file.  Return -1 in case of an error, with
+/// errno set appropriately.
+int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
+
+/// Write up to \p count bytes from \p buffer to \p file at \p offset.  The file
+/// position indicator for \p file is not changed.  Return the number of bytes
+/// written, possibly zero if none written.  Return -1 in case of an error, with
+/// errno set appropriately.
+int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
+
 ///@}
 
 #endif // ARCH_FILESYSTEM_H

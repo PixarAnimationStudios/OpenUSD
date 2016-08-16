@@ -80,6 +80,21 @@ int main()
     mfm.reset();
     unlink(firstName.c_str());
 
+    // Test ArchPWrite and ArchPRead.
+    size_t len = strlen(testContent);
+    assert((firstFile = fopen(firstName.c_str(), "w+b")) != NULL);
+    assert(ArchPWrite(firstFile, testContent, len, 0) == len);
+    std::unique_ptr<char[]> buf(new char[len]);
+    assert(ArchPRead(firstFile, buf.get(), len, 0) == len);
+    assert(memcmp(testContent, buf.get(), len) == 0);
+    char const * const newText = "overwritten in a file";
+    assert(ArchPWrite(firstFile, newText, strlen(newText),
+                      5/*index of 'in a file'*/) == strlen(newText));
+    std::unique_ptr<char[]> buf2(new char[strlen("written in a")]);
+    assert(ArchPRead(firstFile, buf2.get(), strlen("written in a"),
+                     9/*index of 'written in a'*/) == strlen("written in a"));
+    assert(memcmp("written in a", buf2.get(), strlen("written in a")) == 0);
+
     // create and remove a tmp subdir
     std::string retpath;
     retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");

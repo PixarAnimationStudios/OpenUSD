@@ -25,7 +25,9 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/arch/vsnprintf.h"
+
 #include <atomic>
 #include <cstring>
 #include <cstdio>
@@ -362,5 +364,80 @@ ArchMutableFileMapping
 ArchMapFileReadWrite(FILE *file)
 {
     return Arch_MapFileImpl<ArchMutableFileMapping>(file);
+}
+
+int64_t
+ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
+{
+#if defined(ARCH_OS_WINDOWS)
+    HANDLE hFile = _FileToWinHANDLE(file);
+
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(overlapped));
+
+    uint64_t uoffset = offset;
+    overlapped.OffsetHigh = static_cast<DWORD>(uoffset >> 32);
+    overlapped.Offset = static_cast<DWORD>(uoffset);
+
+    DWORD numRead = 0;
+    if (ReadFile(hFile, buffer, static_cast<DWORD>(count),
+                 &numRead, &overlapped)) {
+        return numRead;
+    }
+    return -1;
+#else // assume POSIX
+    return pread(fileno(file), buffer, count, offset);
+#endif
+}
+
+int64_t
+ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
+{
+    if (offset < 0)
+        return -1;
+    
+#if defined(ARCH_OS_WINDOWS)
+    HANDLE hFile = _FileToWinHANDLE(file);
+
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(overlapped));
+
+    uint64_t uoffset = offset;
+    overlapped.OffsetHigh = static_cast<DWORD>(uoffset >> 32);
+    overlapped.Offset = static_cast<DWORD>(uoffset);
+
+    DWORD numWritten = 0;
+    if (WriteFile(hFile, bytes, static_cast<DWORD>(count),
+                  &numWritten, &overlapped)) {
+        return numWritten;
+    }
+    return -1;
+#else // assume POSIX
+    // It's claimed that correct, modern POSIX will never return 0 for (p)write
+    // unless count is zero.  It will either be the case that some bytes were
+    // written, or we get an error return.
+
+    // Write and check if all got written (most common case).
+    int fd = fileno(file);
+    int64_t nwritten = pwrite(fd, bytes, count, offset);
+    if (ARCH_LIKELY(nwritten == count))
+        return nwritten;
+
+    // Track a total and retry until we write everything or hit an error.
+    int64_t total = std::max<int64_t>(nwritten, 0);
+    while (nwritten != -1) {
+        // Update bookkeeping and retry.
+        total += nwritten;
+        count -= nwritten;
+        offset += nwritten;
+        bytes = static_cast<char const *>(bytes) + nwritten;
+        nwritten = pwrite(fd, bytes, count, offset);
+        if (ARCH_LIKELY(nwritten == count))
+            return total + nwritten;
+    }
+
+    // Error case.
+    return -1;
+#endif
 }
 
