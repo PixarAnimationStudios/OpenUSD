@@ -33,11 +33,8 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/interval.h"
 
-#include <boost/mpl/not.hpp>
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_pointer.hpp>
-
 #include <string>
+#include <type_traits>
 #include <vector>
 
 class UsdAttribute;
@@ -306,7 +303,7 @@ public:
     /// retrieve resolved asset paths from SdfAssetPath-valued attributes.
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType);
+        static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         return _Get(value, time);
     }
     /// \overload 
@@ -328,9 +325,9 @@ public:
     /// or if there is no existing definition for the attribute.
     template <typename T>
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_pointer<T> >::value);
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType 
-                            or std::is_same<T, SdfValueBlock>::value);
+        static_assert(!std::is_pointer<T>::value, "");
+        static_assert(SdfValueTypeTraits<T>::IsValueType ||
+                      std::is_same<T, SdfValueBlock>::value, "");
 
         SdfAbstractDataConstTypedValue<T> in(&value);
         return _UntypedSet(in, time);
