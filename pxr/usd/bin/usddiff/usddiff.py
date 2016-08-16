@@ -22,7 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import os, sys, shutil
+import os, sys 
+from tempfile import NamedTemporaryFile
 from subprocess import call
 
 # generates a command list representing a call which will generate
@@ -44,7 +45,7 @@ def _findDiffTools():
     from distutils.spawn import find_executable
     usdcatCmd = find_executable("usdcat")
     if not usdcatCmd:
-        sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH")
+        sys.exit("Error: Could not find 'usdcat'. Expected it to be in PATH")
 
     # prefer USD_DIFF, then DIFF, else 'diff' 
     diffCmd = (os.environ.get('USD_DIFF') or 
@@ -74,14 +75,6 @@ def _getFileFormat(path):
 def _convertTo(inPath, outPath, usdcatCmd, fmt=None):
     call(_generateCatCommand(usdcatCmd, inPath, outPath, fmt)) 
 
-def _cleanUpAndExit(tempDir, exitCodeOrErrorMsg):
-    shutil.rmtree(tempDir)
-
-    if isinstance(exitCodeOrErrorMsg, str):
-        exitCodeOrErrorMsg = "Error: " + exitCodeOrErrorMsg
-
-    sys.exit(exitCodeOrErrorMsg)
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
@@ -101,31 +94,28 @@ def main():
                         help='Do not edit either file.') 
     results = parser.parse_args()
 
-    import tempfile
-    tempDir = tempfile.mkdtemp()
-
-    # Generate unique identifiers for our files in the temp dir
-    # and convert them explicitly to usda
-    tempBaselineFileName = ("baseline_" + 
-        os.path.splitext(os.path.basename(results.baseline))[0] + '.usda')
-    tempComparisonFileName = ("comparison_" +
+    # Generate recognizable suffixes for our files in the temp dir
+    # location of the form /temp/string__originalFileName.usda 
+    # where originalFileName is the basename(no extension) of the original file.
+    # This allows users to tell which file is which when diffing.
+    tempBaselineFileName = ("__" + 
+        os.path.splitext(os.path.basename(results.baseline))[0] + '.usda') 
+    tempComparisonFileName = ("__" +     
         os.path.splitext(os.path.basename(results.comparison))[0] + '.usda')
-    tempBaselinePath = os.path.join(tempDir, tempBaselineFileName)
-    tempComparisonPath = os.path.join(tempDir, tempComparisonFileName)
 
-    with open(tempBaselinePath, "w+") as tempBaseline, \
-         open(tempComparisonPath, "w+") as tempComparison:  
+    with NamedTemporaryFile(suffix=tempBaselineFileName) as tempBaseline, \
+         NamedTemporaryFile(suffix=tempComparisonFileName) as tempComparison:
 
         usdcatCmd, diffCmd = _findDiffTools()
         baselineFileType = _getFileFormat(results.baseline)
         comparisonFileType = _getFileFormat(results.comparison)
 
-        pluginError = 'Cannot find supported file format plugin for %s'
+        pluginError = 'Error: Cannot find supported file format plugin for %s'
         if baselineFileType is None:
-            _cleanUpAndExit(tempDir, pluginError % results.baseline)
+            sys.exit(pluginError % results.baseline)
 
         if comparisonFileType is None:
-            _cleanUpAndExit(tempDir, pluginError % results.comparison)
+            sys.exit(pluginError % results.comparison)
 
         # Dump the contents of our files into the temporaries
         _convertTo(results.baseline, tempBaseline.name, usdcatCmd)
@@ -143,22 +133,22 @@ def main():
 
         # If we intend to edit either of the files
         if not results.noeffect:
-            accessError = 'Cannot write to %s, insufficient permissions' 
+            accessError = 'Error: Cannot write to %s, insufficient permissions' 
             if tempBaselineChanged:
                 if not os.access(results.baseline, os.W_OK):
-                    _cleanUpAndExit(tempDir, accessError % results.baseline)
+                    sys.exit(accessError % results.baseline)
 
                 _convertTo(tempBaseline.name, results.baseline,
                            usdcatCmd, baselineFileType)
 
             if tempComparisonChanged:
                 if not os.access(results.comparison, os.W_OK):
-                    _cleanUpAndExit(tempDir, accessError % results.comparison)
+                    sys.exit(accessError % results.comparison)
 
                 _convertTo(tempComparison.name, results.comparison,
                            usdcatCmd, comparisonFileType)
 
-    _cleanUpAndExit(tempDir, diffResult)
+        sys.exit(diffResult)
 
 if __name__ == "__main__":
     main()
