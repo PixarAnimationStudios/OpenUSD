@@ -65,6 +65,7 @@
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
@@ -2999,6 +3000,12 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
                 "Loading texture: id(%s), isPtex(%s)\n",
                 usdPath.GetText(),
                 isPtex ? "true" : "false");
+    }
+
+    if (not TfPathExists(filePath)) {
+        TF_WARN("Unable to find Texture '%s' with path '%s'.", 
+            filePath.GetText(), usdPath.GetText());
+        return HdTextureResourceSharedPtr();
     }
 
     HdTextureResourceSharedPtr texResource;
