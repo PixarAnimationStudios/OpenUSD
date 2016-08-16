@@ -24,6 +24,8 @@
 
 %{
 
+#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdf/allowed.h"
@@ -3084,125 +3086,67 @@ static void _ReportParseError(Sdf_TextParserContext *context,
 
 // Helper class for generating/managing the buffer used by flex.
 //
-// This class attempts to mmap the given file and pass that buffer along
-// for flex to use. Normally, flex reads data from a given file in blocks
-// of 8KB, which leads to O(n^2) behavior when trying to match strings that 
-// are over this size. Giving flex a pre-filled buffer avoids this behavior.
-struct Sdf_MMappedFlexBuffer : public boost::noncopyable
+// This simply reads the given file entirely into memory, padded as flex
+// requires, and passes it along. Normally, flex reads data from a given file in
+// blocks of 8KB, which leads to O(n^2) behavior when trying to match strings
+// that are over this size. Giving flex a pre-filled buffer avoids this
+// behavior.
+struct Sdf_MemoryFlexBuffer : public boost::noncopyable
 {
 public:
-    Sdf_MMappedFlexBuffer(FILE* file, const std::string& name, yyscan_t scanner);
-    ~Sdf_MMappedFlexBuffer();
+    Sdf_MemoryFlexBuffer(FILE* file, const std::string& name, yyscan_t scanner);
+    ~Sdf_MemoryFlexBuffer();
 
     yy_buffer_state *GetBuffer() { return _flexBuffer; }
 
 private:
     yy_buffer_state *_flexBuffer;
 
-    char*  _fileBuffer;
+    std::unique_ptr<char[]> _fileBuffer;
     size_t _fileBufferSize;
-
-    char*  _paddingBuffer;
-    size_t _paddingBufferSize;
 
     yyscan_t _scanner;
 };
 
-Sdf_MMappedFlexBuffer::Sdf_MMappedFlexBuffer(FILE* file, 
+Sdf_MemoryFlexBuffer::Sdf_MemoryFlexBuffer(FILE* file, 
                                            const std::string& name,
                                            yyscan_t scanner)
-    : _flexBuffer(NULL),
-      _fileBuffer(NULL), _fileBufferSize(0), 
-      _paddingBuffer(NULL), _paddingBufferSize(0),
-      _scanner(scanner)
+    : _flexBuffer(nullptr)
+    , _scanner(scanner)
 {
-    const int fd = fileno(file);
-
-    struct stat fileInfo;
-    if (fstat(fd, &fileInfo) != 0) {
+    int64_t fileSize = ArchGetFileLength(file);
+    if (fileSize == -1) {
         TF_RUNTIME_ERROR("Error retrieving file size for @%s@: %s", 
                          name.c_str(), strerror(errno));
         return;
     }
 
-    // flex requires 2 bytes of NUL padding at the end of any buffers it
-    // is given. We can't guarantee that the file we're mmap'ing will meet
-    // this requirement, so we're going to fake it.
-    const size_t paddingBytesRequired = 2;
+    // flex requires 2 bytes of null padding at the end of any buffers it is
+    // given.  We'll allocate a buffer with 2 padding bytes, then read the
+    // entire file in.
+    static const size_t paddingBytesRequired = 2;
 
-    // First, establish an mmap for the given file along with the additional
-    // padding bytes.
-    const size_t fileSize = fileInfo.st_size;
-    const size_t fileBufferSize = fileSize + paddingBytesRequired;
+    std::unique_ptr<char[]> buffer(new char[fileSize + paddingBytesRequired]);
 
-#if defined(ARCH_HAS_MMAP_MAP_POPULATE)
-    const int mmapFlags = MAP_PRIVATE | MAP_POPULATE;
-#else
-    const int mmapFlags = MAP_PRIVATE;
-#endif
-
-    char* fileSpace = static_cast<char*>(
-        mmap(NULL, fileBufferSize,
-             PROT_READ | PROT_WRITE, mmapFlags, fd, 0));
-    if (fileSpace == MAP_FAILED) {
-        TF_RUNTIME_ERROR("Failed to mmap file @%s@: %s", 
-                         name.c_str(), strerror(errno));
+    fseek(file, 0, SEEK_SET);
+    if (fread(buffer.get(), fileSize, 1, file) == 0) {
+        TF_RUNTIME_ERROR("Failed to read file contents @%s@: %s",
+                         name.c_str(), feof(file) ?
+                         "premature end-of-file" : ArchStrerror().c_str());
         return;
     }
 
-    _fileBuffer = fileSpace;
-    _fileBufferSize = fileBufferSize;
-
-    // Check whether the required padding fits in the last page used by the
-    // file mmap, or if it would spill over into the next page.
-    //
-    // If the padding fits in the last page, it's safe to access those bytes
-    // (even though they are outside the file).
-    // 
-    // If the padding spills over, accessing those bytes results in a SIGBUS.
-    // To avoid this, we try to create an anonymous mmap for the padding that 
-    // is contiguous with the last page. flex will see the two mmap'd space
-    // as one contiguous buffer and can then access the padding bytes safely.
-    const size_t pageSize = sysconf(_SC_PAGESIZE);
-    const size_t numberOfPagesUsedByFile = (fileSize - 1 + pageSize) / pageSize;
-    const size_t totalBytesUsedByPages = numberOfPagesUsedByFile * pageSize;
-
-    if (fileBufferSize > totalBytesUsedByPages) { 
-        char* paddingSpace = _fileBuffer + totalBytesUsedByPages;
-        if (mmap(paddingSpace, paddingBytesRequired, 
-                PROT_READ | PROT_WRITE, 
-                MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0) == MAP_FAILED) {
-
-            // If we can't create this mmap for some reason, fall back to
-            // creating a flex buffer by copying all of the data out of
-            // the mmap'd file.
-            TF_WARN("Can't mmap extra space for @%s@: %s. "
-                    "Copying entire layer into memory.", 
-                    name.c_str(), strerror(errno));
-            _flexBuffer = textFileFormatYy_scan_bytes(_fileBuffer, fileSize, _scanner);
-            return;
-        }
-
-        _paddingBuffer = paddingSpace;
-        _paddingBufferSize = paddingBytesRequired;
-    }
-
-    _flexBuffer = textFileFormatYy_scan_buffer(_fileBuffer, _fileBufferSize, _scanner);
+    // Set null padding.
+    memset(buffer.get() + fileSize, '\0', paddingBytesRequired);
+    _fileBuffer = std::move(buffer);
+    _flexBuffer = textFileFormatYy_scan_buffer(
+        _fileBuffer.get(), fileSize + paddingBytesRequired, _scanner);
 }
 
-Sdf_MMappedFlexBuffer::~Sdf_MMappedFlexBuffer()
+Sdf_MemoryFlexBuffer::~Sdf_MemoryFlexBuffer()
 {
-    if (_flexBuffer) {
+    if (_flexBuffer)
         textFileFormatYy_delete_buffer(_flexBuffer, _scanner);
-    }
-
-    if (_fileBuffer) {
-        munmap(_fileBuffer, _fileBufferSize);
-    }
-
-    if (_paddingBuffer) {
-        munmap(_paddingBuffer, _paddingBufferSize);
-    }
 }
 
 #ifdef SDF_PARSER_DEBUG_MODE
@@ -3250,7 +3194,7 @@ bool Sdf_ParseMenva(const std::string & fileContext, FILE *fin,
 
     int status = -1;
     {
-        Sdf_MMappedFlexBuffer input(fin, fileContext, context.scanner);
+        Sdf_MemoryFlexBuffer input(fin, fileContext, context.scanner);
         yy_buffer_state *buf = input.GetBuffer();
 
         // Continue parsing if we have a valid input buffer. If there 
