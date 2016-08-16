@@ -58,20 +58,23 @@ ArchGetAddressInfo(
 #elif defined(ARCH_OS_WINDOWS)
     HMODULE module = nullptr;
 
-    if (::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                            reinterpret_cast<LPCSTR>(address),
-                            &module))
+    if (objectPath)
     {
-        char modName[ARCH_PATH_MAX + 1] = {0};
-        if(GetModuleFileName(module, modName, ARCH_PATH_MAX))
+        if (::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                reinterpret_cast<LPCSTR>(address),
+                                &module))
         {
-            objectPath->assign(modName);
-            return true;
+            char modName[ARCH_PATH_MAX + 1] = {0};
+            if(GetModuleFileName(module, modName, ARCH_PATH_MAX))
+            {
+                objectPath->assign(modName);
+                return true;
+            }
         }
+        else
+            ArchStrSysError(::GetLastError());
     }
-    else
-        ArchStrSysError(::GetLastError());
 #endif
     return false;
 }

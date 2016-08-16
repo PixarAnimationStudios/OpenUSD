@@ -16,7 +16,7 @@ static void checkError()
     if(errorCode > 0)
     {
         std::string message = ArchStrSysError(errorCode);
-        ARCH_ERROR(message.c_str());
+        OutputDebugString(message.c_str());
     }
 }
 GarchGLWContextState::GarchGLWContextState() :
