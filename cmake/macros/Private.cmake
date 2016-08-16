@@ -111,11 +111,7 @@ function(_install_python LIBRARY_NAME)
     )
 
     set(libPythonPrefix lib/python)
-
-    string(SUBSTRING ${LIBRARY_NAME} 0 1 LIBNAME_FL)
-    string(TOUPPER ${LIBNAME_FL} LIBNAME_FL)
-    string(SUBSTRING ${LIBRARY_NAME} 1 -1 LIBNAME_SUFFIX)
-    set(LIBRARY_INSTALLNAME "${LIBNAME_FL}${LIBNAME_SUFFIX}")
+    _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
     foreach(file ${ip_FILES})
         set(filesToInstall "")
@@ -220,6 +216,36 @@ function(_install_resource_files)
         )
     endforeach()
 endfunction() # _install_resource_files
+
+function(_install_pyside_ui_files)
+    set(uiFiles "")
+    foreach(uiFile ${ARGN})
+        get_filename_component(outFileName ${uiFile} NAME_WE)
+        get_filename_component(uiFilePath ${uiFile} ABSOLUTE)
+        set(outFilePath "${CMAKE_CURRENT_BINARY_DIR}/${outFileName}.py")
+        add_custom_command(
+            OUTPUT ${outFilePath}
+            COMMAND "${PYSIDEUICBINARY}"
+            ARGS -o ${outFilePath} ${uiFilePath}
+            MAIN_DEPENDENCY "${uiFilePath}"
+            COMMENT "Generating Python for ${uiFilePath} ..."
+            VERBATIM
+        )
+        list(APPEND uiFiles ${outFilePath})
+    endforeach()
+
+    add_custom_target(${LIBRARY_NAME}_pysideuifiles ALL
+        DEPENDS ${uiFiles}
+    )
+
+    set(libPythonPrefix lib/python)
+    _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
+
+    install(
+        FILES ${uiFiles}
+        DESTINATION "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}"
+    )
+endfunction() # _install_pyside_ui_files
 
 function(_classes LIBRARY_NAME)
     # Install headers to build or install prefix
