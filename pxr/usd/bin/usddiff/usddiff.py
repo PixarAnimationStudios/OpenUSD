@@ -74,6 +74,14 @@ def _getFileFormat(path):
 def _convertTo(inPath, outPath, usdcatCmd, fmt=None):
     call(_generateCatCommand(usdcatCmd, inPath, outPath, fmt)) 
 
+def _cleanUpAndExit(tempDir, exitCodeOrErrorMsg):
+    shutil.rmtree(tempDir)
+
+    if isinstance(exitCodeOrErrorMsg, str):
+        exitCodeOrErrorMsg = "Error: " + exitCodeOrErrorMsg
+
+    sys.exit(exitCodeOrErrorMsg)
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
@@ -112,13 +120,12 @@ def main():
         baselineFileType = _getFileFormat(results.baseline)
         comparisonFileType = _getFileFormat(results.comparison)
 
+        pluginError = 'Cannot find supported file format plugin for %s'
         if baselineFileType is None:
-            sys.exit('Error: Cannot find supported file format plugin for %s'
-                    % results.baseline)
+            _cleanUpAndExit(tempDir, pluginError % results.baseline)
 
         if comparisonFileType is None:
-            sys.exit('Error: Cannot find supported file format plugin for %s'
-                    % results.comparison)
+            _cleanUpAndExit(tempDir, pluginError % results.comparison)
 
         # Dump the contents of our files into the temporaries
         _convertTo(results.baseline, tempBaseline.name, usdcatCmd)
@@ -136,23 +143,22 @@ def main():
 
         # If we intend to edit either of the files
         if not results.noeffect:
+            accessError = 'Cannot write to %s, insufficient permissions' 
             if tempBaselineChanged:
                 if not os.access(results.baseline, os.W_OK):
-                    sys.exit('Error: cannot write to %s, insufficient '
-                             'permissions' % results.baseline)
+                    _cleanUpAndExit(tempDir, accessError % results.baseline)
+
                 _convertTo(tempBaseline.name, results.baseline,
                            usdcatCmd, baselineFileType)
 
             if tempComparisonChanged:
                 if not os.access(results.comparison, os.W_OK):
-                    sys.exit('Error: cannot write to %s, insufficient permissions'
-                             % results.comparison)
+                    _cleanUpAndExit(tempDir, accessError % results.comparison)
 
                 _convertTo(tempComparison.name, results.comparison,
                            usdcatCmd, comparisonFileType)
 
-    shutil.rmtree(tempDir)
-    sys.exit(diffResult)
+    _cleanUpAndExit(tempDir, diffResult)
 
 if __name__ == "__main__":
     main()
