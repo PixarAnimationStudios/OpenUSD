@@ -768,4 +768,10 @@ TfMakeValidIdentifier(const std::string &in);
 TF_API
 std::string TfGetXmlEscapedString(const std::string &in);
 
+/*!
+* \brief Copy a string (with size).
+*/
+TF_API
+errno_t TfStringCopy(char* destination, rsize_t size, char const* source);
+
 #endif /* TF_STRINGUTILS_H */

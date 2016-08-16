@@ -967,3 +967,12 @@ TfGetXmlEscapedString(const std::string &in)
 
     return result;
 }
+
+errno_t TfStringCopy(char* destination, rsize_t size, char const* source)
+{
+#if defined(ARCH_OS_WINDOWS)
+    return strcpy_s(destination, size, source);
+#else
+    return strcpy(destination, source);
+#endif
+}

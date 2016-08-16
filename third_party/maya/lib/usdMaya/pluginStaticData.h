@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_PLUGINSTATICDATA_H
 #define PXRUSDMAYA_PLUGINSTATICDATA_H
 
+#include "usdMaya/api.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 #include "usdMaya/stageData.h"
@@ -63,6 +64,7 @@ public:
 
     // instance of PxrUsdMayaPluginStaticData used by the "pxrUsd" plugin.
     // Should not be used until the pxrUsd class is initialized.
+    USDMAYA_API
     static PxrUsdMayaPluginStaticData pxrUsd;
 };
 

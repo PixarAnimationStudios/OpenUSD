@@ -8,6 +8,7 @@ pxr_plugin(${PXR_PACKAGE}
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS
+		${TBB_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
     CPPFILES

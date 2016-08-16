@@ -78,14 +78,14 @@ public:
     /// Get (or create) a cached usd stage with a sessionlayer containing the
     /// specified variant selections
     USDKATANA_API
-    UsdStageRefPtr const& GetStage(std::string const& fileName, 
+    UsdStageRefPtr const GetStage(std::string const& fileName,
                              std::string const& variantSelections,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate);
 
     /// Same as above, variant selections as an std::set<SdfPath> instead of str
     USDKATANA_API
-    UsdStageRefPtr const& GetStage(std::string const& fileName, 
+    UsdStageRefPtr const GetStage(std::string const& fileName,
                              std::set<SdfPath> const& variantSelections,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate);

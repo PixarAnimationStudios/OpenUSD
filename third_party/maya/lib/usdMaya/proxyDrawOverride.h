@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_PROXYDRAWOVERRIDE_H
 #define PXRUSDMAYA_PROXYDRAWOVERRIDE_H
 
+#include "usdMaya/api.h"
 #include "pxr/usdImaging/usdImaging/gl.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
@@ -45,7 +46,7 @@ class MSelectionContext;
 class MSelectionInfo;
 class MRenderItem;
 
-class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
+class USDMAYA_API UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
 public:
     static MHWRender::MPxDrawOverride* Creator(const MObject& obj);

@@ -126,10 +126,12 @@ public:
             std::string* opName);
 
 private:
+    USDKATANA_API
     static void _RegisterUsdType(
             const std::string& tfTypeName, 
             const std::string& opName);
 
+    USDKATANA_API
     static void _RegisterUsdTypeForSite(
             const std::string& tfTypeName, 
             const std::string& opName);
@@ -147,9 +149,7 @@ private:
 class T : public FnKat::GeolibOp\
 {\
 public:\
-    USDKATANA_API   \
     static void setup(FnKat::GeolibSetupInterface& interface);\
-    USDKATANA_API   \
     static void cook(FnKat::GeolibCookInterface& interface);\
 };\
 

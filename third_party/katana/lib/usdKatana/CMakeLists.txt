@@ -4,6 +4,22 @@ set(PXR_PACKAGE usdKatana)
 # narrowing conversion
 add_definitions("/wd4838")
 
+add_definitions(
+    /DFNASSET_STATIC
+    /DFNATTRIBUTE_STATIC
+	/DFNATTRIBUTEFUNCTION_STATIC
+    /DFNATTRIBUTEMODIFIER_STATIC
+    /DFNCONFIG_STATIC
+    /DFNDEFAULTATTRIBUTEPRODUCER_STATIC
+	/DFNGEOLIB_STATIC
+    /DFNGEOLIBSERVICES_STATIC
+    /DFNLOGGING_STATIC
+    /DFNRENDEROUTPUTLOCATION_STATIC
+    /DFNSCENEGRAPHGENERATOR_STATIC
+    /DFNSCENEGRAPHITERATOR_STATIC
+    /DPYSTRING_STATIC
+)
+
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         plug
@@ -21,6 +37,8 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUtils
         cameraUtil
         katanaAttrfncApi
+		katanaOpApi
+		katanaPluginApi
         ${Boost_SYSTEM_LIBRARY} 
         ${Boost_THREAD_LIBRARY} 
 

@@ -86,6 +86,7 @@ if(WIN32)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "C:/Program Files/Autodesk/Maya2016"
             "C:/Program Files/Autodesk/Maya2015.5-x64"
             "C:/Program Files/Autodesk/Maya2015.5"
             "C:/Program Files/Autodesk/Maya2014.5-x64"

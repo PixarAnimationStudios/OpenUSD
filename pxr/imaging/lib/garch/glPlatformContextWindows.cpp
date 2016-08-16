@@ -1,26 +1,36 @@
 /// \file glPlatformContextWindows.cpp
 // Copyright 2013, Pixar Animation Studios.  All rights reserved.
 
-#include "pxr/imaging/garch/glPlatformContext.h"
 #include <boost/functional/hash.hpp>
+#include "pxr/imaging/garch/glPlatformContext.h"
+#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/error.h"
 
 //
 // GarchGLWContextState
 //
 
+static void checkError()
+{
+    DWORD errorCode = GetLastError();
+    if(errorCode > 0)
+    {
+        std::string message = ArchStrSysError(errorCode);
+        ARCH_ERROR(message.c_str());
+    }
+}
 GarchGLWContextState::GarchGLWContextState() :
-	display(wglGetCurrentDC()),
-	drawable(wglGetCurrentDC()),
-	context(wglGetCurrentContext()),
    _defaultCtor(true)
 {
-    // Do nothing
+    context = wglGetCurrentContext();
+    checkError();
+
+    device = wglGetCurrentDC();
+    checkError();
 }
 
-GarchGLWContextState::GarchGLWContextState(
-	HDC display_, HDC drawable_, HGLRC context_):
-    display(display_), drawable(drawable_), context(context_),
-     _defaultCtor(false)
+GarchGLWContextState::GarchGLWContextState(HDC device_, HGLRC context_):
+    context(context_), device(device_), _defaultCtor(false)
 {
     // Do nothing
 }
@@ -28,17 +38,14 @@ GarchGLWContextState::GarchGLWContextState(
 bool
 GarchGLWContextState::operator==(const GarchGLWContextState& rhs) const
 {
-    return display  == rhs.display &&
-           drawable == rhs.drawable &&
-           context  == rhs.context;
+    return context == rhs.context;
 }
 
 size_t
 GarchGLWContextState::GetHash() const
 {
     size_t result = 0;
-    boost::hash_combine(result, drawable);
-	boost::hash_combine(result, display);
+    boost::hash_combine(result, device);
     boost::hash_combine(result, context);
     return result;
 }
@@ -46,16 +53,19 @@ GarchGLWContextState::GetHash() const
 bool
 GarchGLWContextState::IsValid() const
 {
-    return display && drawable && context;
+    return context && device;
 }
 
 void
 GarchGLWContextState::MakeCurrent()
 {
-    if (IsValid()) {
-		wglMakeCurrent(display, context);
+    if (IsValid()) 
+    {
+        wglMakeCurrent(device, context);
+        checkError();
     }
-    else if (_defaultCtor) {
+    else if (_defaultCtor)
+    {
         DoneCurrent();
     }
 }
@@ -63,13 +73,12 @@ GarchGLWContextState::MakeCurrent()
 void
 GarchGLWContextState::DoneCurrent()
 {
-	if (HGLRC display = wglGetCurrentContext()) {
-		wglMakeCurrent(NULL, display);
-	}
+    wglMakeCurrent(NULL, NULL);
+    checkError();
 }
 
 GarchGLPlatformContextState
 GarchGetNullGLPlatformContextState()
 {
-    return GarchGLWContextState(NULL, NULL, NULL);
+    return GarchGLWContextState(nullptr, nullptr);
 }

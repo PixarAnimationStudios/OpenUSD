@@ -9,7 +9,8 @@
 
 #include <Windows.h>
 
-class GarchGLWContextState {
+class GarchGLWContextState
+{
 public:
     /// Construct with the current state.
     GARCH_API
@@ -17,7 +18,7 @@ public:
 
     /// Construct with the given state.
     GARCH_API
-	GarchGLWContextState(HDC, HDC, HGLRC);
+	GarchGLWContextState(HDC, HGLRC);
 
     /// Compare for equality.
     GARCH_API
@@ -39,13 +40,10 @@ public:
     GARCH_API
     static void DoneCurrent();
 
-public:
-	HDC display;
-	HDC drawable;
-	HGLRC context;
-
 private:
     bool _defaultCtor;
+    HGLRC context;
+    HDC   device;
 };
 
 // Hide the platform specific type name behind a common name.

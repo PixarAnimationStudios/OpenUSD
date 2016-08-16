@@ -128,12 +128,13 @@ public:
         return _verbose;
     }
 
+    USDKATANA_API
     std::vector<UsdGeomBBoxCache>& GetBBoxCache() {
         return _bboxCaches.local();
     }
 
 private:
-
+    USDKATANA_API
     PxrUsdKatanaUsdInArgs(
             UsdStageRefPtr stage,
             const std::string& rootLocation,
@@ -147,6 +148,7 @@ private:
             const StringListMap& extraAttributesOrNamespaces,
             bool verbose);
 
+    USDKATANA_API
     ~PxrUsdKatanaUsdInArgs();
 
     UsdStageRefPtr _stage;

@@ -23,8 +23,12 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMaya_LIBRARY}
 
     INCLUDE_DIRS
+		${TBB_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
+    PUBLIC_HEADERS
+        api.h
+        
     PUBLIC_CLASSES
         debugCodes
         editUtil

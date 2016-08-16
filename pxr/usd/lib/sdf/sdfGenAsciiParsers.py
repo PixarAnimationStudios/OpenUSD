@@ -29,6 +29,7 @@
 from argparse import ArgumentParser
 from sys import exit, stdout
 from os import listdir, mkdir, getcwd, chdir, rename, path
+import platform
 from subprocess import call
 from shutil import rmtree
 
@@ -221,7 +222,7 @@ if __name__ == '__main__':
     print 'Canonicalizing generated files'
     generatedFiles = _canonicalizeFiles(sourceFiles, generatedFiles)
     
-    if configuration['validate']:
+    if configuration['validate'] and not any(platform.win32_ver()):
         print 'Validating generated files'
         installedFiles = [path.join(configuration['srcDir'], path.basename(f)) 
                           for f in generatedFiles]

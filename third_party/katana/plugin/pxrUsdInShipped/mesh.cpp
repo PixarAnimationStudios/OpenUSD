@@ -70,7 +70,7 @@ _CreateFaceSets(
         // continue here?
     }
 
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
 
     VtIntArray faceCounts, faceIndices;
     faceSet.GetFaceCounts(&faceCounts, currentTime);

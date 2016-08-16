@@ -94,6 +94,10 @@
 	ARCH_PRAGMA_PUSH													\
 	__pragma(warning(disable:4334)) 
 
+#define ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE							\
+	ARCH_PRAGMA_PUSH													\
+	__pragma(warning(disable:4624))
+
 #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME								\
 	ARCH_PRAGMA_PUSH													\
 	__pragma(warning(disable:4996)) 
@@ -130,6 +134,10 @@
 
 #if !defined ARCH_PRAGMA_SHIFT_TO_64_BITS
 #define		 ARCH_PRAGMA_SHIFT_TO_64_BITS
+#endif
+
+#if !defined ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
+#define      ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 #endif
 
 #if !defined ARCH_PRAGMA_DEPRECATED_POSIX_NAME

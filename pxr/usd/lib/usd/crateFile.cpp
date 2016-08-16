@@ -2014,11 +2014,7 @@ CrateFile::_Section::_Section(char const *inName, int64_t start, int64_t size)
 {
     memset(name, 0, sizeof(name));
     if (TF_VERIFY(strlen(inName) <= _SectionNameMaxLength))
-#if defined(ARCH_OS_WINDOWS)
-        strcpy_s(name, size, inName);
-#else
-        strcpy(name, inName);
-#endif
+        TfStringCopy(name, size, inName);
 }
 
 std::ostream &

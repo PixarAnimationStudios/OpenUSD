@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_PROXYSHAPEUI_H
 #define PXRUSDMAYA_PROXYSHAPEUI_H
 
+#include "usdMaya/api.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
 #include <maya/MPxSurfaceShapeUI.h>
@@ -35,6 +36,7 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI {
     /**
      * method to construct node
      */
+    USDMAYA_API
     static void* creator();
 
     /**

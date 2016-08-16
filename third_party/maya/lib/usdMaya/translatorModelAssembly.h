@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H
 #define PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H
 
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"
@@ -39,7 +40,7 @@
 #include <string>
 
 
-struct PxrUsdMayaTranslatorModelAssembly
+struct USDMAYA_API PxrUsdMayaTranslatorModelAssembly
 {
     /// This method generates a USD prim with a model reference
     /// when provided args and a context that identify a Maya

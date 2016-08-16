@@ -26,6 +26,7 @@
 
 /// \file primWriterRegistry.h
 
+#include "usdMaya/api.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 
@@ -66,6 +67,7 @@ struct PxrUsdMayaPrimWriterRegistry
             PxrUsdMayaPrimWriterContext*) > WriterFn;
 
     /// \brief Register \p fn as a writer provider for \p mayaType.
+    USDMAYA_API
     static void Register(const std::string& mayaType, WriterFn fn);
 
     /// \brief Finds a writer if one exists for \p mayaTypeName.

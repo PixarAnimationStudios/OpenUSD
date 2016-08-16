@@ -26,6 +26,8 @@
 
 #include <maya/MPxCommand.h>
 
+#include "usdMaya/api.h"
+
 class usdExport : public MPxCommand
 {
   public:
@@ -35,7 +37,10 @@ class usdExport : public MPxCommand
     virtual MStatus doIt(const MArgList& args);
     virtual bool  isUndoable () const { return false; };
 
+    USDMAYA_API
     static MSyntax  createSyntax();
+
+    USDMAYA_API
     static void* creator();
 };
 

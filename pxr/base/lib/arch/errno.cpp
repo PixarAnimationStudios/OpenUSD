@@ -62,3 +62,31 @@ ArchStrerror(int errorCode)
 #endif
     return msg_buf;
 }
+
+std::string ArchStrSysError(unsigned long errorCode)
+{
+#if defined(ARCH_OS_WINDOWS)
+    if(errorCode == 0)
+        return std::string();
+
+    LPSTR buffer = nullptr;
+    size_t len = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                               FORMAT_MESSAGE_FROM_SYSTEM |
+                               FORMAT_MESSAGE_IGNORE_INSERTS,
+                               nullptr,
+                               errorCode,
+                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               (LPSTR)&buffer,
+                               0,
+                               nullptr);
+
+    std::string message(buffer, len);
+
+    OutputDebugString(buffer);
+    LocalFree(buffer);
+
+    return message;
+#else
+    return std::string();
+#endif
+}

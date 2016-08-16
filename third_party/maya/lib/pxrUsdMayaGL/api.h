@@ -21,28 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __PX_VP20_UTILS_H__
-#define __PX_VP20_UTILS_H__
+#ifndef USDMAYAGL_API_H
+#define USDMAYAGL_API_H
 
-#include <maya/MDrawContext.h>
-#include "px_vp20/api.h"
+#include "pxr/base/arch/export.h"
 
-class px_vp20Utils
-{
-public:
-	// Take VP2.0 lighting information and import it into opengl lights
-    PX_VP20_API
-    static bool setupLightingGL( const MHWRender::MDrawContext& context);
-    
-    PX_VP20_API
-    static void unsetLightingGL( const MHWRender::MDrawContext& context);
+#if defined(USDMAYAGL_STATIC)
+#   define USDMAYAGL_API
+#   define USDMAYAGL_LOCAL
+#else
+#   if defined(USDMAYAGL_EXPORTS)
+#       define USDMAYAGL_API ARCH_EXPORT	
+#       define USDMAYAGL_API_TEMPLATE_CLASS(...)
+#       define USDMAYAGL_API_TEMPLATE_STRUCT(...)
+#   else
+#       define USDMAYAGL_API ARCH_IMPORT
+#       define USDMAYAGL_API_TEMPLATE_CLASS(...) extern template class USDMAYAGL_API __VA_ARGS__
+#       define USDMAYAGL_API_TEMPLATE_STRUCT(...) extern template struct USDMAYAGL_API __VA_ARGS__
+#   endif
+#   define USDMAYAGL_LOCAL ARCH_HIDDEN
+#endif
 
-private:
-	// This class is all static methods.. You should never
-	// instantiate an actual object
-	px_vp20Utils();
-	~px_vp20Utils();
-
-};
-
-#endif //__PX_VP20_UTILS_H__
+#endif

@@ -45,6 +45,7 @@
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include <pystring/pystring.h>
 #include <stdio.h>
@@ -56,16 +57,20 @@ FnLogSetup("PxrUsdIn")
 namespace FnKat = Foundry::Katana;
 
 // convenience macro to report an error.
+#ifdef ERROR
+    // from WinGDI.h
+    #undef ERROR
+#endif
 #define ERROR(...)\
     interface.setAttr("type", Foundry::Katana::StringAttribute("error"));\
     interface.setAttr("errorMesssage", Foundry::Katana::StringAttribute(TfStringPrintf(__VA_ARGS__)));
 
 // see overview.dox for more documentation.
+ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInOp : public FnKat::GeolibOp
 {
 
 public:
-
     static void setup(FnKat::GeolibSetupInterface &interface)
     {
         // Tell katana that it's safe to run this op in a runtime concurrently
@@ -658,7 +663,6 @@ public:
     }
 
 private:
-
     /*
      * Get the write lock and load the USD prim.
      */
@@ -704,7 +708,7 @@ private:
 
     static bool _hasSiteKinds;
 };
-
+ARCH_PRAGMA_RESTORE
 bool PxrUsdInOp::_hasSiteKinds = false;
 
 //-----------------------------------------------------------------------------
@@ -716,6 +720,7 @@ bool PxrUsdInOp::_hasSiteKinds = false;
  * and we must exec all of the registered plugins to process USD prims, we instead
  * pre-build the GeolibPrivateData for the root location to ensure it is available.
  */
+ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInBootstrapOp : public FnKat::GeolibOp
 {
 
@@ -768,8 +773,9 @@ public:
     }
 
 };
+ARCH_PRAGMA_RESTORE
 
-
+ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInMasterIntermediateOp : public FnKat::GeolibOp
 {
 public:
@@ -869,7 +875,7 @@ public:
         
     }
 };
-
+ARCH_PRAGMA_RESTORE
 
 //-----------------------------------------------------------------------------
 

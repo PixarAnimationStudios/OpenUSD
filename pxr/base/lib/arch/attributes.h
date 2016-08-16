@@ -254,12 +254,6 @@
 #   define ARCH_NOINLINE
 #   define ARCH_UNUSED_ARG
 
-/*!
-* \brief Macro to ensure the linker does not strip a symbol.
-*/
-#	define ARCH_NO_STRIP_SYMBOL(x)	\
-		__pragma(comment(linker, "/INCLUDE:"ARCH_STRINGIFY( x ) ) )
-
 /* ARCH_USED_FUNCTION is deliberately omitted.  If a new compiler is deployed,
  * we want the build to fail rather than generate executables that will fail
  * at runtime in potentially mysterious ways. Similarly ARCH_CONSTRUCTOR

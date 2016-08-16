@@ -167,9 +167,7 @@ pxr_shared_library(sdf
 
 # Validate that the checked in generated code matches the sources. This requires
 # a specific version of bison/flex to get the same results
-if(WIN32)
-    message(WARNING "Skipping validation of sdf generated code because of Windows")
-elseif(NOT ${PXR_VALIDATE_GENERATED_CODE})
+if(NOT ${PXR_VALIDATE_GENERATED_CODE})
     message(WARNING "Skipping validation of sdf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
 elseif(NOT BISON_FOUND)
     message(WARNING "Skipping validation of sdf generated code because of missing dependency: bison")

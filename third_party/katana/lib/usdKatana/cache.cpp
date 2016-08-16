@@ -45,6 +45,10 @@
 #include <regex.h>
 #endif
 
+// XXX: NO!
+#include "pxr/base/tf/instantiateStacked.h"
+TF_INSTANTIATE_STACKED(UsdStageCacheContext);
+
 TF_INSTANTIATE_SINGLETON(UsdKatanaCache);
 
 SdfLayerRefPtr&
@@ -202,7 +206,7 @@ _ResolvePath(const std::string& path)
     return ArGetResolver().Resolve(path);
 }
 
-UsdStageRefPtr const&
+UsdStageRefPtr const
 UsdKatanaCache::GetStage(std::string const& fileName,
                          std::string const& variantSelections,
                          std::string const& ignoreLayerRegex,
@@ -250,7 +254,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
 
 }
 
-UsdStageRefPtr const& 
+UsdStageRefPtr const
 UsdKatanaCache::GetStage(std::string const& fileName,
                          std::set<SdfPath> const& variantSelections,
                          std::string const& ignoreLayerRegex,

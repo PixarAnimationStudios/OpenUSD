@@ -28,6 +28,7 @@
 #ifndef PXRUSDMAYAGL_BATCHRENDERER_H
 #define PXRUSDMAYAGL_BATCHRENDERER_H
 
+#include "pxrUsdMayaGL/api.h"
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/usd/usd/stage.h"
@@ -79,7 +80,7 @@ typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 /// In the draw stage, \c Draw(...) must be called for each draw request to
 /// complete the render.
 ///
-class UsdMayaGLBatchRenderer : private boost::noncopyable
+class USDMAYAGL_API UsdMayaGLBatchRenderer : private boost::noncopyable
 {
 public:
 
@@ -129,7 +130,7 @@ public:
     
     /// \brief Class to manage rendering of single Maya shape with a single
     /// non-instanced transform.
-    class ShapeRenderer
+    class USDMAYAGL_API ShapeRenderer
     {
         friend class UsdMayaGLBatchRenderer;
         
@@ -232,7 +233,7 @@ public:
     };
 
     /// \brief hd task
-    class TaskDelegate : public HdSceneDelegate {
+    class USDMAYAGL_API TaskDelegate : public HdSceneDelegate {
     public:
         TaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
                      SdfPath const& delegateID);

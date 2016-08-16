@@ -24,8 +24,8 @@
 option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" ON)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
-option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" OFF)
-option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" OFF)
+option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" ON)
+option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" ON)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 
 set(PXR_INSTALL_LOCATION ""

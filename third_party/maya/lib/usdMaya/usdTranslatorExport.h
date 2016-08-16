@@ -29,6 +29,7 @@
 #ifndef __PX_USDTRANSLATOREXPORT_H__
 #define __PX_USDTRANSLATOREXPORT_H__
 
+#include "usdMaya/api.h"
 #include <maya/MPxFileTranslator.h>
 
 #include <maya/MFnMesh.h>
@@ -57,6 +58,7 @@ class usdTranslatorExport : public MPxFileTranslator {
         /**
          * method to create usdTranslatorExport file translator
          */
+        USDMAYA_API
         static void * creator();
 
         MStatus writer(
