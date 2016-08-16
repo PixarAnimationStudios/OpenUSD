@@ -22,9 +22,21 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-include(gccclangshareddefaults)
+# This file contains a set of flags/settings shared between our 
+# GCC and Clang configs. This allows clangdefaults and gccdefaults
+# to remain minimal, marking the points where divergence is required.
 
-# Defining TF_NO_GNU_EXT disables using the gnu hash_set and 
-# hash_map containers on platforms where we can't. The implementation
-# will substitute C++11 containers with equivalent semantics in this case.
-set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -DTF_NO_GNU_EXT")
+# By default, Release flavor builds in cmake set NDEBUG, which
+# breaks things internally.  Turn it off.
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
+# Enable all warnings
+_add_warning_flag("all")
+# We use hash_map, suppress deprecation warning.
+_add_warning_flag("no-deprecated")
+_add_warning_flag("no-deprecated-declarations")
+# Suppress unused typedef warnings eminating from boost.
+_add_warning_flag("no-unused-local-typedefs")
+
+# Turn on C++11, pxr won't build without it. 
+set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "-std=c++11")
