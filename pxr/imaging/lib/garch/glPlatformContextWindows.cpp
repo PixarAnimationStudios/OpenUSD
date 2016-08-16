@@ -10,23 +10,11 @@
 // GarchGLWContextState
 //
 
-static void checkError()
-{
-    DWORD errorCode = GetLastError();
-    if(errorCode > 0)
-    {
-        std::string message = ArchStrSysError(errorCode);
-        OutputDebugString(message.c_str());
-    }
-}
 GarchGLWContextState::GarchGLWContextState() :
    _defaultCtor(true)
 {
     context = wglGetCurrentContext();
-    checkError();
-
     device = wglGetCurrentDC();
-    checkError();
 }
 
 GarchGLWContextState::GarchGLWContextState(HDC device_, HGLRC context_):
@@ -62,7 +50,6 @@ GarchGLWContextState::MakeCurrent()
     if (IsValid()) 
     {
         wglMakeCurrent(device, context);
-        checkError();
     }
     else if (_defaultCtor)
     {
@@ -74,7 +61,6 @@ void
 GarchGLWContextState::DoneCurrent()
 {
     wglMakeCurrent(NULL, NULL);
-    checkError();
 }
 
 GarchGLPlatformContextState
