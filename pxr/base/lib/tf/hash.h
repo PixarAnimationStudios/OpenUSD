@@ -83,14 +83,13 @@ class TfWeakPtrFacade;
 ///     TfHashMap<int, T, TfHash> m6;
 /// \endcode
 ///
-struct TfHash {
+class TfHash {
 private:
     inline size_t _Mix(size_t val) const {
         return val + (val >> 3);
     }
 
 public:
-
     size_t operator()(const std::string& s) const {
         return ArchHash(s.c_str(), s.length());
     }

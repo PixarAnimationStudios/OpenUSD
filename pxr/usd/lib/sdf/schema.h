@@ -467,7 +467,7 @@ private:
 
     const SpecDefinition* _CheckAndGetSpecDefinition(SdfSpecType type) const;
 
-    friend class Sdf_SchemaFieldTypeRegistrar;
+    friend struct Sdf_SchemaFieldTypeRegistrar;
     FieldDefinition& _CreateField(
         const TfToken &fieldKey, const VtValue &fallback, bool plugin = false);
 
@@ -517,7 +517,7 @@ private:
     void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n);
 
     const Sdf_ValueTypeNamesType* _NewValueTypeNames() const;
-    friend class Sdf_ValueTypeNamesType::_Init;
+    friend struct Sdf_ValueTypeNamesType::_Init;
 };
 
 ///

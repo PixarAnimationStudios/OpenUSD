@@ -365,7 +365,7 @@ private:
     };
 
     friend struct TfTokenFastArbitraryLessThan;
-    friend class Tf_TokenRegistry;
+    friend struct Tf_TokenRegistry;
     
     static std::string const& _GetEmptyString();
     static char const* _emptyStr;

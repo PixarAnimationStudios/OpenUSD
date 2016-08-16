@@ -44,7 +44,7 @@
 #include <vector>
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
-class Plug_RegistrationMetadata;
+struct Plug_RegistrationMetadata;
 
 /// \class PlugRegistry
 ///

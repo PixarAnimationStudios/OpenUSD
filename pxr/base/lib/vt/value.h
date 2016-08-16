@@ -878,7 +878,7 @@ public:
 private:
     const Vt_Reserved* _GetReserved() const;
     size_t _GetNumElements() const;
-    friend class Vt_ValueReservedAccess;
+    friend struct Vt_ValueReservedAccess;
 
     static void _Copy(VtValue const &src, VtValue &dst) {
         if (src.IsEmpty()) {

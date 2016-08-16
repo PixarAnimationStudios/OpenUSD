@@ -50,7 +50,7 @@
 TF_DECLARE_WEAK_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
 
-class Sdf_AssetInfo;
+struct Sdf_AssetInfo;
 
 /// \class SdfLayer 
 ///

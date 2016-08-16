@@ -44,7 +44,7 @@
 // Declare classes in Boost.Python which need to know about TfWeakPtr.
 //
 namespace boost { namespace python { namespace objects {
-template <class P, class V> class pointer_holder;
+template <class P, class V> struct pointer_holder;
 }}}
 
 #endif
@@ -242,7 +242,7 @@ private:
 
     friend class TfHash;
     template <class P, class V>
-    friend class boost::python::objects::pointer_holder;
+    friend struct boost::python::objects::pointer_holder;
 
     friend std::type_info const &TfTypeid(Derived const &p) {
         if (ARCH_UNLIKELY(not p))

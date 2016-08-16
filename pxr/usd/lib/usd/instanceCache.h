@@ -34,13 +34,14 @@
 #include <map>
 #include <vector>
 
-/// \struct Usd_InstanceChanges
+/// \class Usd_InstanceChanges
 ///
 /// List of changes to master prims due to the discovery of new
 /// or destroyed instanceable prim indexes.
 ///
-struct Usd_InstanceChanges
+class Usd_InstanceChanges
 {
+public:
     void AppendChanges(const Usd_InstanceChanges& c)
     {
         newMasterPrims.insert(

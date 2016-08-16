@@ -157,9 +157,9 @@ public:
 private:
     // Allow Pcp_Statistics access to internal data for diagnostics.
     friend class Pcp_Statistics;
-    friend class Pcp_VariableImpl;
+    friend struct Pcp_VariableImpl;
 
-    struct _Node;
+    class _Node;
     typedef boost::intrusive_ptr<_Node> _NodeRefPtr;
 
     explicit PcpMapExpression(const _NodeRefPtr & node) : _node(node) {}

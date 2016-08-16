@@ -380,7 +380,7 @@ private:
     const ComparisonType &_GetComparisonValue() const { return _name; }
 
     friend class Sdf_PathNode; 
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables
@@ -403,7 +403,7 @@ private:
     ~Sdf_PrimPropertyPathNode();
     
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     const ComparisonType &_GetComparisonValue() const { return _name; }
@@ -435,7 +435,7 @@ private:
     }
 
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables
@@ -462,7 +462,7 @@ private:
     const ComparisonType& _GetComparisonValue() const { return _targetPath; }
 
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables
@@ -487,7 +487,7 @@ private:
     const ComparisonType& _GetComparisonValue() const { return _name; }
 
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables
@@ -514,7 +514,7 @@ private:
     const ComparisonType& _GetComparisonValue() const { return _targetPath; }
 
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables
@@ -541,7 +541,7 @@ private:
     const ComparisonType& _GetComparisonValue() const { return _name; }
 
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables
@@ -566,7 +566,7 @@ private:
     ComparisonType _GetComparisonValue() const { return nullptr; }
 
     friend class Sdf_PathNode;
-    friend class Sdf_PathNodePrivateAccess;
+    friend struct Sdf_PathNodePrivateAccess;
     template <int nodeType, class Comp> friend struct Sdf_PathNodeCompare;
 
     // Instance variables

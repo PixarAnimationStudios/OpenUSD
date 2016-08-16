@@ -289,8 +289,8 @@ class CrateFile
     };
 
 public:
-    friend class ValueRep;
-    friend class TimeSamples;
+    friend struct ValueRep;
+    friend struct TimeSamples;
 
     typedef std::pair<TfToken, VtValue> FieldValuePair;
 
@@ -500,7 +500,7 @@ private:
     static _BootStrap _ReadBootStrap(ByteStream src, int64_t fileSize);
 
     template <class Reader>
-    _TableOfContents _ReadTOC(Reader src, class _BootStrap const &b) const;
+    _TableOfContents _ReadTOC(Reader src, struct _BootStrap const &b) const;
 
     template <class Reader> void _ReadFieldSets(Reader src);
     template <class Reader> void _ReadFields(Reader src);

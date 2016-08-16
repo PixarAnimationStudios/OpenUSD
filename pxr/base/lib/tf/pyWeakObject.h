@@ -37,7 +37,7 @@
 
 #include "pxr/base/tf/hashmap.h"
 
-typedef TfWeakPtr<class Tf_PyWeakObject> Tf_PyWeakObjectPtr;
+typedef TfWeakPtr<struct Tf_PyWeakObject> Tf_PyWeakObjectPtr;
 
 struct Tf_PyWeakObjectRegistry
 {

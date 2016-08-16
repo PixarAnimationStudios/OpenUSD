@@ -28,12 +28,13 @@
 #include "pxr/base/vt/value.h"
 #include <string>
 
-/// \struct ArAssetInfo
+/// \class ArAssetInfo
 ///
 /// Contains information about a resolved asset.
 ///
-struct AR_API ArAssetInfo 
+class AR_API ArAssetInfo 
 {
+public:
     /// Version of the resolved asset, if any.
     std::string version;
 

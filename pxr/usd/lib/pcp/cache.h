@@ -609,7 +609,7 @@ private:
     template <class Predicate>
     friend struct Pcp_ParallelIndexer;
 
-    class _PathDebugInfo;
+    struct _PathDebugInfo;
 
     // Helper struct to type-erase a predicate for the duration of
     // ComputePrimIndexesInParallel.

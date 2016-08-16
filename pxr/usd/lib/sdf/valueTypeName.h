@@ -155,7 +155,7 @@ public:
 
 private:
     friend class Sdf_ValueTypeRegistry;
-    friend class Sdf_ValueTypePrivate;
+    friend struct Sdf_ValueTypePrivate;
 
     explicit SdfValueTypeName(const Sdf_ValueTypeImpl*);
 

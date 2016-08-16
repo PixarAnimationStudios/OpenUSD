@@ -250,7 +250,7 @@ public:
 
 private:
     friend class PcpPrimIterator;
-    friend class Pcp_PrimIndexer;
+    friend struct Pcp_PrimIndexer;
     friend void Pcp_BuildPrimStack(
         PcpPrimIndex*, SdfSiteVector*, PcpNodeRefVector*);
 
@@ -280,7 +280,9 @@ inline void swap(PcpPrimIndex &l, PcpPrimIndex &r) { l.swap(r); }
 ///
 /// Outputs of the prim indexing procedure.
 ///
-struct PcpPrimIndexOutputs {
+class PcpPrimIndexOutputs 
+{
+public:
     /// Prim index describing the composition structure for the associated
     /// prim.
     PcpPrimIndex primIndex;

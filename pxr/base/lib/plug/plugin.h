@@ -166,7 +166,7 @@ private:
     PLUG_LOCAL
     static void _DefineType( TfType t );
 
-    class _SeenPlugins;
+    struct _SeenPlugins;
     PLUG_LOCAL
     bool _LoadWithDependents(_SeenPlugins * seenPlugins);
 
