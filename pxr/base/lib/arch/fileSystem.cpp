@@ -405,10 +405,12 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
     int64_t total = std::max<int64_t>(nread, 0);
     while (nread != -1 || (nread == -1 && errno == EINTR)) {
         // Update bookkeeping and retry.
-        total += nread;
-        signedCount -= nread;
-        offset += nread;
-        buffer = static_cast<char *>(buffer) + nread;
+        if (nread > 0) {
+            total += nread;
+            signedCount -= nread;
+            offset += nread;
+            buffer = static_cast<char *>(buffer) + nread;
+        }
         nread = pread(fd, buffer, signedCount, offset);
         if (ARCH_LIKELY(nread == signedCount or nread == 0))
             return total + nread;
