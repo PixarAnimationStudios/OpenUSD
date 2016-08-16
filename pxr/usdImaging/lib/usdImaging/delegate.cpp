@@ -3034,6 +3034,8 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
                                 ? HdMinFilterNearestMipmapLinear
                  : (minFilter == UsdHydraTokens->linearMipmapNearest) 
                                 ? HdMinFilterLinearMipmapNearest
+                 : (minFilter == UsdHydraTokens->linearMipmapLinear) 
+                                ? HdMinFilterLinearMipmapLinear
                  : HdMinFilterLinear; 
 
     texResource = HdTextureResourceSharedPtr(
