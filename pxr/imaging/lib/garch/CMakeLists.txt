@@ -16,8 +16,12 @@ endif()
 pxr_shared_library(garch
     LIBRARIES
         arch
+        ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${APPKIT_LIBRARY}
+
+    INCLUDE_DIRS
+        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         glPlatformContext
