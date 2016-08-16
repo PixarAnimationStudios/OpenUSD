@@ -27,7 +27,7 @@
 #include "pxr/imaging/pxOsd/refinerFactory.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
-#include <opensubdiv3/far/stencilTable.h>
+#include <opensubdiv/far/stencilTable.h>
 
 #include <string>
 #include <vector>

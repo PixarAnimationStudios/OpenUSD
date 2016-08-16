@@ -36,15 +36,15 @@
 
 #include "pxr/base/gf/vec4i.h"
 
-#include <opensubdiv3/version.h>
-#include <opensubdiv3/far/patchTable.h>
-#include <opensubdiv3/far/patchTableFactory.h>
-#include <opensubdiv3/far/stencilTable.h>
-#include <opensubdiv3/far/stencilTableFactory.h>
-#include <opensubdiv3/osd/cpuVertexBuffer.h>
-#include <opensubdiv3/osd/cpuEvaluator.h>
-#include <opensubdiv3/osd/glVertexBuffer.h>
-#include <opensubdiv3/osd/mesh.h>
+#include <opensubdiv/version.h>
+#include <opensubdiv/far/patchTable.h>
+#include <opensubdiv/far/patchTableFactory.h>
+#include <opensubdiv/far/stencilTable.h>
+#include <opensubdiv/far/stencilTableFactory.h>
+#include <opensubdiv/osd/cpuVertexBuffer.h>
+#include <opensubdiv/osd/cpuEvaluator.h>
+#include <opensubdiv/osd/glVertexBuffer.h>
+#include <opensubdiv/osd/mesh.h>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -55,14 +55,14 @@ typedef OpenSubdiv::Osd::CpuVertexBuffer Hd_OsdCpuVertexBuffer;
 
 #if OPENSUBDIV_HAS_GLSL_COMPUTE
 
-#include <opensubdiv3/osd/glComputeEvaluator.h>
+#include <opensubdiv/osd/glComputeEvaluator.h>
 #define HD_ENABLE_GPU_SUBDIVISION 1
 typedef OpenSubdiv::Osd::GLStencilTableSSBO Hd_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLComputeEvaluator Hd_OsdGpuEvaluator;
 
 #elif OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
 
-#include <opensubdiv3/osd/glXFBEvaluator.h>
+#include <opensubdiv/osd/glXFBEvaluator.h>
 #define HD_ENABLE_GPU_SUBDIVISION 1
 typedef OpenSubdiv::Osd::GLStencilTableTBO Hd_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLXFBEvaluator Hd_OsdGpuEvaluator;
