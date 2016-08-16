@@ -14,6 +14,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdShade
         usdGeom
         usdRi
+        usdUI
         usdUtils
         cameraUtil
         katanaAttrfncApi

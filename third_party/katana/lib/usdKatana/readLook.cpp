@@ -37,6 +37,7 @@
 #include "pxr/usd/usdRi/lookAPI.h"
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usdRi/risOslPattern.h"
+#include "pxr/usd/usdUI/nodeGraphNodeAPI.h"
 
 #include <FnGeolibServices/FnAttributeFunctionUtil.h>
 #include <FnLogging/FnLogging.h>
@@ -326,6 +327,30 @@ _CreateShadingNode(
 
         shdNodeAttr.set("parameters", paramsBuilder.build());
         shdNodeAttr.set("connections", connectionsBuilder.build());
+
+        // read position
+        UsdUINodeGraphNodeAPI nodeApi(shadingNode);
+        UsdAttribute posAttr = nodeApi.GetPosAttr();
+        if (posAttr) {
+            GfVec2f pos;
+            if (posAttr.Get(&pos)) {
+                float posArray[2] = {pos[0], pos[1]};
+                shdNodeAttr.set(
+                    "hints.pos", FnKat::FloatAttribute(posArray, 2, 2));
+            }
+        }
+        // read displayColor
+        UsdAttribute displayColorAttr = nodeApi.GetDisplayColorAttr();
+        if (displayColorAttr) {
+            GfVec3f displayColor;
+            if (displayColorAttr.Get(&displayColor)) {
+                float displayColorArray[3] = {
+                    displayColor[0], displayColor[1], displayColor[2]};
+                shdNodeAttr.set(
+                    "hints.displayColor", 
+                    FnKat::FloatAttribute(displayColorArray, 3, 3));
+            }
+        }
     }
 
     if (validData) {
