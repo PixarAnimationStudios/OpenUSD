@@ -1321,6 +1321,14 @@ private:
     void _ComputeSubtreesToRecompose(Iter start, Iter finish,
                                      std::vector<Usd_PrimDataPtr>* recompose);
 
+    // Helper for _Recompose to remove master subtrees in \p subtreesToRecompose
+    // that would be composed when an instance subtree in the same container
+    // is composed.
+    template <class PrimIndexPathMap>
+    void _RemoveMasterSubtreesSubsumedByInstances(
+        std::vector<Usd_PrimDataPtr>* subtreesToRecompose,
+        const PrimIndexPathMap& primPathToSourceIndexPathMap) const;
+
     // return true if the path is valid for load/unload operations.
     // This method will emit errors when invalid paths are encountered.
     bool _IsValidForLoadUnload(const SdfPath& path) const;

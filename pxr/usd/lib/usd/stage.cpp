@@ -97,6 +97,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <utility>
@@ -2179,8 +2180,13 @@ UsdStage::_ComposeSubtreesInParallel(
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    // TF_DEBUG(USD_COMPOSITION).Msg("Composing Subtree at <%s>\n",
-    //                               prim->GetPath().GetText());
+    // TF_DEBUG(USD_COMPOSITION).Msg("Composing Subtrees at: %s\n",
+    //     TfStringify(
+    //         [&prims]() {
+    //             vector<SdfPath> paths;
+    //             for (auto p : prims) { paths.push_back(p->GetPath()); }
+    //             return paths;
+    //         }()).c_str());
 
     TRACE_FUNCTION();
 
@@ -3103,6 +3109,13 @@ void UsdStage::_Recompose(const PcpChanges &changes,
         _ComposeSubtreesInParallel(subtreesToRecompose);
     }
     else {
+        // Make sure we remove any subtrees for master prims that would
+        // be composed when an instance subtree is composed. Otherwise,
+        // the same master subtree could be composed concurrently, which
+        // is unsafe.
+        _RemoveMasterSubtreesSubsumedByInstances(
+            &subtreesToRecompose, masterToPrimIndexMap);
+
         SdfPathVector primIndexPathsForSubtrees;
         primIndexPathsForSubtrees.reserve(subtreesToRecompose.size());
         BOOST_FOREACH(const Usd_PrimDataPtr prim, subtreesToRecompose) {
@@ -3115,6 +3128,64 @@ void UsdStage::_Recompose(const PcpChanges &changes,
 
     if (not pathVecToRecompose.empty())
         _RegisterPerLayerNotices();
+}
+
+template <class PrimIndexPathMap>
+void
+UsdStage::_RemoveMasterSubtreesSubsumedByInstances(
+    std::vector<Usd_PrimDataPtr>* subtreesToRecompose,
+    const PrimIndexPathMap& primPathToSourceIndexPathMap) const
+{
+    TRACE_FUNCTION();
+
+    // Partition so [masterIt, subtreesToRecompose->end()) contains all 
+    // subtrees for master prims.
+    auto masterIt = std::partition(
+        subtreesToRecompose->begin(), subtreesToRecompose->end(),
+        [](const Usd_PrimDataPtr& p) { return not p->IsMaster(); });
+
+    if (masterIt == subtreesToRecompose->end()) {
+        return;
+    }
+
+    // Collect the paths for all master subtrees that will be composed when
+    // the instance subtrees in subtreesToRecompose are composed. 
+    // See the instancing handling in _ComposeChildren.
+    using _PathSet = TfHashSet<SdfPath, SdfPath::Hash>;
+    std::unique_ptr<_PathSet> mastersForSubtrees;
+    for (const Usd_PrimDataPtr& p : 
+         boost::make_iterator_range(subtreesToRecompose->begin(), masterIt)) {
+
+        const SdfPath* sourceIndexPath = 
+            TfMapLookupPtr(primPathToSourceIndexPathMap, p->GetPath());
+        const SdfPath& masterPath = 
+            _instanceCache->GetMasterUsingPrimIndexAtPath(
+                sourceIndexPath ? *sourceIndexPath : p->GetPath());
+        if (not masterPath.IsEmpty()) {
+            if (not mastersForSubtrees) {
+                mastersForSubtrees.reset(new _PathSet);
+            }
+            mastersForSubtrees->insert(masterPath);
+        }
+    }
+
+    if (not mastersForSubtrees) {
+        return;
+    }
+
+    // Remove all master prim subtrees that will get composed when an 
+    // instance subtree in subtreesToRecompose is composed.
+    auto masterIsSubsumedByInstanceSubtree = 
+        [&mastersForSubtrees](const Usd_PrimDataPtr& master) {
+        return mastersForSubtrees->find(master->GetPath()) != 
+               mastersForSubtrees->end();
+    };
+
+    subtreesToRecompose->erase(
+        std::remove_if(
+            masterIt, subtreesToRecompose->end(),
+            masterIsSubsumedByInstanceSubtree),
+        subtreesToRecompose->end());
 }
 
 template <class Iter>
