@@ -25,6 +25,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -1014,19 +1015,12 @@ CrateFile::CreateNew()
 }
 
 /* static */
-CrateFile::_UniqueMap
+ArchConstFileMapping
 CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
-    _UniqueMap map;
-    auto fileSize = _GetFileSize(file);
-    if (fileSize > 0) {
-        map = _UniqueMap(
-            static_cast<char *>(
-                mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fileno(file), 0)),
-            _Munmapper(fileSize));
-        if (not map)
-            TF_RUNTIME_ERROR("Couldn't mmap file '%s'", fileName);
-    }
+    ArchConstFileMapping map = ArchMapFileReadOnly(file);
+    if (not map)
+        TF_RUNTIME_ERROR("Couldn't map file '%s'", fileName);
     return map;
 }
 
@@ -1049,7 +1043,7 @@ CrateFile::Open(string const &fileName)
     auto fileSize = _GetFileSize(inputFile.get());
     if (not TfGetenvBool("USDC_USE_PREAD", false)) {
         // Map the file.
-        _UniqueMap mapStart = _MmapFile(fileName.c_str(), inputFile.get());
+        auto mapStart = _MmapFile(fileName.c_str(), inputFile.get());
         result.reset(new CrateFile(fileName, std::move(mapStart), fileSize));
     } else {
         result.reset(new CrateFile(fileName, std::move(inputFile), fileSize));
@@ -1088,7 +1082,7 @@ CrateFile::CrateFile(bool useMmap)
 }
 
 CrateFile::CrateFile(
-    string const &fileName, _UniqueMap mapStart, int64_t fileSize)
+    string const &fileName, ArchConstFileMapping mapStart, int64_t fileSize)
     : _mapStart(std::move(mapStart))
     , _fileName(fileName)
     , _useMmap(true)
@@ -2015,14 +2009,6 @@ CrateFile::_IsKnownSection(char const *name) {
             return true;
     }
     return false;
-}
-
-void
-CrateFile::_Munmapper::operator()(char *mapStart) const
-{
-    if (mapStart) {
-        munmap(mapStart, fileSize);
-    }
 }
 
 void
