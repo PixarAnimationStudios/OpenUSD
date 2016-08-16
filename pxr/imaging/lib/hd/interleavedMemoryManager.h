@@ -39,9 +39,10 @@
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/tokens.h"
 
-/// Interleaved memory manager (base class)
+/// \class HdInterleavedMemoryManager
 ///
-
+/// Interleaved memory manager (base class).
+///
 class HdInterleavedMemoryManager : public HdAggregationStrategy {
 protected:
     friend class TfSingleton<HdInterleavedMemoryManager>;

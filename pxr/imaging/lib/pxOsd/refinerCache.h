@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/refinerCache.h
-///
-
 #ifndef PXOSD_REFINER_CACHE_H
 #define PXOSD_REFINER_CACHE_H
+
+/// \file pxOsd/refinerCache.h
 
 #include "meshTopology.h"
 #include "refinerFactory.h"
@@ -35,7 +33,6 @@
 #include <opensubdiv3/far/stencilTableFactory.h>
 #include <opensubdiv3/far/patchTable.h>
 #include <opensubdiv3/far/patchTableFactory.h>
-
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -46,11 +43,12 @@
 
 #include <mutex>
 
-
-// A class that acts as a singleton cache of expensive OpenSubdiv stencil
-// tables, patch tables, and topology refiners. This data is used to
-// project onto subdivs by OsdProjector.
-//
+/// \class PxOsdRefinerCache
+///
+/// A class that acts as a singleton cache of expensive OpenSubdiv stencil
+/// tables, patch tables, and topology refiners. This data is used to
+/// project onto subdivs by OsdProjector.
+///
 class PxOsdRefinerCache {
 public:
     typedef boost::shared_ptr<class OpenSubdiv::Far::StencilTable const> StencilTableSharedPtr;

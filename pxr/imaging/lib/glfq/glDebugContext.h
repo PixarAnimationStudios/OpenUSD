@@ -36,6 +36,8 @@ class GlfQGLPlatformDebugContext;
 
 TF_DECLARE_WEAK_PTRS(GlfQGLDebugContext);
 
+/// \class GlfQGLDebugContext
+///
 /// Extends QGLContext to support OpenGL Debug Output.
 ///
 /// Unextended Qt does not support the creation of a GL context that

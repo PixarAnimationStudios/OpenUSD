@@ -34,11 +34,14 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 
-/// This is an interface class for gpu computation. GPU computation fills
-/// the result into range, which has to be allocated using buffer specs
-/// determined by AddBufferSpecs, and registered as a pair of computation
-/// and range.
-
+/// \class HdComputation
+///
+/// An interface class for GPU computation.
+///
+/// GPU computation fills the result into range, which has to be allocated
+/// using buffer specs determined by AddBufferSpecs, and registered as a pair
+/// of computation and range.
+///
 class HdComputation
 {
 public:
@@ -47,14 +50,14 @@ public:
     /// Execute computation.
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range) = 0;
 
-    /// returns the size of its destination buffer (located by range argument
+    /// Returns the size of its destination buffer (located by range argument
     /// of Execute()). This function will be called after all HdBufferSources
     /// have been resolved and commited, so it can use the result of those
     /// buffer source results.
     /// Returning 0 means it doesn't need to resize.
     virtual int GetNumOutputElements() const = 0;
 
-    /// Add the buffer spec for this computaiton into given bufferspec vector.
+    /// Add the buffer spec for this computation into given bufferspec vector.
     /// Caller has to allocate the destination buffer with respect to the
     /// BufferSpecs, and passes the range when registering the computation.
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const = 0;

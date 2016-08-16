@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file glf/glslfx.h
-
 #ifndef GLF_GLSLFX_H
 #define GLF_GLSLFX_H
+
+/// \file glf/glslfx.h
 
 #include "pxr/imaging/glf/glslfxConfig.h"
 
@@ -38,9 +37,9 @@
 #include <set>
 #include <map>
 
-/// 
 /// \class GlfGLSLFX
-/// \brief A class representing the config and shader source of a glslfx file
+///
+/// A class representing the config and shader source of a glslfx file.
 ///
 /// a GlfGLSLFX object is constructed by providing the path of a file whose
 /// contents look something like this:

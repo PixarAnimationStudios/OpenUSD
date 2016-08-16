@@ -52,6 +52,8 @@ class Hd_QuadInfo;
 class Hd_VertexAdjacency;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 
+/// \class HdMeshTopology
+///
 /// Topology data for meshes.
 ///
 /// HtMeshTopology holds the raw input topology data for a mesh and is capable

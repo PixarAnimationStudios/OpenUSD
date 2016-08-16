@@ -42,6 +42,8 @@ typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
 typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
 typedef std::vector<HdShaderSharedPtr> HdTextureSharedPtrVector;
 
+/// \class HdShader
+///
 /// A shader base class, used in conjunction with HdRenderPass.
 ///
 /// This interface provides a simple way for clients to affect the

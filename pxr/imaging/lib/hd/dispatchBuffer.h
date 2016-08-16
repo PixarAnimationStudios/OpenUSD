@@ -34,12 +34,14 @@
 
 typedef boost::shared_ptr<class HdDispatchBuffer> HdDispatchBufferSharedPtr;
 
+/// \class HdDispatchBuffer
 ///
-/// HdDispatchBuffer is a VBO of a simple array of GLuint. This buffer is
-/// used to prepare data on the GPU for indirect dispatch
-/// i.e. to be consumed by glMultiDrawIndirect or glDispatchComputeIndirect.
-/// At the same time, interleaved subsets of the array are bound in several
-/// different ways to provide additional data interface to shaders.
+/// A VBO of a simple array of GLuint.
+///
+/// This buffer is used to prepare data on the GPU for indirect dispatch i.e.
+/// to be consumed by glMultiDrawIndirect or glDispatchComputeIndirect. At the
+/// same time, interleaved subsets of the array are bound in several different
+/// ways to provide additional data interface to shaders.
 ///
 /// For each binding, we define 'BufferResourceView' on top of the GLuint array.
 /// HdBufferArray aggregates those views and HdResourceBinder binds them

@@ -42,6 +42,8 @@
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
 
+/// \class HdDrawItem
+///
 /// An abstraction for a single OpenGL draw call.
 ///
 class HdDrawItem {
@@ -76,7 +78,7 @@ public:
         return _sharedData->bounds.GetMatrix();
     }
 
-    /// Returns a BufferRange of constant-PrimVar
+    /// Returns a BufferRange of constant-PrimVar.
     HdBufferArrayRangeSharedPtr const &GetConstantPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetConstantPrimVarIndex());
@@ -103,31 +105,31 @@ public:
             _drawingCoord.GetInstancePrimVarIndex(level));
     }
 
-    /// Returns a BufferRange of instance-index indirection
+    /// Returns a BufferRange of instance-index indirection.
     HdBufferArrayRangeSharedPtr const &GetInstanceIndexRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetInstanceIndexIndex());
     }
 
-    /// Returns a BufferRange of element-PrimVars
+    /// Returns a BufferRange of element-PrimVars.
     HdBufferArrayRangeSharedPtr const &GetElementPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetElementPrimVarIndex());
     }
 
-    /// Returns a BufferArrayRange of topology
+    /// Returns a BufferArrayRange of topology.
     HdBufferArrayRangeSharedPtr const &GetTopologyRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetTopologyIndex());
     }
 
-    /// Returns a BufferArrayRange of vertex-primVars
+    /// Returns a BufferArrayRange of vertex-primVars.
     HdBufferArrayRangeSharedPtr const &GetVertexPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetVertexPrimVarIndex());
     }
 
-    /// Returns a BufferArrayRange of face-varying primvars
+    /// Returns a BufferArrayRange of face-varying primvars.
     HdBufferArrayRangeSharedPtr const &GetFaceVaryingPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetFaceVaryingPrimVarIndex());
@@ -140,7 +142,7 @@ public:
     /// Returns the authored visibility, expressed by the delegate.
     bool GetVisible() const { return _sharedData->visible; }
 
-    /// Returns true if the drawItem has instancer
+    /// Returns true if the drawItem has instancer.
     bool HasInstancer() const { return _sharedData->hasInstancer; }
 
     /// Returns the hash of the versions of underlying buffers. When the

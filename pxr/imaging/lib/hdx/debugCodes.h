@@ -27,7 +27,6 @@
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/tf/debug.h"
 
-
 TF_DEBUG_CODES(
 
     HDX_DISABLE_ALPHA_TO_COVERAGE,
@@ -35,6 +34,5 @@ TF_DEBUG_CODES(
     HDX_SELECTION_SETUP
 
 );
-
 
 #endif // HDX_DEBUGCODES_H

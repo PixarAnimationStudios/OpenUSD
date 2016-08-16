@@ -53,6 +53,8 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
 typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
 
+/// \class HdRenderIndex
+///
 /// The mapping from client scenegraph to the render engine's scene.
 ///
 /// The HdRenderIndex only tracks primitives that result in draw calls and

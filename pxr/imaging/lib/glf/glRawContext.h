@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glRawContext.h
-
 #ifndef GLF_GLRAWCONTEXT_H
 #define GLF_GLRAWCONTEXT_H
+
+/// \file glRawContext.h
 
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glPlatformContext.h"

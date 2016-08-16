@@ -34,8 +34,9 @@ class HdRenderIndex;
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::weak_ptr<class HdDirtyList> HdDirtyListPtr;
 
-/// HdDirtyList is used for faster iteration of dirty rprims,
-/// filtered by mask.
+/// \class HdDirtyList
+///
+/// Used for faster iteration of dirty rprims, filtered by mask.
 ///
 /// GetDirtyRprims/GetSize implicitly refresh and cache the list if needed.
 /// The returning prims list will be used for sync.
@@ -94,14 +95,13 @@ typedef boost::weak_ptr<class HdDirtyList> HdDirtyListPtr;
 ///   this traversal has already been optimized to some extent in
 ///   _FilterByRootPaths and we can still leverage that code.
 ///
-
 class HdDirtyList {
 public:
     HdDirtyList(HdRprimCollection const& collection,
                  HdRenderIndex &index);
     ~HdDirtyList();
 
-    /// Return the collection associated to this dirty list
+    /// Return the collection associated to this dirty list.
     HdRprimCollection const &GetCollection() const {
         return _collection;
     }
@@ -139,4 +139,3 @@ private:
 };
 
 #endif  // HD_DIRTY_LIST_H
-

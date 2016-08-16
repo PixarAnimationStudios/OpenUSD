@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/textureRegistry.h
-
 #ifndef GLF_TEXTURE_REGISTRY_H
 #define GLF_TEXTURE_REGISTRY_H
+
+/// \file glf/textureRegistry.h
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
@@ -43,10 +43,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 class GlfRankedTypeMap;
 class GlfTextureFactoryBase;
 
-/// 
-/// \class GlfTextureRegistry textureRegistry.h "pxr/imaging/glf/textureRegistry_H
+/// \class GlfTextureRegistry
 ///
-
 class GlfTextureRegistry : boost::noncopyable
 {
   public:

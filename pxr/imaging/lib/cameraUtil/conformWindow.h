@@ -30,7 +30,7 @@ class GfRange2d;
 class GfCamera;
 class GfFrustum;
 
-/// \enum ConformWindowPolicy
+/// \enum CameraUtilConformWindowPolicy
 ///
 /// Policy of how to conform a window to the given aspect ratio.
 /// An ASCII-art explanation is given in the corresponding .cpp file.

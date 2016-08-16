@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/pTexture.h
 #ifndef GLF_PTEXTEXTURE_H
 #define GLF_PTEXTEXTURE_H
+
+/// \file glf/ptexTexture.h
 
 #include "pxr/imaging/glf/texture.h"
 
@@ -34,17 +35,16 @@
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 
-/// 
-/// \class GlfPtexTexture pTexture.h "pxr/imaging/glf/pTexture_H
-/// \brief Represents a Ptex (per-face texture) object in Glf
+/// \class GlfPtexTexture
 ///
-/// A GlfPtexTexture is currently defined by a file path to a valid Ptex file.  ///
-/// The current implementation declares _texels as a GL_TEXTURE_2D_ARRAY of
-/// n pages of a resolution that matches that of the largest face in the Ptex
+/// Represents a Ptex (per-face texture) object in Glf.
+///
+/// A GlfPtexTexture is currently defined by a file path to a valid Ptex file.
+/// The current implementation declares _texels as a GL_TEXTURE_2D_ARRAY of n
+/// pages of a resolution that matches that of the largest face in the Ptex
 /// file.
 ///
-/// Two GL_TEXTURE_BUFFER constructs are used
-/// as lookup tables : 
+/// Two GL_TEXTURE_BUFFER constructs are used as lookup tables: 
 /// * _pages stores the array index in which a given face is located
 /// * _layout stores 4 float coordinates : top-left corner and width/height for each face
 ///
@@ -57,8 +57,7 @@ class GlfPtexTexture : public GlfTexture {
 public:
     virtual ~GlfPtexTexture();
 
-    ///
-    /// \brief Creates a new instance.
+    /// Creates a new instance.
     static GlfPtexTextureRefPtr New(const TfToken &imageFilePath);
 
     static bool IsPtexTexture(std::string const & imageFilePath);

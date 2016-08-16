@@ -40,8 +40,10 @@ typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
 typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
-/// HdResourceBinder is a helper class to maintain all vertex/buffer/uniform
-/// binding points to be used for both codegen time and rendering time.
+/// \class Hd_ResourceBinder
+/// 
+/// A helper class to maintain all vertex/buffer/uniform binding points to be
+/// used for both codegen time and rendering time.
 ///
 /// Hydra uses 6 different types of coherent buffers.
 ///

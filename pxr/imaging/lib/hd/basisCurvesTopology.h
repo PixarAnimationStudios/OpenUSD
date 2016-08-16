@@ -41,6 +41,8 @@ typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologyShar
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 
+/// \class HdBasisCurvesTopology
+///
 /// Topology data for basisCurves.
 ///
 /// HtBasisCurvesTopology holds the raw input topology data for basisCurves
@@ -71,9 +73,9 @@ typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 ///
 ///     Wrap can be either periodic or nonperiodic (segmented is unsupported).
 ///
-///  For each type of line, the generated vertex indices can pass through
-///    an optional index buffer to map the generated indices to actual
-///    indices in the vertex buffer.
+///  For each type of line, the generated vertex indices can pass through an
+///  optional index buffer to map the generated indices to actual indices in
+///  the vertex buffer.
 ///
 class HdBasisCurvesTopology : public HdTopology {
 public:

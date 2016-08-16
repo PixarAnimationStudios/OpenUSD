@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/testGLContext.h
-///
 #ifndef GLF_TEST_GL_CONTEXT_H
 #define GLF_TEST_GL_CONTEXT_H
+
+/// \file glf/testGLContext.h
 
 #include "pxr/imaging/glf/glContext.h"
 
@@ -34,8 +34,9 @@ class Glf_TestGLContextPrivate;
 
 typedef boost::shared_ptr<class GlfTestGLContext> GlfTestGLContextSharedPtr;
 
-/// \class GlfTestGLContext testGLContext.h "pxr/imaging/glf/testGLContext_H
-/// \brief Testing support class for GlfGLContext.
+/// \class GlfTestGLContext
+///
+/// Testing support class for GlfGLContext.
 ///
 class GlfTestGLContext : public GlfGLContext {
 public:

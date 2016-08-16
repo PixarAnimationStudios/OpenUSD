@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/refinerFactory.h
-///
-
 #ifndef PXOSD_REFINER_FACTORY_H
 #define PXOSD_REFINER_FACTORY_H
+
+/// \file pxOsd/refinerFactory.h
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/base/vt/array.h"
@@ -53,4 +51,3 @@ public:
 };
 
 #endif // PXOSD_REFINER_FACTORY_H
-

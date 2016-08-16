@@ -38,11 +38,14 @@ typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
+/// \class HdBufferArrayRange
+///
 /// Interface class for representing range (subset) locator of HdBufferArray.
 /// 
 /// Each memory management strategy defines a specialized range class which is
 /// inherited of this interface so that client (drawItem) can be agnostic about
 /// the implementation detail of aggregation.
+///
 class HdBufferArrayRange : boost::noncopyable {
 public:
     /// Destructor (do nothing).
@@ -117,6 +120,8 @@ protected:
 std::ostream &operator <<(std::ostream &out,
                           const HdBufferArrayRange &self);
 
+/// \class HdBufferArrayRangeContainer
+///
 /// A resizable container of HdBufferArrayRanges.
 ///
 class HdBufferArrayRangeContainer

@@ -39,7 +39,7 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 
-/// XXX: Docs
+// XXX: Docs
 class HdTexture {
 public:
     HdTexture(HdSceneDelegate* delegate, SdfPath const & id);

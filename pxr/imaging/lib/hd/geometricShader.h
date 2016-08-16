@@ -35,7 +35,10 @@
 
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 
+/// \class Hd_GeometricShader
+///
 /// A geometric shader -- hydra internal use
+///
 class Hd_GeometricShader : public HdShader {
 public:
     Hd_GeometricShader(std::string const &glslfxString,

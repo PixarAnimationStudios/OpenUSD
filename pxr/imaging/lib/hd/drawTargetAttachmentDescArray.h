@@ -28,17 +28,21 @@
 
 #include <vector>
 
+/// \class HdDrawTargetAttachmentDescArray
+///
 /// Describes all the color buffer attachments for a draw target.
 /// The array should not contain a depth buffer - that is managed
 /// separately.
-/// Note:  This is a temporary api to aid transition to hydra.
-/// and subject to major changes.
+///
+/// \note This is a temporary API to aid transition to hydra, and is subject
+/// to major changes.
 ///
 /// class is derivable for TfAny support.
+///
 class HdDrawTargetAttachmentDescArray
 {
 public:
-    /// default constructor for container purposes
+    /// Default constructor for container purposes.
     HdDrawTargetAttachmentDescArray();
 
     HdDrawTargetAttachmentDescArray(size_t attachmentCount);

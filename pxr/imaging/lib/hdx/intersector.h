@@ -206,7 +206,6 @@ private:
     HdRenderIndexSharedPtr _index;
 };
 
-
 std::ostream& operator<<(std::ostream& out, HdxIntersector::Hit const & h);
 
 #endif //HDX_INTERSECTOR
