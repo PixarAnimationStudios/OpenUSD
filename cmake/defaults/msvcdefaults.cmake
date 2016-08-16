@@ -22,9 +22,12 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+include(Options)
+
 # Set a decent warning level
 add_definitions("/W3")
 
-# Treat all warnings as errors
-add_definitions("/WX")
-
+if (${PXR_STRICT_BUILD_MODE})
+    # Treat all warnings as errors
+    add_definitions("/WX")
+endif()

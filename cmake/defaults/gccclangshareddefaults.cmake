@@ -40,3 +40,7 @@ _add_warning_flag("no-unused-local-typedefs")
 
 # Turn on C++11, pxr won't build without it. 
 set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "-std=c++11")
+
+if (${PXR_STRICT_BUILD_MODE})
+    _add_warning_flag("error")
+endif()
