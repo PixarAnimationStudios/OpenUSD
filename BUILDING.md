@@ -19,7 +19,7 @@ removes the need for their dependencies when building USD.
 This component contains Hydra, a high-performance graphics rendering engine.
 
 Disable this component by specifying the cmake flag ```PXR_BUILD_IMAGING=FALSE``` when 
-invoking cmake. Disabling this component will also disable the [USD Imaging](#USD-Imaging)
+invoking cmake. Disabling this component will also disable the [USD Imaging](#usd-imaging)
 component.
 
 ##### USD Imaging
@@ -28,7 +28,7 @@ This component provides the USD imaging delegates for Hydra, as well as
 usdview, a standalone native viewer for USD files.
 
 Disable this component by specifying the cmake flag ```PXR_BUILD_USD_IMAGING=FALSE``` when
-invoking cmake. Enabling this component will enable the [Imaging](#Imaging)
+invoking cmake. Enabling this component will enable the [Imaging](#imaging)
 component.
 
 ## Third Party Plugins
