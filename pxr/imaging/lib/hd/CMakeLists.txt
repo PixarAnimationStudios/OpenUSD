@@ -23,6 +23,7 @@ pxr_shared_library(hd
         sdf
         cameraUtil
         glf
+        garch
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
         ${GLEW_LIBRARY}
