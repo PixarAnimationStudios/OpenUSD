@@ -29,9 +29,11 @@
 /// Architecture dependent file system access
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/inttypes.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cstdio>
 #include <string>
 #include <set>
 
@@ -47,7 +49,8 @@
 /// Return the length of a file in bytes.
 ///
 /// Returns -1 if the file cannot be opened/read.
-int ArchGetFileLength(const char* fileName);
+int64_t ArchGetFileLength(const char *fileName);
+int64_t ArchGetFileLength(FILE *file);
 
 /// Returns true if the data in \c stat struct \p st indicates that the target
 /// file or directory is writable.

@@ -26,18 +26,25 @@
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/vsnprintf.h"
+#include <atomic>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <memory>
+#include <sstream>
+
+#include <alloca.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
-#include <atomic>
-#include <fcntl.h>
-#include <string.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <alloca.h>
-#include <errno.h>
-#include <sstream>
+
+#if defined (ARCH_OS_WINDOWS)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif // ARCH_OS_WINDOWS
 
 using std::string;
 using std::set;
@@ -94,11 +101,43 @@ ArchGetStatusChangeTime(const struct stat& st)
 #endif
 }
 
-int
+namespace {
+struct _Fcloser {
+    inline void operator()(FILE *f) const { if (f) { fclose(f); } }
+};
+} // anon
+
+using _UniqueFILE = std::unique_ptr<FILE, _Fcloser>;
+
+int64_t
+ArchGetFileLength(FILE *file)
+{
+    if (!file)
+        return -1;
+#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
+    struct stat buf;
+    return fstat(fileno(file), &buf) < 0 ? -1 :
+        static_cast<int64_t>(buf.st_size);
+#elif defined (ARCH_OS_WINDOWS)
+    LARGE_INTEGER sz;
+    return GetFileSizeEx(_get_osfhandle(_fileno(file)), &sz) ?
+        static_cast<int64_t>(sz.QuadPart) : -1;
+#else
+#error Unknown system architecture
+#endif
+}
+
+int64_t
 ArchGetFileLength(const char* fileName)
 {
+#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
     struct stat buf;
-    return stat(fileName, &buf) < 0 ? -1 : int(buf.st_size);
+    return stat(fileName, &buf) < 0 ? -1 : static_cast<int64_t>(buf.st_size);
+#elif defined (ARCH_OS_WINDOWS)
+    return ArchGetFileLength(_UniqueFILE(fopen(fileName, "rb")).get());
+#else
+#error Unknown system architecture
+#endif
 }
 
 string
