@@ -18,7 +18,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usd
         usdImaging
         ${Boost_LIBRARIES}
-        "C:/Program Files (x86)/NVIDIA Corporation/Cg/lib.x64/glut32.lib"
+        ${GLUT_LIBRARIES}
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS

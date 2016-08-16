@@ -96,7 +96,6 @@ GlfPtexTexture::_OnSetMemoryRequested(size_t targetMemory)
 bool 
 GlfPtexTexture::_ReadImage(size_t targetMemory)
 {
-#if !defined(ARCH_OS_WINDOWS)
     TRACE_FUNCTION();
     
     _FreePtexTextureObject( );
@@ -240,9 +239,6 @@ GlfPtexTexture::_ReadImage(size_t targetMemory)
     cache->release();
 
     return true;
-#else
-    return false;
-#endif    // # if !defined(ARCH_OS_WINDOWS)
 }
 
 //------------------------------------------------------------------------------
