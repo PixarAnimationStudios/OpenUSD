@@ -56,6 +56,7 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -1596,11 +1597,21 @@ CrateFile::_ReadTokens(Reader reader)
     // Now we read that many null-terminated strings into _tokens.
     char const *p = chars.get();
     _tokens.clear();
-    _tokens.reserve(numTokens);
-    while (numTokens--) {
-        _tokens.emplace_back(p);
+    _tokens.resize(numTokens);
+
+    WorkArenaDispatcher wd;
+    struct MakeToken {
+        void operator()() const { (*tokens)[index] = TfToken(str); }
+        vector<TfToken> *tokens;
+        size_t index;
+        char const *str;
+    };
+    for (size_t i = 0; i != numTokens; ++i) {
+        MakeToken mt { &_tokens, i, p };
+        wd.Run(mt);
         p += strlen(p) + 1;
     }
+    wd.Wait();
 }
 
 template <class Reader>
