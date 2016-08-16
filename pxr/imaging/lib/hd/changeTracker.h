@@ -258,6 +258,15 @@ public:
     /// Stop tracking Instancer with the given \p id.
     void InstancerRemoved(SdfPath const& id);
 
+    /// Add the gived \p rprimId to the list of rprims associated with the
+    /// instancer \p instancerId
+    void InstancerRPrimInserted(SdfPath const& instancerId, SdfPath const& rprimId);
+
+    /// Remove the gived \p rprimId to the list of rprims associated with the
+    /// instancer \p instancerId
+    void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
+
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Shader Object Tracking
@@ -334,7 +343,7 @@ public:
     /// with different dirty bits accumulate.
     void MarkInstancerDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
-    /// Mark the primvar for the rprim with \p id as being dirty.
+    /// Clean the specified dirty bits for the instancer with \p id.
     void MarkInstancerClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -486,6 +495,7 @@ private:
 
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
+    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;
@@ -500,6 +510,10 @@ private:
     // Collection versions / state.
     _CollectionStateMap _collectionState;
     bool _needsGarbageCollection;
+
+    // Provides reverse-assosiation between instancers and the rprims that use
+    // them.
+    _InstancerRprimMap _instancerRprimMap;
 
     // Typically the Rprims that get marked dirty per update iteration end up
     // being a stable set of objects; to leverage this fact, we require the
