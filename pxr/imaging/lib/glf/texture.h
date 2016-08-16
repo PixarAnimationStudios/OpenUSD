@@ -47,7 +47,7 @@ TF_DECLARE_PUBLIC_TOKENS(GlfTextureTokens, GLF_TEXTURE_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 
-/// \class GlfTexture texture.h "pxr/imaging/glf/texture_H
+/// \class GlfTexture
 ///
 /// Represents a texture object in Glf.
 ///

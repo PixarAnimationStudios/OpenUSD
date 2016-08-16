@@ -33,7 +33,7 @@
 
 #include <iosfwd>
 
-/// \class GfQuaternion quaternion.h "pxr/base/gf/quaternion.h"
+/// \class GfQuaternion
 /// \ingroup group_gf_LinearAlgebra
 ///
 /// Basic type: complex number with scalar real part and vector imaginary
