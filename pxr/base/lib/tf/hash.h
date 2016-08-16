@@ -96,7 +96,7 @@ public:
 
     template <class T>
     size_t operator()(const TfRefPtr<T>& ptr) const {
-        return (*this)(get_pointer(ptr));
+        return (*this)(ptr._refBase);
     }
 
     template <template <class> class X, class T>

@@ -440,7 +440,6 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 
-#include <atomic>
 #include <typeinfo>
 #include <type_traits>
 #include <cstddef>
@@ -570,8 +569,7 @@ public:
     /// Initializes \c *this to point at \p p's object.
     ///
     /// Increments \p p's object's reference count.
-    TfRefPtr(const TfRefPtr<T>& p) {
-        _refBase.store( p._GetRefBase(), std::memory_order_relaxed );
+    TfRefPtr(const TfRefPtr<T>& p) : _refBase(p._refBase) {
         _AddRef();
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
@@ -633,10 +631,9 @@ public:
     template <class U>
     explicit TfRefPtr(
         U* ptr, typename std::enable_if<
-            std::is_convertible<U*, T*>::value>::type *dummy = nullptr)
+            std::is_convertible<U*, T*>::value>::type * = nullptr) :
+        _refBase(ptr)
     {
-        const TfRefBase *p = ptr;
-        _refBase.store(const_cast<TfRefBase*>(p), std::memory_order_relaxed);
         _AddRef();
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
@@ -685,8 +682,8 @@ public:
         Tf_RefPtrTracker_Assign(this, p._GetObjectForTracking(),
                                 _GetObjectForTracking());
 
-        const TfRefBase* tmp = _GetRefBase();
-        _refBase.store( p._GetRefBase(), std::memory_order_relaxed );
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._refBase;
 
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
@@ -731,8 +728,7 @@ public:
 #if !defined(doxygen)
     template <class U>
 #endif
-    TfRefPtr(const TfRefPtr<U>& p) {
-        _refBase.store(p._GetRefBase(), std::memory_order_relaxed);
+    TfRefPtr(const TfRefPtr<U>& p) : _refBase(p._refBase) {
         if (!boost::is_same<T,U>::value) {
             if (false)
                 _CheckTypeAssignability<U>();
@@ -764,12 +760,10 @@ public:
         Tf_RefPtrTracker_Assign(this,
                                 reinterpret_cast<T*>(p._GetObjectForTracking()),
                                 _GetObjectForTracking());
-        const TfRefBase* oldptr = _GetRefBase();
-        const TfRefBase* newptr = p._GetRefBase();
-        _refBase.store( const_cast<TfRefBase*>(newptr),
-                        std::memory_order_relaxed );
-        p._AddRef();               // first!
-        _RemoveRef(oldptr);        // second!
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._GetData();
+        p._AddRef();            // first!
+        _RemoveRef(tmp);        // second!
         return *this;
     }
 
@@ -784,7 +778,7 @@ public:
         if (false)
             _CheckTypeComparability<U>();
 
-        return _GetRefBase() == p._GetRefBase();
+        return _refBase == p._refBase;
     }
 
     /// Returns true if the address of the object pointed to by \c *this
@@ -798,7 +792,7 @@ public:
         if (false)
             _CheckTypeComparability<U>();
 
-        return _GetRefBase() < p._GetRefBase();
+        return _refBase < p._refBase;
     }
 
 #if !defined(doxygen)
@@ -808,7 +802,7 @@ public:
         if (false)
             _CheckTypeComparability<U>();
 
-        return _GetRefBase() > p._GetRefBase();
+        return _refBase > p._refBase;
     }
 
 #if !defined(doxygen)
@@ -818,7 +812,7 @@ public:
         if (false)
             _CheckTypeComparability<U>();
 
-        return _GetRefBase() <= p._GetRefBase();
+        return _refBase <= p._refBase;
     }
 
 #if !defined(doxygen)
@@ -828,7 +822,7 @@ public:
         if (false)
             _CheckTypeComparability<U>();
 
-        return _GetRefBase() >= p._GetRefBase();
+        return _refBase >= p._refBase;
     }
 
     /// Returns true if \c *this and \c p do not point to the same object.
@@ -841,7 +835,7 @@ public:
         if (false)
             _CheckTypeComparability<U>();
 
-        return _GetRefBase() != p._GetRefBase();
+        return _refBase != p._refBase;
     }
 
     /// Accessor to \c T's public members.
@@ -849,21 +843,21 @@ public:
         if (ARCH_UNLIKELY(!_refBase))
             TF_FATAL_ERROR("attempted member lookup on NULL %s",
                            ArchGetDemangled(typeid(TfRefPtr)).c_str());
-        return static_cast<T*>(_GetRefBase());
+        return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
     }
 
 #if !defined(doxygen)
-    using UnspecifiedBoolType = std::atomic<TfRefBase*> (TfRefPtr::*);
+    using UnspecifiedBoolType = const TfRefBase * (TfRefPtr::*);
 #endif
 
     /// True if the pointer points to an object.
     operator UnspecifiedBoolType() const {
-        return _refBase ? &TfRefPtr::_refBase : NULL;
+        return _refBase ? &TfRefPtr::_refBase : nullptr;
     }
 
     /// True if the pointer points to \c NULL.
     bool operator !() const {
-        return _GetRefBase() == nullptr;
+        return _refBase == nullptr;
     }
 
     /// Swap this pointer with \a other.
@@ -875,10 +869,7 @@ public:
                                 _GetObjectForTracking());
         Tf_RefPtrTracker_Assign(&other, _GetObjectForTracking(),
                                 other._GetObjectForTracking());
-
-        TfRefBase* tmp = _GetRefBase();
-        _refBase.store( other._GetRefBase(), std::memory_order_relaxed);
-        other._refBase.store( tmp, std::memory_order_relaxed);
+        std::swap(_refBase, other._refBase);
     }
 
     /// Set this pointer to point to no object.
@@ -888,14 +879,14 @@ public:
     }        
 
 private:
-    std::atomic<TfRefBase*> _refBase;
+    const TfRefBase* _refBase;
 
     friend class TfHash;
     template <class U>
     friend inline size_t hash_value(const TfRefPtr<U>&);
 
     friend T *get_pointer(TfRefPtr const &p) {
-        return static_cast<T *>(p._GetRefBase());
+        return static_cast<T *>(const_cast<TfRefBase *>(p._refBase));
     }
 
     // Used to distinguish construction in TfCreateRefPtr.
@@ -990,12 +981,8 @@ private:
     TfConst_cast(const TfRefPtr<const typename D::DataType>&);
 #endif
 
-    inline TfRefBase *_GetRefBase() const {
-        return _refBase.load(std::memory_order_relaxed);
-    }
-
     T* _GetData() const {
-        return static_cast<T*>(_GetRefBase());
+        return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
     }
     
     // This method is only used when calling the hook functions for
@@ -1005,7 +992,7 @@ private:
     // not point to a T.  Nevertheless, it should be consistent to
     // all calls to the tracking functions.
     T* _GetObjectForTracking() const {
-        return reinterpret_cast<T*>(_GetRefBase());
+        return reinterpret_cast<T*>(const_cast<TfRefBase*>(_refBase));
     }
 
     /// Call \c typeid on the object pointed to by a \c TfRefPtr.
@@ -1019,7 +1006,7 @@ private:
     friend const std::type_info& TfTypeid(const TfRefPtr<U>& ptr);
 
     void _AddRef() const {
-        _Counter::AddRef(_GetRefBase(), TfRefBase::_uniqueChangedListener);
+        _Counter::AddRef(_refBase, TfRefBase::_uniqueChangedListener);
     }
 
     void _RemoveRef(const TfRefBase* ptr) const {
@@ -1128,7 +1115,7 @@ template <class T>
 const std::type_info&
 TfTypeid(const TfRefPtr<T>& ptr)
 {
-    if (ARCH_UNLIKELY(!ptr._GetRefBase()))
+    if (ARCH_UNLIKELY(!ptr._refBase))
         TF_FATAL_ERROR("called TfTypeid on NULL TfRefPtr");
 
     return typeid(*ptr._GetData());
@@ -1246,7 +1233,7 @@ hash_value(const TfRefPtr<T>& ptr)
     // Make the boost::hash type depend on T so that we don't have to always
     // include boost/functional/hash.hpp in this header for the definition of
     // boost::hash.
-    auto refBase = ptr._GetRefBase();
+    auto refBase = ptr._refBase;
     return boost::hash<decltype(refBase)>()(refBase);
 }
 

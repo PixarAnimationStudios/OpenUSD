@@ -384,9 +384,8 @@ inline TfRefPtr<T>::TfRefPtr(const TfWeakPtrFacade<X, U>& p,
                              typename boost::enable_if<
                                  boost::is_convertible<U*, T*>
                              >::type *dummy)
+    : _refBase(get_pointer(p))
 {
-    const TfRefBase *tmp = get_pointer(p);
-    _refBase.store(const_cast<TfRefBase*>(tmp), std::memory_order_relaxed);
     _AddRef();
     Tf_RefPtrTracker_New(this, _GetObjectForTracking());
 }
