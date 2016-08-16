@@ -1,0 +1,43 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class "NodeGraphNodeAPI" (
+    doc = """
+    This api helps storing information about nodes in node graphs.
+    """
+)
+{
+    uniform color3f ui:nodegraph:node:displayColor (
+        doc = """
+        This hint defines what tint the node should have in the node graph.
+        """
+    )
+    uniform float2 ui:nodegraph:node:pos (
+        doc = """
+        Declared relative position to the parent in a node graph.
+        X is the horizontal position.
+        Y is the vertical position. Higher numbers correspond to lower positions 
+        (coordinates are Qt style, not cartesian).
+
+        These positions are not explicitly meant in pixel space, but rather
+        assume that the size of a node is approximately 100x100. Depending on 
+        graph UI implementation, the size of a node may vary in each direction.
+        """
+    )
+    uniform int ui:nodegraph:node:stackingOrder (
+        doc = """
+        This optional value is a useful hint when an application cares about 
+        the visibility of a node and whether each node overlaps another.
+        
+        Nodes with lower stacking order values are meant to be drawn below 
+        higher ones. Negative values are meant as background. Positive values
+        are meant as foreground.
+        Undefined values should be treated as 0. 
+
+        There are no set limits in these values.
+        """
+    )
+}
+
