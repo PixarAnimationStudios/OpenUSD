@@ -77,12 +77,14 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         return true; 
     }
 
-    MFnMesh lMesh( getDagPath(), &status );
-    if ( !status )
-    {
-        MGlobal::displayError( "MFnMesh() failed for MayaMeshWriter" );
+    MFnMesh lMesh(getDagPath(), &status);
+    if (!status) {
+        MGlobal::displayError(
+            "MayaMeshWriter: MFnMesh() failed for mesh at dagPath: " +
+            getDagPath().fullPathName());
         return false;
     }
+
     unsigned int numVertices = lMesh.numVertices();
     unsigned int numPolygons = lMesh.numPolygons();
 
@@ -320,10 +322,11 @@ bool MayaMeshWriter::isMeshValid()
     MStatus status = MS::kSuccess;
 
     // Sanity checks
-    MFnMesh lMesh( getDagPath(), &status );
-    if ( !status )
-    {
-        MGlobal::displayError( "MFnMesh() failed for MayaMeshWriter" );
+    MFnMesh lMesh(getDagPath(), &status);
+    if (!status) {
+        MGlobal::displayError(
+            "MayaMeshWriter: MFnMesh() failed for mesh at dagPath: " +
+            getDagPath().fullPathName());
         return false;
     }
 
