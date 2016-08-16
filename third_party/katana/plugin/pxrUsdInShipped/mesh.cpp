@@ -87,7 +87,7 @@ _CreateFaceSets(
 
         faceSetAttrs.set("type", FnKat::StringAttribute("faceset"));
         faceSetAttrs.set("materialAssign", FnKat::StringAttribute(
-            PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
+            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
                 bindingTargets[faceSetIdx], data)));
 
         FnKat::IntBuilder facesBuilder;

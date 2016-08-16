@@ -42,7 +42,7 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdRi/statements.h"
 #include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 #include "usdKatana/lookAPI.h"
 
@@ -953,7 +953,7 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
 }
 
 std::string
-PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
+PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         const SdfPath& path,
         const PxrUsdKatanaUsdInPrivateData& data)
 {
@@ -967,12 +967,12 @@ PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
         return basePath;
     }
 
-    UsdShadeLook look = UsdShadeLook(prim);
-    if (not look.HasBaseLook()) {
+    UsdShadeMaterial materialSchema = UsdShadeMaterial(prim);
+    if (not materialSchema.HasBaseMaterial()) {
         return basePath;
     }
 
-    SdfPath parentPath = look.GetBaseLookPath();
+    SdfPath parentPath = materialSchema.GetBaseMaterialPath();
     UsdPrim parentPrim = data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
 
     // Asset sanity check. It is possible the derivesFrom relationship
@@ -1001,7 +1001,7 @@ PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
             parentPath = instancePath.AppendPath(parentPath.ReplacePrefix(
                 masterPath, SdfPath::ReflexiveRelativePath()));
         } else {
-            FnLogWarn("Error converting UsdLook path <" << path.GetString() <<
+            FnLogWarn("Error converting UsdMaterial path <" << path.GetString() <<
                 "> to katana location: could not map parent path <" <<
                 parentPath.GetString() << "> to uninstanced location.");
             return basePath;
@@ -1009,7 +1009,7 @@ PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
     }
 
     std::string parentKatLoc = 
-        ConvertUsdLookPathToKatLocation(parentPath, data);
+        ConvertUsdMaterialPathToKatLocation(parentPath, data);
 
     std::string primName = prim.GetName();
     UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
