@@ -81,7 +81,7 @@ int main()
     unlink(firstName.c_str());
 
     // Test ArchPWrite and ArchPRead.
-    size_t len = strlen(testContent);
+    int64_t len = strlen(testContent);
     assert((firstFile = fopen(firstName.c_str(), "w+b")) != NULL);
     assert(ArchPWrite(firstFile, testContent, len, 0) == len);
     std::unique_ptr<char[]> buf(new char[len]);

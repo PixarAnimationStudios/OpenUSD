@@ -369,6 +369,9 @@ ArchMapFileReadWrite(FILE *file)
 int64_t
 ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
 {
+    if (count == 0)
+        return 0;
+
 #if defined(ARCH_OS_WINDOWS)
     HANDLE hFile = _FileToWinHANDLE(file);
 
@@ -386,7 +389,33 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
     }
     return -1;
 #else // assume POSIX
-    return pread(fileno(file), buffer, count, offset);
+    // Read and check if all got read (most common case).
+    int fd = fileno(file);
+    // Convert to signed so we can compare the result of pread with count
+    // without the compiler complaining.  This conversion is implementation
+    // defined if count is larger than what's representable by int64_t, and
+    // POSIX pread also specifies that this case is implementation defined.  We
+    // follow suit.
+    int64_t signedCount = static_cast<int64_t>(count);
+    int64_t nread = pread(fd, buffer, signedCount, offset);
+    if (ARCH_LIKELY(nread == signedCount or nread == 0))
+        return nread;
+
+    // Track a total and retry until we read everything or hit EOF or an error.
+    int64_t total = std::max<int64_t>(nread, 0);
+    while (nread != -1 || (nread == -1 && errno == EINTR)) {
+        // Update bookkeeping and retry.
+        total += nread;
+        signedCount -= nread;
+        offset += nread;
+        buffer = static_cast<char *>(buffer) + nread;
+        nread = pread(fd, buffer, signedCount, offset);
+        if (ARCH_LIKELY(nread == signedCount or nread == 0))
+            return total + nread;
+    }
+    
+    // Error case.
+    return -1;
 #endif
 }
 
@@ -419,8 +448,14 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
 
     // Write and check if all got written (most common case).
     int fd = fileno(file);
-    int64_t nwritten = pwrite(fd, bytes, count, offset);
-    if (ARCH_LIKELY(nwritten == count))
+    // Convert to signed so we can compare the result of pwrite with count
+    // without the compiler complaining.  This conversion is implementation
+    // defined if count is larger than what's representable by int64_t, and
+    // POSIX pwrite also specifies that this case is implementation defined.  We
+    // follow suit.
+    int64_t signedCount = static_cast<int64_t>(count);
+    int64_t nwritten = pwrite(fd, bytes, signedCount, offset);
+    if (ARCH_LIKELY(nwritten == signedCount))
         return nwritten;
 
     // Track a total and retry until we write everything or hit an error.
@@ -428,11 +463,11 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
     while (nwritten != -1) {
         // Update bookkeeping and retry.
         total += nwritten;
-        count -= nwritten;
+        signedCount -= nwritten;
         offset += nwritten;
         bytes = static_cast<char const *>(bytes) + nwritten;
-        nwritten = pwrite(fd, bytes, count, offset);
-        if (ARCH_LIKELY(nwritten == count))
+        nwritten = pwrite(fd, bytes, signedCount, offset);
+        if (ARCH_LIKELY(nwritten == signedCount))
             return total + nwritten;
     }
 
