@@ -51,8 +51,6 @@
 #include <utility>
 #include <vector>
 
-#include <sys/types.h>
-
 namespace Usd_CrateFile {
 
 using std::make_pair;

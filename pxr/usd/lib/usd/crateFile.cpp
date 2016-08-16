@@ -74,41 +74,20 @@
 #include <tuple>
 #include <type_traits>
 
-#include <sys/mman.h>
-
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
 
 // Write nbytes bytes to fd at pos.
 static inline ssize_t
-WriteToFd(int fd, void const *bytes, ssize_t nbytes, int64_t pos) {
-    // It's claimed that correct, modern POSIX will never return 0 for (p)write
-    // unless nbytes is zero.  It will either be the case that some bytes were
-    // written, or we get an error return.
-
-    // Write and check if all got written (most common case).
-    ssize_t nwritten = pwrite(fd, bytes, nbytes, pos);
-    if (ARCH_LIKELY(nwritten == nbytes))
-        return nwritten;
-
-    // Track a total and retry until we write everything or hit an error.
-    ssize_t total = std::max<ssize_t>(nwritten, 0);
-    while (nwritten != -1) {
-        // Update bookkeeping and retry.
-        total += nwritten;
-        nbytes -= nwritten;
-        pos += nwritten;
-        bytes = static_cast<char const *>(bytes) + nwritten;
-        nwritten = pwrite(fd, bytes, nbytes, pos);
-        if (ARCH_LIKELY(nwritten == nbytes))
-            return total + nwritten;
+WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
+    int64_t nwritten = ArchPWrite(file, bytes, nbytes, pos);
+    if (ARCH_UNLIKELY(nwritten < 0)) {
+        TF_RUNTIME_ERROR("Failed writing usdc data: %s", ArchStrerror().c_str());
+        nwritten = 0;
     }
-
-    // Error case.
-    TF_RUNTIME_ERROR("Failed writing usdc data: %s", ArchStrerror().c_str());
-    return total;
-}    
+    return nwritten;
+}
 
 namespace {
 
@@ -292,15 +271,15 @@ private:
 };
 
 struct _PreadStream {
-    explicit _PreadStream(FILE *file) : _cur(0), _fd(fileno(file)) {}
+    explicit _PreadStream(FILE *file) : _cur(0), _file(file) {}
     inline void Read(void *dest, size_t nBytes) {
-        _cur += pread(_fd, dest, nBytes, _cur);
+        _cur += ArchPRead(_file, dest, nBytes, _cur);
     }
-    inline off_t Tell() const { return _cur; }
-    inline void Seek(off_t offset) { _cur = offset; }
+    inline int64_t Tell() const { return _cur; }
+    inline void Seek(int64_t offset) { _cur = offset; }
 private:
-    off_t _cur;
-    int _fd;
+    int64_t _cur;
+    FILE *_file;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -331,8 +310,7 @@ CrateFile::_TableOfContents::GetMinimumSectionStart() const
 struct CrateFile::_PackingContext
 {
     _PackingContext(CrateFile *crate, FILE *file) 
-        : file(file)
-        , filefd(fileno(file)) {
+        : file(file) {
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
         WorkArenaDispatcher wd;
@@ -415,9 +393,8 @@ struct CrateFile::_PackingContext
     // Unknown sections we're moving to the new structural area.
     vector<tuple<string, unique_ptr<char[]>, size_t>> unknownSections;
 
-    // File we're writing to, and corresponding file descriptor.
+    // File we're writing to.
     FILE *file;
-    int filefd;
     // Current position in output file.
     int64_t outFilePos;
 };
@@ -667,7 +644,7 @@ class CrateFile::_Writer
 {
 public:
     explicit _Writer(CrateFile *crate)
-        : crate(crate), sinkfd(crate->_packCtx->filefd) {}
+        : crate(crate), sink(crate->_packCtx->file) {}
 
     // Recursive write helper.  We use these when writing values if we may
     // invoke _PackValue() recursively.  Since _PackValue() may or may not write
@@ -725,7 +702,7 @@ public:
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     Write(T const &bits) {
         crate->_packCtx->outFilePos += WriteToFd(
-            sinkfd, &bits, sizeof(bits), crate->_packCtx->outFilePos);
+            sink, &bits, sizeof(bits), crate->_packCtx->outFilePos);
     }
 
     template <class U, class T>
@@ -812,7 +789,7 @@ public:
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     WriteContiguous(T const *values, size_t sz) {
         crate->_packCtx->outFilePos += WriteToFd(
-            sinkfd, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
+            sink, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
     }
 
     template <class T>
@@ -822,7 +799,7 @@ public:
     }
 
     CrateFile *crate;
-    int sinkfd;
+    FILE *sink;
 };
 
 
