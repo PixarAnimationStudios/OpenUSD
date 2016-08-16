@@ -37,7 +37,8 @@ typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
 typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 
 /// \class UsdImagingGL
-/// \brief Convenience class that abstracts whether we are rendering via
+///
+/// Convenience class that abstracts whether we are rendering via
 /// a high-performance Hd render engine, or a simple vbo renderer that can
 /// run on old openGl versions.
 ///
@@ -47,6 +48,7 @@ typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 /// \li the environment variable HD_ENABLED is unset, or set to "1"
 /// 
 /// So, to disable Hd rendering for testing purposes, set HD_ENABLED to "0"
+///
 class UsdImagingGL : public UsdImagingEngine {
 public:
 

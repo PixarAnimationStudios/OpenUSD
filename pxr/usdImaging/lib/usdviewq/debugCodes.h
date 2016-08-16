@@ -26,11 +26,10 @@
 
 #include "pxr/base/tf/debug.h"
 
-#include "pxr/base/tf/debug.h"
-
 TF_DEBUG_CODES(
-    USDVIEWQ_DEBUG_CLIPPING
-    );
 
+    USDVIEWQ_DEBUG_CLIPPING
+
+    );
 
 #endif // USDVIEWQ_DEBUGCODES_H

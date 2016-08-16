@@ -44,7 +44,10 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
 
+/// \class UsdImagingEngine
+///
 /// Interface class for render engines.
+///
 class UsdImagingEngine : private boost::noncopyable {
 public:
     virtual ~UsdImagingEngine();

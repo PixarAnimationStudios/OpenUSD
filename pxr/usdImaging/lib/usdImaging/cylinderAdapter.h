@@ -28,6 +28,8 @@
 
 class UsdGeomCylinder;
 
+/// \class UsdImagingCylinderAdapter
+///
 /// Delegate support for UsdGeomCylinder.
 ///
 class UsdImagingCylinderAdapter : public UsdImagingGprimAdapter {
