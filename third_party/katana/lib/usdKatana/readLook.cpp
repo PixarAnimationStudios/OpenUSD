@@ -288,19 +288,33 @@ _CreateShadingNode(
                 fileAssetPath.GetAssetPath()));
         } 
         else {
-            TfToken id;
-            shaderSchema.GetIdAttr().Get(&id, currentTime);
-            std::string oslIdString = id.GetString();
-            oslIdString = "osl:" + oslIdString;
-            FnKat::StringAttribute oslIdAttr = FnKat::StringAttribute(oslIdString);
-            FnAttribute::GroupAttribute shaderInfoAttr = 
-                     FnGeolibServices::FnAttributeFunctionUtil::run(
-                             "PRManGetShaderParameterInfo", oslIdAttr);
-            if (shaderInfoAttr.isValid()) 
-                shdNodeAttr.set("type", oslIdAttr);
-            else 
+            
+            // only use the fallback OSL test if the targetName is "prman" as
+            // it will issue benign but confusing errors to the shell for
+            // display shaders
+            if (targetName == "prman")
+            {
+                TfToken id;
+                shaderSchema.GetIdAttr().Get(&id, currentTime);
+                std::string oslIdString = id.GetString();
+                oslIdString = "osl:" + oslIdString;
+                FnKat::StringAttribute oslIdAttr = FnKat::StringAttribute(oslIdString);
+                FnAttribute::GroupAttribute shaderInfoAttr = 
+                         FnGeolibServices::FnAttributeFunctionUtil::run(
+                                 "PRManGetShaderParameterInfo", oslIdAttr);
+                if (shaderInfoAttr.isValid()) 
+                    shdNodeAttr.set("type", oslIdAttr);
+                else 
+                    shdNodeAttr.set(
+                        "type", FnKat::StringAttribute(id.GetString()));
+            }
+            else
+            {
+                TfToken id;
+                shaderSchema.GetIdAttr().Get(&id, currentTime);
                 shdNodeAttr.set(
-                    "type", FnKat::StringAttribute(id.GetString()));
+                        "type", FnKat::StringAttribute(id.GetString()));
+            }
         }
 
         GroupBuilder paramsBuilder;
