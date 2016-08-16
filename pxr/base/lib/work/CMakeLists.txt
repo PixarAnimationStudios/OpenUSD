@@ -11,9 +11,6 @@ pxr_shared_library(work
     INCLUDE_DIRS
         ${TBB_INCLUDE_DIRS}
 
-    PUBLIC_HEADERS
-        utils.h
-
     PUBLIC_CLASSES
         arenaDispatcher
         detachedTask
@@ -21,6 +18,7 @@ pxr_shared_library(work
         loops
         singularTask
         threadLimits
+        utils
 
     CPPFILES
         moduleDeps.cpp
