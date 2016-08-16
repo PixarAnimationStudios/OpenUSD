@@ -21,6 +21,7 @@ pxr_shared_library(hd
         vt
         work
         sdf
+        cameraUtil
         glf
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
