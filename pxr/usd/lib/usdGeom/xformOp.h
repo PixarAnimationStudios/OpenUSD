@@ -24,7 +24,7 @@
 #ifndef USDGEOM_XFORMOP_H
 #define USDGEOM_XFORMOP_H
 
-/// \file xformOp.h
+/// \file usdGeom/xformOp.h
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"

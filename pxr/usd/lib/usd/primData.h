@@ -24,7 +24,7 @@
 #ifndef USD_PRIMDATA_H
 #define USD_PRIMDATA_H
 
-/// \file primData.h
+/// \file usd/primData.h
 
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primFlags.h"

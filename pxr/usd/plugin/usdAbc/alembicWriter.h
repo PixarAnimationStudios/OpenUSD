@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file alembicWriter.h
 #ifndef USDABC_ALEMBICWRITER_H
 #define USDABC_ALEMBICWRITER_H
+
+/// \file usdAbc/alembicWriter.h
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/declarePtrs.h"

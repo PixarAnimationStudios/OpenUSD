@@ -24,7 +24,7 @@
 #ifndef USD_INTERPOLATION_H
 #define USD_INTERPOLATION_H
 
-/// \file interpolation.h
+/// \file usd/interpolation.h
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/declare.h"

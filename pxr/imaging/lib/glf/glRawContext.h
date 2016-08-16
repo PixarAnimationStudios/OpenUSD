@@ -24,7 +24,7 @@
 #ifndef GLF_GLRAWCONTEXT_H
 #define GLF_GLRAWCONTEXT_H
 
-/// \file glRawContext.h
+/// \file glf/glRawContext.h
 
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glPlatformContext.h"

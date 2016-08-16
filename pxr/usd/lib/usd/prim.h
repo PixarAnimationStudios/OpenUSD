@@ -24,7 +24,7 @@
 #ifndef USD_PRIM_H
 #define USD_PRIM_H
 
-/// \file prim.h
+/// \file usd/prim.h
 
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"

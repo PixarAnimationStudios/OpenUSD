@@ -24,7 +24,7 @@
 #ifndef GARCH_GLPLATFORMCONTEXT_H
 #define GARCH_GLPLATFORMCONTEXT_H
 
-/// \file glPlatformContext.h
+/// \file garch/glPlatformContext.h
 
 #include "pxr/base/arch/defines.h"
 #include <cstddef>

@@ -24,7 +24,7 @@
 #ifndef USD_PRIMFLAGS_H
 #define USD_PRIMFLAGS_H
 
-/// \file primFlags.h
+/// \file usd/primFlags.h
 ///
 /// \anchor Usd_PrimFlags
 ///

@@ -24,7 +24,7 @@
 #ifndef GLF_GLCONTEXTREGISTRY_H
 #define GLF_GLCONTEXTREGISTRY_H
 
-/// \file glContextRegistry.h
+/// \file glf/glContextRegistry.h
 
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
