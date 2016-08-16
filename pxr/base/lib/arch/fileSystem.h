@@ -30,12 +30,14 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <memory>
 #include <cstdio>
 #include <string>
 #include <set>
+
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #if defined(ARCH_OS_LINUX)
 #include <sys/statfs.h>
@@ -142,6 +144,40 @@ std::string ArchMakeTmpSubdir(const std::string& tmpdir,
 ///
 /// Returns a set of all directories that are automount points for the host.
 std::set<std::string> ArchGetAutomountDirectories();
+
+// Helper 'deleter' for use with std::unique_ptr for file mappings.
+#if defined(ARCH_OS_WINDOWS)
+struct Arch_Unmapper {
+    void operator()(char *mapStart) const;
+    void operator()(char const *mapStart) const;
+};
+#else // assume POSIX
+struct Arch_Unmapper {
+    Arch_Unmapper() : _length(~0) {}
+    explicit Arch_Unmapper(size_t length) : _length(length) {}
+    void operator()(char *mapStart) const;
+    void operator()(char const *mapStart) const;
+private:
+    size_t _length;
+};
+#endif
+
+/// ArchConstFileMapping and ArchMutableFileMapping are std::unique_ptr<char
+/// const *, ...> and std::unique_ptr<char *, ...> respectively.  The functions
+/// ArchMapFileReadOnly() and ArchMapFileReadWrite() return them and provide
+/// access to memory-mapped file contents.
+using ArchConstFileMapping = std::unique_ptr<char const, Arch_Unmapper>;
+using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
+
+/// Privately map the passed \p file into memory and return a unique_ptr to the
+/// read-only mapped contents.  The contents may not be modified.
+ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
+
+/// Privately map the passed \p file into memory and return a unique_ptr to the
+/// copy-on-write mapped contents.  If modified, the affected pages are
+/// dissociated from the underlying file and become backed by the system's swap
+/// or page-file storage.  Edits are not carried through to the underlying file.
+ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
 ///@}
 

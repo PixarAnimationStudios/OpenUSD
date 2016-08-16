@@ -36,6 +36,7 @@
 
 #include <alloca.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -44,10 +45,17 @@
 #if defined (ARCH_OS_WINDOWS)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <io.h>
 #endif // ARCH_OS_WINDOWS
 
 using std::string;
 using std::set;
+
+#if defined (ARCH_OS_WINDOWS)
+static inline HANDLE _FileToWinHANDLE(FILE *file) {
+    return reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+}
+#endif // ARCH_OS_WINDOWS
 
 bool
 ArchStatIsWritable(const struct stat *st)
@@ -120,7 +128,7 @@ ArchGetFileLength(FILE *file)
         static_cast<int64_t>(buf.st_size);
 #elif defined (ARCH_OS_WINDOWS)
     LARGE_INTEGER sz;
-    return GetFileSizeEx(_get_osfhandle(_fileno(file)), &sz) ?
+    return GetFileSizeEx(_FileToWinHANDLE(file), &sz) ?
         static_cast<int64_t>(sz.QuadPart) : -1;
 #else
 #error Unknown system architecture
@@ -288,3 +296,71 @@ ArchGetAutomountDirectories()
     
     return result;
 }
+
+void
+Arch_Unmapper::operator()(char const *mapStart) const
+{
+    void *ptr = static_cast<void *>(const_cast<char *>(mapStart));
+    if (!ptr)
+        return;
+#if defined(ARCH_OS_WINDOWS)
+    UnmapViewOfFile(ptr);
+#else // assume POSIX
+    munmap(ptr, _length);
+#endif
+}
+
+void
+Arch_Unmapper::operator()(char *mapStart) const
+{
+    (*this)(static_cast<char const *>(mapStart));
+}
+
+template <class Mapping>
+static inline Mapping
+Arch_MapFileImpl(FILE *file)
+{
+    using PtrType = typename Mapping::pointer;
+    constexpr bool isConst =
+        std::is_const<typename Mapping::element_type>::value;
+
+    auto length = ArchGetFileLength(file);
+    if (length < 0)
+        return Mapping();
+
+#if defined(ARCH_OS_WINDOWS)
+    uint64_t unsignedLength = length;
+    DWORD maxSizeHigh = static_cast<DWORD>(unsignedLength >> 32);
+    DWORD maxSizeLow = static_cast<DWORD>(unsignedLength);
+    HANDLE hFileMap = CreateFileMapping(
+        _FileToWinHANDLE(file), NULL,
+        PAGE_READONLY /* allow read-only or copy-on-write */,
+        maxSizeHigh, maxSizeLow, NULL);
+    if (hFileMap == NULL)
+        return Mapping();
+    auto ptr = static_cast<PtrType>(
+        MapViewOfFile(hFileMap, isConst ? FILE_MAP_READ : FILE_MAP_COPY,
+                      /*offsetHigh=*/ 0, /*offsetLow=*/0, unsignedLength));
+    // Close the mapping handle, and return the view pointer.
+    CloseHandle(hFileMap);
+    return Mapping(ptr, Arch_Unmapper());
+#else // Assume POSIX
+    return Mapping(
+        static_cast<PtrType>(
+            mmap(nullptr, length, isConst ? PROT_READ : PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE, fileno(file), 0)), Arch_Unmapper(length));
+#endif
+}
+
+ArchConstFileMapping
+ArchMapFileReadOnly(FILE *file)
+{
+    return Arch_MapFileImpl<ArchConstFileMapping>(file);
+}
+
+ArchMutableFileMapping
+ArchMapFileReadWrite(FILE *file)
+{
+    return Arch_MapFileImpl<ArchMutableFileMapping>(file);
+}
+
