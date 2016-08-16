@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/mapperArgSpec.h
-
 #ifndef SDF_MAPPERARGSPEC_H
 #define SDF_MAPPERARGSPEC_H
+
+/// \file sdf/mapperArgSpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
@@ -34,9 +34,9 @@
 SDF_DECLARE_HANDLES(SdfMapperArgSpec);
 SDF_DECLARE_HANDLES(SdfMapperSpec);
 
-///
 /// \class SdfMapperArgSpec 
-/// \brief Represents an argument to a specific mapper.
+///
+/// Represents an argument to a specific mapper.
 ///
 class SdfMapperArgSpec : public SdfSpec 
 {
@@ -51,7 +51,7 @@ public:
     /// \name Spec creation
     /// @{
 
-    /// \brief Create a mapper arg spec.
+    /// Create a mapper arg spec.
     ///
     /// Creates and returns a new mapper arg owned by mapper \a owner with
     /// the name \p name and value \p value.

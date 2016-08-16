@@ -24,6 +24,8 @@
 #ifndef USDHYDRA_GENERATED_LOOKAPI_H
 #define USDHYDRA_GENERATED_LOOKAPI_H
 
+/// \file usdHydra/lookAPI.h
+
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +46,8 @@ class SdfAssetPath;
 // HYDRALOOKAPI                                                               //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdHydraLookAPI
+///
 /// 
 /// 
 ///
@@ -82,7 +86,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdHydraLookAPI holding the prim adhering to this
+    /// Return a UsdHydraLookAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

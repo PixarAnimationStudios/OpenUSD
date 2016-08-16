@@ -21,20 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/layerOffset.h
-
-
 #ifndef SDF_LAYER_OFFSET
 #define SDF_LAYER_OFFSET
+
+/// \file sdf/layerOffset.h
 
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <vector>
 
-///
 /// \class SdfLayerOffset 
-/// \brief Represents a time offset and scale between layers.
+///
+/// Represents a time offset and scale between layers.
 ///
 /// The SdfLayerOffset class is an affine transform, providing both a scale and
 /// a translate.  It supports vector algebra semantics for composing

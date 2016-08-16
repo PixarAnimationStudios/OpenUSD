@@ -34,8 +34,10 @@
 class PcpPrimIndex;
 
 /// \class Usd_ClipCache
+///
 /// Private helper object for computing and caching clip information for 
 /// a prim on a UsdStage.
+///
 class Usd_ClipCache : public boost::noncopyable
 {
 public:
@@ -83,8 +85,10 @@ public:
     GetClipsForPrim(const SdfPath& path) const;
 
     /// \struct Lifeboat
+    ///
     /// Structure for keeping invalidated clip data alive.
-    /// See InvalidateClipsForPrim.
+    /// \sa InvalidateClipsForPrim.
+    ///
     struct Lifeboat
     {
         std::vector<Clips> _clips;

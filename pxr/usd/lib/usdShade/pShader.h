@@ -24,6 +24,8 @@
 #ifndef USDSHADE_GENERATED_PSHADER_H
 #define USDSHADE_GENERATED_PSHADER_H
 
+/// \file usdShade/pShader.h
+
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +46,8 @@ class SdfAssetPath;
 // PSHADER                                                                    //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadePShader
+///
 ///
 class UsdShadePShader : public UsdTyped
 {
@@ -80,7 +84,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadePShader holding the prim adhering to this
+    /// Return a UsdShadePShader holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -92,7 +96,7 @@ public:
     static UsdShadePShader
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

@@ -39,12 +39,15 @@ SDF_DECLARE_HANDLES(SdfVariantSetSpec);
 
 class SdfPath;
 
+/// \class UsdVariantSet
+///
 /// A UsdVariantSet represents a single VariantSet in USD
 /// (e.g. modelingVariant or shadingVariant), which can have multiple
 /// variations that express different sets of opinions about the scene
 /// description rooted at the prim that defines the VariantSet.
 ///
 /// (More detailed description of variants to follow)
+///
 class UsdVariantSet {
 public:
 #ifndef doxygen
@@ -186,6 +189,8 @@ private:
 // VariantSet Names are stored as SdListOps, but a VariantSet is an actual spec
 // (like a Prim). Is it important to make that distinction here?
 
+/// \class UsdVariantSets
+///
 /// UsdVariantSets represents the collection of
 /// \ref UsdVariantSet "VariantSets" that are present on a UsdPrim.
 ///
@@ -194,6 +199,7 @@ private:
 /// the composed list of VariantSets active defined on the prim, and also
 /// the facility for authoring a VariantSet \em selection for any of those
 /// VariantSets.
+///
 class UsdVariantSets {
 public:
 
@@ -257,6 +263,5 @@ private:
 
     friend class UsdPrim;
 };
-
 
 #endif //USD_VARIANTSETS_H

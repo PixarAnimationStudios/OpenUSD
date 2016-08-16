@@ -458,5 +458,4 @@ operator||(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
     return Usd_Term(lhs) || Usd_Term(rhs);
 }
 
-
 #endif // USD_PRIMFLAGS_H

@@ -24,9 +24,9 @@
 #ifndef SDF_CHILDREN_POLICIES_H
 #define SDF_CHILDREN_POLICIES_H
 
-/// These policies are used as template arguments to SdfChildrenView to determine
-/// how the view maps between keys (the child's name or path) and values
-/// (the child's SpecHandle).
+// These policies are used as template arguments to SdfChildrenView to
+// determine how the view maps between keys (the child's name or path) and
+// values (the child's SpecHandle).
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -43,10 +43,9 @@ SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 SDF_DECLARE_HANDLES(SdfVariantSpec);
 SDF_DECLARE_HANDLES(SdfVariantSetSpec);
 
-
-///
-/// Token Child Policies
-///
+//
+// Token Child Policies
+//
 
 template <class SpecType>
 class Sdf_TokenChildPolicy {

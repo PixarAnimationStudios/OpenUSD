@@ -34,7 +34,9 @@
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 /// \enum Usd_ResolveInfoSource
+///
 /// Describes the various sources of attribute values.
+///
 enum Usd_ResolveInfoSource
 {
     Usd_ResolveInfoSourceNone,        //< No value
@@ -46,8 +48,10 @@ enum Usd_ResolveInfoSource
 };
 
 /// \class Usd_ResolveInfo
-/// Container for information about the source of an attribute's
-/// value, i.e. the 'resolved' location of the attribute.
+///
+/// Container for information about the source of an attribute's value, i.e.
+/// the 'resolved' location of the attribute.
+///
 struct Usd_ResolveInfo
 {
 public:

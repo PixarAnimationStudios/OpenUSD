@@ -35,8 +35,10 @@
 #include <boost/array.hpp>
 
 /// \class Sdf_ListOpListEditor
+///
 /// List editor implementation for list editing operations stored in an
 /// SdfListOp object. 
+///
 template <class TypePolicy>
 class Sdf_ListOpListEditor
     : public Sdf_ListEditor<TypePolicy>

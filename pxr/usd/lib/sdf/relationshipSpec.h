@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/relationshipSpec.h
-
 #ifndef SDF_RELATIONSHIPSPEC_H
 #define SDF_RELATIONSHIPSPEC_H
+
+/// \file sdf/relationshipSpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
@@ -34,8 +34,8 @@ template <class TypePolicy> class Sdf_ListEditor;
 template <class T> class Sdf_MarkerUtils;
 
 /// \class SdfRelationshipSpec
-/// \brief A property that contains a reference to one or more SdfPrimSpec
-/// instances.
+///
+/// A property that contains a reference to one or more SdfPrimSpec instances.
 ///
 /// A relationship may refer to one or more target prims or attributes.
 /// All targets of a single relationship are considered to be playing the same
@@ -60,7 +60,7 @@ public:
     /// \name Spec creation
     /// @{
 
-    /// \brief Creates a new prim relationship instance.
+    /// Creates a new prim relationship instance.
     ///
     /// Creates and returns a new relationship for the given prim.
     /// The \p owner will own the newly created relationship.
@@ -75,7 +75,7 @@ public:
     /// \name Relationship targets
     /// @{
 
-    /// \brief Returns the relationship's target path list editor.
+    /// Returns the relationship's target path list editor.
     ///
     /// The list of the target paths for this relationship may be modified
     /// through the proxy.
@@ -87,13 +87,13 @@ public:
     /// Clears the list of target paths on this relationship.
     void ClearTargetPathList() const;
 
-    /// \brief Updates the specified target path.
+    /// Updates the specified target path.
     ///
     /// Replaces the path given by \p oldPath with the one specified by
     /// \p newPath.  Relational attributes are updated if necessary.
     void ReplaceTargetPath(const SdfPath& oldPath, const SdfPath& newPath);
 
-    /// \brief Removes the specified target path.
+    /// Removes the specified target path.
     ///
     /// Removes the given target path and any relational attributes for the
     /// given target path. If \p preserveTargetOrder is \c true, Erase() is
@@ -155,15 +155,15 @@ public:
     SdfNameOrderProxy GetOrCreateAttributeOrderForTargetPath(
         const SdfPath& path);
 
-    /// \brief Replaces all target attribute orders with the given map.
+    /// Replaces all target attribute orders with the given map.
     ///
     /// The map's keys are the target paths whose attributes should be
     /// ordered.  The values are vectors of strings specifying the
     /// ordering for each path.
     void SetTargetAttributeOrders(const AttributeOrderMap& orders);
 
-    /// \brief Reorders the given list of attribute names according to the
-    /// reorder attributes statement for the given target path.
+    /// Reorders the given list of attribute names according to the reorder
+    /// attributes statement for the given target path.
     ///
     /// This routine employs the standard list editing operation for ordered
     /// items in a ListEditor.
@@ -184,27 +184,25 @@ public:
     /// Sets the all the target markers for this relationship.
     void SetTargetMarkers(const TargetMarkerMap& markers);
 
-    /// \brief Returns the marker for this relationship for the given target 
-    /// path.
+    /// Returns the marker for this relationship for the given target path.
     std::string GetTargetMarker(const SdfPath& path) const;
 
-    /// \brief Sets the marker for this relationship for the given target
-    /// path. 
+    /// Sets the marker for this relationship for the given target path. 
     /// 
     /// If an empty string is specified, the target marker will be cleared.
     void SetTargetMarker(const SdfPath& path, const std::string& marker);
 
-    /// \brief Clears the marker for the given target path.
+    /// Clears the marker for the given target path.
     void ClearTargetMarker(const SdfPath& path);
 
     /// Returns all target paths on which markers are specified.
     SdfPathVector GetTargetMarkerPaths() const;
 
-    /// \brief Get whether loading the target of this relationship is necessary
+    /// Get whether loading the target of this relationship is necessary
     /// to load the prim we're attached to
     bool GetNoLoadHint(void) const;
 
-    /// \brief Set whether loading the target of this relationship is necessary
+    /// Set whether loading the target of this relationship is necessary
     /// to load the prim we're attached to
     void SetNoLoadHint(bool noload);
 

@@ -24,9 +24,6 @@
 #ifndef USDGEOM_FACE_SET_API_H
 #define USDGEOM_FACE_SET_API_H
 
-
-
-
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
@@ -122,11 +119,10 @@
 /// lookFaceSet.SetBindingTargets([look1Path, look2Path])
 /// \endcode
 /// 
-/// 
 class UsdGeomFaceSetAPI: public UsdSchemaBase
 {
 public:
-    /// \brief Construct a UsdGeomFaceSetAPI with the given \p setName on 
+    /// Construct a UsdGeomFaceSetAPI with the given \p setName on 
     /// the UsdPrim \p prim .
     /// 
     explicit UsdGeomFaceSetAPI(const UsdPrim& prim=UsdPrim(), 
@@ -136,7 +132,7 @@ public:
     {
     }
 
-    /// \brief Construct a USdGeomFaceSetAPI with the given \p setName on the 
+    /// Construct a USdGeomFaceSetAPI with the given \p setName on the 
     /// prim held by \p schemaObj .
     /// 
     explicit UsdGeomFaceSetAPI(const UsdSchemaBase& schemaObj, 

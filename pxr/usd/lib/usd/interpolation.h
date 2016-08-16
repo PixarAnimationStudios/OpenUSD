@@ -24,16 +24,19 @@
 #ifndef USD_INTERPOLATION_H
 #define USD_INTERPOLATION_H
 
+/// \file interpolation.h
+
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/declare.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
 
-/// \file interpolation.h
-
 /// \enum UsdInterpolationType
-/// \brief Attribute value interpolation options. 
+///
+/// Attribute value interpolation options. 
+///
 /// See \ref Usd_AttributeInterpolation for more details.
+///
 enum UsdInterpolationType
 {
     UsdInterpolationTypeHeld,  //< Held interpolation
@@ -82,7 +85,8 @@ enum UsdInterpolationType
     (GfQuath) (VtArray<GfQuath>)
 
 /// \struct UsdLinearInterpolationTraits
-/// \brief Traits class describing whether a particular C++ value type
+///
+/// Traits class describing whether a particular C++ value type
 /// supports linear interpolation.
 ///
 /// UsdLinearInterpolationTraits<T>::isSupported will be true for all

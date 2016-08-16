@@ -35,7 +35,10 @@
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 class PcpLayerStackSite;
 
+/// \struct PcpSite
+///
 /// A site specifies a path in a layer stack of scene description.
+///
 struct PcpSite : boost::totally_ordered<PcpSite> {
 public:
     PcpLayerStackIdentifier layerStackIdentifier;
@@ -57,7 +60,10 @@ public:
     };
 };
 
+/// \struct PcpLayerStackSite
+///
 /// A site specifies a path in a layer stack of scene description.
+///
 struct PcpLayerStackSite : boost::totally_ordered<PcpLayerStackSite> {
 public:
     PcpLayerStackPtr layerStack;

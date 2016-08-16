@@ -65,7 +65,10 @@ public:
         return key._hash;
     }
 
-    /// Hash functor
+    /// \struct Hash
+    ///
+    /// Hash functor.
+    ///
     struct Hash {
         inline size_t operator()(const PcpInstanceKey& key) const
         {

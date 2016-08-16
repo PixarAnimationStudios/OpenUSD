@@ -45,7 +45,6 @@
 
 TF_DECLARE_WEAK_PTRS(UsdStage);
 
-//
 // Private class that stores cached prim information and defines the prim tree
 // on a UsdStage.
 //
@@ -73,7 +72,7 @@ public:
     /// \name Prim Data & Behavior
     // --------------------------------------------------------------------- //
 
-    /// \brief Returns the composed path for the prim.
+    /// Returns the composed path for the prim.
     ///
     /// This path is absolute with respect to the current stage and may require
     /// translation when used in the context of individual layers of which the 
@@ -85,7 +84,7 @@ public:
 
     UsdStage *GetStage() const { return _stage; }
 
-    /// \brief Returns the composed type name for the prim.
+    /// Returns the composed type name for the prim.
     /// Note that this value is cached and is efficient to query.
     const TfToken &GetTypeName() const { return _typeName; };
 

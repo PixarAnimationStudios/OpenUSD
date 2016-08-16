@@ -29,7 +29,9 @@
 #include <string>
 
 /// \struct ArAssetInfo
+///
 /// Contains information about a resolved asset.
+///
 struct AR_API ArAssetInfo 
 {
     /// Version of the resolved asset, if any.

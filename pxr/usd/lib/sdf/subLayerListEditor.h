@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/subLayerListEditor.h
-
 #ifndef SDF_SUBLAYERLISTEDITOR_H
 #define SDF_SUBLAYERLISTEDITOR_H
+
+/// \file sdf/subLayerListEditor.h
 
 #include "pxr/usd/sdf/vectorListEditor.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -32,8 +32,10 @@
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
-/// \class Sdf_SubLayerListEditor sdf/subLayerListEditor.h
-/// \brief List editor implementation for sublayer path lists.
+/// \class Sdf_SubLayerListEditor
+///
+/// List editor implementation for sublayer path lists.
+///
 class Sdf_SubLayerListEditor 
     : public Sdf_VectorListEditor<SdfSubLayerTypePolicy>
 {

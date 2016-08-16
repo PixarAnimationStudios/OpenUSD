@@ -21,13 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pcp/utils.h
-///
-///
-
 #ifndef PCP_UTILS_H
 #define PCP_UTILS_H
+
+/// \file pcp/utils.h
 
 #include <string>
 #include "pxr/usd/sdf/layer.h"

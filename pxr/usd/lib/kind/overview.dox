@@ -5,7 +5,7 @@
 /// \endif
 /// \anchor mainpage_kind
 ///
-/// \brief The Kind library provides a runtime-extensible taxonomy known as "kinds".
+/// The Kind library provides a runtime-extensible taxonomy known as "kinds".
 ///
 /// Kinds are just TfToken symbols, but the KindRegistry allows
 /// for organizing kinds into taxonomies of related/refined concepts,

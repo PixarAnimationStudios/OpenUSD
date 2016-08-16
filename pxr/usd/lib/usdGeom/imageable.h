@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_IMAGEABLE_H
 #define USDGEOM_GENERATED_IMAGEABLE_H
 
+/// \file usdGeom/imageable.h
+
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -47,7 +49,9 @@ class SdfAssetPath;
 // IMAGEABLE                                                                  //
 // -------------------------------------------------------------------------- //
 
-/// \brief Base class for all prims that may require rendering or 
+/// \class UsdGeomImageable
+///
+/// Base class for all prims that may require rendering or 
 /// visualization of some sort. The primary attributes of Imageable 
 /// are \em visibility and \em purpose, which each provide instructions for
 /// what geometry should be included for processing by rendering and other
@@ -97,7 +101,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomImageable holding the prim adhering to this
+    /// Return a UsdGeomImageable holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -304,7 +308,7 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// \brief Make the imageable visible if it is invisible at the given time.
+    /// Make the imageable visible if it is invisible at the given time.
     /// 
     /// Since visibility is pruning, this may need to override some 
     /// ancestor's visibility and all-but-one of the ancestor's children's 
@@ -332,7 +336,7 @@ public:
     /// 
     void MakeVisible(const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
-    /// \brief Makes the imageable invisible if it is visible at the given time.
+    /// Makes the imageable invisible if it is visible at the given time.
     ///
     /// \note When visibility is animated, this only works when it is 
     /// invoked sequentially at increasing time samples. If visibility is 

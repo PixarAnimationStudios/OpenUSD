@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_BOUNDABLE_H
 #define USDGEOM_GENERATED_BOUNDABLE_H
 
+/// \file usdGeom/boundable.h
+
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,7 +46,9 @@ class SdfAssetPath;
 // BOUNDABLE                                                                  //
 // -------------------------------------------------------------------------- //
 
-/// \brief Boundable introduces the ability for a prim to persistently
+/// \class UsdGeomBoundable
+///
+/// Boundable introduces the ability for a prim to persistently
 /// cache a rectilinear, local-space, extent.
 /// 
 /// \section UsdGeom_Boundable_Extent Why Extent and not Bounds ?
@@ -106,7 +110,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomBoundable holding the prim adhering to this
+    /// Return a UsdGeomBoundable holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

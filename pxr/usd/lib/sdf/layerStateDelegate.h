@@ -43,13 +43,16 @@ class SdfPath;
 class TfToken;
 
 /// \class SdfLayerStateDelegateBase
+///
 /// Maintains authoring state information for an associated layer. 
+///
 /// For example, layers rely on a state delegate to determine whether or
 /// not they have been dirtied by authoring operations.
 ///
 /// A layer's state delegate is invoked on every authoring operation on
 /// that layer. The delegate may keep track of these operations for various
 /// purposes.
+///
 class SdfLayerStateDelegateBase
     : public TfRefBase
     , public TfWeakBase

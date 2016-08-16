@@ -24,9 +24,6 @@
 #ifndef USDGEOM_PRIMVAR_H
 #define USDGEOM_PRIMVAR_H
 
-
-
-
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -34,9 +31,9 @@
 #include <vector>
 
 /// \class UsdGeomPrimvar
-/// \brief Schema wrapper for UsdAttribute for authoring and introspecting
-/// attributes that are primvars.
-/// 
+///
+/// Schema wrapper for UsdAttribute for authoring and introspecting attributes
+/// that are primvars.
 ///
 /// UsdGeomPrimvar provides API for authoring and retrieving the
 /// additional data required to encode an attribute as a "Primvar",
@@ -309,7 +306,7 @@ class UsdGeomPrimvar
     /// Explicit UsdAttribute extractor
     UsdAttribute const &GetAttr() const { return _attr; }
     
-    /// \brief Return true if the wrapped UsdAttribute::IsDefined(), and in
+    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
     /// addition the attribute is identified as a Primvar.
     bool IsDefined() const { return IsPrimvar(_attr); }
 

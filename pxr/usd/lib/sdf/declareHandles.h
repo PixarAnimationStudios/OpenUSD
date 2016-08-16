@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/declareHandles.h
-
 #ifndef SDF_DECLAREHANDLES_H
 #define SDF_DECLAREHANDLES_H
+
+/// \file sdf/declareHandles.h
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
@@ -49,9 +49,12 @@ class Sdf_Identity;
 // Sdf_IdentityRegistry::Identify().
 typedef boost::intrusive_ptr<Sdf_Identity> Sdf_IdentityRefPtr;
 
+/// \class SdfHandle
+///
 /// SdfHandle is a smart ptr that calls IsDormant() on the pointed-to
 /// object as an extra expiration check so that dormant objects appear to
 /// be expired.
+///
 template <class T>
 class SdfHandle : private boost::totally_ordered<SdfHandle<T> > {
 public:

@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_NURBSPATCH_H
 #define USDGEOM_GENERATED_NURBSPATCH_H
 
+/// \file usdGeom/nurbsPatch.h
+
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,7 +46,9 @@ class SdfAssetPath;
 // NURBSPATCH                                                                 //
 // -------------------------------------------------------------------------- //
 
-/// \brief Encodes a rational or polynomial non-uniform B-spline
+/// \class UsdGeomNurbsPatch
+///
+/// Encodes a rational or polynomial non-uniform B-spline
 /// surface, with optional trim curves.
 /// 
 /// The encoding mostly follows that of RiNuPatch and RiTrimCurve: 
@@ -133,7 +137,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomNurbsPatch holding the prim adhering to this
+    /// Return a UsdGeomNurbsPatch holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -145,7 +149,7 @@ public:
     static UsdGeomNurbsPatch
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

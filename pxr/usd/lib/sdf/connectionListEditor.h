@@ -35,9 +35,11 @@ SDF_DECLARE_HANDLES(SdfSpec);
 class TfToken;
 
 /// \class Sdf_ConnectionListEditor
+///
 /// List editor implementation that ensures that the appropriate target
 /// specs are created or destroyed when connection/relationship targets are 
 /// added to the underlying list operation.
+///
 template <class ConnectionChildPolicy>
 class Sdf_ConnectionListEditor 
     : public Sdf_ListOpListEditor<SdfPathKeyPolicy>
@@ -60,7 +62,9 @@ private:
 };
 
 /// \class Sdf_AttributeConnectionListEditor
+///
 /// List editor implementation for attribute connections.
+///
 class Sdf_AttributeConnectionListEditor
     : public Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>
 {
@@ -79,7 +83,9 @@ private:
 };
 
 /// \class Sdf_RelationshipTargetListEditor
+///
 /// List editor implementation for attribute connections.
+///
 class Sdf_RelationshipTargetListEditor
     : public Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>
 {

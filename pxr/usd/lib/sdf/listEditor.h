@@ -48,8 +48,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
 
 /// \class Sdf_ListEditor
+///
 /// Base class for list editor implementations in which list editing operations 
 /// are stored in data field(s) associated with an owning spec.
+///
 template <class TypePolicy>
 class Sdf_ListEditor
     : public boost::noncopyable 

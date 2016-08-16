@@ -33,7 +33,10 @@
 #include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
 
-/// PcpMapExpression is an expression that yields a PcpMapFunction value.
+/// \class PcpMapExpression
+///
+/// An expression that yields a PcpMapFunction value.
+///
 /// Expressions comprise constant values, variables, and operators
 /// applied to sub-expressions.  Expressions cache their computed values
 /// internally.  Assigning a new value to a variable automatically
@@ -44,6 +47,7 @@
 /// handling of relocates edits.  It represents a tree of the namespace
 /// mapping operations and their inputs, so we can narrowly redo the
 /// computation when one of the inputs changes.
+///
 class PcpMapExpression
 {
 public:

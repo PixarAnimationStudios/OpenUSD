@@ -36,7 +36,7 @@ class UsdProperty;
 
 /// \class UsdProperty
 ///
-/// \brief Base class for UsdAttribute and UsdRelationship scenegraph objects.
+/// Base class for UsdAttribute and UsdRelationship scenegraph objects.
 ///
 /// UsdProperty has a bool conversion operator that validates that the property
 /// IsDefined() and thus valid for querying and authoring values and metadata.
@@ -58,7 +58,9 @@ public:
     // --------------------------------------------------------------------- //
     /// \name Object and Namespace Accessors
     // --------------------------------------------------------------------- //
-   
+
+    /// @{
+
     /// Returns a strength-ordered list of property specs that provide
     /// opinions for this property.
     ///
@@ -101,9 +103,9 @@ public:
     /// name as the final element.
     std::vector<std::string> SplitName() const;
 
-    //
+    /// @}
     /// \name Core Metadata
-    //
+    /// @{
 
     /// Return this property's display group (metadata).  This returns the
     /// empty token if no display group has been set.
@@ -178,11 +180,11 @@ public:
     /// is provided primarily for fixing invalid scene description.
     bool SetCustom(bool isCustom) const;
 
-    //
+    /// @}
     /// \name Existence and Validity
-    //
+    /// @{
 
-    /// \brief Return true if this is a builtin property or if the strongest
+    /// Return true if this is a builtin property or if the strongest
     /// authored SdfPropertySpec for this property's path matches this
     /// property's dynamic type.  That is, SdfRelationshipSpec in case this is a
     /// UsdRelationship, and SdfAttributeSpec in case this is a UsdAttribute.
@@ -194,16 +196,18 @@ public:
     /// metadata.
     bool IsDefined() const;
 
-    /// \brief Return true if there are any authored opinions for this property
+    /// Return true if there are any authored opinions for this property
     /// in any layer that contributes to this stage, false otherwise.
     bool IsAuthored() const;
 
-    /// \brief Return true if there is an SdfPropertySpec authored for this
+    /// Return true if there is an SdfPropertySpec authored for this
     /// property at the given \a editTarget, otherwise return false.  Note
     /// that this method does not do partial composition.  It does not consider
     /// whether authored scene description exists at \a editTarget or weaker,
     /// only <b>exactly at</b> the given \a editTarget.
     bool IsAuthoredAt(const class UsdEditTarget &editTarget) const;
+
+    /// @}
 
 private:
     friend class UsdAttribute;
@@ -218,6 +222,5 @@ private:
         : UsdObject(objType, prim, propName) {}
 
 };
-
 
 #endif // USD_PROPERTY_H

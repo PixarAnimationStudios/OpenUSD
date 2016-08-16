@@ -32,9 +32,11 @@
 class PcpPrimIndex_Graph;
 
 /// \struct PcpArc
+///
 /// Represents an arc connecting two nodes in the prim index. 
 /// The arc is owned by a node (source) and points to its parent node (target) 
 /// in the index.
+///
 struct PcpArc 
 {
     PcpArc()

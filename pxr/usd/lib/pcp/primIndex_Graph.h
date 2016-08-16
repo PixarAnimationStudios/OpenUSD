@@ -46,8 +46,10 @@ class PcpLayerStackSite;
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpPrimIndex_Graph);
 
 /// \class PcpPrimIndex_Graph
+///
 /// Internal representation of the graph used to represent sources of
 /// opinions in the prim index.
+///
 class PcpPrimIndex_Graph 
     : public TfRefBase
     , public TfWeakBase

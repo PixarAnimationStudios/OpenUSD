@@ -37,7 +37,9 @@
 //         out of it anyway for simplicity's sake.
 
 /// \class UsdAbc_AlembicDataReader
-/// \brief An alembic reader suitable for an SdfAbstractData.
+///
+/// An alembic reader suitable for an SdfAbstractData.
+///
 class UsdAbc_AlembicDataReader : boost::noncopyable {
 public:
     typedef int64_t Index;

@@ -38,7 +38,9 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfAbstractData);
 
 /// \class UsdAbc_AlembicDataWriter
-/// \brief An alembic writer suitable for an SdfAbstractData.
+///
+/// An alembic writer suitable for an SdfAbstractData.
+///
 class UsdAbc_AlembicDataWriter : boost::noncopyable {
 public:
     UsdAbc_AlembicDataWriter();

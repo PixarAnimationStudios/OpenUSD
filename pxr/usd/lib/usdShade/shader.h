@@ -24,6 +24,8 @@
 #ifndef USDSHADE_GENERATED_SHADER_H
 #define USDSHADE_GENERATED_SHADER_H
 
+/// \file usdShade/shader.h
+
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -47,6 +49,8 @@ class SdfAssetPath;
 // SHADER                                                                     //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeShader
+///
 /// Base class for all usd shaders. This is not target specific,
 /// although usually each render target will derive its own, renderer-specific
 /// shader object types from this base.
@@ -103,7 +107,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeShader holding the prim adhering to this
+    /// Return a UsdShadeShader holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -115,7 +119,7 @@ public:
     static UsdShadeShader
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -184,7 +188,7 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// \brief Create a parameter which can either have a value or can be
+    /// Create a parameter which can either have a value or can be
     /// connected.
     ///
     /// This will infer whether the parameter should be scalar or array from

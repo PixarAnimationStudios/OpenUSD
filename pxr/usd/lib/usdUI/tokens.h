@@ -24,6 +24,8 @@
 #ifndef USDUI_TOKENS_H
 #define USDUI_TOKENS_H
 
+/// \file usdUI/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -33,8 +35,6 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-/// \file pxr/usd/usdUI/tokens.h
-
 /// \hideinitializer
 #define USDUI_TOKENS \
     ((uiNodegraphNodeDisplayColor, "ui:nodegraph:node:displayColor")) \
@@ -42,7 +42,8 @@
     ((uiNodegraphNodeStackingOrder, "ui:nodegraph:node:stackingOrder"))
 
 /// \anchor UsdUITokens
-/// \brief <b>UsdUITokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdUITokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

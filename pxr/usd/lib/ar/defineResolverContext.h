@@ -28,10 +28,12 @@
 #include "pxr/usd/ar/pyResolverContext.h"
 
 /// \def AR_DECLARE_RESOLVER_CONTEXT(ContextObject)
+///
 /// Declare that the specified ContextObject type may be used as an asset
 /// resolver context object for ArResolverContext. This typically
 /// would be invoked in the header where the ContextObject is
 /// declared.
+///
 #define AR_DECLARE_RESOLVER_CONTEXT(context)           \
 template <>                                            \
 struct ArIsContextObject<context>                      \

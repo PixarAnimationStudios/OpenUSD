@@ -24,6 +24,8 @@
 #ifndef USD_TOKENS_H
 #define USD_TOKENS_H
 
+/// \file usd/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -32,8 +34,6 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file pxr/usd/usd/tokens.h
 
 /// \hideinitializer
 #define USD_TOKENS \
@@ -44,7 +44,8 @@
     (clipTimes)
 
 /// \anchor UsdTokens
-/// \brief <b>UsdTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

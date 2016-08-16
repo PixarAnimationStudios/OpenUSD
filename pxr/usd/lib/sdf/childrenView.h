@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/childrenView.h
-
 #ifndef SDF_CHILDRENVIEW_H
 #define SDF_CHILDRENVIEW_H
+
+/// \file sdf/childrenView.h
 
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
@@ -36,11 +36,13 @@
 #include <vector>
 
 /// \class SdfChildrenViewTrivialPredicate
-/// \brief Special case predicate that always passes.
+///
+/// Special case predicate that always passes.
 ///
 /// \c T is the type exposed by the value traits.
 ///
 /// This predicate is compiled out.
+///
 template <class T>
 class SdfChildrenViewTrivialPredicate {
 public:
@@ -48,7 +50,9 @@ public:
 };
 
 /// \class SdfChildrenViewTrivialAdapter
-/// \brief Special case adapter that does no conversions.
+///
+/// Special case adapter that does no conversions.
+///
 template <class T>
 class SdfChildrenViewTrivialAdapter {
 public:
@@ -57,11 +61,13 @@ public:
     static const PublicType& Convert(const PrivateType& t) { return t; }
 };
 
-// This traits class defines the iterator for a particular ChildrenView
-// along with conversions to and from the view's internal un-filtered iterator.
-//
-// A specialization of the traits for trivial predicates allows the
-// internal iterator to be used directly.
+/// \class Sdf_ChildrenViewTraits
+/// This traits class defines the iterator for a particular ChildrenView
+/// along with conversions to and from the view's internal un-filtered iterator.
+///
+/// A specialization of the traits for trivial predicates allows the
+/// internal iterator to be used directly.
+///
 template <typename _Owner, typename _InnerIterator, typename _DummyPredicate>
 class Sdf_ChildrenViewTraits {
 private:
@@ -129,8 +135,9 @@ public:
     }
 };
 
-/// \class SdfChildrenView sdf/childrenView.h
-/// \brief Provides a view onto an object's children.
+/// \class SdfChildrenView
+///
+/// Provides a view onto an object's children.
 ///
 /// The \c _ChildPolicy dictates the type of children being viewed by this
 /// object. This policy defines the key type by which children are referenced
@@ -148,6 +155,7 @@ public:
 ///
 /// Note that all methods are const, i.e. the children cannot be changed
 /// through a view.
+///
 template <typename _ChildPolicy,
           typename _Predicate =
               SdfChildrenViewTrivialPredicate<

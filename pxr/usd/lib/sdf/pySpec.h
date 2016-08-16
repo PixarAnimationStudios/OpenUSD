@@ -26,11 +26,44 @@
 #ifndef SDF_PYSPEC_H
 #define SDF_PYSPEC_H
 
-///
 /// \file sdf/pySpec.h
 ///
-/// \brief SdfSpec Python wrapping utilities.
+/// SdfSpec Python wrapping utilities.
 ///
+/// An SdfSpec subclass is not the representation of scene data.  An SdfSpec
+/// simply provides an interface to data stored in some internal representation.
+/// SdfSpec subclasses are value types and their lifetimes don't reflect the 
+/// lifetime of the scene data.  However, clients still create scene data using 
+/// the New methods on SdfSpec subclasses.
+///
+/// When wrapping to Python we need to wrap the New methods as the constructors. 
+/// This used to look like this:
+///
+/// \code
+///   class_<MyClass, MyClassHandle>("MyClass", no_init)
+///       .def(TfPyRefAndWeakPtr())
+///       .def(TfMakePyConstructor(&MyClass::New))
+///       ...
+/// \endcode
+///
+/// But we can't use TfMakePyConstructor() because an SdfSpec handle is
+/// not a weak pointer.  Furthermore, we don't have the problem of needing
+/// to store a ref pointer in the Python object.  But we do still need
+/// conversion of spec types to yield the most-derived type in python.
+///
+/// This file introduces a few boost::python::class_ def visitors to make
+/// wrapping specs easy.  Spec wrapping should now look like:
+///
+/// \code
+///   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, boost::noncopyable>
+///       ("MyClass", no_init)
+///       .def(SdfPySpec())  // or SdfPyAbstractSpec()
+///       .def(SdfMakePySpecConstructor(&MyClass::New))
+///       ...
+/// \endcode
+///
+/// If you need a custom repr you can use SdfPySpecNoRepr() or
+/// SdfPyAbstractSpecNoRepr() and def("__repr__", ...).
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/tf.h"
@@ -52,45 +85,6 @@
 #include <string>
 
 class SdfSpec;
-
-//
-// Helper for wrapping SdfSpec subclasses.
-//
-// An SdfSpec subclass is not the representation of scene data.  An SdfSpec
-// simply provides an interface to data stored in some internal representation.
-// SdfSpec subclasses are value types and their lifetimes don't reflect the 
-// lifetime of the scene data.  However, clients still create scene data using 
-// the New methods on SdfSpec subclasses.
-//
-// When wrapping to Python we need to wrap the New methods as the constructors. 
-// This used to look like this:
-//
-// \code
-//   class_<MyClass, MyClassHandle>("MyClass", no_init)
-//       .def(TfPyRefAndWeakPtr())
-//       .def(TfMakePyConstructor(&MyClass::New))
-//       ...
-// \endcode
-//
-// But we can't use TfMakePyConstructor() because an SdfSpec handle is
-// not a weak pointer.  Furthermore, we don't have the problem of needing
-// to store a ref pointer in the Python object.  But we do still need
-// conversion of spec types to yield the most-derived type in python.
-//
-// This file introduces a few boost::python::class_ def visitors to make
-// wrapping specs easy.  Spec wrapping should now look like:
-//
-// \code
-//   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, boost::noncopyable>
-//       ("MyClass", no_init)
-//       .def(SdfPySpec())  // or SdfPyAbstractSpec()
-//       .def(SdfMakePySpecConstructor(&MyClass::New))
-//       ...
-// \endcode
-//
-// If you need a custom repr you can use SdfPySpecNoRepr() or
-// SdfPyAbstractSpecNoRepr() and def("__repr__", ...).
-//
 
 namespace Sdf_PySpecDetail {
 

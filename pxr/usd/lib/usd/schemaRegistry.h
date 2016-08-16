@@ -47,6 +47,7 @@ SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 /// for un-instantiated "builtin" properties of schema classes, and also
 /// to enumerate all properties for a given schema class, and finally to
 /// provide fallback values for unauthored builtin properties.
+///
 class UsdSchemaRegistry : public TfSingleton<UsdSchemaRegistry> {
 public:
     static UsdSchemaRegistry& GetInstance() {
