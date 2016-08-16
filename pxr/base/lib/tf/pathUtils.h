@@ -104,6 +104,8 @@ std::string TfAbsPath(std::string const& path);
 /// TfGetExtension('/foo/bar/foo.baz')      -> 'baz'
 /// TfGetExtension('/foo.bar/foo.baz')      -> 'baz'
 /// TfGetExtension('/foo/bar/foo.101.baz')  -> 'baz'
+/// TfGetExtension('/foo/bar/.foo.baz')     -> 'baz'
+/// TfGetExtension('/foo/bar/.foo')         -> ''
 std::string TfGetExtension(std::string const& path);
 
 /// Returns the source path for a symbolic link.
