@@ -76,9 +76,11 @@ CameraUtilConformWindow(
     GfCamera *camera,
     CameraUtilConformWindowPolicy policy, double targetAspect);
 
-GfFrustum
-ComputeFittedFrustum( const GfFrustum &frustum,
-                      const CameraUtilConformWindowPolicy policy,
-                      const GfVec4d viewport);
+/// Conforms the given \p frustum to have aspect ratio \p targetAspect
+/// by applying \p policy.
+void
+CameraUtilConformWindow(
+    GfFrustum *frustum,
+    CameraUtilConformWindowPolicy policy, double targetAspect);
 
 #endif
