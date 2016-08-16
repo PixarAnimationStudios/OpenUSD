@@ -30,6 +30,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/typeInfoMap.h"
@@ -258,7 +259,7 @@ public:
     }
 
     void SetPythonClass(TfType::_TypeInfo *info,
-                        boost::python::object & classObj) {
+                        const boost::python::object & classObj) {
         // Hold a reference to this PyObject in our map.
         boost::python::handle<> handle(
             boost::python::borrowed(classObj.ptr()));
@@ -456,11 +457,11 @@ TfType::_FindByTypeid(const std::type_info &typeInfo)
 }
 
 TfType const&
-TfType::FindByPythonClass(const boost::python::object & classObj)
+TfType::FindByPythonClass(const TfPyObjWrapper & classObj)
 {
     auto &r = Tf_TypeRegistry::GetInstance();
     ScopedLock readLock(r.GetMutex(), /*write=*/false);
-    TfType::_TypeInfo *info = r.FindByPythonClass(classObj);
+    TfType::_TypeInfo *info = r.FindByPythonClass(classObj.Get());
 
     return info ? info->canonicalTfType : GetUnknownType();
 }
@@ -478,7 +479,7 @@ TfType::GetTypeid() const
     return typeInfo ? *typeInfo : typeid(void);
 }
 
-boost::python::object
+TfPyObjWrapper
 TfType::GetPythonClass() const
 {
     if (not TfPyIsInitialized())
@@ -486,8 +487,8 @@ TfType::GetPythonClass() const
 
     ScopedLock lock(_info->mutex, /*write=*/false);
     if (_info->pyClass.get())
-        return boost::python::object(_info->pyClass);
-    return boost::python::object();
+        return TfPyObjWrapper(boost::python::object(_info->pyClass));
+    return TfPyObjWrapper();
 }
 
 vector<string>
@@ -650,7 +651,8 @@ TfType::_FindImplPyPolymorphic(PyPolymorphicBase const *ptr) {
         object pyObj = Tf_FindPythonObject(
             TfCastToMostDerivedType(ptr), typeid(*ptr));
         if (not TfPyIsNone(pyObj))
-            ret = FindByPythonClass(pyObj.attr("__class__"));
+            ret = FindByPythonClass(
+                TfPyObjWrapper(pyObj.attr("__class__")));
     }
     return not ret.IsUnknown() ? ret.GetCanonicalType() : Find(typeid(*ptr));
 }
@@ -833,7 +835,7 @@ errorOut:
 }
 
 void
-TfType::DefinePythonClass( boost::python::object & classObj ) const
+TfType::DefinePythonClass(const TfPyObjWrapper & classObj) const
 {
     if (IsUnknown() or IsRoot()) {
         TF_CODING_ERROR("cannot define Python class because type is unknown");
@@ -849,7 +851,7 @@ TfType::DefinePythonClass( boost::python::object & classObj ) const
                         "cannot redefine", GetTypeName().c_str());
         return;
     }
-    r.SetPythonClass(_info, classObj);
+    r.SetPythonClass(_info, classObj.Get());
 }
 
 void

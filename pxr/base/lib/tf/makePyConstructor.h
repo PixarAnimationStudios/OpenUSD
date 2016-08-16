@@ -472,7 +472,7 @@ struct NewCtor<SIGNATURE> : CtorBase<SIGNATURE> {
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
 
-        bp::detail::initialize_wrapper(ret.ptr(), bp::get_pointer(h));
+        bp::detail::initialize_wrapper(ret.ptr(), get_pointer(h));
         // make the object have the right class.
         bp::setattr(ret, "__class__", cls);
 
@@ -602,7 +602,7 @@ struct NewCtorWithClassReference<SIGNATURE> : CtorBase<SIGNATURE> {
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
 
-        bp::detail::initialize_wrapper(ret.ptr(), bp::get_pointer(h));
+        bp::detail::initialize_wrapper(ret.ptr(), get_pointer(h));
         // make the object have the right class.
         bp::setattr(ret, "__class__", a0);
 

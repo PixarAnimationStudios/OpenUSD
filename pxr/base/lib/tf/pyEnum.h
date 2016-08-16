@@ -27,6 +27,7 @@
 /// \file tf/pyEnum.h
 /// Provide facilities for wrapping enums for script.
 
+#include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/type.h"
 
