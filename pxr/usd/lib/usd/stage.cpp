@@ -4895,15 +4895,14 @@ struct UsdStage::_PropertyStackResolver {
                 const PcpNodeRef& node,
                 const double* time) 
     {
-        Usd_ClipRefPtr localClip;
+        // If given a time, do a range check on the clip first.
+        if (time && (*time < clip->startTime || *time >= clip->endTime))
+            return false;
+
         double lowerSample = 0.0, upperSample = 0.0;
-
         if (_HasTimeSamples(clip, specId, time, &lowerSample, &upperSample)) {
-            const auto propertySpec = clip->GetPropertyAtPath(specId);
-
-            if (propertySpec) {
+            if (const auto propertySpec = clip->GetPropertyAtPath(specId))
                 propertyStack.push_back(propertySpec);    
-            }
         }
      
         return false;
@@ -4997,11 +4996,21 @@ struct UsdStage::_ResolveInfoResolver
                 const PcpNodeRef& node,
                 const double* time)
     {
+        // If given a time, do a range check on the clip first.
+        if (time && (*time < clip->startTime || *time >= clip->endTime))
+            return false;
+
         if (_HasTimeSamples(clip, specId, time,
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)){
             _extraInfo->clip = clip;
-            _resolveInfo->source = Usd_ResolveInfoSourceValueClips;
+            // If we're querying at a particular time, we know the value comes
+            // from this clip at this time.  If we're not given a time, then we
+            // cannot be sure, and we must say that the value source may be time
+            // dependent.
+            _resolveInfo->source = time ?
+                Usd_ResolveInfoSourceValueClips :
+                Usd_ResolveInfoSourceIsTimeDependent;
             _resolveInfo->layerStack = node.GetLayerStack();
             _resolveInfo->primPathInLayerStack = node.GetPath();
             return true;
@@ -5010,10 +5019,10 @@ struct UsdStage::_ResolveInfoResolver
         return false;
     }
 
-    private:
-        const UsdAttribute& _attr;
-        Usd_ResolveInfo* _resolveInfo;
-        UsdStage::_ExtraResolveInfo<T>* _extraInfo;
+private:
+    const UsdAttribute& _attr;
+    Usd_ResolveInfo* _resolveInfo;
+    UsdStage::_ExtraResolveInfo<T>* _extraInfo;
 };
 
 // NOTE:
@@ -5037,9 +5046,10 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
     _ResolveInfoResolver<T> resolver(attr, resolveInfo, extraInfo);
     _GetResolvedValueImpl(attr, &resolver, time);
     
-    if (TfDebug::IsEnabled(USD_VALIDATE_VARIABILITY) and
-        (resolveInfo->source == Usd_ResolveInfoSourceTimeSamples or
-         resolveInfo->source == Usd_ResolveInfoSourceValueClips) and
+    if (TfDebug::IsEnabled(USD_VALIDATE_VARIABILITY) &&
+        (resolveInfo->source == Usd_ResolveInfoSourceTimeSamples ||
+         resolveInfo->source == Usd_ResolveInfoSourceValueClips ||
+         resolveInfo->source == Usd_ResolveInfoSourceIsTimeDependent) &&
         _GetVariability(attr) == SdfVariabilityUniform) {
 
         TF_DEBUG(USD_VALIDATE_VARIABILITY)
@@ -5130,12 +5140,6 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                 // this attribute. If a time is given, examine just the clips
                 // that are active at that time.
                 for (const auto& clip : clips.get()->valueClips) {
-                    if ((localTime 
-                         and (localTime < clip->startTime 
-                              or localTime >= clip->endTime))) {
-                        continue;
-                    }
-
                     if (resolver->ProcessClip(clip, specId, node,
                                               localTime.get_ptr())) {
                         return;
@@ -5225,6 +5229,12 @@ UsdStage::_GetValueFromResolveInfoImpl(const Usd_ResolveInfo &info,
             }
         }
     }
+    else if (info.source == Usd_ResolveInfoSourceIsTimeDependent) {
+        // In this case, we obtained a resolve info for an attribute value whose
+        // value source may vary over time.  So we must fall back on invoking
+        // the normal Get() machinery now that we actually have a specific time.
+        return _GetValueImpl(time, attr, interpolator, result);
+    }
     else if (info.source == Usd_ResolveInfoSourceFallback) {
         return _GetFallbackMetadata(attr, SdfFieldKeys->Default, 
                                     TfToken(), result);
@@ -5311,10 +5321,10 @@ UsdStage::_GetTimeSampleMap(const UsdAttribute &attr) const
 
 bool 
 UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
-                                         const Usd_ResolveInfo &info,
-                                         const UsdAttribute &attr,
-                                         const GfInterval& interval,
-                                         std::vector<double>* times) const
+    const Usd_ResolveInfo &info,
+    const UsdAttribute &attr,
+    const GfInterval& interval,
+    std::vector<double>* times) const
 {
     if ((interval.IsMinFinite() and interval.IsMinOpen())
         or (interval.IsMaxFinite() and interval.IsMaxOpen())) {
@@ -5353,7 +5363,8 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
 
         return true;
     }
-    else if (info.source == Usd_ResolveInfoSourceValueClips) {
+    else if (info.source == Usd_ResolveInfoSourceValueClips ||
+             info.source == Usd_ResolveInfoSourceIsTimeDependent) {
         const UsdPrim prim = attr.GetPrim();
 
         // See comments in _GetValueImpl regarding clips.
@@ -5449,8 +5460,8 @@ UsdStage::_GetNumTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
 
         return layer->GetNumTimeSamplesForPath(specId);
     } 
-    else if (info.source == Usd_ResolveInfoSourceValueClips) {
-
+    else if (info.source == Usd_ResolveInfoSourceValueClips ||
+             info.source == Usd_ResolveInfoSourceIsTimeDependent) {
         // XXX: optimization
         // 
         // We don't have an efficient way of getting the number of time
@@ -5559,7 +5570,8 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
         *hasSamples = false;
         return true;
     }
-    else if (info.source == Usd_ResolveInfoSourceValueClips) {
+    else if (info.source == Usd_ResolveInfoSourceValueClips ||
+             info.source == Usd_ResolveInfoSourceIsTimeDependent) {
         const SdfAbstractDataSpecId specId(
             &info.primPathInLayerStack, &attr.GetName());
 
@@ -5689,7 +5701,8 @@ UsdStage::_ValueMightBeTimeVarying(const UsdAttribute &attr) const
     _ExtraResolveInfo<SdfAbstractDataValue> extraInfo;
     _GetResolveInfo(attr, &info, NULL, &extraInfo);
 
-    if (info.source == Usd_ResolveInfoSourceValueClips) {
+    if (info.source == Usd_ResolveInfoSourceValueClips ||
+        info.source == Usd_ResolveInfoSourceIsTimeDependent) {
         // See comment in _ValueMightBeTimeVaryingFromResolveInfo.
         // We can short-cut the work in that function because _GetResolveInfo
         // gives us the first clip that has time samples for this attribute.
@@ -5705,7 +5718,8 @@ bool
 UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const Usd_ResolveInfo &info,
                                                   const UsdAttribute &attr) const
 {
-    if (info.source == Usd_ResolveInfoSourceValueClips) {
+    if (info.source == Usd_ResolveInfoSourceValueClips ||
+        info.source == Usd_ResolveInfoSourceIsTimeDependent) {
         // In the case that the attribute value comes from a value clip, we
         // need to find the first clip that has samples for attr to see if the
         // clip values may be time varying. This is potentially much more 
