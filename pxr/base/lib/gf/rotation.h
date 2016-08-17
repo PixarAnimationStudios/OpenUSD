@@ -24,6 +24,8 @@
 #ifndef GF_ROTATION_H
 #define GF_ROTATION_H
 
+/// \file gf/rotation.h
+/// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/base/gf/quaternion.h"
 #include "pxr/base/gf/quatd.h"
@@ -36,61 +38,50 @@
 
 #include <iosfwd>
 
-//!
-// \file rotation.h
-// \ingroup group_gf_LinearAlgebra
-//
-
-//!
-// \class GfRotation rotation.h "pxr/base/gf/rotation.h"
-// \ingroup group_gf_LinearAlgebra
-// \brief Basic type: 3-space rotation specification.
-//
-// This class represents a rotation in 3-space. This stores an axis as
-// a normalized vector of 3 \c doubles and an angle in degrees (as a
-// double). Rotations follow the right-hand rule: a positive rotation
-// about an axis vector appears counter-clockwise when looking from
-// the end of the vector toward the origin.
-//
+/// \class GfRotation
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type: 3-space rotation specification.
+///
+/// This class represents a rotation in 3-space. This stores an axis as a
+/// normalized vector of 3 \c doubles and an angle in degrees (as a double).
+/// Rotations follow the right-hand rule: a positive rotation about an axis
+/// vector appears counter-clockwise when looking from the end of the vector
+/// toward the origin.
+///
 class GfRotation {
 
   public:
 
-    //!
-    // The default constructor leaves the rotation undefined.
+    /// The default constructor leaves the rotation undefined.
     GfRotation() {
     }
 
-    //!
-    // This constructor initializes the rotation to be \p angle
-    // degrees about \p axis.
+    /// This constructor initializes the rotation to be \p angle
+    /// degrees about \p axis.
     GfRotation(const GfVec3d &axis, double angle) {
         SetAxisAngle(axis, angle);
     }
 
-    //!
-    // This constructor initializes the rotation from a quaternion.
+    /// This constructor initializes the rotation from a quaternion.
     GfRotation(const GfQuaternion &quaternion) {
         SetQuaternion(quaternion);
     }
 
-    //!
-    // This constructor initializes the rotation from a quaternion.  Note that
-    // this constructor accepts GfQuatf and GfQuath since they implicitly
-    // convert to GfQuatd.
+    /// This constructor initializes the rotation from a quaternion.  Note that
+    /// this constructor accepts GfQuatf and GfQuath since they implicitly
+    /// convert to GfQuatd.
     GfRotation(const GfQuatd &quat) { SetQuat(quat); }
 
-    //!
-    // This constructor initializes the rotation to one that brings
-    // the \p rotateFrom vector to align with \p rotateTo. The passed
-    // vectors need not be unit length.
+    /// This constructor initializes the rotation to one that brings
+    /// the \p rotateFrom vector to align with \p rotateTo. The passed
+    /// vectors need not be unit length.
 	GF_API
     GfRotation(const GfVec3d &rotateFrom, const GfVec3d &rotateTo) {
         SetRotateInto(rotateFrom, rotateTo);
     }
 
-    //!
-    // Sets the rotation to be \p angle degrees about \p axis.
+    /// Sets the rotation to be \p angle degrees about \p axis.
     GfRotation &        SetAxisAngle(const GfVec3d &axis, double angle) {
         _axis = axis;
         _angle = angle;
@@ -99,69 +90,58 @@ class GfRotation {
         return *this;
     }
 
-    //!
-    // Sets the rotation from a quaternion.  Note that this method accepts
-    // GfQuatf and GfQuath since they implicitly convert to GfQuatd.
+    /// Sets the rotation from a quaternion.  Note that this method accepts
+    /// GfQuatf and GfQuath since they implicitly convert to GfQuatd.
     GF_API
     GfRotation &        SetQuat(const GfQuatd &quat);
 
-    //!
-    // Sets the rotation from a quaternion.
+    /// Sets the rotation from a quaternion.
     GfRotation &        SetQuaternion(const GfQuaternion &quat) {
         return SetQuat(GfQuatd(quat.GetReal(), quat.GetImaginary()));
     }
-        
-    //!
-    // Sets the rotation to one that brings the \p rotateFrom vector
-    // to align with \p rotateTo. The passed vectors need not be unit
-    // length.
+
+    /// Sets the rotation to one that brings the \p rotateFrom vector
+    /// to align with \p rotateTo. The passed vectors need not be unit
+    /// length.
 	GF_API
     GfRotation &        SetRotateInto(const GfVec3d &rotateFrom,
                                       const GfVec3d &rotateTo);
 
-
-    //!
-    // Sets the rotation to an identity rotation. (This is chosen to
-    // be 0 degrees around the positive X axis.)
+    /// Sets the rotation to an identity rotation.
+    /// (This is chosen to be 0 degrees around the positive X axis.)
     GfRotation &        SetIdentity() {
         _axis.Set(1.0, 0.0, 0.0);
         _angle = 0.0;
         return *this;
     }
 
-    //!
-    // Returns the axis of rotation.
+    /// Returns the axis of rotation.
     const GfVec3d &     GetAxis() const {
         return _axis;
     }
 
-    //!
-    // Returns the rotation angle in degrees.
+    /// Returns the rotation angle in degrees.
     double              GetAngle() const {
         return _angle;
     }
 
-    //!
-    // Returns the rotation expressed as a quaternion.
+    /// Returns the rotation expressed as a quaternion.
     GfQuaternion        GetQuaternion() const {
         auto quat = GetQuat();
         return GfQuaternion(quat.GetReal(), quat.GetImaginary());
     }
 
-    //!
-    // Returns the rotation expressed as a quaternion.
+    /// Returns the rotation expressed as a quaternion.
     GF_API
     GfQuatd             GetQuat() const;
 
-    //!
-    // Returns the inverse of this rotation.
+    /// Returns the inverse of this rotation.
     GfRotation          GetInverse() const {
         return GfRotation(_axis, -_angle);
     }
 
-    //!
-    // Decompose rotation about 3 orthogonal axes. 
-    // If the axes are not orthogonal, warnings will be spewed.
+    /// Decompose rotation about 3 orthogonal axes. 
+    /// If the axes are not orthogonal, warnings will be spewed.
     GF_API
     GfVec3d Decompose( const GfVec3d &axis0,
                        const GfVec3d &axis1,
@@ -214,37 +194,15 @@ class GfRotation {
                                           const GfVec3d &v2,
                                           const GfVec3d &axis);
 
-#if 0
-// XXX:I ported this code over to presto, but it is not
-// yet being used. 
-
-    /// Compose a rotation with unit axes with the supplied tw, fb, lr & sw
-    // values.
-    //
-    static void ComposeRotation ( double                tw,
-                                  double                fb,
-                                  double                lr,
-                                  double                sw,
-                                  GfMatrix4d            *rot, // outputs
-                                  GfVec3d               *TwAxis,
-                                  GfVec3d               *FBAxis,
-                                  GfVec3d               *LRAxis) ;
-    
-#endif
-
-    //!
-    // Transforms row vector \p vec by the rotation, returning the
-    // result. 
+    /// Transforms row vector \p vec by the rotation, returning the result. 
     GF_API
     GfVec3f TransformDir( const GfVec3f &vec ) const;
 
-    //!
-    // \overload
+    /// \overload
     GF_API
     GfVec3d TransformDir( const GfVec3d &vec ) const;
 
-    //!
-    // hash.
+    /// Hash.
     friend inline size_t hash_value(const GfRotation &r) {
         size_t h = 0;
         boost::hash_combine(h, r._axis);
@@ -252,80 +210,71 @@ class GfRotation {
         return h;
     }
 
-    //!
-    // Component-wise rotation equality test. The axes and angles must
-    // match exactly for rotations to be considered equal. (To compare
-    // equality of the actual rotations, you can convert both to
-    // quaternions and test the results for equality.)
-    bool		operator ==(const GfRotation &r) const {
-	return (_axis  == r._axis &&
-		_angle == r._angle);
+    /// Component-wise rotation equality test. The axes and angles must match
+    /// exactly for rotations to be considered equal. (To compare equality of
+    /// the actual rotations, you can convert both to quaternions and test the
+    /// results for equality.)
+    bool        operator ==(const GfRotation &r) const {
+        return (_axis  == r._axis &&
+            _angle == r._angle);
     }
 
-    //!
-    // Component-wise rotation inequality test. The axes and angles
-    // must match exactly for rotations to be considered equal. (To
-    // compare equality of the actual rotations, you can convert both
-    // to quaternions and test the results for equality.)
-    bool		operator !=(const GfRotation &r) const {
-	return ! (*this == r);
+    /// Component-wise rotation inequality test. The axes and angles must
+    /// match exactly for rotations to be considered equal. (To compare
+    /// equality of the actual rotations, you can convert both to quaternions
+    /// and test the results for equality.)
+    bool        operator !=(const GfRotation &r) const {
+        return ! (*this == r);
     }
 
-    //!
-    // Post-multiplies rotation \p r into this rotation.
+    /// Post-multiplies rotation \p r into this rotation.
     GF_API
     GfRotation &        operator *=(const GfRotation &r);
 
-    //!
-    // Scales rotation angle by multiplying by \p scale.
+    /// Scales rotation angle by multiplying by \p scale.
     GfRotation &        operator *=(double scale) {
         _angle *= scale;
         return *this;
     }
 
-    //!
-    // Scales rotation angle by dividing by \p scale.
-    GfRotation &	operator /=(double scale) {
-	_angle /= scale;
-	return *this;
+    /// Scales rotation angle by dividing by \p scale.
+    GfRotation &    operator /=(double scale) {
+        _angle /= scale;
+        return *this;
     }
 
-    //!
-    // Returns composite rotation of rotations \p r1 and \p r2.
-    friend GfRotation	operator *(const GfRotation &r1,
-				   const GfRotation &r2) {
-	GfRotation r  = r1;
-	return     r *= r2;
+    /// Returns composite rotation of rotations \p r1 and \p r2.
+    friend GfRotation   operator *(const GfRotation &r1,
+                   const GfRotation &r2) {
+        GfRotation r  = r1;
+        return     r *= r2;
     }
 
-    //!
-    // Returns a rotation equivalent to \p r with its angle multiplied
-    // by \p scale.
-    friend GfRotation	operator *(const GfRotation &r, double scale) {
-	GfRotation rTmp  = r;
-	return     rTmp *= scale;
+    /// Returns a rotation equivalent to \p r with its angle multiplied
+    /// by \p scale.
+    friend GfRotation   operator *(const GfRotation &r, double scale) {
+        GfRotation rTmp  = r;
+        return     rTmp *= scale;
     }
 
-    //!
-    // Returns a rotation equivalent to \p r with its angle multiplied
-    // by \p scale.
-    friend GfRotation	operator *(double scale, const GfRotation &r) {
-	return (r * scale);
+    /// Returns a rotation equivalent to \p r with its angle multiplied
+    /// by \p scale.
+    friend GfRotation   operator *(double scale, const GfRotation &r) {
+        return (r * scale);
     }
 
-    //!
-    // Returns a rotation equivalent to \p r with its angle divided
-    // by \p scale.
-    friend GfRotation	operator /(const GfRotation &r, double scale) {
-	GfRotation rTmp  = r;
-	return     rTmp /= scale;
+    /// Returns a rotation equivalent to \p r with its angle divided
+    /// by \p scale.
+    friend GfRotation   operator /(const GfRotation &r, double scale) {
+        GfRotation rTmp  = r;
+        return     rTmp /= scale;
     }
 
   private:
-    //! Axis storage. This axis is normalized to unit length whenever
-    // it is set.
+    /// Axis storage.
+    /// This axis is normalized to unit length whenever it is set.
     GfVec3d     _axis;
-    //! Angle storage (represented in degrees).
+    /// Angle storage (represented in degrees).
     double      _angle;
 };
 

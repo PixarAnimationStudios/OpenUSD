@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file vt/types.h
-/// Defines all the types "TYPED" for which Vt creates a VtTYPEDArray typedef.
-/// 
 #ifndef VT_TYPES_H
 #define VT_TYPES_H
+
+/// \file vt/types.h
+/// Defines all the types "TYPED" for which Vt creates a VtTYPEDArray typedef.
 
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"

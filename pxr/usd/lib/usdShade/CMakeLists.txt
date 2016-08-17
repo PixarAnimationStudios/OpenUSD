@@ -17,6 +17,7 @@ pxr_shared_library(usdShade
         debugCodes
         interfaceAttribute
         look
+        material
         parameter
         pShader
         pShaderUtils
@@ -36,6 +37,7 @@ pxr_shared_library(usdShade
         module.cpp
         wrapInterfaceAttribute.cpp
         wrapLook.cpp
+        wrapMaterial.cpp
         wrapParameter.cpp
         wrapPShader.cpp
         wrapShader.cpp

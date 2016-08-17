@@ -24,6 +24,10 @@
 #ifndef ARCH_FILESYSTEM_H
 #define ARCH_FILESYSTEM_H
 
+/// \file arch/fileSystem.h
+/// \ingroup group_arch_SystemFunctions
+/// Architecture dependent file system access
+
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
@@ -46,6 +50,8 @@
 #include <io.h>
 #endif
 
+/// \addtogroup group_arch_SystemFunctions
+///@{
 #if !defined(ARCH_OS_WINDOWS)
 #ifdef _POSIX_VERSION
 #include <limits.h>                     /* for PATH_MAX */
@@ -66,6 +72,9 @@
  * \ingroup group_arch_SystemFunctions
  */
 
+/// Return the length of a file in bytes.
+///
+/// Returns -1 if the file cannot be opened/read.
 #ifndef ARCH_PATH_MAX
 #ifdef _POSIX_VERSION
 #define ARCH_PATH_MAX _POSIX_PATH_MAX
@@ -170,129 +179,103 @@ int ArchStatCompare(enum ArchStatComparisonOp op,
 ARCH_API int64_t ArchGetFileLength(const char* fileName);
 ARCH_API int64_t ArchGetFileLength(FILE *file);
 
-/*!
- * \brief Returns true if the data in \c stat struct \p st indicates that the
- * target file or directory is writable.
- *
- * This returns true if the struct pointer is valid, and the stat indicates
- * the target is writable by the effective user, effective group, or all
- * users.
- */
+/// Returns true if the data in \c stat struct \p st indicates that the target
+/// file or directory is writable.
+///
+/// This returns true if the struct pointer is valid, and the stat indicates
+/// the target is writable by the effective user, effective group, or all
+/// users.
 ARCH_API bool ArchStatIsWritable(const struct stat *st);
 
-/*!
- * \brief Returns the modification time (mtime) in seconds from the stat struct.
- * \ingroup group_arch_SystemFunctions
- *
- * This function returns the modification time with as much precision as is
- * available in the stat structure for the current platform.
- */
+/// Returns the modification time (mtime) in seconds from the stat struct.
+///
+/// This function returns the modification time with as much precision as is
+/// available in the stat structure for the current platform.
 ARCH_API double ArchGetModificationTime(const struct stat& st);
 
-/*!
- * \brief Returns the access time (atime) in seconds from the stat struct.
- * \ingroup group_arch_SystemFunctions
- *
- * This function returns the access time with as much precision as is
- * available in the stat structure for the current platform.
- */
+/// Returns the access time (atime) in seconds from the stat struct.
+///
+/// This function returns the access time with as much precision as is
+/// available in the stat structure for the current platform.
 ARCH_API double ArchGetAccessTime(const struct stat& st);
 
-/*!
- * \brief Returns the status change time (ctime) in seconds from the stat struct.
- * \ingroup group_arch_SystemFunctions
- *
- * This function returns the status change time with as much precision as is
- * available in the stat structure for the current platform.
- */
+/// Returns the status change time (ctime) in seconds from the stat struct.
+///
+/// This function returns the status change time with as much precision as is
+/// available in the stat structure for the current platform.
 ARCH_API double ArchGetStatusChangeTime(const struct stat& st);
 
-/*!
- * \brief Return the path to a temporary directory for this platform.
- *
- * The returned temporary directory will be a location that will normally
- * be cleaned out on a reboot. This is /var/tmp on Linux machines (for
- * legacy reasons), but /tmp on Darwin machines (/var/tmp on Darwin is
- * specified as a location where files are kept between system reboots -
- * see "man hier"). The returned string will not have a trailing slash.
- * This routine is threadsafe and will not perform any memory allocations.
- *
- */
+/// Return the path to a temporary directory for this platform.
+///
+/// The returned temporary directory will be a location that will normally
+/// be cleaned out on a reboot. This is /var/tmp on Linux machines (for
+/// legacy reasons), but /tmp on Darwin machines (/var/tmp on Darwin is
+/// specified as a location where files are kept between system reboots -
+/// see "man hier"). The returned string will not have a trailing slash.
+///
+/// This routine is threadsafe and will not perform any memory allocations.
 ARCH_API const char *ArchGetTmpDir();
 
-/*!
- * \brief Make a temporary file name, in a system-determined
- * temporary directory.
- *
- * The result returned has the form TMPDIR/prefix.pid[.n]suffix
- * where TMPDIR is a system-determined temporary directory (typically
- * /tmp or /usr/tmp), pid is the process id of the process, and
- * the optional .n records the number of times this function has been called
- * by a process (and is ommited the first time this function is called).
- *
- * The call is threadsafe.
- *
- * This call opens a security hole because of the race between choosing
- * the name and opening the file.  This call should be avoided in favor
- * of ArchMakeTmpFile().
- */
-
+/// Make a temporary file name, in a system-determined temporary directory.
+///
+/// The result returned has the form TMPDIR/prefix.pid[.n]suffix where TMPDIR
+/// is a system-determined temporary directory (typically /tmp or /usr/tmp),
+/// pid is the process id of the process, and the optional .n records the
+/// number of times this function has been called by a process (and is ommited
+/// the first time this function is called).
+///
+/// The call is threadsafe.
+///
+/// \warning This call opens a security hole because of the race between
+/// choosing the name and opening the file.  This call should be avoided in
+/// favor of \c ArchMakeTmpFile().
 ARCH_API
 std::string ArchMakeTmpFileName(const std::string& prefix,
     	    	    	    	const std::string& suffix = std::string());
 
-/*!
- * \brief Create a temporary file, in a system-determined
- * temporary directory.
- *
- * The result returned has the form TMPDIR/prefix.XXXXXX where
- * TMPDIR is a system-determined temporary directory (typically
- * /tmp or /usr/tmp) and XXXXXX is a unique suffix.  Returns the
- * file descriptor of the new file and, if pathname isn't NULL,
- * returns the full path to the file in pathname.  Returns -1 on
- * failure and errno is set.
- *
- * The call is threadsafe.
- */
+/// Create a temporary file, in a system-determined temporary directory.
+///
+/// The result returned has the form TMPDIR/prefix.XXXXXX where TMPDIR is a
+/// system-determined temporary directory (typically /tmp or /usr/tmp) and
+/// XXXXXX is a unique suffix.  Returns the file descriptor of the new file
+/// and, if pathname isn't NULL, returns the full path to the file in
+/// pathname.  Returns -1 on failure and errno is set.
+///
+/// The call is threadsafe.
 ARCH_API
 int ArchMakeTmpFile(const std::string& prefix, std::string* pathname = 0);
 
-/*!
- * \brief Create a temporary file, in a given temporary directory.
- *
- * The result returned has the form TMPDIR/prefix.XXXXXX where
- * TMPDIR is the given temporary directory and XXXXXX is a unique
- * suffix.  Returns the file descriptor of the new file and, if
- * pathname isn't NULL, returns the full path to the file in
- * pathname.  Returns -1 on failure and errno is set.
- *
- * The call is threadsafe.
- */
+/// Create a temporary file, in a given temporary directory.
+///
+/// The result returned has the form TMPDIR/prefix.XXXXXX where TMPDIR is the
+/// given temporary directory and XXXXXX is a unique suffix.  Returns the file
+/// descriptor of the new file and, if pathname isn't NULL, returns the full
+/// path to the file in pathname.  Returns -1 on failure and errno is set.
+///
+/// The call is threadsafe.
 ARCH_API
 int ArchMakeTmpFile(const std::string& tmpdir,
                     const std::string& prefix, std::string* pathname = 0);
 
-/*!
- * \brief Create a temporary sub-direcrory, in a given temporary directory.
- *
- * The result returned has the form TMPDIR/prefix.XXXXXX/ where
- * TMPDIR is the given temporary directory and XXXXXX is a unique
- * suffix.  Returns the the full path to the subdir in
- * pathname.  Returns empty string on failure and errno is set.
- *
- * The call is threadsafe.
- */
+/// Create a temporary sub-direcrory, in a given temporary directory.
+///
+/// The result returned has the form TMPDIR/prefix.XXXXXX/ where TMPDIR is the
+/// given temporary directory and XXXXXX is a unique suffix.  Returns the the
+/// full path to the subdir in pathname.  Returns empty string on failure and
+/// errno is set.
+///
+/// The call is threadsafe.
 ARCH_API
 std::string ArchMakeTmpSubdir(const std::string& tmpdir,
                               const std::string& prefix);
 
-/*!
- * \brief Return all automounted directories.
- *
- * Returns a set of all directories that are automount points for the host.
- */
+/// Return all automounted directories.
+///
+/// Returns a set of all directories that are automount points for the host.
 ARCH_API
 std::set<std::string> ArchGetAutomountDirectories();
+
+///@}
 
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
 #if defined(ARCH_OS_WINDOWS)

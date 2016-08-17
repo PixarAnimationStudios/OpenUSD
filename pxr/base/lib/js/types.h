@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file js/types.h
-
 #ifndef JS_TYPES_H
 #define JS_TYPES_H
+
+/// \file js/types.h
 
 #include <map>
 #include <string>

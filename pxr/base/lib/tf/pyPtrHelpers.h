@@ -24,10 +24,8 @@
 #ifndef TF_PYPTRHELPERS_H
 #define TF_PYPTRHELPERS_H
 
-///
-/// \file pyPtrHelpers.h
-/// \brief Enables wrapping of Weak or Ref & Weak held types to python.
-///
+/// \file tf/pyPtrHelpers.h
+/// Enables wrapping of Weak or Ref & Weak held types to python.
 
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyIdentity.h"
@@ -98,7 +96,7 @@ struct TfMakePyPtr {
             return Result(id, false);
 
         // Just make a new python object holding this pointer.
-        /// XXX FIXME : use existing to-python conversion?
+        // TODO: use existing to-python conversion?
         PyObject *res = boost::python::objects::make_ptr_instance
                             <Pointee, Holder>::execute(p);
         // If we got back Py_None, no new object was made, so make sure
@@ -117,7 +115,6 @@ using boost::disable_if;
 using boost::enable_if;
 using boost::is_abstract;
 using boost::is_same;
-
 
 template <typename Ptr>
 struct _PtrInterface {
@@ -208,7 +205,6 @@ struct _PtrFromPython {
     }
 };
 
-
 // Converter from python to AnyWeakPtr.  We use this converter to wrap 
 // the weak-pointable object into an AnyWeakPtr when we don't know what
 // specific C++ type it has--for example, see wrapNotice.cpp.
@@ -247,7 +243,6 @@ struct _AnyWeakPtrFromPython {
     }
 };
 
-
 template <typename Source, typename Target>
 typename disable_if<mpl::or_<is_abstract<Source>, is_abstract<Target> > >::type
 _RegisterImplicitConversion() {
@@ -271,8 +266,6 @@ struct _ConstPtrToPython {
     }
 };
 
-
-
 template <typename Ptr>
 struct _PtrToPython {
     _PtrToPython() {
@@ -287,7 +280,6 @@ struct _PtrToPython {
     }
 };
 
-
 template <typename SrcPtr, typename DstPtr>
 struct _ConvertPtrToPython {
     _ConvertPtrToPython() {
@@ -298,7 +290,6 @@ struct _ConvertPtrToPython {
         return incref(object(dst).ptr());
     }
 };
-
 
 template <typename Ptr>
 struct _PtrToPythonWrapper {
@@ -328,7 +319,6 @@ struct _PtrToPythonWrapper {
 template <typename T>
 converter::to_python_function_t
 _PtrToPythonWrapper<T>::_originalConverter = 0;
-
 
 struct WeakPtr : def_visitor<WeakPtr> {
     friend class def_visitor_access;
@@ -387,8 +377,6 @@ struct WeakPtr : def_visitor<WeakPtr> {
             _PtrToPython<PtrType>();
 
     }
-
-
 
     template <typename PtrType, typename CLS, typename Wrapper, typename T>
     static void _AddAPI(CLS &c, Wrapper *, T *) {
@@ -455,6 +443,3 @@ struct TfPyWeakPtr : Tf_PyDefHelpers::WeakPtr {};
 struct TfPyRefAndWeakPtr : Tf_PyDefHelpers::RefAndWeakPtr {};
 
 #endif // TF_PYPTRHELPERS_H
-
-
-

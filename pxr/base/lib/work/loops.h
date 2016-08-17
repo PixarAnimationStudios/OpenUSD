@@ -24,8 +24,7 @@
 #ifndef WORK_LOOPS_H
 #define WORK_LOOPS_H
 
-///
-///\file work/loops.h
+/// \file work/loops.h
 
 #include <boost/function.hpp>
 #include "pxr/base/arch/defines.h"

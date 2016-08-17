@@ -101,9 +101,7 @@ int main()
     fclose(firstFile);
     assert(ArchGetFileLength(firstName.c_str()) == 15);
 
-    ArchUnlinkFile(firstName.c_str());
-    ArchUnlinkFile(secondName.c_str());
-    ArchUnlinkFile(thirdName.c_str());
+    unlink(firstName.c_str());
 
     // create and remove a tmp subdir
     std::string retpath;

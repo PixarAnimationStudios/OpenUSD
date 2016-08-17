@@ -21,24 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pyStaticTokens.h
-
 
 #ifndef TF_PYSTATICTOKENS_H
 #define TF_PYSTATICTOKENS_H
+
+/// \file tf/pyStaticTokens.h
 
 #include "pxr/base/tf/staticTokens.h"
 #include <boost/bind.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>
 
-// XXX: Should wrap token arrays to Python.
+// TODO: Should wrap token arrays to Python.
 
-/// Macro to wrap static tokens defined with \c TF_DEFINE_PUBLIC_TOKENS
-/// to Python.  It creates a class of name \p name in the current scope
-/// containing just the tokens in \p seq in the static tokens named by
-/// \p key.  Arrays are not wrapped but their components are.
+/// Macro to wrap static tokens defined with \c TF_DEFINE_PUBLIC_TOKENS to
+/// Python.  It creates a class of name \p name in the current scope
+/// containing just the tokens in \p seq in the static tokens named by \p key.
+/// Arrays are not wrapped but their components are.
 ///
+/// \hideinitializer
 #define TF_PY_WRAP_PUBLIC_TOKENS(name, key, seq)                            \
     boost::python::class_<_TF_TOKENS_STRUCT_NAME(key), boost::noncopyable>( \
             name, boost::python::no_init)                                   \
@@ -49,6 +50,7 @@
 /// as attributes on the current boost python scope. Arrays are not wrapped
 /// but their components are.
 ///
+/// \hideinitializer
 #define TF_PY_WRAP_PUBLIC_TOKENS_IN_CURRENT_SCOPE(key, seq)                 \
     _TF_PY_TOKENS_WRAP_ATTR_SEQ(key, _TF_PY_TOKENS_EXPAND(seq))
 
@@ -68,7 +70,6 @@ public:
 private:
     const TfToken* _token;
 };
-
 
 // Private macros to add a single data member.
 #define _TF_PY_TOKENS_WRAP_ATTR_MEMBER(r, key, name)                        \

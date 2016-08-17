@@ -51,6 +51,8 @@
 class TfType;
 class Tf_TypeRegistry;
 
+/// \class TfType
+///
 /// TfType represents a dynamic runtime type.
 ///
 /// TfTypes are created and discovered at runtime, rather than compile
@@ -121,9 +123,9 @@ private:
 public:
     
     enum LegacyFlags {
-        ABSTRACT =       0x01,   //!< Abstract (unmanufacturable and unclonable)
-        CONCRETE =       0x02,   //!< Not abstract
-        MANUFACTURABLE = 0x08,   //!< Manufacturable type (implies concrete)
+        ABSTRACT =       0x01,   ///< Abstract (unmanufacturable and unclonable)
+        CONCRETE =       0x02,   ///< Not abstract
+        MANUFACTURABLE = 0x08,   ///< Manufacturable type (implies concrete)
     };
 
     // This is a non-templated base class for the templated
@@ -521,27 +523,23 @@ public:
     /// \name Pointer casts
     /// @{
 
-    /*!
-     * \brief Cast \c addr to the address corresponding to the type
-     * \c ancestor.
-     *
-     * (This is a dangerous function; there's probably a much better way to do
-     * whatever it is you're trying to do.)
-     *
-     * With multiple inheritance, you can't do a reinterpret_cast back
-     * to an ancestor type; this function figures out how to cast addr
-     * to the address corresponding to the type ancestor if in fact
-     * ancestor is really an ancestor of the type corresponding to \c
-     * *this.
-     *
-     * In order for this function to work correctly, \p addr must have been
-     * a pointer of type corresponding to \c *this, which was cast to void;
-     * and of course the type of \p ancestor must be an ancestor of the type
-     * of \c *this.
-     *
-     * You are warned:  this is deadly dangerous stuff, and you shouldn't be
-     * doing it!
-     */
+    /// Cast \c addr to the address corresponding to the type \c ancestor.
+    ///
+    /// (This is a dangerous function; there's probably a much better way to
+    /// do whatever it is you're trying to do.)
+    ///
+    /// With multiple inheritance, you can't do a reinterpret_cast back to an
+    /// ancestor type; this function figures out how to cast addr to the
+    /// address corresponding to the type ancestor if in fact ancestor is
+    /// really an ancestor of the type corresponding to \c *this.
+    ///
+    /// In order for this function to work correctly, \p addr must have been a
+    /// pointer of type corresponding to \c *this, which was cast to void; and
+    /// of course the type of \p ancestor must be an ancestor of the type of
+    /// \c *this.
+    ///
+    /// \warning You are warned: this is deadly dangerous stuff, and you
+    /// shouldn't be doing it!
     void* CastToAncestor(TfType ancestor, void* addr) const;
 
     const void* CastToAncestor(TfType ancestor,
@@ -549,23 +547,20 @@ public:
         return CastToAncestor(ancestor, const_cast<void*>(addr));
     }
     
-    /*!
-     * \brief Cast \c addr, which pointed to the ancestor type \p ancestor,
-     * to the type of \c *this.
-     *
-     * This function is the opposite of \c CastToAncestor(); the assumption
-     * is that \c addr was a pointer to the type corresponding to
-     * \c ancestor, and was then reinterpret-cast to \c void*, but now
-     * you wish to turn cast the pointer to the type corresponding to
-     * \c *this.  While the fact that \p addr was a pointer of type
-     * \c ancestor is taken on faith, a runtime check is performed to
-     * verify that the underlying object pointed to by \p addr is of
-     * type \c *this (or derived from \c *this).
-     *
-     * Again, this is dangerous territory, and there's probably something
-     * much better than using this function.
-     */
-
+    /// Cast \c addr, which pointed to the ancestor type \p ancestor, to the
+    /// type of \c *this.
+    ///
+    /// This function is the opposite of \c CastToAncestor(); the assumption
+    /// is that \c addr was a pointer to the type corresponding to \c
+    /// ancestor, and was then reinterpret-cast to \c void*, but now you wish
+    /// to turn cast the pointer to the type corresponding to \c *this.  While
+    /// the fact that \p addr was a pointer of type \c ancestor is taken on
+    /// faith, a runtime check is performed to verify that the underlying
+    /// object pointed to by \p addr is of type \c *this (or derived from \c
+    /// *this).
+    ///
+    /// \warning Again, this is dangerous territory, and there's probably
+    /// something much better than using this function.
     void* CastFromAncestor(TfType ancestor, void* addr) const;
 
     const void* CastFromAncestor(TfType ancestor,
@@ -574,7 +569,6 @@ public:
     }
 
     /// @}
-
 
     /// \name Instantiation / Manufacturing
     /// @{
@@ -631,7 +625,6 @@ public:
     T *GetFactory() const { return dynamic_cast<T*>(_GetFactory()); }
 
     /// @}
-
 
 private:
     FactoryBase* _GetFactory() const;
@@ -701,14 +694,11 @@ private:
     _TypeInfo *_info;
 };
 
-
-//! \brief Output a TfType, using the machine-independent type name.
-// \ingroup group_tf_DebuggingOutput
+/// Output a TfType, using the machine-independent type name.
+/// \ingroup group_tf_DebuggingOutput
 TF_API std::ostream& operator<<(std::ostream& out, const TfType &t);
 
-
 /// Metafunction returning sizeof(T) for a type T (or 0 if T is a void type).
-///
 template <typename T>
 struct TfSizeofType {
     static const size_t value = sizeof(T);
@@ -742,9 +732,7 @@ TfType::_TypeDefiner<T>::_TypeDefiner(TfType const& type)
     _type->_DefineCppType(typeid(T), sizeofType, isPodType, isEnumType);
 }
 
-
 // Implementation details are put in this header.
 #include "pxr/base/tf/type_Impl.h"
 
 #endif // TF_TYPE_H
-

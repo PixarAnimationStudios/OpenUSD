@@ -21,59 +21,56 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pyInterpreter.h
-/// Python runtime utilities.
-
 #ifndef TF_PYINTERPRETER_H
 #define TF_PYINTERPRETER_H
+
+/// \file tf/pyInterpreter.h
+/// Python runtime utilities.
 
 #include "pxr/base/tf/api.h"
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <string>
 
+/// Starts up the python runtime.
 ///
-/// \brief Starts up the python runtime.  The program name and arguments
-/// are set automatically.  sys.argv has no arguments 
-/// other than an argv[0] matching the program name.
+/// The program name and arguments are set automatically. sys.argv has no
+/// arguments other than an argv[0] matching the program name.
 TF_API
 extern void TfPyInitialize();
 
+/// Runs the given string using PyRun_SimpleString().
 ///
-/// \brief Runs the given string using PyRun_SimpleString().
-///
-/// Starts the interpreter if necessary.  Deals with necessary 
-/// thread state setup.
+/// Starts the interpreter if necessary. Deals with necessary thread state
+/// setup.
 TF_API
 extern int TfPyRunSimpleString(const std::string & cmd);
 
-///
-/// \brief Runs the given string using PyRun_String().
+/// Runs the given string using PyRun_String().
 ///
 /// \a start is Py_eval_input, Py_single_input or Py_file_input.
 /// \a globals and locals can be dictionaries to use when evaluating the 
 ///    string in python. Defaults to reusing globals from main module. If
 ///    only the globals are provided, they will also be used as locals.
 ///
-/// Starts the interpreter if necessary.  Deals with necessary 
-/// thread state setup.
+/// Starts the interpreter if necessary. Deals with necessary thread state
+/// setup.
 TF_API
 extern boost::python::handle<>
 TfPyRunString(const std::string & cmd, int start,
               boost::python::object const &globals = boost::python::object(),
               boost::python::object const &locals = boost::python::object()
               );
-///
-/// \brief Runs the given file using PyRun_File().
+
+/// Runs the given file using PyRun_File().
 ///
 /// \a start is Py_eval_input, Py_single_input or Py_file_input.
 /// \a globals and locals can be dictionaries to use when evaluating the 
 ///    string in python. Defaults to reusing globals from main module. If
 ///    only the globals are provided, they will also be used as locals.
 ///
-/// Starts the interpreter if necessary.  Deals with necessary 
-/// thread state setup.
+/// Starts the interpreter if necessary. Deals with necessary thread state
+/// setup.
 TF_API
 extern boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
@@ -81,11 +78,10 @@ TfPyRunFile(const std::string &filename, int start,
             boost::python::object const &locals = boost::python::object()
             );
 
+/// Returns the disk path to the given module as an NSString.
 ///
-/// \brief Returns the disk path to the given module as an NSString.
-///
-/// Starts the interpreter if necessary.  Deals with necessary 
-/// thread state setup.
+/// Starts the interpreter if necessary. Deals with necessary thread state
+/// setup.
 TF_API
 extern std::string TfPyGetModulePath(const std::string & moduleName);
 

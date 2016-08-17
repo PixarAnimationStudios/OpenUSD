@@ -24,8 +24,7 @@
 #ifndef WORK_DETACHEDTASK_H
 #define WORK_DETACHEDTASK_H
 
-///
-///\file work/detachedTask.h
+/// \file work/detachedTask.h
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/work/api.h"

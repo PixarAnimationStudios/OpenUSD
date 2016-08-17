@@ -30,6 +30,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdShadePShader);
     TF_WRAP(UsdShadeShader);
     TF_WRAP(UsdShadeSubgraph);
+    TF_WRAP(UsdShadeMaterial); 
     TF_WRAP(UsdShadeLook); 
     TF_WRAP(UsdShadeTokens);
 }

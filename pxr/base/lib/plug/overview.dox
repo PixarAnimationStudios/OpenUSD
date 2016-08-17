@@ -1,6 +1,10 @@
 /*!
-\mainpage
+\page plug_page_front Plug: Plugin Framework
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Plug: Plugin Framework
 \publicLib
+\endif
+
 
 \section Overview
 Provides generic interface classes to implement a plug-in framework.  The
@@ -94,6 +98,7 @@ with the following structure:
         }
     ]
 }
+\endcode
 
 The "Info" object has a key "Types" holding a single object providing metadata
 about the types that the plugin provides. The example above declares the type

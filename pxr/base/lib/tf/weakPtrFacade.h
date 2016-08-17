@@ -40,9 +40,9 @@
 
 
 #if !defined(doxygen)
-/*
- * Declare classes in Boost.Python which need to know about TfWeakPtr.
- */
+//
+// Declare classes in Boost.Python which need to know about TfWeakPtr.
+//
 namespace boost { namespace python { namespace objects {
 template <class P, class V> struct pointer_holder;
 }}}
@@ -55,9 +55,11 @@ template <class U> class TfRefPtr;
 template <template <class> class PtrTemplate, class DataType>
 class TfWeakPtrFacade;
 
-/// This access class is befriended by TfWeakPtrFacade-derived classes to grant
-/// TfWeakPtrFacade access to specific internal functions provided by the
-/// derived classes.
+/// \class TfWeakPtrFacadeAccess
+///
+/// This access class is befriended by \c TfWeakPtrFacade -derived classes to
+/// grant \c TfWeakPtrFacade access to specific internal functions provided by
+/// the derived classes.
 class TfWeakPtrFacadeAccess {
 public:
     template <template <class> class PtrTemplate, class DataType>
@@ -189,9 +191,9 @@ public:
         return _FetchPointer() == &obj;
     }
 
-    // Return true if this object points to an object of type \a T.  \a T must
-    // either be the same as or a base class of \a DataType or DataType must be
-    // polymorphic.
+    /// Return true if this object points to an object of type \a T.  \a T
+    /// must either be the same as or a base class of \a DataType or DataType
+    /// must be polymorphic.
     template <class T>
     typename boost::enable_if<boost::is_base_of<T, DataType> >::type
     PointsToA() const {
@@ -230,8 +232,8 @@ public:
         return 0;
     }
 
-    /// \brief Reset this pointer to point at no object.  Equivalent to
-    /// assignment with \a TfNullPtr.
+    /// Reset this pointer to point at no object. Equivalent to assignment
+    /// with \a TfNullPtr.
     void Reset() {
         _Derived() = TfNullPtr;
     }
@@ -268,14 +270,14 @@ private:
 };
 
 
-//
-// nullptr comparisons
-//
-// These are provided both to avoid ambiguous overloads due to
-// TfWeakPtrFacade::Derived comparisons with TfRefPtr and because implicitly
-// converting a nullptr to a TfWeakPtrFacade-derived type can add an unknown
-// amount of overhead.
-//
+/// \section nullptr comparisons
+///@{
+///
+/// These are provided both to avoid ambiguous overloads due to
+/// TfWeakPtrFacade::Derived comparisons with TfRefPtr and because implicitly
+/// converting a nullptr to a TfWeakPtrFacade-derived type can add an unknown
+/// amount of overhead.
+///
 
 template <template <class> class X, class Y>
 inline bool operator== (TfWeakPtrFacade<X, Y> const &p, std::nullptr_t)
@@ -343,6 +345,7 @@ inline bool operator>= (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
     return not (nullptr < p);
 }
 
+///@}
 
 template <class ToPtr, template <class> class X, class Y>
 ToPtr TfDynamic_cast(TfWeakPtrFacade<X, Y> const &p) {
@@ -368,13 +371,12 @@ ToPtr TfConst_cast(TfWeakPtrFacade<X, Y> const &p) {
                  (get_pointer(p)));
 }
 
-
-/*
- * This is the implementation; the declaration and doxygen
- * is in refPtr.h.
- *
- * If _remnant itself is NULL, then wp doesn't point to anything.
- */
+//
+// This is the implementation; the declaration and doxygen
+// is in refPtr.h.
+//
+// If _remnant itself is NULL, then wp doesn't point to anything.
+//
 
 template <class T>
 template <template <class> class X, class U>
@@ -389,10 +391,9 @@ inline TfRefPtr<T>::TfRefPtr(const TfWeakPtrFacade<X, U>& p,
     Tf_RefPtrTracker_New(this, _GetObjectForTracking());
 }
 
-
-/*
- * See typeFunctions.h for documention.
- */
+//
+// See typeFunctions.h for documention.
+//
 template <template <class> class Ptr, class T>
 struct TfTypeFunctions<Ptr<T>,
                        typename boost::enable_if<

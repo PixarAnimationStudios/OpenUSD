@@ -32,7 +32,7 @@
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdShadeLook,
-        TfType::Bases< UsdShadeSubgraph > >();
+        TfType::Bases< UsdShadeMaterial > >();
     
     // Register the usd prim typename to associate it with the TfType, under
     // UsdSchemaBase. This enables one to call TfType::FindByName("Look") to find
@@ -99,7 +99,7 @@ UsdShadeLook::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdShadeSubgraph::GetSchemaAttributeNames(true);
+        UsdShadeMaterial::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
@@ -426,28 +426,4 @@ UsdShadeLook::HasLookFaceSet(const UsdPrim &prim)
     UsdGeomFaceSetAPI faceSet(prim, _tokens->look);
     bool isPartition=false;
     return faceSet.GetIsPartitionAttr().Get(&isPartition) and isPartition;
-}
-
-UsdRelationship
-UsdShadeLook::GetSurfaceTerminal() const
-{
-    return GetTerminal(_tokens->surfaceTerminal);
-}
-
-UsdRelationship
-UsdShadeLook::CreateSurfaceTerminal(const SdfPath& targetPath) const
-{
-    return CreateTerminal(_tokens->surfaceTerminal, targetPath);
-}
-
-UsdRelationship
-UsdShadeLook::GetDisplacementTerminal() const
-{
-    return GetTerminal(_tokens->displacementTerminal);
-}
-
-UsdRelationship
-UsdShadeLook::CreateDisplacementTerminal(const SdfPath& targetPath) const
-{
-    return CreateTerminal(_tokens->displacementTerminal, targetPath);
 }

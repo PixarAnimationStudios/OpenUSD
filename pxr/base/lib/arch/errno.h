@@ -24,31 +24,27 @@
 #ifndef ARCH_ERRNO_H
 #define ARCH_ERRNO_H
 
-/*!
- * \file errno.h
- * \brief Functions for dealing with system errors.
- * \ingroup group_arch_SystemFunctions
- */
+/// \file arch/errno.h
+/// \ingroup group_arch_SystemFunctions
+/// Functions for dealing with system errors.
 
 #include "pxr/base/arch/api.h"
 #include <string>
 
-/*!
- * \brief Return the error string for the current value of errno.
- * \ingroup group_arch_SystemFunctions
- *
- * This function provides a thread-safe method of fetching the error string
- * from errno. POSIX.1c defines errno as a macro which provides access to a
- * thread-local integer. This function uses strerror_r, which is thread-safe.
- */
+/// \addtogroup group_arch_SystemFunctions
+///@{
+
+/// Return the error string for the current value of errno.
+///
+/// This function provides a thread-safe method of fetching the error string
+/// from errno. POSIX.1c defines errno as a macro which provides access to a
+/// thread-local integer. This function uses strerror_r, which is thread-safe.
+/// \overload
 ARCH_API std::string ArchStrerror();
 
-/*!
- * \brief Return the error string for the specified value of errno.
- * \ingroup group_arch_SystemFunctions
- *
- * This function uses strerror_r, which is thread-safe.
- */
+/// Return the error string for the specified value of errno.
+///
+/// This function uses strerror_r, which is thread-safe.
 ARCH_API std::string ArchStrerror(int errorCode);
 
 /*!

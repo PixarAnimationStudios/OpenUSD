@@ -24,59 +24,55 @@
 #ifndef GF_SIZE3_H
 #define GF_SIZE3_H
 
+/// \file gf/size3.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/base/gf/api.h" 
 
 #include <iosfwd>
 
-/*!
- * \file size3.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-/*!
- * \class GfSize3 size3.h pxr/base/gf/size3.h
- * \ingroup group_gf_LinearAlgebra
- * \brief Three-dimensional array of sizes
- *
- * GfSize3 is used to represent triples of counts.  It is based on
- * the datatype size_t, and thus can only represent non-negative
- * values in each dimension.  If you need to represent negative numbers
- * as well, use GfVeci.
- *
- * Usage of GfSize3 is similar to that of GfVec3i, except that all
- * mathematical operations are componentwise (including multiplication).
- */
-
+/// \class GfSize3
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Three-dimensional array of sizes
+///
+/// GfSize3 is used to represent triples of counts.  It is based on the
+/// datatype size_t, and thus can only represent non-negative values in each
+/// dimension.  If you need to represent negative numbers as well, use GfVeci.
+///
+/// Usage of GfSize3 is similar to that of GfVec3i, except that all
+/// mathematical operations are componentwise (including multiplication).
+///
 class GfSize3 {
 public:
-    //! Default constructor initializes components to zero
+    /// Default constructor initializes components to zero
     GfSize3() {
-	Set(0, 0, 0);
+        Set(0, 0, 0);
     }
 
-    //! Copy constructor.
+    /// Copy constructor.
     GfSize3(const GfSize3& o) {
         *this = o;
     }
 
-    //! Conversion from GfVec3i
+    /// Conversion from GfVec3i
     explicit GfSize3(const GfVec3i&o) {
-	Set(o[0], o[1], o[2]);
+        Set(o[0], o[1], o[2]);
     }
 
-    //! Construct from an array
+    /// Construct from an array
     GfSize3(const size_t v[3]) {
         Set(v);
     }
 
-    //! Construct from three values
+    /// Construct from three values
     GfSize3(size_t v0, size_t v1, size_t v2) {
         Set(v0, v1, v2);
     }
 
-    //! Set to the values in \p v.
+    /// Set to the values in \p v.
     GfSize3 & Set(const size_t v[3]) {
         _vec[0] = v[0]; 
         _vec[1] = v[1]; 
@@ -84,7 +80,7 @@ public:
         return *this;
     }
 
-    //! Set to values passed directly
+    /// Set to values passed directly
     GfSize3 & Set(size_t v0, size_t v1, size_t v2) {
         _vec[0] = v0; 
         _vec[1] = v1; 
@@ -92,28 +88,28 @@ public:
         return *this;
     }
 
-    //! Array operator
+    /// Array operator
     size_t & operator [](size_t i) {
         return _vec[i];
     }
 
-    //! Const array operator
+    /// Const array operator
     const size_t & operator [](size_t i) const {
         return _vec[i];
     }
 
-    //! Component-wise equality
+    /// Component-wise equality
     bool operator ==(const GfSize3 &v) const {
         return _vec[0] == v._vec[0] && _vec[1] == v._vec[1] &&
-	    _vec[2] == v._vec[2];
+            _vec[2] == v._vec[2];
     }
 
-    //! Component-wise inequality
+    /// Component-wise inequality
     bool operator !=(const GfSize3 &v) const {
         return ! (*this == v);
     }
 
-    //! Component-wise in-place addition
+    /// Component-wise in-place addition
     GfSize3 & operator +=(const GfSize3 &v) {
         _vec[0] += v._vec[0]; 
         _vec[1] += v._vec[1]; 
@@ -121,7 +117,7 @@ public:
         return *this;
     }
 
-    //! Component-wise in-place subtraction
+    /// Component-wise in-place subtraction
     GfSize3 & operator -=(const GfSize3 &v) {
         _vec[0] -= v._vec[0]; 
         _vec[1] -= v._vec[1]; 
@@ -129,7 +125,7 @@ public:
         return *this;
     }
 
-    //! Component-wise in-place multiplication.
+    /// Component-wise in-place multiplication.
     GfSize3 & operator *=(GfSize3 const &v) {
         _vec[0] *= v._vec[0];
         _vec[1] *= v._vec[1];
@@ -137,7 +133,7 @@ public:
         return *this;
     }
 
-    //! Component-wise in-place multiplication by a scalar
+    /// Component-wise in-place multiplication by a scalar
     GfSize3 & operator *=(size_t d) {
         _vec[0] = _vec[0] * d;
         _vec[1] = _vec[1] * d;
@@ -145,7 +141,7 @@ public:
         return *this;
     }
 
-    //! Component-wise in-place division by a scalar
+    /// Component-wise in-place division by a scalar
     GfSize3 & operator /=(size_t d) {
         _vec[0] = _vec[0] / d;
         _vec[1] = _vec[1] / d;
@@ -153,54 +149,54 @@ public:
         return *this;
     }
 
-    //! Component-wise addition
+    /// Component-wise addition
     friend GfSize3 operator +(const GfSize3 &v1, const GfSize3 &v3) {
         return GfSize3(v1._vec[0]+v3._vec[0],
-		       v1._vec[1]+v3._vec[1],
-		       v1._vec[2]+v3._vec[2]);
+                       v1._vec[1]+v3._vec[1],
+                       v1._vec[2]+v3._vec[2]);
     }
 
-    //! Component-wise subtraction
+    /// Component-wise subtraction
     friend GfSize3 operator -(const GfSize3 &v1, const GfSize3 &v3) {
         return GfSize3(v1._vec[0]-v3._vec[0],
-		       v1._vec[1]-v3._vec[1],
-		       v1._vec[2]-v3._vec[2]);
+                       v1._vec[1]-v3._vec[1],
+                       v1._vec[2]-v3._vec[2]);
     }
 
-    //! Component-wise multiplication
+    /// Component-wise multiplication
     friend GfSize3 operator *(const GfSize3 &v1, const GfSize3 &v3) {
         return GfSize3(v1._vec[0]*v3._vec[0],
-		       v1._vec[1]*v3._vec[1],
-		       v1._vec[2]*v3._vec[2]);
+                       v1._vec[1]*v3._vec[1],
+                       v1._vec[2]*v3._vec[2]);
     }
 
-    //! Component-wise multiplication by a scalar
+    /// Component-wise multiplication by a scalar
     friend GfSize3 operator *(const GfSize3 &v1, size_t s) {
         return GfSize3(v1._vec[0]*s,
-		       v1._vec[1]*s,
-		       v1._vec[2]*s);
+                       v1._vec[1]*s,
+                       v1._vec[2]*s);
     }
 
-    //! Component-wise multiplication by a scalar
+    /// Component-wise multiplication by a scalar
     friend GfSize3 operator *(size_t s, const GfSize3 &v1) {
         return GfSize3(v1._vec[0]*s,
-		       v1._vec[1]*s,
-		       v1._vec[2]*s);
+                       v1._vec[1]*s,
+                       v1._vec[2]*s);
     }
 
-    //! Component-wise division by a scalar
+    /// Component-wise division by a scalar
     friend GfSize3 operator /(const GfSize3 &v1, size_t s) {
         return GfSize3(v1._vec[0]/s,
-		       v1._vec[1]/s,
-		       v1._vec[2]/s);
+                       v1._vec[1]/s,
+                       v1._vec[2]/s);
     }
 
-    //! Output operator
+    /// Output operator
     friend GF_API std::ostream &operator<<(std::ostream &o, GfSize3 const &v);
 
-    //! Conversion to GfVec3i
+    /// Conversion to GfVec3i
     operator GfVec3i() const {
-	return GfVec3i(static_cast<int>(_vec[0]), static_cast<int>(_vec[1]), static_cast<int>(_vec[2]));
+        return GfVec3i(_vec[0],_vec[1],_vec[2]);
     }
 private:
     size_t _vec[3];

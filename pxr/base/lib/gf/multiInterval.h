@@ -24,6 +24,9 @@
 #ifndef GF_INTERVAL_SET_H
 #define GF_INTERVAL_SET_H
 
+/// \file gf/multiInterval.h
+/// \ingroup group_gf_BasicMath
+
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/api.h"
 
@@ -31,20 +34,12 @@
 #include <set>
 #include <vector>
 
-//#include <boost/iterator/iterator_adaptor.hpp>
-
-/*!
- * \file multiInterval.h
- * \ingroup group_gf_BasicMath
- */
-
-/*!
- * \class GfMultiInterval
- * \ingroup group_gf_BasicMath
- *
- * GfMultiInterval represents a subset of the real number line as an
- * ordered set of non-intersecting GfIntervals.
- */
+/// \class GfMultiInterval
+/// \ingroup group_gf_BasicMath
+///
+/// GfMultiInterval represents a subset of the real number line as an
+/// ordered set of non-intersecting GfIntervals.
+///
 class GfMultiInterval
 {
 public:

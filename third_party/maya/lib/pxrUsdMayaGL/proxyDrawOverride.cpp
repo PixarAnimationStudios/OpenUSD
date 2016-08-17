@@ -21,25 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/proxyDrawOverride.h"
+#include "pxrUsdMayaGL/proxyDrawOverride.h"
 
+#include "pxr/base/tf/envSetting.h"
+#include "pxrUsdMayaGL/batchRenderer.h"
 #include "usdMaya/proxyShape.h"
 
 #include <maya/MBoundingBox.h>
-#include <maya/MObject.h>
 #include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
 #include <maya/MDrawContext.h>
-#include <maya/MMatrix.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
-
-#include <iostream>
-using std::cout;
-using std::endl;
+#include <maya/MObject.h>
+#include <maya/MPxDrawOverride.h>
+#include <maya/MString.h>
+#include <maya/MUserData.h>
 
 
 MString UsdMayaProxyDrawOverride::sm_drawDbClassification("drawdb/geometry/usdMaya");
-MString UsdMayaProxyDrawOverride::sm_drawRegistrantId("px_usdIOPlugin");
+MString UsdMayaProxyDrawOverride::sm_drawRegistrantId("pxrUsdPlugin");
 
 
 static inline UsdMayaGLBatchRenderer& _GetBatchRenderer()
@@ -94,20 +95,18 @@ UsdMayaProxyDrawOverride::getShape(const MDagPath& objPath)
 {
     MObject obj = objPath.node();
     MFnDependencyNode dnNode(obj);
-    if(obj.apiType() != MFn::kPluginShape)
-    {
-        cout << "Failed apiType test" << endl;
-        cout << "apiType = " << (int)obj.apiType() << endl;
+    if (obj.apiType() != MFn::kPluginShape) {
+        MGlobal::displayError("Failed apiType test (apiTypeStr=" +
+                              MString(obj.apiTypeStr()) + ")");
         return NULL;
     }
 
     UsdMayaProxyShape* pShape = static_cast<UsdMayaProxyShape*>(dnNode.userNode());
-
-    if(!pShape)
-    {
-        cout << "Failed geting userNode" << endl;
+    if (not pShape) {
+        MGlobal::displayError("Failed getting userNode");
         return NULL;
     }
+
     return pShape;
 }
 

@@ -17,6 +17,7 @@ pxr_shared_library(${PXR_PACKAGE}
         sdf
         usd
         usdImaging
+        usdMaya
         ${Boost_LIBRARIES}
         ${GLUT_LIBRARIES}
         ${MAYA_LIBRARIES}
@@ -33,5 +34,7 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_CLASSES
         hdRenderer
         batchRenderer
+        proxyDrawOverride
+        proxyShapeUI
 )
 

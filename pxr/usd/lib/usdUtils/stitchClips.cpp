@@ -67,9 +67,10 @@ namespace {
     void _StitchClipActive(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
                            const SdfPath&);
     void _StitchClipPrimPath(const SdfLayerRefPtr&, const SdfPath&);
-    void _StitchClipTopologyLayerReference(const SdfLayerRefPtr&, 
-                                           const SdfLayerRefPtr&, 
-                                           const std::string&);
+    void _StitchClipTopologyLayerReference(const SdfLayerRefPtr& resultLayer,
+                                           const SdfPath& rootPath,
+                                           const std::string& topIdentifier);
+
     void _StitchClipManifest(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
                              const SdfPath&);
     void _StitchClipMetadata(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
@@ -89,7 +90,9 @@ namespace {
                                            const std::string&);
 
     // validation utilities 
-    bool _ClipLayersAreValid(const SdfLayerRefPtrVector&, const SdfPath&);
+    bool _ClipLayersAreValid(const SdfLayerRefPtrVector& clipLayers,
+                             const std::vector<std::string>& clipLayerFiles,
+                             const SdfPath& clipPath);
     void _CleanUpGeneratedLayers(const std::string& topologyLayerName,
                                  const std::string& resultLayerName,
                                  const bool topologyWasGenerated);

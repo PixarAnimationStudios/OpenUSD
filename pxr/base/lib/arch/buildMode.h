@@ -30,11 +30,6 @@
 #error This include file can be included only in C++ programs.
 #endif
 
-/*
- * The various flavor Makefiles are responsible for defining
- * either BUILD_OPTLEVEL_DEV or BUILD_OPTLEVEL_OPT.
- */
-
 struct ArchBuildMode {
 
 #if defined(BUILD_OPTLEVEL_DEV)

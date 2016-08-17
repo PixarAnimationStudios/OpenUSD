@@ -24,30 +24,29 @@
 #ifndef TF_PYERROR_H
 #define TF_PYERROR_H
 
-///
-/// \file error.h
-/// \brief Provide facilities for error handling in script.
-///
+/// \file tf/error.h
+/// Provide facilities for error handling in script.
 
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/errorMark.h"
 
 #include <boost/python/default_call_policies.hpp>
 
-/// \brief Converts any \a TfError objects in \a m into python exceptions.  User
-/// code should generally not have to call this.  User code should generally not
+/// Converts any \a TfError objects in \a m into python exceptions.  User code
+/// should generally not have to call this.  User code should generally not
 /// have to call this, unless it's manually bridging between C++ & Python.
 TF_API
 bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m);
 
-/// \brief Convert the current python exception to \a TfError objects and post
-/// them to the error system.  User code should generally not have to call this,
+/// Convert the current python exception to \a TfError objects and post them
+/// to the error system.  User code should generally not have to call this,
 /// unless it's manually bridging between C++ & Python.
 TF_API
 void TfPyConvertPythonExceptionToTfErrors();
 
 /// \class TfPyRaiseOnError
-/// \brief A boost.python call policy class which, when applied to a wrapped
+///
+/// A boost.python call policy class which, when applied to a wrapped
 /// function, will create an error mark before calling the function, and check
 /// that error mark after the function has completed.  If any TfErrors have
 /// occured, they will be raised as python exceptions.
@@ -64,12 +63,12 @@ struct TfPyRaiseOnError : Base
     // This call policy provides a customized argument_package.  We need to do
     // this to store the TfErrorMark that we use to collect TfErrors that
     // occurred during the call and convert them to a python exception at the
-    // end.  It doesn't work to do this in the precall() and postcall() because
-    // if the call itself throws a c++ exception, the postcall() isn't executed
-    // and we can't destroy the TfErrorMark, leaving it dangling.  Using the
-    // argument_package solves this since it is a local variable it will be
-    // destroyed whether or not the call throws.  This is not really a publicly
-    // documented boost.python feature, however.  :-/
+    // end.  It doesn't work to do this in the precall() and postcall()
+    // because if the call itself throws a c++ exception, the postcall() isn't
+    // executed and we can't destroy the TfErrorMark, leaving it dangling.
+    // Using the argument_package solves this since it is a local variable it
+    // will be destroyed whether or not the call throws.  This is not really a
+    // publicly documented boost.python feature, however.  :-/
     template <class BaseArgs>
     struct ErrorMarkAndArgs {
         /* implicit */ErrorMarkAndArgs(BaseArgs base_) : base(base_) {}

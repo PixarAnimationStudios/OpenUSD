@@ -26,6 +26,7 @@
 
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usdShade/subgraph.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -48,6 +49,8 @@ class SdfAssetPath;
 // LOOK                                                                       //
 // -------------------------------------------------------------------------- //
 
+/// \deprecated Deprecated in favor of Material.
+/// 
 /// A Look provides a container into which multiple "render targets"
 /// can add data that defines a "shading look" for a renderer.  Typically
 /// this consists of one or more UsdRelationship properties that target
@@ -92,7 +95,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdShadeLook : public UsdShadeSubgraph
+class UsdShadeLook : public UsdShadeMaterial
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -106,7 +109,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdShadeLook(const UsdPrim& prim=UsdPrim())
-        : UsdShadeSubgraph(prim)
+        : UsdShadeMaterial(prim)
     {
     }
 
@@ -114,7 +117,7 @@ public:
     /// Should be preferred over UsdShadeLook(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdShadeLook(const UsdSchemaBase& schemaObj)
-        : UsdShadeSubgraph(schemaObj)
+        : UsdShadeMaterial(schemaObj)
     {
     }
 
@@ -445,36 +448,7 @@ public:
 
     /// @}
 
-    // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeLook_Terminals
-    /// 
-    /// API to create and query the existence of standard terminals
-    //
-    /// @{
-    // --------------------------------------------------------------------- //
 
-    /// Get the main terminal of a look: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    USDSHADE_API
-    UsdRelationship GetSurfaceTerminal() const;
-
-    /// Create and set the main terminal of a look: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    USDSHADE_API
-    UsdRelationship CreateSurfaceTerminal(const SdfPath& targetPath) const;
-
-    /// Get the displacement terminal of a look
-    /// 
-    USDSHADE_API
-    UsdRelationship GetDisplacementTerminal() const;
-
-    /// Create and set the displacement terminal of a look
-    /// 
-    USDSHADE_API
-    UsdRelationship CreateDisplacementTerminal(const SdfPath& targetPath) const;
-    /// @}
 };
 
 #endif

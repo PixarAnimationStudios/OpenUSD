@@ -51,7 +51,7 @@ PROJECT_BRIEF          =
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           = src/usd/images/USDLogoDocs.png
+PROJECT_LOGO           = src/pxr/usd/lib/usd/images/USDLogoDocs.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -251,7 +251,7 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 # that for custom extensions you also need to set FILE_PATTERNS otherwise the
 # files are not read by doxygen.
 
-EXTENSION_MAPPING      =
+EXTENSION_MAPPING      = h=C++
 
 # If MARKDOWN_SUPPORT is enabled (the default) then doxygen pre-processes all
 # comments according to the Markdown format, which allows for more readable
@@ -348,7 +348,7 @@ TYPEDEF_HIDES_STRUCT   = NO
 # range is 0..9, the default is 0, corresponding to a cache size of 2^16 = 65536
 # symbols.
 
-LOOKUP_CACHE_SIZE      = 0
+LOOKUP_CACHE_SIZE      = 3
 
 #---------------------------------------------------------------------------
 # Build related configuration options
@@ -668,13 +668,20 @@ WARN_LOGFILE           =
 # Our pages almost identically correspond to modules, and we want them
 # to be ordered by "package" and low-to-high-level module order.
 
-INPUT                  = src/usd/doxygen/externalOverview.dox \
-                         src/kind \
-                         src/sdf \
-                         src/pcp \
-                         src/usd \
-                         src/usdGeom \
-                         src/usdShade
+INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
+                         clientModuleHeader.dox \
+                         src/modules/ar \
+                         src/modules/sdf \
+                         src/modules/usd \
+                         src/modules/usdGeom \
+                         src/modules/usdImaging \
+                         src/modules/usdRi \
+                         src/modules/usdShade \
+                         src/modules/usdUtils \
+                         src/modules/vt \
+                         foundationModuleHeader.dox \
+                         src/modules
+                         
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -761,8 +768,8 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = src/usd/images \
-                         src/usdGeom/images
+IMAGE_PATH             = src/modules/usd/images \
+                         src/modules/usdGeom/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program

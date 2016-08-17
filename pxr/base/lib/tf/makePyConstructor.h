@@ -26,12 +26,9 @@
 #ifndef TF_MAKE_CONSTRUCTOR_H
 #define TF_MAKE_CONSTRUCTOR_H
 
-///
-/// \file makePyConstructor.h
-///
-/// \brief An injected constructor mechanism that works with polymorphic wrapped
+/// \file tf/makePyConstructor.h
+/// An injected constructor mechanism that works with polymorphic wrapped
 /// classes.
-///
 
 #ifndef TF_MAX_ARITY
 #  define TF_MAX_ARITY 7
@@ -63,7 +60,6 @@
 
 #include <string>
 
-//
 // Helper for wrapping objects that are held by weak pointers, but may also be
 // constructed from script.  This lets one construct an object from script and
 // stores a ref pointer to the C++ object inside the python object.  This way,
@@ -384,10 +380,8 @@ struct TfPyRefPtrFactory : public Tf_MakePyConstructor::RefPtrFactory<T> {};
 
 template <typename T> struct Tf_PySequenceToListConverterRefPtrFactory;
 
-/*!
- * \brief A boost::python result converter generator which converts standard
- * library sequences to lists of python owned objects.
- */
+/// A \c boost::python result converter generator which converts standard
+/// library sequences to lists of python owned objects.
 struct TfPySequenceToListRefPtrFactory {
     template <typename T>
     struct apply {
@@ -422,16 +416,9 @@ struct Tf_PySequenceToListConverterRefPtrFactory {
     }
 };
 
-
 #endif // TF_MAKE_CONSTRUCTOR_H
 
-
-
-
-
-
 #else // BOOST_PP_IS_ITERATING
-
 
 #define N BOOST_PP_ITERATION()
 

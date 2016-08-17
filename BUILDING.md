@@ -2,11 +2,11 @@ Advanced Build Configuration
 ============================
 
 ## Table of Contents
-- [Optional Components](#Optional-Components)
-- [Third Party Plugins](#Plugins)
-- [Other Build Options](#Other-Build-Options)
-- [USD Developer Options](#USD-Developer-Options)
-- [Optimization Options](#Optimization-Options)
+- [Optional Components](#optional-components)
+- [Third Party Plugins](#third-party-plugins)
+- [Other Build Options](#other-build-options)
+- [USD Developer Options](#usd-developer-options)
+- [Optimization Options](#optimization-options)
 
 ## Optional Components
 
@@ -31,7 +31,7 @@ Disable this component by specifying the cmake flag ```PXR_BUILD_USD_IMAGING=FAL
 invoking cmake. Enabling this component will enable the [Imaging](#Imaging)
 component.
 
-## Plugins
+## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages,
 including Maya, Katana, and Alembic. There is additional documentation on each plugin 

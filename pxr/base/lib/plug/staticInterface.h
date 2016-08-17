@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file staticInterface.h
-
 #ifndef PLUG_STATICINTERFACE_H
 #define PLUG_STATICINTERFACE_H
+
+/// \file plug/staticInterface.h
 
 #include "pxr/base/plug/api.h"
 #include <typeinfo>
@@ -55,9 +55,9 @@ protected:
     mutable void* _ptr;
 };
 
+/// \class PlugStaticInterface
 ///
-/// \class PlugStaticInterface staticInterface.h pxr/base/plug/staticInterface.h
-/// \brief Provides access to an interface into a plugin.
+/// Provides access to an interface into a plugin.
 ///
 /// A plugin can provide one or more interface types through which clients
 /// can access the plugin's full functionality without needing to link

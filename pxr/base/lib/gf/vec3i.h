@@ -28,6 +28,9 @@
 #ifndef GF_VEC3I_H
 #define GF_VEC3I_H
 
+/// \file gf/vec3i.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -42,21 +45,14 @@
 template <>
 struct GfIsGfVec<class GfVec3i> { static const bool value = true; };
 
-/*!
- * \file vec3i.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-/*!
- * \class GfVec3i vec3i.h "pxr/base/gf/vec3i.h"
- * \ingroup group_gf_LinearAlgebra
- * \brief Basic type for a vector of 3 int components.
- *
- * Represents a vector of 3 components of type \c int.
- * It is intended to be fast and simple.
- *
- */
-
+/// \class GfVec3i
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type for a vector of 3 int components.
+///
+/// Represents a vector of 3 components of type \c int.
+/// It is intended to be fast and simple.
+///
 class GfVec3i
 {
 public:
@@ -67,8 +63,8 @@ public:
     /// Default constructor does no initialization.
     GfVec3i() {}
 
-
-    // Copy constructor.  XXX: Remove this, use compiler-generated.
+    // Copy constructor.
+    // TODO Remove this, use compiler-generated.
     GfVec3i(const GfVec3i &other) {
         *this = other;
     }
@@ -84,7 +80,7 @@ public:
     GfVec3i(int s0, int s1, int s2) {
         Set(s0, s1, s2);
     }
-    
+
     /// Construct with pointer to values.
     template <class Scl>
     explicit GfVec3i(Scl const *p) { Set(p); }
@@ -107,7 +103,7 @@ public:
         result[2] = 1;
         return result;
     }
-    
+
     /// Create a unit vector along the i-th axis, zero-based.  Return the zero
     /// vector if \p i is greater than or equal to 3.
     static GfVec3i Axis(size_t i) {
@@ -116,7 +112,7 @@ public:
             result[i] = 1;
         return result;
     }
-    
+
     /// Set all elements with passed arguments.
     GfVec3i &Set(int s0, int s1, int s2) {
         _data[0] = s0;
@@ -158,7 +154,7 @@ public:
         return !(*this == other);
     }
 
-    // XXX: Add inequality for other vec types...
+    // TODO Add inequality for other vec types...
     /// Equality comparison.
     GF_API
     bool operator==(class GfVec3d const &other) const;
@@ -201,10 +197,10 @@ public:
         _data[0] *= s;
         _data[1] *= s;
         _data[2] *= s;
-	return *this;
+        return *this;
     }
     GfVec3i operator*(double s) const {
-	return GfVec3i(*this) *= s;
+        return GfVec3i(*this) *= s;
     }
     friend GfVec3i operator*(double s, GfVec3i const &v) {
         return v * s;
@@ -218,7 +214,7 @@ public:
         return *this;
     }
     GfVec3i operator/(int s) const {
-	return GfVec3i(*this) /= s;
+        return GfVec3i(*this) /= s;
     }
     
     /// See GfDot().
@@ -226,7 +222,7 @@ public:
         return _data[0] * v[0] + _data[1] * v[1] + _data[2] * v[2];
     }
 
-    /// Returns the projection of \p this onto \p v. That is: 
+    /// Returns the projection of \p this onto \p v. That is:
     /// \code
     /// v * (*this * v)
     /// \endcode
@@ -234,12 +230,13 @@ public:
         return v * (*this * v);
     }
 
-    /// Returns the orthogonal complement of \p this->GetProjection(b). That is:
+    /// Returns the orthogonal complement of \p this->GetProjection(b).
+    /// That is:
     /// \code
     ///  *this - this->GetProjection(b)
     /// \endcode
     GfVec3i GetComplement(GfVec3i const &b) const {
-	return *this - this->GetProjection(b);
+        return *this - this->GetProjection(b);
     }
 
     /// Squared length.
@@ -252,7 +249,7 @@ private:
     int _data[3];
 };
 
-/// Output a GfVec3i
+/// Output a GfVec3i.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfVec3i const &);
 
@@ -282,7 +279,6 @@ inline int
 GfDot(GfVec3i const &v1, GfVec3i const &v2) {
     return v1 * v2;
 }
-
 
  
 #endif // GF_VEC3I_H

@@ -5,6 +5,7 @@ pxr_plugin(${PXR_PACKAGE}
         ar
         arch
         usdMaya
+        pxrUsdMayaGL
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS

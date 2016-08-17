@@ -170,12 +170,9 @@ TF_REGISTRY_FUNCTION(TfType) \
                     TfType::Bases<Base> >(); \
 }
 
-
 #endif // TF_PYNOTICEWRAPPER_H
 
-
 #else // BOOST_PP_IS_ITERATING
-
 
 #define N BOOST_PP_ITERATION()
 

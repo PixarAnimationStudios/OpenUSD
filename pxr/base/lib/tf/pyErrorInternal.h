@@ -38,6 +38,4 @@ TF_API void Tf_PyRestorePythonExceptionState(TfPyExceptionState state);
 TF_API boost::python::handle<> Tf_PyGetErrorExceptionClass();
 TF_API void Tf_PySetErrorExceptionClass(boost::python::object const &cls);
 
-
-
 #endif // TF_PYERRORINTERNAL_H

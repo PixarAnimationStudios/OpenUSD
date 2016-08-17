@@ -37,6 +37,8 @@
 
 \anchor mainpage_Gf
 
+\section gf_overview Overview
+
 Contains foundation classes and functions for working with the basic mathematical aspects of graphics.  
 
 The high-level grouping of the classes and functions is as follows:
@@ -44,8 +46,10 @@ The high-level grouping of the classes and functions is as follows:
 <ul>
  	<li> \link group_gf_LinearAlgebra \b Linear \b Algebra - \endlink Includes classes representing basic types, including vectors of varying numbers and types (such as vectors of two, three, and four float components), two and three-dimensional arrays of sizes, and compound linear transformations. </li>
  	<li>  \link group_gf_BasicMath \b Basic \b Mathematical \b Operations - \endlink  Includes classes and functions for performing operations such as converting between radians and degrees, calculating square roots, minimum and maximum values, absolute values, and so on.</li>
-	<li> \link group_gf_BasicGeometry \b Basic \b Geometry - \endlink  Includes classes that represent basic types such as one to three-dimensional floating point ranges, three-dimensional bounding boxes, planes, rays, and splines.</li>
-	<li> \link group_gf_Noise \b Noise \b and \b Randomness - \endlink  Includes classes and functions for generating random numbers and various types of noise, including different dimensional levels of input and output (for example, four-dimensional input, two dimensional output).</li>
+	<li> \link group_gf_BasicGeometry \b Basic \b Geometry - \endlink  
+Includes classes that represent basic types such as one to three-dimensional 
+floating point ranges, three-dimensional bounding boxes, planes, rays, frusta, 
+and a camera model.</li>
 	<li> \link group_gf_DebuggingOutput \b Output \b For \b Debugging - \endlink  Includes functions for quickly outputting Gf types (these are particularly useful for diagnostic purposes).</li>
 <!--  	<li> \link group_gf_Color Color \endlink</li>
   	<li> \link group_gf_Gamma Gamma Mapping</li> \endlink -->

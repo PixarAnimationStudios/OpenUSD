@@ -35,5 +35,4 @@ struct TfNullPtrType
 // TfRefPtr.
 extern const TF_API TfNullPtrType TfNullPtr;
 
-
 #endif // TF_NULLPTR_H

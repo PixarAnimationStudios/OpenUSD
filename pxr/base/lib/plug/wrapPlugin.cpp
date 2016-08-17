@@ -93,7 +93,7 @@ void wrapPlugin()
               arg("includeSubclasses") = false))
 
         .def("MakeResourcePath", &This::MakeResourcePath)
-        .def("FindResource", &This::FindResource,
+        .def("FindPluginResource", &This::FindPluginResource,
              (arg("path"), 
               arg("verify") = true))
         ;

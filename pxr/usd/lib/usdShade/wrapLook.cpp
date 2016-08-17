@@ -50,7 +50,7 @@ void wrapUsdShadeLook()
 {
     typedef UsdShadeLook This;
 
-    class_<This, bases<UsdShadeSubgraph> >
+    class_<This, bases<UsdShadeMaterial> >
         cls("Look");
 
     cls

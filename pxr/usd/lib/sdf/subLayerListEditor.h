@@ -40,6 +40,8 @@ class Sdf_SubLayerListEditor
 public:
     Sdf_SubLayerListEditor(const SdfLayerHandle& owner);
 
+    virtual ~Sdf_SubLayerListEditor();
+
 private:
     typedef Sdf_VectorListEditor<SdfSubLayerTypePolicy> Parent;
 

@@ -24,10 +24,31 @@
 #ifndef TF_DIAGNOSTICLITE_H
 #define TF_DIAGNOSTICLITE_H
 
+/// \file tf/diagnosticLite.h
+/// Stripped down version of \c diagnostic.h that doesn't define \c std::string.
+///
+/// This file provides the same functionality as \c diagnostic.h, except that
+/// all strings must be passed as plain \c const \c char*, and not by
+/// \c std::string, and the macro \c TF_FUNCTION_NAME() is only defined by
+/// \c diagnostic.h
+///
+/// In particular, this header file does not include the C++ header file
+/// \c < \c string \c >, making inclusion of this file a very light-weight
+/// addition. Include this file, as opposed to pxr/base/tf/diagnostic.h in
+/// header files that need to remain as light-weight as possible.
+///
+/// These macros are safe to use in multiple threads, but errors will be
+/// converted to warnings because our error handling mechanisms are not thread
+/// safe.
+
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/api.h"
+#include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/callContext.h"
+#include <stddef.h>
 
-//! Enum describing various diagnostic conditions.
+/// \enum TfDiagnosticType
+/// Enum describing various diagnostic conditions.
 enum TfDiagnosticType {
     TF_DIAGNOSTIC_INVALID_TYPE = 0,
     TF_DIAGNOSTIC_CODING_ERROR_TYPE,
@@ -40,29 +61,6 @@ enum TfDiagnosticType {
     TF_APPLICATION_EXIT_TYPE,
 };
 
-#include "pxr/base/arch/hints.h"
-#include "pxr/base/tf/callContext.h"
-#include <stddef.h>
-
-/*!
- * \file diagnosticLite.h
- * \brief Stripped down version of pxr/base/tf/diagnostic.h that doesn't define
- * \c std::string
- *
- * This file provides the same functionality as pxr/base/tf/diagnostic.h,
- * except that all strings must be passed as plain \c const \c char*, and
- * not by \c std::string, and the macro \c TF_FUNCTION_NAME() is only defined
- * by pxr/base/tf/diagnostic.h
- *
- * In particular, this header file does not include the C++ header file \c < \c
- * string \c >, making inclusion of this file a very light-weight addition.
- * Include this file, as opposed to pxr/base/tf/diagnostic.h in header files that
- * need to remain as light-weight as possible.
- *
- * These macros are safe to use in multiple threads, but errors will be
- * converted to warnings because our error handling mechanisms are not
- * thread safe.
- */
 
 #if !defined(doxygen)
 
@@ -119,8 +117,6 @@ enum TfDiagnosticType {
         if (TF_DEV_BUILD)       \
             TF_AXIOM(cond);     \
     } while (0)
-
-
 
 struct Tf_DiagnosticLiteHelper {
     Tf_DiagnosticLiteHelper(TfCallContext const &context,

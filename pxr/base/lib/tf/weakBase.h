@@ -24,56 +24,22 @@
 #ifndef TF_WEAKBASE_H
 #define TF_WEAKBASE_H
 
+/// \file tf/weakBase.h
+/// \ingroup group_tf_Memory
 
 #include "pxr/base/tf/expiryNotifier.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/traits.h"
 #include "pxr/base/tf/api.h"
 
-/*!
- * \file weakBase.h
- * \ingroup group_tf_Memory
- */
-
-/*!
- * \class TfWeakBase WeakBase.h pxr/base/tf/weakBase.h
- * \ingroup group_tf_Memory
- * \brief Enable a concrete base class for use with \c TfWeakPtr.
- *
- * You should be familiar with the \c TfWeakPtr type
- * before reading further.
- *
- * A class is enabled for use with the \c TfWeakPtr type by publicly
- * deriving from \c TfWeakBase.  (Note that deriving from \c
- * TfWeakBase adds data to a structure, so the result is no longer a
- * "pure" interface class.)
- *
- * For example,
- * \code
- *     #include "pxr/base/tf/weakBase.h"
- *
- *     class Simple : public TfWeakBase {
- *           ...
- *     };
- * \endcode
- *
- * Given the above inheritance, a \c Simple* can now be used to
- * initialize an object of type \c TfWeakPtr<Simple>.
- */
-
-
-/*
- * The _Remnant structure is simply a persisent memory of an object's address.
- * When the object dies, the pointer is set to NULL.  A _Remnant object is
- * destroyed when both the original whose address it was initialized with, and
- * there are no weak pointers left pointing to that remnant.
- */
-
+// The _Remnant structure is simply a persisent memory of an object's
+// address. When the object dies, the pointer is set to NULL.  A _Remnant
+// object is destroyed when both the original whose address it was
+// initialized with, and there are no weak pointers left pointing to that
+// remnant.
 class Tf_Remnant : public TfRefBase
 {
 public:
-
-    //TF_ENABLE_CLASS_ALLOCATOR(Tf_Remnant);
 
     TF_API virtual ~Tf_Remnant();
 
@@ -147,8 +113,29 @@ private:
     bool _alive;
 };
 
-
-
+/// \class TfWeakBase
+/// \ingroup group_tf_Memory
+///
+/// Enable a concrete base class for use with \c TfWeakPtr.
+///
+/// You should be familiar with the \c TfWeakPtr type before reading further.
+///
+/// A class is enabled for use with the \c TfWeakPtr type by publicly deriving
+/// from \c TfWeakBase.  (Note that deriving from \c TfWeakBase adds data to a
+/// structure, so the result is no longer a "pure" interface class.)
+///
+/// For example,
+/// \code
+///     #include "pxr/base/tf/weakBase.h"
+///
+///     class Simple : public TfWeakBase {
+///           ...
+///     };
+/// \endcode
+///
+/// Given the above inheritance, a \c Simple* can now be used to initialize an
+/// object of type \c TfWeakPtr<Simple>.
+///
 class TfWeakBase {
 public:
     TfWeakBase() {}
@@ -218,8 +205,4 @@ private:
     Tf_WeakBaseAccess();
 };
 
-
-
-
-
-#endif
+#endif // TF_WEAKBASE_H

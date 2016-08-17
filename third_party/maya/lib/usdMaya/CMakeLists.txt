@@ -7,7 +7,6 @@ pxr_shared_library(${PXR_PACKAGE}
         js 
         kind 
         plug 
-        pxrUsdMayaGL
         sdf 
         tf
         usd
@@ -65,9 +64,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdWriteJob
 
         pluginStaticData
-        proxyDrawOverride
         proxyShape
-        proxyShapeUI 
         referenceAssembly
         usdImport
         usdExport

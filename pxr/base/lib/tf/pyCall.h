@@ -27,11 +27,11 @@
 #  ifndef TF_PYCALL_H
 #  define TF_PYCALL_H
 
-///
-/// \file pyCall.h
-/// \brief Utilities for calling python callables.  These functions handle
-/// trapping python errors and converting them to \a TfErrors.
-///
+/// \file tf/pyCall.h
+/// Utilities for calling python callables.
+/// 
+/// These functions handle trapping python errors and converting them to \a
+/// TfErrors.
 
 #ifndef TF_MAX_ARITY
 #  define TF_MAX_ARITY 7
@@ -45,7 +45,11 @@
 #include <boost/python/call.hpp>
 #include <boost/python/object.hpp>
 
-/// \brief Provide a way to call a python callable.  Usage is as follows:
+/// \class TfPyCall
+///
+/// Provide a way to call a Python callable.
+/// 
+/// Usage is as follows:
 /// \code
 ///     return TfPyCall<RetType>(callable)(arg1, arg2, ... argN);
 /// \endcode
@@ -56,8 +60,8 @@
 /// call operator.
 template <typename Return>
 struct TfPyCall {
-    /// \brief Construct with callable \a c.  Constructing with a \a
-    /// boost::python::object works, since those implicitly convert to \a
+    /// Construct with callable \a c.  Constructing with a \c
+    /// boost::python::object works, since those implicitly convert to \c
     /// TfPyObjWrapper, however in that case the GIL must be held by the caller.
     explicit TfPyCall(TfPyObjWrapper const &c) : _callable(c) {}
   private:
@@ -73,9 +77,7 @@ struct TfPyCall {
 
 #  endif // TF_PYCALL_H
 
-
 #else // BOOST_PP_IS_ITERATING
-
 
 #  define N BOOST_PP_ITERATION()
 
@@ -104,6 +106,5 @@ Return operator()(BOOST_PP_ENUM_BINARY_PARAMS(N, A, a))
     return Return();
 }
 #  undef N
-
 
 #endif // BOOST_PP_IS_ITERATING

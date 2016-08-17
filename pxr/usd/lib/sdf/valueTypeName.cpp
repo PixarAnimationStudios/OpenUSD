@@ -168,7 +168,7 @@ SdfValueTypeName::GetHash() const
     // See comment in operator==.
     size_t hash = 0;
     boost::hash_combine(hash, TfHash()(_impl->type->type));
-    boost::hash_combine(hash, TfHash()(_impl->type->role));
+    boost::hash_combine(hash, _impl->type->role.Hash());
     return hash;
 }
 

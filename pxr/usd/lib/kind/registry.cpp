@@ -160,7 +160,7 @@ _GetKey(const JsObject &dict, const std::string &key, JsObject *value)
 {
     JsObject::const_iterator i = dict.find(key);
     if (i != dict.end() && i->second.IsObject()) {
-        *value = i->second.GetObject();
+        *value = i->second.GetJsObject();
         return true;
     }
     return false;

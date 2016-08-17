@@ -26,18 +26,17 @@
 
 #include "pxr/base/tf/diagnosticBase.h"
 
-/*!
- *  \class TfWarning Warning.h pxr/base/tf/warning.h
- *  \brief Represents an object that contains information about a warning.
- *  \ingroup group_tf_Diagnostic
- * 
- *  See \ref page_tf_Diagnostic in the C++ API reference for a detailed
- *  description of the warning issuing API.  For a example of how to post a
- *  warning, see \c TF_WARN(), also in the C++ API reference.
- *
- *  In the Python API, you can issue a warning with Tf.Warn().
- *
- */
+/// \class TfWarning
+/// \ingroup group_tf_Diagnostic
+///
+/// Represents an object that contains information about a warning.
+///
+/// See \ref page_tf_Diagnostic in the C++ API reference for a detailed
+/// description of the warning issuing API.  For a example of how to post a
+/// warning, see \c TF_WARN(), also in the C++ API reference.
+///
+/// In the Python API, you can issue a warning with Tf.Warn().
+///
 class TfWarning: public TfDiagnosticBase
 {
 private:

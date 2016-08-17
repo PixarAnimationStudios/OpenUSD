@@ -65,11 +65,9 @@ Vt_StreamOutImpl(T const &obj, std::ostream &stream)
         typeid(T), static_cast<void const *>(&obj), stream);
 }
 
-/*!
- * \brief VtValue and VtArray make unqualified calls to VtStreamOut when writing
- * values to streams.  Clients may overload VtStreamOut for their own types if
- * desired.
- */
+/// VtValue and VtArray make unqualified calls to VtStreamOut when writing
+/// values to streams.  Clients may overload VtStreamOut for their own types
+/// if desired.
 template <class T>
 typename boost::disable_if<boost::is_enum<T>, std::ostream &>::type
 VtStreamOut(T const &obj, std::ostream &stream)

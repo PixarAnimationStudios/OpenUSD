@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file valueFromPython.h
-///
 #ifndef VT_VALUE_FROM_PYTHON_H
 #define VT_VALUE_FROM_PYTHON_H
+
+/// \file vt/valueFromPython.h
 
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/api.h"
@@ -42,6 +42,7 @@
 #include <vector>
 
 /// \class Vt_ValueFromPythonRegistry
+///
 class Vt_ValueFromPythonRegistry : boost::noncopyable {
 public:
 
