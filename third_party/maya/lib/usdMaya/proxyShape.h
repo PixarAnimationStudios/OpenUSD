@@ -38,6 +38,7 @@
 #include "pxr/usd/sdf/path.h"
 
 
+USDMAYA_API
 extern TfEnvSetting<bool> PIXMAYA_ENABLE_BOUNDING_BOX_MODE;
 
 
