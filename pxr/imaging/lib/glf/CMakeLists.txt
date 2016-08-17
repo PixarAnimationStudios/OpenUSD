@@ -8,6 +8,9 @@ endif()
 
 if(WIN32)
     set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+    # conversion from 'double' to 'const float' requires a narrowing conversion
+    add_definitions("/wd4838")
+    add_definitions("/DPTEX_STATIC")
 endif()
 
 pxr_shared_library(glf
@@ -30,6 +33,7 @@ pxr_shared_library(glf
         ${PTEX_LIBRARY}
         ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
+		${ZLIB_LIBRARY_RELEASE}
 
     INCLUDE_DIRS
         ${OIIO_INCLUDE_DIRS}

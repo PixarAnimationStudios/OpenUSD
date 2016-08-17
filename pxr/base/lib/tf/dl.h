@@ -37,42 +37,22 @@
 
 /// Call \c dlopen() and notify \c lib/tf that a new module has been loaded.
 ///
-/// This is a wrapper around dlopen(), in the sense that this function simply
-/// calls \c dlopen(\p name, \p flag).  It will additionally load script
+/// This is a wrapper around ArchOpenLibrary(), in the sense that this function
+/// simply calls \c dlopen(\p name, \p flag).  It will additionally load script
 /// bindings if scripting is initialized and loading is requested.
 /// 
 /// If \p error is not \c NULL, it will be set to the return value of a
-/// \c dlerror() call after the \c dlopen(), or cleared if that value is
-/// \c NULL. It is not reliable to get the error string by calling
+/// \c dlerror() call after the \c ArchOpenLibrary(), or cleared if that value
+// is \c NULL. It is not reliable to get the error string by calling
 /// \c dlerror() after \c TfDlopen().
 ///
 /// If you set the environment variable \c TF_DLOPEN_DEBUG then debug output
 /// will be sent to \c stdout on each invocation of this function.
+TF_API
 void* TfDlopen(const std::string &filename,
                int flag, 
                std::string *error = NULL,
                bool loadScriptBindings = true);
-
-
-/*!
- * \brief Call ArchOpenLibrary() and notify lib/tf that a new module has been loaded.
- * \ingroup group_tf_SystemsExt
- *
- * This is a wrapper around ArchOpenLibrary(), in the sense that this function
- * simply calls ArchOpenLibrary(\p name, \p flag).  It will additionally load
- * script bindings if scripting is initialized and loading is requested.
- * 
- * If \p error is not NULL, it will be set to the return value of
- * a ArchLibraryError() call after the dlopen(), or cleared if that value is NULL.
- * It is not reliable to get the error string by calling ArchLibraryError()
- * after \c TfDlopen().
- *
- * If you set the environment variable TF_DLOPEN_DEBUG then debug output
- * will be sent to stdout on each invocation of this function.
- */
-TF_API
-void* TfDlopen(const std::string &filename, int flag, 
-               std::string *error = NULL, bool loadScriptBindings = true);
 
 /*!
  * \brief Call dlclose().

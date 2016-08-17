@@ -35,6 +35,7 @@
 #include <float.h>
 #include <iosfwd>
 #include <limits>
+#include <ciso646>
 
 /// \class GfInterval
 /// \ingroup group_gf_BasicMath

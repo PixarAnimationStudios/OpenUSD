@@ -45,7 +45,7 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     /**
      * method to construct node
      */
-    USDMAYA_API
+    USDMAYAGL_API
     static void* creator();
 
     /**

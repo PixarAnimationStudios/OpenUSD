@@ -41,7 +41,7 @@
 #include <maya/MUserData.h>
 
 
-class USDMAYA_API UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
+class USDMAYAGL_API UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
 public:
     static MHWRender::MPxDrawOverride* Creator(const MObject& obj);

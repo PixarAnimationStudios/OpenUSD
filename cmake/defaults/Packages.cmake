@@ -97,13 +97,17 @@ if (PXR_BUILD_IMAGING)
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     find_package(PTex REQUIRED)
-    # --X11
-    find_package(X11)
+    if(UNIX)
+        # --X11
+        find_package(X11)
+    endif()
     # --Qt
     find_package(Qt4)
     if (QT4_FOUND)
         find_package(PySideTools REQUIRED)
     endif()
+    # --Zlib
+    find_package(ZLIB REQUIRED)
 endif()
 
 # Third Party Plugin Package Requirements

@@ -204,6 +204,9 @@ inline void TfReset(TfHashMap<Key, Value, Hash, Equal, Alloc> &hash){
         hash.clear();
 }
 
+TF_API size_t Tf_GetEmptyHashMapBucketCount();
+TF_API size_t Tf_GetEmptyHashSetBucketCount();
+
 /// Specialize for TfHashSet to make minimally sized hashes.
 template <class Value, class Hash, class Equal, class Alloc>
 inline void TfReset(TfHashSet<Value, Hash, Equal, Alloc> &hash) {

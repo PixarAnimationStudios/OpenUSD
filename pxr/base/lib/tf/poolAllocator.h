@@ -30,6 +30,8 @@
 #include <tbb/spin_mutex.h>
 #include <vector>
 
+#include "pxr/base/tf/api.h"
+
 /// \class TfPoolAllocator
 /// \ingroup group_tf_Memory
 ///

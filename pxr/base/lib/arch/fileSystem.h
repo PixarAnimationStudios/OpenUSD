@@ -53,11 +53,11 @@
 /// \addtogroup group_arch_SystemFunctions
 ///@{
 #if !defined(ARCH_OS_WINDOWS)
-#ifdef _POSIX_VERSION
-#include <limits.h>                     /* for PATH_MAX */
-#else
-#include <sys/param.h>                  /* for MAXPATHLEN */
-#endif
+    #ifdef _POSIX_VERSION
+        #include <limits.h>                     /* for PATH_MAX */
+    #else
+        #include <sys/param.h>                  /* for MAXPATHLEN */
+    #endif
 #endif
 
 #if !defined(ARCH_OS_WINDOWS)
@@ -76,19 +76,19 @@
 ///
 /// Returns -1 if the file cannot be opened/read.
 #ifndef ARCH_PATH_MAX
-#ifdef _POSIX_VERSION
-#define ARCH_PATH_MAX _POSIX_PATH_MAX
-#else
-#ifdef MAXPATHLEN
-#define ARCH_PATH_MAX MAXPATHLEN
-#else
-#ifdef _MAX_PATH
-#define ARCH_PATH_MAX _MAX_PATH
-#else
-#define ARCH_PATH_MAX 1024
-#endif
-#endif
-#endif
+    #ifdef _POSIX_VERSION
+        #define ARCH_PATH_MAX _POSIX_PATH_MAX
+    #else
+        #ifdef MAXPATHLEN
+            #define ARCH_PATH_MAX MAXPATHLEN
+        #else
+            #ifdef _MAX_PATH
+                #define ARCH_PATH_MAX _MAX_PATH
+            #else
+                #define ARCH_PATH_MAX 1024
+            #endif
+        #endif
+    #endif
 #endif
 
 #if defined(ARCH_OS_WINDOWS)
