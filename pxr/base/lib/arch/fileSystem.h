@@ -282,15 +282,15 @@ std::set<std::string> ArchGetAutomountDirectories();
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
 #if defined(ARCH_OS_WINDOWS)
 struct Arch_Unmapper {
-    void operator()(char *mapStart) const;
-    void operator()(char const *mapStart) const;
+    ARCH_API void operator()(char *mapStart) const;
+    ARCH_API void operator()(char const *mapStart) const;
 };
 #else // assume POSIX
 struct Arch_Unmapper {
     Arch_Unmapper() : _length(~0) {}
     explicit Arch_Unmapper(size_t length) : _length(length) {}
-    void operator()(char *mapStart) const;
-    void operator()(char const *mapStart) const;
+    ARCH_API void operator()(char *mapStart) const;
+    ARCH_API void operator()(char const *mapStart) const;
 private:
     size_t _length;
 };
@@ -305,24 +305,28 @@ using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// read-only mapped contents.  The contents may not be modified.
+ARCH_API
 ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// copy-on-write mapped contents.  If modified, the affected pages are
 /// dissociated from the underlying file and become backed by the system's swap
 /// or page-file storage.  Edits are not carried through to the underlying file.
+ARCH_API
 ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
 /// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
 /// file position indicator for \p file is not changed.  Return the number of
 /// bytes read, or zero if at end of file.  Return -1 in case of an error, with
 /// errno set appropriately.
+ARCH_API
 int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
 
 /// Write up to \p count bytes from \p buffer to \p file at \p offset.  The file
 /// position indicator for \p file is not changed.  Return the number of bytes
 /// written, possibly zero if none written.  Return -1 in case of an error, with
 /// errno set appropriately.
+ARCH_API
 int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
 
 ///@}

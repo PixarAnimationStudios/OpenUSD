@@ -87,7 +87,7 @@ PxrUsdKatanaReadMaterial(
     // we do this before ReadPrim because ReadPrim calls ReadBlindData which we
     // don't want to stomp here.
     attrs.set("material", _GetMaterialAttr(
-        look, data.GetUsdInArgs()->GetCurrentTimeD(), flatten));
+        material, data.GetUsdInArgs()->GetCurrentTimeD(), flatten));
 
     PxrUsdKatanaReadPrim(material.GetPrim(), data, attrs);
 

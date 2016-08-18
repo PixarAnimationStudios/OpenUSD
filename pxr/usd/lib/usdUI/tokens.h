@@ -65,6 +65,6 @@
 /// \li <b>uiNodegraphNodeDisplayColor</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodePos</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeStackingOrder</b> - UsdUINodeGraphNodeAPI
-TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUIAPI, USDUI_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUI_API, USDUI_TOKENS);
 
 #endif

@@ -34,7 +34,7 @@
 #include <tbb/concurrent_hash_map.h>
 #endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
-struct Pcp_VariableImpl;
+class Pcp_VariableImpl;
 
 // Add a mapping from </> to </> if the function does not already have one.
 static PcpMapFunction

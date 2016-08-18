@@ -26,10 +26,12 @@
 
 ///\file work/utils.h
 
+#include "pxr/base/work/api.h"
 #include "pxr/base/work/detachedTask.h"
 
 #include <utility>
 
+WORK_API
 bool Work_ShouldSynchronizeAsyncDestroyCalls();
 
 template <class T>

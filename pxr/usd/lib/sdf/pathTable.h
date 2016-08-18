@@ -36,6 +36,10 @@
 #include <utility>
 #include <vector>
 
+// Helper function for clearing path tables.
+SDF_API
+void Sdf_ClearPathTableInParallel(void **, size_t, void (*)(void *));
+
 /// \class SdfPathTable
 ///
 /// A mapping from SdfPath to \a MappedType, somewhat similar to map<SdfPath,
@@ -482,8 +486,6 @@ public:
     /// Equivalent to clear(), but destroy contained objects in parallel.  This
     /// requires that running the contained objects' destructors is thread-safe.
     void ClearInParallel() {
-        // Helper function for clearing path tables.
-        void Sdf_ClearPathTableInParallel(void **, size_t, void (*)(void *));
         Sdf_ClearPathTableInParallel(reinterpret_cast<void **>(_buckets.data()),
                                      _buckets.size(), _DeleteEntryChain);
     }        
