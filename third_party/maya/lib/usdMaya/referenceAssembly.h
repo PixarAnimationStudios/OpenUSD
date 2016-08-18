@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_REFERENCEASSEMBLY_H
 #define PXRUSDMAYA_REFERENCEASSEMBLY_H
 
+#include "usdMaya/api.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
@@ -52,6 +53,7 @@ class UsdMayaReferenceAssembly : public MPxAssembly,
     public PxrUsdMayaUsdPrimProvider
 {
 public:
+    USDMAYA_API
     static const MString _classification;
 
     /// \brief Helper struct to hold MObjects for this class.
@@ -102,20 +104,25 @@ public:
     };
 
     // Static Member Functions ==
+    USDMAYA_API
     static void*   creator(
             const PluginStaticData& psData);
+    USDMAYA_API
     static MStatus initialize(
             PluginStaticData* psData);
 
     // == Base Class Virtuals ==
+    USDMAYA_API
     virtual MStatus    compute( const MPlug& plug,
                                 MDataBlock& dataBlock );
 
+    USDMAYA_API
     virtual bool       setInternalValueInContext( const MPlug& plug,
                                          const MDataHandle& dataHandle,
                                          MDGContext& ctx);
 
     // Required overrides
+    USDMAYA_API
     virtual MString createRepresentation(
             const MString& input,
             const MString& type,
@@ -123,18 +130,28 @@ public:
             MDagModifier*  undoRedo = NULL,
             MStatus*       ReturnStatus = NULL);
     
+    USDMAYA_API
     virtual MString      getActive() const;
+    USDMAYA_API
     virtual MStringArray getRepresentations(MStatus* ReturnStatus = NULL) const;
+    USDMAYA_API
     virtual MString      getRepType(const MString& representation) const;
+    USDMAYA_API
     virtual MString      getRepLabel(const MString& representation) const;
+    USDMAYA_API
     virtual MStringArray repTypes() const;
+    USDMAYA_API
     virtual MStatus      deleteRepresentation(const MString& representation);
+    USDMAYA_API
     virtual MStatus      deleteAllRepresentations();
+    USDMAYA_API
     virtual MString      setRepName(const MString& representation,
                                     const MString& newName,
                                     MStatus*       ReturnStatus = NULL);
+    USDMAYA_API
     virtual MStatus      setRepLabel(const MString& representation,
                                      const MString& label);
+    USDMAYA_API
     virtual bool         activateRep(const MString& representation);
 
     // Optional overrides
@@ -142,8 +159,11 @@ public:
     virtual bool         supportsMemberChanges() const { return false;};
     virtual bool         canRepApplyEdits(const MString& rep) const {return (rep.length() > 0);};
 
+    USDMAYA_API
     virtual void         postLoad();
+    USDMAYA_API
     virtual bool         inactivateRep();
+    USDMAYA_API
     virtual MString      getRepNamespace() const;
     //virtual bool         activate(const MString& representation);
     //virtual bool         isActive(const MString& representation) const;
@@ -162,9 +182,11 @@ public:
     //                                  bool& hasInitialRep,
     //                                  MStatus* ReturnStatus=NULL) const;
 
+    USDMAYA_API
     virtual MStatus      setDependentsDirty( const MPlug& plug, MPlugArray& plugArray);
 
     // PxrUsdMayaUsdPrimProvider overrides:
+    USDMAYA_API
     UsdPrim usdPrim() const override;
 
     // Additional public functions
@@ -176,6 +198,7 @@ public:
     // of valid variantSets is retrieved from the referenced prim, so only
     // Maya attributes with a selection that correspond to a valid variantSet
     // are included in the returned map.
+    USDMAYA_API
     std::map<std::string, std::string> GetVariantSetSelections() const;
 
 

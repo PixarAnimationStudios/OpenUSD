@@ -26,14 +26,14 @@
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 
+#include "pxrUsdMayaGL/proxyDrawOverride.h"
+#include "pxrUsdMayaGL/proxyShapeUI.h"
+
+#include "usdMaya/pluginStaticData.h"
 #include "usdMaya/usdImport.h"
 #include "usdMaya/usdExport.h"
 #include "usdMaya/usdTranslatorImport.h"
 #include "usdMaya/usdTranslatorExport.h"
-
-#include "usdMaya/pluginStaticData.h"
-#include "usdMaya/proxyDrawOverride.h"
-#include "usdMaya/proxyShapeUI.h"
 
 static PxrUsdMayaPluginStaticData& _data(PxrUsdMayaPluginStaticData::pxrUsd);
 

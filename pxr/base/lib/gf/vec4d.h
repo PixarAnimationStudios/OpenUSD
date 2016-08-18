@@ -28,6 +28,9 @@
 #ifndef GF_VEC4D_H
 #define GF_VEC4D_H
 
+/// \file gf/vec4d.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -44,21 +47,14 @@
 template <>
 struct GfIsGfVec<class GfVec4d> { static const bool value = true; };
 
-/*!
- * \file vec4d.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-/*!
- * \class GfVec4d vec4d.h "pxr/base/gf/vec4d.h"
- * \ingroup group_gf_LinearAlgebra
- * \brief Basic type for a vector of 4 double components.
- *
- * Represents a vector of 4 components of type \c double.
- * It is intended to be fast and simple.
- *
- */
-
+/// \class GfVec4d
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type for a vector of 4 double components.
+///
+/// Represents a vector of 4 components of type \c double.
+/// It is intended to be fast and simple.
+///
 class GfVec4d
 {
 public:
@@ -69,8 +65,8 @@ public:
     /// Default constructor does no initialization.
     GfVec4d() {}
 
-
-    // Copy constructor.  XXX: Remove this, use compiler-generated.
+    // Copy constructor.
+    // TODO Remove this, use compiler-generated.
     GfVec4d(const GfVec4d &other) {
         *this = other;
     }
@@ -87,7 +83,7 @@ public:
     GfVec4d(double s0, double s1, double s2, double s3) {
         Set(s0, s1, s2, s3);
     }
-    
+
     /// Construct with pointer to values.
     template <class Scl>
     explicit GfVec4d(Scl const *p) { Set(p); }
@@ -128,7 +124,7 @@ public:
         result[3] = 1;
         return result;
     }
-    
+
     /// Create a unit vector along the i-th axis, zero-based.  Return the zero
     /// vector if \p i is greater than or equal to 4.
     static GfVec4d Axis(size_t i) {
@@ -137,7 +133,7 @@ public:
             result[i] = 1;
         return result;
     }
-    
+
     /// Set all elements with passed arguments.
     GfVec4d &Set(double s0, double s1, double s2, double s3) {
         _data[0] = s0;
@@ -182,7 +178,7 @@ public:
         return !(*this == other);
     }
 
-    // XXX: Add inequality for other vec types...
+    // TODO Add inequality for other vec types...
     /// Equality comparison.
     GF_API
     bool operator==(class GfVec4f const &other) const;
@@ -228,25 +224,25 @@ public:
         _data[1] *= s;
         _data[2] *= s;
         _data[3] *= s;
-	return *this;
+        return *this;
     }
     GfVec4d operator*(double s) const {
-	return GfVec4d(*this) *= s;
+        return GfVec4d(*this) *= s;
     }
     friend GfVec4d operator*(double s, GfVec4d const &v) {
         return v * s;
     }
 
         /// Division by scalar.
-    // XXX: should divide by the scalar type.
+    // TODO should divide by the scalar type.
     GfVec4d &operator/=(double s) {
-        // XXX: This should not multiply by 1/s, it should do the division.
+        // TODO This should not multiply by 1/s, it should do the division.
         // Doing the division is more numerically stable when s is close to
         // zero.
         return *this *= (1.0 / s);
     }
     GfVec4d operator/(double s) const {
-	return *this * (1.0 / s);
+        return *this * (1.0 / s);
     }
     
     /// See GfDot().
@@ -254,7 +250,7 @@ public:
         return _data[0] * v[0] + _data[1] * v[1] + _data[2] * v[2] + _data[3] * v[3];
     }
 
-    /// Returns the projection of \p this onto \p v. That is: 
+    /// Returns the projection of \p this onto \p v. That is:
     /// \code
     /// v * (*this * v)
     /// \endcode
@@ -262,12 +258,13 @@ public:
         return v * (*this * v);
     }
 
-    /// Returns the orthogonal complement of \p this->GetProjection(b). That is:
+    /// Returns the orthogonal complement of \p this->GetProjection(b).
+    /// That is:
     /// \code
     ///  *this - this->GetProjection(b)
     /// \endcode
     GfVec4d GetComplement(GfVec4d const &b) const {
-	return *this - this->GetProjection(b);
+        return *this - this->GetProjection(b);
     }
 
     /// Squared length.
@@ -277,7 +274,7 @@ public:
 
     /// Length
     double GetLength() const {
-        // XXX: should use GfSqrt.
+        // TODO should use GfSqrt.
         return sqrt(GetLengthSq());
     }
 
@@ -290,7 +287,7 @@ public:
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
     double Normalize(double eps = GF_MIN_VECTOR_LENGTH) {
-        // XXX: this seems suspect...  suggest dividing by length so long as
+        // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
         double length = GetLength();
         *this /= (length > eps) ? length : eps;
@@ -308,7 +305,7 @@ private:
     double _data[4];
 };
 
-/// Output a GfVec4d
+/// Output a GfVec4d.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfVec4d const &);
 
@@ -345,7 +342,6 @@ GfDot(GfVec4d const &v1, GfVec4d const &v2) {
 }
 
 
-
 /// Returns the geometric length of \c v.
 inline double
 GfGetLength(GfVec4d const &v)
@@ -363,8 +359,8 @@ GfNormalize(GfVec4d *v, double eps = GF_MIN_VECTOR_LENGTH)
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.
-/// If the length of this vector is smaller than \p eps, the vector divided
-/// by \p eps is returned.
+/// If the length of this vector is smaller than \p eps, the vector divided by
+/// \p eps is returned.
 inline GfVec4d
 GfGetNormalized(GfVec4d const &v, double eps = GF_MIN_VECTOR_LENGTH)
 {

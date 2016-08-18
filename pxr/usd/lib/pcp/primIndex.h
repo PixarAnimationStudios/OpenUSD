@@ -75,6 +75,7 @@ inline void
 swap(PcpPrimIndexDependencies &l, PcpPrimIndexDependencies &r) { l.swap(r); } 
 
 /// \class PcpPrimIndex
+///
 /// PcpPrimIndex is an index of the all sites of scene description that
 /// contribute opinions to a specific prim, under composition
 /// semantics.
@@ -278,8 +279,11 @@ private:
 inline void swap(PcpPrimIndex &l, PcpPrimIndex &r) { l.swap(r); }
 
 /// \class PcpPrimIndexOutputs
+///
 /// Outputs of the prim indexing procedure.
-class PcpPrimIndexOutputs {
+///
+class PcpPrimIndexOutputs 
+{
 public:
     /// Prim index describing the composition structure for the associated
     /// prim.
@@ -319,7 +323,9 @@ public:
 inline void swap(PcpPrimIndexOutputs &l, PcpPrimIndexOutputs &r) { l.swap(r); }
 
 /// \class PcpPrimIndexInputs
+///
 /// Inputs for the prim indexing procedure.
+///
 class PcpPrimIndexInputs {
 public:
     PcpPrimIndexInputs() 

@@ -52,8 +52,10 @@ class Sdf_ValueTypeRegistry;
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
 
 /// \class SdfSchemaBase
+///
 /// Generic class that provides information about scene description fields
 /// but doesn't actually provide any fields.
+///
 class SdfSchemaBase : public TfWeakBase, public boost::noncopyable {
 
 protected:
@@ -61,7 +63,9 @@ protected:
 
 public:
     /// \class FieldDefinition
+    ///
     /// Class defining various attributes for a field.
+    ///
     class FieldDefinition {
     public:
         FieldDefinition(
@@ -159,7 +163,9 @@ public:
     class SpecDefinition;
 
     /// \class SpecDefinition
+    ///
     /// Class representing fields and other information for a spec type.
+    ///
     class SpecDefinition {
     public:
         /// Returns all fields for this spec.
@@ -319,7 +325,9 @@ public:
 
 protected:
     /// \class _SpecDefiner
+    ///
     /// Class that defines fields for a spec type.
+    ///
     class _SpecDefiner {
     public:
         /// Functions for setting spec attributes during registration
@@ -502,8 +510,10 @@ private:
 };
 
 /// \class SdfSchema
+///
 /// Class that provides information about the various scene description 
 /// fields.
+///
 class SdfSchema : public SdfSchemaBase {
 public:
     static const SdfSchema& GetInstance()
@@ -528,7 +538,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
 
 ///
 /// The following fields are pre-registered by Sdf. 
-///
+/// \showinitializer
 #define SDF_FIELD_KEYS                                       \
     ((Active, "active"))                                     \
     ((AllowedTokens, "allowedTokens"))                       \
@@ -585,8 +595,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
                                                              \
     /* XXX: These fields should move into Sd. See bug 123508. */ \
     ((EndFrame, "endFrame"))                                 \
-    ((StartFrame, "startFrame"))    
-    
+    ((StartFrame, "startFrame"))
 
 #define SDF_CHILDREN_KEYS                                    \
     ((ConnectionChildren, "connectionChildren"))             \

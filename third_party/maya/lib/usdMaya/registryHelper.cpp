@@ -81,7 +81,7 @@ _ReadNestedDict(
             TF_CODING_ERROR("bad plugInfo data.");
             return false;
         }
-        currDict = any.GetObject();
+        currDict = any.GetJsObject();
     }
     *dict = currDict;
     return true;

@@ -21,12 +21,6 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-find_path(OPENEXR_ROOT_DIR
-        include/OpenEXR/half.h
-    HINTS
-        "${OPENEXR_LOCATION}"
-        "$ENV{OPENEXR_LOCATION}"
-)
 
 if (APPLE)
     find_path(OPENEXR_LIBRARY_DIR
@@ -119,7 +113,6 @@ list(APPEND OPENEXR_INCLUDE_DIRS ${OPENEXR_INCLUDE_DIR}/OpenEXR)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenEXR
     REQUIRED_VARS
-        OPENEXR_ROOT_DIR
         OPENEXR_INCLUDE_DIRS
         OPENEXR_LIBRARY_DIR
     VERSION_VAR

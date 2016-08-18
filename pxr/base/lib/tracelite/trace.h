@@ -24,6 +24,13 @@
 #ifndef TRACELITE_TRACE_H
 #define TRACELITE_TRACE_H
 
+/// \file tracelite/trace.h
+/// Low-level trace handler facility.
+///
+/// This library implements a stub-tracing system, with the actual code doing
+/// the tracing registered as callback functions, via \c
+/// TraceliteSetFunctions().
+
 #include <stddef.h>
 
 #include "pxr/base/arch/functionLite.h"
@@ -36,86 +43,72 @@
 /// Forward declaration to type in lib/Trace (in place of void*)
 class TraceScopeHolder;
 
-
 #define _TRACELITE_JOIN(x, y) _TRACELITE_JOIN2(x, y)
 #define _TRACELITE_JOIN2(x, y) x ## y
 
-/*!
- * \file trace.h
- * \brief Low-level trace handler facility.
- *
- * This library implements a stub-tracing system, with the actual code doing the tracing
- * registered as callback functions, via \c TraceliteSetFunctions().
- */
-
-/*!
- * \brief Typedef for "initialize" trace function.
- */
+/// Typedef for "initialize" trace function.
 typedef void (*TraceliteInitializeFunction)(
     std::atomic<TraceScopeHolder*>*, const std::string*,
     char const*, char const*);
 
-/*!
- * \brief Typedef for "begin" trace function.
- */
+/// Typedef for "begin" trace function.
 typedef void (*TraceliteBeginFunction)(void*, void*);
 
-/*!
- * \brief Typedef for "end" trace function.
- */
+/// Typedef for "end" trace function.
 typedef void (*TraceliteEndFunction)(void*);
 
-/*!
- * \brief Size of available "stack" data.
- */
+/// Size of available "stack" data.
+/// \hideinitializer
 #define TRACELITE_STACKDATA_SIZE  (sizeof(size_t) + 2*sizeof(void*))
 
-/*!
- * \brief Register begin/end trace callbacks.
- *
- * The begin/end functions/initialize functions are called in the following
- * sequence:
- *
- *   static void* siteData = NULL;
- *   if (!siteData) (*initializeFunction)(&siteData, keyStr1, keyStr2);
- *   (*beginFunction)(stackData, siteData)
- *
- *       <code to be trace>
- *
- *   (*endFunction)(stackData)
- *
- * The argument stackData is a pointer to data on the thread's stack, with
- * pointer alignment and size of at least \c TRACELITE_STACKDATA_SIZE.
- * The arguments keyStr1 and keyStr2 are char const* pointers with data
- * that describes the site being initialized.
- *
- * Until \c TraceliteSetFunctions() is called, the functions called above
- * are no-op functions (and in particular, the initialize function called
- * will not modify siteData).
- *
- * After calling \c TraceliteSetFunctions(), the initialize function will
- * be called; however, one must still call TraceliteEnable(true) to activate
- * the begin/end functions.
- *
- * This call is not thread-safe (the simplest use is to only call it from the main thread). 
- */
+/// Register begin/end trace callbacks.
+///
+/// The begin/end functions/initialize functions are called in the following
+/// sequence:
+///
+/// \code
+///   static void* siteData = NULL;
+///   if (!siteData) (*initializeFunction)(&siteData, keyStr1, keyStr2);
+///   (*beginFunction)(stackData, siteData)
+///
+///   // ...code to be traced...
+///
+///   (*endFunction)(stackData)
+/// \endcode
+///
+/// The argument stackData is a pointer to data on the thread's stack, with
+/// pointer alignment and size of at least \c TRACELITE_STACKDATA_SIZE. The
+/// arguments keyStr1 and keyStr2 are char const* pointers with data that
+/// describes the site being initialized.
+///
+/// Until \c TraceliteSetFunctions() is called, the functions called above are
+/// no-op functions (and in particular, the initialize function called will
+/// not modify siteData).
+///
+/// After calling \c TraceliteSetFunctions(), the initialize function will be
+/// called; however, one must still call TraceliteEnable(true) to activate the
+/// begin/end functions.
+///
+/// This call is not thread-safe (the simplest use is to only call it from the
+/// main thread). 
 TRACELITE_API void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
 			   TraceliteBeginFunction beginFunction,
 			   TraceliteEndFunction endFunction);
 
-/*!
- * \brief Enable the begin/end trace callbacks.
- *
- * Calling this function before calling \c TraceliteSetFunctions() is silently ignored.
- * After that, each call to this function with true increments a counter; each call
- * with false decrements a counter.  As long as the counter is positive, the begin/end
- * functions registered by \c TraceliteSetFunctions() are active.
- *
- * The value returned is the count (including the effects of this call); thus, if the
- * call returns positive, the begin/end trace callbacks are enabled.
- *
- * This call is not thread-safe (the simplest use is to only call it from the main thread). 
- */
+/// Enable the begin/end trace callbacks.
+///
+/// Calling this function before calling \c TraceliteSetFunctions() is
+/// silently ignored. After that, each call to this function with true
+/// increments a counter; each call with false decrements a counter.  As long
+/// as the counter is positive, the begin/end functions registered by \c
+/// TraceliteSetFunctions() are active.
+///
+/// The value returned is the count (including the effects of this call);
+/// thus, if the call returns positive, the begin/end trace callbacks are
+/// enabled.
+///
+/// This call is not thread-safe (the simplest use is to only call it from the
+/// main thread). 
 int TRACELITE_API TraceliteEnable(bool state);
 
 class Tracelite_ScopeAuto {
@@ -189,6 +182,5 @@ private:
         _TRACELITE_JOIN(_tracelite_site, instance);                         \
     Tracelite_ScopeAuto _TRACELITE_JOIN(_traceliteScopeAuto_, instance)(    \
 			&_TRACELITE_JOIN(_tracelite_site, instance), name)
-
 
 #endif // TRACELITE_TRACE_H

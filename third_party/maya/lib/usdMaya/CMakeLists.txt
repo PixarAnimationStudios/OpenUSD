@@ -7,7 +7,6 @@ pxr_shared_library(${PXR_PACKAGE}
         js 
         kind 
         plug 
-        pxrUsdMayaGL
         sdf 
         tf
         usd
@@ -17,14 +16,20 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUtils
         vt
         ${Boost_PYTHON_LIBRARY}
+		${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMayaAnim_LIBRARY}
         ${MAYA_OpenMayaFX_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
+		${MAYA_OpenMayaRender_LIBRARY}
 
     INCLUDE_DIRS
+		${TBB_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
+    PUBLIC_HEADERS
+        api.h
+        
     PUBLIC_CLASSES
         debugCodes
         editUtil
@@ -61,9 +66,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdWriteJob
 
         pluginStaticData
-        proxyDrawOverride
         proxyShape
-        proxyShapeUI 
         referenceAssembly
         usdImport
         usdExport

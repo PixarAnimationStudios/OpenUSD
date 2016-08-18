@@ -24,93 +24,85 @@
 #ifndef TF_ERROR_MARK
 #define TF_ERROR_MARK
 
+/// \file tf/errorMark.h
+
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/errorTransport.h"
 #include "pxr/base/tf/api.h"
 
 #include <boost/noncopyable.hpp>
 
-/*!
- * \class TfErrorMark
- * \brief Class used to record the end of the error-list.
- * \ingroup group_tf_TfError
- *
- * See \ref page_tf_TfError for a detailed description.
- *
- * A \c TfErrorMark is used as follows:
- * \code
- *     TfErrorMark m;
- *
- *     m.SetMark();             // (A)
- *     ... ;
- *     ... ;
- *                              // (B)
- *     if (!m.IsClean()) {
- *       // errors occurred between (A) and (B)
- *     }
- * \endcode
- *
- * Another common pattern is
- * \code
- *      TfErrorMark m;
- *      if (TF_HAS_ERRORS(m, expr)) {
- *          // handle errors;
- *      }
- * \endcode
- */
+/// \class TfErrorMark
+/// \ingroup group_tf_TfError
+///
+/// Class used to record the end of the error-list.
+///
+/// See \ref page_tf_TfError for a detailed description.
+///
+/// A \c TfErrorMark is used as follows:
+/// \code
+///     TfErrorMark m;
+///
+///     m.SetMark();             // (A)
+///     ... ;
+///     ... ;
+///                              // (B)
+///     if (!m.IsClean()) {
+///       // errors occurred between (A) and (B)
+///     }
+/// \endcode
+///
+/// Another common pattern is
+/// \code
+///      TfErrorMark m;
+///      if (TF_HAS_ERRORS(m, expr)) {
+///          // handle errors;
+///      }
+/// \endcode
+///
 class TF_API TfErrorMark : boost::noncopyable
 {
   public:
 
     typedef TfDiagnosticMgr::ErrorIterator Iterator;
     
-    /*!
-     * \brief Default constructor.
-     *
-     * The default constructor automatically calls \c SetMark() at
-     * the point of declaration.
-     */
+    /// Default constructor.
+    ///
+    /// The default constructor automatically calls \c SetMark() at the point
+    /// of declaration.
     TfErrorMark();
 
-    /*!
-     * \brief Destroy this ErrorMark.
-     *
-     * If this is the last ErrorMark on this thread of execution and there are
-     * pending errors, this will report them via the diagnostic delegate (if one
-     * is instanlled) otherwise by printing to stderr.
-     */
+    /// Destroy this ErrorMark.
+    ///
+    /// If this is the last ErrorMark on this thread of execution and there
+    /// are pending errors, this will report them via the diagnostic delegate
+    /// (if one is instanlled) otherwise by printing to stderr.
     ~TfErrorMark();
 
-    /*!
-     * \brief Record future errors.
-     *
-     * \c SetMark() arranges to record future errors in \c *this.
-     */
+    /// Record future errors.
+    ///
+    /// \c SetMark() arranges to record future errors in \c *this.
     inline void SetMark() {
         _mark = TfDiagnosticMgr::GetInstance()._nextSerial;
     }
 
-    /*!
-     * \brief Return true if no new errors were posted in this thread since the
-     * last call to \c SetMark(), false otherwise.
-     *
-     * When no threads are issuing errors the cost of this function is an atomic
-     * integer read and comparison.  Otherwise thread-specific data is accessed
-     * to make the determination.  Thus, this function is fast when diagnostics
-     * are not being issued.
-     */
+    /// Return true if no new errors were posted in this thread since the last
+    /// call to \c SetMark(), false otherwise.
+    ///
+    /// When no threads are issuing errors the cost of this function is an
+    /// atomic integer read and comparison.  Otherwise thread-specific data is
+    /// accessed to make the determination.  Thus, this function is fast when
+    /// diagnostics are not being issued.
     inline bool IsClean() const {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
         return _mark >= mgr._nextSerial or _IsCleanImpl(mgr);
     }
 
-    /*!
-     * \brief Remove all errors in this mark from the error system.  Return true
-     * if any errors were cleared, false if there were no errors in this mark.
-     *
-     * Clear all errors contained in this mark from the error system.
-     * Subsequently, these errors will be considered handled.
-     */
+    /// Remove all errors in this mark from the error system.  Return true if
+    /// any errors were cleared, false if there were no errors in this mark.
+    ///
+    /// Clear all errors contained in this mark from the error system.
+    /// Subsequently, these errors will be considered handled.
     inline bool Clear() const {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
         auto b = GetBegin(), e = mgr.GetErrorEnd();
@@ -121,60 +113,52 @@ class TF_API TfErrorMark : boost::noncopyable
         return false;
     }
 
-    /*!
-     * \brief Remove all errors in this mark fom the error system and return
-     * them in a TfErrorTransport.
-     * 
-     * This can be used to transfer errors from one thread to another.  See
-     * TfErrorTransport for more information.  As with Clear(), all the removed
-     * errors are considered handled for this thread.  See also TransportTo().
-     */
+    /// Remove all errors in this mark fom the error system and return them in
+    /// a TfErrorTransport.
+    /// 
+    /// This can be used to transfer errors from one thread to another.  See
+    /// TfErrorTransport for more information.  As with Clear(), all the
+    /// removed errors are considered handled for this thread.  See also
+    /// TransportTo().
     inline TfErrorTransport Transport() const {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
         return TfErrorTransport(mgr._errorList.local(),
                                 GetBegin(), mgr.GetErrorEnd());
     }
 
-    /*!
-     * \brief Remove all errors in this mark fom the error system and return
-     * them in a TfErrorTransport.
-     * 
-     * This is a variant of Transport().  Instead of returning a new
-     * TfErrorTransport object it fills an existing one.
-     */
+    /// Remove all errors in this mark fom the error system and return them in
+    /// a TfErrorTransport.
+    /// 
+    /// This is a variant of Transport().  Instead of returning a new
+    /// TfErrorTransport object it fills an existing one.
     inline void TransportTo(TfErrorTransport &dest) const {
         Transport().swap(dest);
     }
 
-    /*!
-     * \brief Return an iterator to the first error added to the error list
-     * after \c SetMark().
-     *
-     * If there are no errors on the error list that were not already
-     * present when \c SetMark() was called, the iterator returned
-     * is equal to the iterator returned by \c TfDiagnosticMgr::GetErrorEnd().
-     * Otherwise, the iterator points to the earliest error added to the
-     * list since \c SetMark() was called.
-     *
-     * This function takes O(n) time where n is the number of errors
-     * from the end of the list to the mark i.e. \c GetMark() walks
-     * the list from the end until it finds the mark and then returns
-     * an iterator to that spot.
-     *
-     * If \c nErrors is non-NULL, then \c *nErrors is set to the number
-     * of errors between the returned iterator and the end of the list.
-     */
+    /// Return an iterator to the first error added to the error list after
+    /// \c SetMark().
+    ///
+    /// If there are no errors on the error list that were not already present
+    /// when \c SetMark() was called, the iterator returned is equal to the
+    /// iterator returned by \c TfDiagnosticMgr::GetErrorEnd(). Otherwise, the
+    /// iterator points to the earliest error added to the list since
+    /// \c SetMark() was called.
+    ///
+    /// This function takes O(n) time where n is the number of errors from the
+    /// end of the list to the mark i.e. \c GetMark() walks the list from the
+    /// end until it finds the mark and then returns an iterator to that spot.
+    ///
+    /// If \c nErrors is non-NULL, then \c *nErrors is set to the number of
+    /// errors between the returned iterator and the end of the list.
     Iterator GetBegin(size_t *nErrors = 0) const {
         return
             TfDiagnosticMgr::GetInstance()._GetErrorMarkBegin(_mark, nErrors);
     }
 
-    /*!
-     * \brief Return an iterator past the last error in the error system.
-     *
-     * This iterator is always equivalend to the iterator returned by \c
-     * TfDiagnosticMgr::GetErrorEnd().
-     */
+    /// Return an iterator past the last error in the error system.
+    ///
+    /// This iterator is always equivalend to the iterator returned by \c
+    /// TfDiagnosticMgr::GetErrorEnd().
     Iterator GetEnd() const {
         return TfDiagnosticMgr::GetInstance().GetErrorEnd();
     }
@@ -192,33 +176,31 @@ class TF_API TfErrorMark : boost::noncopyable
 };
 
 
-/*!
- * \ingroup group_tf_TfError
- * \hideinitializer
- * \brief Convenience macro to check if errors occurred.
- *
- * This macro is equivalent to
- * \code
- *     (marker.SetMark(), (expr), !marker.IsClean())
- * \endcode
- *
- * which enables it to be used as an expression:
- * \code
- *    if (TF_HAS_ERRORS(m, expr))
- *       // cope!
- * \endcode
- */
+/// Convenience macro to check if errors occurred.
+///
+/// This macro is equivalent to
+/// \code
+///     (marker.SetMark(), (expr), !marker.IsClean())
+/// \endcode
+///
+/// which enables it to be used as an expression:
+/// \code
+///    if (TF_HAS_ERRORS(m, expr))
+///       // cope!
+/// \endcode
+///
+/// \ingroup group_tf_TfError
+/// \hideinitializer
 #define TF_HAS_ERRORS(marker, expr) \
         (marker.SetMark(), (expr), !marker.IsClean())
 
-/*!
- * \ingroup group_tf_TfError
- * \brief Report current TfErrorMark instances and the stack traces that created
- * them to stdout for debugging purposes.
- *
- * To call this function, set _enableTfErrorMarkStackTraces in errorMark.cpp and
- * enable the TF_ERROR_MARK_TRACKING TfDebug code.
- */
+/// Report current TfErrorMark instances and the stack traces that created
+/// them to stdout for debugging purposes.
+///
+/// To call this function, set _enableTfErrorMarkStackTraces in errorMark.cpp
+/// and enable the TF_ERROR_MARK_TRACKING TfDebug code.
+///
+/// \ingroup group_tf_TfError
 TF_API
 void TfReportActiveErrorMarks();
 

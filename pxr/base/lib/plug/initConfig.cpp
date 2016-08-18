@@ -25,28 +25,26 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/fileSystem.h"
 #include <boost/preprocessor/stringize.hpp>
 
 namespace {
 
 const char* pathEnvVarName  = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation   = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
-const char* userLocation    = BOOST_PP_STRINGIZE(PXR_USER_LOCATION);
+const char* userLocation    = BOOST_PP_STRINGIZE(C:\\ProgramData\\usd\\plugins);
 const char* installLocation = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
 void
 _AppendPathList(std::vector<std::string>* result, const std::string& paths)
 {
-    for (const auto& path: TfStringSplit(paths, ":")) {
+    for (const auto& path: TfStringSplit(paths, ARCH_PATH_SEP)) {
         if (not path.empty()) {
             result->push_back(path);
         }
     }
 }
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Plug_InitConfig()
+ARCH_CONSTRUCTOR_DEFINE(102, Plug_InitConfig)
 {
     std::vector<std::string> result;
 

@@ -127,8 +127,11 @@ HdTask::_GetTaskContextData(HdTaskContext const* ctx,
 ///////////////////////////////////////////////////////////////////////////////
 
 
+/// \class HdSceneTask
+///
 /// An HdTask that lives in the RenderIndex and is backed by a SceneDelegate.
 /// The default sync
+///
 class HdSceneTask : public HdTask {
 public:
 	HDLIB_API
@@ -194,7 +197,6 @@ HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
 
     return true;
 }
-
 
 // Task parameters for scene based synchronization
 struct HdTaskParams {

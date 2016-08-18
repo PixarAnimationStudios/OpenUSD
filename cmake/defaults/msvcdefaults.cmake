@@ -81,3 +81,8 @@ add_definitions("/Gm")
 # Until we can set the flag on a per file basis, we'll have to enable it
 # for all translation units.
 add_definitions("/bigobj")
+
+if (${PXR_STRICT_BUILD_MODE})
+    # Treat all warnings as errors
+    add_definitions("/WX")
+endif()

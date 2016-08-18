@@ -24,22 +24,19 @@
 #ifndef TF_BIT_UTILS_H
 #define TF_BIT_UTILS_H
 
-/*!
- * \file BitUtils.h
- */
+/// \file tf/bitUtils.h
+/// \ingroup group_tf_BasicMath
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/integral_c.hpp>
 
-/*!
- * \hideinitializer
-// \ingroup group_tf_BasicMath
- * \brief Compute the number of bits required to store the given number of
- * values.
- *
- * Note that the computed result for a number smaller or equal to zero is
- * undefined.  The input number can be any compile-time constant.
- */
+/// Compute the number of bits required to store the given number of values.
+///
+/// Note that the computed result for a number smaller or equal to zero is
+/// undefined.  The input number can be any compile-time constant.
+///
+/// \ingroup group_tf_BasicMath
+/// \hideinitializer
 #define TF_BITS_FOR_VALUES(n) \
     Tf_NumBits<n-1>::type::value
 
@@ -63,19 +60,17 @@ struct Tf_NumBits<N, SUM, 0>
     typedef boost::mpl::integral_c<size_t, SUM+1> type;
 };
 
-/*!
- * \hideinitializer
-// \ingroup group_tf_BasicMath
- * \brief Compute the number of bits required to store the given number of
- * (signed) enum values.
- *
- * Note: This is intended to be used when storing enum values in a bitfield
- * without casting the enum type to an unsigned integer.  (At least GCC
- * consideres enums to be signed and hence wastes one bit when all enumerants
- * are non-negative).
- */
+/// Compute the number of bits required to store the given number of (signed)
+/// enum values.
+///
+/// \note This is intended to be used when storing enum values in a bitfield
+/// without casting the enum type to an unsigned integer.  (At least GCC
+/// consideres enums to be signed and hence wastes one bit when all enumerants
+/// are non-negative).
+///
+/// \ingroup group_tf_BasicMath
+/// \hideinitializer
 #define TF_BITS_FOR_ENUM_VALUES(n) \
     (TF_BITS_FOR_VALUES(n) + 1)
-
 
 #endif /* TF_BIT_UTILS_H */

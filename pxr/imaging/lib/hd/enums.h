@@ -24,7 +24,10 @@
 #ifndef HD_ENUMS_H
 #define HD_ENUMS_H
 
-/// Abstraction of the Graphics compare functions
+/// \enum HdCompareFunction
+///
+/// Abstraction of the Graphics compare functions.
+///
 enum HdCompareFunction
 {
     HdCmpFuncNever,
@@ -39,9 +42,13 @@ enum HdCompareFunction
     HdCmpFuncLast
 };
 
-/// Face culling options
+/// \enum HdCullStyle
+///
+/// Face culling options.
+///
 /// BackUnlessDoubleSided and FrontUnlessDoubleSided will only cull back or
 /// front faces if prim isn't marked as doubleSided.
+///
 enum HdCullStyle
 {
     HdCullStyleDontCare,
@@ -58,7 +65,10 @@ enum HdPolygonMode
     HdPolygonModeLine
 };
 
-/// Hydra native geom styles
+/// \enum HdMeshGeomStyle
+///
+/// Hydra native geom styles.
+///
 enum HdMeshGeomStyle {
     HdMeshGeomStyleInvalid,
     HdMeshGeomStyleSurf,
@@ -82,6 +92,8 @@ enum HdPointsGeomStyle {
     HdPointsGeomStylePoints
 };
 
+/// \enum HdGeomStyle
+///
 /// Defines geometric styles for how each polygon/triangle
 /// of a gprim is to be rendered.
 ///
@@ -97,6 +109,7 @@ enum HdPointsGeomStyle {
 ///  <li> Sheer draws lines and polygons but with the polygons mostly
 ///       transparent.</li>
 /// </ul>
+///
 enum HdGeomStyle
 {
     HdGeomStyleLines,
@@ -107,10 +120,9 @@ enum HdGeomStyle
     HdGeomStyleOutline
 };
 
-
+/// \enum HdComplexity
 ///
-/// Defines the display complexity for primitives that support
-///        refinement.
+/// Defines the display complexity for primitives that support refinement.
 ///
 /// <ul>
 ///     <li>\b BoundingBoxComplexity:  Complexity is bounding box.</li>
@@ -132,7 +144,9 @@ enum HdComplexity
     HdComplexityVeryHigh,
 };
 
-/// Enumerates wrapping attributes type values
+/// \enum HdWrap
+///
+/// Enumerates wrapping attributes type values.
 ///
 /// <ul>
 ///     <li>\b HdWrapClamp               Clamp coordinate to range [1/(2N),1-1/(2N)] where N is the size of the texture in the direction of clamping</li>
@@ -147,7 +161,9 @@ enum HdWrap
     HdWrapBlack,
 };
 
-/// Enumerates minFilter attribute type values
+/// \enum HdMinFilter
+///
+/// Enumerates minFilter attribute type values.
 ///
 /// <ul>
 ///     <li>\b HdMinFilterNearest                Nearest to center of the pixel</li>
@@ -168,7 +184,9 @@ enum HdMinFilter
     HdMinFilterLinearMipmapLinear,
 };
 
-/// Enumerates magFilter attribute type values
+/// \enum HdMagFilter
+///
+/// Enumerates magFilter attribute type values.
 ///
 /// <ul>
 ///     <li>HdFilterNearest       Nearest to center of the pixel</li>
@@ -181,11 +199,17 @@ enum HdMagFilter
     HdMagFilterLinear,
 };
 
-/// Enumerates formats to be used when creating buffers
+/// \enum HdFormat
+///
+/// Enumerates formats to be used when creating buffers.
+///
 /// Format names follow the general pattern:
+///
 ///   Channel identifier, bit precision, type.
-///   with the channel in the lowest bit coming first.
-///   This is the same general naming convention as Vulkan and DXGI
+///
+/// with the channel in the lowest bit coming first. This is the same general
+/// naming convention as Vulkan and DXGI
+///
 enum HdFormat
 {
     HdFormatR8UNorm,
@@ -211,6 +235,5 @@ enum HdFormat
     HdFormatCount,
     HdFormatUnknown = -1
 };
-
 
 #endif // HD_ENUMS_H

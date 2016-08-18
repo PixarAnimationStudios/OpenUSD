@@ -33,7 +33,9 @@
 
 typedef std::vector<HdBindingRequest> HdBindingRequestVector;
 
-/// Drawing batch that is executed from an indirect dispatch buffer
+/// \class Hd_IndirectDrawBatch
+///
+/// Drawing batch that is executed from an indirect dispatch buffer.
 ///
 /// An indirect drawing batch accepts draw items that have the same
 /// primitive mode and that share aggregated drawing resources,
@@ -144,7 +146,6 @@ private:
     // We'll use this fence to signal when GPU frustum culling is
     // complete if we need to read back result data from the GPU.
     GLsync _cullResultSync;
-
 };
 
 #endif // HD_INDIRECT_DRAW_BATCH_H

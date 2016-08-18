@@ -21,20 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_PROXYSHAPEUI_H
-#define PXRUSDMAYA_PROXYSHAPEUI_H
+#ifndef PXRUSDMAYAGL_PROXYSHAPEUI_H
+#define PXRUSDMAYAGL_PROXYSHAPEUI_H
 
+#include "usdMaya/api.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "usdMaya/proxyShape.h"
 
+#include <maya/M3dView.h>
+#include <maya/MDagPath.h>
+#include <maya/MDrawInfo.h>
+#include <maya/MDrawRequest.h>
+#include <maya/MDrawRequestQueue.h>
+#include <maya/MPointArray.h>
 #include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MSelectInfo.h>
+#include <maya/MSelectionList.h>
 
-class UsdMayaProxyShape;
 
-class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI {
+class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
+{
  public:
     /**
      * method to construct node
      */
+    USDMAYAGL_API
     static void* creator();
 
     /**
@@ -49,7 +60,7 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI {
      * draw method
      */
     void draw(
-        const MDrawRequest& request, 
+        const MDrawRequest& request,
         M3dView& view) const;
 
     /**
@@ -60,21 +71,22 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI {
         MSelectionList& selectionList,
         MPointArray& worldSpaceSelectPts) const;
 
- protected:
  private:
-         
+
     /**
      * method to prepare renderer, used in both draw and select...
      */
     UsdMayaGLBatchRenderer::ShapeRenderer* _GetShapeRenderer(
          const MDagPath &objPath,
          bool prepareForQueue) const;
-	 
+
     UsdMayaProxyShapeUI();
     UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&);
-    
+
     ~UsdMayaProxyShapeUI();
-    
+
     UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
 };
-#endif // PXRUSDMAYA_PROXYSHAPEUI_H
+
+
+#endif // PXRUSDMAYAGL_PROXYSHAPEUI_H

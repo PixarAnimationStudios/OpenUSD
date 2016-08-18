@@ -43,6 +43,10 @@
 #include <double-conversion/double-conversion.h>
 #include <double-conversion/utils.h>
 
+#if defined(ARCH_OS_WINDOWS)
+#include <Shlwapi.h>
+#endif
+
 using std::list;
 using std::make_pair;
 using std::pair;
@@ -301,6 +305,9 @@ TfStringGetBeforeSuffix(const string& name, char delimiter)
 string
 TfGetBaseName(const string& fileName)
 {
+#if defined(ARCH_OS_WINDOWS)
+    return PathFindFileName(fileName.c_str());
+#else
     if (fileName.empty())
         return fileName;
     else if (fileName[fileName.size()-1] == '/')    // ends in /
@@ -312,6 +319,7 @@ TfGetBaseName(const string& fileName)
         else
             return fileName.substr(i+1);
     }
+#endif
 }
 
 string
@@ -958,4 +966,13 @@ TfGetXmlEscapedString(const std::string &in)
     result = TfStringReplace(result, "'",  "&apos;");
 
     return result;
+}
+
+errno_t TfStringCopy(char* destination, rsize_t size, char const* source)
+{
+#if defined(ARCH_OS_WINDOWS)
+    return strcpy_s(destination, size, source);
+#else
+    return strcpy(destination, source);
+#endif
 }

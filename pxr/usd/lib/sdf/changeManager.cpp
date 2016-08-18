@@ -175,11 +175,13 @@ Sdf_ChangeManager::_SendNotices()
         // Send layer-specific notices.
         _SendNoticesForChangeList(it->first, it->second);
 
+#if 0
         if (TfDebug::IsEnabled(SDF_CHANGES)) {
             TF_DEBUG(SDF_CHANGES).Msg("Changes to layer %s:\n%s",
                                      it->first->GetIdentifier().c_str(),
                                      TfStringify(it->second).c_str());
         }
+#endif
     }
 
     // Obtain a serial number for this round of change processing.

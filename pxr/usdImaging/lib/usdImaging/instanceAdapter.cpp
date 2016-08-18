@@ -184,6 +184,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         }
         if (primCount > 0) {
             index->InsertInstancer(instancerPath, &ctx); 
+        } else if (nestedInstances.empty()) {
+            // if this instance path ends up to have no prims in subtree
+            // and not an instance itself , we don't need to track this path
+            // any more.
+
+            instancePath = SdfPath();
         }
     }
 

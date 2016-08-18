@@ -31,6 +31,7 @@
 class ArResolver;
 
 /// \class ArResolverContextBinder
+///
 /// Helper object for managing the binding and unbinding of 
 /// ArResolverContext objects with the asset resolver.
 ///

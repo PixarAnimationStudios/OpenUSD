@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_NURBSCURVES_H
 #define USDGEOM_GENERATED_NURBSCURVES_H
 
+/// \file usdGeom/nurbsCurves.h
+
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,6 +47,8 @@ class SdfAssetPath;
 // NURBSCURVES                                                                //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdGeomNurbsCurves
+///
 /// Nurbs curves are analagous to Maya Nurbs Curves,  used for 
 /// interchange of rigging and modeling curves.  Unlike Maya Curves, this 
 /// curve spec supports batching of multiple curves into a single prim and 
@@ -100,7 +104,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomNurbsCurves holding the prim adhering to this
+    /// Return a UsdGeomNurbsCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -113,7 +117,7 @@ public:
     static UsdGeomNurbsCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

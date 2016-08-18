@@ -21,41 +21,37 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_PROXYDRAWOVERRIDE_H
-#define PXRUSDMAYA_PROXYDRAWOVERRIDE_H
+#ifndef PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
+#define PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 
+#include "usdMaya/api.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImaging/gl.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
-#include "pxr/usd/usd/stage.h"
+#include "usdMaya/proxyShape.h"
 
+#include <maya/MBoundingBox.h>
+#include <maya/MDagPath.h>
+#include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
-#include <maya/MString.h>
+#include <maya/MObject.h>
 #include <maya/MPxDrawOverride.h>
+#include <maya/MString.h>
 #include <maya/MUserData.h>
 
-#include <boost/shared_ptr.hpp>
 
-#include <vector>
-
-
-class UsdMayaProxyShape;
-
-class MSelectionContext;
-class MSelectionInfo;
-class MRenderItem;
-
-class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
+class USDMAYAGL_API UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
 public:
     static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
     virtual ~UsdMayaProxyDrawOverride();
-    
+
     virtual bool isBounded(
         const MDagPath& objPath,
         const MDagPath& cameraPath) const;
-    
+
     virtual MBoundingBox boundingBox(
         const MDagPath& objPath,
         const MDagPath& cameraPath) const;
@@ -65,15 +61,17 @@ public:
         const MDagPath& cameraPath,
         const MHWRender::MFrameContext& frameContext,
         MUserData* oldData);
-    
+
     static MString sm_drawDbClassification;
     static MString sm_drawRegistrantId;
-    
+
     static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
-    
+
     static UsdMayaProxyShape* getShape(const MDagPath& objPath);
-    
+
 private:
     UsdMayaProxyDrawOverride(const MObject& obj);
 };
-#endif // PXRUSDMAYA_PROXYDRAWOVERRIDE_H
+
+
+#endif // PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H

@@ -35,7 +35,9 @@
 class TfToken;
 
 /// \class Sdf_MapEditor
+///
 /// Interface for private implementations used by SdfMapEditProxy.
+///
 template <class MapType>
 class Sdf_MapEditor {
 public:

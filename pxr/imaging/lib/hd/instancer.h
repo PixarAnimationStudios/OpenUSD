@@ -35,6 +35,8 @@
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
+/// \class HdInstancer
+///
 /// This class exists to facilitate point cloud style instancing.
 ///
 /// The primary role of this class is to provide two buffer resources,

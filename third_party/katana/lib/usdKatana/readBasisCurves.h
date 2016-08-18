@@ -24,12 +24,14 @@
 #ifndef PXRUSDKATANA_READBASISCURVES_H
 #define PXRUSDKATANA_READBASISCURVES_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomBasisCurves;
 
 /// \brief read \p basiscurves into \p attrs.
-void
+USDKATANA_API void
 PxrUsdKatanaReadBasisCurves(
         const UsdGeomBasisCurves& basisCurves,
         const PxrUsdKatanaUsdInPrivateData& data,

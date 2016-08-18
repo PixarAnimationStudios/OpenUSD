@@ -31,6 +31,8 @@
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
+/// \class UsdImaging_InheritedCache
+///
 /// A general caching mechanism for attributes inherited up or down the ancestor
 /// chain.
 ///

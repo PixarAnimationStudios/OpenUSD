@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file glf/drawTarget.h
-
 #ifndef GLF_DRAWTARGET_H
 #define GLF_DRAWTARGET_H
+
+/// \file glf/drawTarget.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
@@ -45,10 +44,9 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
-///
 /// \class GlfDrawTarget
-/// \brief A class representing a GL render target with mutliple image
-/// attachments
+///
+/// A class representing a GL render target with mutliple image attachments.
 ///
 /// A DrawTarget is essentially a custom render pass into which several
 /// arbitrary variables can be output into. These can later be used as
@@ -67,10 +65,10 @@ public:
 
 public:
     
-    /// \brief Returns a new instance 
+    /// Returns a new instance.
     GLF_API static GlfDrawTargetRefPtr New( GfVec2i const & size );
 
-    /// \brief Returns a new instance
+    /// Returns a new instance.
     /// GL framebuffers cannot be shared across contexts, but texture
     /// attachments can. In order to reflect this, GlfDrawTargets hold
     /// onto their maps of attachments through a RefPtr that can be shared
@@ -108,7 +106,7 @@ public:
                                           GLuint samplerName) const;
         virtual VtDictionary GetTextureInfo() const;
 
-        /// \brief Updates the contents signature for the underlying texture
+        /// Updates the contents signature for the underlying texture
         /// to allow downstream consumers to know that the texture image
         /// data may have changed.
         void TouchContents();
@@ -135,64 +133,64 @@ public:
 
     typedef std::map<std::string, AttachmentRefPtr> AttachmentsMap;
     
-    /// \brief Add an attachment to the DrawTarget
+    /// Add an attachment to the DrawTarget.
     GLF_API void AddAttachment( std::string const & name, 
                         GLenum format, GLenum type, GLenum internalFormat );
 
-    /// \brief Removes the named attachment from the DrawTarget
+    /// Removes the named attachment from the DrawTarget.
     GLF_API void DeleteAttachment( std::string const & name );
     
-    /// \brief Clears all the attachments for this DrawTarget
+    /// Clears all the attachments for this DrawTarget.
     GLF_API void ClearAttachments();
     
-    /// \brief Copies the list of attachments from drawtarget
+    /// Copies the list of attachments from DrawTarget.
     GLF_API void CloneAttachments( GlfDrawTargetPtr const & drawtarget );
     
-    /// \brief Returns the list of Attachments for this DrawTarget
+    /// Returns the list of Attachments for this DrawTarget.
     GLF_API AttachmentsMap const & GetAttachments() const;
     
-    /// \brief Returns the attachment with a given name or TfNullPtr;
+    /// Returns the attachment with a given name or TfNullPtr;
     GLF_API AttachmentRefPtr GetAttachment(std::string const & name);
     
-    /// \brief write the Attachment buffer to an image file (debugging)
+    /// Write the Attachment buffer to an image file (debugging).
     GLF_API bool WriteToFile(std::string const & name,
                      std::string const & filename,
                      GfMatrix4d const & viewMatrix = GfMatrix4d(1),
                      GfMatrix4d const & projectionMatrix = GfMatrix4d(1));
 
-    /// \brief Resize the DrawTarget
+    /// Resize the DrawTarget.
     GLF_API void SetSize( GfVec2i );    
 
-    /// \brief Returns the size of the draw target
+    /// Returns the size of the DrawTarget.
     GfVec2i const & GetSize() const {
         return _size;
     }
 
-    /// \brief Returns the framebuffer object Id
+    /// Returns the framebuffer object Id.
     GLF_API GLuint GetFramebufferId() const;
     
-    /// \brief Binds the framebuffer.
+    /// Binds the framebuffer.
     GLF_API void Bind();
 
-    /// \brief Unbinds the framebuffer.
+    /// Unbinds the framebuffer.
     GLF_API void Unbind();
 
-    /// \brief Returns whether the framebuffer is currently bound.
+    /// Returns whether the framebuffer is currently bound.
     GLF_API bool IsBound() const;
 
-    /// \brief Updates the contents signature for attached textures
+    /// Updates the contents signature for attached textures
     /// to allow downstream consumers to know that the texture image
     /// data may have changed.
     GLF_API void TouchContents();
 
-    /// \brief Returns whether the enclosed framebuffer object is complete.
+    /// Returns whether the enclosed framebuffer object is complete.
     /// If \a reason is non-NULL, and this framebuffer is not valid,
     /// sets \a reason to the reason why not.
     GLF_API bool IsValid(std::string * reason = NULL);
 
 protected:
 
-    /// \brief Weak/Ref-based container for the the map of texture attachments.
+    /// Weak/Ref-based container for the the map of texture attachments.
     /// Multiple GlfDrawTargets can jointly share their attachment textures :
     /// this construction allows the use of a RefPtr on the map of attachments.
     class AttachmentsContainer : public TfRefBase, public TfWeakBase {

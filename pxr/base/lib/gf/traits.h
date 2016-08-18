@@ -24,29 +24,24 @@
 #ifndef GF_TRAITS_H
 #define GF_TRAITS_H
 
-/*! \brief A metafunction with a static const bool member 'value' that is true
- * for GfVec types, like GfVec2i, GfVec4d, etc and false for all other
- * types.
- */
+/// A metafunction with a static const bool member 'value' that is true for
+/// GfVec types, like GfVec2i, GfVec4d, etc and false for all other types.
 template <class T>
 struct GfIsGfVec { static const bool value = false; };
 
-/*! \brief A metafunction with a static const bool member 'value' that is true
- * for GfMatrix types, like GfMatrix3d, GfMatrix4f, etc and false for all
- * other types.
- */
+/// A metafunction with a static const bool member 'value' that is true for
+/// GfMatrix types, like GfMatrix3d, GfMatrix4f, etc and false for all other
+/// types.
 template <class T>
 struct GfIsGfMatrix { static const bool value = false; };
 
-/*! \brief A metafunction with a static const bool member 'value' that is true
- * for GfQuat types and false for all other types.
- */
+/// A metafunction with a static const bool member 'value' that is true for
+/// GfQuat types and false for all other types.
 template <class T>
 struct GfIsGfQuat { static const bool value = false; };
 
-/*! \brief A metafunction with a static const bool member 'value' that is true
- * for GfRange types and false for all other types.
- */
+/// A metafunction with a static const bool member 'value' that is true for
+/// GfRange types and false for all other types.
 template <class T>
 struct GfIsGfRange { static const bool value = false; };
 

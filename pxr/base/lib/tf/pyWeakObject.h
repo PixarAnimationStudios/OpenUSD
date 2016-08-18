@@ -38,14 +38,13 @@
 
 #include "pxr/base/tf/hashmap.h"
 
-
 typedef TfWeakPtr<class Tf_PyWeakObject> Tf_PyWeakObjectPtr;
 
 struct Tf_PyWeakObjectRegistry
 {
     typedef Tf_PyWeakObjectRegistry This;
     
-    //! \brief Return the singleton instance.
+    /// Return the singleton instance.
     TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     } 

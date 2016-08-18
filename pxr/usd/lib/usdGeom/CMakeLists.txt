@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdGeom)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usdGeom
     LIBRARIES
         tf
@@ -52,6 +56,7 @@ pxr_shared_library(usdGeom
         api.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

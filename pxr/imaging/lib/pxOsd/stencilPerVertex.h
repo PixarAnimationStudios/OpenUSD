@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/stencilPerVertex.h
-
 #ifndef PXOSD_STENCILPERVERTEX_H
 #define PXOSD_STENCILPERVERTEX_H
+
+/// \file pxOsd/stencilPerVertex.h
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
@@ -46,4 +45,3 @@ public:
 };
 
 #endif 
-

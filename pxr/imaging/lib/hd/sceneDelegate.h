@@ -48,7 +48,8 @@
 
 typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
 
-
+/// \class HdSyncRequestVector
+///
 /// The SceneDelegate is requested to synchronize prims as the result of
 /// executing a specific render pass, the following data structure is passed
 /// back to the delegate to drive synchronization.
@@ -71,6 +72,8 @@ struct HdSyncRequestVector {
 };
 
 
+/// \class HdSceneDelegate
+///
 /// Adapter class providing data exchange with the client scene graph.
 ///
 class HdSceneDelegate {

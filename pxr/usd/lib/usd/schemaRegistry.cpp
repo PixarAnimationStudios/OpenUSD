@@ -63,7 +63,7 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
     // target (with possible exceptions) rather than cherry-picking certain
     // data.
     static TfToken allowedTokens("allowedTokens");
-    BOOST_FOREACH(SdfPrimSpecHandle const &prim, source->GetRootPrims()) {
+    for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
         if (not target->GetPrimAtPath(prim->GetPath())) {
 
             SdfPrimSpecHandle targetPrim =
@@ -74,8 +74,7 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
             if (not doc.empty())
                 targetPrim->SetDocumentation(doc);
 
-            BOOST_FOREACH(SdfAttributeSpecHandle const &attr,
-                          prim->GetAttributes()) {
+            for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
                 SdfAttributeSpecHandle newAttr =
                     SdfAttributeSpec::New(
                         targetPrim, attr->GetName(), attr->GetTypeName(),
@@ -98,8 +97,8 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
                     newAttr->SetHidden(true);
             }
 
-            BOOST_FOREACH(SdfRelationshipSpecHandle const &rel,
-                          prim->GetRelationships()) {
+            for (SdfRelationshipSpecHandle const &rel:
+                     prim->GetRelationships()) {
                 SdfRelationshipSpecHandle newRel =
                     SdfRelationshipSpec::New(
                         targetPrim, rel->GetName(), rel->IsCustom());
@@ -134,7 +133,7 @@ UsdSchemaRegistry::_BuildPrimTypePropNameToSpecIdMap(
     _primTypePropNameToSpecIdMap[make_pair(typeName, TfToken())] = 
         new SdfAbstractDataSpecId(new SdfPath(prim->GetPath()));
 
-    BOOST_FOREACH(SdfPropertySpecHandle prop, prim->GetProperties()) {
+    for (SdfPropertySpecHandle prop: prim->GetProperties()) {
         _primTypePropNameToSpecIdMap[make_pair(typeName, prop->GetNameToken())] =
             new SdfAbstractDataSpecId(new SdfPath(prop->GetPath()));
     }
@@ -158,7 +157,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
     // Get all the plugins that provide the types.
     set<PlugPluginPtr> plugins;
-    BOOST_FOREACH(const TfType &type, types) {
+    for (const TfType &type: types) {
         if (PlugPluginPtr plugin =
             PlugRegistry::GetInstance().GetPluginForType(type))
             plugins.insert(plugin);
@@ -166,14 +165,14 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
     // For each plugin, if it has generated schema, add it to the schematics.
     SdfChangeBlock block;
-    BOOST_FOREACH(const PlugPluginPtr &plugin, plugins) {
+    for (const PlugPluginPtr &plugin: plugins) {
         if (SdfLayerRefPtr generatedSchema = _GetGeneratedSchema(plugin))
             _AddSchema(generatedSchema, _schematics);
     }
 
     // Add them to the type -> path and typeName -> path maps, and the type ->
     // SpecId and typeName -> SpecId maps.
-    BOOST_FOREACH(const TfType &type, types) {
+    for (const TfType &type: types) {
         // The path in the schema is the type's alias under UsdSchemaBase.
         vector<string> aliases = _schemaBaseType->GetAliases(type);
         if (aliases.size() == 1) {

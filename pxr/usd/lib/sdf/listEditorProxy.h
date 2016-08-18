@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/listEditorProxy.h
-
 #ifndef SDF_LISTEDITORPROXY_H
 #define SDF_LISTEDITORPROXY_H
+
+/// \file sdf/listEditorProxy.h
 
 #include "pxr/usd/sdf/listEditor.h"
 #include "pxr/usd/sdf/listProxy.h"
@@ -38,8 +38,9 @@
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
 
-/// \class SdfListEditorProxy sdf/listEditorProxy.h
-/// \brief Represents a set of list editing operations. 
+/// \class SdfListEditorProxy
+///
+/// Represents a set of list editing operations. 
 ///
 /// An SdfListEditorProxy allows consumers to specify a transformation to be
 /// applied to a list via a set of list editing operations. Given a starting 

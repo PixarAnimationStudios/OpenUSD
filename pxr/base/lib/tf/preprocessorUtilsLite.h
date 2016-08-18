@@ -28,8 +28,8 @@
 // expanded before the pasting occurs.
 #define TF_PP_CAT_IMPL(x, y) x ## y
 
-/// Paste concatenate preprocessor expressions x and y after expansion.  This is
-/// similar to BOOST_PP_CAT but doesn't require including the boost config
+/// Paste concatenate preprocessor expressions x and y after expansion.  This
+/// is similar to BOOST_PP_CAT but doesn't require including the boost config
 /// header which is somewhat heavy.
 #define TF_PP_CAT(x, y) TF_PP_CAT_IMPL(x, y)
 

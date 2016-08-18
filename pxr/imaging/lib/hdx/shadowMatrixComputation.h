@@ -44,5 +44,4 @@ private:
     HdxShadowMatrixComputation &operator =(const HdxShadowMatrixComputation &) = delete;
 };
 
-
 #endif // HDX_COMPUTE_SHADOW_MATRIX_H

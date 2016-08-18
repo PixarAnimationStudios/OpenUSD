@@ -35,8 +35,10 @@
 #include <boost/array.hpp>
 
 /// \class Sdf_ListOpListEditor
+///
 /// List editor implementation for list editing operations stored in an
 /// SdfListOp object. 
+///
 template <class TypePolicy>
 class Sdf_ListOpListEditor
     : public Sdf_ListEditor<TypePolicy>
@@ -53,6 +55,8 @@ public:
 
     Sdf_ListOpListEditor(const SdfSpecHandle& owner, const TfToken& listField,
                          const TypePolicy& typePolicy = TypePolicy());
+
+    virtual ~Sdf_ListOpListEditor() = default;
 
     virtual bool IsExplicit() const;
     virtual bool IsOrderedOnly() const;

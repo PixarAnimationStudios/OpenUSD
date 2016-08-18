@@ -34,8 +34,10 @@
 #include <cmath>
 #include <ciso646>
 
-/// \brief Represent a time value, which may be either numeric, holding a
-/// double value, or a sentinel value UsdTimeCode::Default().
+/// \class UsdTimeCode
+///
+/// Represent a time value, which may be either numeric, holding a double
+/// value, or a sentinel value UsdTimeCode::Default().
 ///
 /// A UsdTimeCode does \em not represent an 
 /// <a href="https://en.wikipedia.org/wiki/SMPTE_timecode">SMPTE timecode</a>,

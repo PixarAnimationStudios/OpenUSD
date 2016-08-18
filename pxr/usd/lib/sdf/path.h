@@ -51,13 +51,14 @@ class Sdf_PathNode;
 // is the size of two pointers.)
 typedef boost::intrusive_ptr<const Sdf_PathNode> Sdf_PathNodeConstRefPtr;
 
-/// \brief A set of SdfPaths.
+/// A set of SdfPaths.
 typedef std::set<class SdfPath> SdfPathSet;
-/// \brief A vector of SdfPaths.
+/// A vector of SdfPaths.
 typedef std::vector<class SdfPath> SdfPathVector;
 
 /// \class SdfPath 
-/// \brief A path value used to locate objects in layers or scenegraphs.
+///
+/// A path value used to locate objects in layers or scenegraphs.
 ///
 /// \section sec_SdfPath_Overview Overview
 ///
@@ -133,24 +134,24 @@ class SdfPath :
     boost::totally_ordered<SdfPath>
 {
 public:
-    /// \brief The empty path value, equivalent to SdfPath().
+    /// The empty path value, equivalent to SdfPath().
     SDF_API static const SdfPath & EmptyPath();
 
-    /// \brief The absolute path representing the top of the
+    /// The absolute path representing the top of the
     /// namespace hierarchy.
     SDF_API static const SdfPath & AbsoluteRootPath();
 
-    /// \brief The relative path representing "self".
+    /// The relative path representing "self".
     SDF_API static const SdfPath & ReflexiveRelativePath();
 
     /// \name Constructors
     /// @{ 
     
-    /// \brief Constructs the default, empty path.
+    /// Constructs the default, empty path.
     ///
 	SDF_API SdfPath();
 
-    /// \brief Creates a path from the given string.
+    /// Creates a path from the given string.
     ///
     /// If the given string is not a well-formed path, this will raise
     /// a Tf error.  Note that passing an empty std::string() will also
@@ -173,90 +174,90 @@ public:
     /// \name Querying paths 
     /// @{
 
-    /// \brief Returns the number of path elements in this path.
+    /// Returns the number of path elements in this path.
 	SDF_API size_t GetPathElementCount() const;
 
-    /// \brief Returns whether the path is absolute.
+    /// Returns whether the path is absolute.
 	SDF_API bool IsAbsolutePath() const;
 
-    /// \brief Returns whether the path identifies a prim.
+    /// Returns whether the path identifies a prim.
 	SDF_API bool IsPrimPath() const;
 
-    /// \brief Returns whether the path identifies a prim or the absolute root.
+    /// Returns whether the path identifies a prim or the absolute root.
 	SDF_API bool IsAbsoluteRootOrPrimPath() const;
 
-    /// \brief Returns whether the path identifies a root prim.
+    /// Returns whether the path identifies a root prim.
     ///
     /// the path must be absolute and have a single element
     /// (for example <c>/foo</c>).
 	SDF_API bool IsRootPrimPath() const;
 
-    /// \brief Returns whether the path identifies a property.
+    /// Returns whether the path identifies a property.
     ///
     /// A relational attribute is considered to be a property, so this
     /// method will return true for relational attributes as well
     /// as properties of prims.
 	SDF_API bool IsPropertyPath() const;
 
-    /// \brief Returns whether the path identifies a prim's property.
+    /// Returns whether the path identifies a prim's property.
     ///
     /// A relational attribute is not a prim property.
 	SDF_API bool IsPrimPropertyPath() const;
 
-    /// \brief Returns whether the path identifies a namespaced property.
+    /// Returns whether the path identifies a namespaced property.
     ///
     /// A namespaced property has colon embedded in its name.
 	SDF_API bool IsNamespacedPropertyPath() const;
 
-    /// \brief Returns whether the path identifies a variant selection for a
+    /// Returns whether the path identifies a variant selection for a
     /// prim.
 	SDF_API bool IsPrimVariantSelectionPath() const;
 
-    /// \brief Return true if this path is a prim path or is a prim variant
+    /// Return true if this path is a prim path or is a prim variant
     /// selection path.
 	SDF_API bool IsPrimOrPrimVariantSelectionPath() const;
 
-    /// \brief Returns whether the path or any of its parent paths identifies
+    /// Returns whether the path or any of its parent paths identifies
     /// a variant selection for a prim.
 	SDF_API bool ContainsPrimVariantSelection() const;
 
-    /// \brief Returns whether the path identifies a relational attribute.
+    /// Returns whether the path identifies a relational attribute.
     ///
     /// If this is true, IsPropertyPath() will also be true.
 	SDF_API bool IsRelationalAttributePath() const;
 
-    /// \brief Returns whether the path identifies a relationship or
+    /// Returns whether the path identifies a relationship or
     /// connection target.
 	SDF_API bool IsTargetPath() const;
 
-    /// \brief Returns whether the path identifies a connection mapper.
+    /// Returns whether the path identifies a connection mapper.
 	SDF_API bool IsMapperPath() const;
 
-    /// \brief Returns whether the path identifies a connection mapper arg.
+    /// Returns whether the path identifies a connection mapper arg.
 	SDF_API bool IsMapperArgPath() const;
 
-    /// \brief Returns whether the path identifies a connection expression.
+    /// Returns whether the path identifies a connection expression.
 	SDF_API bool IsExpressionPath() const;
 
-    /// \brief Returns true if this is the empty path (SdfPath::EmptyPath()).
+    /// Returns true if this is the empty path (SdfPath::EmptyPath()).
 	SDF_API bool IsEmpty() const;
 
-    /// \brief Returns the string representation of this path as a TfToken.
+    /// Returns the string representation of this path as a TfToken.
 	SDF_API TfToken const &GetToken() const;
 
-    /// \brief Returns the string representation of this path as a std::string.
+    /// Returns the string representation of this path as a std::string.
 	SDF_API const std::string &GetString() const;
 
-    /// \brief Returns the string representation of this path as a c string.
+    /// Returns the string representation of this path as a c string.
 	SDF_API const char *GetText() const;
 
-    /// \brief Returns the prefix paths of this path.
+    /// Returns the prefix paths of this path.
     ///
     /// Prefixes are returned in order of shortest to longest.  The path
     /// itself is returned as the last prefix.
 	SDF_API SdfPathVector GetPrefixes() const;
 
-    /// \brief Fills prefixes with prefixes of this path.
+    /// Fills prefixes with prefixes of this path.
     /// 
     /// This avoids copy constructing the return value.
     ///
@@ -264,7 +265,7 @@ public:
     /// itself is returned as the last prefix.
 	SDF_API void GetPrefixes(SdfPathVector *prefixes) const;
 
-    /// \brief Returns the name of the prim, property or relational
+    /// Returns the name of the prim, property or relational
     /// attribute identified by the path.
     ///
     /// Returns EmptyPath if this path is a target or mapper path.
@@ -276,11 +277,11 @@ public:
     /// </ul>
 	SDF_API const std::string &GetName() const;
 
-    /// \brief Returns the name of the prim, property or relational
+    /// Returns the name of the prim, property or relational
     /// attribute identified by the path, as a token.
 	SDF_API const TfToken &GetNameToken() const;
     
-    /// \brief Returns an ascii representation of the "terminal" element
+    /// Returns an ascii representation of the "terminal" element
     /// of this path, which can be used to reconstruct the path using
     /// \c AppendElementString() on its parent.
     ///
@@ -299,10 +300,10 @@ public:
     /// manipulation, which you should keep in mind if performance is a concern.
 	SDF_API std::string GetElementString() const;
 
-    /// \brief Like GetElementString() but return the value as a TfToken.
+    /// Like GetElementString() but return the value as a TfToken.
 	SDF_API TfToken GetElementToken() const;
 
-    /// \brief Return a copy of this path with its final component changed to
+    /// Return a copy of this path with its final component changed to
     /// \a newName.  This path must be a prim or property path.
     ///
     /// This method is shorthand for path.GetParentPath().AppendChild(newName)
@@ -323,7 +324,7 @@ public:
     ///
 	SDF_API SdfPath ReplaceName(TfToken const &newName) const;
 
-    /// \brief Returns the relational attribute or mapper target path
+    /// Returns the relational attribute or mapper target path
     /// for this path.
     ///
     /// Returns EmptyPath if this is not a target, relational attribute or
@@ -337,7 +338,7 @@ public:
     /// target in this example).
 	SDF_API const SdfPath &GetTargetPath() const;
 
-    /// \brief Returns all the relationship target or connection target
+    /// Returns all the relationship target or connection target
     /// paths contained in this path, and recursively all the target paths
     /// contained in those target paths in reverse depth-first order.
     ///
@@ -346,7 +347,7 @@ public:
     /// '/E/F.a'
 	SDF_API void GetAllTargetPathsRecursively(SdfPathVector *result) const;
 
-    /// \brief Returns the variant selection for this path.
+    /// Returns the variant selection for this path.
     ///
     /// Returns a pair of empty strings if this path is not a variant
     /// selection path.
@@ -358,7 +359,7 @@ public:
 	SDF_API 
     const std::pair<std::string, std::string> GetVariantSelection() const;
 
-    /// \brief Return true if both this path and \a prefix are not the empty
+    /// Return true if both this path and \a prefix are not the empty
     /// path and this path has \a prefix as a prefix.  Return false otherwise.
 	SDF_API bool HasPrefix( const SdfPath &prefix ) const;
 
@@ -367,7 +368,7 @@ public:
     /// \name Creating new paths by modifying existing paths
     /// @{
 
-    /// \brief Creates a path by stripping a single element off of this path.
+    /// Creates a path by stripping a single element off of this path.
     ///
     /// For a relational attribute path, returns the relationship target
     /// path.  For a path to a prim's property, returns the prim's path.
@@ -377,7 +378,7 @@ public:
     /// returns EmptyPath.
 	SDF_API SdfPath GetParentPath() const;
 
-    /// \brief Creates a path by stripping all relational attributes, targets,
+    /// Creates a path by stripping all relational attributes, targets,
     /// properties, and variant selections from the leafmost prim path, leaving
     /// the nearest path for which \a IsPrimPath() returns true.
     ///
@@ -386,7 +387,7 @@ public:
     /// If the path is already a prim path, the same path is returned.
 	SDF_API SdfPath GetPrimPath() const;
 
-    /// \brief Creates a path by stripping all relational attributes, targets,
+    /// Creates a path by stripping all relational attributes, targets,
     /// and properties, leaving the nearest path for which
     /// \a IsPrimOrPrimVariantSelectionPath() returns true.
     ///
@@ -396,19 +397,19 @@ public:
     /// path is returned.
 	SDF_API SdfPath GetPrimOrPrimVariantSelectionPath() const;
 
-    /// \brief Creates a path by stripping all properties and relational
+    /// Creates a path by stripping all properties and relational
     /// attributes from this path, leaving the path to the containing prim.
     ///
     /// If the path is already a prim or absolute root path, the same
     /// path is returned.
 	SDF_API SdfPath GetAbsoluteRootOrPrimPath() const;
 
-    /// \brief Create a path by stripping all variant selections from all
+    /// Create a path by stripping all variant selections from all
     /// components of this path, leaving a path with no embedded variant
     /// selections.
 	SDF_API SdfPath StripAllVariantSelections() const;
 
-    /// \brief Creates a path by appending a given relative path to this path.
+    /// Creates a path by appending a given relative path to this path.
     ///
     /// If the newSuffix is a prim path, then this path must be a prim path
     /// or a root path.
@@ -417,20 +418,20 @@ public:
     /// a prim path or the ReflexiveRelativePath.
 	SDF_API SdfPath AppendPath(const SdfPath &newSuffix) const;
 
-    /// \brief Creates a path by appending an element for \p childName
+    /// Creates a path by appending an element for \p childName
     /// to this path.
     ///
     /// This path must be a prim path, the AbsoluteRootPath
     /// or the ReflexiveRelativePath.
 	SDF_API SdfPath AppendChild(TfToken const &childName) const;
 
-    /// \brief Creates a path by appending an element for \p propName
+    /// Creates a path by appending an element for \p propName
     /// to this path.
     ///
     /// This path must be a prim path or the ReflexiveRelativePath.
 	SDF_API SdfPath AppendProperty(TfToken const &propName) const;
 
-    /// \brief Creates a path by appending an element for \p variantSet
+    /// Creates a path by appending an element for \p variantSet
     /// and \p variant to this path.
     ///
     /// This path must be a prim path.
@@ -438,43 +439,43 @@ public:
     SdfPath AppendVariantSelection(const std::string &variantSet,
                                    const std::string &variant) const;
 
-    /// \brief Creates a path by appending an element for
+    /// Creates a path by appending an element for
     /// \p targetPath.
     ///
     /// This path must be a prim property or relational attribute path.
 	SDF_API SdfPath AppendTarget(const SdfPath &targetPath) const;
 
-    /// \brief Creates a path by appending an element for
+    /// Creates a path by appending an element for
     /// \p attrName to this path.
     ///
     /// This path must be a target path.
 	SDF_API 
     SdfPath AppendRelationalAttribute(TfToken const &attrName) const;
 
-    /// \brief Replaces the relational attribute's target path
+    /// Replaces the relational attribute's target path
     ///
     /// The path must be a relational attribute path.
 	SDF_API 
     SdfPath ReplaceTargetPath( const SdfPath &newTargetPath ) const;
 
-    /// \brief Creates a path by appending a mapper element for
+    /// Creates a path by appending a mapper element for
     /// \p targetPath.
     ///
     /// This path must be a prim property or relational attribute path.
 	SDF_API SdfPath AppendMapper(const SdfPath &targetPath) const;
 
-    /// \brief Creates a path by appending an element for
+    /// Creates a path by appending an element for
     /// \p argName.
     ///
     /// This path must be a mapper path.
 	SDF_API SdfPath AppendMapperArg(TfToken const &argName) const;
 
-    /// \brief Creates a path by appending an expression element.
+    /// Creates a path by appending an expression element.
     ///
     /// This path must be a prim property or relational attribute path.
 	SDF_API SdfPath AppendExpression() const;
 
-    /// \brief Creates a path by extracting and appending an element
+    /// Creates a path by extracting and appending an element
     /// from the given ascii element encoding.
     ///
     /// Attempting to append a root or empty path (or malformed path)
@@ -485,10 +486,10 @@ public:
     /// possess a child of the type encoded in \p element.
 	SDF_API SdfPath AppendElementString(const std::string &element) const;
 
-    /// \brief Like AppendElementString() but take the element as a TfToken.
+    /// Like AppendElementString() but take the element as a TfToken.
 	SDF_API SdfPath AppendElementToken(const TfToken &elementTok) const;
 
-    /// \brief Returns a path with all occurrences of the prefix path
+    /// Returns a path with all occurrences of the prefix path
     /// \p oldPrefix replaced with the prefix path \p newPrefix.
     ///
     /// If fixTargetPaths is true, any embedded target paths will also
@@ -502,11 +503,11 @@ public:
                           const SdfPath &newPrefix,
                           bool fixTargetPaths=true) const;
 
-    /// \brief Returns a path with maximal length that is a prefix path of
+    /// Returns a path with maximal length that is a prefix path of
     /// both this path and \p path.
 	SDF_API SdfPath GetCommonPrefix(const SdfPath &path) const;
 
-    /// \brief Find and remove the longest common suffix from two paths.
+    /// Find and remove the longest common suffix from two paths.
     ///
     /// Returns this path and \p otherPath with the longest common suffix
     /// removed (first and second, respectively).  If the two paths have no
@@ -526,7 +527,7 @@ public:
     RemoveCommonSuffix(const SdfPath& otherPath,
                        bool stopAtRootPrim = false) const;
 
-    /// \brief Returns the absolute form of this path using \p anchor 
+    /// Returns the absolute form of this path using \p anchor 
     /// as the relative basis.
     ///
     /// \p anchor must be an absolute prim path.
@@ -537,7 +538,7 @@ public:
     /// If this path is already an absolute path, just return a copy.
 	SDF_API SdfPath MakeAbsolutePath(const SdfPath & anchor) const;
 
-    /// \brief Returns the relative form of this path using \p anchor
+    /// Returns the relative form of this path using \p anchor
     /// as the relative basis.
     ///
     /// \p anchor must be an absolute prim path.
@@ -556,59 +557,57 @@ public:
     /// \name Valid path strings, prim and property names
     /// @{
 
-    /// \brief Returns whether \p name is a legal identifier for any
+    /// Returns whether \p name is a legal identifier for any
     /// path component.
 	SDF_API static bool IsValidIdentifier(const std::string &name);
 
-    /// \brief Returns whether \p name is a legal namespaced identifier.
+    /// Returns whether \p name is a legal namespaced identifier.
     /// This returns \c true if IsValidIdentifier() does.
 	SDF_API static bool IsValidNamespacedIdentifier(const std::string &name);
 
-    /// \brief Tokenizes \p name by the namespace delimiter.
+    /// Tokenizes \p name by the namespace delimiter.
     /// Returns the empty vector if \p name is not a valid namespaced
     /// identifier.
     SDF_API static std::vector<std::string> TokenizeIdentifier(const std::string &name);
 
-    /// \brief Tokenizes \p name by the namespace delimiter.
+    /// Tokenizes \p name by the namespace delimiter.
     /// Returns the empty vector if \p name is not a valid namespaced
     /// identifier.
     SDF_API
     static TfTokenVector TokenizeIdentifierAsTokens(const std::string &name);
 
-    /// \brief Join \p names into a single identifier using the namespace
-    /// delimiter.
+    /// Join \p names into a single identifier using the namespace delimiter.
 	SDF_API 
     static std::string JoinIdentifier(const std::vector<std::string>& names);
 
-    /// \brief Join \p names into a single identifier using the namespace
-    /// delimiter.
+    /// Join \p names into a single identifier using the namespace delimiter.
 	SDF_API 
     static std::string JoinIdentifier(const TfTokenVector& names);
 
-    /// \brief Join \p lhs and \p rhs into a single identifier using the
+    /// Join \p lhs and \p rhs into a single identifier using the
     /// namespace delimiter.
 	SDF_API 
     static std::string JoinIdentifier(const std::string &lhs,
                                       const std::string &rhs);
 
-    /// \brief Join \p lhs and \p rhs into a single identifier using the
+    /// Join \p lhs and \p rhs into a single identifier using the
     /// namespace delimiter.
 	SDF_API 
     static std::string JoinIdentifier(const TfToken &lhs, const TfToken &rhs);
 
-    /// \brief Returns \p name stripped of any namespaces.
+    /// Returns \p name stripped of any namespaces.
     /// This does not check the validity of the name;  it just attempts
     /// to remove anything that looks like a namespace.
     SDF_API
     static std::string StripNamespace(const std::string &name);
 
-    /// \brief Returns \p name stripped of any namespaces.
+    /// Returns \p name stripped of any namespaces.
     /// This does not check the validity of the name;  it just attempts
     /// to remove anything that looks like a namespace.
     SDF_API
     static TfToken StripNamespace(const TfToken &name);
 
-    /// \brief Return true if \p pathString is a valid path string, meaning that
+    /// Return true if \p pathString is a valid path string, meaning that
     /// passing the string to the \a SdfPath constructor will result in a valid,
     /// non-empty SdfPath.  Otherwise, return false and if \p errMsg is not NULL,
     /// set the pointed-to string to the parse error.
@@ -616,7 +615,7 @@ public:
     static bool IsValidPathString(const std::string &pathString,
                                   std::string *errMsg = 0);
 
-    /// \brief Returns true, if \p marker denotes a built in marker.
+    /// Returns true, if \p marker denotes a built in marker.
     SDF_API
     static bool IsBuiltInMarker(const std::string &marker);
 
@@ -625,12 +624,13 @@ public:
     /// \name Operators
     /// @{
 
-    /// \brief Equality operator.  (Boost provides inequality from this.)
+    /// Equality operator.
+    /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
         return (_pathNode == rhs._pathNode);
     }
 
-    /// \brief Comparison operator.
+    /// Comparison operator.
     ///
     /// This orders paths lexicographically, aka dictionary-style.
     ///
@@ -665,7 +665,7 @@ public:
     /// \name Utilities
     /// @{
 
-    /// \brief Given some vector of paths, get a vector of concise unambiguous
+    /// Given some vector of paths, get a vector of concise unambiguous
     /// relative paths.
     ///
     /// GetConciseRelativePaths requires a vector of absolute paths. It
@@ -673,12 +673,12 @@ public:
     /// unique.
     SDF_API static SdfPathVector GetConciseRelativePaths(const SdfPathVector& paths);
 
-    /// \brief Remove all elements of \a paths that are prefixed by other
+    /// Remove all elements of \a paths that are prefixed by other
     /// elements in \a paths.  As a side-effect, the result is left in sorted
     /// order.
 	SDF_API static void RemoveDescendentPaths(SdfPathVector *paths);
 
-    /// \brief Remove all elements of \a paths that prefix other elements in \a
+    /// Remove all elements of \a paths that prefix other elements in \a
     /// paths.  As a side-effect, the result is left in sorted order.
 	SDF_API static void RemoveAncestorPaths(SdfPathVector *paths);
 
@@ -721,8 +721,7 @@ private:
 // Overload hash_value for SdfPath.  Used by things like boost::hash.
 SDF_API size_t hash_value(SdfPath const &path);
 
-///
-/// \brief Writes the string representation of \p path to \p out.
+/// Writes the string representation of \p path to \p out.
 SDF_API std::ostream & operator<<( std::ostream &out, const SdfPath &path );
 
 /// Find the subrange of the sorted range [\a begin, \a end) that includes all

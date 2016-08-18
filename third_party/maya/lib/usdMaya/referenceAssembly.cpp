@@ -67,7 +67,6 @@
 #include <string>
 #include <vector>
 
-
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_REF_ASSEMBLIES, true,
                       "Uses USD scene assemblies for set dressing");
 

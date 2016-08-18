@@ -44,6 +44,8 @@ typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 
+/// \class HdRenderPass
+///
 /// A single draw pass to a render target/buffer.
 ///
 class HdRenderPass : boost::noncopyable {

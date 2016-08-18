@@ -27,7 +27,7 @@
 #include <FnDefaultAttributeProducer/plugin/FnDefaultAttributeProducerPlugin.h>
 #include <FnDefaultAttributeProducer/plugin/FnDefaultAttributeProducerUtil.h>
 
-
+#include "pxr/base/arch/pragmas.h"
 
 namespace
 {
@@ -35,6 +35,8 @@ namespace
 // Allows for attr hints to be described via attrs. This is used by
 // PxrUsdInVariantSelect to populate its pop-up menus with contextually
 // relevant values.
+
+ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInUtilExtraHintsDap :
         public FnDefaultAttributeProducer::DefaultAttributeProducer
 {
@@ -73,6 +75,7 @@ public:
         return gb.build();
     }
 };
+ARCH_PRAGMA_RESTORE
 
 DEFINE_DEFAULTATTRIBUTEPRODUCER_PLUGIN(PxrUsdInUtilExtraHintsDap)
 

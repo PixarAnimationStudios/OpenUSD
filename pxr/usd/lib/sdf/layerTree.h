@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/layerTree.h
-
 #ifndef SDF_LAYER_TREE_H
 #define SDF_LAYER_TREE_H
+
+/// \file sdf/layerTree.h
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layerOffset.h"
@@ -39,6 +39,8 @@ typedef std::vector<SdfLayerTreeHandle> SdfLayerTreeHandleVector;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
+/// \class SdfLayerTree
+///
 /// A SdfLayerTree is an immutable tree structure representing a sublayer
 /// stack and its recursive structure.
 ///

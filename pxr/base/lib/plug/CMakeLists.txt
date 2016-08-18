@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE plug)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(plug
     LIBRARIES
         arch
@@ -32,6 +36,7 @@ pxr_shared_library(plug
         api.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         initConfig.cpp
         moduleDeps.cpp
 

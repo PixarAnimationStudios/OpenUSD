@@ -35,8 +35,9 @@
 
 class Hd_VertexAdjacency;
 
-/// smooth normal computation CPU
+/// \class Hd_SmoothNormalsComputation
 ///
+/// Smooth normal computation CPU.
 ///
 class Hd_SmoothNormalsComputation : public HdComputedBufferSource {
 public:

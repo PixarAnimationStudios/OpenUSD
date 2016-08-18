@@ -31,7 +31,6 @@
 #include <string>
 #include <vector>
 
-
 // This is used internally by the Tf python wrapping infrastructure.
 
 class Tf_PyWrapContextManager : public boost::noncopyable {

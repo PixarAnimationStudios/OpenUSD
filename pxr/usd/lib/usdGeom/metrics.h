@@ -24,17 +24,15 @@
 #ifndef USDGEOM_METRICS_H
 #define USDGEOM_METRICS_H
 
-
-
-
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/common.h"
 
-/// \file metrics.h
-/// \brief Schema and utilities for encoding various spatial and geometric
-/// metrics of a UsdStage and its contents.
-
+/// \file usd/metrics.h
+///
+/// Schema and utilities for encoding various spatial and geometric metrics of
+/// a UsdStage and its contents.
+///
 /// \defgroup UsdGeomUpAxis_group Encoding Stage UpAxis
 /// 
 /// Even if all UsdGeomCamera objects in a scene are encoded with a 
@@ -74,6 +72,7 @@
 /// axis, the stage's Z axis will be pointing out of the screen, and when
 /// viewing a UsdStage with a "Z" up axis, the stage's Y axis will be
 /// pointing into the screen.
+///
 /// @{
 
 /// Fetch and return \p stage 's upAxis.  If unauthored, will return the
@@ -87,7 +86,6 @@
 USDGEOM_API
 TfToken UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage);
 
-
 /// Set \p stage 's upAxis to \p axis, which must be one of UsdGeomTokens->y
 /// or UsdGeomTokens->z
 /// 
@@ -97,7 +95,6 @@ TfToken UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage);
 /// \sa UsdGeomUpAxis_group
 USDGEOM_API
 bool UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis);
-
 
 /// Return the site-level fallback up axis as a TfToken.
 ///

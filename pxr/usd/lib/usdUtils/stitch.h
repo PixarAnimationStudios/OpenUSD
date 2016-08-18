@@ -24,17 +24,17 @@
 #ifndef _USDUTILS_STITCH_H_
 #define _USDUTILS_STITCH_H_
 
+/// \file usdUtils/stitch.h
+///
+/// Collection of module-scoped utilities for combining layers.
+/// These utilize the convention of a strong and a weak layer. The strong
+/// layer will be the first parameter to the function and will always have
+/// precedence in conflicts during the merge.
+
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
 SDF_DECLARE_HANDLES(SdfLayer);
-
-/// \file stitch.h
-///
-/// Collection of module-scoped utilities for combining layers.
-/// These utilize the convention of a strong and a weak layer.
-/// The strong layer will be the first parameter to the function
-/// and will always have precedence in conflicts during the merge.
 
 /// The function will recurse down the root prims of each layer,
 /// either making clean copies if no path match is found or recursing to

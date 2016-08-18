@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/accessorHelpers.h
-
 #ifndef SDF_ACCESSORHELPERS_H
 #define SDF_ACCESSORHELPERS_H
+
+/// \file sdf/accessorHelpers.h
 
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"

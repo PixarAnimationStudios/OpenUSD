@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/allowed.h
-
 #ifndef SD_ALLOWED_H
 #define SD_ALLOWED_H
+
+/// \file sdf/allowed.h
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usd/sdf/api.h"
@@ -33,11 +33,13 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
-/// \class SdfAllowed sdf/allowed.h
-/// \brief Indicates if an operation is allowed and, if not, why not.
+/// \class SdfAllowed
+///
+/// Indicates if an operation is allowed and, if not, why not.
 ///
 /// A \c SdfAllowed either evaluates to \c true in a boolean context
 /// or evaluates to \c false and has a string annotation.
+///
 class SdfAllowed : private boost::equality_comparable<SdfAllowed> {
 private:
     typedef boost::optional<std::string> _State;

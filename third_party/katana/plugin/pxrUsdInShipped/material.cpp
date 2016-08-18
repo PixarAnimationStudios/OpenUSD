@@ -24,16 +24,16 @@
 #include "pxrUsdInShipped/declareCoreOps.h"
 
 #include "usdKatana/attrMap.h"
-#include "usdKatana/readLook.h"
+#include "usdKatana/readMaterial.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LookOp, privateData, interface)
 {
     PxrUsdKatanaAttrMap attrs;
     
-    PxrUsdKatanaReadLook(
-        UsdShadeLook(privateData.GetUsdPrim()),
+    PxrUsdKatanaReadMaterial(
+        UsdShadeMaterial(privateData.GetUsdPrim()),
         /* flatten */ true,
         privateData,
         attrs);

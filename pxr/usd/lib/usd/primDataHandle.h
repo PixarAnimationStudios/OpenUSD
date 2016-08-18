@@ -142,4 +142,3 @@ private:
 };
 
 #endif // USD_PRIMDATAHANDLE_H
-

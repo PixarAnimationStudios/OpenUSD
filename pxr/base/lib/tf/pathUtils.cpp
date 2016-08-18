@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/systemInfo.h"
@@ -43,6 +44,7 @@
 #include <glob.h>
 #else
 #include <Windows.h>
+#include <Shlwapi.h>
 #endif
 
 using std::pair;
@@ -367,6 +369,26 @@ TfAbsPath(string const& path)
 }
 
 string
+TfGetExtension(string const& path)
+{
+    static const string emptyPath;
+
+    if (path.empty()) {
+        return emptyPath;
+    }
+
+    const std::string fileName = TfGetBaseName(path);
+
+    // If this is a dot file with no extension (e.g. /some/path/.folder), then
+    // we return an empty string.
+    if (TfStringGetBeforeSuffix(fileName).empty()) {
+        return emptyPath;
+    }
+
+    return TfStringGetSuffix(fileName);
+}
+
+string
 TfReadLink(string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
@@ -385,6 +407,15 @@ TfReadLink(string const& path)
     buf.get()[len] = '\0';
 
     return TfSafeString(buf.get());
+#endif
+}
+
+bool TfIsRelativePath(std::string const& path)
+{
+#if defined(ARCH_OS_WINDOWS)
+    return PathIsRelative(path.c_str()) ? true : false;
+#else
+    return path[0] != '/';
 #endif
 }
 
@@ -417,6 +448,43 @@ TfGlob(vector<string> const& paths, unsigned int flags)
 
     return results;
 }
+
+#else
+
+vector<string>
+TfGlob(vector<string> const& paths, unsigned int flags)
+{
+    if (paths.empty())
+    {
+        return vector<string>();
+    }
+
+    vector<string> results;
+
+    for (auto path : paths)
+    {
+        size_t wildcard = path.find("/*/");
+        if(wildcard != std::string::npos)
+        {
+            string rootDir(path, 0, wildcard);
+
+            vector<string> dirNames;
+            TfReadDir(rootDir, &dirNames, nullptr, nullptr, nullptr);
+
+            for (auto dirName : dirNames)
+            {
+                string dir = path;
+                dir.replace(wildcard + 1, 1, dirName);
+
+                results.push_back(dir);
+            }
+        }
+    }
+
+    return results;
+}
+
+#endif
 
 vector<string>
 TfGlob(string const& path, unsigned int flags)

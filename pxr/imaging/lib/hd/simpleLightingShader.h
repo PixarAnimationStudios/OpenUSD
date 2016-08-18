@@ -45,7 +45,9 @@
 
 typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSharedPtr;
 
-/// A shader that supports simple lighting functionality
+/// \class HdSimpleLightingShader
+///
+/// A shader that supports simple lighting functionality.
 ///
 class HdSimpleLightingShader : public HdLightingShader {
 public:

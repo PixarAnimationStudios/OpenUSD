@@ -34,8 +34,10 @@
 #include <vector>
 
 /// \class UsdCrateInfo
-/// \brief A class for introspecting the underlying qualities of .usdc 'crate'
-/// files, for diagnostic purposes.
+///
+/// A class for introspecting the underlying qualities of .usdc 'crate' files,
+/// for diagnostic purposes.
+///
 class UsdCrateInfo
 {
 public:
@@ -56,27 +58,27 @@ public:
         size_t numUniqueFieldSets = 0;
     };
 
-    //! Attempt to open and read \p fileName.
+    /// Attempt to open and read \p fileName.
     USD_API
     static UsdCrateInfo Open(std::string const &fileName);
 
-    //! Return summary statistics structure for this file.
+    /// Return summary statistics structure for this file.
     USD_API
     SummaryStats GetSummaryStats() const;
 
-    //! Return the named file sections, their location and sizes in the file.
+    /// Return the named file sections, their location and sizes in the file.
     USD_API
     std::vector<Section> GetSections() const;
 
-    //! Return the file version.
+    /// Return the file version.
     USD_API
     TfToken GetFileVersion() const;
     
-    //! Return the software version.
+    /// Return the software version.
     USD_API
     TfToken GetSoftwareVersion() const;
 
-    //! Return true if this object refers to a valid file.
+    /// Return true if this object refers to a valid file.
     explicit operator bool() const { return (bool)_impl; }
 
 private:
@@ -84,6 +86,5 @@ private:
     struct _Impl;
     std::shared_ptr<_Impl> _impl;
 };
-
 
 #endif // USD_CRATEINFO_H

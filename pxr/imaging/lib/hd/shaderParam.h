@@ -38,7 +38,7 @@ typedef std::vector<class HdShaderParam> HdShaderParamVector;
 
 bool HdEnabledUV();
 
-/// XXX: Docs
+// XXX: Docs
 class HdShaderParam {
 public:
     typedef size_t ID;

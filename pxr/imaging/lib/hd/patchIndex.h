@@ -27,7 +27,10 @@
 #include <cstddef>
 #include <iostream>
 
+/// \class Hd_PatchIndex
+///
 /// N integers array for storing patch indices.
+///
 template <int N>
 class Hd_PatchIndex {
 public:

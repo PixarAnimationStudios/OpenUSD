@@ -153,5 +153,4 @@ private:
     SdfPath _cameraId;
 };
 
-
 #endif  // HDX_UNIT_TEST_DELEGATE

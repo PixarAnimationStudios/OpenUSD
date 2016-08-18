@@ -35,6 +35,8 @@
 
 #include <vector>
 
+/// \class Hd_TestDriver
+///
 /// A unit test driver that exercises the core engine.
 ///
 /// \note This test driver does NOT assume OpenGL is available; in the even

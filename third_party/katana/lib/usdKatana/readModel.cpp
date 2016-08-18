@@ -53,7 +53,7 @@ _GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
         FnKat::StringAttribute("usd"));
 
     proxiesBuilder.set("viewer.load.opArgs.a.currentTime", 
-        FnKat::DoubleAttribute(data.GetUsdInArgs()->GetCurrentTime()));
+        FnKat::DoubleAttribute(data.GetUsdInArgs()->GetCurrentTimeD()));
 
     proxiesBuilder.set("viewer.load.opArgs.a.fileName", 
         FnKat::StringAttribute(data.GetUsdInArgs()->GetFileName()));

@@ -24,6 +24,8 @@
 #ifndef USDRI_GENERATED_STATEMENTS_H
 #define USDRI_GENERATED_STATEMENTS_H
 
+/// \file usdRi/statements.h
+
 #include "pxr/usd/usdRi/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,6 +47,8 @@ class SdfAssetPath;
 // STATEMENTS                                                                 //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdRiStatements
+///
 /// Container namespace schema for all renderman statements
 ///
 class UsdRiStatements : public UsdSchemaBase
@@ -84,7 +88,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdRiStatements holding the prim adhering to this
+    /// Return a UsdRiStatements holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -196,7 +200,7 @@ public:
     // --------------------------------------------------------------------- //
     // GetRiAttributes 
     // --------------------------------------------------------------------- //
-    /// \brief Return all rib attributes on this prim, or under a specific 
+    /// Return all rib attributes on this prim, or under a specific 
     /// namespace (e.g.\ "user").
     ///
     /// As noted above, rib attributes can be either UsdAttribute or 

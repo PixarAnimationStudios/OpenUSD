@@ -38,7 +38,7 @@
 typedef boost::shared_ptr<class HdGLSLFXShader> HdGLSLFXShaderSharedPtr;
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
 
-/// XXX: DOCS!
+// XXX: DOCS!
 class HdGLSLFXShader : public HdSurfaceShader {
 public:
     HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx);

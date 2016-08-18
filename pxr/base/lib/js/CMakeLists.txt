@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE js)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(js
     LIBRARIES
         tf
@@ -14,6 +18,9 @@ pxr_shared_library(js
         api.h
         converter.h
         types.h
+
+    CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
 )
 
 if(UNIX)

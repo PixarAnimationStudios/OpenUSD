@@ -107,7 +107,7 @@ Arch_ValidateAssumptions()
      */
 #if !defined(ARCH_OS_WINDOWS)
     if (sizeof(size_t) != sizeof(unsigned long))
-	ARCH_ERROR("size_t and unsigned long are different sizes");
+	    ARCH_ERROR("size_t and unsigned long are different sizes");
 #endif
     /*
      * endian.h needs to know how big various types are for its

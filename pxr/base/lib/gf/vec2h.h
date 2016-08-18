@@ -28,6 +28,9 @@
 #ifndef GF_VEC2H_H
 #define GF_VEC2H_H
 
+/// \file gf/vec2h.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -45,21 +48,14 @@
 template <>
 struct GfIsGfVec<class GfVec2h> { static const bool value = true; };
 
-/*!
- * \file vec2h.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-/*!
- * \class GfVec2h vec2h.h "pxr/base/gf/vec2h.h"
- * \ingroup group_gf_LinearAlgebra
- * \brief Basic type for a vector of 2 half components.
- *
- * Represents a vector of 2 components of type \c half.
- * It is intended to be fast and simple.
- *
- */
-
+/// \class GfVec2h
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type for a vector of 2 half components.
+///
+/// Represents a vector of 2 components of type \c half.
+/// It is intended to be fast and simple.
+///
 class GfVec2h
 {
 public:
@@ -70,8 +66,8 @@ public:
     /// Default constructor does no initialization.
     GfVec2h() {}
 
-
-    // Copy constructor.  XXX: Remove this, use compiler-generated.
+    // Copy constructor.
+    // TODO Remove this, use compiler-generated.
     GfVec2h(const GfVec2h &other) {
         *this = other;
     }
@@ -86,7 +82,7 @@ public:
     GfVec2h(half s0, half s1) {
         Set(s0, s1);
     }
-    
+
     /// Construct with pointer to values.
     template <class Scl>
     explicit GfVec2h(Scl const *p) { Set(p); }
@@ -115,7 +111,7 @@ public:
         result[1] = 1;
         return result;
     }
-    
+
     /// Create a unit vector along the i-th axis, zero-based.  Return the zero
     /// vector if \p i is greater than or equal to 2.
     static GfVec2h Axis(size_t i) {
@@ -124,7 +120,7 @@ public:
             result[i] = 1;
         return result;
     }
-    
+
     /// Set all elements with passed arguments.
     GfVec2h &Set(half s0, half s1) {
         _data[0] = s0;
@@ -163,7 +159,7 @@ public:
         return !(*this == other);
     }
 
-    // XXX: Add inequality for other vec types...
+    // TODO Add inequality for other vec types...
     /// Equality comparison.
     GF_API
     bool operator==(class GfVec2d const &other) const;
@@ -203,25 +199,25 @@ public:
     GfVec2h &operator*=(double s) {
         _data[0] *= s;
         _data[1] *= s;
-	return *this;
+        return *this;
     }
     GfVec2h operator*(double s) const {
-	return GfVec2h(*this) *= s;
+        return GfVec2h(*this) *= s;
     }
     friend GfVec2h operator*(double s, GfVec2h const &v) {
         return v * s;
     }
 
         /// Division by scalar.
-    // XXX: should divide by the scalar type.
+    // TODO should divide by the scalar type.
     GfVec2h &operator/=(double s) {
-        // XXX: This should not multiply by 1/s, it should do the division.
+        // TODO This should not multiply by 1/s, it should do the division.
         // Doing the division is more numerically stable when s is close to
         // zero.
         return *this *= (1.0 / s);
     }
     GfVec2h operator/(double s) const {
-	return *this * (1.0 / s);
+        return *this * (1.0 / s);
     }
     
     /// See GfDot().
@@ -229,7 +225,7 @@ public:
         return _data[0] * v[0] + _data[1] * v[1];
     }
 
-    /// Returns the projection of \p this onto \p v. That is: 
+    /// Returns the projection of \p this onto \p v. That is:
     /// \code
     /// v * (*this * v)
     /// \endcode
@@ -237,12 +233,13 @@ public:
         return v * (*this * v);
     }
 
-    /// Returns the orthogonal complement of \p this->GetProjection(b). That is:
+    /// Returns the orthogonal complement of \p this->GetProjection(b).
+    /// That is:
     /// \code
     ///  *this - this->GetProjection(b)
     /// \endcode
     GfVec2h GetComplement(GfVec2h const &b) const {
-	return *this - this->GetProjection(b);
+        return *this - this->GetProjection(b);
     }
 
     /// Squared length.
@@ -252,7 +249,7 @@ public:
 
     /// Length
     half GetLength() const {
-        // XXX: should use GfSqrt.
+        // TODO should use GfSqrt.
         return sqrt(GetLengthSq());
     }
 
@@ -265,7 +262,7 @@ public:
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
     half Normalize(half eps = 0.001) {
-        // XXX: this seems suspect...  suggest dividing by length so long as
+        // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
         half length = GetLength();
         *this /= (length > eps) ? length : eps;
@@ -283,7 +280,7 @@ private:
     half _data[2];
 };
 
-/// Output a GfVec2h
+/// Output a GfVec2h.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfVec2h const &);
 
@@ -316,7 +313,6 @@ GfDot(GfVec2h const &v1, GfVec2h const &v2) {
 }
 
 
-
 /// Returns the geometric length of \c v.
 inline half
 GfGetLength(GfVec2h const &v)
@@ -334,8 +330,8 @@ GfNormalize(GfVec2h *v, half eps = 0.001)
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.
-/// If the length of this vector is smaller than \p eps, the vector divided
-/// by \p eps is returned.
+/// If the length of this vector is smaller than \p eps, the vector divided by
+/// \p eps is returned.
 inline GfVec2h
 GfGetNormalized(GfVec2h const &v, half eps = 0.001)
 {

@@ -24,10 +24,11 @@
 #ifndef USDRI_RMANUTILITIES_H
 #define USDRI_RMANUTILITIES_H
 
+/// \file usdRi/rmanUtilities.h
+/// Utilities for converting between USD encodings and Renderman encodings in
+/// cases where there is a difference.
 
-
-
-/// \file pxr/usd/usdRi/rmanUtilities.h
+#include "pxr/usd/usdRi/api.h"
 
 #include "pxr/usd/usdRi/api.h"
 

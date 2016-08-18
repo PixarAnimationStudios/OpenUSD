@@ -70,7 +70,7 @@ _CreateFaceSets(
         // continue here?
     }
 
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
 
     VtIntArray faceCounts, faceIndices;
     faceSet.GetFaceCounts(&faceCounts, currentTime);
@@ -87,7 +87,7 @@ _CreateFaceSets(
 
         faceSetAttrs.set("type", FnKat::StringAttribute("faceset"));
         faceSetAttrs.set("materialAssign", FnKat::StringAttribute(
-            PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
+            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
                 bindingTargets[faceSetIdx], data)));
 
         FnKat::IntBuilder facesBuilder;

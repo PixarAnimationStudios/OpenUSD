@@ -24,8 +24,7 @@
 #ifndef USDGEOM_XFORMOP_H
 #define USDGEOM_XFORMOP_H
 
-
-
+/// \file usdGeom/xformOp.h
 
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/attribute.h"
@@ -39,8 +38,6 @@
 #include <boost/variant.hpp>
 
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file xformOp.h
 
 /// \hideinitializer
 #define USDGEOM_XFORM_OP_TYPES \
@@ -60,9 +57,8 @@
     ((resetXformStack, "!resetXformStack!"))
 
 /// \anchor UsdGeomXformOpTypes
-/// \brief <b>UsdGeomXformOpTypes</b> provides TfToken's for use in conjunction
-/// with UsdGeomXformable::Add  XformOp() and UsdGeomXformOp::GetOpType(), to
-/// establish op type.
+/// Provides TfToken's for use in conjunction with UsdGeomXformable::Add
+/// XformOp() and UsdGeomXformOp::GetOpType(), to establish op type.
 ///
 /// The component operation names and their meanings are:
 /// \li <b>translate</b> - XYZ translation
@@ -86,7 +82,8 @@
 TF_DECLARE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_API, USDGEOM_XFORM_OP_TYPES);
 
 /// \class UsdGeomXformOp
-/// \brief Schema wrapper for UsdAttribute for authoring and computing
+///
+/// Schema wrapper for UsdAttribute for authoring and computing
 /// transformation operations, as consumed by UsdGeomXformable schema.
 /// 
 /// The semantics of an op are determined primarily by its name, which allows
@@ -106,6 +103,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_API, USDGEOM_XFORM_OP_TYPE
 /// vec[1] = Y, vec[2] = Z .  The \em A, \em B, \em C in the op name dictate
 /// the order in which their corresponding elements are consumed by the 
 /// rotation, not how they are laid out.
+///
 class UsdGeomXformOp
 {
 public:
@@ -229,7 +227,7 @@ public:
         return _isInverseOp;
     }
 
-    /// \brief Returns the opName as it appears in the xformOpOrder attribute.
+    /// Returns the opName as it appears in the xformOpOrder attribute.
     /// 
     /// This will begin with "!invert!:xformOp:" if it is an inverse xform 
     /// operation. If it is not an inverse xformOp, it will begin with 'xformOp:'.
@@ -329,7 +327,7 @@ public:
         return boost::apply_visitor(_GetAttr(), _attr); 
     }
     
-    /// \brief Return true if the wrapped UsdAttribute::IsDefined(), and in
+    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
     /// addition the attribute is identified as a XformOp.
     bool IsDefined() const { return IsXformOp(GetAttr()); }
 

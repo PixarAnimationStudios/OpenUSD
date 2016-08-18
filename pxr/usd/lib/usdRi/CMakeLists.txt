@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdRi)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usdRi
     LIBRARIES
         tf
@@ -30,6 +34,7 @@ pxr_shared_library(usdRi
         api.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         typeUtils
 

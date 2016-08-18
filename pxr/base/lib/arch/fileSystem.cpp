@@ -26,7 +26,18 @@
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/arch/vsnprintf.h"
+
+#include <atomic>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <memory>
+#include <sstream>
+
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(ARCH_OS_WINDOWS)
@@ -34,6 +45,8 @@
 #include <stdio.h>
 #include <process.h>
 #else
+#include <sys/mman.h>
+#include <alloca.h>
 #include <sys/file.h>
 #include <unistd.h>
 #endif
@@ -46,11 +59,20 @@
 #include <sstream>
 #include <mutex>
 
+#if defined (ARCH_OS_WINDOWS)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <io.h>
+#endif // ARCH_OS_WINDOWS
+
 using std::string;
 using std::set;
 
-// Currently this is only used by platforms that don't have pread.
-static std::mutex _fileSystemMutex;
+#if defined (ARCH_OS_WINDOWS)
+static inline HANDLE _FileToWinHANDLE(FILE *file) {
+    return reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
+}
+#endif // ARCH_OS_WINDOWS
 
 FILE* ArchOpenFile(char const* fileName, char const* mode)
 {
@@ -162,11 +184,43 @@ ArchGetStatusChangeTime(const struct stat& st)
 #endif
 }
 
-int
+namespace {
+    struct _Fcloser {
+        inline void operator()(FILE *f) const { if (f) { fclose(f); } }
+    };
+} // anon
+
+using _UniqueFILE = std::unique_ptr<FILE, _Fcloser>;
+
+int64_t
+ArchGetFileLength(FILE *file)
+{
+    if (!file)
+        return -1;
+#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
+    struct stat buf;
+    return fstat(fileno(file), &buf) < 0 ? -1 :
+        static_cast<int64_t>(buf.st_size);
+#elif defined (ARCH_OS_WINDOWS)
+    LARGE_INTEGER sz;
+    return GetFileSizeEx(_FileToWinHANDLE(file), &sz) ?
+        static_cast<int64_t>(sz.QuadPart) : -1;
+#else
+#error Unknown system architecture
+#endif
+}
+
+int64_t
 ArchGetFileLength(const char* fileName)
 {
+#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
     struct stat buf;
-    return stat(fileName, &buf) < 0 ? -1 : int(buf.st_size);
+    return stat(fileName, &buf) < 0 ? -1 : static_cast<int64_t>(buf.st_size);
+#elif defined (ARCH_OS_WINDOWS)
+    return ArchGetFileLength(_UniqueFILE(ArchOpenFile(fileName, "rb")).get());
+#else
+#error Unknown system architecture
+#endif
 }
 
 string
@@ -201,10 +255,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
                 const std::string& prefix, std::string* pathname)
 {
 #if defined(ARCH_OS_WINDOWS)
-	// PATH_MAX is defined in base/lib/arch/systemInfo.cpp but not in
-	// base/lib/arch/defines.h, so we have to use the Windows define.
-
-	char filename[MAX_PATH];
+	char filename[ARCH_PATH_MAX];
 	UINT ret = ::GetTempFileName(tmpdir.c_str(), prefix.c_str(), 0, filename);
 	if (ret == 0)
 	{
@@ -234,11 +285,9 @@ ArchMakeTmpFile(const std::string& tmpdir,
 		*pathname = filename;
 	}
 
-	// XXX: We have to do something about this API.  It returns a file
-	// descriptor, that's not ideal.  At least some clients don't care
-	// about it being open.
 	int fd = 0;
-	return _sopen_s(&fd, filename, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	_sopen_s(&fd, filename, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    return fd;
 #else
     // Format the template.
     std::string sTemplate =
@@ -386,49 +435,182 @@ ArchGetAutomountDirectories()
     return result;
 }
 
-_off_t ArchPositionRead(int fd, void *buf, size_t count, off_t offset)
+
+void
+Arch_Unmapper::operator()(char const *mapStart) const
 {
+    void *ptr = static_cast<void *>(const_cast<char *>(mapStart));
+    if (!ptr)
+        return;
 #if defined(ARCH_OS_WINDOWS)
-	std::lock_guard<std::mutex> lock(_fileSystemMutex);
-    off_t current_offset;
-    off_t rc;
-
-    current_offset = _lseek(fd, 0, SEEK_CUR);
-
-	if (_lseek(fd, offset, SEEK_SET) != offset)
-	{
-		return -1;
-	}
-	
-    rc = _read(fd, buf, static_cast<unsigned int>(count));
-
-    if (current_offset != _lseek(fd, current_offset, SEEK_SET))
-        return -1;
-    return rc;
-#else
-	return pread(fd, buf, count, offset);
+    UnmapViewOfFile(ptr);
+#else // assume POSIX
+    munmap(ptr, _length);
 #endif
 }
 
-_off_t ArchPositionWrite(int fd, const void *buf, size_t count, off_t offset)
+void
+Arch_Unmapper::operator()(char *mapStart) const
 {
+    (*this)(static_cast<char const *>(mapStart));
+}
+
+template <class Mapping>
+static inline Mapping
+Arch_MapFileImpl(FILE *file)
+{
+    using PtrType = typename Mapping::pointer;
+    constexpr bool isConst =
+        std::is_const<typename Mapping::element_type>::value;
+
+    auto length = ArchGetFileLength(file);
+    if (length < 0)
+        return Mapping();
+
 #if defined(ARCH_OS_WINDOWS)
-	std::lock_guard<std::mutex> lock(_fileSystemMutex);
-    off_t current_offset;
-    off_t rc;
+    uint64_t unsignedLength = length;
+    DWORD maxSizeHigh = static_cast<DWORD>(unsignedLength >> 32);
+    DWORD maxSizeLow = static_cast<DWORD>(unsignedLength);
+    HANDLE hFileMap = CreateFileMapping(
+        _FileToWinHANDLE(file), NULL,
+        PAGE_READONLY /* allow read-only or copy-on-write */,
+        maxSizeHigh, maxSizeLow, NULL);
+    if (hFileMap == NULL)
+        return Mapping();
+    auto ptr = static_cast<PtrType>(
+        MapViewOfFile(hFileMap, isConst ? FILE_MAP_READ : FILE_MAP_COPY,
+            /*offsetHigh=*/ 0, /*offsetLow=*/0, unsignedLength));
+    // Close the mapping handle, and return the view pointer.
+    CloseHandle(hFileMap);
+    return Mapping(ptr, Arch_Unmapper());
+#else // Assume POSIX
+    return Mapping(
+        static_cast<PtrType>(
+            mmap(nullptr, length, isConst ? PROT_READ : PROT_READ | PROT_WRITE,
+                MAP_PRIVATE, fileno(file), 0)), Arch_Unmapper(length));
+#endif
+}
 
-    current_offset = _lseek(fd, 0, SEEK_CUR);
+ArchConstFileMapping
+ArchMapFileReadOnly(FILE *file)
+{
+    return Arch_MapFileImpl<ArchConstFileMapping>(file);
+}
 
-	if (_lseek(fd, offset, SEEK_SET) != offset)
-	{
-		return -1;
-	}
-    rc = _write(fd, buf, static_cast<unsigned int>(count));
+ArchMutableFileMapping
+ArchMapFileReadWrite(FILE *file)
+{
+    return Arch_MapFileImpl<ArchMutableFileMapping>(file);
+}
 
-    if (current_offset != _lseek(fd, current_offset, SEEK_SET))
+int64_t
+ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
+{
+    if (count == 0)
+        return 0;
+
+#if defined(ARCH_OS_WINDOWS)
+    HANDLE hFile = _FileToWinHANDLE(file);
+
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(overlapped));
+
+    uint64_t uoffset = offset;
+    overlapped.OffsetHigh = static_cast<DWORD>(uoffset >> 32);
+    overlapped.Offset = static_cast<DWORD>(uoffset);
+
+    DWORD numRead = 0;
+    if (ReadFile(hFile, buffer, static_cast<DWORD>(count),
+        &numRead, &overlapped)) {
+        return numRead;
+    }
+    return -1;
+#else // assume POSIX
+    // Read and check if all got read (most common case).
+    int fd = fileno(file);
+    // Convert to signed so we can compare the result of pread with count
+    // without the compiler complaining.  This conversion is implementation
+    // defined if count is larger than what's representable by int64_t, and
+    // POSIX pread also specifies that this case is implementation defined.  We
+    // follow suit.
+    int64_t signedCount = static_cast<int64_t>(count);
+    int64_t nread = pread(fd, buffer, signedCount, offset);
+    if (ARCH_LIKELY(nread == signedCount or nread == 0))
+        return nread;
+
+    // Track a total and retry until we read everything or hit EOF or an error.
+    int64_t total = std::max<int64_t>(nread, 0);
+    while (nread != -1 || (nread == -1 && errno == EINTR)) {
+        // Update bookkeeping and retry.
+        if (nread > 0) {
+            total += nread;
+            signedCount -= nread;
+            offset += nread;
+            buffer = static_cast<char *>(buffer) + nread;
+        }
+        nread = pread(fd, buffer, signedCount, offset);
+        if (ARCH_LIKELY(nread == signedCount or nread == 0))
+            return total + nread;
+    }
+
+    // Error case.
+    return -1;
+#endif
+}
+
+int64_t
+ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
+{
+    if (offset < 0)
         return -1;
-    return rc;
-#else
-	return pwrite(fd, buf, count, offset);
+
+#if defined(ARCH_OS_WINDOWS)
+    HANDLE hFile = _FileToWinHANDLE(file);
+
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(overlapped));
+
+    uint64_t uoffset = offset;
+    overlapped.OffsetHigh = static_cast<DWORD>(uoffset >> 32);
+    overlapped.Offset = static_cast<DWORD>(uoffset);
+
+    DWORD numWritten = 0;
+    if (WriteFile(hFile, bytes, static_cast<DWORD>(count),
+        &numWritten, &overlapped)) {
+        return numWritten;
+    }
+    return -1;
+#else // assume POSIX
+    // It's claimed that correct, modern POSIX will never return 0 for (p)write
+    // unless count is zero.  It will either be the case that some bytes were
+    // written, or we get an error return.
+
+    // Write and check if all got written (most common case).
+    int fd = fileno(file);
+    // Convert to signed so we can compare the result of pwrite with count
+    // without the compiler complaining.  This conversion is implementation
+    // defined if count is larger than what's representable by int64_t, and
+    // POSIX pwrite also specifies that this case is implementation defined.  We
+    // follow suit.
+    int64_t signedCount = static_cast<int64_t>(count);
+    int64_t nwritten = pwrite(fd, bytes, signedCount, offset);
+    if (ARCH_LIKELY(nwritten == signedCount))
+        return nwritten;
+
+    // Track a total and retry until we write everything or hit an error.
+    int64_t total = std::max<int64_t>(nwritten, 0);
+    while (nwritten != -1) {
+        // Update bookkeeping and retry.
+        total += nwritten;
+        signedCount -= nwritten;
+        offset += nwritten;
+        bytes = static_cast<char const *>(bytes) + nwritten;
+        nwritten = pwrite(fd, bytes, signedCount, offset);
+        if (ARCH_LIKELY(nwritten == signedCount))
+            return total + nwritten;
+    }
+
+    // Error case.
+    return -1;
 #endif
 }

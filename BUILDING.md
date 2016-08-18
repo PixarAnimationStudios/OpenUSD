@@ -2,11 +2,11 @@ Advanced Build Configuration
 ============================
 
 ## Table of Contents
-- [Optional Components](#Optional-Components)
-- [Third Party Plugins](#Plugins)
-- [Other Build Options](#Other-Build-Options)
-- [USD Developer Options](#USD-Developer-Options)
-- [Optimization Options](#Optimization-Options)
+- [Optional Components](#optional-components)
+- [Third Party Plugins](#third-party-plugins)
+- [Other Build Options](#other-build-options)
+- [USD Developer Options](#usd-developer-options)
+- [Optimization Options](#optimization-options)
 
 ## Optional Components
 
@@ -19,7 +19,7 @@ removes the need for their dependencies when building USD.
 This component contains Hydra, a high-performance graphics rendering engine.
 
 Disable this component by specifying the cmake flag ```PXR_BUILD_IMAGING=FALSE``` when 
-invoking cmake. Disabling this component will also disable the [USD Imaging](#USD-Imaging)
+invoking cmake. Disabling this component will also disable the [USD Imaging](#usd-imaging)
 component.
 
 ##### USD Imaging
@@ -28,10 +28,10 @@ This component provides the USD imaging delegates for Hydra, as well as
 usdview, a standalone native viewer for USD files.
 
 Disable this component by specifying the cmake flag ```PXR_BUILD_USD_IMAGING=FALSE``` when
-invoking cmake. Enabling this component will enable the [Imaging](#Imaging)
+invoking cmake. Enabling this component will enable the [Imaging](#imaging)
 component.
 
-## Plugins
+## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages,
 including Maya, Katana, and Alembic. There is additional documentation on each plugin 

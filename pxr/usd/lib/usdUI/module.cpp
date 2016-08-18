@@ -21,23 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDKATANA_READLOOK_H
-#define PXRUSDKATANA_READLOOK_H
+#include "pxr/base/tf/pyModule.h"
 
-class PxrUsdKatanaAttrMap;
-class PxrUsdKatanaUsdInPrivateData;
-class UsdShadeLook;
-
-/// \brief read \p Look into \p attrs.  If \p flatten is specified, we treat it
-/// as if it is a "standalone" material (i.e. no "material" inheritance in the
-/// katana sense).
-void
-PxrUsdKatanaReadLook(
-        const UsdShadeLook& Look,
-        bool flatten,
-        const PxrUsdKatanaUsdInPrivateData& data,
-        PxrUsdKatanaAttrMap& attrs,
-        const std::string& looksGroupLocation = "");
-
-#endif // PXRUSDKATANA_READLOOK_H
-
+TF_WRAP_MODULE
+{
+    TF_WRAP(UsdUINodeGraphNodeAPI); 
+    TF_WRAP(UsdUITokens);
+}

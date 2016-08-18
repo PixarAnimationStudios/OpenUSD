@@ -21,7 +21,7 @@ Getting Help
 ------------
 
 Need help understanding certain concepts in USD? See
-[Getting Help with USD](http://openusd.org/docs/Getting-Help-With-USD.html).
+[Getting Help with USD](http://openusd.org/docs/Getting-Help-with-USD.html).
 
 If you are experiencing undocumented problems with the software, 
 please read our [issue guidelines](ISSUES.md) and file a bug via the

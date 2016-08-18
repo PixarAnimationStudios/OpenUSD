@@ -30,6 +30,8 @@
 class HdSubdivTags;
 class PxOsdSubdivTags;
 
+/// \class UsdImagingMeshAdapter
+///
 /// Delegate support for UsdGeomMesh.
 ///
 class UsdImagingMeshAdapter : public UsdImagingGprimAdapter {
@@ -93,6 +95,5 @@ private:
     void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, UsdTimeCode time);
     void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, UsdTimeCode time);
 };
-
 
 #endif // USDIMAGING_MESH_ADAPTER_H

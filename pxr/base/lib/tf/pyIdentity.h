@@ -43,7 +43,6 @@
 
 #include "pxr/base/tf/hashmap.h"
 
-
 // Specializations for boost::python::pointee and get_pointer for TfRefPtr and
 // TfWeakPtr.
 namespace boost { namespace python {
@@ -61,7 +60,6 @@ struct pointee< TfRefPtr<T> > {
 };
 
 }}
-
 
 struct Tf_PyIdentityHelper
 {
@@ -262,9 +260,5 @@ void Tf_PyAddPythonOwnership(Ptr const &t, const void *uniqueId, PyObject *obj)
 {
     Tf_PyOwnershipHelper<Ptr>::Add(t, uniqueId, obj);
 }
-
-
-
-
 
 #endif // TF_PYIDENTITY_H

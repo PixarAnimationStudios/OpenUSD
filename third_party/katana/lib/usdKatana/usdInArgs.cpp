@@ -22,6 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "usdKatana/usdInArgs.h"
+#ifdef GetCurrentTime
+#undef GetCurrentTime
+#endif
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/boundable.h"

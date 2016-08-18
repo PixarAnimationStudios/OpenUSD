@@ -60,7 +60,9 @@ find_library(M_LIB m)
 find_package(Jinja2)
 
 if (NOT PXR_MALLOC_LIBRARY)
-    message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified") 
+    if (NOT WIN32)
+        message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified")
+    endif()
 endif()
 
 # Developer Options Package Requirements
@@ -95,13 +97,17 @@ if (PXR_BUILD_IMAGING)
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     find_package(PTex REQUIRED)
-    # --X11
-    find_package(X11)
+    if(UNIX)
+        # --X11
+        find_package(X11)
+    endif()
     # --Qt
     find_package(Qt4)
     if (QT4_FOUND)
-        find_package(PySideTools REQUIRED)
+        find_package(PySide REQUIRED)
     endif()
+    # --Zlib
+    find_package(ZLIB REQUIRED)
 endif()
 
 # Third Party Plugin Package Requirements

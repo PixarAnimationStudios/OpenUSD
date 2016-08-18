@@ -24,6 +24,8 @@
 #ifndef TF_FLYWEIGHT_H
 #define TF_FLYWEIGHT_H
 
+/// \file tf/flyweight.h
+/// An implementation of the "flyweight pattern".
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -119,7 +121,6 @@ struct Tf_FlyweightData : public Tf_FlyweightDataBase {
 TF_API Tf_FlyweightDataBase *
 Tf_TrySetFlyweightData(std::string const &poolName, Tf_FlyweightDataBase *data);
 
-///
 /// \class TfFlyweight
 ///
 /// An implementation of the "flyweight pattern":
@@ -127,32 +128,31 @@ Tf_TrySetFlyweightData(std::string const &poolName, Tf_FlyweightDataBase *data);
 ///
 /// This class maintains object instances in a shared pool so that two or more
 /// objects that compare equal share the same instance in the pool.  This can
-/// help reduce memory usage if there are many equivalent object instances in a
-/// program.  There is overhead associated with these savings.  The primary
-/// overhead is in constructing a flyweight object.  This requires searching the
-/// pool to determine if there exists an equivalent object, and possibly
+/// help reduce memory usage if there are many equivalent object instances in
+/// a program.  There is overhead associated with these savings.  The primary
+/// overhead is in constructing a flyweight object.  This requires searching
+/// the pool to determine if there exists an equivalent object, and possibly
 /// inserting one if there is not.  Minor overhead exists in accessing a
 /// flyweight object.  This incurs an extra indirection.
 ///
-/// TfFlyweight objects are thread-safe assuming the held
-/// value type provides the basic thread safety guarantee (see below).  Thread
-/// safety at the TfFlyweight level is accomplished by guarding the global
-/// object pool with a mutex lock.  The lock is only taken when constructing and
-/// assigning TfFlyweights from value types.  The lock is not taken for
-/// constructing and assigning TfFlyweights with other TfFlyweights.  Note that
-/// the common case of default construction is special-cased not to require
-/// locking (except on first construction).
+/// TfFlyweight objects are thread-safe assuming the held value type provides
+/// the basic thread safety guarantee (see below).  Thread safety at the
+/// TfFlyweight level is accomplished by guarding the global object pool with
+/// a mutex lock.  The lock is only taken when constructing and assigning
+/// TfFlyweights from value types.  The lock is not taken for constructing and
+/// assigning TfFlyweights with other TfFlyweights.  Note that the common case
+/// of default construction is special-cased not to require locking (except on
+/// first construction).
 ///
 /// To use TfFlyweight with some value type concurrently in different threads,
 /// that value type must support basic thread safety.  Specifically, it must
 /// safely allow multiple concurrent const accesses, but can assume that
-/// non-const accesses are serialized by another party.  The basic rule to keep
-/// in mind is that if there are any 'mutable' member variables in \e type, then
-/// those members are potentially mutable shared state in const contexts.
-/// Modifications of those member variables inside const methods must be made
-/// thread-safe by mutual exclusion or other means.  Modifying those variables
-/// in non-const methods need not be guarded.
-///
+/// non-const accesses are serialized by another party.  The basic rule to
+/// keep in mind is that if there are any 'mutable' member variables in \e
+/// type, then those members are potentially mutable shared state in const
+/// contexts. Modifications of those member variables inside const methods
+/// must be made thread-safe by mutual exclusion or other means.  Modifying
+/// those variables in non-const methods need not be guarded.
 template <
       class Type
     , class HashFn
@@ -456,7 +456,6 @@ private:
 
     _ElementPairPtr _ptr;
 };
-
 
 /// A functor that gives a total order for flyweight objects.  Note that the
 /// specific order that the functor produces is arbitrary, and may differ from

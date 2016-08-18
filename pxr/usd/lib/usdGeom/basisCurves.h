@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_BASISCURVES_H
 #define USDGEOM_GENERATED_BASISCURVES_H
 
+/// \file usdGeom/basisCurves.h
+
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,6 +47,8 @@ class SdfAssetPath;
 // BASISCURVES                                                                //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdGeomBasisCurves
+///
 /// Basis curves are analagous to RiCurves.  A basis matrix and vstep 
 /// are used to uniformly interpolate the curves.  These curves are often used 
 /// to render dense aggregate geometry like hair.
@@ -137,7 +141,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomBasisCurves holding the prim adhering to this
+    /// Return a UsdGeomBasisCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -150,7 +154,7 @@ public:
     static UsdGeomBasisCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -274,8 +278,10 @@ public:
     /// \{
 
     typedef std::vector< std::pair<TfToken, size_t> > ComputeInterpolationInfo;
-    /// \brief Computes interpolation token for \p n.  
-    /// if this returns an empty token and \p info was non-NULL, it'll contain
+
+    /// Computes interpolation token for \p n.
+    ///
+    /// If this returns an empty token and \p info was non-NULL, it'll contain
     /// the expected value for each token.
     ///
     /// The topology is determined using \p timeCode.#
@@ -284,21 +290,21 @@ public:
             const UsdTimeCode& timeCode,
             ComputeInterpolationInfo* info=NULL) const;
 
-    /// \brief Computes the expected size for data with "uniform" interpolation
+    /// Computes the expected size for data with "uniform" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
     USDGEOM_API
     size_t ComputeUniformDataSize(const UsdTimeCode& timeCode) const;
 
-    /// \brief Computes the expected size for data with "varying" interpolation
+    /// Computes the expected size for data with "varying" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
     USDGEOM_API
     size_t ComputeVaryingDataSize(const UsdTimeCode& timeCode) const;
 
-    /// \brief Computes the expected size for data with "vertex" interpolation
+    /// Computes the expected size for data with "vertex" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize

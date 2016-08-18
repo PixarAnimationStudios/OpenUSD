@@ -24,6 +24,8 @@
 #ifndef USD_GENERATED_MODELAPI_H
 #define USD_GENERATED_MODELAPI_H
 
+/// \file usd/modelAPI.h
+
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +46,8 @@ class SdfAssetPath;
 // MODELAPI                                                                   //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdModelAPI
+///
 /// UsdModelAPI is an API schema that provides an interface to a prim's
 /// model qualities, if it does, in fact, represent the root prim of a model.
 /// 
@@ -99,7 +103,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdModelAPI holding the prim adhering to this
+    /// Return a UsdModelAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -286,7 +290,8 @@ protected:
 };
 
 /// \anchor UsdModelAPIAssetInfoKeys
-/// \brief <b>UsdModelAPIAssetInfoKeys</b> provides tokens for the various core
+///
+/// <b>UsdModelAPIAssetInfoKeys</b> provides tokens for the various core
 /// entries into the assetInfo dictionary.
 ///
 /// The keys provided here are:

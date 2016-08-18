@@ -26,19 +26,61 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/base/work/loops.h"
 
 Hd_VertexAdjacency::Hd_VertexAdjacency()
     : _stride(0)
 {
 }
 
+template <typename Vec3Type>
+class _SmoothNormalsWorker
+{
+public:
+    _SmoothNormalsWorker(Vec3Type const * pointsPtr,
+                         std::vector<int> const &entry,
+                         int stride,
+                         VtArray<Vec3Type> *normals)
+    : _pointsPtr(pointsPtr)
+    , _entry(entry)
+    , _stride(stride)
+    , _normals(normals)
+    {
+    }
+
+    void Compute(size_t begin, size_t end)
+    {
+        for(size_t i = begin; i < end; ++i) {
+            int const * e = &_entry[i * _stride];
+            int valence = *e++;
+            Vec3Type normal(0);
+            Vec3Type const & curr = _pointsPtr[i];
+            for (int j=0; j<valence; ++j) {
+                Vec3Type const & prev = _pointsPtr[*e++];
+                Vec3Type const & next = _pointsPtr[*e++];
+                // All meshes have all been converted to rightHanded
+                normal += GfCross(next-curr, prev-curr);
+            }
+            if (true) { // Could defer normalization to shader code
+                normal.Normalize();
+            }
+            (*_normals)[i] = normal;
+        }
+    }
+
+private:
+    Vec3Type const * _pointsPtr;
+    std::vector<int> const &_entry;
+    int _stride;
+    VtArray<Vec3Type> *_normals;
+};
+
 /// Returns an array of the same size and type as the source points
 /// containing normal vectors computed by averaging the cross products
 /// of incident face edges.
 template <typename Vec3Type>
 VtArray<Vec3Type>
-_ComputeSmoothNormals(Hd_VertexAdjacency const *adjacency,
-                      int numPoints, Vec3Type const * pointsPtr,
+_ComputeSmoothNormals(int numPoints, Vec3Type const * pointsPtr,
                       std::vector<int> const &entry, int stride)
 {
     // to be safe.
@@ -48,22 +90,15 @@ _ComputeSmoothNormals(Hd_VertexAdjacency const *adjacency,
                          (int)entry.size()/stride);
 
     VtArray<Vec3Type> normals(numPoints);
-    for (int i=0; i<numPoints; ++i) {
-        int const * e = &entry[i * stride];
-        int valence = *e++;
-        Vec3Type normal(0);
-        Vec3Type const & curr = pointsPtr[i];
-        for (int j=0; j<valence; ++j) {
-            Vec3Type const & prev = pointsPtr[*e++];
-            Vec3Type const & next = pointsPtr[*e++];
-            // All meshes have all been converted to rightHanded
-            normal += GfCross(next-curr, prev-curr);
-        }
-        if (true) { // Could defer normalization to shader code
-            normal.Normalize();
-        }
-        normals[i] = normal;
-    }
+
+    _SmoothNormalsWorker<Vec3Type> workerState
+                                           (pointsPtr, entry, stride, &normals);
+
+    WorkParallelForN(numPoints,
+                     boost::bind(&_SmoothNormalsWorker<Vec3Type>::Compute,
+                                 workerState, _1, _2));
+
+
 
     return normals;
 }
@@ -72,7 +107,7 @@ VtArray<GfVec3f>
 Hd_VertexAdjacency::ComputeSmoothNormals(int numPoints,
                                          GfVec3f const * pointsPtr) const
 {
-    return _ComputeSmoothNormals(this, numPoints, pointsPtr,
+    return _ComputeSmoothNormals(numPoints, pointsPtr,
                                  _entry, _stride);
 }
 
@@ -80,7 +115,7 @@ VtArray<GfVec3d>
 Hd_VertexAdjacency::ComputeSmoothNormals(int numPoints,
                                          GfVec3d const * pointsPtr) const
 {
-    return _ComputeSmoothNormals(this, numPoints, pointsPtr,
+    return _ComputeSmoothNormals(numPoints, pointsPtr,
                                  _entry, _stride);
 }
 

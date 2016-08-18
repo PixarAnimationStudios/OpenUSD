@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE ar)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(ar
     LIBRARIES
         arch
@@ -36,6 +40,7 @@ pxr_shared_library(ar
         resolverScopedCache.cpp
         debugCodes.cpp
         defaultResolver.cpp
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

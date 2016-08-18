@@ -36,7 +36,8 @@
 #include <vector>
 
 /// \class UsdAttributeQuery
-/// \brief Object for efficiently making repeated queries for attribute values.
+///
+/// Object for efficiently making repeated queries for attribute values.
 ///
 /// Retrieving an attribute's value at a particular time requires determining
 /// the source of strongest opinion for that value.  This source does not vary 
@@ -77,6 +78,8 @@ public:
     /// \name Query information
     // --------------------------------------------------------------------- //
 
+    /// @{
+
     /// Return the attribute associated with this query.
 	USD_API const UsdAttribute& GetAttribute() const;
 
@@ -98,9 +101,13 @@ public:
     }
 #endif // doxygen
 
+    /// @}
+
     // --------------------------------------------------------------------- //
     /// \name Value & Time-Sample Accessors
     // --------------------------------------------------------------------- //
+
+    /// @{
 
     /// Perform value resolution to fetch the value of the attribute associated
     /// with this query at the requested UsdTimeCode \p time.
@@ -115,14 +122,14 @@ public:
     /// Type-erased access, often not as efficient as typed access.
 	USD_API bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
     
-    /// \brief Populates a vector with authored sample times. 
+    /// Populates a vector with authored sample times. 
     /// Returns false only on error. 
     //
     /// \sa UsdAttribute::GetTimeSamples
     /// \sa UsdAttributeQuery::GetTimeSamplesInInterval
 	USD_API bool GetTimeSamples(std::vector<double>* times) const;
 
-    /// \brief Populates a vector with authored sample times in \p interval.
+    /// Populates a vector with authored sample times in \p interval.
     /// The interval may have any combination of open/infinite and 
     /// closed/finite endpoints; it may not have open/finite endpoints, however,
     /// this restriction may be lifted in the future.
@@ -132,12 +139,12 @@ public:
 	USD_API bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
 
-    /// \brief Returns the number of time samples that have been authored.
+    /// Returns the number of time samples that have been authored.
     /// 
     /// \sa UsdAttribute::GetNumTimeSamples
 	USD_API size_t GetNumTimeSamples() const;
 
-    /// \brief Populate \a lower and \a upper with the next greater and lesser
+    /// Populate \a lower and \a upper with the next greater and lesser
     /// value relative to the \a desiredTime.
     ///
     /// \sa UsdAttribute::GetBracketingTimeSamples
@@ -170,6 +177,8 @@ public:
     ///
     /// \sa UsdAttribute::ValueMightBeTimeVarying
 	USD_API bool ValueMightBeTimeVarying() const;
+
+    /// @}
 
 private:
     void _Initialize(const UsdAttribute& attr);

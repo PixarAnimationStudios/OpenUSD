@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdx)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(hdx
     LIBRARIES
         plug
@@ -40,6 +44,9 @@ pxr_shared_library(hdx
 
     PRIVATE_CLASSES
         unitTestDelegate
+
+    CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
 
     RESOURCE_FILES
         plugInfo.json

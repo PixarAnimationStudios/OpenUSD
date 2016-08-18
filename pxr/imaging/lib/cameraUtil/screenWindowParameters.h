@@ -27,8 +27,11 @@
 #include "pxr/imaging/cameraUtil/api.h"
 #include "pxr/base/gf/camera.h"
 
+/// \class CameraUtilScreenWindowParameters
+///
 /// Given a camera object, compute parameters suitable for setting up
 /// RenderMan.
+///
 class CameraUtilScreenWindowParameters
 {
 public:

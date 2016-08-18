@@ -24,6 +24,9 @@
 #ifndef USDKATANA_GENERATED_LOOKAPI_H
 #define USDKATANA_GENERATED_LOOKAPI_H
 
+/// \file usdKatana/lookAPI.h
+
+#include "usdKatana/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +47,8 @@ class SdfAssetPath;
 // LOOKAPI                                                                    //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdKatanaLookAPI
+///
 /// Katana-specific extensions of UsdShadeLook.
 ///
 class UsdKatanaLookAPI : public UsdSchemaBase
@@ -73,15 +78,17 @@ public:
     }
 
     /// Destructor.
+    USDKATANA_API
     virtual ~UsdKatanaLookAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDKATANA_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdKatanaLookAPI holding the prim adhering to this
+    /// Return a UsdKatanaLookAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -90,10 +97,11 @@ public:
     /// UsdKatanaLookAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDKATANA_API
     static UsdKatanaLookAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -115,6 +123,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDKATANA_API
     static UsdKatanaLookAPI
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -126,6 +135,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDKATANA_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -165,6 +175,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->String
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
+    USDKATANA_API
     UsdAttribute GetPrimNameAttr() const;
 
     /// See GetPrimNameAttr(), and also 
@@ -172,6 +183,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDKATANA_API
     UsdAttribute CreatePrimNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

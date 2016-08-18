@@ -24,6 +24,8 @@
 #ifndef USDHYDRA_GENERATED_PRIMVAR_H
 #define USDHYDRA_GENERATED_PRIMVAR_H
 
+/// \file usdHydra/primvar.h
+
 #include "pxr/usd/usdHydra/api.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,6 +47,8 @@ class SdfAssetPath;
 // HYDRAPRIMVAR                                                               //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdHydraPrimvar
+///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdHydraTokens.
 /// So to set an attribute to the value "rightHanded", use UsdHydraTokens->rightHanded
@@ -87,7 +91,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdHydraPrimvar holding the prim adhering to this
+    /// Return a UsdHydraPrimvar holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

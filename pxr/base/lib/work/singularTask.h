@@ -24,9 +24,7 @@
 #ifndef WORK_SINGULARTASK_H
 #define WORK_SINGULARTASK_H
 
-
-///
-///\file work/singularTask.h
+/// \file work/singularTask.h
 
 #include <atomic>
 #include <functional>

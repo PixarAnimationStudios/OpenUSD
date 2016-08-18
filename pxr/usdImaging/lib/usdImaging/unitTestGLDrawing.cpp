@@ -35,7 +35,6 @@
 #include <QtGui/QMouseEvent>
 #include <QtOpenGL/QGLWidget>
 
-#include <mutex>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -271,32 +270,6 @@ UsdImaging_UnitTestGLDrawing::_Redraw() const
     _widget->update();
 }
 
-// copied from testSdGetObjectAtPath.cpp
-static std::string
-_FindDataFile(const std::string& file)
-{
-    static std::once_flag importOnce;
-    std::call_once(importOnce, [](){
-        const std::string importFindDataFile = "from Mentor.Runtime import *";
-        if (TfPyRunSimpleString(importFindDataFile) != 0) {
-            TF_FATAL_ERROR("ERROR: Could not import FindDataFile");
-        }
-    });
-
-    const std::string findDataFile =
-        TfStringPrintf("FindDataFile(\'%s\')", file.c_str());
-
-    using namespace boost::python;
-    const object resultObj(TfPyRunString(findDataFile, Py_eval_input));
-    const extract<std::string> dataFileObj(resultObj);
-
-    if (not dataFileObj.check()) {
-        TF_FATAL_ERROR("ERROR: Could not extract result of FindDataFile");
-        return std::string();
-    }
-    return dataFileObj();
-}
-
 struct UsdImaging_UnitTestGLDrawing::_Args {
     _Args() : offscreen(false) { }
 
@@ -500,7 +473,7 @@ UsdImaging_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     }
 
     if (not args.unresolvedStageFilePath.empty()) {
-        _stageFilePath = _FindDataFile(args.unresolvedStageFilePath);
+        _stageFilePath = args.unresolvedStageFilePath;
     }
 
     _widget = new UsdImaging_UnitTestDrawingQGLWidget(this);

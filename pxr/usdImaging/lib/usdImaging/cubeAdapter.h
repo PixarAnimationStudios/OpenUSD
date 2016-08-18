@@ -29,6 +29,8 @@
 
 class UsdGeomCube;
 
+/// \class UsdImagingCubeAdapter
+///
 /// Delegate support for UsdGeomCube.
 ///
 class UsdImagingCubeAdapter : public UsdImagingGprimAdapter {

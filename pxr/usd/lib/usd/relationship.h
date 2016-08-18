@@ -36,12 +36,12 @@
 
 class UsdRelationship;
 
-/// \brief A std::vector of UsdRelationships.
+/// A std::vector of UsdRelationships.
 typedef std::vector<UsdRelationship> UsdRelationshipVector;
 
 /// \class UsdRelationship
 ///
-/// \brief A UsdRelationship creates dependencies between scenegraph objects by 
+/// A UsdRelationship creates dependencies between scenegraph objects by 
 /// allowing a prim to \em target other prims, attributes, or relationships.
 ///
 /// \section usd_relationship_chars Relationship Characteristics
@@ -144,9 +144,8 @@ public:
     {
     }
 
-    //
     /// \name Editing Relationships at Current EditTarget
-    //
+    /// @{
 
     // XXX Should the mutation API be changed to take UsdObject
     // pointers so that we can enforce (as does Mf) that you can only
@@ -154,7 +153,7 @@ public:
     // validate those objects since it is easy to create a UsdAttribute
     // or UsdRelationship object not backed by scene description).
 
-    /// \brief Adds \p target to the list of targets.
+    /// Adds \p target to the list of targets.
     ///
     /// Passing paths to master prims or any other objects in masters will 
     /// cause an error to be issued. It is not valid to author targets to
@@ -165,19 +164,19 @@ public:
     /// semantics, which we will document soon 
 	USD_API bool AddTarget(const SdfPath& target) const;
 
-    /// \brief Removes \p target from the list of targets.
+    /// Removes \p target from the list of targets.
     ///
     /// Passing paths to master prims or any other objects in masters will 
     /// cause an error to be issued. It is not valid to author targets to
     /// these objects.
 	USD_API bool RemoveTarget(const SdfPath& target) const;
 
-    /// \brief Clears all target edits from the current EditTarget, and makes
+    /// Clears all target edits from the current EditTarget, and makes
     /// the opinion explicit, which means we are effectively resetting the
     /// composed value of the targets list to empty.
 	USD_API bool BlockTargets() const;
 
-    /// \brief Make the authoring layer's opinion of the targets list explicit,
+    /// Make the authoring layer's opinion of the targets list explicit,
     /// and set exactly to \p targets.
     ///
     /// Passing paths to master prims or any other objects in masters will 
@@ -188,7 +187,7 @@ public:
     /// and this function will return false.
 	USD_API bool SetTargets(const SdfPathVector& targets) const;
 
-    /// \brief Remove all opinions about the target list from the current edit
+    /// Remove all opinions about the target list from the current edit
     /// target.
     ///
     /// Only remove the spec if \p removeSpec is true (leave the spec to
@@ -196,7 +195,7 @@ public:
     /// relationship)
 	USD_API bool ClearTargets(bool removeSpec) const;
 
-    /// \brief Compose this relationship's targets and return the result as a
+    /// Compose this relationship's targets and return the result as a
     /// vector of SdfPath.
     ///
     /// By default, any relationship targets that point to a child prim or
@@ -218,7 +217,7 @@ public:
 	USD_API bool GetTargets(SdfPathVector* targets,
                     bool forwardToObjectsInMasters = true) const;
 
-    /// \brief Compose this relationship's \em ultimate targets, taking into
+    /// Compose this relationship's \em ultimate targets, taking into
     /// account "relationship forwarding", and return the result as a vector
     /// of SdfPath. This method never returns relationship paths in the targets
     /// vector.
@@ -250,14 +249,13 @@ public:
 	USD_API bool GetForwardedTargets(SdfPathVector* targets,
                              bool forwardToObjectsInMasters = true) const;
 
-    /// \brief Returns true if any target path opinions have been authored. 
+    /// Returns true if any target path opinions have been authored. 
     /// Note that this may include opinions that clear targets and may not 
     /// indicate that target paths will exist for this relationship.
 	USD_API bool HasAuthoredTargets() const;
 
-    // ---------------------------------------------------------------------- //
-    // Private Methods and Members 
-    // ---------------------------------------------------------------------- //
+    /// @}
+
 private:
     friend class UsdObject;
     friend class UsdPrim;

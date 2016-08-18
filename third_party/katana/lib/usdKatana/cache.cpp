@@ -40,7 +40,10 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 
 #include <set>
+
+#if !defined(ARCH_OS_WINDOWS)
 #include <regex.h>
+#endif
 
 TF_INSTANTIATE_SINGLETON(UsdKatanaCache);
 
@@ -102,6 +105,7 @@ UsdKatanaCache::_SetMutedLayers(
     // Trace this function to track its performance
     TRACE_FUNCTION();
 
+#if !defined(ARCH_OS_WINDOWS)
     // Unmute layers that are currently muted, but not requested to be muted
     SdfLayerHandleVector stageLayers = stage->GetUsedLayers();
 
@@ -149,6 +153,7 @@ UsdKatanaCache::_SetMutedLayers(
         }
     }
     regfree(&regex);
+#endif
 }
 
 UsdKatanaCache::UsdKatanaCache() 
@@ -197,7 +202,7 @@ _ResolvePath(const std::string& path)
     return ArGetResolver().Resolve(path);
 }
 
-UsdStageRefPtr const&
+UsdStageRefPtr const
 UsdKatanaCache::GetStage(std::string const& fileName,
                          std::string const& variantSelections,
                          std::string const& ignoreLayerRegex,
@@ -245,7 +250,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
 
 }
 
-UsdStageRefPtr const& 
+UsdStageRefPtr const
 UsdKatanaCache::GetStage(std::string const& fileName,
                          std::set<SdfPath> const& variantSelections,
                          std::string const& ignoreLayerRegex,

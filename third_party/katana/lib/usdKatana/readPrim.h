@@ -24,18 +24,20 @@
 #ifndef PXRUSDKATANA_READPRIM_H
 #define PXRUSDKATANA_READPRIM_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdPrim;
 
 /// \brief read \p prim into \p attrs.
-void
+USDKATANA_API void
 PxrUsdKatanaReadPrim(
         const UsdPrim& prim,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs);
 
-void
+USDKATANA_API void
 PxrUsdKatanaReadPrimPrmanStatements(
         const UsdPrim& prim,
         double currentTime,

@@ -37,10 +37,14 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 class HdDrawTargetRenderPassState;
 
-/// Represents an render pass that renders to a draw target
-/// XXX::  This is a temporary api to aid transition to Hydra.
-/// and subject to major changes.  It is likely this functionality
-/// will be absorbed into the base class.
+/// \class HdDrawTargetRenderPass
+///
+/// Represents an render pass that renders to a draw target.
+///
+/// \note This is a temporary API to aid transition to Hydra, and is subject
+/// to major changes.  It is likely this functionality will be absorbed into
+/// the base class.
+///
 class HdDrawTargetRenderPass : public HdTask {
 public:
 	HDLIB_API

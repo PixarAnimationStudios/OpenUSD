@@ -43,7 +43,10 @@ TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens,
                          USDIMAGING_API,
                          USD_IMAGING_ADAPTER_KEY_TOKENS);
 
+/// \class UsdImagingAdapterRegistry
+///
 /// Registry of PrimAdapter plug-ins.
+///
 class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry> 
 {
     friend class TfSingleton<UsdImagingAdapterRegistry>;

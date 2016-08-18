@@ -33,10 +33,7 @@ void Arch_InitTickTimer();
 
 namespace {
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Arch_InitConfig()
+ARCH_CONSTRUCTOR_DEFINE(102, Arch_InitConfig)
 {
     // Initialize the application start time.  First so it's a close as
     // possible to the real start time.
@@ -66,15 +63,4 @@ Arch_InitConfig()
     Arch_InitDebuggerAttach();
 }
 
-}
-
-#include <Windows.h>
-int __stdcall DllMain(void* instance, unsigned long reason, void* reserved)
-{
-    if (DLL_PROCESS_ATTACH == reason)
-    {
-        printf("Arch DLL_PROCESS_ATTACH\n");
-        Arch_InitConfig();
-    }
-    return TRUE;
 }

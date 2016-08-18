@@ -5,9 +5,11 @@ pxr_plugin(${PXR_PACKAGE}
         ar
         arch
         usdMaya
+        pxrUsdMayaGL
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS
+		${TBB_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
     CPPFILES

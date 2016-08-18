@@ -41,6 +41,8 @@ typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilde
 
 class HdMeshTopology;
 
+/// \class Hd_VertexAdjacency
+///
 /// Hd_VertexAdjacency encapsulates mesh adjacency information,
 /// which is used for smooth normal computation.
 ///
@@ -54,9 +56,7 @@ class HdMeshTopology;
 ///                                ---> AdjacencyBuilderForGPU (for GPU smooth)
 ///                                ---> SmoothNormals (CPU smooth normals)
 ///                                ---> SmoothNormalsGPU (GPU smooth normals)
-
-// adjacency info
-//
+///
 class Hd_VertexAdjacency {
 public:
     Hd_VertexAdjacency();
@@ -132,8 +132,9 @@ private:
     Hd_AdjacencyBuilderComputationPtr _adjacencyBuilder;
 };
 
-/// adjacency table computation CPU
+/// \class Hd_AdjacencyBuilderComputation
 ///
+/// Adjacency table computation CPU.
 ///
 class Hd_AdjacencyBuilderComputation : public HdNullBufferSource {
 public:
@@ -149,8 +150,9 @@ private:
     HdMeshTopology const *_topology;
 };
 
-/// adjacency table computation GPU
+/// \class Hd_AdjacencyBuilderForGPUComputation
 ///
+/// Adjacency table computation GPU.
 ///
 class Hd_AdjacencyBuilderForGPUComputation : public HdComputedBufferSource {
 public:
@@ -161,7 +163,7 @@ public:
         Hd_VertexAdjacency const *adjacency,
         Hd_AdjacencyBuilderComputationSharedPtr const &adjacencyBuilder);
 
-    /// overrides
+    // overrides
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
 
@@ -172,6 +174,5 @@ private:
     Hd_VertexAdjacency const *_adjacency;
     Hd_AdjacencyBuilderComputationSharedPtr const _adjacencyBuilder;
 };
-
 
 #endif  // HD_VERTEX_ADJACENCY_H

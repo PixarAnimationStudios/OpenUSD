@@ -29,6 +29,8 @@
 
 class UsdGeomSphere;
 
+/// \class UsdImagingSphereAdapter
+///
 /// Delegate support for UsdGeomSphere.
 ///
 class UsdImagingSphereAdapter : public UsdImagingGprimAdapter {

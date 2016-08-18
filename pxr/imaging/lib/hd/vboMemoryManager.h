@@ -38,9 +38,10 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/strategyBase.h"
 
-/// VBO memory manager
+/// \class HdVBOMemoryManager
 ///
-
+/// VBO memory manager.
+///
 class HdVBOMemoryManager : public HdAggregationStrategy {
 public:
     /// Factory for creating HdBufferArray managed by
@@ -243,4 +244,3 @@ protected:
 HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdVBOMemoryManager>);
 
 #endif  // HD_VBO_MEMORY_MANAGER_H
-

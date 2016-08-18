@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/tokens.h
-///
-
 #ifndef PXOSD_TOKENS_H
 #define PXOSD_TOKENS_H
+
+/// \file pxOsd/tokens.h
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/pxOsd/api.h"

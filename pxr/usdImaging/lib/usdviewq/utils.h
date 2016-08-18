@@ -32,7 +32,10 @@
 
 class UsdStage;
 
+/// \class UsdviewqUtils
+///
 /// Performance enhancing utilities for usdview.
+///
 class UsdviewqUtils {
 public:
 
@@ -66,7 +69,6 @@ public:
     /// visibiity if it is imageable.
     USDVIEWQ_API
     static UsdviewqUtils::PrimInfo GetPrimInfo(UsdPrim prim, UsdTimeCode time);
-
 };
 
 #endif //USDVIEWQ_UTILS_H

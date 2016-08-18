@@ -45,6 +45,8 @@ typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 typedef std::vector<HdTextureResourceSharedPtr> HdTextureResourceSharedPtrVector;
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 
+/// \class HdSurfaceShader
+///
 /// A scene-based SurfaceShader object.
 ///
 /// When surface shaders are expresed in the scene graph, the HdSceneDelegate

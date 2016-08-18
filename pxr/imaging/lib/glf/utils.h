@@ -21,18 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file glf/utils.h
-
 #ifndef GLF_UTILS_H
 #define GLF_UTILS_H
+
+/// \file glf/utils.h
 
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/garch/glext.h"
 
 #include <string>
 
-/// \brief Number of elements.
+/// Number of elements.
 ///
 /// Returns the number of elements (channels) in a given GL enum format.
 ///
@@ -40,7 +39,7 @@
 /// GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
 int GlfGetNumElements(GLenum format);
 
-/// \brief Byte size of a GL type.
+/// Byte size of a GL type.
 ///
 /// Returns the size in bytes of a give GL type.
 ///
@@ -48,21 +47,22 @@ int GlfGetNumElements(GLenum format);
 /// GL_FLOAT, GL_DOUBLE
 int GlfGetElementSize(GLenum type);
 
-/// \brief Checks the valitidy of a GL framebuffer
+/// Checks the valitidy of a GL framebuffer
 ///
 /// True if the currently bound GL framebuffer is valid and can be bound
 /// or returns the cause of the problem
 bool GlfCheckGLFrameBufferStatus(GLuint target, std::string * reason);
 
-/// \brief Check if the format is compressed
+/// Check if the format is compressed.
 ///
 /// Supported OGL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
 /// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
 bool GlfIsCompressedFormat(GLenum format);
 
-/// \brief Calculate the byte size of compressed textures
+/// Calculate the byte size of compressed textures.
 ///
 /// Supported OGL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
 /// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
 int GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum type);
+
 #endif

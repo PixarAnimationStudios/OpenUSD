@@ -13,6 +13,10 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     _add_define(OPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(hd
     LIBRARIES
         plug
@@ -21,7 +25,9 @@ pxr_shared_library(hd
         vt
         work
         sdf
+        cameraUtil
         glf
+        garch
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
         ${GLEW_LIBRARY}
@@ -133,6 +139,9 @@ pxr_shared_library(hd
 
     PRIVATE_HEADERS
         unitTestGLDrawing.h
+
+    CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
 
     RESOURCE_FILES
         plugInfo.json

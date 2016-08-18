@@ -23,7 +23,11 @@
 //
 #include "px_vp20/utils.h"
 
+#if defined(_WIN32)
+#include <Windows.h>
+#endif
 #include <GL/gl.h>
+#include <algorithm>
 
 bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
 {

@@ -24,9 +24,6 @@
 #ifndef USDGEOM_CONSTRAINT_TARGET_H
 #define USDGEOM_CONSTRAINT_TARGET_H
 
-
-
-
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/attribute.h"
 
@@ -36,7 +33,8 @@ class GfMatrix4d;
 class UsdGeomXformCache;
 
 /// \class UsdGeomConstraintTarget
-/// \brief Schema wrapper for UsdAttribute for authoring and introspecting
+///
+/// Schema wrapper for UsdAttribute for authoring and introspecting
 /// attributes that are constraint targets.
 /// 
 /// Constraint targets correspond roughly to what some DCC's call locators.
@@ -110,7 +108,7 @@ class UsdGeomConstraintTarget
     /// Explicit UsdAttribute extractor
     UsdAttribute const &GetAttr() const { return _attr; }
     
-    /// \brief Return true if the wrapped UsdAttribute::IsDefined(), and in
+    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
     /// addition the attribute is identified as a ConstraintTarget.
     bool IsDefined() const { return IsValid(_attr); }
 
@@ -150,7 +148,7 @@ class UsdGeomConstraintTarget
     USDGEOM_API
     static TfToken GetConstraintAttrName(const std::string &constraintName);
 
-    /// \brief Computes the value of the constraint target in world space.
+    /// Computes the value of the constraint target in world space.
     /// 
     /// If a valid UsdGeomXformCache is provided in the argument \p xfCache, 
     /// it is used to evaluate the CTM of the model to which the constraint
@@ -168,6 +166,5 @@ private:
 
     UsdAttribute _attr;
 };
-
 
 #endif // USD_CONSTRAINT_TARGET_H

@@ -33,7 +33,7 @@
 #include "shared.h"
 #include "crateValueInliners.h"
 
-#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
@@ -52,8 +52,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <sys/types.h>
 
 namespace Usd_CrateFile {
 
@@ -264,16 +262,6 @@ struct _Hasher {
 
 class CrateFile
 {
-    struct _Munmapper {
-        _Munmapper() : fileSize(-1) {}
-        explicit _Munmapper(int64_t fileSize) : fileSize(fileSize) {}
-        void operator()(char *mapStart) const;
-        int64_t fileSize;
-    };
-	// NB: void* is actually a boost::iostreams::mapped_file, however,
-	// we want to hide it due to dllexport.
-    typedef std::unique_ptr<char, _Munmapper> _UniqueMap;
-
     struct _Fcloser {
         void operator()(FILE *f) const;
     };
@@ -305,8 +293,8 @@ class CrateFile
     };
 
 public:
-    friend class ValueRep;
-    friend class TimeSamples;
+    friend struct ValueRep;
+    friend struct TimeSamples;
 
     typedef std::pair<TfToken, VtValue> FieldValuePair;
 
@@ -473,13 +461,14 @@ public:
 
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &fileName, _UniqueMap mapStart, int64_t fileSize);
+    CrateFile(string const &fileName,
+              ArchConstFileMapping mapStart, int64_t fileSize);
     CrateFile(string const &fileName, _UniqueFILE inputFile, int64_t fileSize);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
 
-    static _UniqueMap _MmapFile(char const *fileName, FILE *file);
+    static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
     class _Writer;
     
@@ -633,7 +622,7 @@ private:
 
     // We'll only have one of these, depending on whether we're doing mmap() or
     // pread().
-    _UniqueMap _mapStart; // NULL if this wasn't populated from file.
+    ArchConstFileMapping _mapStart; // NULL if this wasn't populated from file.
     _UniqueFILE _inputFile; // NULL if this wasn't populated from file.
 
     std::string _fileName; // Empty if this file data is in-memory only.

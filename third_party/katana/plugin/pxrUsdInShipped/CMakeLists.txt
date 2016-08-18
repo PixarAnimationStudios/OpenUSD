@@ -1,5 +1,21 @@
 set(PXR_PACKAGE pxrUsdInShipped)
 
+add_definitions(
+    /DFNASSET_STATIC
+    /DFNATTRIBUTE_STATIC
+	/DFNATTRIBUTEFUNCTION_STATIC
+    /DFNATTRIBUTEMODIFIER_STATIC
+    /DFNCONFIG_STATIC
+    /DFNDEFAULTATTRIBUTEPRODUCER_STATIC
+	/DFNGEOLIB_STATIC
+    /DFNGEOLIBSERVICES_STATIC
+    /DFNLOGGING_STATIC
+    /DFNRENDEROUTPUTLOCATION_STATIC
+    /DFNSCENEGRAPHGENERATOR_STATIC
+    /DFNSCENEGRAPHITERATOR_STATIC
+    /DPYSTRING_STATIC
+)
+
 pxr_plugin(${PXR_PACKAGE}
     KATANA_PLUGIN
     LIBRARIES
@@ -20,8 +36,8 @@ pxr_plugin(${PXR_PACKAGE}
         basisCurves.cpp
         camera.cpp
         constraints.cpp
-        look.cpp
-        looksGroup.cpp
+        material.cpp
+        materialsGroup.cpp
         mesh.cpp
         model.cpp
         nurbsPatch.cpp

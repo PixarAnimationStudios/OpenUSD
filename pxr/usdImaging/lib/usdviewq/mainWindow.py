@@ -1280,8 +1280,6 @@ class MainWindow(QtGui.QMainWindow):
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
-        import sip
-
         # We must call ReloadStage() before _clearCaches() to avoid a crash in
         # the case when we have reopened the stage. The problem is when the
         # stage is being reopened, its internal state is inconsistent, but as a
@@ -1799,8 +1797,9 @@ class MainWindow(QtGui.QMainWindow):
     @classmethod
     def _outputBaseDirectory(cls):
         import os
+        from os.path import expanduser
 
-        baseDir = os.getenv('HOME') + "/.usdview/"
+        baseDir = expanduser("~") + "/.usdview/"
 
         if not os.path.exists(baseDir):
             os.makedirs(baseDir)

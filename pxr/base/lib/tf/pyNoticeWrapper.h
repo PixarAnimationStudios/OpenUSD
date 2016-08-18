@@ -59,7 +59,7 @@ struct Tf_PyNoticeObjectGenerator {
     // Register the generator for notice type T.
     template <typename T>
     static void Register() {
-        // XXX this stuff should be keyed directly off TfType now
+        // XXX blevin: this stuff should be keyed directly off TfType now
         (*_generators)[typeid(T).name()] = This::_Generate<T>;
     }
 
@@ -170,12 +170,9 @@ TF_REGISTRY_FUNCTION(TfType) \
                     TfType::Bases<Base> >(); \
 }
 
-
 #endif // TF_PYNOTICEWRAPPER_H
 
-
 #else // BOOST_PP_IS_ITERATING
-
 
 #define N BOOST_PP_ITERATION()
 

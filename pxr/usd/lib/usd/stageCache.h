@@ -43,7 +43,7 @@ class ArResolverContext;
 
 /// \class UsdStageCache
 ///
-/// \brief A strongly concurrency safe collection of UsdStageRefPtr s, enabling
+/// A strongly concurrency safe collection of UsdStageRefPtr s, enabling
 /// sharing across multiple clients and threads.  See UsdStageCacheContext for
 /// typcial use cases finding UsdStage s in a cache and publishing UsdStage s to
 /// a cache.
@@ -82,7 +82,7 @@ class UsdStageCache
 public:
     /// \class Id
     ///
-    /// \brief A lightweight identifier that may be used to identify a
+    /// A lightweight identifier that may be used to identify a
     /// particular cached stage within a UsdStageCache.  An identifer may be
     /// converted to and from long int and string, to facilitate use within
     /// restricted contexts.
@@ -90,6 +90,7 @@ public:
     /// Id objects are only valid with the stage from which they were obtained.
     /// It never makes sense to use an Id with a stage other than the one it was
     /// obtained from.
+    ///
     struct Id : private boost::totally_ordered<Id> {
         /// Default construct an invalid id.
         Id() : _value(-1) {}
@@ -171,6 +172,7 @@ public:
     /// stage in this cache, return an arbitrary matching one.  See also
     /// FindAllMatching().
     USD_API UsdStageRefPtr FindOneMatching(const SdfLayerHandle &rootLayer) const;
+
     /// Find a stage in this cache with \p rootLayer and \p sessionLayer.  If
     /// there is no matching stage in this cache, return null.  If there is more
     /// than one matching stage in this cache, return an arbitrary matching one.
@@ -178,18 +180,22 @@ public:
     USD_API
     UsdStageRefPtr FindOneMatching(const SdfLayerHandle &rootLayer,
                                      const SdfLayerHandle &sessionLayer) const;
+
     /// Find a stage in this cache with \p rootLayer and \p pathResolverContext.
     /// If there is no matching stage in this cache, return null.  If there is
     /// more than one matching stage in this cache, return an arbitrary matching
-    /// one.  See also FindAllMatching().
+    /// one.
+    /// \sa FindAllMatching()
     USD_API
     UsdStageRefPtr FindOneMatching(
         const SdfLayerHandle &rootLayer,
         const ArResolverContext &pathResolverContext) const;
+
     /// Find a stage in this cache with \p rootLayer, \p sessionLayer, and
     /// \p pathResolverContext.  If there is no matching stage in this cache,
     /// return null.  If there is more than one matching stage in this cache,
-    /// return an arbitrary matching one.  See also FindAllMatching().
+    /// return an arbitrary matching one.
+    /// \sa FindAllMatching()
     USD_API
     UsdStageRefPtr FindOneMatching(
         const SdfLayerHandle &rootLayer,
@@ -197,27 +203,27 @@ public:
         const ArResolverContext &pathResolverContext) const;
 
     /// Find all stages in this cache with \p rootLayer.  If there is no
-    /// matching stage in this cache, return an empty vector.  See also
-    /// FindAllMatching().
+    /// matching stage in this cache, return an empty vector.
     USD_API std::vector<UsdStageRefPtr>
     FindAllMatching(const SdfLayerHandle &rootLayer) const;
-    /// Find all stages in this cache with \p rootLayer and \p sessionLayer.  If
-    /// there is no matching stage in this cache, return an empty vector.  See
-    /// also FindAllMatching().
+
+    /// Find all stages in this cache with \p rootLayer and \p sessionLayer.
+    /// If there is no matching stage in this cache, return an empty vector.
     USD_API std::vector<UsdStageRefPtr>
     FindAllMatching(const SdfLayerHandle &rootLayer,
                     const SdfLayerHandle &sessionLayer) const;
+
     /// Find all stages in this cache with \p rootLayer and
     /// \p pathResolverContext.  If there is no matching stage in this cache,
-    /// return an empty vector.  See also FindAllMatching().
+    /// return an empty vector.
     USD_API std::vector<UsdStageRefPtr>
     FindAllMatching(const SdfLayerHandle &rootLayer,
                     const ArResolverContext &pathResolverContext) const;
+
     /// Find all stages in this cache with \p rootLayer, \p sessionLayer, and
     /// \p pathResolverContext.  If there is no matching stage in this cache,
     /// return an empty vector.  If there is more than one matching stage in
-    /// this cache, return an arbitrary matching one.  See also
-    /// FindAllMatching().
+    /// this cache, return an arbitrary matching one. 
     USD_API std::vector<UsdStageRefPtr>
     FindAllMatching(const SdfLayerHandle &rootLayer,
                     const SdfLayerHandle &sessionLayer,
@@ -258,6 +264,7 @@ public:
     /// from the cache will only destroy the stage if no other UsdStageRefPtrs
     /// exist referring to it.
     USD_API size_t EraseAll(const SdfLayerHandle &rootLayer);
+
     /// Erase all stages present in the cache with \p rootLayer and
     /// \p sessionLayer and return the number erased.  Since the cache contains
     /// UsdStageRefPtr, erasing a stage from the cache will only destroy the
@@ -265,6 +272,7 @@ public:
     USD_API
     size_t EraseAll(const SdfLayerHandle &rootLayer,
                     const SdfLayerHandle &sessionLayer);
+
     /// Erase all stages present in the cache with \p rootLayer,
     /// \p sessionLayer, and \p pathResolverContext and return the number
     /// erased.  Since the cache contains UsdStageRefPtr, erasing a stage from
@@ -302,6 +310,5 @@ private:
     std::unique_ptr<_Impl> _impl;
     mutable std::mutex _mutex;
 };
-
 
 #endif // USD_STAGECACHE_H

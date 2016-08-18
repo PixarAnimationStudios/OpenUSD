@@ -28,6 +28,9 @@
 #ifndef GF_RANGE1D_H
 #define GF_RANGE1D_H
 
+/// \file gf/range1d.h
+/// \ingroup group_gf_BasicGeometry
+
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/api.h"
 
@@ -37,299 +40,288 @@
 #include <cstddef>
 #include <iosfwd>
 
-/*!
- * \file range1d.h
- * \ingroup group_gf_BasicGeometry
- */
-
 class GfRange1d;
 class GfRange1f;
 
 template <>
 struct GfIsGfRange<class GfRange1d> { static const bool value = true; };
 
-//!
-// \class GfRange1d range1d.h "pxr/base/gf/range1d.h"
-// \ingroup group_gf_BasicGeometry
-// \brief Basic type: 1-dimensional floating point range.
-//
-// This class represents a 1-dimensional range (or interval)
-// All operations are component-wise and conform to interval mathematics.
-// An empty range is one where max < min.  The default empty is
-// [FLT_MAX,-FLT_MAX]
-
+/// \class GfRange1d
+/// \ingroup group_gf_BasicGeometry
+///
+/// Basic type: 1-dimensional floating point range.
+///
+/// This class represents a 1-dimensional range (or interval) All
+/// operations are component-wise and conform to interval mathematics. An
+/// empty range is one where max < min.
+/// The default empty is [FLT_MAX,-FLT_MAX]
 class GfRange1d
 {
 public:
 
-    //! Helper typedef.
+    /// Helper typedef.
     typedef double MinMaxType;
 
     static const size_t dimension = 1;
     typedef MinMaxType ScalarType;
 
-    //!   Sets the range to an empty interval
-    // \warning Only found in libtess (once) and libgpt (once) Deprecated?
+    /// Sets the range to an empty interval
+    // TODO check whether this can be deprecated.
     void inline SetEmpty() {
 	_min =  FLT_MAX;
 	_max = -FLT_MAX;
     }
 
-    //! The default constructor creates an empty range.
+    /// The default constructor creates an empty range.
     GfRange1d() {
         SetEmpty();
     }
 
-    //! This constructor initializes the minimum and maximum points.
+    /// This constructor initializes the minimum and maximum points.
     GfRange1d(double min, double max)
         : _min(min), _max(max)
     {
     }
 
-    //! Returns the minimum value of the range.
+    /// Returns the minimum value of the range.
     double GetMin() const { return _min; }
 
-    //! Returns the maximum value of the range.
+    /// Returns the maximum value of the range.
     double GetMax() const { return _max; }
 
-    //! Returns the size of the range.
+    /// Returns the size of the range.
     double GetSize() const { return _max - _min; }
 
-    //! Sets the minimum value of the range.
+    /// Sets the minimum value of the range.
     void SetMin(double min) { _min = min; }
 
-    //! Sets the maximum value of the range.
+    /// Sets the maximum value of the range.
     void SetMax(double max) { _max = max; }
 
-    //! Returns whether the range is empty (max < min).
+    /// Returns whether the range is empty (max < min).
     bool IsEmpty() const {
         return _min > _max;
     }
 
-    //! Modifies the range if necessary to surround the given value.
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Modifies the range if necessary to surround the given value.
+    /// \deprecated Use UnionWith() instead.
     void ExtendBy(double point) { UnionWith(point); }
 
-    //! Modifies the range if necessary to surround the given range.
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Modifies the range if necessary to surround the given range.
+    /// \deprecated Use UnionWith() instead.
     void ExtendBy(const GfRange1d &range) { UnionWith(range); }
 
-    //!
-    // Returns true if the \p point is located inside the range.
-    // As with all operations of this type, the range is assumed to include its
-    // extrema.
+    /// Returns true if the \p point is located inside the range. As with all
+    /// operations of this type, the range is assumed to include its extrema.
     bool Contains(double point) const {
         return (point >= _min && point <= _max);
     }
 
-    //!
-    // Returns true if the \p range is located entirely inside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
+    /// Returns true if the \p range is located entirely inside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
     bool Contains(const GfRange1d &range) const {
-	return Contains(range._min) && Contains(range._max);
+        return Contains(range._min) && Contains(range._max);
     }
 
-    //!
-    // Returns true if the \p point is located inside the range.
-    // As with all operations of this type, the range is assumed to include its
-    // extrema.
-    // \warning Deprecated - use \c Contains instead.
+    /// Returns true if the \p point is located inside the range. As with all
+    /// operations of this type, the range is assumed to include its extrema.
+    /// \deprecated Use Contains() instead.
     bool IsInside(double point) const {
         return Contains(point);
     }
 
-    //!
-    // Returns true if the \p range is located entirely inside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
-    // \warning Deprecated - use \c Contains instead.
+    /// Returns true if the \p range is located entirely inside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
+    /// \deprecated Use Contains() instead.
     bool IsInside(const GfRange1d &range) const {
-	return Contains(range);
+        return Contains(range);
     }
 
-    //!
-    // Returns true if the \p range is located entirely outside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
+    /// Returns true if the \p range is located entirely outside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
     bool IsOutside(const GfRange1d &range) const {
         return (range._max < _min || range._min > _max);
     }
 
-    //! Returns the smallest \c GfRange1d which contains both \p a and \p b
+    /// Returns the smallest \c GfRange1d which contains both \p a and \p b.
     static GfRange1d GetUnion(const GfRange1d &a, const GfRange1d &b) {
-	GfRange1d res = a;
-	_FindMin(res._min,b._min);
-	_FindMax(res._max,b._max);
-	return res;
+        GfRange1d res = a;
+        _FindMin(res._min,b._min);
+        _FindMax(res._max,b._max);
+        return res;
     }
 
-    //! Extend \p this to include \p b
+    /// Extend \p this to include \p b.
     const GfRange1d &UnionWith(const GfRange1d &b) {
-	_FindMin(_min,b._min);
-	_FindMax(_max,b._max);
-	return *this;
+        _FindMin(_min,b._min);
+        _FindMax(_max,b._max);
+        return *this;
     }
 
-    //! Extend \p this to include \p b
+    /// Extend \p this to include \p b.
     const GfRange1d &UnionWith(double b) {
-	_FindMin(_min,b);
-	_FindMax(_max,b);
-	return *this;
+        _FindMin(_min,b);
+        _FindMax(_max,b);
+        return *this;
     }
 
-    //! Returns the smallest \c GfRange1d which contains both \p a and \p b
-    // \warning Deprecated - use \c GetUnion instead.
+    /// Returns the smallest \c GfRange1d which contains both \p a and \p b
+    /// \deprecated Use GetUnion() instead.
     static GfRange1d Union(const GfRange1d &a, const GfRange1d &b) {
         return GetUnion(a, b);
     }
 
-    //! Extend \p this to include \p b
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Extend \p this to include \p b.
+    /// \deprecated Use UnionWith() instead.
     const GfRange1d &Union(const GfRange1d &b) {
         return UnionWith(b);
     }
 
-    //! Extend \p this to include \p b
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Extend \p this to include \p b.
+    /// \deprecated Use UnionWith() instead.
     const GfRange1d &Union(double b) {
         return UnionWith(b);
     }
 
-    //! Returns a \c GfRange1d that describes the intersection of \p a and \p b
+    /// Returns a \c GfRange1d that describes the intersection of \p a and \p b.
     static GfRange1d GetIntersection(const GfRange1d &a, const GfRange1d &b) {
-	GfRange1d res = a;
-	_FindMax(res._min,b._min);
-	_FindMin(res._max,b._max);
-	return res;
+        GfRange1d res = a;
+        _FindMax(res._min,b._min);
+        _FindMin(res._max,b._max);
+        return res;
     }
 
-    //! Returns a \c GfRange1d that describes the intersection of \p a and \p b
-    // \warning Deprecated - use \c GetIntersection instead.
+    /// Returns a \c GfRange1d that describes the intersection of \p a and \p b.
+    /// \deprecated Use GetIntersection() instead.
     static GfRange1d Intersection(const GfRange1d &a, const GfRange1d &b) {
         return GetIntersection(a, b);
     }
 
-    //! Modifies this range to hold its intersection with \p b and returns the
-    //  result
+    /// Modifies this range to hold its intersection with \p b and returns the
+    /// result
     const GfRange1d &IntersectWith(const GfRange1d &b) {
-	_FindMax(_min,b._min);
-	_FindMin(_max,b._max);
-	return *this;
+        _FindMax(_min,b._min);
+        _FindMin(_max,b._max);
+        return *this;
     }
 
-    //! Modifies this range to hold its intersection with \p b and returns the
-    //  result
-    // \warning Deprecated - use \c IntersectWith instead.
+    /// Modifies this range to hold its intersection with \p b and returns the
+    /// result.
+    /// \deprecated Use IntersectWith() instead.
     const GfRange1d &Intersection(const GfRange1d &b) {
         return IntersectWith(b);
     }
 
-    //! unary sum.
+    /// unary sum.
     GfRange1d operator +=(const GfRange1d &b) {
-	_min += b._min;
-	_max += b._max;
-	return *this;
+        _min += b._min;
+        _max += b._max;
+        return *this;
     }
 
-    //! unary difference.
+    /// unary difference.
     GfRange1d operator -=(const GfRange1d &b) {
-	_min -= b._max;
-	_max -= b._min;
-	return *this;
+        _min -= b._max;
+        _max -= b._min;
+        return *this;
     }
 
-    //! unary multiply
+    /// unary multiply.
     GfRange1d operator *=(double m) {
-	if (m > 0) {
-	    _min *= m;
-	    _max *= m;
-	} else {
-	    double tmp = _min;
-	    _min = _max * m;
-	    _max = tmp * m;
-	}
-	return *this;
+        if (m > 0) {
+            _min *= m;
+            _max *= m;
+        } else {
+            double tmp = _min;
+            _min = _max * m;
+            _max = tmp * m;
+        }
+        return *this;
     }
-    //! unary division.
+
+    /// unary division.
     GfRange1d operator /=(double m) {
-	return *this *= (1.0 / m);
+        return *this *= (1.0 / m);
     }
 
-    //! binary sum.
+    /// binary sum.
     GfRange1d operator +(const GfRange1d &b) const {
-	return GfRange1d(_min + b._min, _max + b._max);
+        return GfRange1d(_min + b._min, _max + b._max);
     }
 
 
-    //! binary difference.
+    /// binary difference.
     GfRange1d operator -(const GfRange1d &b) const {
-	return GfRange1d(_min - b._max, _max - b._min);
+        return GfRange1d(_min - b._max, _max - b._min);
     }
 
-    //! scalar multiply.
+    /// scalar multiply.
     friend GfRange1d operator *(double m, const GfRange1d &r) {
-	return (m > 0 ? 
-		GfRange1d(r._min*m, r._max*m) : 
-		GfRange1d(r._max*m, r._min*m));
+        return (m > 0 ? 
+            GfRange1d(r._min*m, r._max*m) : 
+            GfRange1d(r._max*m, r._min*m));
     }
 
-    //! scalar multiply.
+    /// scalar multiply.
     friend GfRange1d operator *(const GfRange1d &r, double m) {
-	return (m > 0 ? 
-		GfRange1d(r._min*m, r._max*m) : 
-		GfRange1d(r._max*m, r._min*m));
+        return (m > 0 ? 
+            GfRange1d(r._min*m, r._max*m) : 
+            GfRange1d(r._max*m, r._min*m));
     }
 
-    //! scalar divide.
+    /// scalar divide.
     friend GfRange1d operator /(const GfRange1d &r, double m) {
-	return r * (1.0 / m);
+        return r * (1.0 / m);
     }
 
-    //! hash.
+    /// hash.
     friend inline size_t hash_value(const GfRange1d &r) {
         size_t h = 0;
         boost::hash_combine(h, r._min);
         boost::hash_combine(h, r._max);
         return h;
-    }        
-
-    //! The min and max points must match exactly for equality.
-    bool operator ==(const GfRange1d &b) const {
-	return (_min == b._min && _max == b._max);
     }
+
+    /// The min and max points must match exactly for equality.
+    bool operator ==(const GfRange1d &b) const {
+        return (_min == b._min && _max == b._max);
+    }
+
     bool operator !=(const GfRange1d &b) const {
         return !(*this == b);
     }
 
-    //! Compare this range to a GfRange1f.
-    //
-    // The values must match exactly and it does exactly what you
-    // might expect when comparing float and double values.
+    /// Compare this range to a GfRange1f.
+    ///
+    /// The values must match exactly and it does exactly what you might
+    /// expect when comparing float and double values.
     GF_API inline bool operator ==(const GfRange1f& other) const;
     GF_API inline bool operator !=(const GfRange1f& other) const;
 
-    //! Compute the squared distance from a point to the range.
+    /// Compute the squared distance from a point to the range.
     GF_API
     double GetDistanceSquared(double p) const;
 
 
   private:
-    //! Minimum and maximum points.
+    /// Minimum and maximum points.
     double _min, _max;
 
-    //! Extends minimum point if necessary to contain given point
+    /// Extends minimum point if necessary to contain given point.
     static void _FindMin(double &dest, double point) {
         if (point < dest) dest = point;
     }
 
-    //! Extends maximum point if necessary to contain given point
+    /// Extends maximum point if necessary to contain given point.
     static void _FindMax(double &dest, double point) {
         if (point > dest) dest = point;
     }
 };
 
-/// Output a GfRange1d
+/// Output a GfRange1d.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfRange1d const &);
 

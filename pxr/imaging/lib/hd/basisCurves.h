@@ -37,7 +37,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-/// descriptor to configure a drawItem for a repr
+/// \class HdBasisCurvesReprDesc
+///
+/// Descriptor to configure a drawItem for a repr.
 ///
 struct HdBasisCurvesReprDesc {
     HdBasisCurvesReprDesc(
@@ -48,6 +50,8 @@ struct HdBasisCurvesReprDesc {
     HdBasisCurvesGeomStyle geomStyle:2;
 };
 
+/// \class HdBasisCurves
+///
 /// A collection of curves using a particular basis.
 ///
 class HdBasisCurves: public HdRprim {

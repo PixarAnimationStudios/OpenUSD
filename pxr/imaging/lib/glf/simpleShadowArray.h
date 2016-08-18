@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/simpleShadowArray.h
 #ifndef GLF_SIMPLE_SHADOW_ARRAY_H
 #define GLF_SIMPLE_SHADOW_ARRAY_H
+
+/// \file glf/simpleShadowArray.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/declarePtrs.h"

@@ -42,7 +42,10 @@
 // Forward declaration:
 class PcpCache;
 
+/// \enum PcpErrorType
+///
 /// Enum to indicate the type represented by a Pcp error.
+///
 enum PcpErrorType {
     PcpErrorType_ArcCycle,
     PcpErrorType_ArcPermissionDenied,
@@ -74,7 +77,10 @@ class PcpErrorBase;
 typedef boost::shared_ptr<PcpErrorBase> PcpErrorBasePtr;
 typedef std::vector<PcpErrorBasePtr> PcpErrorVector;
 
+/// \class PcpErrorBase
+///
 /// Base class for all error types.
+///
 class PcpErrorBase {
 public:
     /// Destructor.
@@ -102,7 +108,10 @@ protected:
 class PcpErrorArcCycle;
 typedef boost::shared_ptr<PcpErrorArcCycle> PcpErrorArcCyclePtr;
 
+/// \class PcpErrorArcCycle
+///
 /// Arcs between PcpNodes that form a cycle.
+///
 class PcpErrorArcCycle : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -126,8 +135,11 @@ class PcpErrorArcPermissionDenied;
 typedef boost::shared_ptr<PcpErrorArcPermissionDenied> 
     PcpErrorArcPermissionDeniedPtr;
 
+/// \class PcpErrorArcPermissionDenied
+///
 /// Arcs that were not made between PcpNodes because of permission
 /// restrictions.
+///
 class PcpErrorArcPermissionDenied : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -178,7 +190,10 @@ class PcpErrorInconsistentPropertyType;
 typedef boost::shared_ptr<PcpErrorInconsistentPropertyType> 
     PcpErrorInconsistentPropertyTypePtr;
 
+/// \class PcpErrorInconsistentPropertyType
+///
 /// Properties that have specs with conflicting definitions.
+///
 class PcpErrorInconsistentPropertyType : 
     public PcpErrorInconsistentPropertyBase {
 public:
@@ -206,7 +221,10 @@ class PcpErrorInconsistentAttributeType;
 typedef boost::shared_ptr<PcpErrorInconsistentAttributeType> 
     PcpErrorInconsistentAttributeTypePtr;
 
+/// \class PcpErrorInconsistentAttributeType
+///
 /// Attributes that have specs with conflicting definitions.
+///
 class PcpErrorInconsistentAttributeType : 
     public PcpErrorInconsistentPropertyBase {
 public:
@@ -234,7 +252,10 @@ class PcpErrorInconsistentAttributeVariability;
 typedef boost::shared_ptr<PcpErrorInconsistentAttributeVariability> 
     PcpErrorInconsistentAttributeVariabilityPtr;
 
+/// \class PcpErrorInconsistentAttributeVariability
+///
 /// Attributes that have specs with conflicting variability.
+///
 class PcpErrorInconsistentAttributeVariability : 
     public PcpErrorInconsistentPropertyBase {
 public:
@@ -262,7 +283,10 @@ class PcpErrorInternalAssetPath;
 typedef boost::shared_ptr<PcpErrorInternalAssetPath>
     PcpErrorInternalAssetPathPtr;
 
+/// \class PcpErrorInternalAssetPath
+///
 /// Error about an arc that is prohibited due to being internal to an asset.
+///
 class PcpErrorInternalAssetPath : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -291,7 +315,10 @@ class PcpErrorInvalidPrimPath;
 typedef boost::shared_ptr<PcpErrorInvalidPrimPath>
     PcpErrorInvalidPrimPathPtr;
 
+/// \class PcpErrorInvalidPrimPath
+///
 /// Invalid prim paths used by references or payloads.
+///
 class PcpErrorInvalidPrimPath : public PcpErrorBase {
 public:        
     /// Returns a new error object.
@@ -343,7 +370,10 @@ class PcpErrorInvalidAssetPath;
 typedef boost::shared_ptr<PcpErrorInvalidAssetPath>
     PcpErrorInvalidAssetPathPtr;
 
+/// \class PcpErrorInvalidAssetPath
+///
 /// Invalid asset paths used by references or payloads.
+///
 class PcpErrorInvalidAssetPath : public PcpErrorInvalidAssetPathBase {
 public:
     /// Returns a new error object.
@@ -365,7 +395,10 @@ class PcpErrorMutedAssetPath;
 typedef boost::shared_ptr<PcpErrorMutedAssetPath>
     PcpErrorMutedAssetPathPtr;
 
+/// \class PcpErrorMutedAssetPath
+///
 /// Muted asset paths used by references or payloads.
+///
 class PcpErrorMutedAssetPath : public PcpErrorInvalidAssetPathBase {
 public:
     /// Returns a new error object.
@@ -387,8 +420,10 @@ class PcpErrorTargetPathBase;
 typedef boost::shared_ptr<PcpErrorTargetPathBase>
     PcpErrorTargetPathBasePtr;
 
-/// Base class for composition errors related to target or connection
-/// paths.
+/// \class PcpErrorTargetPathBase
+///
+/// Base class for composition errors related to target or connection paths.
+///
 class PcpErrorTargetPathBase : public PcpErrorBase {
 public:
     /// Destructor.
@@ -420,8 +455,11 @@ class PcpErrorInvalidInstanceTargetPath;
 typedef boost::shared_ptr<PcpErrorInvalidInstanceTargetPath>
     PcpErrorInvalidInstanceTargetPathPtr;
 
+/// \class PcpErrorInvalidInstanceTargetPath
+///
 /// Invalid target or connection path authored in an inherited
 /// class that points to an instance of that class.
+///
 class PcpErrorInvalidInstanceTargetPath : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
@@ -443,8 +481,11 @@ class PcpErrorInvalidExternalTargetPath;
 typedef boost::shared_ptr<PcpErrorInvalidExternalTargetPath>
     PcpErrorInvalidExternalTargetPathPtr;
 
+/// \class PcpErrorInvalidExternalTargetPath
+///
 /// Invalid target or connection path in some scope that points to
 /// an object outside of that scope.
+///
 class PcpErrorInvalidExternalTargetPath : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
@@ -469,7 +510,10 @@ class PcpErrorInvalidTargetPath;
 typedef boost::shared_ptr<PcpErrorInvalidTargetPath>
     PcpErrorInvalidTargetPathPtr;
 
+/// \class PcpErrorInvalidTargetPath
+/// 
 /// Invalid target or connection path.
+///
 class PcpErrorInvalidTargetPath : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
@@ -491,7 +535,10 @@ class PcpErrorInvalidSublayerOffset;
 typedef boost::shared_ptr<PcpErrorInvalidSublayerOffset>
     PcpErrorInvalidSublayerOffsetPtr;
 
+/// \class PcpErrorInvalidSublayerOffset
+///
 /// Sublayers that use invalid layer offsets.
+///
 class PcpErrorInvalidSublayerOffset : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -517,7 +564,10 @@ class PcpErrorInvalidReferenceOffset;
 typedef boost::shared_ptr<PcpErrorInvalidReferenceOffset>
     PcpErrorInvalidReferenceOffsetPtr;
 
+/// \class PcpErrorInvalidReferenceOffset
+///
 /// Sublayers that use invalid layer offsets.
+///
 class PcpErrorInvalidReferenceOffset : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -545,7 +595,10 @@ class PcpErrorInvalidSublayerOwnership;
 typedef boost::shared_ptr<PcpErrorInvalidSublayerOwnership>
     PcpErrorInvalidSublayerOwnershipPtr;
 
+/// \class PcpErrorInvalidSublayerOwnership
+///
 /// Sibling layers that have the same owner.
+///
 class PcpErrorInvalidSublayerOwnership : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -571,7 +624,10 @@ class PcpErrorInvalidSublayerPath;
 typedef boost::shared_ptr<PcpErrorInvalidSublayerPath>
     PcpErrorInvalidSublayerPathPtr;
 
+/// \class PcpErrorInvalidSublayerPath
+///
 /// Asset paths that could not be both resolved and loaded.
+///
 class PcpErrorInvalidSublayerPath : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -596,7 +652,10 @@ class PcpErrorInvalidVariantSelection;
 typedef boost::shared_ptr<PcpErrorInvalidVariantSelection>
     PcpErrorInvalidVariantSelectionPtr;
 
+/// \class PcpErrorInvalidVariantSelection
+///
 /// Invalid variant selections.
+///
 class PcpErrorInvalidVariantSelection : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -622,7 +681,10 @@ class PcpErrorOpinionAtRelocationSource;
 typedef boost::shared_ptr<PcpErrorOpinionAtRelocationSource>
     PcpErrorOpinionAtRelocationSourcePtr;
 
+/// \class PcpErrorOpinionAtRelocationSource
+///
 /// Opinions were found at a relocation source path.
+///
 class PcpErrorOpinionAtRelocationSource : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -647,7 +709,10 @@ class PcpErrorPrimPermissionDenied;
 typedef boost::shared_ptr<PcpErrorPrimPermissionDenied>
     PcpErrorPrimPermissionDeniedPtr;
 
+/// \class PcpErrorPrimPermissionDenied
+///
 /// Layers with illegal opinions about private prims.
+///
 class PcpErrorPrimPermissionDenied : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -674,7 +739,10 @@ class PcpErrorPropertyPermissionDenied;
 typedef boost::shared_ptr<PcpErrorPropertyPermissionDenied>
     PcpErrorPropertyPermissionDeniedPtr;
 
+/// \class PcpErrorPropertyPermissionDenied
+///
 /// Layers with illegal opinions about private properties.
+///
 class PcpErrorPropertyPermissionDenied : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -699,7 +767,10 @@ private:
 class PcpErrorSublayerCycle;
 typedef boost::shared_ptr<PcpErrorSublayerCycle> PcpErrorSublayerCyclePtr;
 
+/// \class PcpErrorSublayerCycle
+///
 /// Layers that recursively sublayer themselves.
+///
 class PcpErrorSublayerCycle : public PcpErrorBase {
 public:
     /// Returns a new error object.
@@ -724,7 +795,10 @@ class PcpErrorTargetPermissionDenied;
 typedef boost::shared_ptr<PcpErrorTargetPermissionDenied>
     PcpErrorTargetPermissionDeniedPtr;
 
+/// \class PcpErrorTargetPermissionDenied
+///
 /// Paths with illegal opinions about private targets.
+///
 class PcpErrorTargetPermissionDenied : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
@@ -746,7 +820,10 @@ class PcpErrorUnresolvedPrimPath;
 typedef boost::shared_ptr<PcpErrorUnresolvedPrimPath>
     PcpErrorUnresolvedPrimPathPtr;
 
+/// \class PcpErrorUnresolvedPrimPath
+///
 /// Asset paths that could not be both resolved and loaded.
+///
 class PcpErrorUnresolvedPrimPath : public PcpErrorBase {
 public:
     /// Returns a new error object.

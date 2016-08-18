@@ -37,6 +37,8 @@ typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 
 #include <boost/shared_ptr.hpp>
 
+/// \class HdEngine
+///
 /// The user-facing entry point for issuing render commands.
 ///
 class HdEngine {
@@ -49,8 +51,12 @@ public:
     HdResourceRegistry& GetResourceRegistry() const
         { return *_resourceRegistry; }
 
+    /// \name Task Context
+    ///
     /// External interface to set data/state in the task context passed to
     /// each task in the render graph
+    ///
+    /// @{
 
     /// Adds or updates the value associated with the token.
     /// Only one is supported for each token.
@@ -60,6 +66,8 @@ public:
     /// Removes the specified token.
     HDLIB_API
     void RemoveTaskContextData(const TfToken &id);
+
+    /// @}
 
     /// Execute tasks.
     HDLIB_API

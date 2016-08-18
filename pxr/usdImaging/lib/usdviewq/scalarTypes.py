@@ -43,7 +43,6 @@ def ToString(v, typeName=None):
     This string is used in the watch window"""
 
     from pxr import Tf, Gf
-    import locale
     import pprint
 
     if v is None:
@@ -99,11 +98,11 @@ def ToString(v, typeName=None):
 
     # pretty print an int 
     elif isinstance(v, int):
-        result = locale.format("%d", v, grouping=True)
+        result = "{:,d}".format(v)
 
     # pretty print a float 
     elif isinstance(v, float):
-        result = locale.format("%f", v, grouping=True)
+        result =  "{:,.6f}".format(v)
 
     # print a string as-is
     elif isinstance(v, str):

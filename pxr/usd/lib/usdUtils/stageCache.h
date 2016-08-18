@@ -21,13 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/**
-   \file
-   \brief A simple interface for handling a singleton usd stage cache.
-*/
-
 #ifndef _USDUTILS_STAGECACHE_H_
 #define _USDUTILS_STAGECACHE_H_
+
+/// \file usdUtils/stageCache.h
+/// A simple interface for handling a singleton usd stage cache.
 
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usd/stageCache.h"
@@ -40,22 +38,23 @@
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayer);
 
-/**
-   The UsdUtilsStageCache class provides a simple interface for handling a
-   singleton usd stage cache for use by all USD clients. This way code from any
-   location can make use of the same cache to maximize stage reuse.
-*/
+/// \class UsdUtilsStageCache
+///
+/// The UsdUtilsStageCache class provides a simple interface for handling a
+/// singleton usd stage cache for use by all USD clients. This way code from
+/// any location can make use of the same cache to maximize stage reuse.
+///
 class UsdUtilsStageCache {
 public:
 
-    // Returns the singleton stage cache.
+    /// Returns the singleton stage cache.
     USDUTILS_API
     static UsdStageCache &Get();
 
-    // Given variant selections as a vector of pairs (vector in case order
-    // matters to the client), constructs a session layer with overs on the
-    // given root modelName with the variant selections, or returns a cached
-    // session layer with those opinions.
+    /// Given variant selections as a vector of pairs (vector in case order
+    /// matters to the client), constructs a session layer with overs on the
+    /// given root modelName with the variant selections, or returns a cached
+    /// session layer with those opinions.
     USDUTILS_API
     static SdfLayerRefPtr GetSessionLayerForVariantSelections(
         const TfToken& modelName,

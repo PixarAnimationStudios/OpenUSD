@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdHydra)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usdHydra
 
     LIBRARIES
@@ -21,6 +25,7 @@ pxr_shared_library(usdHydra
         api.h
         
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

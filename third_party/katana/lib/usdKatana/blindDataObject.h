@@ -24,12 +24,12 @@
 #ifndef USDKATANA_GENERATED_BLINDDATAOBJECT_H
 #define USDKATANA_GENERATED_BLINDDATAOBJECT_H
 
-
-
+/// \file usdKatana/blindDataObject.h
 
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "usdKatana/api.h"
 #include "usdKatana/tokens.h"
 
 #include "pxr/base/vt/value.h"
@@ -47,6 +47,8 @@ class SdfAssetPath;
 // BLINDDATAOBJECT                                                            //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdKatanaBlindDataObject
+///
 /// Container namespace schema for katana blind data from the klf file
 ///
 class UsdKatanaBlindDataObject : public UsdSchemaBase
@@ -76,15 +78,17 @@ public:
     }
 
     /// Destructor.
+    USDKATANA_API
     virtual ~UsdKatanaBlindDataObject();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDKATANA_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdKatanaBlindDataObject holding the prim adhering to this
+    /// Return a UsdKatanaBlindDataObject holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -93,10 +97,11 @@ public:
     /// UsdKatanaBlindDataObject(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDKATANA_API
     static UsdKatanaBlindDataObject
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -118,6 +123,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDKATANA_API
     static UsdKatanaBlindDataObject
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -129,6 +135,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDKATANA_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -141,6 +148,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->String
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDKATANA_API
     UsdAttribute GetTypeAttr() const;
 
     /// See GetTypeAttr(), and also 
@@ -148,6 +156,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDKATANA_API
     UsdAttribute CreateTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -160,6 +169,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Bool
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDKATANA_API
     UsdAttribute GetVisibleAttr() const;
 
     /// See GetVisibleAttr(), and also 
@@ -167,6 +177,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDKATANA_API
     UsdAttribute CreateVisibleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -188,6 +199,7 @@ public:
     /// \p katanaFullName should be the full attribute name from katana, i.e. 
     /// "materials.interface.foo".   \p usdType is the typename for the
     /// attribute and will be passed directly to \p UsdPrim::CreateAttribute().
+    USDKATANA_API
     UsdAttribute
     CreateKbdAttribute(
         const std::string &katanaFullName,
@@ -202,6 +214,7 @@ public:
     /// As noed above, rib attributes can be either UsdAttribute or 
     /// UsdRelationship, and like all UsdProperties, need not have a defined 
     /// value.
+    USDKATANA_API
     std::vector<UsdProperty>
     GetKbdAttributes(const std::string &nameSpace = "") const;
 
@@ -209,9 +222,11 @@ public:
     // GetKbdAttribute
     // --------------------------------------------------------------------- //
     /// Return a specific KBD attribute
+    USDKATANA_API
     UsdAttribute
     GetKbdAttribute(const std::string &katanaFullName);
 
+    USDKATANA_API
     bool 
     _IsCompatible(const UsdPrim &prim) const;
 
@@ -222,6 +237,7 @@ public:
     /// "geometry" or "materials").  Can be used with
     /// GetGroupBuilderKeyForProperty()
     ///
+    USDKATANA_API
     static TfToken GetKbdAttributeNameSpace(const UsdProperty &prop);
 
     // --------------------------------------------------------------------- //
@@ -243,6 +259,7 @@ public:
     /// "interface.foo"
     ///
     /// To get "materials", use GetKbdAttributeNameSpace()
+    USDKATANA_API
     static std::string GetGroupBuilderKeyForProperty(const UsdProperty& prop);
 
     // --------------------------------------------------------------------- //
@@ -250,6 +267,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Return true if the property is in the "ri:attributes" namespace.
     ///
+    USDKATANA_API
     static bool IsKbdAttribute(const UsdProperty &prop);
 };
 

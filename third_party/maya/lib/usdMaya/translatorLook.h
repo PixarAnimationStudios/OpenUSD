@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_TRANSLATOR_LOOK_H
 
 #include "pxr/base/tf/staticTokens.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdShade/look.h"
 
@@ -37,6 +38,7 @@
     ((LookNamespace, "USD_Looks"))
 
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorLookTokens,
+    USDMAYA_API,
     PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS);
 
 /// \brief Provides helper functions for reading UsdShadeLook

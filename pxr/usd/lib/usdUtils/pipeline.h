@@ -24,6 +24,12 @@
 #ifndef _USDUTILS_PIPELINE_H_
 #define _USDUTILS_PIPELINE_H_
 
+/// \file usdUtils/pipeline.h
+///
+/// Collection of module-scoped utilities for establishing pipeline
+/// conventions for things not currently suitable or possible to canonize in
+/// USD's schema modules.
+
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usdUtils/registeredVariantSet.h"
 
@@ -33,11 +39,6 @@
 #include "pxr/base/tf/envSetting.h"
 
 SDF_DECLARE_HANDLES(SdfLayer);
-
-/// \file pipeline.h
-/// Collection of module-scoped utilities for establishing pipeline conventions
-/// for things not currently suitable or possible to canonize in USD's
-/// schema modules.
 
 /// Are the UsdGeomCameras in the given stage Z up?
 ///

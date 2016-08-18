@@ -26,6 +26,9 @@
 #ifndef GF_{{ UPPER(MAT)[2:] }}_H
 #define GF_{{ UPPER(MAT)[2:] }}_H
 
+/// \file gf/matrix{{ SUFFIX }}.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec{{ SUFFIX }}.h"
 #include "pxr/base/gf/traits.h"
@@ -37,10 +40,6 @@
 #include <iosfwd>
 #include <vector>
 
-/// \file matrix{{ SUFFIX }}.h
-/// \ingroup group_gf_LinearAlgebra
-///
-
 template <>
 struct GfIsGfMatrix<class {{ MAT }}> { static const bool value = true; };
 
@@ -50,11 +49,12 @@ class GfMatrix{{ DIM }}{{ S[0] }};
 {% block forwardDeclarations %}
 {% endblock %}
 
-/// \class {{ MAT }} matrix{{ SUFFIX }}.h "pxr/base/gf/matrix{{ SUFFIX }}.h"
+/// \class {{ MAT }}
 /// \ingroup group_gf_LinearAlgebra
-/// \brief Stores a {{ DIM }}x{{ DIM }} matrix of \c {{ SCL }} elements. A basic type.
 ///
-/// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c> 
+/// Stores a {{ DIM }}x{{ DIM }} matrix of \c {{ SCL }} elements. A basic type.
+///
+/// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c>
 /// indexes the element in the \e i th row and the \e j th column.
 ///
 {% block classDocs %}{% endblock %}
@@ -66,8 +66,7 @@ public:
     static const size_t numRows = {{ DIM }};
     static const size_t numColumns = {{ DIM }};
 
-    /// Default constructor. Leaves the matrix component values
-    /// undefined.
+    /// Default constructor. Leaves the matrix component values undefined.
     {{ MAT }}() {}
 
     /// Constructor. Initializes the matrix from {{ DIM*DIM }} independent
@@ -77,14 +76,14 @@ public:
         Set({{ MATRIX("m%(i)s%(j)s", indent=12) }});
     }
 
-    /// Constructor. Initializes the matrix from a {{ DIM }}x{{ DIM }} array of
-    /// \c {{ SCL }} values, specified in row-major order.
+    /// Constructor. Initializes the matrix from a {{ DIM }}x{{ DIM }} array
+    /// of \c {{ SCL }} values, specified in row-major order.
     {{ MAT }}(const {{ SCL }} m[{{ DIM }}][{{ DIM }}]) {
         Set(m);
     }
 
-    /// Constructor. Explicitly initializes the matrix to \e s times
-    /// the identity matrix.
+    /// Constructor. Explicitly initializes the matrix to \e s times the
+    /// identity matrix.
     explicit {{ MAT }}({{ SCL }} s) {
         SetDiagonal(s);
     }
@@ -98,11 +97,11 @@ public:
     }
 
 {% for S in SCALARS %}
-    /// Constructor.  Initialize the matrix from a vector of vectors of {{ S }}.
-    /// The vector is expected to be {{ DIM }}x{{ DIM }}.  If it is too big, only the first
-    /// {{ DIM }} rows and/or columns will be used.  If it is too small, uninitialized
-    /// elements will be filled in with the corresponding elements from an
-    /// identity matrix.
+    /// Constructor.  Initialize the matrix from a vector of vectors of
+    /// {{ S }}. The vector is expected to be {{ DIM }}x{{ DIM }}. If it is
+    /// too big, only the first {{ DIM }} rows and/or columns will be used.
+    /// If it is too small, uninitialized elements will be filled in with
+    /// the corresponding elements from an identity matrix.
     ///
     explicit {{ MAT }}(const std::vector< std::vector<{{ S }}> >& v);
 
@@ -110,14 +109,12 @@ public:
 {% block customConstructors %}
 {% endblock %}
 {% if SCL == 'double' %}
-    //!
-    // This explicit constructor converts a "float" matrix to a "double" matrix.
+    /// This explicit constructor converts a "float" matrix to a "double" matrix.
     explicit {{ MAT }}(const class GfMatrix{{ DIM }}f& m);
 
 {% endif %}
 {% if SCL == 'float' %}
-    //!
-    // This explicit constructor converts a "double" matrix to a "float" matrix.
+    /// This explicit constructor converts a "double" matrix to a "float" matrix.
     explicit {{ MAT }}(const class GfMatrix{{ DIM }}d& m);
 
 {% endif %}
@@ -141,16 +138,16 @@ public:
         return GfVec{{ SUFFIX }}({{ LIST("_mtx[%(i)s][i]") }});
     }
 
-    /// \brief Sets the matrix from {{ DIM*DIM }} independent \c {{ SCL }} values, specified
-    /// in row-major order. For example, parameter \e m10 specifies the
-    /// value in row 1 and column 0.
+    /// Sets the matrix from {{ DIM*DIM }} independent \c {{ SCL }} values,
+    /// specified in row-major order. For example, parameter \e m10 specifies
+    /// the value in row 1 and column 0.
     {{ MAT }}& Set({{ MATRIX("%(SCL)s m%%(i)s%%(j)s" % { 'SCL':SCL }, indent=20) }}) {
         {{ MATRIX("_mtx[%(i)s][%(j)s] = m%(i)s%(j)s;", sep=" ", indent=8) }}
         return *this;
     }
 
-    /// \brief Sets the matrix from a {{ DIM }}x{{ DIM }} array of \c {{ SCL }} values, specified
-    /// in row-major order.
+    /// Sets the matrix from a {{ DIM }}x{{ DIM }} array of \c {{ SCL }}
+    /// values, specified in row-major order.
     {{ MAT }}& Set(const {{ SCL }} m[{{ DIM }}][{{ DIM }}]) {
         {{ MATRIX("_mtx[%(i)s][%(j)s] = m[%(i)s][%(j)s];", sep="\n        ") }}
         return *this;
@@ -185,15 +182,15 @@ public:
     const {{ SCL }}* GetArray() const {
         return _mtx.GetData();
     }
-    
-    /// Accesses an indexed row \e i of the matrix as an array of {{ DIM }} \c {{ SCL }}
-    /// values so that standard indexing (such as <c>m[0][1]</c>) works
-    /// correctly.
+
+    /// Accesses an indexed row \e i of the matrix as an array of {{ DIM }} \c
+    /// {{ SCL }} values so that standard indexing (such as <c>m[0][1]</c>)
+    /// works correctly.
     {{ SCL }}* operator [](int i) { return _mtx[i]; }
 
-    /// Accesses an indexed row \e i of the matrix as an array of {{ DIM }} \c {{ SCL }}
-    /// values so that standard indexing (such as <c>m[0][1]</c>) works
-    /// correctly.
+    /// Accesses an indexed row \e i of the matrix as an array of {{ DIM }} \c
+    /// {{ SCL }} values so that standard indexing (such as <c>m[0][1]</c>)
+    /// works correctly.
     const {{ SCL }}* operator [](int i) const { return _mtx[i]; }
 
     /// Hash.
@@ -204,7 +201,7 @@ public:
         while (nElems--)
             boost::hash_combine(h, *p++);
         return h;
-    }        
+    }
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
@@ -230,10 +227,10 @@ public:
     {{ MAT }} GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
-    /// matrix is singular. (FLT_MAX is the largest value a \c float can have, 
-    /// as defined by the system.) The matrix is considered singular if the 
-    /// determinant is less than or equal to the optional parameter \e eps.
-    /// If \e det is non-null, <c>*det</c> is set to the determinant.
+    /// matrix is singular. (FLT_MAX is the largest value a \c float can have,
+    /// as defined by the system.) The matrix is considered singular if the
+    /// determinant is less than or equal to the optional parameter \e eps. If
+    /// \e det is non-null, <c>*det</c> is set to the determinant.
     {{ MAT }} GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
@@ -248,12 +245,11 @@ public:
     /// Multiplies the matrix by a {{ SCL }}.
     {{ MAT }}& operator *=(double);
 
-    ///
-    // Returns the product of a matrix and a {{ SCL }}.
+    /// Returns the product of a matrix and a {{ SCL }}.
     friend {{ MAT }} operator *(const {{ MAT }}& m1, double d)
     {
-	{{ MAT }} m = m1;
-	return m *= d;
+        {{ MAT }} m = m1;
+        return m *= d;
     }
 
     ///
@@ -280,15 +276,15 @@ public:
         return tmp;
     }
 
-    /// Subtracts matrix \e m2 from \e m1
+    /// Subtracts matrix \e m2 from \e m1.
     friend {{ MAT }} operator -(const {{ MAT }}& m1, const {{ MAT }}& m2)
     {
         {{ MAT }} tmp(m1);
         tmp -= m2;
         return tmp;
     }
-    
-    /// Multiplies matrix \e m1 by \e m2
+
+    /// Multiplies matrix \e m1 by \e m2.
     friend {{ MAT }} operator *(const {{ MAT }}& m1, const {{ MAT }}& m2)
     {
         {{ MAT }} tmp(m1);

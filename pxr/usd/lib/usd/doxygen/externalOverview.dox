@@ -28,7 +28,7 @@ or jump directly into the core of the \ref usd_page_front "Usd API."
 
 <HR>
 
-USD is distributed under a \ref Usd_License "modified Apache 2.0 license"
+USD is distributed under a <a href="https://github.com/PixarAnimationStudios/USD/blob/master/LICENSE.txt"> modified Apache 2.0 license</a>
 */
 
 /*!
@@ -96,26 +96,34 @@ Following is a deeper indexing of the four packages.
 
 \subsection Usd_Package_Base The "base" package
 
-- \b Arch : The "Architecture dependent" module centralizes functionality
+- \ref arch_page_front module centralizes functionality
   that must be implemented differently for different operating systems or
   architectures, so that we can avoid littering the entire code-base with
   conditionally-compiled code.
 
-- \b Tf : The "Tools Foundation" module is a catch-all for low-level,
+- \ref tf_page_front module is a catch-all for low-level,
   commonly used services developed at Pixar, including facilities for memory
   tracking, error reporting and debugging, string utilities, boost python
   wrapping aids, threading/synchronization tools, registry and singleton
   management, smart pointers, and "observer pattern" support, which we call
   "notification". 
 
-- \b Gf : The "Graphics Foundation" module provides Pixar's equivalent to
+- \ref gf_page_front module provides Pixar's equivalent to
   imath, and provides many of the types enumerated in Vt.  It also provides
   other foundational graphics abstractions like frusta and a camera
   model. Given unlimited resources we would have replaced our use of the
   linear algebra components in Gf with imath, but Gf's use in Pixar's
   code-base is substantial and its API's do not map one-to-one to imath.
 
-- \b Vt : The "Value Types" module provides many of the concrete types that Sdf
+- \ref js_page_front module provides a thin API wrapper on top of the 
+  <a href="http://rapidjson.org/">RapidJSON</a> package, which is what our
+  plugin system uses for multi-threaded plugin discovery. 
+
+- \ref tracelite_page_front module provides a stubbed interface for embeddable
+  performance-profiling tagging.  USD does not yet ship with an implementation
+  of this interface, but may at some point in the future.
+
+- \ref vt_page_front module provides many of the concrete types that Sdf
   is able to recognize and serialize.  It provides a copy-on-write
   array-type, VtArray, which is used for all array types in Usd, and an
   efficient type-erasure wrapper class, VtValue, that also provides datatype
@@ -123,11 +131,11 @@ Following is a deeper indexing of the four packages.
   python.  VtValue is supported in all Usd API for getting and setting
   values.
 
-- \b Work : The Work module provides a thin abstraction layer on top of
+- \ref work_page_front module provides a thin abstraction layer on top of
   Intel's TBB (Thread Building Blocks), and is leveraged extensively in Usd
   core and higher-level services for multi-threading.
 
-- \b Plug : The Plugin module provides the organization and access API for
+- \ref plug_page_front module provides the organization and access API for
   all plugins to Pixar open software.  It identifies plugins by the existence
   of a plugInfo.json manifest file, which enumerates the number and kinds of
   plugins provided by a module.  
@@ -140,16 +148,16 @@ scene description serialization, and composition, upon which the "core" Usd
 module relies.  The USD package is rounded out by a set of schema and utility
 modules that layer on top of the core.  In low-to-high order, the modules are:
 
-- \ref kind_page_front module provides a simple, site-extensible token-based
-  typing system, which USD uses, for example, to identify and classify types
-  of "models".
-
-- \b Ar : The Asset Resolver module defines the abstract interface for USD's
+- \ref ar_page_front module defines the abstract interface for USD's
   asset resolution plugin, so that clients can author asset references in
   their USD files that make sense to their asset management systems.  It also
   provides a "fallback resolver" that is active when no site-level plugin has
   been provided; the fallback resolver provides basic search-path based
   resolution.
+
+- \ref kind_page_front module provides a simple, site-extensible token-based
+  typing system, which USD uses, for example, to identify and classify types
+  of "models".
 
 - \ref sdf_page_front module defines the Usd data
   model, namely: prims, attributes, relationships, meta-data, as well as the
@@ -194,28 +202,51 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   shading schemas to be built on top of it, and a Look can host the network
   "terminals" for any number of renderer schemas.
 
-- \b UsdRi : A utility and schema module for data targeted at Pixar's
+- \ref usdHydra_page_front module provides a set of schemas for authoring
+  Hydra-targetted shading in the USD shading model.
+
+- \ref usdRi_page_front module for data targeted at Pixar's
   RenderMan specification.  Includes shading schemas for both RSL and RIS
   shading systems, as well as a "catch all" \c RiStatements schema for
   encoding various RenderMan concepts/directives, such as attributes,
   options, coordinate systems, etc.
 
-- \b UsdUtils : Provides a number of utilities and conventions that have
-  proven useful in a USD-based pipeline.
+- \ref usdUtils_page_front module provides a number of utilities and
+  conventions that have proven useful in a USD-based pipeline.
 
 
 \subsection Usd_Package_Imaging The "imaging" package
+
+- \b Garch : The Graphics Architecture module provides abstractions for
+  architecture-specific functionality that may pull in imaging-related
+  dependencies.
 
 - \b Glf : The Gl Foundations module provides access to textures, ptextures,
   and glslfx files.  It also provides some basic glsl shaders upon which Hd
   behaviors are built.
 
-- \b Hd : The Hydra renderer.  Hydra makes usd of OpenSubdiv for tessellating
-  subdivision meshes, and supports general programmable glsl shaders, with
-  multiple render passes.
+- \b Glfq : The Gl Qt Foundations module makes it easy to instrument your
+  QglWidget classes so that your application can be configured at runtime to
+  emit detailed OpenGL debugging output.
+
+- \b CameraUtil The Camera Utilities module provides a small but important set of 
+  common camera-related computations that don't really belong in the core
+  GfCamera class.
+
+- \b PxOsd : The Pixar OpenSubdiv module provides some higher-level utilities on
+  top of OpenSubdiv that may, one day make it into OpenSubdiv, but are still 
+  "cooking".  Hydra interacts with OpenSubdiv through pxOsd.
+
+- \b Hd : The Hydra module provides the Hydra renderer.  Hydra uses
+  OpenSubdiv for tessellating subdivision meshes, and supports general
+  programmable glsl shaders, and multiple render passes.
+
+- \b Hdx : The Hydra Extensions module provides higher-level functionality on
+  top of Hydra, such as organization and packaging for particular kinds of
+  multiple render-pass tasks.
+
 
 \subsection Usd_Package_UsdImaging The "usdImaging" package
-
 
 - \b UsdImaging : An adapter to Pixar's modern, high-performance GL
   rendering engine \em Hydra (which in turn leverages OpenSubdiv) that
@@ -236,16 +267,7 @@ classes.  Each module described in the last section, plus the core Usd
 module, are independently importable.  Each module includes in-python
 help/documentation extracted from the doxygen docs for the module.  We have
 chosen, initially, to keep the python API as true to the C++ API as possible,
-with two notable exceptions.
-
- - <b>All array-valued data can be expressed as numpy.array .</b> The Pixar
-   templated VtArray container serves as the native array type for Sdf and
-   Usd, and is what the UsdAttribute Get() and Set() methods accept.
-   However, while VtArray is fully wrapped to python, all Usd API that
-   returns VtArray-valued data will instead return an equivalent numpy.array
-   in its python-wrapped form, and all Usd API that accepts a VtArray-valued
-   datum will accept, from python, either a VtArray or a numpy.array, or
-   native python array types.
+with one notable exceptions.
 
  - <b>Some underlying modules support more pythonic API's.</b> Some of the
    foundational modules shared with Presto, such as Sdf,  provide a more
@@ -256,10 +278,18 @@ with two notable exceptions.
    data that resides in one-or-more SdfLayer s, and don't possess any member
    variables/properties other than those that serve as temporary caches.
 
+USD's central array type, used to hold all array-valued scene description types,
+is VtArray.  THe python wrapping for VtArray supports python's "buffer protocol",
+so VtArray 's returned by USD to python can be trivially accessed like and
+converted to native python containers, as well as numpy arrays.  Further, 
+USD methods that expect a VtArray input argument should always successfully
+convert native python containers and numpy arrays whose underlying element-type
+is compatible.
 
 \section Usd_Quickstart Quickstart!
 
-Please visit <a href="http://openusd.org/docs">the USD Documentation Hub</a> where you will find tutorials, FAQs, and other supporting material.
+Please visit <a href="http://openusd.org">the USD Documentation Hub</a> where 
+you will find tutorials, FAQs, and other supporting material.
 
 
 \section Usd_Background USD: What's the Point, and Why Isn't it Alembic ?

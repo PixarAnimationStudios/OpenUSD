@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_CUBE_H
 #define USDGEOM_GENERATED_CUBE_H
 
+/// \file usdGeom/cube.h
+
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,7 +47,9 @@ class SdfAssetPath;
 // CUBE                                                                       //
 // -------------------------------------------------------------------------- //
 
-/// \brief Defines a primitive rectilinear cube centered at the origin.
+/// \class UsdGeomCube
+///
+/// Defines a primitive rectilinear cube centered at the origin.
 /// 
 /// The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
 /// they all pack into the same volume/bounds.
@@ -87,7 +91,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomCube holding the prim adhering to this
+    /// Return a UsdGeomCube holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -100,7 +104,7 @@ public:
     static UsdGeomCube
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

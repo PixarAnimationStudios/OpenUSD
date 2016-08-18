@@ -96,7 +96,7 @@ public:
             // Allowable child node types:
             //     <none>
 
-        NumNodeTypes //!< Internal sentinel value
+        NumNodeTypes ///< Internal sentinel value
     };
 
     static Sdf_PathNodeConstRefPtr

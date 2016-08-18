@@ -24,7 +24,7 @@
 #ifndef USD_PRIMFLAGS_H
 #define USD_PRIMFLAGS_H
 
-/// \file primFlags.h
+/// \file usd/primFlags.h
 ///
 /// \anchor Usd_PrimFlags
 ///
@@ -461,6 +461,5 @@ inline Usd_PrimFlagsDisjunction
 operator||(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
     return Usd_Term(lhs) || Usd_Term(rhs);
 }
-
 
 #endif // USD_PRIMFLAGS_H

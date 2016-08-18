@@ -44,6 +44,8 @@ typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 typedef boost::shared_ptr<class HdRprim> HdRprimSharedPtr;
 typedef boost::shared_ptr<class HdRprim const> HdRprimConstSharedPtr;
 
+/// \class HdRprim
+///
 /// The render engine state for a given rprim from the scene graph. All data 
 /// access (aside from local caches) is delegated to the HdSceneDelegate.
 ///

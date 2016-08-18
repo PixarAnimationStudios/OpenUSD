@@ -34,22 +34,19 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/interval.h"
 
-#include <boost/mpl/not.hpp>
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_pointer.hpp>
-
 #include <string>
+#include <type_traits>
 #include <vector>
 
 class UsdAttribute;
 
-/// \brief A std::vector of UsdAttributes.
+/// A std::vector of UsdAttributes.
 typedef std::vector<UsdAttribute> UsdAttributeVector;
 
 /// \class UsdAttribute
 ///
-/// \brief Scenegraph object for authoring and retrieving numeric, string,
-/// and array valued data, sampled over time.
+/// Scenegraph object for authoring and retrieving numeric, string, and array
+/// valued data, sampled over time.
 ///
 /// The allowed value types for UsdAttribute are dictated by the Sdf
 /// ("Scene Description Foundations") core's data model, which we summarize in
@@ -149,6 +146,8 @@ public:
     /// \name Core Metadata
     // --------------------------------------------------------------------- //
 
+    /// @{
+
     /// An attribute's variability expresses whether it is intended to have
     /// time-samples (\c SdfVariabilityVarying), or only a single default 
     /// value (\c SdfVariabilityUniform).
@@ -179,12 +178,16 @@ public:
     /// Return the roleName for this attribute's typeName.
 	USD_API TfToken GetRoleName() const;
 
+    /// @}
+
     // --------------------------------------------------------------------- //
     /// \anchor Usd_AttributeValueMethods
     /// \name Value & Time-Sample Accessors
     // --------------------------------------------------------------------- //
 
-    /// \brief Populates a vector with authored sample times.
+    /// @{
+
+    /// Populates a vector with authored sample times.
     /// Returns false only on error.
     ///
     /// This method uses the standard resolution semantics, so if a stronger
@@ -198,7 +201,7 @@ public:
     /// \sa UsdAttribute::GetTimeSamplesInInterval
 	USD_API bool GetTimeSamples(std::vector<double>* times) const;
 
-    /// \brief Populates a vector with authored sample times in \p interval. 
+    /// Populates a vector with authored sample times in \p interval. 
     /// The interval may have any combination of open/infinite and 
     /// closed/finite endpoints; it may not have open/finite endpoints, however,
     /// this restriction may be lifted in the future.
@@ -210,7 +213,7 @@ public:
 	USD_API bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
 
-    /// \brief Returns the number of time samples that have been authored.
+    /// Returns the number of time samples that have been authored.
     ///
     /// This method uses the standard resolution semantics, so if a stronger
     /// default value is authored over weaker time samples, the default value
@@ -221,7 +224,7 @@ public:
     /// expensive, especially if many clips are involved.
 	USD_API size_t GetNumTimeSamples() const;
 
-    /// \brief Populate \a lower and \a upper with the next greater and lesser
+    /// Populate \a lower and \a upper with the next greater and lesser
     /// value relative to the \a desiredTime. Return false if no value exists
     /// or an error occurs, true if either a default value or timeSamples exist.
     ///
@@ -307,7 +310,7 @@ public:
     /// retrieve resolved asset paths from SdfAssetPath-valued attributes.
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType);
+        static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         return _Get(value, time);
     }
     /// \overload 
@@ -329,9 +332,9 @@ public:
     /// or if there is no existing definition for the attribute.
     template <typename T>
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_pointer<T> >::value);
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType 
-                            or std::is_same<T, SdfValueBlock>::value);
+        static_assert(!std::is_pointer<T>::value, "");
+        static_assert(SdfValueTypeTraits<T>::IsValueType ||
+                      std::is_same<T, SdfValueBlock>::value, "");
 
         SdfAbstractDataConstTypedValue<T> in(&value);
         return _UntypedSet(in, time);
@@ -340,7 +343,7 @@ public:
     /// \overload 
 	USD_API bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// \brief Clears the authored default value and all time samples for this
+    /// Clears the authored default value and all time samples for this
     /// attribute at the current EditTarget and returns true on success.
     ///
     /// Calling clear when either no value is authored or no spec is present,
@@ -349,7 +352,7 @@ public:
     /// This method does not affect any other data authored on this attribute.
 	USD_API bool Clear() const;
 
-    /// \brief Clears the authored value for this attribute at the given 
+    /// Clears the authored value for this attribute at the given 
     /// \a time, at the current EditTarget and returns true on success. 
     /// UsdTimeCode::Default() can be used to clear the default value.
     ///
@@ -357,16 +360,18 @@ public:
     /// is a silent no-op returning true. 
 	USD_API bool ClearAtTime(UsdTimeCode time) const;
 
-    /// \brief Shorthand for ClearAtTime(UsdTimeCode::Default()).
+    /// Shorthand for ClearAtTime(UsdTimeCode::Default()).
 	USD_API bool ClearDefault() const;
 
-    /// \brief Removes all time samples on an attribute and sets a block
+    /// Removes all time samples on an attribute and sets a block
     /// value as the default. See \c SdfValueBlock for more information
     /// on the type being authored. This value covers all lower opinions
     /// in the LayerStack. During value resolution, if a block is authored,
     /// if there is a fallback, the client will receive that, otherwise they
     /// will receive false when calling Get(). 
 	USD_API void Block();
+
+    /// @}
 
     // ---------------------------------------------------------------------- //
     // Private Methods and Members 

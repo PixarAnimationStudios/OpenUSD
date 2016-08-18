@@ -34,6 +34,8 @@
 
 typedef boost::shared_ptr<class HdResource> HdResourceSharedPtr;
 
+/// \class HdResource
+///
 /// Base class for all GPU resource objects.
 ///
 class HdResource : boost::noncopyable {

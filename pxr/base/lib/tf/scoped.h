@@ -30,14 +30,15 @@
 #include <boost/function.hpp>
 #include <boost/utility.hpp>
 
-/// \class TfScoped Scoped.h "pxr/base/tf/scoped.h"
-/// \brief Execute code on exiting scope.
+/// \class TfScoped
 /// \ingroup group_tf_Multithreading
 ///
-/// A \c TfScoped executes code when destroyed.  It's useful when cleanup
-/// code should be executed when exiting the scope because it gets executed
-/// no matter how the scope is exited (e.g. normal execution, return,
-/// exceptions, etc).
+/// Execute code on exiting scope.
+///
+/// A \c TfScoped executes code when destroyed.  It's useful when cleanup code
+/// should be executed when exiting the scope because it gets executed no
+/// matter how the scope is exited (e.g. normal execution, return, exceptions,
+/// etc).
 ///
 /// \code
 ///     int func(bool x) {
@@ -45,6 +46,7 @@
 ///          return func2(x);          // call cleanup after calling func2
 ///     }
 /// \endcode
+///
 template <typename T = boost::function<void ()> >
 class TfScoped : boost::noncopyable {
 public:
@@ -108,11 +110,12 @@ private:
     Procedure _onExit;
 };
 
-/// \class TfScopedVar Scoped.h "pxr/base/tf/scoped.h"
-/// \brief Reset variable on exiting scope.
+/// \class TfScopedVar
 ///
-/// A \c TfScopedVar sets a variable to a value when created then
-/// restores its original value when destroyed.  For example:
+/// Reset variable on exiting scope.
+///
+/// A \c TfScopedVar sets a variable to a value when created then restores its
+/// original value when destroyed.  For example:
 ///
 /// \code
 ///     int func(bool x) {
@@ -123,10 +126,10 @@ private:
 template <typename T>
 class TfScopedVar : boost::noncopyable {
 public:
-    /// \brief Set/reset variable
+    /// Set/reset variable
     ///
-    /// Sets \p x to \p val immediately and restores its old
-    /// value when this goes out of scope.
+    /// Sets \p x to \p val immediately and restores its old value when this
+    /// goes out of scope.
     explicit TfScopedVar(T& x, const T& val) :
         _x(&x),
         _old(x)
@@ -145,12 +148,14 @@ private:
     T _old;
 };
 
-/// \class TfScopedAutoVar Scoped.h "pxr/base/tf/scoped.h"
-/// \brief Reset variable on exiting scope.
+/// \class TfScopedAutoVar
 ///
-/// A \c TfScopedAutoVar sets a variable to a value when created then
-/// restores its original value when destroyed.  For example:
+/// Reset variable on exiting scope.
 ///
+/// A \c TfScopedAutoVar sets a variable to a value when created then restores
+/// its original value when destroyed.
+///
+/// For example:
 /// \code
 ///     int func(bool x) {
 ///          TfScopedAutoVar scope(x, true);    // set x to true
@@ -158,16 +163,18 @@ private:
 ///     }
 /// \endcode
 ///
-/// This differs from \c TfScopedVar in that it's not a template class,
-/// the value type is deduced automatically and it allocates memory on
-/// the heap.  If performance is critical or memory must not be allocated
-/// then use \c TfScopedVar instead.
+/// This differs from \c TfScopedVar in that it's not a template class, the
+/// value type is deduced automatically and it allocates memory on the heap.
+/// If performance is critical or memory must not be allocated then use \c
+/// TfScopedVar instead.
+///
+/// \see TfScopedVar
 class TfScopedAutoVar : boost::noncopyable {
 public:
-    /// \brief Set/reset variable
+    /// Set/reset variable
     ///
-    /// Sets \p x to \p val immediately and restores its old
-    /// value when this goes out of scope.
+    /// Sets \p x to \p val immediately and restores its old value when this
+    /// goes out of scope.
     template <typename T>
     explicit TfScopedAutoVar(T& x, const T& val) :
         _scope(boost::bind(&TfScopedAutoVar::_Set<T>, &x, x))

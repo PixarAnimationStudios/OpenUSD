@@ -98,6 +98,8 @@ class SdfPath;
 // PERFORMANCE LOG                                                            //
 //----------------------------------------------------------------------------//
 
+/// \class HdPerfLog
+///
 /// Performance counter monitoring.
 ///
 class HdPerfLog : public boost::noncopyable {

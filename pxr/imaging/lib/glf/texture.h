@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/texture.h
 #ifndef GLF_TEXTURE_H
 #define GLF_TEXTURE_H
+
+/// \file glf/texture.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -47,21 +48,23 @@ TF_DECLARE_PUBLIC_TOKENS(GlfTextureTokens, GLF_API, GLF_TEXTURE_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 
-/// 
-/// \class GlfTexture texture.h "pxr/imaging/glf/texture_H
-/// \brief Represents a texture object in Glf
+/// \class GlfTexture
+///
+/// Represents a texture object in Glf.
 ///
 /// A texture is typically defined by reading texture image data from an image
 /// file but a texture might also represent an attachment of a draw target.
 ///
-
 class GlfTexture : public TfRefBase, public TfWeakBase, boost::noncopyable {
 public:
-    // A texture has one or more bindings which describe how the different
-    // aspects of the texture should be bound in order to allow shader access.
-    // Most textures will have a single binding for the role "texels", but
-    // some textures might need multiple bindings, e.g. a ptexTexture will
-    // have an additional binding for the role "layout".
+    /// \class Binding
+    ///
+    /// A texture has one or more bindings which describe how the different
+    /// aspects of the texture should be bound in order to allow shader
+    /// access. Most textures will have a single binding for the role
+    /// "texels", but some textures might need multiple bindings, e.g. a
+    /// ptexTexture will have an additional binding for the role "layout".
+    ///
     struct Binding {
         Binding(TfToken name, TfToken role, GLenum target,
                 GLuint textureId, GLuint samplerId)

@@ -5,7 +5,10 @@ set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE arch)
 
 if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+    set(PLATFORM_ATTRIBUTES_H attributesWindows.h)
 	set(WINLIBS Ws2_32.lib)
+    set(DEBUG_HELP Dbghelp.lib)
 else()
 	set(MATHLIB ${M_LIB})
 endif()
@@ -16,7 +19,7 @@ pxr_shared_library(arch
         ${CMAKE_DL_LIBS}
         ${WINLIBS}
         ${MATHLIB}
-    
+        ${DEBUG_HELP}
 
     PUBLIC_CLASSES
         daemon
@@ -40,6 +43,7 @@ pxr_shared_library(arch
         align.h
         api.h
         attributes.h
+        ${PLATFORM_ATTRIBUTES_H}
         buildMode.h
         defines.h
         env.h
@@ -57,6 +61,7 @@ pxr_shared_library(arch
     CPPFILES
         assumptions.cpp
         env.cpp
+        ${MODULE_ENTRYPOINT_CPP}
         initConfig.cpp
         library.cpp
 )

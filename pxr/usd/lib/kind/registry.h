@@ -24,6 +24,8 @@
 #ifndef AMBER_KIND_REGISTRY_H
 #define AMBER_KIND_REGISTRY_H
 
+/// \file kind/registry.h
+
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -34,8 +36,6 @@
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashmap.h"
 
-/// \file kind/registry.h
-
 /// \hideinitializer
 #define KIND_TOKENS \
     (model) \
@@ -45,8 +45,7 @@
     (subcomponent)
 
 /// \anchor KindTokens
-/// \brief <b>KindTokens</b> provides static, efficient TfToken's for
-/// built-in Kinds
+/// Provides static, efficient TfToken's for built-in Kinds
 ///
 /// See \ref kind_coreKinds for description of the builtin kinds.
 TF_DECLARE_PUBLIC_TOKENS(KindTokens, KIND_API, KIND_TOKENS);

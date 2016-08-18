@@ -21,13 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/assetPathResolver.h
-///
-///
-
 #ifndef SDF_ASSET_PATH_RESOLVER_H
 #define SDF_ASSET_PATH_RESOLVER_H
+
+/// \file sdf/assetPathResolver.h
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"

@@ -34,9 +34,11 @@
 #include <map>
 #include <vector>
 
-/// \struct Usd_InstanceChanges
+/// \class Usd_InstanceChanges
+///
 /// List of changes to master prims due to the discovery of new
 /// or destroyed instanceable prim indexes.
+///
 class Usd_InstanceChanges
 {
 public:

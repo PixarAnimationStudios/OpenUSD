@@ -41,8 +41,10 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdLight> HdLightSharedPtr;
 typedef std::vector<HdLightSharedPtr> HdLightSharedPtrVector;
 
+/// \class HdLight
+///
 /// A light model, used in conjunction with HdRenderPass.
-
+///
 class HdLight {
 public:
 	HDLIB_API

@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file js/value.h
-
 #ifndef JS_VALUE_H
 #define JS_VALUE_H
+
+/// \file js/value.h
 
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/types.h"
@@ -36,15 +35,16 @@
 #include <type_traits>
 #include <vector>
 
-#undef GetObject            // Defined on Windows.
-
+// Value API Version
+// 1 (or undefined) - Initial version.
+// 2 - Changed Get{Array,Object} to GetJs{Array,Object}.
+#define JS_VALUE_API_VERSION 2
 
 /// \class JsValue
 ///
 /// A discriminated union type for JSON values. A JsValue may contain one of
 /// the following types:
 ///
-/// \ul
 /// \li JsObject, a dictionary type
 /// \li JsArray, a vector type
 /// \li std::string
@@ -53,7 +53,6 @@
 /// \li uint64_t
 /// \li double
 /// \li null
-/// \ul
 ///
 class JsValue
 {
@@ -102,12 +101,12 @@ public:
     /// Returns the object held by this value. If this value is not holding an
     /// object, this method raises a coding error and an empty object is
     /// returned.
-	JS_API const JsObject& GetObject() const;
+    JS_API const JsObject& GetJsObject() const;
 
     /// Returns the array held by this value. If this value is not holding an
     /// array, this method raises a coding error and an empty array is
     /// returned.
-	JS_API const JsArray& GetArray() const;
+    JS_API const JsArray& GetJsArray() const;
 
     /// Returns the string held by this value. If this value is not holding a
     /// string, this method raises a coding error and an empty string is
@@ -229,8 +228,8 @@ private:
         return T();
     }
 
-    const JsObject& _Get(JsObject*) const { return GetObject(); }
-    const JsArray& _Get(JsArray*) const { return GetArray(); }
+    const JsObject& _Get(JsObject*) const { return GetJsObject(); }
+    const JsArray& _Get(JsArray*) const { return GetJsArray(); }
     const std::string& _Get(std::string*) const { return GetString(); }
     bool _Get(bool*) const { return GetBool(); }
     int _Get(int*) const { return GetInt(); }
@@ -261,7 +260,7 @@ private:
 template <typename T>
 inline std::vector<T> JsValue::GetArrayOf() const
 {
-    const JsArray& array = GetArray();
+    const JsArray& array = GetJsArray();
     std::vector<T> result(array.size());
     std::transform(array.begin(), array.end(), result.begin(),
                    [](const JsValue& v) { return v.Get<T>(); });
@@ -274,7 +273,7 @@ inline bool JsValue::IsArrayOf() const
     if (not IsArray()) {
         return false;
     }
-    const JsArray& array = GetArray();
+    const JsArray& array = GetJsArray();
     return std::all_of(array.begin(), array.end(),
                        [](const JsValue& v) { return v.Is<T>(); });
 }

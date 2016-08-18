@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyChildrenView.h
-
 #ifndef SDF_PYCHILDRENVIEW_H
 #define SDF_PYCHILDRENVIEW_H
+
+/// \file sdf/pyChildrenView.h
 
 #include <boost/python.hpp>
 

@@ -24,10 +24,8 @@
 #ifndef TF_PREPROCESSOR_UTILS_H
 #define TF_PREPROCESSOR_UTILS_H
 
-/*!
- * \file preprocessorUtils.h
- * \ingroup group_tf_Preprocessor
- */
+/// \file tf/preprocessorUtils.h
+/// \ingroup group_tf_Preprocessor
 
 #ifndef TF_MAX_ARITY
 #  define TF_MAX_ARITY 7
@@ -55,14 +53,13 @@
 #define BOOST_PP_TUPLE_TO_SEQ_0()
 #endif
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Count the number of arguments.
- *
- * The underlying macro argument counting trick originates from a posting
- * on comp.std.c by Laurent Deniau.
- */
+/// Count the number of arguments.
+///
+/// The underlying macro argument counting trick originates from a posting on
+/// comp.std.c by Laurent Deniau.
+///
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #if defined(ARCH_OS_WINDOWS)
     #include <boost/preprocessor/variadic/size.hpp>
 
@@ -110,12 +107,10 @@
 #endif
 
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief If the argument is a tuple, expand to the tuple without its outermost
- * parentheses, otherwise expand to the argument itself.
- */
+/// If the argument is a tuple, expand to the tuple without its outermost
+/// parentheses, otherwise expand to the argument itself.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_PP_EAT_PARENS(arg) \
     BOOST_PP_CAT(_TF_PP_EAT_PARENS, BOOST_PP_EXPAND(_TF_PP_EAT_PARENS arg)) )arg
 
@@ -128,11 +123,9 @@
 #define _TF_PP_EAT_PARENS_EXPAND2(...) __VA_ARGS__
 #define _TF_PP_EAT_PARENS_EMPTY(...) /*empty*/
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Exapnds to 1 if the argument is a tuple, and 0 otherwise.
- */
+/// Exapnds to 1 if the argument is a tuple, and 0 otherwise.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #if defined(ARCH_OS_WINDOWS)
     #include <boost/vmd/is_tuple.hpp>
     ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
@@ -156,65 +149,51 @@
 
 #endif 
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Count the number of elements in a preprocessor tuple.
- */
+/// Count the number of elements in a preprocessor tuple.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_PP_TUPLE_SIZE(tuple) \
     BOOST_PP_EXPAND(TF_NUM_ARGS tuple)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Convert a preprocessor tuple to a preprocessor list.
- */
+/// Convert a preprocessor tuple to a preprocessor list.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_PP_TUPLE_TO_LIST(tuple) \
     BOOST_PP_IIF(                                               \
         BOOST_PP_EQUAL(TF_PP_TUPLE_SIZE(tuple), 0),             \
         BOOST_PP_LIST_NIL,                                      \
         BOOST_PP_TUPLE_TO_LIST(TF_PP_TUPLE_SIZE(tuple), tuple))
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Convert a preprocessor tuple to a preprocessor sequence.
- */
+/// Convert a preprocessor tuple to a preprocessor sequence.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_PP_TUPLE_TO_SEQ(tuple) \
     BOOST_PP_IIF(                                               \
         BOOST_PP_EQUAL(TF_PP_TUPLE_SIZE(tuple), 0),             \
         BOOST_PP_EMPTY(),                                       \
         BOOST_PP_TUPLE_TO_SEQ(TF_PP_TUPLE_SIZE(tuple), tuple))
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Create a preprocessor array.
- */
+/// Create a preprocessor array.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_MAKE_PP_ARRAY(...) \
     (TF_NUM_ARGS(__VA_ARGS__), (__VA_ARGS__))
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Create a preprocessor list.
- */
+/// Create a preprocessor list.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_MAKE_PP_LIST(...) \
     TF_PP_TUPLE_TO_LIST((__VA_ARGS__))
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Create a preprocessor sequence.
- */
+/// Create a preprocessor sequence.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_MAKE_PP_SEQ(...) \
     TF_PP_TUPLE_TO_SEQ((__VA_ARGS__))
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Preprocessor
- * \brief Macros that expand to a specific argument.
- */
+/// Macros that expand to a specific argument.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
 #define TF_ARG_1(_1,...) _1
 #define TF_ARG_2(_1,_2,...) _2
 #define TF_ARG_3(_1,_2,_3,...) _3
@@ -284,7 +263,4 @@
 #error "TF_MAX_ARITY is larger than _MAX_ARGS"
 #endif
 
-
-
 #endif /* TF_PREPROCESSOR_UTILS_H */
-

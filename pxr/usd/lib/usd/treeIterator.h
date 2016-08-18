@@ -32,10 +32,10 @@
 #include <vector>
 #include <iterator>
 
-
 /// \class UsdTreeIterator
-/// \brief An object with iterator semantics that will traverse the subtree
-/// of prims rooted at a given prim.
+///
+/// An object with iterator semantics that will traverse the subtree of prims
+/// rooted at a given prim.
 ///
 /// In addition to providing an alternative to UsdPrim::GetChildren()-based
 /// recursion, UsdTreeIterator provides a compact expression for performing
@@ -99,6 +99,7 @@
 /// Finally, since iterators in python are not directly dereferencable, we
 /// provide the \em python \em only methods GetCurrentPrim() and IsValid(),
 /// documented in the python help system.
+///
 class UsdTreeIterator : public boost::iterator_adaptor<
     UsdTreeIterator,               // crtp base.
     Usd_PrimDataConstPtr,          // base iterator.

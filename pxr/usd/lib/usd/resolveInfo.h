@@ -34,20 +34,25 @@
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 /// \enum Usd_ResolveInfoSource
+///
 /// Describes the various sources of attribute values.
+///
 enum Usd_ResolveInfoSource
 {
-    Usd_ResolveInfoSourceNone,        //< No value
+    Usd_ResolveInfoSourceNone,            //< No value
 
-    Usd_ResolveInfoSourceFallback,    //< Built-in fallback value
-    Usd_ResolveInfoSourceDefault,     //< Attribute default value
-    Usd_ResolveInfoSourceTimeSamples, //< Attribute time samples
-    Usd_ResolveInfoSourceValueClips,  //< Value clips
+    Usd_ResolveInfoSourceFallback,        //< Built-in fallback value
+    Usd_ResolveInfoSourceDefault,         //< Attribute default value
+    Usd_ResolveInfoSourceTimeSamples,     //< Attribute time samples
+    Usd_ResolveInfoSourceValueClips,      //< Value clips
+    Usd_ResolveInfoSourceIsTimeDependent, //< Source may vary over time
 };
 
 /// \class Usd_ResolveInfo
-/// Container for information about the source of an attribute's
-/// value, i.e. the 'resolved' location of the attribute.
+///
+/// Container for information about the source of an attribute's value, i.e.
+/// the 'resolved' location of the attribute.
+///
 class Usd_ResolveInfo
 {
 public:
@@ -56,6 +61,17 @@ public:
         , layerIndex(std::numeric_limits<size_t>::max())
         , valueIsBlocked(false)
     {
+    }
+    
+    /// Return true if this Usd_ResolveInfo represents an attribute that has an
+    /// authored value opinion.
+    bool HasAuthoredValueOpinion() const {
+        return
+            source == Usd_ResolveInfoSourceDefault ||
+            source == Usd_ResolveInfoSourceTimeSamples ||
+            source == Usd_ResolveInfoSourceValueClips ||
+            source == Usd_ResolveInfoSourceIsTimeDependent ||
+            valueIsBlocked;
     }
     
     /// The source of the associated attribute's value.

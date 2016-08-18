@@ -67,8 +67,9 @@ public:
     std::map<size_t, size_t> mapFunctionSizeDistribution;
 };
 
-struct Pcp_Statistics
+class Pcp_Statistics
 {
+public:
     static void AccumulateGraphStats(
         const PcpPrimIndex& primIndex, 
         Pcp_GraphStats* stats,

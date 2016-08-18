@@ -83,4 +83,3 @@ private:
 };
 
 #endif // USD_WRAPUTILS_H
-

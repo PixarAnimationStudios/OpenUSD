@@ -24,9 +24,14 @@
 #ifndef PXRUSDKATANA_USDIN_PRIVATEDATA_H
 #define PXRUSDKATANA_USDIN_PRIVATEDATA_H
 
+#include "usdKatana/api.h"
 #include "usdKatana/usdInArgs.h"
 
 #include "pxr/usd/usd/prim.h"
+#ifdef GetCurrentTime
+#undef GetCurrentTime
+#endif
+#undef interface // Defined on Windows.
 #include <FnGeolib/op/FnGeolibOp.h>
 
 /// \brief Private data for each non-root invocation of \c PxrUsdIn. 
@@ -36,7 +41,7 @@ class PxrUsdKatanaUsdInPrivateData : public Foundry::Katana::GeolibPrivateData
 {
 
 public:
-
+    USDKATANA_API
     PxrUsdKatanaUsdInPrivateData(
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
@@ -62,6 +67,7 @@ public:
         return _masterPath;
     }
 
+    USDKATANA_API
     const std::vector<double> GetMotionSampleTimes(const UsdAttribute& attr = UsdAttribute()) const;
 
 private:

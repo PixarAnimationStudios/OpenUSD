@@ -86,7 +86,7 @@ Ar_DefaultResolver::ConfigureResolverForAsset(const std::string& path)
 bool
 Ar_DefaultResolver::IsRelativePath(const std::string& path)
 {
-    return (not path.empty() and path[0] != '/');
+    return (not path.empty() and TfIsRelativePath(path));
 }
 
 bool
@@ -126,19 +126,7 @@ Ar_DefaultResolver::IsSearchPath(const std::string& path)
 std::string
 Ar_DefaultResolver::GetExtension(const std::string& path)
 {
-    if (path.empty()) {
-        return path;
-    }
-
-    const std::string fileName = TfGetBaseName(path);
-
-    // If this is a dot file with no extension (e.g. /some/path/.folder), then
-    // we return an empty string.
-    if (TfStringGetBeforeSuffix(fileName).empty()) {
-        return std::string();
-    }
-
-    return TfStringGetSuffix(fileName);
+    return TfGetExtension(path);
 }
 
 std::string

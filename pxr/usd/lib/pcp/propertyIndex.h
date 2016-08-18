@@ -38,8 +38,10 @@
 class PcpCache;
 
 /// \class Pcp_PropertyInfo
+///
 /// Private helper structure containing information about a property in the 
 /// property stack.
+///
 struct Pcp_PropertyInfo
 {
     Pcp_PropertyInfo() { }
@@ -51,9 +53,11 @@ struct Pcp_PropertyInfo
 };
 
 /// \class PcpPropertyIndex
+///
 /// PcpPropertyIndex is an index of all sites in scene description that
 /// contribute opinions to a specific property, under composition
 /// semantics.
+///
 class PcpPropertyIndex
 {
 public:

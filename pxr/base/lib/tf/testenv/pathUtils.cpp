@@ -163,12 +163,37 @@ TestTfGlob()
 }
 
 static bool
+TestTfGetExtension()
+{
+    string emptyPath = "";
+    string dotFile = ".foo";
+    string dotFileWithPath = "/bar/baz/.foo";
+    string directoryPath = "/bar/baz";
+    string normalFilePath = "/bar/baz/foo.py";
+    string dotDirectoryFilePath = "/bar.foo/baz.py";
+    string clipFilePath = "/bar/baz/foo.bar.py";
+    string hiddenFileWithExtension = "/foo/.bar.py";
+
+    TF_AXIOM(TfGetExtension(emptyPath) == emptyPath);
+    TF_AXIOM(TfGetExtension(dotFile) == emptyPath);
+    TF_AXIOM(TfGetExtension(dotFileWithPath) == emptyPath);
+    TF_AXIOM(TfGetExtension(directoryPath) == emptyPath);
+    TF_AXIOM(TfGetExtension(dotDirectoryFilePath) == "py");
+    TF_AXIOM(TfGetExtension(normalFilePath) == "py");
+    TF_AXIOM(TfGetExtension(clipFilePath) == "py");
+    TF_AXIOM(TfGetExtension(hiddenFileWithExtension) == "py");
+
+    return true;
+}
+
+static bool
 Test_TfPathUtils()
 {
     return TestTfRealPath() &&
            TestTfNormPath() &&
            TestTfAbsPath() &&
            TestTfReadLink() &&
+           TestTfGetExtension() &&
            TestTfGlob()
            ;
 }

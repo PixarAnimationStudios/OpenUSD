@@ -24,9 +24,9 @@
 #ifndef ARCH_DEFINES_H
 #define ARCH_DEFINES_H
 
-/*
- * OS
- */
+//
+// OS
+//
 
 #if defined(__linux__)
 #define ARCH_OS_LINUX
@@ -42,9 +42,9 @@
 #define ARCH_OS_WINDOWS
 #endif
 
-/*
- * Processor
- */
+//
+// Processor
+//
 
 #if defined(i386) || defined(__i386__) || defined(__x86_64__) || \
     defined(_M_IX86) || defined(_M_X64)
@@ -53,11 +53,9 @@
 #define ARCH_CPU_ARM
 #endif
 
-
-
-/*
- * Bits
- */
+//
+// Bits
+//
 
 #if defined(__x86_64__) || defined(__aarch64__) || defined(_M_X64)
 #define ARCH_BITS_64
@@ -65,11 +63,9 @@
 #error "Unsupported architecture.  x86_64 or ARM64 required."
 #endif
 
-
-
-/*
- * Compiler
- */
+//
+// Compiler
+//
 
 #if defined(__clang__)
 #define ARCH_COMPILER_CLANG
@@ -88,11 +84,10 @@
 #define ARCH_COMPILER_MSVC_VERSION	_MSC_VER
 #endif
 
+//
+// Features
+//
 
-
-/*
- * Features
- */
 // XXX -- This is an interim solution during the port to C++11.  We want to
 //        use pure C++11 so we don't want to use the __typeof__ extension.
 //        Once we don't require backward compatibility we can find and fix

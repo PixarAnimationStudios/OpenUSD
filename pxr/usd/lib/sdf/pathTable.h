@@ -36,7 +36,10 @@
 #include <utility>
 #include <vector>
 
-///
+// Helper function for clearing path tables.
+SDF_API
+void Sdf_ClearPathTableInParallel(void **, size_t, void (*)(void *));
+
 /// \class SdfPathTable
 ///
 /// A mapping from SdfPath to \a MappedType, somewhat similar to map<SdfPath,
@@ -66,8 +69,8 @@
 /// a pair of iterators [\a b, \a e) defining a range such that for every
 /// iterator \a i in [\a b, \a e), i->first is either equal to \a p or is
 /// prefixed by \a p.
-
-/// Iterator Invalidation.
+///
+/// Iterator Invalidation
 ///
 /// Like most other node-based containers, iterators are only invalidated when
 /// the element they refer to is removed from the table.  Note however, that
@@ -266,13 +269,13 @@ public:
     typedef Iterator<value_type, _Entry *> iterator;
     typedef Iterator<const value_type, const _Entry *> const_iterator;
 
-    /// \brief Result type for insert().
+    /// Result type for insert().
     typedef std::pair<iterator, bool> _IterBoolPair;
 
-    /// \brief Default constructor.
+    /// Default constructor.
     SdfPathTable() : _size(0), _mask(0) {}
 
-    /// \brief Copy constructor.
+    /// Copy constructor.
     SdfPathTable(SdfPathTable const &other)
         : _buckets(other._buckets.size())
         , _size(0) // size starts at 0, since we insert elements.
@@ -299,20 +302,20 @@ public:
         }
     }
 
-    /// \brief Destructor.
+    /// Destructor.
     ~SdfPathTable() {
         // Call clear to free all nodes.
         clear();
     }
 
-    /// \brief Assignment.
+    /// Assignment.
     SdfPathTable &operator=(SdfPathTable const &other) {
         if (this != &other)
             SdfPathTable(other).swap(*this);
         return *this;
     }
 
-    /// \brief Return an iterator to the start of the table.
+    /// Return an iterator to the start of the table.
     iterator begin() {
         // Return an iterator pointing to the root if this table isn't empty.
         if (empty())
@@ -483,8 +486,6 @@ public:
     /// Equivalent to clear(), but destroy contained objects in parallel.  This
     /// requires that running the contained objects' destructors is thread-safe.
     void ClearInParallel() {
-        // Helper function for clearing path tables.
-        void Sdf_ClearPathTableInParallel(void **, size_t, void (*)(void *));
         Sdf_ClearPathTableInParallel(reinterpret_cast<void **>(_buckets.data()),
                                      _buckets.size(), _DeleteEntryChain);
     }        

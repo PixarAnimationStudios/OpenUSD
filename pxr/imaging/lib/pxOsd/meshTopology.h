@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/meshTopology.h
-///
-
 #ifndef PXOSD_MESH_TOPOLOGY_H
 #define PXOSD_MESH_TOPOLOGY_H
+
+/// \file pxOsd/meshTopology.h
 
 #include "pxr/imaging/pxOsd/api.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
@@ -41,6 +39,7 @@
 
 typedef boost::shared_ptr<class PxOsdMeshTopology> PxOsdMeshTopologySharedPtr;
 
+/// \class PxOsdMeshTopology
 ///
 /// Topology data for meshes.
 ///
