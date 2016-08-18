@@ -36,6 +36,7 @@ class UsdGeomModelAPI;
 class UsdGeomPointBased;
 
 /// \class UsdGeomBBoxCache
+///
 /// Caches bounds by recursively computing and aggregating bounds of children
 /// in world space and aggregating the result back into local space.
 ///
@@ -313,7 +314,6 @@ private:
     bool                _useExtentsHint;
     UsdGeomXformCache   _ctmCache;
     _PrimBBoxHashMap    _bboxCache;
-
 };
 
 #endif // USDGEOM_BBOXCACHE_H

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/attributeSpec.h
-
 #ifndef SDF_ATTRIBUTESPEC_H
 #define SDF_ATTRIBUTESPEC_H
+
+/// \file sdf/attributeSpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/path.h"
@@ -36,7 +36,8 @@
 template <class T> class Sdf_MarkerUtils;
 
 /// \class SdfAttributeSpec
-/// \brief A subclass of SdfPropertySpec that holds typed data.
+///
+/// A subclass of SdfPropertySpec that holds typed data.
 ///
 /// Attributes are typed data containers that can optionally hold any
 /// and all of the following:
@@ -64,7 +65,7 @@ public:
     /// \name Spec construction
     /// @{
 
-    /// \brief Constructs a new prim attribute instance.
+    /// Constructs a new prim attribute instance.
     ///
     /// Creates and returns a new attribute for the given prim.
     /// The \p owner will own the newly created attribute.
@@ -75,7 +76,7 @@ public:
         SdfVariability variability = SdfVariabilityVarying,
         bool custom = false);
 
-    /// \brief Constructs a new relational attribute instance.
+    /// Constructs a new relational attribute instance.
     ///
     /// Creates and returns a new attribute for the given relationship
     /// and target. The \p owner will own the newly created attribute.
@@ -95,7 +96,7 @@ public:
     /// \name Connections
     /// @{
 
-    /// \brief Returns a proxy for editing the attribute's connection paths.
+    /// Returns a proxy for editing the attribute's connection paths.
     ///
     /// The returned proxy, which is an SdfListEditorProxy, modifies the
     /// SdfListOp that represents this attribute's connections.
@@ -114,7 +115,7 @@ public:
     /// \name Mappers
     /// @{
 
-    /// \brief Returns the mappers for this attribute.
+    /// Returns the mappers for this attribute.
     ///
     /// Returns an editable map whose keys are connection paths and whose
     /// values are mappers.  Mappers may be removed from the map.  Mappers
@@ -204,7 +205,7 @@ public:
     /// \name Spec properties
     /// @{
 
-    /// \brief Returns the roleName for this attribute's typeName.
+    /// Returns the roleName for this attribute's typeName.
     ///
     /// If the typeName has no roleName, return empty token.
     SDF_API

@@ -24,11 +24,8 @@
 #ifndef USD_SHD_UTILS_H
 #define USD_SHD_UTILS_H
 
-
-
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
-
 
 #endif

@@ -34,6 +34,8 @@
 
 #include <mutex>
 
+/// \class UsdImagingInstanceAdapter
+///
 /// Delegate support for instanced prims.
 ///
 class UsdImagingInstanceAdapter : public UsdImagingPrimAdapter
@@ -334,6 +336,5 @@ private:
         _MasterToInstancerMap;
     _MasterToInstancerMap _masterToInstancerMap;
 };
-
 
 #endif // USDIMAGING_INSTANCE_ADAPTER_H

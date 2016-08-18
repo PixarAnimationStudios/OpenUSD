@@ -27,7 +27,6 @@ arrayAttributeView
 '''
 from PySide import QtGui
 from pxr import Gf
-import locale
 
 # locale.setlocale(locale.LC_ALL, 'en_US')
 

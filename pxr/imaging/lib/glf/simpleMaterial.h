@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/simpleMaterial.h
 #ifndef GLF_SIMPLE_MATERIAL_H
 #define GLF_SIMPLE_MATERIAL_H
+
+/// \file glf/simpleMaterial.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/base/gf/vec4f.h"

@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_XFORMABLE_H
 #define USDGEOM_GENERATED_XFORMABLE_H
 
+/// \file usdGeom/xformable.h
+
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usd/prim.h"
@@ -48,7 +50,9 @@ class SdfAssetPath;
 // XFORMABLE                                                                  //
 // -------------------------------------------------------------------------- //
 
-/// \brief Base class for all transformable prims, which allows arbitrary
+/// \class UsdGeomXformable
+///
+/// Base class for all transformable prims, which allows arbitrary
 /// sequences of component affine transformations to be encoded.
 /// 
 /// \anchor usdGeom_linAlgBasics
@@ -268,7 +272,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomXformable holding the prim adhering to this
+    /// Return a UsdGeomXformable holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -334,7 +338,7 @@ public:
 
     /// \class UsdGeomXformable::XformQuery
     /// 
-    /// \brief Helper class that caches the ordered vector of UsGeomXformOps that 
+    /// Helper class that caches the ordered vector of UsGeomXformOps that 
     /// contribute to the local transformation of an xformable prim
     /// 
     /// Internally, the class initializes UsdAttributeQuery objects for the 
@@ -437,7 +441,7 @@ public:
                               TfToken const &opSuffix = TfToken(), 
                               bool isInverseOp=false) const;
     
-    /// \brief Add a translate operation to the local stack represented by this 
+    /// Add a translate operation to the local stack represented by this 
     /// xformable.
     /// 
     /// \sa AddXformOp()
@@ -446,7 +450,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionDouble,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a scale operation to the local stack represented by this 
+    /// Add a scale operation to the local stack represented by this 
     /// xformable.
     /// 
     /// \sa AddXformOp()
@@ -455,7 +459,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation about the X-axis to the local stack represented by 
+    /// Add a rotation about the X-axis to the local stack represented by 
     /// this xformable.
     /// 
     /// Set the angle value of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -465,7 +469,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation about the YX-axis to the local stack represented by 
+    /// Add a rotation about the YX-axis to the local stack represented by 
     /// this xformable.
     /// 
     /// Set the angle value of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -475,7 +479,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation about the Z-axis to the local stack represented by 
+    /// Add a rotation about the Z-axis to the local stack represented by 
     /// this xformable.
     /// 
     /// \sa AddXformOp()
@@ -484,7 +488,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation op with XYZ rotation order to the local stack 
+    /// Add a rotation op with XYZ rotation order to the local stack 
     /// represented by this xformable.
     /// 
     /// Set the angle value of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -494,7 +498,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation op with XZY rotation order to the local stack 
+    /// Add a rotation op with XZY rotation order to the local stack 
     /// represented by this xformable.
     /// 
     /// Set the angle values of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -504,7 +508,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation op with YXZ rotation order to the local stack 
+    /// Add a rotation op with YXZ rotation order to the local stack 
     /// represented by this xformable.
     /// 
     /// Set the angle values of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -514,7 +518,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation op with YZX rotation order to the local stack 
+    /// Add a rotation op with YZX rotation order to the local stack 
     /// represented by this xformable.
     /// 
     /// Set the angle values of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -524,7 +528,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation op with ZXY rotation order to the local stack 
+    /// Add a rotation op with ZXY rotation order to the local stack 
     /// represented by this xformable.
     /// 
     /// Set the angle values of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -534,7 +538,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a rotation op with ZYX rotation order to the local stack 
+    /// Add a rotation op with ZYX rotation order to the local stack 
     /// represented by this xformable.
     /// 
     /// Set the angle values of the resulting UsdGeomXformOp <b>in degrees</b>
@@ -544,7 +548,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a orient op (arbitrary axis/angle rotation) to the local stack 
+    /// Add a orient op (arbitrary axis/angle rotation) to the local stack 
     /// represented by this xformable.
     /// 
     /// \sa AddXformOp()
@@ -553,7 +557,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionFloat,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Add a tranform op (4x4 matrix transformation) to the local stack 
+    /// Add a tranform op (4x4 matrix transformation) to the local stack 
     /// represented by this xformable.
     /// 
     /// \sa AddXformOp()
@@ -567,7 +571,7 @@ public:
         UsdGeomXformOp::Precision const precision=UsdGeomXformOp::PrecisionDouble,
         TfToken const &opSuffix = TfToken(), bool isInverseOp=false) const;
 
-    /// \brief Specify whether this prim's transform should reset the transformation
+    /// Specify whether this prim's transform should reset the transformation
     /// stack inherited from its parent prim.  
     /// 
     /// By default, parent transforms are inherited. SetResetXformStack() can be 
@@ -579,7 +583,7 @@ public:
     USDGEOM_API
     bool SetResetXformStack(bool resetXform) const;
 
-    /// \brief Does this prim reset its parent's inherited transformation?
+    /// Does this prim reset its parent's inherited transformation?
     /// 
     /// Returns true if "!resetXformStack!" appears \em anywhere in xformOpOrder.
     /// When this returns true, all ops upto the last "!resetXformStack!" in

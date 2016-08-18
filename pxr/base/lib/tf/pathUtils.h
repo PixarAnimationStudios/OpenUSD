@@ -99,6 +99,22 @@ TfFindLongestAccessiblePrefix(std::string const &path, std::string* error = 0);
 /// than an empty string.
 TF_API std::string TfAbsPath(std::string const& path);
 
+/// Returns the extension for a file path
+///
+/// If \p path is a directory path, an empty path, or a dotfile path, return
+/// the empty string. Otherwise return \p path 's dot-separated extension as
+/// a string(dot not included).
+///
+/// Examples:
+/// 
+/// TfGetExtension('/foo/bar')              -> ''
+/// TfGetExtension('/foo/bar/foo.baz')      -> 'baz'
+/// TfGetExtension('/foo.bar/foo.baz')      -> 'baz'
+/// TfGetExtension('/foo/bar/foo.101.baz')  -> 'baz'
+/// TfGetExtension('/foo/bar/.foo.baz')     -> 'baz'
+/// TfGetExtension('/foo/bar/.foo')         -> ''
+std::string TfGetExtension(std::string const& path);
+
 /// Returns the source path for a symbolic link.
 ///
 /// This is a wrapper to readlink(2).

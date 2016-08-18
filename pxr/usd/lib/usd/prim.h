@@ -24,7 +24,7 @@
 #ifndef USD_PRIM_H
 #define USD_PRIM_H
 
-/// \file prim.h
+/// \file usd/prim.h
 
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
@@ -71,7 +71,8 @@ class UsdPrimSubtreeIterator;
 typedef boost::iterator_range<UsdPrimSubtreeIterator> UsdPrimSubtreeRange;
 
 /// \class UsdPrim
-/// \brief UsdPrim is the sole persistent scenegraph object on a UsdStage, and
+///
+/// UsdPrim is the sole persistent scenegraph object on a UsdStage, and
 /// is the embodiment of a "Prim" as described in the <em>Universal Scene
 /// Description Composition Compendium</em>
 ///
@@ -141,7 +142,7 @@ public:
     /// prim's type if one exists, otherwise return null.
 	USD_API SdfPrimSpecHandle GetPrimDefinition() const;
 
-    /// \brief Return this prim's composed specifier.
+    /// Return this prim's composed specifier.
     SdfSpecifier GetSpecifier() const { return _Prim()->GetSpecifier(); };
 
     /// Return a list of PrimSpecs that provide opinions for this prim
@@ -155,28 +156,28 @@ public:
     /// opinion wins" semantics.
     USD_API SdfPrimSpecHandleVector GetPrimStack() const;
 
-    /// \brief Author an opinion for this Prim's specifier at the current edit
+    /// Author an opinion for this Prim's specifier at the current edit
     /// target.
     bool SetSpecifier(SdfSpecifier specifier) const {
         return SetMetadata(SdfFieldKeys->Specifier, specifier);
     }
 
-    /// \brief Return this prim's composed type name.  Note that this value is
+    /// Return this prim's composed type name.  Note that this value is
     /// cached and is efficient to query.
     const TfToken &GetTypeName() const { return _Prim()->GetTypeName(); };
 
-    /// \brief Author this Prim's typeName at the current EditTarget.
+    /// Author this Prim's typeName at the current EditTarget.
     bool SetTypeName(const TfToken & typeName) const {
         return SetMetadata(SdfFieldKeys->TypeName, typeName);
     }
 
-    /// \brief Clear the opinion for this Prim's typeName at the current edit
+    /// Clear the opinion for this Prim's typeName at the current edit
     /// target.
     bool ClearTypeName() const {
         return ClearMetadata(SdfFieldKeys->TypeName);
     }
 
-    /// \brief Return true if a typeName has been authored.
+    /// Return true if a typeName has been authored.
     bool HasAuthoredTypeName() const {
         return HasAuthoredMetadata(SdfFieldKeys->TypeName);
     }
@@ -365,12 +366,12 @@ public:
 
 private:
     friend void wrapUsdPrim();
-    /// \brief The non-templated implementation of UsdPrim::IsA using the
+    /// The non-templated implementation of UsdPrim::IsA using the
     /// TfType system.
 	USD_API bool _IsA(const TfType& schemaType) const;
 
 public:
-    /// \brief Return true if the UsdPrim is/inherits a Schema of type T.
+    /// Return true if the UsdPrim is/inherits a Schema of type T.
     ///
     /// This will also return true if the UsdPrim is a schema that inherits
     /// from schema \c T.
@@ -517,7 +518,7 @@ public:
 	USD_API
     UsdVariantSet GetVariantSet(const std::string& variantSetName) const;
 
-    /// \brief Return true if this prim has any authored VariantSets.
+    /// Return true if this prim has any authored VariantSets.
     ///
     /// \note this connotes only the *existence* of one of more VariantSets,
     /// *not* that such VariantSets necessarily contain any variants or
@@ -720,41 +721,41 @@ public:
     /// \name Payloads, Load and Unload 
     // --------------------------------------------------------------------- //
 
-    /// \brief Clears the payload at the current EditTarget for this prim. 
+    /// Clears the payload at the current EditTarget for this prim. 
     /// Return false if the payload could not be cleared.
 	USD_API bool ClearPayload() const;
 
-    /// \brief Fetch the payload for this prim; return true if a value was
+    /// Fetch the payload for this prim; return true if a value was
     /// read, otherwise return false, leaving \p payload unaltered.
     ///
     /// \sa \ref Usd_Payloads
 	USD_API bool GetPayload(SdfPayload* payload) const;
    
-    /// \brief Return true if a payload is present on this prim.
+    /// Return true if a payload is present on this prim.
     ///
     /// \sa \ref Usd_Payloads
 	USD_API bool HasPayload() const;
 
-    /// \brief Author payload metadata for this prim at the current edit
+    /// Author payload metadata for this prim at the current edit
     /// target. Return true on success, false if the value could not be set. 
     ///
     /// \sa \ref Usd_Payloads
 	USD_API bool SetPayload(const SdfPayload& payload) const;
 
-    /// \brief Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
+    /// Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
 	USD_API bool SetPayload(
         const std::string& assetPath, const SdfPath& primPath) const;
     
-    /// \brief Shorthand for SetPayload(SdfPayload(layer->GetIdentifer(),
+    /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifer(),
     /// primPath)).
 	USD_API bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
 
-    /// \brief Loads this prim, all its ancestors, and all its descendants.
+    /// Loads this prim, all its ancestors, and all its descendants.
     ///
     /// See UsdStage::Load for additional details.
 	USD_API void Load() const;
 
-    /// \brief Unloads this prim and all its descendants.
+    /// Unloads this prim and all its descendants.
     ///
     /// See UsdStage::Unload for additional details.
 	USD_API void Unload() const;
@@ -771,7 +772,7 @@ public:
     /// requires some thought.
 	USD_API UsdReferences GetReferences() const;
 
-    /// \brief Return true if this prim has any authored references.
+    /// Return true if this prim has any authored references.
 	USD_API bool HasAuthoredReferences() const;
 
     // --------------------------------------------------------------------- //
@@ -786,7 +787,7 @@ public:
     /// requires some thought.
 	USD_API UsdInherits GetInherits() const;
 
-    /// \brief Return true if this prim has any authored inherits.
+    /// Return true if this prim has any authored inherits.
 	USD_API bool HasAuthoredInherits() const;
 
     // --------------------------------------------------------------------- //
@@ -801,7 +802,7 @@ public:
     /// requires some thought.
 	USD_API UsdSpecializes GetSpecializes() const;
 
-    /// \brief Returns true if this prim has any authored specializes.
+    /// Returns true if this prim has any authored specializes.
 	USD_API bool HasAuthoredSpecializes() const;
 
     // --------------------------------------------------------------------- //

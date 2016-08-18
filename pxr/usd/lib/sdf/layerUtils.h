@@ -21,13 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/layerUtils.h
-///
-///
-
 #ifndef SDF_LAYER_UTILS_H
 #define SDF_LAYER_UTILS_H
+
+/// \file sdf/layerUtils.h
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"

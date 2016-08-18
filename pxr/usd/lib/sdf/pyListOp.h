@@ -33,8 +33,11 @@
 #include "pxr/base/tf/stringUtils.h"
 
 /// \class SdfPyWrapListOp<T>
+///
 /// Helper class for wrapping SdfListOp objects for Python. The template
-/// parameter is the specific SdfListOp type being wrapped (e.g., SdfPathListOp)
+/// parameter is the specific SdfListOp type being wrapped (e.g.,
+/// SdfPathListOp)
+///
 template <class T>
 class SdfPyWrapListOp {
 public:

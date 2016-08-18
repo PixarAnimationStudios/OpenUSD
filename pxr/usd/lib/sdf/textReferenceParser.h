@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/textReferenceParser.h
 #ifndef SDF_TEXT_REFERENCE_PARSER_H
 #define SDF_TEXT_REFERENCE_PARSER_H
+
+/// \file sdf/textReferenceParser.h
 
 #include "pxr/usd/sdf/api.h"
 

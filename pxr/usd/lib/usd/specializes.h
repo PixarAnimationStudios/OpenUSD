@@ -33,8 +33,11 @@
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
+/// \class UsdSpecializes
+///
 /// A proxy class for applying listOp edits to the specializes list for a
 /// prim.
+///
 class UsdSpecializes {
     friend class UsdPrim;
 

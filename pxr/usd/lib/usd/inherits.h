@@ -33,8 +33,11 @@
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
+/// \class UsdInherits
+///
 /// A proxy class for applying listOp edits to the inherit paths list for a
 /// prim.
+///
 class UsdInherits {
     friend class UsdPrim;
 

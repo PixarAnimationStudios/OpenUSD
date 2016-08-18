@@ -30,6 +30,8 @@
 
 #include <utility>
 
+bool Work_ShouldSynchronizeAsyncDestroyCalls();
+
 template <class T>
 struct Work_AsyncDestroyHelper {
     void operator()() const { /* do nothing */ }
@@ -49,7 +51,8 @@ void WorkSwapDestroyAsync(T &obj)
     using std::swap;
     Work_AsyncDestroyHelper<T> helper;
     swap(helper.obj, obj);
-    WorkRunDetachedTask(std::move(helper));
+    if (!Work_ShouldSynchronizeAsyncDestroyCalls())
+        WorkRunDetachedTask(std::move(helper));
 }
 
 /// Like WorkSwapDestroyAsync() but instead, move from \p obj, leaving it
@@ -58,7 +61,8 @@ template <class T>
 void WorkMoveDestroyAsync(T &obj)
 {
     Work_AsyncDestroyHelper<T> helper { std::move(obj) };
-    WorkRunDetachedTask(std::move(helper));
+    if (!Work_ShouldSynchronizeAsyncDestroyCalls())
+        WorkRunDetachedTask(std::move(helper));
 }
 
 #endif // WORK_UTILS_H

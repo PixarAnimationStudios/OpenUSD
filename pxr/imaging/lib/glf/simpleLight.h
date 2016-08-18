@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/simpleLight.h
 #ifndef GLF_SIMPLE_LIGHT_H
 #define GLF_SIMPLE_LIGHT_H
+
+/// \file glf/simpleLight.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/base/gf/matrix4d.h"

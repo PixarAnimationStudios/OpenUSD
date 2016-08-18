@@ -138,6 +138,27 @@ _DoSerialTest()
     _VerifyDoubled(v);
 }
 
+// Make sure that the API for WorkParallelForN and WorkSerialForN can be
+// interchanged.  
+void
+_DoSignatureTest()
+{
+    struct F
+    {
+        // Test that this can be non-const
+        void operator()(size_t start, size_t end) {
+        }
+    };
+
+    F f;
+
+    WorkParallelForN(100, f);
+    WorkSerialForN(100, f);
+
+    WorkParallelForN(100, F());
+    WorkSerialForN(100, F());
+}
+
 
 int
 main(int argc, char **argv)
@@ -167,6 +188,7 @@ main(int argc, char **argv)
 
     _DoSerialTest();
 
+    _DoSignatureTest();
 
     if (perfMode) {
 

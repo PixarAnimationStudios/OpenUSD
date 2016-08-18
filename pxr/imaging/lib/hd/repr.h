@@ -31,6 +31,8 @@
 
 struct HdRprimSharedData;
 
+/// \class HdRepr
+///
 /// One or more draw items for a specific representation of an HdRprim.
 ///
 class HdRepr {

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/spec.h
-
 #ifndef SDF_SPEC_H
 #define SDF_SPEC_H
+
+/// \file sdf/spec.h
 
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/identity.h"
@@ -40,7 +40,8 @@
 #include <iosfwd>
 
 /// \class SdfSpec
-/// \brief Base class for all Sdf spec classes.
+///
+/// Base class for all Sdf spec classes.
 ///
 class SdfSpec {
     SDF_DECLARE_BASE_SPEC(SdfSchema, SdfSpec);
@@ -56,28 +57,28 @@ public:
     ///
     /// @{
 
-    /// \brief Returns the SdfSchemaBase for the layer that owns this spec.
+    /// Returns the SdfSchemaBase for the layer that owns this spec.
     SDF_API
     const SdfSchemaBase& GetSchema() const;
 
-    /// \brief Returns the SdfSpecType specifying the spec type this object
+    /// Returns the SdfSpecType specifying the spec type this object
     /// represents.
     SDF_API
     SdfSpecType GetSpecType() const;
 
-    /// \brief Returns true if this object is invalid or expired.
+    /// Returns true if this object is invalid or expired.
     SDF_API
     bool IsDormant() const;
 
-    /// \brief Returns the layer that this object belongs to.
+    /// Returns the layer that this object belongs to.
     SDF_API
     SdfLayerHandle GetLayer() const;
 
-    /// \brief Returns the scene path of this object.
+    /// Returns the scene path of this object.
     SDF_API
     SdfPath GetPath() const;
 
-    /// \brief Returns whether this object's layer can be edited.
+    /// Returns whether this object's layer can be edited.
     SDF_API
     bool PermissionToEdit() const;
 
@@ -86,7 +87,7 @@ public:
     SDF_API
     std::vector<TfToken> ListInfoKeys() const;
 
-    /// \brief Returns the list of metadata info keys for this object.
+    /// Returns the list of metadata info keys for this object.
     ///
     /// This is not the complete list of keys, it is only those that
     /// should be considered to be metadata by inspectors or other 
@@ -97,19 +98,19 @@ public:
     SDF_API
     std::vector<TfToken> GetMetaDataInfoKeys() const;
 
-    /// \brief Returns this metadata key's displayGroup.
+    /// Returns this metadata key's displayGroup.
     ///
     SDF_API
     TfToken GetMetaDataDisplayGroup(TfToken const &key) const;
 
-    /// \brief Gets the value for the given metadata key.
+    /// Gets the value for the given metadata key.
     ///
     /// This is interim API which is likely to change.  Only editors with
     /// an immediate specific need (like the Inspector) should use this API.
     SDF_API
     VtValue GetInfo(const TfToken &key) const;
 
-    /// \brief Sets the value for the given metadata key.
+    /// Sets the value for the given metadata key.
     ///
     /// It is an error to pass a value that is not the correct type for
     /// that given key.
@@ -119,13 +120,13 @@ public:
     SDF_API
     void SetInfo(const TfToken &key, const VtValue &value);
 
-    /// \brief Sets the value for \p entryKey to \p value within the dictionary 
+    /// Sets the value for \p entryKey to \p value within the dictionary 
     ///        with the given metadata key \p dictionaryKey
     SDF_API
     void SetInfoDictionaryValue(const TfToken &dictionaryKey, 
                                 const TfToken &entryKey, const VtValue &value);
 
-    /// \brief Returns whether there is a setting for the scene spec info 
+    /// Returns whether there is a setting for the scene spec info 
     /// with the given key.
     ///
     /// When asked for a value for one of its scene spec info, a valid value
@@ -144,7 +145,7 @@ public:
     SDF_API
     bool HasInfo(const TfToken &key) const;
 
-    /// \brief Clears the value for scene spec info with the given \a key.
+    /// Clears the value for scene spec info with the given \a key.
     ///
     /// After calling this, HasInfo() will return \b false.
     /// To make HasInfo() return \b true just set a value for that
@@ -167,7 +168,7 @@ public:
     SDF_API
     bool WriteToStream(std::ostream&, size_t indent = 0) const;
 
-    /// \brief Returns whether this object has no significant data.
+    /// Returns whether this object has no significant data.
     ///
     /// "Significant" here means that the object contributes opinions to
     /// a scene. If this spec has any child scenegraph objects (e.g.,
@@ -180,9 +181,7 @@ public:
 
     /// @}
 
-
     /// \name Field-based Generic API
-    ///
     /// @{
 
     /// Returns all fields with values.
@@ -258,7 +257,6 @@ protected:
 
 private:
     Sdf_IdentityRefPtr _id;
-
 };
 
 #endif

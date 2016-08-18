@@ -36,7 +36,10 @@
 
 TF_DECLARE_WEAK_PTRS(UsdStage);
 
+/// \enum UsdObjType
+///
 /// Enum values to represent the various Usd object types.
+///
 enum UsdObjType
 {
     // Value order matters in this enum.
@@ -94,7 +97,8 @@ UsdIsConcrete(UsdObjType type) {
 }
 
 /// \class UsdObject
-/// \brief Base class for Usd scenegraph objects, providing common API.
+///
+/// Base class for Usd scenegraph objects, providing common API.
 ///
 /// The commonality between the three types of scenegraph objects in Usd
 /// (\ref UsdPrim, \ref UsdAttribute, \ref UsdRelationship) is that they can
@@ -281,7 +285,7 @@ public:
     /// \overload
 	USD_API bool SetMetadata(const TfToken& key, const VtValue& value) const;
 
-    /// \brief Clears the authored \a key's value at the current EditTarget,
+    /// Clears the authored \a key's value at the current EditTarget,
     /// returning false on error.
     ///
     /// If no value is present, this method is a no-op and returns true. It is
@@ -292,17 +296,17 @@ public:
     /// \sa \ref Usd_OM_Metadata
 	USD_API bool ClearMetadata(const TfToken& key) const;
 
-    /// \brief Returns true if the \a key has a meaningful value, that is, if
+    /// Returns true if the \a key has a meaningful value, that is, if
     /// GetMetadata() will provide a value, either because it was authored
     /// or because a prim's metadata fallback will be provided.
 	USD_API bool HasMetadata(const TfToken& key) const;
 
-    /// \brief Returns true if the \a key has an authored value, false if no
+    /// Returns true if the \a key has an authored value, false if no
     /// value was authored or the only value available is a prim's metadata 
     /// fallback.
 	USD_API bool HasAuthoredMetadata(const TfToken& key) const;
 
-    /// \brief Resolve the requested dictionary sub-element \p keyPath of
+    /// Resolve the requested dictionary sub-element \p keyPath of
     /// dictionary-valued metadatum named \p key into \p value,
     /// returning true on success.
     ///
@@ -324,7 +328,7 @@ public:
 	USD_API bool GetMetadataByDictKey(
         const TfToken& key, const TfToken &keyPath, VtValue *value) const;
 
-    /// \brief Author \p value to the field identified by \p key and \p keyPath
+    /// Author \p value to the field identified by \p key and \p keyPath
     /// at the current EditTarget.  The \p keyPath is a ':'-separated path
     /// identifying a value in subdictionaries stored in the metadata field at
     /// \p key.  Return true if the value is authored successfully, false
@@ -338,7 +342,7 @@ public:
 	USD_API bool SetMetadataByDictKey(
         const TfToken& key, const TfToken &keyPath, const VtValue& value) const;
 
-    /// \brief Clear any authored value identified by \p key and \p keyPath
+    /// Clear any authored value identified by \p key and \p keyPath
     /// at the current EditTarget.  The \p keyPath is a ':'-separated path
     /// identifying a path in subdictionaries stored in the metadata field at
     /// \p key.  Return true if the value is cleared successfully, false
@@ -348,7 +352,7 @@ public:
 	USD_API bool ClearMetadataByDictKey(
         const TfToken& key, const TfToken& keyPath) const;
 
-    /// \brief Return true if there exists any authored or fallback opinion for
+    /// Return true if there exists any authored or fallback opinion for
     /// \p key and \p keyPath.  The \p keyPath is a ':'-separated path
     /// identifying a value in subdictionaries stored in the metadata field at
     /// \p key.
@@ -357,7 +361,7 @@ public:
     USD_API bool HasMetadataDictKey(
         const TfToken& key, const TfToken &keyPath) const;
 
-    /// \brief Return true if there exists any authored opinion (excluding
+    /// Return true if there exists any authored opinion (excluding
     /// fallbacks) for \p key and \p keyPath.  The \p keyPath is a ':'-separated
     /// path identifying a value in subdictionaries stored in the metadata field
     /// at \p key.
@@ -366,7 +370,7 @@ public:
 	USD_API bool HasAuthoredMetadataDictKey(
         const TfToken& key, const TfToken &keyPath) const;
 
-    /// \brief Resolve and return all metadata (including both authored and
+    /// Resolve and return all metadata (including both authored and
     /// fallback values) on this object, sorted lexicographically.
     ///
     /// The keys returned in this map exactly match the keys returned by
@@ -377,7 +381,7 @@ public:
     /// primChildren, nor does it return the default value or timeSamples.
 	USD_API UsdMetadataValueMap GetAllMetadata() const;
 
-    /// \brief Resolve and return all user-authored metadata on this object,
+    /// Resolve and return all user-authored metadata on this object,
     /// sorted lexicographically.
     ///
     /// This method returns a subset of the keys returned by ListMetadata.
@@ -396,7 +400,7 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// \brief Gets the value of the 'hidden' metadata field, false if not 
+    /// Gets the value of the 'hidden' metadata field, false if not 
     /// authored.
     ///
     /// When an object is marked as hidden, it is an indicator to clients who 
@@ -412,21 +416,21 @@ public:
     /// interpreted by any renderer as making a prim invisible to drawing.
 	USD_API bool IsHidden() const;
 
-    /// \brief Sets the value of the 'hidden' metadata field. See IsHidden()
+    /// Sets the value of the 'hidden' metadata field. See IsHidden()
     /// for details.
 	USD_API bool SetHidden(bool hidden) const;
 
-    /// \brief Clears the opinion for "Hidden" at the current EditTarget.
+    /// Clears the opinion for "Hidden" at the current EditTarget.
 	USD_API bool ClearHidden() const;
 
-    /// \brief Returns true if hidden was explicitly authored and GetMetadata()
+    /// Returns true if hidden was explicitly authored and GetMetadata()
     /// will return a meaningful value for Hidden. 
     ///
     /// Note that IsHidden returns a fallback value (false) when hidden is not
     /// authored.
 	USD_API bool HasAuthoredHidden() const;
 
-    /// \brief Return this object's composed customData dictionary.
+    /// Return this object's composed customData dictionary.
     ///
     /// CustomData is "custom metadata", a place for applications and users
     /// to put uniform data that is entirely dynamic and subject to no schema
@@ -446,54 +450,54 @@ public:
     /// \sa GetCustomDataByKey()
 	USD_API VtDictionary GetCustomData() const;
 
-    /// \brief Return the element identified by \p keyPath in this object's
+    /// Return the element identified by \p keyPath in this object's
     /// composed customData dictionary.  The \p keyPath is a ':'-separated path
     /// identifying a value in subdictionaries.  This is in general more
     /// efficient than composing the entire customData dictionary and then
     /// pulling out one sub-element.
 	USD_API VtValue GetCustomDataByKey(const TfToken &keyPath) const;
 
-    /// \brief Author this object's customData dictionary to \p customData at
+    /// Author this object's customData dictionary to \p customData at
     /// the current EditTarget.
 	USD_API void SetCustomData(const VtDictionary &customData) const;
 
-    /// \brief Author the element identified by \p keyPath in this object's
+    /// Author the element identified by \p keyPath in this object's
     /// customData dictionary at the current EditTarget.  The \p keyPath is a
     /// ':'-separated path identifying a value in subdictionaries.
 	USD_API void SetCustomDataByKey(const TfToken &keyPath, const VtValue &value) const;
 
-    /// \brief Clear the authored opinion for this object's customData
+    /// Clear the authored opinion for this object's customData
     /// dictionary at the current EditTarget.  Do nothing if there is no such
     /// authored opinion.
 	USD_API void ClearCustomData() const;
 
-    /// \brief Clear the authored opinion identified by \p keyPath in this
+    /// Clear the authored opinion identified by \p keyPath in this
     /// object's customData dictionary at the current EditTarget.  The \p
     /// keyPath is a ':'-separated path identifying a value in subdictionaries.
     /// Do nothing if there is no such authored opinion.
 	USD_API void ClearCustomDataByKey(const TfToken &keyPath) const;
 
-    /// \brief Return true if there are any authored or fallback opinions for
+    /// Return true if there are any authored or fallback opinions for
     /// this object's customData dictionary, false otherwise.
 	USD_API bool HasCustomData() const;
 
-    /// \brief Return true if there are any authored or fallback opinions for
+    /// Return true if there are any authored or fallback opinions for
     /// the element identified by \p keyPath in this object's customData
     /// dictionary, false otherwise.  The \p keyPath is a ':'-separated path
     /// identifying a value in subdictionaries.
 	USD_API bool HasCustomDataKey(const TfToken &keyPath) const;
 
-    /// \brief Return true if there are any authored opinions (excluding
+    /// Return true if there are any authored opinions (excluding
     /// fallback) for this object's customData dictionary, false otherwise.
 	USD_API bool HasAuthoredCustomData() const;
 
-    /// \brief Return true if there are any authored opinions (excluding
+    /// Return true if there are any authored opinions (excluding
     /// fallback) for the element identified by \p keyPath in this object's
     /// customData dictionary, false otherwise.  The \p keyPath is a
     /// ':'-separated path identifying a value in subdictionaries.
 	USD_API bool HasAuthoredCustomDataKey(const TfToken &keyPath) const;
 
-    /// \brief Return this object's composed assetInfo dictionary.
+    /// Return this object's composed assetInfo dictionary.
     ///
     /// The asset info dictionary is used to annotate objects representing the 
     /// root-prims of assets (generally organized as models) with various 
@@ -508,48 +512,48 @@ public:
     /// \sa GetAssetInfoByKey()
 	USD_API VtDictionary GetAssetInfo() const;
 
-    /// \brief Return the element identified by \p keyPath in this object's
+    /// Return the element identified by \p keyPath in this object's
     /// composed assetInfo dictionary.  The \p keyPath is a ':'-separated path
     /// identifying a value in subdictionaries.  This is in general more
     /// efficient than composing the entire assetInfo dictionary than 
     /// pulling out one sub-element.
 	USD_API VtValue GetAssetInfoByKey(const TfToken &keyPath) const;
 
-    /// \brief Author this object's assetInfo dictionary to \p assetInfo at
+    /// Author this object's assetInfo dictionary to \p assetInfo at
     /// the current EditTarget.
 	USD_API void SetAssetInfo(const VtDictionary &customData) const;
 
-    /// \brief Author the element identified by \p keyPath in this object's
+    /// Author the element identified by \p keyPath in this object's
     /// assetInfo dictionary at the current EditTarget.  The \p keyPath is a
     /// ':'-separated path identifying a value in subdictionaries.
 	USD_API void SetAssetInfoByKey(const TfToken &keyPath, const VtValue &value) const;
 
-    /// \brief Clear the authored opinion for this object's assetInfo
+    /// Clear the authored opinion for this object's assetInfo
     /// dictionary at the current EditTarget.  Do nothing if there is no such
     /// authored opinion.
 	USD_API void ClearAssetInfo() const;
 
-    /// \brief Clear the authored opinion identified by \p keyPath in this
+    /// Clear the authored opinion identified by \p keyPath in this
     /// object's assetInfo dictionary at the current EditTarget.  The \p
     /// keyPath is a ':'-separated path identifying a value in subdictionaries.
     /// Do nothing if there is no such authored opinion.
 	USD_API void ClearAssetInfoByKey(const TfToken &keyPath) const;
 
-    /// \brief Return true if there are any authored or fallback opinions for
+    /// Return true if there are any authored or fallback opinions for
     /// this object's assetInfo dictionary, false otherwise.
 	USD_API bool HasAssetInfo() const;
 
-    /// \brief Return true if there are any authored or fallback opinions for
+    /// Return true if there are any authored or fallback opinions for
     /// the element identified by \p keyPath in this object's assetInfo
     /// dictionary, false otherwise.  The \p keyPath is a ':'-separated path
     /// identifying a value in subdictionaries.
 	USD_API bool HasAssetInfoKey(const TfToken &keyPath) const;
 
-    /// \brief Return true if there are any authored opinions (excluding
+    /// Return true if there are any authored opinions (excluding
     /// fallback) for this object's assetInfo dictionary, false otherwise.
 	USD_API bool HasAuthoredAssetInfo() const;
 
-    /// \brief Return true if there are any authored opinions (excluding
+    /// Return true if there are any authored opinions (excluding
     /// fallback) for the element identified by \p keyPath in this object's
     /// assetInfo dictionary, false otherwise.  The \p keyPath is a
     /// ':'-separated path identifying a value in subdictionaries.
@@ -630,7 +634,6 @@ private:
     TfToken _propName;
 
 };
-
 
 template<typename T>
 bool

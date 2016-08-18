@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/proxyPolicies.h
-
 #ifndef SDF_PROXYPOLICIES_H
 #define SDF_PROXYPOLICIES_H
 
 #include "pxr/usd/sdf/api.h"
+/// \file sdf/proxyPolicies.h
+
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/spec.h"
@@ -34,7 +34,10 @@
 class SdfReference;
 class SdfMapperSpec;
 
+/// \class SdfNameKeyPolicy
+///
 /// Key policy for \c std::string names.
+///
 class SdfNameKeyPolicy {
 public:
     typedef std::string value_type;
@@ -51,7 +54,10 @@ public:
     }
 };
 
+/// \class SdfNameTokenKeyPolicy
+///
 /// Key policy for \c TfToken names.
+///
 class SdfNameTokenKeyPolicy {
 public:
     typedef TfToken value_type;
@@ -68,7 +74,10 @@ public:
     }
 };
 
+/// \class SdfPathKeyPolicy
+///
 /// Key policy for \c SdfPath; converts all SdfPaths to absolute.
+///
 class SdfPathKeyPolicy {
 public:
     typedef SdfPath value_type;
@@ -124,7 +133,10 @@ struct Vt_DefaultValueFactory<SdfPathKeyPolicy> {
     }
 };
 
+/// \class SdfReferenceTypePolicy
+///
 /// List editor type policy for \c SdfReference.
+///
 class SdfReferenceTypePolicy {
 public:
     typedef SdfReference value_type;
@@ -150,7 +162,10 @@ struct Vt_DefaultValueFactory<SdfReferenceTypePolicy> {
     }
 };
 
+/// \class SdfSubLayerTypePolicy
+///
 /// List editor type policy for sublayers.
+///
 class SdfSubLayerTypePolicy {
 public:
     typedef std::string value_type;
@@ -167,22 +182,31 @@ public:
     }
 };
 
+/// \class SdfConnectionMapperViewPredicate
+///
 /// Predicate for connection mappers.  Don't include connections that don't
 /// have a mapper.
+///
 class SdfConnectionMapperViewPredicate {
 public:
     SDF_API bool operator()(const SdfHandle<SdfMapperSpec>& x) const;
 };
 
+/// \class SdfConnectionMapperValuePolicy
+///
 /// Value policy for connection mappers.
+///
 class SdfConnectionMapperValuePolicy {
 public:
     typedef SdfHandle<SdfMapperSpec> value_type;
 
 };
 
+/// \class SdfRelocatesMapProxyValuePolicy
+///
 /// Map edit proxy value policy for relocates maps.  This absolutizes all
 /// paths.
+///
 class SdfRelocatesMapProxyValuePolicy {
 public:
     typedef std::map<SdfPath, SdfPath> Type;
@@ -204,7 +228,10 @@ public:
                                        const value_type& x);
 };
 
+/// \class SdfGenericSpecViewPredicate
+///
 /// Predicate for viewing properties.
+///
 class SdfGenericSpecViewPredicate {
 public:
     SdfGenericSpecViewPredicate(SdfSpecType type) : _type(type) { }
@@ -223,13 +250,19 @@ private:
     SdfSpecType _type;
 };
 
+/// \class SdfAttributeViewPredicate
+///
 /// Predicate for viewing attributes.
+///
 class SdfAttributeViewPredicate : public SdfGenericSpecViewPredicate {
 public:
     SdfAttributeViewPredicate();
 };
 
+/// \class SdfRelationshipViewPredicate
+///
 /// Predicate for viewing relationships.
+///
 class SdfRelationshipViewPredicate : public SdfGenericSpecViewPredicate {
 public:
     SdfRelationshipViewPredicate();

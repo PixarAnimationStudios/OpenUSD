@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/changeList.h
-
-
 #ifndef SDF_CHANGELIST_H
 #define SDF_CHANGELIST_H
+
+/// \file sdf/changeList.h
 
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
@@ -41,8 +39,8 @@ typedef std::map<SdfLayerHandle, SdfChangeList> SdfLayerChangeListMap;
 
 /// \class SdfChangeList
 ///
-/// \brief A list of scene description modifications, organized
-/// by the namespace paths where the changes occur.
+/// A list of scene description modifications, organized by the namespace
+/// paths where the changes occur.
 ///
 class SdfChangeList
 {
@@ -84,7 +82,9 @@ public:
     void DidChangeInfo(const SdfPath &path, const TfToken &key,
                        const VtValue &oldValue, const VtValue &newValue);
 
-    /// \brief Entry of changes at a single path in namespace.
+    /// \struct Entry
+    ///
+    /// Entry of changes at a single path in namespace.
     ///
     /// If the path is SdfPath::AbsoluteRootPath(), that indicates a change
     /// to the root of namespace (that is, a layer or stage).

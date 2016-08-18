@@ -33,6 +33,7 @@ struct ArAssetInfo;
 class VtValue;
 
 /// \class ArResolver
+///
 /// Interface for the asset resolution system. An asset resolver is 
 /// responsible for resolving asset information (including the asset's
 /// physical path) from a logical path.

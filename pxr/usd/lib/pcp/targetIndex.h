@@ -39,6 +39,7 @@ class PcpPropertyIndex;
 /// paths of a relationship or attribute.  Note that this is just
 /// the result; it does not retain all of the input arguments used
 /// in computing the index, such as the owning property.
+///
 struct PcpTargetIndex {
     SdfPathVector paths;
     PcpErrorVector localErrors;

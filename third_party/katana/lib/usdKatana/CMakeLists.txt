@@ -34,6 +34,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdShade
         usdGeom
         usdRi
+        usdUI
         usdUtils
         cameraUtil
         katanaAttrfncApi
@@ -64,7 +65,7 @@ pxr_shared_library(${PXR_PACKAGE}
         readCamera
         readConstraintTarget
         readGprim
-        readLook
+        readMaterial
         readMesh
         readModel
         readNurbsPatch

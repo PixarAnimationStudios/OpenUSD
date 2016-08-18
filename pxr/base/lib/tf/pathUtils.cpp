@@ -369,6 +369,26 @@ TfAbsPath(string const& path)
 }
 
 string
+TfGetExtension(string const& path)
+{
+    static const string emptyPath;
+
+    if (path.empty()) {
+        return emptyPath;
+    }
+
+    const std::string fileName = TfGetBaseName(path);
+
+    // If this is a dot file with no extension (e.g. /some/path/.folder), then
+    // we return an empty string.
+    if (TfStringGetBeforeSuffix(fileName).empty()) {
+        return emptyPath;
+    }
+
+    return TfStringGetSuffix(fileName);
+}
+
+string
 TfReadLink(string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)

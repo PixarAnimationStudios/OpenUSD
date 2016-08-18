@@ -25,10 +25,10 @@
 
 #include "usdKatana/blindDataObject.h"
 #include "usdKatana/readBlindData.h"
-#include "usdKatana/readLook.h"
+#include "usdKatana/readMaterial.h"
 #include "usdKatana/utils.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interface)
 {
@@ -38,7 +38,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
 
     //
     // Construct the group attribute argument for the StaticSceneCreate
-    // op which will construct the looks scenegraph branch.
+    // op which will construct the materials scenegraph branch.
     //
 
     FnKat::GroupBuilder gb;
@@ -46,20 +46,22 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
     bool flatten = false;
     TF_FOR_ALL(childIter, privateData.GetUsdPrim().GetChildren()) {
         const UsdPrim& child = *childIter;
-        UsdShadeLook look(child);
-        if (not look) {
+        UsdShadeMaterial materialSchema(child);
+        if (not materialSchema) {
             continue;
         }
 
         std::string location = 
-            PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
+            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
                 child.GetPath(), privateData);
 
         PxrUsdKatanaAttrMap attrs;
-        PxrUsdKatanaReadLook(look, flatten, privateData, attrs, rootLocation);
+        PxrUsdKatanaReadMaterial(materialSchema, flatten, 
+            privateData, attrs, rootLocation);
 
         // Read blind data.
-        PxrUsdKatanaReadBlindData(UsdKatanaBlindDataObject(look), attrs);
+        PxrUsdKatanaReadBlindData(
+            UsdKatanaBlindDataObject(materialSchema), attrs);
 
         // location is "/root/world/geo/Model/Wood/Walnut/Aged"
         // where rootLocation is "/root/world/geo/Model/"

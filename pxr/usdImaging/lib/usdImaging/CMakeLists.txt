@@ -19,6 +19,7 @@ pxr_shared_library(usdImaging
         tracelite
         vt
         work
+        garch
         glf
         hd
         hdx

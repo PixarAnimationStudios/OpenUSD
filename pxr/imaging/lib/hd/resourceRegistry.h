@@ -63,6 +63,8 @@ typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 
+/// \class HdResourceRegistry
+///
 /// A central registry of all GPU resources.
 ///
 class HdResourceRegistry : public boost::noncopyable  {

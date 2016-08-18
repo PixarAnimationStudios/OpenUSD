@@ -53,7 +53,9 @@ public:
 
 };
 
-/// a utility class to perform batched buffer copy
+/// \class HdGLBufferRelocator
+///
+/// A utility class to perform batched buffer copy.
 ///
 class HdGLBufferRelocator {
 public:

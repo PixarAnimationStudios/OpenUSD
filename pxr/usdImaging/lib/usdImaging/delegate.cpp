@@ -65,6 +65,7 @@
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
@@ -163,8 +164,8 @@ UsdImagingDelegate::~UsdImagingDelegate()
     TF_FOR_ALL(it, _texturePaths) {
         index.RemoveTexture(*it);
     }
-    TF_FOR_ALL(it, _shaderPaths) {
-        index.RemoveShader(GetPathForIndex(*it));
+    TF_FOR_ALL(it, _shaderMap) {
+        index.RemoveShader(GetPathForIndex(it->first));
     }
 }
 
@@ -534,11 +535,26 @@ UsdImagingIndexProxy::_InsertRprim(SdfPath const& usdPath,
                                         _delegate->GetPathForIndex(instancer));
 
         if (shader != SdfPath() and
-            _delegate->_shaderPaths.find(shader) == _delegate->_shaderPaths.end()) {
+            _delegate->_shaderMap.find(shader) == _delegate->_shaderMap.end()) {
+
             _delegate->GetRenderIndex()
                 .InsertShader<HdSurfaceShader>(_delegate,
                                                _delegate->GetPathForIndex(shader));
-            _delegate->_shaderPaths.insert(shader);
+            
+            // Detect if the shader has any attribute that is time varying
+            // if so we will tag the shader as time varying so we can 
+            // invalidate it accordingly
+            bool isTimeVarying = false;
+            UsdPrim p = _delegate->_GetPrim(shader);
+            const std::vector<UsdAttribute> &attrs = p.GetAttributes();
+            TF_FOR_ALL(attrIter, attrs) {
+                const UsdAttribute& attr = *attrIter;
+                if (attr.GetNumTimeSamples()>1){
+                    isTimeVarying = true;
+                    break;
+                }
+            }
+            _delegate->_shaderMap[shader] = isTimeVarying;
 
             SdfPathVector textures = 
                     _delegate->GetSurfaceShaderTextures(shader);
@@ -1177,6 +1193,15 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
         if (dirtyFlags == HdChangeTracker::Clean)
             continue;
         _MarkRprimOrInstancerDirty(it->first, dirtyFlags);
+    }
+
+    // If any shader is time varying now it is the time to invalidate it.
+    TF_FOR_ALL(it, _shaderMap) {
+        bool& isTimeVarying = it->second;
+        if (isTimeVarying) {
+            HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
+            tracker.MarkShaderDirty(it->first, HdChangeTracker::DirtyParams);
+        }
     }
 }
 
@@ -2688,7 +2713,7 @@ UsdImagingDelegate::GetSurfaceShaderParamValue(SdfPath const &id,
     }
 
     // Reading the value may fail, should we warn here when it does?
-    attr.Get(&value);
+    attr.Get(&value, _time);
     return value;
 }
 
@@ -3001,6 +3026,12 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
                 isPtex ? "true" : "false");
     }
 
+    if (not TfPathExists(filePath)) {
+        TF_WARN("Unable to find Texture '%s' with path '%s'.", 
+            filePath.GetText(), usdPath.GetText());
+        return HdTextureResourceSharedPtr();
+    }
+
     HdTextureResourceSharedPtr texResource;
 
     TF_DEBUG(USDIMAGING_TEXTURES).Msg("    Loading texture: %s\n", 
@@ -3027,6 +3058,8 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
                                 ? HdMinFilterNearestMipmapLinear
                  : (minFilter == UsdHydraTokens->linearMipmapNearest) 
                                 ? HdMinFilterLinearMipmapNearest
+                 : (minFilter == UsdHydraTokens->linearMipmapLinear) 
+                                ? HdMinFilterLinearMipmapLinear
                  : HdMinFilterLinear; 
 
     texResource = HdTextureResourceSharedPtr(

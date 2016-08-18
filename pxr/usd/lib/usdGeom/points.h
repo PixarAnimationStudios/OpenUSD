@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_POINTS_H
 #define USDGEOM_GENERATED_POINTS_H
 
+/// \file usdGeom/points.h
+
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,7 +47,9 @@ class SdfAssetPath;
 // POINTS                                                                     //
 // -------------------------------------------------------------------------- //
 
-/// \brief Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
+/// \class UsdGeomPoints
+///
+/// Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
 /// 
 /// Points can be an efficient means of storing and rendering particle
 /// effects comprised of thousands or millions of small particles.  Points
@@ -89,7 +93,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomPoints holding the prim adhering to this
+    /// Return a UsdGeomPoints holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -102,7 +106,7 @@ public:
     static UsdGeomPoints
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

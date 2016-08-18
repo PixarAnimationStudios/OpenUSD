@@ -38,10 +38,11 @@ typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderPtr;
 typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
 
-/// HdCodeGen
+/// \class Hd_CodeGen
+///
 /// A utility class to compose glsl shader sources and compile them
 /// upon request of HdShaderSpec.
-
+///
 class Hd_CodeGen
 {
 public:

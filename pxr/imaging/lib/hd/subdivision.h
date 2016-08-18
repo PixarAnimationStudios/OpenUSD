@@ -35,9 +35,12 @@
 
 class HdMeshTopology;
 
-/// Subdivision struct
-/// holding subdivision tables and patch tables.
+/// \class Hd_Subdivision
+///
+/// Subdivision struct holding subdivision tables and patch tables.
+///
 /// This single struct can be used for cpu and gpu subdivision at the same time.
+///
 class Hd_Subdivision {
 public:
     virtual ~Hd_Subdivision();
@@ -82,8 +85,10 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-/// OpenSubdiv Topology Analysis
-/// create Hd_Subdivision struct and sets it into HdMeshTopology.
+/// \class Hd_OsdTopologyComputation
+///
+/// OpenSubdiv Topology Analysis.
+/// Create Hd_Subdivision struct and sets it into HdMeshTopology.
 ///
 class Hd_OsdTopologyComputation : public HdComputedBufferSource {
 public:
@@ -102,7 +107,9 @@ protected:
 };
 
 // ---------------------------------------------------------------------------
-/// OpenSubdiv refined index buffer computation
+/// \class Hd_OsdIndexComputation
+///
+/// OpenSubdiv refined index buffer computation.
 ///
 /// computes index buffer and primitiveParam
 ///
@@ -116,7 +123,6 @@ protected:
 /// ... |           |           | ...    primitive param[2] (patch param 1)
 /// ----+-----------+-----------+------
 ///
-
 class Hd_OsdIndexComputation : public HdComputedBufferSource {
 public:
     /// overrides
@@ -137,7 +143,9 @@ protected:
 };
 
 // ---------------------------------------------------------------------------
-/// OpenSubdiv CPU Refinement
+/// \class Hd_OsdRefineComputation
+///
+/// OpenSubdiv CPU Refinement.
 /// This class isn't inherited from HdComputedBufferSource.
 /// GetData() returns the internal buffer of Hd_OsdCpuVertexBuffer,
 /// so that reducing data copy between osd buffer and HdBufferSource.
@@ -171,8 +179,9 @@ private:
 };
 
 // ---------------------------------------------------------------------------
-/// OpenSubdiv GPU Refinement
+/// \class Hd_OsdRefineComputationGPU
 ///
+/// OpenSubdiv GPU Refinement.
 ///
 class Hd_OsdRefineComputationGPU : public HdComputation {
 public:
@@ -322,7 +331,5 @@ Hd_OsdRefineComputation<VERTEX_BUFFER>::AddBufferSpecs(HdBufferSpecVector *specs
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
 }
-
-
 
 #endif // HD_SUBDIVISION_H

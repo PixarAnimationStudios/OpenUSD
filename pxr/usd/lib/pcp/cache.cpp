@@ -156,7 +156,7 @@ PcpCache::~PcpCache()
     wd.Run([this]() { _payloadDecorator.Reset(); });
     wd.Run([this]() { TfReset(_includedPayloads); });
     wd.Run([this]() { TfReset(_variantFallbackMap); });
-    wd.Run([this]() { TfReset(_primIndexCache); });
+    wd.Run([this]() { _primIndexCache.ClearInParallel(); });
     wd.Run([this]() { TfReset(_propertyIndexCache); });
 
     // Wait, since _layerStackCache cannot be destroyed until _dependencies is

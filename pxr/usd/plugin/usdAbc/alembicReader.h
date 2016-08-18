@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file alembicReader.h
 #ifndef USDABC_ALEMBICREADER_H
 #define USDABC_ALEMBICREADER_H
+
+/// \file usdAbc/alembicReader.h
 
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/tf/token.h"
@@ -37,7 +38,9 @@
 //         out of it anyway for simplicity's sake.
 
 /// \class UsdAbc_AlembicDataReader
-/// \brief An alembic reader suitable for an SdfAbstractData.
+///
+/// An alembic reader suitable for an SdfAbstractData.
+///
 class UsdAbc_AlembicDataReader : boost::noncopyable {
 public:
     typedef int64_t Index;

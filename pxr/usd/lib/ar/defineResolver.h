@@ -34,9 +34,11 @@
 #include <boost/preprocessor/if.hpp>
 
 /// \def AR_DEFINE_RESOLVER(ResolverClass, BaseClass1, BaseClass2, ...)
+///
 /// Performs registrations required for the specified resolver class
 /// to be discovered by Ar's plugin mechanism. This typically would be
 /// invoked in the source file defining the resolver class.
+///
 #define AR_DEFINE_RESOLVER(c, ...)                                  \
 TF_REGISTRY_FUNCTION(TfType) {                                      \
     TfType t = TfType::Define<                                      \

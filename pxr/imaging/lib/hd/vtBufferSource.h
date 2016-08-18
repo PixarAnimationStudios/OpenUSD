@@ -49,6 +49,8 @@
 
 #include <iosfwd>
 
+/// \class HdVtBufferSource
+///
 /// A transient buffer of data that has not yet been committed to the GPU.
 ///
 /// This class is primarily used in the interaction between HdRprim and the

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/namespaceEdit.h
-
 #ifndef SDF_NAMESPACEEDIT_H
 #define SDF_NAMESPACEEDIT_H
+
+/// \file sdf/namespaceEdit.h
 
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
@@ -35,8 +35,10 @@
 #include <vector>
 
 /// \class SdfNamespaceEdit
+///
 /// A single namespace edit.  It supports renaming, reparenting, reparenting
 /// with a rename, reordering, and removal.
+///
 struct SdfNamespaceEdit :
     boost::equality_comparable<SdfNamespaceEdit> {
 public:
@@ -109,9 +111,9 @@ public:
     SDF_API bool operator==(const This& rhs) const;
 
 public:
-    Path currentPath;   //!< Path of the object when this edit starts.
-    Path newPath;       //!< Path of the object when this edit ends.
-    Index index;        //!< Index for prim insertion.
+    Path currentPath;   ///< Path of the object when this edit starts.
+    Path newPath;       ///< Path of the object when this edit ends.
+    Index index;        ///< Index for prim insertion.
 };
 
 /// A sequence of \c SdfNamespaceEdit.
@@ -120,15 +122,18 @@ typedef std::vector<SdfNamespaceEdit> SdfNamespaceEditVector;
 SDF_API std::ostream& operator<<(std::ostream&, const SdfNamespaceEdit&);
 SDF_API std::ostream& operator<<(std::ostream&, const SdfNamespaceEditVector&);
 
+/// \struct SdfNamespaceEditDetail
+///
 /// Detailed information about a namespace edit.
+///
 struct SdfNamespaceEditDetail :
     boost::equality_comparable<SdfNamespaceEditDetail> {
 public:
     /// Validity of an edit.
     enum Result {
-        Error,          //!< Edit will fail.
-        Unbatched,      //!< Edit will succeed but not batched.
-        Okay,           //!< Edit will succeed as a batch.
+        Error,          ///< Edit will fail.
+        Unbatched,      ///< Edit will succeed but not batched.
+        Okay,           ///< Edit will succeed as a batch.
     };
 
     SDF_API SdfNamespaceEditDetail();
@@ -138,9 +143,9 @@ public:
     SDF_API bool operator==(const SdfNamespaceEditDetail& rhs) const;
 
 public:
-    Result result;          //!< Validity.
-    SdfNamespaceEdit edit;  //!< The edit.
-    std::string reason;     //!< The reason the edit will not succeed cleanly.
+    Result result;          ///< Validity.
+    SdfNamespaceEdit edit;  ///< The edit.
+    std::string reason;     ///< The reason the edit will not succeed cleanly.
 };
 
 /// A sequence of \c SdfNamespaceEditDetail.
@@ -176,7 +181,8 @@ CombineUnbatched(SdfNamespaceEditDetail::Result other)
 }
 
 /// \class SdfBatchNamespaceEdit
-/// \brief A description of an arbitrarily complex namespace edit.
+///
+/// A description of an arbitrarily complex namespace edit.
 ///
 /// A \c SdfBatchNamespaceEdit object describes zero or more namespace edits.
 /// Various types providing a namespace will allow the edits to be applied
@@ -198,6 +204,7 @@ CombineUnbatched(SdfNamespaceEditDetail::Result other)
 /// we could just rename A to C.  This means notices may be elided.  However,
 /// implementations must not elide notices that contain information about any
 /// edit that clients must be able to know but otherwise cannot determine.
+///
 class SdfBatchNamespaceEdit {
 public:
     /// Create an empty sequence of edits.

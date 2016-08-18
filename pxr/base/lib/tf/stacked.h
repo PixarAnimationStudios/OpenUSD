@@ -42,7 +42,8 @@
 /// to customize aspects \a TfStacked's behavior.  See \a TfStacked
 /// documentation for more details.
 ///
-struct TfStackedAccess {
+class TfStackedAccess {
+public:
     template <class Derived>
     static void InitializeStack() {
         return Derived::_InitializeStack();

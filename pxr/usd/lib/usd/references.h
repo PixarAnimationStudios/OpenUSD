@@ -118,6 +118,7 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// \em or if the provided primPath is not an actual root prim in that layer,
 /// the stage's recomposition will fail, and pass on composition errors to the
 /// client.
+///
 class UsdReferences {
     friend class UsdPrim;
 
@@ -189,10 +190,6 @@ public:
     // TODO: use safe bool idiom
     operator bool() { return bool(_prim); }
 
-
-    // ---------------------------------------------------------------------- //
-    // Private Methods and Members
-    // ---------------------------------------------------------------------- //
 private:
 
     SdfPrimSpecHandle _CreatePrimSpecForEditing();

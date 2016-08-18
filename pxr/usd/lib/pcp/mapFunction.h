@@ -29,10 +29,11 @@
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/base/tf/flyweight.h"
 
-/// PcpMapFunction is a function that maps values from one namespace
-/// (and time domain) to another. It represents the transformation
-/// that an arc such as a reference arc applies as it incorporates
-/// values across the arc.
+/// \class PcpMapFunction
+///
+/// A function that maps values from one namespace (and time domain) to
+/// another. It represents the transformation that an arc such as a reference
+/// arc applies as it incorporates values across the arc.
 ///
 /// Take the example of a reference arc, where a source path
 /// \</Model\> is referenced as a target path, \</Model_1\>.

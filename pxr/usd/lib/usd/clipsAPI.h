@@ -24,6 +24,8 @@
 #ifndef USD_GENERATED_CLIPSAPI_H
 #define USD_GENERATED_CLIPSAPI_H
 
+/// \file usd/clipsAPI.h
+
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
@@ -44,6 +46,8 @@ class SdfAssetPath;
 // CLIPSAPI                                                                   //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdClipsAPI
+///
 /// UsdClipsAPI is an API schema that provides an interface to
 /// a prim's clip metadata. Clips are a "value resolution" feature that 
 /// allows one to specify a sequence of usd files (clips) to be consulted, 
@@ -116,7 +120,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdClipsAPI holding the prim adhering to this
+    /// Return a UsdClipsAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

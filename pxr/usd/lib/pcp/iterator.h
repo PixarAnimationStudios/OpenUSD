@@ -41,8 +41,10 @@ class PcpPrimIndex_Graph;
 class PcpPropertyIndex;
 
 /// \class PcpNodeIterator
+///
 /// Object used to iterate over nodes in the prim index graph in strong-to-weak
 /// order.
+///
 class PcpNodeIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeIterator, 
@@ -87,8 +89,10 @@ private:
 };
 
 /// \class PcpNodeReverseIterator
+///
 /// Object used to iterate over nodes in the prim index graph in weak-to-strong
 /// order.
+///
 class PcpNodeReverseIterator
     : public boost::reverse_iterator<PcpNodeIterator>
 {
@@ -99,8 +103,10 @@ public:
 };
 
 /// \class PcpPrimIterator
+///
 /// Object used to iterate over prim specs in the prim index graph in 
 /// strong-to-weak order.
+///
 class PcpPrimIterator 
     : public boost::iterator_facade<
                  /* Derived  = */ PcpPrimIterator, 
@@ -143,8 +149,10 @@ private:
 };
 
 /// \class PcpPrimReverseIterator
+///
 /// Object used to iterate over prim specs in the prim index graph in 
 /// weak-to-strong order.
+///
 class PcpPrimReverseIterator
     : public boost::reverse_iterator<PcpPrimIterator>
 {
@@ -167,8 +175,10 @@ public:
 };
 
 /// \class PcpPropertyIterator
+///
 /// Object used to iterate over property specs in a property index in
 /// strong-to-weak order.
+///
 class PcpPropertyIterator
     : public boost::iterator_facade<
                  /* Derived  = */ PcpPropertyIterator, 
@@ -208,8 +218,10 @@ private:
 };
 
 /// \class PcpPropertyReverseIterator
+///
 /// Object used to iterate over property specs in a property index in
 /// weak-to-strong order.
+///
 class PcpPropertyReverseIterator
     : public boost::reverse_iterator<PcpPropertyIterator>
 {
@@ -281,8 +293,10 @@ PCP_DEFINE_RANGE(PcpPropertyRange, PcpPropertyIterator,
                  PcpPropertyReverseIterator);
 
 /// \class PcpIteratorTraits
+///
 /// Traits class for retrieving useful characteristics about one of the
 /// Pcp iterator types above.
+///
 template <class Iterator> struct PcpIteratorTraits;
 
 template <>

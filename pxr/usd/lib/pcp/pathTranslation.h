@@ -24,6 +24,8 @@
 #ifndef PCP_PATH_TRANSLATION_H
 #define PCP_PATH_TRANSLATION_H
 
+/// \file pcp/pathTranslation.h
+/// Path translation.
 #include "pxr/usd/pcp/api.h"
 
 /// \file
@@ -87,7 +89,7 @@ PcpTranslateTargetPathFromRootToNode(
     const SdfPath& pathInRootNamespace,
     bool* pathWasTranslated = 0);
 
-/// \brief Convenience function like \a PcpTranslatePathFromRootToNode, but
+/// Convenience function like \a PcpTranslatePathFromRootToNode, but
 /// takes a function rather than a node.
 PCP_API SdfPath
 PcpTranslatePathFromRootToNodeUsingFunction(
@@ -95,7 +97,7 @@ PcpTranslatePathFromRootToNodeUsingFunction(
     const SdfPath &pathInRootNamespace,
     bool *pathWasTranslated = 0);
 
-/// \brief Convenience function like \a PcpTranslatePathFromNodeToRoot, but
+/// Convenience function like \a PcpTranslatePathFromNodeToRoot, but
 /// takes a function rather than a node.
 PCP_API SdfPath
 PcpTranslatePathFromNodeToRootUsingFunction(

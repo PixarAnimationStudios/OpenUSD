@@ -39,6 +39,7 @@
 ///    
 /// UsdTyped implements a typeName-based query for its override of
 /// UsdSchemaBase::_IsCompatible().  It provides no other behavior.
+///
 class UsdTyped : public UsdSchemaBase
 {
 public:
@@ -72,10 +73,10 @@ public:
         return names;
     }
 
-    /// \brief Return a UsdTyped holding the prim adhering to this
-    /// schema at \p path on \p stage.  If no prim exists at \p path on
-    /// \p stage, or if the prim at that path does not adhere to this schema,
-    /// return an invalid schema object.  This is shorthand for the following:
+    /// Return a UsdTyped holding the prim adhering to this schema at \p path
+    /// on \p stage.  If no prim exists at \p path on \p stage, or if the prim
+    /// at that path does not adhere to this schema, return an invalid schema
+    /// object.  This is shorthand for the following:
     ///
     /// \code
     /// UsdTyped(stage->GetPrimAtPath(path));

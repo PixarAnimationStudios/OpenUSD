@@ -27,7 +27,9 @@
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
-/// Delegate support for UsdGeomPoints
+/// \class UsdImagingPointsAdapter
+///
+/// Delegate support for UsdGeomPoints.
 ///
 class UsdImagingPointsAdapter : public UsdImagingGprimAdapter {
 public:
@@ -79,6 +81,5 @@ public:
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
 };
-
 
 #endif // USDIMAGING_POINTS_ADAPTER_H

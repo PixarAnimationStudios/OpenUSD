@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glPlatformContext.h
-
 #ifndef GARCH_GLPLATFORMCONTEXT_H
 #define GARCH_GLPLATFORMCONTEXT_H
+
+/// \file garch/glPlatformContext.h
 
 #include "pxr/base/arch/defines.h"
 #include <cstddef>

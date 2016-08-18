@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_CURVES_H
 #define USDGEOM_GENERATED_CURVES_H
 
+/// \file usdGeom/curves.h
+
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,7 +47,9 @@ class SdfAssetPath;
 // CURVES                                                                     //
 // -------------------------------------------------------------------------- //
 
-/// \brief Base class for BasisCurves (RiCurves) and NurbsCurves
+/// \class UsdGeomCurves
+///
+/// Base class for BasisCurves (RiCurves) and NurbsCurves
 /// (MayaCurves).
 ///
 class UsdGeomCurves : public UsdGeomPointBased
@@ -85,7 +89,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomCurves holding the prim adhering to this
+    /// Return a UsdGeomCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

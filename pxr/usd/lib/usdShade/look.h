@@ -24,6 +24,8 @@
 #ifndef USDSHADE_GENERATED_LOOK_H
 #define USDSHADE_GENERATED_LOOK_H
 
+/// \file usdShade/look.h
+
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usdShade/subgraph.h"
 #include "pxr/usd/usdShade/material.h"
@@ -49,6 +51,8 @@ class SdfAssetPath;
 // LOOK                                                                       //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeLook
+///
 /// \deprecated Deprecated in favor of Material.
 /// 
 /// A Look provides a container into which multiple "render targets"
@@ -132,7 +136,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeLook holding the prim adhering to this
+    /// Return a UsdShadeLook holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -145,7 +149,7 @@ public:
     static UsdShadeLook
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

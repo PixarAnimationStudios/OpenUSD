@@ -24,6 +24,8 @@
 #ifndef USDHYDRA_GENERATED_PTEXTEXTURE_H
 #define USDHYDRA_GENERATED_PTEXTEXTURE_H
 
+/// \file usdHydra/ptexTexture.h
+
 #include "pxr/usd/usdHydra/api.h"
 #include "pxr/usd/usdHydra/texture.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,6 +47,8 @@ class SdfAssetPath;
 // PTEXTEXTURE                                                                //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdHydraPtexTexture
+///
 ///
 class UsdHydraPtexTexture : public UsdHydraTexture
 {
@@ -83,7 +87,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdHydraPtexTexture holding the prim adhering to this
+    /// Return a UsdHydraPtexTexture holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/fileIO_Common.h 
-
-
 #ifndef SDF_FILEIO_COMMON_H
 #define SDF_FILEIO_COMMON_H
+
+/// \file sdf/fileIO_Common.h 
 
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/declareHandles.h"

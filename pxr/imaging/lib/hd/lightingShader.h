@@ -32,7 +32,10 @@
 
 typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
 
-/// A lighting shader base class
+/// \class HdLightingShader
+///
+/// A lighting shader base class.
+///
 class HdLightingShader : public HdShader {
 public:
     HdLightingShader();

@@ -24,8 +24,9 @@
 #ifndef PCP_COMPOSE_SITE_H
 #define PCP_COMPOSE_SITE_H
 
-/// \file
-/// \brief Single-site composition.
+/// \file pcp/composeSite.h
+///
+/// Single-site composition.
 ///
 /// These are helpers that compose specific fields at single sites.
 /// They compose the field for a given path across a layer stack,
@@ -66,7 +67,10 @@ class PcpLayerStackSite;
 
 typedef TfDenseHashSet<TfToken, TfToken::HashFunctor> PcpTokenSet;
 
+/// \struct PcpSourceReferenceInfo
+///
 /// Information about reference arcs.
+///
 struct PcpSourceReferenceInfo {
     SdfLayerHandle layer;
     SdfLayerOffset layerOffset;

@@ -24,6 +24,8 @@
 #ifndef USDSHADE_GENERATED_SUBGRAPH_H
 #define USDSHADE_GENERATED_SUBGRAPH_H
 
+/// \file usdShade/subgraph.h
+
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
@@ -50,6 +52,8 @@ class SdfAssetPath;
 // SUBGRAPH                                                                   //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeSubgraph
+///
 /// A subgraph is a container for shading nodes, as well as other 
 /// subgraphs. It has a public input interface and provides a list of public 
 /// outputs, called terminals.
@@ -105,7 +109,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeSubgraph holding the prim adhering to this
+    /// Return a UsdShadeSubgraph holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -118,7 +122,7 @@ public:
     static UsdShadeSubgraph
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -199,7 +203,7 @@ public:
     /// \todo describe scoped interfaces and fix bug/108940 to account for them
     /// @{
 
-    /// \brief Create an interface attribute
+    /// Create an interface attribute.
     ///
     /// \p interfaceAttrName may be any legal property name, including
     /// arbitrary namespaces

@@ -40,7 +40,8 @@ class TfToken;
 class HdRprimCollection;
 class HdRenderIndex;
 
-
+/// \class HdChangeTracker
+///
 /// Tracks changes from the HdSceneDelegate, providing invalidation cues to the
 /// render engine.
 ///
@@ -109,6 +110,7 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Rprim with the given \p id.
@@ -120,7 +122,9 @@ public:
     void RprimRemoved(SdfPath const& id);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Rprim State Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the rprim with \p id.
@@ -278,7 +282,9 @@ public:
     static void MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Instancer Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Instancer with the given \p id.
@@ -289,8 +295,19 @@ public:
 	HDLIB_API
     void InstancerRemoved(SdfPath const& id);
 
+    /// Add the gived \p rprimId to the list of rprims associated with the
+    /// instancer \p instancerId
+    void InstancerRPrimInserted(SdfPath const& instancerId, SdfPath const& rprimId);
+
+    /// Remove the gived \p rprimId to the list of rprims associated with the
+    /// instancer \p instancerId
+    void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
+
+
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Shader Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Shader with the given \p id.
@@ -314,7 +331,9 @@ public:
     void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Task Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Task with the given \p id.
@@ -338,7 +357,9 @@ public:
     void MarkTaskClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Texture Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Texture with the given \p id.
@@ -362,7 +383,9 @@ public:
     void MarkTextureClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Instancer State Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the instancer with \p id.
@@ -374,12 +397,14 @@ public:
 	HDLIB_API
     void MarkInstancerDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
-    /// Mark the primvar for the rprim with \p id as being dirty.
+    /// Clean the specified dirty bits for the instancer with \p id.
 	HDLIB_API
     void MarkInstancerClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Camera Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Camera with the given \p id.
@@ -403,7 +428,9 @@ public:
     void MarkCameraClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Light Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Light with the given \p id.
@@ -427,7 +454,9 @@ public:
     void MarkLightClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Draw Target Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Draw Target with the given \p id.
@@ -456,7 +485,9 @@ public:
     unsigned GetDrawTargetSetVersion();
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name GarbageCollection Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Clears the garbageCollectionNeeded flag.
@@ -476,7 +507,9 @@ public:
     }
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name RprimCollection Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Adds a named collection for tracking.
@@ -521,13 +554,17 @@ public:
     unsigned GetShaderBindingsVersion() const;
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Debug
+    /// @{
     // ---------------------------------------------------------------------- //
 	HDLIB_API
     static std::string StringifyDirtyBits(int dirtyBits);
 
 	HDLIB_API
     static void DumpDirtyBits(int dirtyBits);
+
+    /// @}
 
 private:
 
@@ -538,6 +575,7 @@ private:
 
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
+    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;
@@ -552,6 +590,10 @@ private:
     // Collection versions / state.
     _CollectionStateMap _collectionState;
     bool _needsGarbageCollection;
+
+    // Provides reverse-assosiation between instancers and the rprims that use
+    // them.
+    _InstancerRprimMap _instancerRprimMap;
 
     // Typically the Rprims that get marked dirty per update iteration end up
     // being a stable set of objects; to leverage this fact, we require the

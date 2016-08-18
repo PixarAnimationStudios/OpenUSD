@@ -29,6 +29,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
+
+/// \class HdGLSLProgram
+///
 /// An instance of glsl program.
 ///
 /// This is almost a stripped version of GlfGLSLProgram, intended
@@ -39,10 +43,7 @@
 /// Although this class generate ID of the buffer object, the allocation
 /// and update of the uniform block is caller's responsibility.
 ///
-/// XXX: this design is transitional and will be revised soon.
-
-typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
-
+// XXX: this design is transitional and will be revised soon.
 class HdGLSLProgram
 {
 public:

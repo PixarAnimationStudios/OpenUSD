@@ -144,6 +144,7 @@ function(pxr_shared_library LIBRARY_NAME)
         CPPFILES
         PYMODULE_CPPFILES
         PYTHON_FILES
+        PYSIDE_UI_FILES
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
@@ -376,6 +377,11 @@ function(pxr_shared_library LIBRARY_NAME)
     if (sl_RESOURCE_FILES)
         _install_resource_files(${sl_RESOURCE_FILES})
     endif()
+
+    if (sl_PYSIDE_UI_FILES)
+        _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
+    endif()        
+
 endfunction() # pxr_shared_library
 
 function(pxr_static_library LIBRARY_NAME)
@@ -524,6 +530,7 @@ function(pxr_plugin PLUGIN_NAME)
         CPPFILES
         PYMODULE_CPPFILES
         PYTHON_FILES
+        PYSIDE_UI_FILES
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
@@ -676,6 +683,13 @@ function(pxr_plugin PLUGIN_NAME)
 
         _install_resource_files(${sl_RESOURCE_FILES})
     endif()
+
+    if (sl_PYSIDE_UI_FILES)
+        _get_install_dir(plugin PLUGINS_PREFIX)
+        set(LIBRARY_NAME ${PLUGIN_NAME})
+
+        _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
+    endif()        
 
     # Build python module.
     if(DEFINED sl_PYMODULE_CPPFILES)

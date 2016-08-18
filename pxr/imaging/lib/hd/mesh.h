@@ -43,6 +43,8 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 
+/// \class HdMeshReprDesc
+///
 /// descriptor to configure a drawItem for a repr
 ///
 struct HdMeshReprDesc {

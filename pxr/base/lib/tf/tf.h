@@ -156,19 +156,6 @@ struct TfDeleter {
 
 #define TF_DEV_BUILD ARCH_DEV_BUILD
 
-#else // defined(__cplusplus)
-
-/* 
- * The following three macros are purposefully not documented and are for use
- * only by legacy code.  New code should not need to use these macros.
- */
-
-#define TF_ABS(v)       ((v) < 0 ? -(v) : (v))
-
-#define TF_MIN(v0, v1)  ((v0) < (v1) ? (v0) : (v1)) 
-
-#define TF_MAX(v0, v1)  ((v0) > (v1) ? (v0) : (v1)) 
-
 #endif // defined(__cplusplus)
 
 /// Stops compiler from producing unused argument or variable warnings.

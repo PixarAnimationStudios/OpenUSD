@@ -36,7 +36,10 @@ class TfType;
 class VtValue;
 class Sdf_ValueTypeImpl;
 
+/// \struct SdfTupleDimensions
+///
 /// Represents the shape of a value type (or that of an element in an array).
+///
 struct SdfTupleDimensions 
     : boost::equality_comparable<SdfTupleDimensions> {
 public:
@@ -52,6 +55,7 @@ public:
 };
 
 /// \class SdfValueTypeName
+///
 /// Represents a value type name, i.e. an attribute's type name.  Usually,
 /// a value type name associates a string with a \c TfType and an optional
 /// role, along with additional metadata.  A schema registers all known
@@ -169,7 +173,7 @@ public:
 
 private:
     friend class Sdf_ValueTypeRegistry;
-    friend class Sdf_ValueTypePrivate;
+    friend struct Sdf_ValueTypePrivate;
 
     SDF_API
     explicit SdfValueTypeName(const Sdf_ValueTypeImpl*);

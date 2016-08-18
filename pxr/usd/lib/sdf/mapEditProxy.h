@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/mapEditProxy.h
-
 #ifndef SDF_MAPEDITPROXY_H
 #define SDF_MAPEDITPROXY_H
+
+/// \file sdf/mapEditProxy.h
 
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/changeBlock.h"
@@ -46,8 +46,9 @@ class TfToken;
 
 SDF_DECLARE_HANDLES(SdfSpec);
 
-/// \class SdfIdentityMapEditProxyValuePolicy sdf/mapEditProxy.h
-/// \brief A value policy for \c SdfMapEditProxy that does nothing.
+/// \class SdfIdentityMapEditProxyValuePolicy
+///
+/// A value policy for \c SdfMapEditProxy that does nothing.
 ///
 /// A \c SdfMapEditProxy value policy converts incoming keys and values
 /// into a canonical form used for storage.  This is useful if you have
@@ -56,6 +57,7 @@ SDF_DECLARE_HANDLES(SdfSpec);
 /// equivalent values.  Note that the policy is only used on inputs to
 /// the map proxy;  it's never used when returning keys or values from
 /// the proxy.
+///
 template <class T>
 class SdfIdentityMapEditProxyValuePolicy {
 public:
@@ -98,8 +100,9 @@ public:
     }
 };
 
-/// \class SdfMapEditProxy sdf/mapEditProxy.h
-/// \brief A proxy for editing map-like values.
+/// \class SdfMapEditProxy
+///
+/// A proxy for editing map-like values.
 ///
 /// A \c SdfMapEditProxy provides an interface for editing fields
 /// containing map-like values. The proxy allows consumers to
@@ -108,6 +111,7 @@ public:
 ///
 /// The \c _ValuePolicy is used to canonicalize keys and values before
 /// storage or comparison.
+///
 /// \sa SdfIdentityMapEditProxyValuePolicy
 ///
 template <class T, class _ValuePolicy = SdfIdentityMapEditProxyValuePolicy<T> >

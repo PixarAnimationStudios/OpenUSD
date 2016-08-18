@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pcp/changes.h
-
 #ifndef PCP_CHANGES_H
 #define PCP_CHANGES_H
+
+/// \file pcp/changes.h
 
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -42,7 +42,10 @@ class PcpSite;
 class SdfChangeList;
 typedef std::map<SdfLayerHandle, SdfChangeList> SdfLayerChangeListMap;
 
+/// \class PcpLayerStackChanges
+///
 /// Types of changes per layer stack.
+///
 class PcpLayerStackChanges {
 public:
     /// Must rebuild the layer tree.  Implies didChangeLayerOffsets.
@@ -80,7 +83,10 @@ public:
     {}
 };
 
+/// \class PcpCacheChanges
+///
 /// Types of changes per cache.
+///
 class PcpCacheChanges {
 public:
     enum TargetType {
@@ -135,12 +141,14 @@ private:
 };
 
 /// \class PcpChanges
-/// \brief Describes Pcp changes.
+///
+/// Describes Pcp changes.
 ///
 /// Collects changes to Pcp necessary to reflect changes in Sd.  It does
 /// not cause any changes to any Pcp caches, layer stacks, etc;  it only
 /// computes what changes would be necessary to Pcp to reflect the Sd
 /// changes.
+///
 class PcpChanges {
 public:
 	PCP_API PcpChanges();

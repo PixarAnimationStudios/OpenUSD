@@ -24,13 +24,14 @@
 #ifndef USDUTILS_REGISTEREDVARIANTSET_H
 #define USDUTILS_REGISTEREDVARIANTSET_H
 
+/// \file usdUtils/registeredVariantSet.h
+
 #include <string>
 
-/// \file registeredVariantSet.h
-
 /// \class UsdUtilsRegisteredVariantSet
-/// \brief Class that holds information about variantSets that are registered
-/// with the pipeline.
+///
+/// Class that holds information about variantSets that are registered with
+/// the pipeline.
 ///
 /// Registered variantSets are known variantSets in a pipeline that may need to
 /// be reasoned about by apps during import/export.
@@ -39,23 +40,22 @@
 struct UsdUtilsRegisteredVariantSet
 {
 public:
-    /// \brief The name of the variantSet.
+    /// The name of the variantSet.
     const std::string name;
 
-    /// \brief This specifies how the variantSet should be treated during
-    /// export.
+    /// This specifies how the variantSet should be treated during export.
     ///
     /// Note, in the plugInfo.json, the values for these enum's are
     /// lowerCamelCase.
     enum class SelectionExportPolicy {
-        /// \brief never
+        /// Never
         ///
         /// This variantSet selection is meant to remain entirely within an
         /// application.  This typically represents a "session" variantSelection
         /// that should not be transmitted down the pipeline.
         Never,
 
-        /// \brief ifAuthored
+        /// IfAuthored
         ///
         /// This variantSet selection should be exported if there is an authored
         /// opinion in the application.  This is only relevant if the
@@ -63,13 +63,13 @@ public:
         /// opinions.
         IfAuthored,
 
-        /// \brief authored
+        /// Authored
         ///
         /// This variantSet selection should always be exported.
         Always,
     };
 
-    /// \brief specifies how to export a variant selection.
+    /// Specifies how to export a variant selection.
     const SelectionExportPolicy selectionExportPolicy;
 
     UsdUtilsRegisteredVariantSet(
@@ -86,4 +86,5 @@ public:
         return this->name < other.name;
     }
 };
+
 #endif // USDUTILS_REGISTEREDVARIANTSET_H

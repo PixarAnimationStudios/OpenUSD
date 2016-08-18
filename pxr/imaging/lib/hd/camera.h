@@ -36,8 +36,10 @@
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
 
+/// \class HdCamera
+///
 /// A camera model, used in conjunction with HdRenderPass.
-
+///
 class HdCamera {
 public:
     typedef std::vector<GfVec4d> ClipPlanesVector;

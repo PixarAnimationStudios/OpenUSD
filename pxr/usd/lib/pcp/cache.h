@@ -56,6 +56,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
 TF_DECLARE_REF_PTRS(PcpPayloadDecorator);
 SDF_DECLARE_HANDLES(SdfSpec);
 
+/// \class PcpCache
+///
 /// PcpCache is the context required to make requests of the Pcp
 /// composition algorithm and cache the results.
 ///
@@ -365,9 +367,9 @@ public:
 
     /// Options for finding dependencies.
     enum UsingSite {
-        UsingSiteOnly,              //!< Dependencies of site only
-        UsingSiteAndDescendants,    //!< Dependencies at and under site
-        UsingSiteAndDescendantPrims //!< Dependencies on prims at and under site
+        UsingSiteOnly,              ///< Dependencies of site only
+        UsingSiteAndDescendants,    ///< Dependencies at and under site
+        UsingSiteAndDescendantPrims ///< Dependencies on prims at and under site
     };
 
     /// Returns set of all layers used by this cache. 
@@ -439,11 +441,11 @@ public:
     /// Types of namespace edits that a given layer stack site could need
     /// to perform to respond to a namespace edit.
     enum NamespaceEditType {
-        NamespaceEditPath,      //!< Must namespace edit spec
-        NamespaceEditInherit,   //!< Must fixup inherits
-        NamespaceEditReference, //!< Must fixup references
-        NamespaceEditPayload,   //!< Must fixup payload
-        NamespaceEditRelocate,  //!< Must fixup relocates
+        NamespaceEditPath,      ///< Must namespace edit spec
+        NamespaceEditInherit,   ///< Must fixup inherits
+        NamespaceEditReference, ///< Must fixup references
+        NamespaceEditPayload,   ///< Must fixup payload
+        NamespaceEditRelocate,  ///< Must fixup relocates
     };
 
     /// Sites that must respond to a namespace edit.
@@ -457,21 +459,21 @@ public:
 
         /// Cache site that must respond to a namespace edit.
         struct CacheSite {
-            size_t cacheIndex;  //!< Index of cache of site.
-            SdfPath oldPath;     //!< Old path of site.
-            SdfPath newPath;     //!< New path of site.
+            size_t cacheIndex;  ///< Index of cache of site.
+            SdfPath oldPath;    ///< Old path of site.
+            SdfPath newPath;    ///< New path of site.
         };
         typedef std::vector<CacheSite> CacheSites;
 
         /// Layer stack site that must respond to a namespace edit.  All
         /// of the specs at the site will respond the same way.
         struct LayerStackSite {
-            size_t cacheIndex;              //!< Index of cache of site.
-            NamespaceEditType type;         //!< Type of edit.
-            PcpLayerStackPtr layerStack;    //!< Layer stack needing fix.
-            SdfPath sitePath;                //!< Path of site needing fix.
-            SdfPath oldPath;                 //!< Old path.
-            SdfPath newPath;                 //!< New path.
+            size_t cacheIndex;              ///< Index of cache of site.
+            NamespaceEditType type;         ///< Type of edit.
+            PcpLayerStackPtr layerStack;    ///< Layer stack needing fix.
+            SdfPath sitePath;               ///< Path of site needing fix.
+            SdfPath oldPath;                ///< Old path.
+            SdfPath newPath;                ///< New path.
         };
         typedef std::vector<LayerStackSite> LayerStackSites;
 

@@ -29,8 +29,10 @@
 #include "pxr/usd/pcp/site.h"
 
 /// \class PcpPrimIndex_StackFrame
+///
 /// Internal helper class for tracking recursive invocations of
 /// the prim indexing algorithm.
+///
 class PcpPrimIndex_StackFrame
 {
 public:
@@ -40,29 +42,31 @@ public:
         , arcToParent(NULL)
     { }
 
-    // Link to the previous recursive invocation.
+    /// Link to the previous recursive invocation.
     PcpPrimIndex_StackFrame* previousFrame;
 
-    // The site of the prim index being built by this recursive
-    // call to Pcp_BuildPrimIndex.
+    /// The site of the prim index being built by this recursive
+    /// call to Pcp_BuildPrimIndex.
     PcpLayerStackSite requestedSite;
 
-    // Whether the prim index being built by this recursive call should
-    // skip adding nodes if another node exists with the same site.
+    /// Whether the prim index being built by this recursive call should
+    /// skip adding nodes if another node exists with the same site.
     bool skipDuplicateNodes;
 
-    // The node in the parent graph that will be the parent of the prim index 
-    // being built by this recursive call.
+    /// The node in the parent graph that will be the parent of the prim index 
+    /// being built by this recursive call.
     PcpNodeRef parentNode;
 
-    // The arc connecting the prim index being built by this recursive
-    // call to the parent node in the previous stack frame.
+    /// The arc connecting the prim index being built by this recursive
+    /// call to the parent node in the previous stack frame.
     PcpArc* arcToParent;
 };
 
 /// \class PcpPrimIndex_StackFrameIterator
+///
 /// Iterator for walking up a node's ancestors while potentially crossing
 /// stack frames.
+///
 class PcpPrimIndex_StackFrameIterator
 {
 public:
@@ -122,6 +126,5 @@ public:
         }
     }
 };
-
 
 #endif // PCP_PRIM_INDEX_STACK_FRAME_H

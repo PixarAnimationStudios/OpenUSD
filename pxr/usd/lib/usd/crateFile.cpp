@@ -58,7 +58,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
-#include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"

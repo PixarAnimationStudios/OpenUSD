@@ -24,6 +24,8 @@
 #ifndef USDKATANA_GENERATED_LOOKAPI_H
 #define USDKATANA_GENERATED_LOOKAPI_H
 
+/// \file usdKatana/lookAPI.h
+
 #include "usdKatana/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
@@ -45,6 +47,8 @@ class SdfAssetPath;
 // LOOKAPI                                                                    //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdKatanaLookAPI
+///
 /// Katana-specific extensions of UsdShadeLook.
 ///
 class UsdKatanaLookAPI : public UsdSchemaBase
@@ -84,7 +88,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdKatanaLookAPI holding the prim adhering to this
+    /// Return a UsdKatanaLookAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -97,7 +101,7 @@ public:
     static UsdKatanaLookAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

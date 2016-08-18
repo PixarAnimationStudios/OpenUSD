@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/uvTextureStorage.h
-
 #ifndef GLF_UVTEXTURESTORAGE_H
 #define GLF_UVTEXTURESTORAGE_H
+
+/// \file glf/uvTextureStorage.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/baseTexture.h"
@@ -34,13 +34,12 @@
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureStorage);
 
-/// 
-/// \class GlfUVTextureStorage uvTextureStorage.h "pxr/imaging/glf/uvTextureStorage.h"
-/// \brief Represents a texture object in Glf initialized from a VtValue
+/// \class GlfUVTextureStorage
+///
+/// Represents a texture object in Glf initialized from a VtValue.
 ///
 /// A GlfUVTextureStorage is currently initialized from a float/double, GfVec3d, or GfVec4d.
 ///
-
 class GlfUVTextureStorage : public GlfBaseTexture {
 public:
     /// Creates a new texture instance based on input storageData

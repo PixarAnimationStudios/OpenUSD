@@ -44,6 +44,8 @@ class PcpNodeRef_ChildrenReverseIterator;
 
 TF_DECLARE_WEAK_PTRS(PcpPrimIndex_Graph);
 
+/// \class PcpNode
+///
 /// PcpNode represents a node in an expression tree for compositing
 /// scene description.
 ///
@@ -285,8 +287,10 @@ typedef TfHashSet<PcpNodeRef, PcpNodeRef::Hash> PcpNodeRefHashSet;
 typedef std::vector<PcpNodeRef> PcpNodeRefVector;
 
 /// \class PcpNodeRef_ChildrenIterator
+///
 /// Object used to iterate over child nodes (not all descendant nodes) of a
 /// node in the prim index graph in strong-to-weak order.
+///
 class PcpNodeRef_ChildrenIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeRef_ChildrenIterator, 
@@ -328,8 +332,10 @@ private:
 };
 
 /// \class PcpNodeRef_ChildrenReverseIterator
+///
 /// Object used to iterate over nodes in the prim index graph in weak-to-strong
 /// order.
+///
 class PcpNodeRef_ChildrenReverseIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeRef_ChildrenReverseIterator, 

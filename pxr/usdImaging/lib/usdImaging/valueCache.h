@@ -41,7 +41,10 @@
 #include <tbb/concurrent_queue.h>
 
 
+/// \class UsdImagingValueCache
+///
 /// A heterogeneous value container without type erasure.
+///
 class UsdImagingValueCache : boost::noncopyable {
 public:
     typedef PxOsdSubdivTags SubdivTags;

@@ -24,6 +24,8 @@
 #ifndef USDSHADE_TOKENS_H
 #define USDSHADE_TOKENS_H
 
+/// \file usdShade/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -33,8 +35,6 @@
 
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file pxr/usd/usdShade/tokens.h
 
 /// \hideinitializer
 #define USDSHADE_TOKENS \
@@ -46,7 +46,8 @@
     (sloPath)
 
 /// \anchor UsdShadeTokens
-/// \brief <b>UsdShadeTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdShadeTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

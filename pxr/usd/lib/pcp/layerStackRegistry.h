@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pcp/layerStackRegistry.h
-
 #ifndef PCP_LAYER_STACK_REGISTRY_H
 #define PCP_LAYER_STACK_REGISTRY_H
+
+/// \file pcp/layerStackRegistry.h
 
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -39,7 +39,8 @@ class Pcp_LayerStackRegistryData;
 class Pcp_MutedLayers;
 
 /// \class Pcp_LayerStackRegistry
-/// \brief A registry of layer stacks
+///
+/// A registry of layer stacks.
 ///
 class Pcp_LayerStackRegistry : public TfRefBase, public TfWeakBase {
 public:
@@ -129,7 +130,9 @@ private:
 };
 
 /// \class Pcp_MutedLayers
+///
 /// Helper for maintaining and querying a collection of muted layers.
+///
 class Pcp_MutedLayers
 {
 public:

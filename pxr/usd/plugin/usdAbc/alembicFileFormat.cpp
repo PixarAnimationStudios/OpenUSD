@@ -31,6 +31,7 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 
@@ -72,8 +73,13 @@ UsdAbcAlembicFileFormat::InitData(const FileFormatArguments& args) const
 bool
 UsdAbcAlembicFileFormat::CanRead(const string& filePath) const
 {
-    // XXX: we need to establish the CanRead condition here
-    return true;
+    // XXX: Add more verification of file header magic
+    auto extension = TfGetExtension(filePath);
+    if (extension.empty()) {
+        return false;
+    }
+
+    return extension == this->GetFormatId();
 }
 
 bool

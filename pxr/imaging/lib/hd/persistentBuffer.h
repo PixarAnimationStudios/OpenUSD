@@ -31,6 +31,8 @@
 
 typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 
+/// \class HdPersistentBuffer
+///
 /// A buffer used to prepare data on the GPU that has a persistent mapping
 /// from the CPU.
 ///

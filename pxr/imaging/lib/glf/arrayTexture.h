@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/arrayTexture.h
-
 #ifndef GLF_ARRAYTEXTURE_H
 #define GLF_ARRAYTEXTURE_H
+
+/// \file glf/arrayTexture.h
 
 #include "pxr/imaging/glf/uvTexture.h"
 
@@ -35,9 +35,9 @@
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfArrayTexture);
 
-/// 
-/// \class GlfArrayTexture Texture.h "pxr/imaging/glf/texture.h"
-/// \brief Represents an array of texture objects in Glf
+/// \class GlfArrayTexture
+///
+/// Represents an array of texture objects in Glf
 ///
 /// An GlfArrayTexture is defined by a set of image file paths.
 /// Currently accepted image formats are png, jpg and bmp.

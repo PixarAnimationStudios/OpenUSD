@@ -37,7 +37,6 @@
 #include <boost/function.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/operators.hpp>
-#include <boost/python/object.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <iosfwd>
@@ -47,9 +46,8 @@
 #include <typeinfo>
 #include <vector>
 
-
+class TfPyObjWrapper;
 class TfType;
-class Tf_TypeRegistry;
 
 /// \class TfType
 ///
@@ -279,7 +277,7 @@ public:
     /// Retrieve the \c TfType corresponding to an obj with the
     /// given Python class \c classObj.
     ///
-    static TfType const& FindByPythonClass(const boost::python::object & classObj);
+    static TfType const& FindByPythonClass(const TfPyObjWrapper & classObj);
 
     /// @}
 
@@ -329,11 +327,11 @@ public:
     ///
     /// If this type is unknown or has not yet had a Python class
     /// defined, this will return \c None, as an empty
-    /// \c boost::python::object().
+    /// \c TfPyObjWrapper
     ///
     /// \see DefinePythonClass()
     ///
-    boost::python::object GetPythonClass() const;
+    TfPyObjWrapper GetPythonClass() const;
 
     /// Return a vector of types from which this type was derived.
     ///
@@ -487,7 +485,7 @@ public:
 
     /// Define the Python class object corresponding to this TfType.
     /// \see TfTypePythonClass
-    void DefinePythonClass(boost::python::object &classObj) const;
+    void DefinePythonClass(const TfPyObjWrapper &classObj) const;
 
     /// Add an alias for DERIVED beneath BASE.
     ///

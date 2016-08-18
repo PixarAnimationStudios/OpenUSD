@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyMapEditProxy.h
-
 #ifndef SDF_PYMAPEDITPROXY_H
 #define SDF_PYMAPEDITPROXY_H
+
+/// \file sdf/pyMapEditProxy.h
 
 #include <boost/python.hpp>
 

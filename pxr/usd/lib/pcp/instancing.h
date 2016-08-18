@@ -24,6 +24,8 @@
 #ifndef PCP_INSTANCING_H
 #define PCP_INSTANCING_H
 
+/// \file pcp/instancing.h
+///
 /// A collection of private helper utilities to support instancing
 /// functionality.
 

@@ -36,8 +36,8 @@ pxr_plugin(${PXR_PACKAGE}
         basisCurves.cpp
         camera.cpp
         constraints.cpp
-        look.cpp
-        looksGroup.cpp
+        material.cpp
+        materialsGroup.cpp
         mesh.cpp
         model.cpp
         nurbsPatch.cpp

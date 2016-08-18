@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/variantSetSpec.h
-
 #ifndef SDF_VARIANTSETSPEC_H
 #define SDF_VARIANTSETSPEC_H
+
+/// \file sdf/variantSetSpec.h
 
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
@@ -37,16 +37,17 @@
 #include <string>
 #include <vector>
 
-///
 /// \class SdfVariantSetSpec 
-/// \brief Represents a coherent set of alternate representations for part of 
-/// a scene.
 ///
-/// An SdfPrimSpec object may contain one or more named SdfVariantSetSpec objects
-/// that define variations on the prim.
+/// Represents a coherent set of alternate representations for part of a
+/// scene.
 ///
-/// An SdfVariantSetSpec object contains one or more named SdfVariantSpec objects.
-/// It may also define the name of one of its variants to be used by default. 
+/// An SdfPrimSpec object may contain one or more named SdfVariantSetSpec
+/// objects that define variations on the prim.
+///
+/// An SdfVariantSetSpec object contains one or more named SdfVariantSpec
+/// objects. It may also define the name of one of its variants to be used by
+/// default. 
 ///
 /// When a prim references another prim, the referencing prim may specify
 /// one of the variants from each of the variant sets of the target prim.
@@ -65,7 +66,7 @@ public:
     /// \name Spec construction
     /// @{
 
-    /// \brief Constructs a new instance.
+    /// Constructs a new instance.
     SDF_API
     static SdfVariantSetSpecHandle
     New(const SdfPrimSpecHandle& prim, const std::string& name);
@@ -103,7 +104,7 @@ public:
     SDF_API
     SdfVariantSpecHandleVector GetVariantList() const;
 
-    /// \brief Removes \p variant from the list of variants.
+    /// Removes \p variant from the list of variants.
     ///
     /// If the variant set does not currently own \p variant, no action
     /// is taken.

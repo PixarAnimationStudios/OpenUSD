@@ -30,9 +30,12 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 
-/// The base class for all schema types in Usd.  Schema objects hold a
-/// ::UsdPrim internally and provide a layer of specific named API atop the
-/// underlying scene graph.
+/// \class UsdSchemaBase
+///
+/// The base class for all schema types in Usd.
+/// 
+/// Schema objects hold a ::UsdPrim internally and provide a layer of specific
+/// named API atop the underlying scene graph.
 ///
 /// Schema objects are polymorphic but they are intended to be created as
 /// automatic local variables, so they may be passed and returned by-value.
@@ -110,9 +113,6 @@ public:
     }
 #endif // doxygen
 
-    // ---------------------------------------------------------------------- //
-    // Protected Methods and Members
-    // ---------------------------------------------------------------------- //
 protected:
     // Helper for subclasses to get the TfType for this schema object's dynamic
     // C++ type.
@@ -126,9 +126,6 @@ protected:
                              VtValue const &defaultValue, 
                              bool writeSparsely) const;
     
-    // ---------------------------------------------------------------------- //
-    // Private Methods and Members
-    // ---------------------------------------------------------------------- //
 private:
     // Subclasses may override _IsCompatible to do specific compatibility
     // checking with the given prim, such as type compatibility or value

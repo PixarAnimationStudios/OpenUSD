@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/simpleLightingContext.h
-
 #ifndef GLF_SIMPLE_LIGHTING_CONTEXT_H
 #define GLF_SIMPLE_LIGHTING_CONTEXT_H
+
+/// \file glf/simpleLightingContext.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/simpleLight.h"

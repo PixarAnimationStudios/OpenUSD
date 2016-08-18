@@ -31,8 +31,9 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdAbc_AlembicData);
 
 /// \class UsdAbc_AlembicData
-/// \brief UsdAbc_AlembicData provides an SdfAbstractData interface to
-///        Alembic data.
+///
+/// Provides an SdfAbstractData interface to Alembic data.
+///
 class UsdAbc_AlembicData : public SdfAbstractData {
 public:
     /// Returns a new \c UsdAbc_AlembicData object.  The object cannot be

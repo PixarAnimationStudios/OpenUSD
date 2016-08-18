@@ -21,13 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/textFileFormat.h
-///
-///
-
 #ifndef SD_MENVA_FILE_FORMAT_H
 #define SD_MENVA_FILE_FORMAT_H
+
+/// \file sdf/textFileFormat.h
 
 #include "pxr/usd/sdf/declareHandles.h" 
 #include "pxr/usd/sdf/fileFormat.h"

@@ -39,7 +39,7 @@ class GfLineSeg;
 class GfPlane;
 class GfRange3d;
 
-/// \class GfRay ray.h "pxr/base/gf/ray.h"
+/// \class GfRay
 /// \ingroup group_gf_BasicGeometry
 ///
 /// Basic type: Ray used for intersection testing

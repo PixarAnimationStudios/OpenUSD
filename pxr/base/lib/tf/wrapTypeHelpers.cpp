@@ -33,7 +33,7 @@ using namespace std;
 using namespace boost::python;
 
 TfType
-TfType_DefinePythonTypeAndBases( boost::python::object & classObj )
+TfType_DefinePythonTypeAndBases( const boost::python::object & classObj )
 {
     string moduleName = extract<string>(classObj.attr("__module__"));
     string className = extract<string>(classObj.attr("__name__"));

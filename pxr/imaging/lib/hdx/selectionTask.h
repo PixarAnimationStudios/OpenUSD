@@ -44,11 +44,14 @@ struct HdxSelectionTaskParams
     GfVec4f maskColor;
 };
 
+/// \class HdxSelectionTask
+///
 /// The SelectionTask is responsible for setting up render pass global buffers
 /// for selection and depositing those buffers into the task context for down
 /// stream consumption. Any render pass which wants to display selection may
 /// extract those buffers and bind them into the current render pass shader to
 /// enable selection highlighting.
+///
 class HdxSelectionTask : public HdSceneTask {
 public:
     HDXLIB_API

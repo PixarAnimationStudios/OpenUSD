@@ -63,15 +63,14 @@ pxr_shared_library(usdviewq
         icons/branch-open.png
         icons/branch-open-selected.png
         usdviewstyle.qss
-)
 
-PYSIDE_WRAP_UI(Usdviewq
-    mainWindowUI.ui
-    watchWindowUI.ui
-    adjustClippingUI.ui
-    attributeValueEditorUI.ui
-    pythonExpressionPromptUI.ui
-    referenceEditorUI.ui
+    PYSIDE_UI_FILES
+        mainWindowUI.ui
+        watchWindowUI.ui
+        adjustClippingUI.ui
+        attributeValueEditorUI.ui
+        pythonExpressionPromptUI.ui
+        referenceEditorUI.ui
 )
 
 install(DIRECTORY

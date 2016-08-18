@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/reference.h
-
 #ifndef SDF_REFERENCE_H
 #define SDF_REFERENCE_H
+
+/// \file sdf/reference.h
 
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
@@ -42,8 +42,8 @@ class SdfReference;
 
 typedef std::vector<SdfReference> SdfReferenceVector;
 
-
 /// \class SdfReference
+///
 /// Represents a reference and all its meta data.
 ///
 /// A reference is expressed on a prim in a given layer and it identifies a

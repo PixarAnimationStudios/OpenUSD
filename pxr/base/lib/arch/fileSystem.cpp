@@ -26,7 +26,20 @@
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/arch/vsnprintf.h"
+
+#include <atomic>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <memory>
+#include <sstream>
+
+#include <alloca.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(ARCH_OS_WINDOWS)
@@ -45,6 +58,12 @@
 #include <errno.h>
 #include <sstream>
 #include <mutex>
+
+#if defined (ARCH_OS_WINDOWS)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <io.h>
+#endif // ARCH_OS_WINDOWS
 
 using std::string;
 using std::set;

@@ -45,7 +45,6 @@
 /// A discriminated union type for JSON values. A JsValue may contain one of
 /// the following types:
 ///
-/// \ul
 /// \li JsObject, a dictionary type
 /// \li JsArray, a vector type
 /// \li std::string
@@ -54,7 +53,6 @@
 /// \li uint64_t
 /// \li double
 /// \li null
-/// \ul
 ///
 class JsValue
 {

@@ -70,9 +70,10 @@ class UsdTreeIterator;
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// \class UsdStage
-/// \brief A UsdStage is the outermost container for scene description, which
-/// owns and presents composed prims as a scenegraph, following the composition
-/// recipe recursively described in its associated "root layer".
+///
+/// The outermost container for scene description, which owns and presents
+/// composed prims as a scenegraph, following the composition recipe
+/// recursively described in its associated "root layer".
 ///
 /// USD derives its persistent-storage scalability by combining and reusing
 /// simple compositions into richer aggregates using referencing and layering
@@ -130,6 +131,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// also freqenuently used to perform interactive vising/invsning of geometry 
 /// and assets in the scene.   A session layer, if present, contributes to a 
 /// UsdStage's identity, for purposes of stage-caching, etc.
+///
 class UsdStage : public TfRefBase, public TfWeakBase {
 public:
 
@@ -139,11 +141,11 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// \brief Create a new stage with root layer \p identifier, destroying
+    /// Create a new stage with root layer \p identifier, destroying
     /// potentially existing files with that identifer; it is considered an
     /// error if an existing, open layer is present with this identifier.
     ///
-    /// Also see SdfLayer::CreateNew().
+    /// \sa SdfLayer::CreateNew()
     ///
     /// Invoking an overload that does not take a \p sessionLayer argument will
     /// create a stage with an anonymous in-memory session layer.  To create a
@@ -172,7 +174,7 @@ public:
     CreateNew(const std::string& identifier,
               const ArResolverContext& pathResolverContext);
 
-    /// \brief Creates a new stage only in memory, analogous to creating an
+    /// Creates a new stage only in memory, analogous to creating an
     /// anonymous SdfLayer.
     ///
     /// Note that the \p pathResolverContext passed here will apply to all path
@@ -204,17 +206,19 @@ public:
                    const ArResolverContext& pathResolverContext);
 
     /// \enum InitialLoadSet
+    ///
     /// Specifies the initial set of prims to load when opening a UsdStage.
+    ///
     enum InitialLoadSet
     {
         LoadAll, ///< Load all loadable prims
         LoadNone ///< Load no loadable prims
     };
 
-    /// \brief Attempts to find an existing stage in a cache if
-    /// UsdStageCacheContext objects exist on the stack.  Failing that, creates
-    /// a new stage and recursively loads all data within and referenced by the
-    /// layer found at \p filePath, which must be a file that already exists.
+    /// Attempts to find an existing stage in a cache if UsdStageCacheContext
+    /// objects exist on the stack. Failing that, creates a new stage and
+    /// recursively loads all data within and referenced by the layer found at
+    /// \p filePath, which must be a file that already exists.
     ///
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
@@ -234,7 +238,7 @@ public:
          const ArResolverContext& pathResolverContext,
          InitialLoadSet load = LoadAll);
 
-    /// \brief Open a stage rooted at \p rootLayer.
+    /// Open a stage rooted at \p rootLayer.
     ///
     /// Attempt to find a stage that matches the passed arguments in a
     /// UsdStageCache if UsdStageCacheContext objects exist on the calling
@@ -286,7 +290,7 @@ public:
 
 	USD_API void Close();
 
-    /// \brief Calls SdfLayer::Reload on all layers contributing to this stage,
+    /// Calls SdfLayer::Reload on all layers contributing to this stage,
     /// except session layers and sublayers of session layers.
     ///
     /// This includes non-session sublayers, references and payloads.
@@ -295,8 +299,7 @@ public:
     /// will clear its root layer.
 	USD_API void Reload();
 
-    /// \brief Indicates whether the specified file is supported
-    /// by UsdStage.
+    /// Indicates whether the specified file is supported by UsdStage.
     ///
     /// This function is a cheap way to determine whether a
     /// file might be open-able with UsdStage::Open. It is
@@ -357,11 +360,10 @@ public:
     ///
     /// @{
 
-    /// \brief Get the global variant fallback preferences used in new
-    /// UsdStages.
+    /// Get the global variant fallback preferences used in new UsdStages.
 	USD_API static PcpVariantFallbackMap GetGlobalVariantFallbacks();
 
-    /// \brief Set the global variant fallback preferences used in new
+    /// Set the global variant fallback preferences used in new
     /// UsdStages. This overrides any defaults configured in plugin
     /// metadata, and only affects stages created after this call.
     ///
@@ -390,7 +392,7 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// \brief Load the prim at \p path along with all descendants, ancestors
+    /// Load the prim at \p path along with all descendants, ancestors
     /// and dependencies (relationship targets).
     ///
     /// If an instance prim is encountered during this operation, this
@@ -406,7 +408,7 @@ public:
 	USD_API UsdPrim
     Load(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
-    /// \brief Unload the prim and its descendants specified by \p path.
+    /// Unload the prim and its descendants specified by \p path.
     ///
     /// If an instance prim is encountered during this operation, this
     /// function will also unload prims in the instance's master. In other
@@ -421,7 +423,7 @@ public:
 	USD_API void
     Unload(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
-    /// \brief Unloads and loads the given path sets; the effect is as if the
+    /// Unloads and loads the given path sets; the effect is as if the
     /// unload set were processed first followed by the load set.
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
@@ -435,7 +437,7 @@ public:
 	USD_API 
     void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet);
 
-    /// \brief Returns a set of all loaded paths.
+    /// Returns a set of all loaded paths.
     ///
     /// The paths returned are both those that have been explicitly loaded and
     /// those that were loaded as a result of dependencies, ancestors or
@@ -789,7 +791,7 @@ public:
     //    * Move Flatten into a free-function to ensure it doesn't rely on
     //      Stage internals.
 
-    /// \brief Writes out the composite scene as a single flattened layer into
+    /// Writes out the composite scene as a single flattened layer into
     /// \a filename.
     ///
     /// If addSourceFileComment is true, a comment in the output layer
@@ -802,7 +804,7 @@ public:
                 const SdfLayer::FileFormatArguments &args = 
                     SdfLayer::FileFormatArguments()) const;
 
-    /// \brief Writes the composite scene as a flattened Usd text
+    /// Writes the composite scene as a flattened Usd text
     /// representation into the given \a string.
     ///
     /// If addSourceFileComment is true, a comment in the output layer
@@ -813,7 +815,7 @@ public:
     bool ExportToString(std::string *result,
                         bool addSourceFileComment=true) const;
 
-    /// \brief Returns a single, anonymous, merged layer for this composite
+    /// Returns a single, anonymous, merged layer for this composite
     /// scene.
     ///
     /// Specifically, this function removes **most** composition metadata and
@@ -997,12 +999,12 @@ public:
     /// on time and TimeCodes in USD.
     /// @{
     // --------------------------------------------------------------------- //
-    /// \brief Returns the stage's start timeCode. If the stage has an associated
+    /// Returns the stage's start timeCode. If the stage has an associated
     /// session layer with a start timeCode opinion, this value is returned. 
     /// Otherwise, the start timeCode opinion from the root layer is returned.
 	USD_API double GetStartTimeCode() const;
 
-    /// \brief Sets the stage's start timeCode. 
+    /// Sets the stage's start timeCode. 
     /// 
     /// The start timeCode is set in the current EditTarget, if it is the root 
     /// layer of the stage or the session layer associated with the stage. If 
@@ -1010,12 +1012,12 @@ public:
     /// timeCode is not set.
 	USD_API void SetStartTimeCode(double);
 
-    /// \brief Returns the stage's end timeCode. If the stage has an associated
+    /// Returns the stage's end timeCode. If the stage has an associated
     /// session layer with an end timeCode opinion, this value is returned. 
     /// Otherwise, the end timeCode opinion from the root layer is returned.
 	USD_API double GetEndTimeCode() const;
 
-    /// \brief Sets the stage's end timeCode. 
+    /// Sets the stage's end timeCode. 
     /// 
     /// The end timeCode is set in the current EditTarget, if it is the root 
     /// layer of the stage or the session layer associated with the stage. If 
@@ -1023,11 +1025,11 @@ public:
     /// timeCode is not set.
 	USD_API void SetEndTimeCode(double);
 
-    /// \brief Returns true if the stage has both start and end timeCodes 
+    /// Returns true if the stage has both start and end timeCodes 
     /// authored in the session layer or the root layer of the stage.
 	USD_API bool HasAuthoredTimeCodeRange() const;
 
-    /// \brief Returns the stage's timeCodesPerSecond value.
+    /// Returns the stage's timeCodesPerSecond value.
     /// 
     /// The timeCodesPerSecond value scales the time ordinate for the samples
     /// contained in the stage to seconds. If timeCodesPerSecond is 24, then a 
@@ -1037,7 +1039,7 @@ public:
     /// The default value of timeCodesPerSecond is 24.
 	USD_API double GetTimeCodesPerSecond() const;
 
-    /// \brief Sets the stage's timeCodesPerSecond value.
+    /// Sets the stage's timeCodesPerSecond value.
     ///
     /// The timeCodesPerSecond value is set in the current EditTarget, if it 
     /// is the root layer of the stage or the session layer associated with the 
@@ -1047,7 +1049,7 @@ public:
     /// \sa GetTimeCodesPerSecond()
 	USD_API void SetTimeCodesPerSecond(double timeCodesPerSecond) const;
 
-    /// \brief Returns the stage's framesPerSecond value.
+    /// Returns the stage's framesPerSecond value.
     /// 
     /// This makes an advisory statement about how the contained data can be 
     /// most usefully consumed and presented.  It's primarily an indication of 
@@ -1058,7 +1060,7 @@ public:
     /// The default value of framesPerSecond is 24.
 	USD_API double GetFramesPerSecond() const;
     
-    /// \brief Sets the stage's framesPerSecond value.
+    /// Sets the stage's framesPerSecond value.
     /// 
     /// The framesPerSecond value is set in the current EditTarget, if it 
     /// is the root layer of the stage or the session layer associated with the 
@@ -1079,13 +1081,13 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// \brief Sets the interpolation type used during value resolution
+    /// Sets the interpolation type used during value resolution
     /// for all attributes on this stage.  Changing this will cause a
     /// UsdNotice::StageContentsChanged notice to be sent, as values at
     /// times where no samples are authored may have changed.
 	USD_API void SetInterpolationType(UsdInterpolationType interpolationType);
 
-    /// \brief Returns the interpolation type used during value resolution
+    /// Returns the interpolation type used during value resolution
     /// for all attributes on this stage.
 	USD_API UsdInterpolationType GetInterpolationType() const;
 
@@ -1327,6 +1329,14 @@ private:
     template <class Iter>
     void _ComputeSubtreesToRecompose(Iter start, Iter finish,
                                      std::vector<Usd_PrimDataPtr>* recompose);
+
+    // Helper for _Recompose to remove master subtrees in \p subtreesToRecompose
+    // that would be composed when an instance subtree in the same container
+    // is composed.
+    template <class PrimIndexPathMap>
+    void _RemoveMasterSubtreesSubsumedByInstances(
+        std::vector<Usd_PrimDataPtr>* subtreesToRecompose,
+        const PrimIndexPathMap& primPathToSourceIndexPathMap) const;
 
     // return true if the path is valid for load/unload operations.
     // This method will emit errors when invalid paths are encountered.

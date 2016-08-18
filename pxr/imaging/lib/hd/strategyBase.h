@@ -34,7 +34,10 @@
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
-/// Aggregation strategy base class
+/// \class HdAggregationStrategy
+///
+/// Aggregation strategy base class.
+///
 class HdAggregationStrategy {
 public:
     /// Aggregation ID
@@ -55,6 +58,5 @@ public:
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const = 0;
 };
-
 
 #endif  // HD_STRATEGY_BASE_H

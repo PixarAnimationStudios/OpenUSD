@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pcp/node_Iterator.h
-
 #ifndef PCP_NODE_ITERATOR_H
 #define PCP_NODE_ITERATOR_H
+
+/// \file pcp/node_Iterator.h
 
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
@@ -36,8 +36,10 @@
 // inline access to PcpPrimIndex_Graph.
 
 /// \class PcpNodeRef_PrivateChildrenConstIterator
+///
 /// Object used to iterate over child nodes (not all descendant nodes) of a
 /// node in the prim index graph in strong-to-weak order.
+///
 class PcpNodeRef_PrivateChildrenConstIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeRef_PrivateChildrenConstIterator, 
@@ -85,8 +87,10 @@ private:
 };
 
 /// \class PcpNodeRef_PrivateChildrenConstReverseIterator
+///
 /// Object used to iterate over child nodes (not all descendant nodes) of a
 /// node in the prim index graph in weak-to-strong order.
+///
 class PcpNodeRef_PrivateChildrenConstReverseIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeRef_PrivateChildrenConstReverseIterator, 

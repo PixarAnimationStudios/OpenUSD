@@ -24,14 +24,15 @@
 #ifndef _USDUTILS_AUTHORING_H_
 #define _USDUTILS_AUTHORING_H_
 
+/// \file usdUtils/authoring.h 
+///
+/// A collection of utilities for higher-level authoring and copying scene
+/// description than provided by the core Usd and Sdf API's
+
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/usdUtils/api.h"
 
 SDF_DECLARE_HANDLES(SdfLayer);
-
-/// \file authoring.h 
-/// A collection of utilities for higher-level authoring and copying scene
-/// description than provided by the core Usd and Sdf API's
 
 /// Given two layers \p source and \p destination, copy the authored metadata
 /// from one to the other.  By default, copy **all** authored metadata;

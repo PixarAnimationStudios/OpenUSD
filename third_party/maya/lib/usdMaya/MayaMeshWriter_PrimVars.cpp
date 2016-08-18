@@ -558,6 +558,12 @@ MayaMeshWriter::_GetMeshUVSetData(MFnMesh& m, MString uvSetName,
     if (!status)
         return status;
 
+    // Sanity check the data before we attempt to do anything with it.
+    if (uvCounts.length() == 0 or uvIds.length() == 0 or
+        uArray.length() == 0 or vArray.length() == 0) {
+        return MS::kFailure;
+    }
+
     // Check for zeros in "uvCounts" -- if there are any,
     // the uvs are sparse.
     const bool isSparse = _HasZeros(uvCounts);

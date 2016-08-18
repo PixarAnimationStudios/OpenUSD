@@ -70,9 +70,11 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
     MFnDependencyNode fnDepNode(getDagPath().node(), &status);
     MString name = fnDepNode.name();
 
-    MFnNurbsCurve curveFn( getDagPath(), &status );
+    MFnNurbsCurve curveFn(getDagPath(), &status);
     if (!status) {
-        MGlobal::displayError("MFnNurbsCurve() failed for MayaNurbsCurveWriter");
+        MGlobal::displayError(
+            "MayaNurbsCurveWriter: MFnNurbsCurve() failed for curve at dagPath: " +
+            getDagPath().fullPathName());
         return false;
     }
 

@@ -81,7 +81,7 @@ class TF_API TfErrorMark : boost::noncopyable
 
     /// Record future errors.
     ///
-    /// \c SetMark() arranges to record future errors in \c///this.
+    /// \c SetMark() arranges to record future errors in \c *this.
     inline void SetMark() {
         _mark = TfDiagnosticMgr::GetInstance()._nextSerial;
     }
@@ -148,7 +148,7 @@ class TF_API TfErrorMark : boost::noncopyable
     /// end of the list to the mark i.e. \c GetMark() walks the list from the
     /// end until it finds the mark and then returns an iterator to that spot.
     ///
-    /// If \c nErrors is non-NULL, then \c///nErrors is set to the number of
+    /// If \c nErrors is non-NULL, then \c *nErrors is set to the number of
     /// errors between the returned iterator and the end of the list.
     Iterator GetBegin(size_t *nErrors = 0) const {
         return

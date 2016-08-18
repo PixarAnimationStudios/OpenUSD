@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/propertySpec.h
-
 #ifndef SDF_PROPERTYSPEC_H
 #define SDF_PROPERTYSPEC_H
+
+/// \file sdf/propertySpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
@@ -42,7 +42,8 @@
 #include <string>
 
 /// \class SdfPropertySpec
-/// \brief Base class for SdfAttributeSpec and SdfRelationshipSpec.
+///
+/// Base class for SdfAttributeSpec and SdfRelationshipSpec.
 ///
 /// Scene Spec Attributes (SdfAttributeSpec) and Relationships
 /// (SdfRelationshipSpec) are the basic properties that make up Scene Spec Prims
@@ -61,15 +62,15 @@ public:
     /// \name Name
     /// @{
 
-    /// \brief Returns the property's name.
+    /// Returns the property's name.
     SDF_API
     const std::string &GetName() const;
 
-    /// \brief Returns the property's name, as a token.
+    /// Returns the property's name, as a token.
     SDF_API
     TfToken GetNameToken() const;
 
-    /// \brief Returns true if setting the property spec's name to \p newName
+    /// Returns true if setting the property spec's name to \p newName
     /// will succeed.
     ///
     /// Returns false if it won't, and sets \p whyNot with a string
@@ -77,7 +78,7 @@ public:
     SDF_API
     bool CanSetName(const std::string &newName, std::string *whyNot) const;
 
-    /// \brief Sets the property's name.
+    /// Sets the property's name.
     ///
     /// A Prim's properties must be unique by name. Setting the
     /// name to the same name as an existing property is an error.
@@ -87,7 +88,7 @@ public:
     SDF_API
     bool SetName(const std::string &newName, bool validate = true);
 
-    /// \brief Returns true if the given name is considered a valid name for a
+    /// Returns true if the given name is considered a valid name for a
     /// property.  A valid name is not empty, and does not use invalid
     /// characters (such as '/', '[', or '.').
     SDF_API
@@ -97,7 +98,7 @@ public:
     /// \name Ownership
     /// @{
 
-    /// \brief Returns the owner prim or relationship of this property.
+    /// Returns the owner prim or relationship of this property.
     SDF_API
     SdfSpecHandle GetOwner() const;
 
@@ -119,7 +120,7 @@ public:
     SDF_API
     SdfDictionaryProxy GetCustomData() const;
 
-    /// \brief Returns the asset info dictionary for this property.
+    /// Returns the asset info dictionary for this property.
     /// 
     /// The default value is an empty dictionary. 
     /// 
@@ -134,13 +135,13 @@ public:
     SDF_API
     SdfDictionaryProxy GetAssetInfo() const;
 
-    /// \brief Sets a property custom data entry.
+    /// Sets a property custom data entry.
     ///
     /// If \p value is empty, then this removes the given custom data entry.
     SDF_API
     void SetCustomData(const std::string &name, const VtValue &value);
 
-    /// \brief Sets a asset info entry for this property.
+    /// Sets a asset info entry for this property.
     ///
     /// If \p value is empty, then this removes the given asset info entry.
     /// 
@@ -149,7 +150,7 @@ public:
     SDF_API
     void SetAssetInfo(const std::string& name, const VtValue& value);
 
-    /// \brief Returns the displayGroup string for this property spec.
+    /// Returns the displayGroup string for this property spec.
     ///
     /// The default value for displayGroup is empty string.
     SDF_API
@@ -159,7 +160,7 @@ public:
     SDF_API
     void SetDisplayGroup(const std::string &value);
 
-    /// \brief Returns the displayName string for this property spec.
+    /// Returns the displayName string for this property spec.
     ///
     /// The default value for displayName is empty string.
     SDF_API
@@ -169,7 +170,7 @@ public:
     SDF_API
     void SetDisplayName(const std::string &value);
 
-    /// \brief Returns the documentation string for this property spec.
+    /// Returns the documentation string for this property spec.
     ///
     /// The default value for documentation is empty string.
     SDF_API
@@ -179,7 +180,7 @@ public:
     SDF_API
     void SetDocumentation(const std::string &value);
 
-    /// \brief Returns whether this property spec will be hidden in browsers.
+    /// Returns whether this property spec will be hidden in browsers.
     ///
     /// The default value for hidden is false.
     SDF_API
@@ -189,7 +190,7 @@ public:
     SDF_API
     void SetHidden(bool value);
 
-    /// \brief Returns the property's permission restriction.
+    /// Returns the property's permission restriction.
     ///
     /// The default value for permission is SdfPermissionPublic.
     SDF_API
@@ -199,7 +200,7 @@ public:
     SDF_API
     void SetPermission(SdfPermission value);
 
-    /// \brief Returns the prefix string for this property spec.
+    /// Returns the prefix string for this property spec.
     ///
     /// The default value for prefix is "".
     SDF_API
@@ -209,39 +210,39 @@ public:
     SDF_API
     void SetPrefix(const std::string &value);
 
-    /// \brief Returns the property's symmetric peer.
+    /// Returns the property's symmetric peer.
     ///
     /// The default value for the symmetric peer is an empty string.
     SDF_API
     std::string GetSymmetricPeer() const;
 
-    /// \brief Sets the property's symmetric peer.
+    /// Sets the property's symmetric peer.
     ///
     /// If \p peerName is empty, then this removes any symmetric peer for the
     /// given property.
     SDF_API
     void SetSymmetricPeer(const std::string &peerName);
 
-    /// \brief Returns the property's symmetry arguments.
+    /// Returns the property's symmetry arguments.
     ///
     /// The default value for symmetry arguments is an empty dictionary.
     SDF_API
     SdfDictionaryProxy GetSymmetryArguments() const;
 
-    /// \brief Sets a property symmetry argument.
+    /// Sets a property symmetry argument.
     ///
     /// If \p value is empty, then this removes the argument with the given
     /// \p name.
     SDF_API
     void SetSymmetryArgument(const std::string &name, const VtValue &value);
 
-    /// \brief Returns the property's symmetry function.
+    /// Returns the property's symmetry function.
     ///
     /// The default value for the symmetry function is an empty token.
     SDF_API
     TfToken GetSymmetryFunction() const;
 
-    /// \brief Sets the property's symmetry function.
+    /// Sets the property's symmetry function.
     ///
     /// If \p functionName is empty, then this removes any symmetry function
     /// for the given property.
@@ -252,7 +253,7 @@ public:
     /// \name Property value API
     /// @{
 
-    /// \brief Returns the entire set of time samples.
+    /// Returns the entire set of time samples.
     SDF_API
     SdfTimeSampleMap GetTimeSampleMap() const;
 
@@ -260,20 +261,20 @@ public:
     SDF_API
     TfType GetValueType() const;
 
-    /// \brief Returns the name of the value type that this property holds.
+    /// Returns the name of the value type that this property holds.
     ///
     /// Returns the typename used to represent the types of value held by
     /// this attribute.
     SDF_API
     SdfValueTypeName GetTypeName() const;
 
-    /// \brief Returns the attribute's default value.
+    /// Returns the attribute's default value.
     ///
     /// If it doesn't have a default value, an empty VtValue is returned.
     SDF_API
     VtValue GetDefaultValue() const;
 
-    /// \brief Sets the attribute's default value.
+    /// Sets the attribute's default value.
     ///
     /// Returns true if successful, false otherwise.  Fails if \p defaultValue
     /// has wrong type.
@@ -292,7 +293,7 @@ public:
     /// \name Spec properties
     /// @{
 
-    /// \brief Returns the comment string for this property spec.
+    /// Returns the comment string for this property spec.
     ///
     /// The default value for comment is "".
     SDF_API
@@ -310,7 +311,7 @@ public:
     SDF_API
     void SetCustom(bool custom);
 
-    /// \brief Returns the variability of the property.
+    /// Returns the variability of the property.
     ///
     /// An attribute's variability may be \c Varying (the default),
     /// \c Uniform, \c Config, or \c Computed.
@@ -341,8 +342,8 @@ public:
     SDF_API
     SdfVariability GetVariability() const;
 
-    /// \brief Returns true if this PropertySpec has no significant data other 
-    ///        than just what is necessary for instantiation.
+    /// Returns true if this PropertySpec has no significant data other than
+    /// just what is necessary for instantiation.
     /// 
     /// For example, "double foo" has only required fields, but "double foo = 3"
     /// has more than just what is required.

@@ -21,25 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdInShipped/declareCoreOps.h"
+#include "pxr/base/tf/pyModule.h"
 
-#include "usdKatana/attrMap.h"
-#include "usdKatana/readLook.h"
-
-#include "pxr/usd/usdShade/look.h"
-
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LookOp, privateData, interface)
+TF_WRAP_MODULE
 {
-    PxrUsdKatanaAttrMap attrs;
-    
-    PxrUsdKatanaReadLook(
-        UsdShadeLook(privateData.GetUsdPrim()),
-        /* flatten */ true,
-        privateData,
-        attrs);
-
-    attrs.toInterface(interface);
-
-    // tell the op handling the traversal to skip all children
-    interface.setAttr("__UsdIn.skipAllChildren", FnAttribute::IntAttribute(1));
+    TF_WRAP(UsdUINodeGraphNodeAPI); 
+    TF_WRAP(UsdUITokens);
 }

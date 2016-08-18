@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/bindingMap.h
-
 #ifndef GLF_BINDING_MAP_H
 #define GLF_BINDING_MAP_H
+
+/// \file glf/bindingMap.h
 
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/gl.h"
@@ -34,7 +34,6 @@
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/base/tf/hashmap.h"
-
 
 class GlfBindingMap : public TfRefBase, public TfWeakBase {
 public:

@@ -39,16 +39,19 @@
 class HdSceneDelegate;
 class HdDrawTargetAttachmentDescArray;
 
-
 typedef boost::shared_ptr<class HdDrawTarget> HdDrawTargetSharedPtr;
 typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 typedef std::vector<HdDrawTargetSharedPtr> HdDrawTargetSharedPtrVector;
 
+/// \class HdDrawTarget
+///
 /// Represents an render to texture render pass.
-/// Note:  This is a temporary api to aid transition to hydra.
-/// and subject to major changes.
+///
+/// \note This is a temporary API to aid transition to hydra, and is subject
+/// to major changes.
+///
 class HdDrawTarget final {
 public:
     HdDrawTarget(HdSceneDelegate* delegate, SdfPath const & id);
