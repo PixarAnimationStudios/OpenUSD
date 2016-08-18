@@ -68,6 +68,4 @@ private:
     boost::scoped_ptr<GlfRankedTypeMap> _typeMap;
 };
 
-GLF_API_TEMPLATE_CLASS(TfSingleton<GlfImageRegistry>);
-
 #endif // GLF_IMAGE_REGISTRY_H

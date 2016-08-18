@@ -204,6 +204,4 @@ private:
     _PrimTypePropNameToSpecIdMap _primTypePropNameToSpecIdMap;
 };
 
-USD_API_TEMPLATE_CLASS(TfSingleton<UsdSchemaRegistry>);
-
 #endif //USD_SCHEMAREGISTRY_H

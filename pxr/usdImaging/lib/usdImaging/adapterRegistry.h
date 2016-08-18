@@ -74,6 +74,4 @@ public:
     UsdImagingPrimAdapterSharedPtr ConstructAdapter(TfToken const& adapterKey);
 };
 
-USDIMAGING_API_TEMPLATE_CLASS(TfSingleton<UsdImagingAdapterRegistry>);
-
 #endif //USD_ADAPTER_REGISTRY_H
