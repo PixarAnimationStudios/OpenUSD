@@ -63,8 +63,7 @@
 /// }
 /// \endcode
 ///
-class SdfCleanupEnabler : 
-    public TfStacked<SdfCleanupEnabler, /* thread safe */ false>
+TF_DECLARE_STACKED_CLASS(SdfCleanupEnabler, false, SDF_API)
 {
 public:
 

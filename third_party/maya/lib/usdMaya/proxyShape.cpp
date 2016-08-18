@@ -52,10 +52,6 @@
 
 #include <mutex>
 
-// XXX: NO!
-#include "pxr/base/tf/instantiateStacked.h"
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
-
 // Hydra performs its own high-performance frustum culling, so
 // we don't want to rely on Maya to do it on the CPU. AS such, the best
 // performance comes from telling Maya to pretend that every object has no

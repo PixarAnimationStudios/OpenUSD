@@ -64,10 +64,6 @@
 #include <string>
 #include <vector>
 
-// XXX: NO!
-#include "pxr/base/tf/instantiateStacked.h"
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
-
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((FilePathPlugName, "filePath"))
     ((PrimPathPlugName, "primPath"))

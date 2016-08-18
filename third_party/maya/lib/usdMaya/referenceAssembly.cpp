@@ -67,10 +67,6 @@
 #include <string>
 #include <vector>
 
-// XXX: NO!
-#include "pxr/base/tf/instantiateStacked.h"
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
-
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_REF_ASSEMBLIES, true,
                       "Uses USD scene assemblies for set dressing");
 

@@ -117,7 +117,7 @@ enum UsdStageCacheContextBlockType
 /// UsdStageCacheContext objects that exist in one thread's stack do not
 /// influence calls to UsdStage::Open() from a different thread.
 ///
-class UsdStageCacheContext : public TfStacked<UsdStageCacheContext, true>
+TF_DECLARE_STACKED_CLASS(UsdStageCacheContext, true, USD_API)
 {
 public:
     /// \brief Bind a cache for calls to UsdStage::Open() to read from and write
@@ -153,7 +153,5 @@ private:
     bool _isReadOnlyCache;
     UsdStageCacheContextBlockType _blockType;
 };
-
-// USD_API_TEMPLATE_CLASS(TfStacked<UsdStageCacheContext>);
 
 #endif // USD_STAGECACHECONTEXT_H

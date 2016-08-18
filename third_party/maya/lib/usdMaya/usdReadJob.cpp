@@ -55,10 +55,6 @@
 #include <string>
 #include <vector>
 
-// XXX: NO!
-#include "pxr/base/tf/instantiateStacked.h"
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
-
 // for now, we hard code this to use displayColor.  But maybe the more
 // appropriate thing to do is just to leave shadingMode a lone and pass
 // "displayColor" in from the UsdMayaRepresentationFull

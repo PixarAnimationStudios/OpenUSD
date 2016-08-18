@@ -45,10 +45,6 @@
 #include <regex.h>
 #endif
 
-// XXX: NO!
-#include "pxr/base/tf/instantiateStacked.h"
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
-
 TF_INSTANTIATE_SINGLETON(UsdKatanaCache);
 
 SdfLayerRefPtr&
