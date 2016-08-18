@@ -38,7 +38,7 @@ TfPyNoticeWrapperBase::~TfPyNoticeWrapperBase()
 Tf_PyNoticeObjectGenerator::MakeObjectFunc
 Tf_PyNoticeObjectGenerator::_Lookup(TfNotice const &n)
 {
-    if (not _generators.IsInitialized())
+    if (!_generators.IsInitialized())
         return 0;
     string typeName = typeid(n).name();
     map<string, MakeObjectFunc>::iterator i = _generators->find(typeName);

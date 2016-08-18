@@ -24,7 +24,23 @@
 #ifndef TF_OSTREAMMETHODS_H
 #define TF_OSTREAMMETHODS_H
 
+/// \file tf/ostreamMethods.h
+/// \ingroup group_tf_DebuggingOutput
+///
+/// Handy ostream output for various lib/tf and STL containers.
+///
+/// These functions are useful when you need to quickly output various STL
+/// containers.  The stream operators are only available if the contained
+/// types have stream operators.
+///
+/// This facility should \e not be used to output data for later input: this
+/// is essentially a "write-only" facility meant for diagnostics or
+/// human-readable display; the formats described herein are subject to change
+/// without notice.
+
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/arch/defines.h"
+#include <ciso646>
 #include <iostream>
 #include <vector>
 #include <list>
@@ -34,33 +50,18 @@
 
 #include <boost/type_traits/has_left_shift.hpp>
 
-/*!
- * \file tf/ostreamMethods.h
- * \brief Handy ostream output for various lib/tf and STL containers.
- * \ingroup group_tf_DebuggingOutput
- *
- * These functions are useful when you need to quickly output various STL
- * containers.  The stream operators are only available if the contained types
- * have stream operators.
- *
- * This facility should \e not be used to output data for later input: this is
- * essentially a "write-only" facility meant for diagnostics or human-readable
- * display; the formats described herein are subject to change without notice.
- */
-
 template <class T>
 constexpr bool Tf_IsOstreamable() {
     return boost::has_left_shift<
         std::ostream &, /* << */ T, /* -> */ std::ostream &>::value;
 }
 
-
 // These operator<< overloads need to go in the std namespace for
 // Koenig lookup to work.
 namespace std {
 
-//! \brief Output an STL vector using [ ] as delimiters.
-// \ingroup group_tf_DebuggingOutput
+/// Output an STL vector using [ ] as delimiters.
+/// \ingroup group_tf_DebuggingOutput
 template <class T>
 typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::vector<T> &v)
@@ -73,8 +74,8 @@ operator<<(std::ostream &out, const std::vector<T> &v)
     return out;
 }
 
-//! \brief Output an STL set using ( ) as delimiters.
-// \ingroup group_tf_DebuggingOutput
+/// Output an STL set using ( ) as delimiters.
+/// \ingroup group_tf_DebuggingOutput
 template <class T>
 typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::set<T> &v)
@@ -87,8 +88,8 @@ operator<<(std::ostream &out, const std::set<T> &v)
     return out;
 }
 
-//! \brief Output an STL list using { } as delimiters.
-// \ingroup group_tf_DebuggingOutput
+/// Output an STL list using { } as delimiters.
+/// \ingroup group_tf_DebuggingOutput
 template <class T>
 typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::list<T> &l)
@@ -101,8 +102,8 @@ operator<<(std::ostream &out, const std::list<T> &l)
     return out;
 }
 
-//! \brief Output an TfHashMap using < > as delimiters.
-// \ingroup group_tf_DebuggingOutput
+/// Output an TfHashMap using < > as delimiters.
+/// \ingroup group_tf_DebuggingOutput
 template <class K, class M, class H, class C, class A>
 typename std::enable_if<
     Tf_IsOstreamable<K>() and Tf_IsOstreamable<M>(), std::ostream &>::type
@@ -115,8 +116,8 @@ operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
     return out;
 }
 
-//! \brief Output an STL map using < > as delimiters.
-// \ingroup group_tf_DebuggingOutput
+/// Output an STL map using < > as delimiters.
+/// \ingroup group_tf_DebuggingOutput
 template <class K, class M>
 typename std::enable_if<
     Tf_IsOstreamable<K>() and Tf_IsOstreamable<M>(), std::ostream &>::type
@@ -130,7 +131,5 @@ operator<<(std::ostream &out, const std::map<K, M> &h)
 }
 
 } // namespace std
-
-
 
 #endif /* TF_OSTREAMMETHODS_H */

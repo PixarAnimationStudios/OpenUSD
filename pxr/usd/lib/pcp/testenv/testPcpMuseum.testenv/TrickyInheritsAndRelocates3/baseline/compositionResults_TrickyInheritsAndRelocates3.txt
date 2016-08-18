@@ -1,0 +1,151 @@
+Loading @testPcpMuseum.testenv/TrickyInheritsAndRelocates3/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX>
+
+Prim Stack:
+    root.usda            /GuitarRigX
+    rig.usda             /GuitarRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Anim>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Anim
+
+Child names:
+     ['Strings']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Anim/Strings>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Anim/Strings
+    strings_rig.usda     /StringsRig/Strings
+
+Child names:
+     ['String1', 'String2']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Anim/Strings/String1>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Anim/Strings/String1
+    strings_rig.usda     /StringsRig/_Class_StringRig/String
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Anim/Strings/String2>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Anim/Strings/String2
+    strings_rig.usda     /StringsRig/_Class_StringRig/String
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Rig
+
+Child names:
+     ['StringsRig']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Rig/StringsRig
+    strings_rig.usda     /StringsRig
+
+Child names:
+     ['_Class_StringRig', 'String1Rig', 'String2Rig']
+
+Prohibited child names:
+     ['Strings']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/_Class_StringRig>
+
+Prim Stack:
+    strings_rig.usda     /StringsRig/_Class_StringRig
+
+Child names:
+     ['String', 'Vibrate']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/_Class_StringRig/String>
+
+Prim Stack:
+    strings_rig.usda     /StringsRig/_Class_StringRig/String
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/_Class_StringRig/Vibrate>
+
+Prim Stack:
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate
+
+Property names:
+     ['amount']
+
+Property stacks:
+/GuitarRigX/Rig/StringsRig/_Class_StringRig/Vibrate.amount:
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate.amount
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/String1Rig>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Rig/StringsRig/String1Rig
+    strings_rig.usda     /StringsRig/_Class_StringRig
+
+Child names:
+     ['Vibrate']
+
+Prohibited child names:
+     ['String']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/String1Rig/Vibrate>
+
+Prim Stack:
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate
+
+Property names:
+     ['amount']
+
+Property stacks:
+/GuitarRigX/Rig/StringsRig/String1Rig/Vibrate.amount:
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate.amount
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/String2Rig>
+
+Prim Stack:
+    rig.usda             /GuitarRig/Rig/StringsRig/String2Rig
+    strings_rig.usda     /StringsRig/_Class_StringRig
+
+Child names:
+     ['Vibrate']
+
+Prohibited child names:
+     ['String']
+
+------------------------------------------------------------------------
+Results for composing </GuitarRigX/Rig/StringsRig/String2Rig/Vibrate>
+
+Prim Stack:
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate
+
+Property names:
+     ['amount']
+
+Property stacks:
+/GuitarRigX/Rig/StringsRig/String2Rig/Vibrate.amount:
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate.amount
+

@@ -24,6 +24,9 @@
 #ifndef USDRI_GENERATED_RISBXDF_H
 #define USDRI_GENERATED_RISBXDF_H
 
+/// \file usdRi/risBxdf.h
+
+#include "pxr/usd/usdRi/api.h"
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -43,6 +46,8 @@ class SdfAssetPath;
 // RISBXDF                                                                    //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdRiRisBxdf
+///
 /// Represents a ris bxdf object. One of these is assigned at one time.
 ///
 class UsdRiRisBxdf : public UsdRiRisObject
@@ -72,15 +77,17 @@ public:
     }
 
     /// Destructor.
+    USDRI_API
     virtual ~UsdRiRisBxdf();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDRI_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdRiRisBxdf holding the prim adhering to this
+    /// Return a UsdRiRisBxdf holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -89,10 +96,11 @@ public:
     /// UsdRiRisBxdf(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDRI_API
     static UsdRiRisBxdf
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -114,6 +122,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDRI_API
     static UsdRiRisBxdf
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -125,6 +134,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDRI_API
     virtual const TfType &_GetTfType() const;
 
 public:

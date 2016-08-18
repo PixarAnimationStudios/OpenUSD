@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/noticeRegistry.h"
@@ -163,3 +164,4 @@ TfNotice::Block::~Block()
 {
     Tf_NoticeRegistry::_GetInstance()._DecrementBlockCount();
 }
+

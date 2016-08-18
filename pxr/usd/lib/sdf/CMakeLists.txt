@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE sdf)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(sdf
     LIBRARIES
         arch
@@ -90,6 +94,7 @@ pxr_shared_library(sdf
     PUBLIC_HEADERS
         accessorHelpers.h
         declareSpec.h
+        api.h
         schemaTypeRegistration.h
 
     PRIVATE_CLASSES
@@ -116,6 +121,7 @@ pxr_shared_library(sdf
         valueTypePrivate.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         # Flex/Bison generated code
         layerIdentifier.lex.cpp
@@ -161,7 +167,7 @@ pxr_shared_library(sdf
 
 # Validate that the checked in generated code matches the sources. This requires
 # a specific version of bison/flex to get the same results
-if (NOT ${PXR_VALIDATE_GENERATED_CODE})
+if(NOT ${PXR_VALIDATE_GENERATED_CODE})
     message(WARNING "Skipping validation of sdf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
 elseif(NOT BISON_FOUND)
     message(WARNING "Skipping validation of sdf generated code because of missing dependency: bison")

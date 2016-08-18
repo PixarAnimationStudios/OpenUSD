@@ -24,6 +24,9 @@
 #ifndef USDHYDRA_GENERATED_PRIMVAR_H
 #define USDHYDRA_GENERATED_PRIMVAR_H
 
+/// \file usdHydra/primvar.h
+
+#include "pxr/usd/usdHydra/api.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +47,8 @@ class SdfAssetPath;
 // HYDRAPRIMVAR                                                               //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdHydraPrimvar
+///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdHydraTokens.
 /// So to set an attribute to the value "rightHanded", use UsdHydraTokens->rightHanded
@@ -76,15 +81,17 @@ public:
     }
 
     /// Destructor.
+    USDHYDRA_API
     virtual ~UsdHydraPrimvar();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDHYDRA_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdHydraPrimvar holding the prim adhering to this
+    /// Return a UsdHydraPrimvar holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -93,6 +100,7 @@ public:
     /// UsdHydraPrimvar(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDHYDRA_API
     static UsdHydraPrimvar
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -105,6 +113,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDHYDRA_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -122,6 +131,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: 
+    USDHYDRA_API
     UsdAttribute GetVarnameAttr() const;
 
     /// See GetVarnameAttr(), and also 
@@ -129,6 +139,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDHYDRA_API
     UsdAttribute CreateVarnameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

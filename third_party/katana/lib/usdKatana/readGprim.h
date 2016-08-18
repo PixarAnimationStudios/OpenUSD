@@ -24,38 +24,46 @@
 #ifndef PXRUSDKATANA_READGPRIM_H
 #define PXRUSDKATANA_READGPRIM_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomGprim;
 class UsdGeomPointBased;
 
 /// \brief reads \p gprim into \p attrs.
+USDKATANA_API
 void
 PxrUsdKatanaReadGprim(
         const UsdGeomGprim& gprim,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs);
 
+USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetPrimvarGroup(
         const UsdGeomGprim& gprim,
         const PxrUsdKatanaUsdInPrivateData& data);
 
+USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetDisplayColorAttr(
         const UsdGeomGprim& gprim,
         const PxrUsdKatanaUsdInPrivateData& data);
 
+USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetPAttr(
         const UsdGeomPointBased& points,
         const PxrUsdKatanaUsdInPrivateData& data);
 
+USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetWindingOrderAttr(
         const UsdGeomGprim& gprim,
         const PxrUsdKatanaUsdInPrivateData& data);
 
+USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetNormalAttr(
     const UsdGeomPointBased& points,

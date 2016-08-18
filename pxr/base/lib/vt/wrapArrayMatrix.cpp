@@ -23,8 +23,9 @@
 //
 #define NUMERIC_OPERATORS
 #define DOUBLE_MULT_OPERATOR
-#include "pxr/base/vt/typeHeaders.h"
+
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/typeHeaders.h"
 
 
 void wrapArrayMatrix() {

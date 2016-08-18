@@ -24,6 +24,7 @@
 #ifndef HD_ENGINE_H
 #define HD_ENGINE_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/task.h"
@@ -36,32 +37,45 @@ typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 
 #include <boost/shared_ptr.hpp>
 
+/// \class HdEngine
+///
 /// The user-facing entry point for issuing render commands.
 ///
 class HdEngine {
 public:
-
+    HDLIB_API
     HdEngine();
+    HDLIB_API
     virtual ~HdEngine();
 
     HdResourceRegistry& GetResourceRegistry() const
         { return *_resourceRegistry; }
 
+    /// \name Task Context
+    ///
     /// External interface to set data/state in the task context passed to
     /// each task in the render graph
+    ///
+    /// @{
 
     /// Adds or updates the value associated with the token.
     /// Only one is supported for each token.
+    HDLIB_API
     void SetTaskContextData(const TfToken &id, VtValue &data);
 
     /// Removes the specified token.
+    HDLIB_API
     void RemoveTaskContextData(const TfToken &id);
 
+    /// @}
+
     /// Execute tasks.
+    HDLIB_API
     void Execute(HdRenderIndex& index, 
                  HdTaskSharedPtrVector const &tasks);
 
     /// (deprecated: use Execute instead) Draw a renderpass.
+	HDLIB_API
     void Draw(HdRenderIndex& index,
               HdRenderPassSharedPtr const &renderPass,
               HdRenderPassStateSharedPtr const &renderPassState);

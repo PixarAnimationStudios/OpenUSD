@@ -65,10 +65,10 @@ UsdObject::_GetMetadataImpl(
 }
 
 template bool
-UsdObject::_GetMetadataImpl(
+USD_API UsdObject::_GetMetadataImpl(
     const TfToken&, VtValue*, const TfToken &) const;
 template bool
-UsdObject::_GetMetadataImpl(
+USD_API UsdObject::_GetMetadataImpl(
     const TfToken&, SdfAbstractDataValue*, const TfToken &) const;
 
 bool 
@@ -99,10 +99,10 @@ UsdObject::_SetMetadataImpl(const TfToken& key, const T& value,
 
 
 template bool
-UsdObject::_SetMetadataImpl(
+USD_API UsdObject::_SetMetadataImpl(
     const TfToken&, const VtValue&, const TfToken &) const;
 template bool
-UsdObject::_SetMetadataImpl(
+USD_API UsdObject::_SetMetadataImpl(
     const TfToken&, const SdfAbstractDataConstValue&, const TfToken &) const;
 
 bool

@@ -1,0 +1,26 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+class MfScope "Root" (
+    customData = {
+        bool primBool = 1
+        double[] primDouble = [0, 1]
+        double[] primDouble2 = [0, 1, 2, 3]
+    }
+)
+{
+}
+
+def MfScope "Ref" (
+    customData = {
+        bool primRefBool = 1
+        double[] primRefDouble = [0, 1]
+    }
+    inherits = </Root>
+)
+{
+}
+

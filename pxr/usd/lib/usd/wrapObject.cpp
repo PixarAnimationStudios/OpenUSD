@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/extract.hpp>
+
 #include "pxr/usd/usd/object.h"
 
 #include "pxr/usd/usd/conversions.h"
@@ -31,10 +35,6 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/extract.hpp>
 
 #include <string>
 #include <vector>

@@ -1,0 +1,13 @@
+#sdf 1.4.32
+#tagged-as-never-update
+type = cue = what is this?
+length = 75;
+def MfScope "overview_cam" {
+	double camx =
+	double camy =  =
+	double camz = ds;ljadf ;alkdsf ;j
+	def MfScope "Head" {
+		double aspect = 1.02517;
+		double width = 1905.41;
+	}
+}

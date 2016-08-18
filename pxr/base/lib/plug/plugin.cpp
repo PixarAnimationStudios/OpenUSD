@@ -25,7 +25,9 @@
 #include "pxr/base/plug/debugCodes.h"
 
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/threads.h"
 #include "pxr/base/js/value.h"
@@ -56,6 +58,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#undef FindResource         // Defined on Windows.
 
 using std::pair;
 using std::string;
@@ -251,7 +255,7 @@ PlugPlugin::GetDependencies()
         not depend->second.IsObject())
         return JsObject();
 
-    return depend->second.GetObject();
+    return depend->second.GetJsObject();
 }
 
 bool
@@ -271,7 +275,7 @@ PlugPlugin::_Load()
         }
     } else {
         string dsoError;
-        _handle = TfDlopen(_path.c_str(), RTLD_NOW, &dsoError);
+		_handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
         if ( ! _handle ) {
             TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
                             _path.c_str(), _name.c_str(), dsoError.c_str());
@@ -412,7 +416,7 @@ PlugPlugin::MakeResourcePath(const std::string& path) const
 }
 
 std::string
-PlugPlugin::FindResource(const std::string& path, bool verify) const
+PlugPlugin::FindPluginResource(const std::string& path, bool verify) const
 {
     std::string result = MakeResourcePath(path);
     if (verify and not TfPathExists(result)) {
@@ -498,11 +502,11 @@ PlugPlugin::GetMetadataForType(const TfType &type)
         return JsObject();
     }
 
-    const JsObject &typesDict = types.GetObject();
+    const JsObject &typesDict = types.GetJsObject();
     JsValue result;
     TfMapLookup(typesDict,type.GetTypeName(),&result);
     if (result.IsObject()) {
-        return result.GetObject();
+        return result.GetJsObject();
     }
     return JsObject();
 }
@@ -512,7 +516,7 @@ PlugPlugin::DeclaresType(const TfType& type, bool includeSubclasses) const
 {
     if (const JsValue* typesEntry = TfMapLookupPtr(_dict, "Types")) {
         if (typesEntry->IsObject()) {
-            const JsObject& typesDict = typesEntry->GetObject();
+            const JsObject& typesDict = typesEntry->GetJsObject();
             TF_FOR_ALL(it, typesDict) {
                 const TfType typeFromPlugin = TfType::FindByName(it->first);
                 const bool match = 
@@ -556,7 +560,7 @@ PlugPlugin::_DeclareAliases( TfType t, const JsObject & metadata )
     if (i == metadata.end() or not i->second.IsObject())
         return;
 
-    const JsObject& aliasDict = i->second.GetObject();
+    const JsObject& aliasDict = i->second.GetJsObject();
 
     TF_FOR_ALL(aliasIt, aliasDict) {
 
@@ -579,12 +583,12 @@ PlugPlugin::_DeclareTypes()
     JsValue typesValue;
     TfMapLookup(_dict,"Types",&typesValue);
     if (typesValue.IsObject()) {
-        const JsObject& types = typesValue.GetObject();
+        const JsObject& types = typesValue.GetJsObject();
 
         // Declare TfTypes for all the types found in the plugin.
         TF_FOR_ALL(i, types) {
             if (i->second.IsObject()) {
-                _DeclareType(i->first, i->second.GetObject());
+                _DeclareType(i->first, i->second.GetJsObject());
             }
         }
     }
@@ -697,19 +701,19 @@ PlugThisPlugin::~PlugThisPlugin()
 }
 
 std::string
-PlugFindResource(
+PlugFindPluginResource(
     const PlugPluginPtr& plugin,
     const std::string& path,
     bool verify)
 {
-    return plugin ? plugin->FindResource(path, verify) : std::string();
+    return plugin ? plugin->FindPluginResource(path, verify) : std::string();
 }
 
 std::string
-PlugFindResource(
+PlugFindPluginResource(
     const PlugThisPlugin& plugin,
     const std::string& path,
     bool verify)
 {
-    return PlugFindResource(plugin.Get(), path, verify);
+    return PlugFindPluginResource(plugin.Get(), path, verify);
 }

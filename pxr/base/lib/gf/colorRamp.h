@@ -24,30 +24,25 @@
 #ifndef GF_COLORRAMP_H
 #define GF_COLORRAMP_H
 
+/// \file gf/colorRamp.h
+/// \ingroup group_gf_Color
+
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/rgb.h"
 #include "pxr/base/tf/tf.h"
+#include "pxr/base/gf/api.h"
 #include <stdio.h>
 
-//!
-// \file colorRamp.h
-// \ingroup group_gf_Color
-//
-
-//!
-// \class GfColorRamp colorRamp.h luxo/iwq/colorRamp.h
-// \ingroup group_gf_Color
-//
-// \brief A color ramp, as commonly used in Pixar shaders.
-//
-// \see
-// \c /usr/anim/bin/cramp \n
-// \c /usr/anim/global/src/shaders/include/stdshad/Math00a.h: Math00aSmoothTriad
+/// \class GfColorRamp
+/// \ingroup group_gf_Color
+///
+/// A color ramp, as commonly used in Pixar shaders.
+///
 class GfColorRamp
 {
 public:
-    //  \brief Constructor.
-    // The default color ramp is a red->green->blue gradient.
+    /// Constructor.
+    /// The default color ramp is a red->green->blue gradient.
     GfColorRamp(
 	const GfRGB& cMin = GfRGB(1,0,0),
 	const GfRGB& cMid = GfRGB(0,1,0),
@@ -73,8 +68,8 @@ public:
     {
     } 
 
-    //  \brief Constructor.
-    // The default color ramp is a red->green->blue gradient.
+    /// Constructor.
+    /// The default color ramp is a red->green->blue gradient.
     GfColorRamp(
         bool useColorRamp,
 	const GfRGB& cMin = GfRGB(1,0,0),
@@ -100,8 +95,8 @@ public:
     {
     } 
 
-    //! \brief
-    // Evaluate the ramp at the given value.  x is in [0..1].
+    /// Evaluate the ramp at the given value.  x is in [0..1].
+    GF_API
     GfRGB Eval(const double x) const;
 
     bool operator ==(const GfColorRamp &ramp) const {
@@ -153,6 +148,5 @@ private:
     GfRGB  _cMin, _cMid, _cMax;
     double _midPos, _widthMin, _widthMidIn, _widthMidOut, _widthMax;
 };
-
 
 #endif

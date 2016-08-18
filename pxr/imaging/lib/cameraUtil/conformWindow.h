@@ -24,13 +24,15 @@
 #ifndef PXR_CONFORM_WINDOW_H
 #define PXR_CONFORM_WINDOW_H
 
+#include "pxr/imaging/cameraUtil/api.h"
+
 class GfVec2d;
 class GfVec4d;
 class GfRange2d;
 class GfCamera;
 class GfFrustum;
 
-/// \enum ConformWindowPolicy
+/// \enum CameraUtilConformWindowPolicy
 ///
 /// Policy of how to conform a window to the given aspect ratio.
 /// An ASCII-art explanation is given in the corresponding .cpp file.
@@ -48,7 +50,7 @@ enum CameraUtilConformWindowPolicy {
 
 /// Returns a window with aspect ratio \p targetAspect by applying
 /// \p policy to \p window where \p window is encoded as GfRange2d.
-GfRange2d
+CAMERAUTIL_API GfRange2d
 CameraUtilConformedWindow(
     const GfRange2d &window,
     CameraUtilConformWindowPolicy policy, double targetAspect);
@@ -56,7 +58,7 @@ CameraUtilConformedWindow(
 /// Returns a window with aspect ratio \p targetAspect by applying
 /// \p policy to \p window where \p window is encoded as vector
 /// (left, right, bottom, top) similarly to RenderMan's RiScreenWindow.
-GfVec4d 
+CAMERAUTIL_API GfVec4d 
 CameraUtilConformedWindow(
     const GfVec4d &window,
     CameraUtilConformWindowPolicy policy, double targetAspect);
@@ -64,21 +66,24 @@ CameraUtilConformedWindow(
 /// Returns a window with aspect ratio \p targetAspect by applying
 /// \p policy to \p window where \p window is encoded as vector
 /// (width, height).
-GfVec2d
+CAMERAUTIL_API GfVec2d
 CameraUtilConformedWindow(
     const GfVec2d &window,
     CameraUtilConformWindowPolicy policy, double targetAspect);
 
 /// Conforms the given \p camera to have aspect ratio \p targetAspect
 /// by applying \p policy.
-void
+CAMERAUTIL_API void
 CameraUtilConformWindow(
     GfCamera *camera,
     CameraUtilConformWindowPolicy policy, double targetAspect);
 
-GfFrustum
-ComputeFittedFrustum( const GfFrustum &frustum,
-                      const CameraUtilConformWindowPolicy policy,
-                      const GfVec4d viewport);
+/// Conforms the given \p frustum to have aspect ratio \p targetAspect
+/// by applying \p policy.
+CAMERAUTIL_API
+void
+CameraUtilConformWindow(
+    GfFrustum *frustum,
+    CameraUtilConformWindowPolicy policy, double targetAspect);
 
 #endif

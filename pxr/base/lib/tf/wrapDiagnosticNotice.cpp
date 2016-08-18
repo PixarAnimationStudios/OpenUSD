@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/scope.hpp>
+
 #include "pxr/base/tf/diagnosticNotice.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
 #include "pxr/base/tf/status.h"
 #include "pxr/base/tf/warning.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/scope.hpp>
 
 using namespace boost::python;
 

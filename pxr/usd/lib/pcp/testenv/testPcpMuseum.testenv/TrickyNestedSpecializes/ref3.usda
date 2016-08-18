@@ -1,0 +1,11 @@
+#usda 1.0
+
+class "NestedSpecializes"
+{
+}
+
+def "Ref3" (
+    specializes = </NestedSpecializes>
+)
+{
+}

@@ -1,8 +1,13 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usd
     LIBRARIES
+        arch
         kind
         pcp
         sdf
@@ -68,11 +73,15 @@ pxr_shared_library(usd
         interpolators
         wrapUtils
 
+    PUBLIC_HEADERS
+        api.h
+
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

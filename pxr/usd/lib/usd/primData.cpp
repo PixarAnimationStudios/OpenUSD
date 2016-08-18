@@ -33,21 +33,18 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/mpl/assert.hpp>
-
 #include <algorithm>
 #include <sstream>
 #include <vector>
 
+#if defined(ARCH_COMPILER_HAS_STATIC_ASSERT)
 namespace {
 // Static assertion on PrimData size.  We want to be warned when its size
 // changes.
-template <int size>
-struct Size_is_ {};
-BOOST_MPL_ASSERT_MSG(sizeof(Usd_PrimData) == 64,
-                     Size_of_Usd_PrimData_expected_to_be_exactly_64,
-                     (Size_is_<sizeof(Usd_PrimData)>));
+static_assert(sizeof(Usd_PrimData) == 64,
+              "Expected sizeof(Usd_PrimData) == 64");
 }
+#endif
 
 Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
     : _stage(stage)

@@ -1,0 +1,14 @@
+#usda 1.0
+
+def "Model" (
+    add inherits = </Class>
+)
+{
+}
+
+class Prim "Class"
+{
+    custom double x = 1 (
+        doc = """This property is provided by the class in the model.  Notice that the class in the root layer does NOT compose this in."""
+    )
+}

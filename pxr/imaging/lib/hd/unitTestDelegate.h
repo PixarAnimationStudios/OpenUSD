@@ -24,6 +24,7 @@
 #ifndef HD_UNIT_TEST_DELEGATE
 #define HD_UNIT_TEST_DELEGATE
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
@@ -40,24 +41,30 @@
 #define HD_UNIT_TEST_TOKENS                             \
     (geometryAndGuides)
 
-TF_DECLARE_PUBLIC_TOKENS(Hd_UnitTestTokens, HD_UNIT_TEST_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(Hd_UnitTestTokens, HDLIB_API, HD_UNIT_TEST_TOKENS);
 
+/// \class Hd_UnitTestDelegate
+///
 /// A simple delegate class for unit test driver.
 ///
 class Hd_UnitTestDelegate : public HdSceneDelegate {
 public:
+    HDLIB_API
     Hd_UnitTestDelegate();
 
     void SetUseInstancePrimVars(bool v) { _hasInstancePrimVars = v; }
 
+    HDLIB_API
     void SetRefineLevel(int level);
 
     enum Interpolation { VERTEX, UNIFORM, CONSTANT, FACEVARYING, VARYING };
 
     // -----------------------------------------------------------------------
 
+    HDLIB_API
     void AddMesh(SdfPath const& id);
 
+    HDLIB_API
     void AddMesh(SdfPath const &id,
                  GfMatrix4f const &transform,
                  VtVec3fArray const &points,
@@ -69,6 +76,7 @@ public:
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
 
+    HDLIB_API
     void AddMesh(SdfPath const &id,
                  GfMatrix4f const &transform,
                  VtVec3fArray const &points,
@@ -84,44 +92,51 @@ public:
                  bool doubleSided=false);
 
     /// Add a cube
+    HDLIB_API
     void AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmark);
 
     /// Add a grid with division x*y
+    HDLIB_API
     void AddGrid(SdfPath const &id, int x, int y, GfMatrix4f const &transform,
                  bool rightHanded=true, bool doubleSided=false,
                  SdfPath const &instancerId=SdfPath());
 
     /// Add a grid with division x*y
+    HDLIB_API
     void AddGridWithFaceColor(SdfPath const &id, int x, int y,
                               GfMatrix4f const &transform,
                               bool rightHanded=true, bool doubleSided=false,
                               SdfPath const &instancerId=SdfPath());
 
     /// Add a grid with division x*y
+    HDLIB_API
     void AddGridWithVertexColor(SdfPath const &id, int x, int y,
                                 GfMatrix4f const &transform,
                                 bool rightHanded=true, bool doubleSided=false,
                                 SdfPath const &instancerId=SdfPath());
 
     /// Add a grid with division x*y
+    HDLIB_API
     void AddGridWithFaceVaryingColor(SdfPath const &id, int x, int y,
                                      GfMatrix4f const &transform,
                                      bool rightHanded=true, bool doubleSided=false,
                                      SdfPath const &instancerId=SdfPath());
 
     /// Add a triangle, quad and pentagon.
+    HDLIB_API
     void AddPolygons(SdfPath const &id, GfMatrix4f const &transform,
                      Hd_UnitTestDelegate::Interpolation colorInterp,
                      SdfPath const &instancerId=SdfPath());
 
     /// Add a subdiv with various tags
+    HDLIB_API
     void AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
                    SdfPath const &insatancerId=SdfPath());
 
     // -----------------------------------------------------------------------
-
+    HDLIB_API
     void AddBasisCurves(SdfPath const &id,
                         VtVec3fArray const &points,
                         VtIntArray const &curveVertexCounts,
@@ -134,6 +149,7 @@ public:
                         SdfPath const &instancerId=SdfPath());
 
     /// Add a basis curves prim containing two curves
+    HDLIB_API
     void AddCurves(SdfPath const &id, TfToken const &basis,
                    GfMatrix4f const &transform,
                    Hd_UnitTestDelegate::Interpolation colorInterp=Hd_UnitTestDelegate::CONSTANT,
@@ -141,6 +157,7 @@ public:
                    bool authoredNormals=false,
                    SdfPath const &instancerId=SdfPath());
 
+    HDLIB_API
     void AddPoints(SdfPath const &id,
                    VtVec3fArray const &points,
                    VtValue const &color,
@@ -150,6 +167,7 @@ public:
                    SdfPath const &instancerId=SdfPath());
 
     /// Add a points prim
+    HDLIB_API
     void AddPoints(SdfPath const &id,
                    GfMatrix4f const &transform,
                    Hd_UnitTestDelegate::Interpolation colorInterp=Hd_UnitTestDelegate::CONSTANT,
@@ -157,10 +175,12 @@ public:
                    SdfPath const &instancerId=SdfPath());
 
     /// Instancer
+    HDLIB_API
     void AddInstancer(SdfPath const &id,
                       SdfPath const &parentId=SdfPath(),
                       GfMatrix4f const &rootTransform=GfMatrix4f(1));
 
+    HDLIB_API
     void SetInstancerProperties(SdfPath const &id,
                                 VtIntArray const &prototypeIndex,
                                 VtVec3fArray const &scale,
@@ -168,36 +188,50 @@ public:
                                 VtVec3fArray const &translate);
 
     /// Shader
+    HDLIB_API
     void AddSurfaceShader(SdfPath const &id,
                     std::string const &source,
                     HdShaderParamVector const &params);
 
+    HDLIB_API
     void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
 
     /// Remove a prim
+    HDLIB_API
     void Remove(SdfPath const &id);
 
     /// Clear all prims
+    HDLIB_API
     void Clear();
 
     // Hides an rprim, invalidating all collections it was in.
+    HDLIB_API
     void HideRprim(SdfPath const &id);
 
     // Un-hides an rprim, invalidating all collections it was in.
+    HDLIB_API
     void UnhideRprim(SdfPath const &id);
 
     // set per-prim repr
+    HDLIB_API
     void SetReprName(SdfPath const &id, TfToken const &reprName);
 
     // set per-prim refine level
+    HDLIB_API
     void SetRefineLevel(SdfPath const &id, int refineLevel);
 
     /// Marks an rprim in the RenderIndex as dirty with the given dirty flags.
+    HDLIB_API
     void MarkRprimDirty(SdfPath path, HdChangeTracker::DirtyBits flag);
 
+    HDLIB_API
     void UpdatePositions(SdfPath const &id, float time);
+
+    HDLIB_API
     void UpdateRprims(float time);
+    HDLIB_API
     void UpdateInstancerPrimVars(float time);
+    HDLIB_API
     void UpdateInstancerPrototypes(float time);
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
@@ -208,45 +242,74 @@ public:
     // ---------------------------------------------------------------------- //
     // utility functions generating test case
     // ---------------------------------------------------------------------- //
+    HDLIB_API
     GfVec3f PopulateBasicTestSet();
+    HDLIB_API
     GfVec3f PopulateInvalidPrimsSet();
 
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of virtual methods.
     // ---------------------------------------------------------------------- //
+    HDLIB_API
     virtual bool IsInCollection(SdfPath const& id,
                                 TfToken const& collectionName);
+    HDLIB_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
+    HDLIB_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+    HDLIB_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
+    HDLIB_API
     virtual GfRange3d GetExtent(SdfPath const & id);
+    HDLIB_API
     virtual GfMatrix4d GetTransform(SdfPath const & id);
+    HDLIB_API
     virtual bool GetVisible(SdfPath const & id);
+    HDLIB_API
     virtual bool GetDoubleSided(SdfPath const & id);
+    HDLIB_API
     virtual int GetRefineLevel(SdfPath const & id);
+    HDLIB_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
+    HDLIB_API
     virtual TfToken GetReprName(SdfPath const &id);
+    HDLIB_API
     virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
+    HDLIB_API
     virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
+    HDLIB_API
     virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
+    HDLIB_API
     virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
+    HDLIB_API
     virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
+    HDLIB_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
+    HDLIB_API
     virtual int GetPrimVarDataType(SdfPath const& id, TfToken const& key);
+    HDLIB_API
     virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
+    HDLIB_API
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
                                           SdfPath const& prototypeId);
 
+    HDLIB_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
                                              SdfPath const& prototypeId);
 
+    HDLIB_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    HDLIB_API
     virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
+    HDLIB_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
+    HDLIB_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 
                                   TfToken const &paramName);
+    HDLIB_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
+    HDLIB_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
 private:

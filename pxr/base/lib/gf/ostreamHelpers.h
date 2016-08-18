@@ -24,17 +24,16 @@
 #ifndef GF_OSTREAM_HELPERS_H
 #define GF_OSTREAM_HELPERS_H
 
+/// \file gf/ostreamHelpers.h
+/// \ingroup group_gf_DebuggingOutput
+///
+/// Helpers for Gf stream operators.
+///
+/// These functions are useful to help with writing stream operators for
+/// Gf types.  Please do not include this file in any header.
+
 #include <iostream>
 #include <limits>
-
-/*!
- * \file gf/ostreamHelpers.h
- * \brief Helpers for Gf stream operators.
- * \ingroup group_gf_DebuggingOutput
- *
- * These functions are useful to help with writing stream operators for
- * Gf types.  Please do not include this file in any header.
- */
 
 // Helper class to write out the correct precision
 template <class T>
@@ -62,17 +61,16 @@ inline Gf_OstreamHelperValue<double> Gf_OstreamHelperP(double v) {
 inline std::ostream &
 operator<<(std::ostream &out, const Gf_OstreamHelperValue<float> &data)
 {
-    int oldPrecision = out.precision(std::numeric_limits<float>::digits10);
+    std::streamsize oldPrecision = out.precision(std::numeric_limits<float>::digits10);
     out << data.value;
     out.precision(oldPrecision);
     return out;
 }
 
-
 inline std::ostream &
 operator<<(std::ostream &out, const Gf_OstreamHelperValue<double> &data)
 {
-    int oldPrecision = out.precision(std::numeric_limits<double>::digits10);
+	std::streamsize oldPrecision = out.precision(std::numeric_limits<double>::digits10);
     out << data.value;
     out.precision(oldPrecision);
     return out;

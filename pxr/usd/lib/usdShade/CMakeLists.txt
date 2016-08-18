@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdShade)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usdShade
     LIBRARIES
         tf
@@ -13,6 +17,7 @@ pxr_shared_library(usdShade
         debugCodes
         interfaceAttribute
         look
+        material
         parameter
         pShader
         pShaderUtils
@@ -20,14 +25,19 @@ pxr_shared_library(usdShade
         subgraph
         tokens
         utils
+        
+    PUBLIC_HEADERS
+        api.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
         wrapInterfaceAttribute.cpp
         wrapLook.cpp
+        wrapMaterial.cpp
         wrapParameter.cpp
         wrapPShader.cpp
         wrapShader.cpp

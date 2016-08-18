@@ -24,12 +24,11 @@
 #ifndef WORK_SINGULARTASK_H
 #define WORK_SINGULARTASK_H
 
-
-///
-///\file work/singularTask.h
+/// \file work/singularTask.h
 
 #include <atomic>
 #include <functional>
+#include "pxr/base/work/api.h"
 
 class WorkDispatcher;
 
@@ -85,7 +84,7 @@ public:
     /// Ensure that this task runs at least once after this call.  The task is
     /// not guaranteed to run as many times as Wake() is invoked, only that it
     /// run at least once after a call to Wake().
-    void Wake();
+	WORK_API void Wake();
 
 private:
     struct _Invoker;

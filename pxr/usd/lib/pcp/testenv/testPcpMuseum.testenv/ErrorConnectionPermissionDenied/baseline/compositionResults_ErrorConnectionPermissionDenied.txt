@@ -1,0 +1,327 @@
+Loading @testPcpMuseum.testenv/ErrorConnectionPermissionDenied/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences>
+
+Prim Stack:
+    root.usda            /PermissionsAcrossReferences
+    ref.usda             /Reference
+
+Child names:
+     ['PrivatePrimFromRef', 'PublicPrimFromRef', 'ChildFromRef', 'PrivatePrimFromRoot', 'PublicPrimFromRoot', 'ChildFromRoot']
+
+Property names:
+     ['privateAttrFromRef', 'publicAttrFromRef', 'privateAttrFromRoot', 'publicAttrFromRoot']
+
+Property stacks:
+/PermissionsAcrossReferences.privateAttrFromRef:
+    ref.usda             /Reference.privateAttrFromRef
+/PermissionsAcrossReferences.privateAttrFromRoot:
+    root.usda            /PermissionsAcrossReferences.privateAttrFromRoot
+/PermissionsAcrossReferences.publicAttrFromRef:
+    ref.usda             /Reference.publicAttrFromRef
+/PermissionsAcrossReferences.publicAttrFromRoot:
+    root.usda            /PermissionsAcrossReferences.publicAttrFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PrivatePrimFromRef>
+
+Prim Stack:
+    ref.usda             /Reference/PrivatePrimFromRef
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PublicPrimFromRef>
+
+Prim Stack:
+    ref.usda             /Reference/PublicPrimFromRef
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/ChildFromRef>
+
+Prim Stack:
+    ref.usda             /Reference/ChildFromRef
+
+Property names:
+     ['relInRef']
+
+Property stacks:
+/PermissionsAcrossReferences/ChildFromRef.relInRef:
+    ref.usda             /Reference/ChildFromRef.relInRef
+
+Relationship targets:
+/PermissionsAcrossReferences/ChildFromRef.relInRef:
+    /PermissionsAcrossReferences/PrivatePrimFromRef
+    /PermissionsAcrossReferences/PublicPrimFromRef
+    /PermissionsAcrossReferences.privateAttrFromRef
+    /PermissionsAcrossReferences.publicAttrFromRef
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PrivatePrimFromRoot>
+
+Prim Stack:
+    root.usda            /PermissionsAcrossReferences/PrivatePrimFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PublicPrimFromRoot>
+
+Prim Stack:
+    root.usda            /PermissionsAcrossReferences/PublicPrimFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/ChildFromRoot>
+
+Prim Stack:
+    root.usda            /PermissionsAcrossReferences/ChildFromRoot
+
+Property names:
+     ['relInRoot']
+
+Property stacks:
+/PermissionsAcrossReferences/ChildFromRoot.relInRoot:
+    root.usda            /PermissionsAcrossReferences/ChildFromRoot.relInRoot
+
+Relationship targets:
+/PermissionsAcrossReferences/ChildFromRoot.relInRoot:
+    /PermissionsAcrossReferences/PublicPrimFromRef
+    /PermissionsAcrossReferences/PrivatePrimFromRoot
+    /PermissionsAcrossReferences/PublicPrimFromRoot
+    /PermissionsAcrossReferences.publicAttrFromRef
+    /PermissionsAcrossReferences.privateAttrFromRoot
+    /PermissionsAcrossReferences.publicAttrFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits>
+
+Prim Stack:
+    root.usda            /PermissionsAcrossInherits
+    ref.usda             /ReferenceWithLocalClass
+
+Child names:
+     ['Class', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class
+
+Child names:
+     ['PrivatePrimFromClass', 'PublicPrimFromClass', 'ChildFromClass']
+
+Property names:
+     ['privateAttrFromClass', 'publicAttrFromClass']
+
+Property stacks:
+/PermissionsAcrossInherits/Class.privateAttrFromClass:
+    ref.usda             /ReferenceWithLocalClass/Class.privateAttrFromClass
+/PermissionsAcrossInherits/Class.publicAttrFromClass:
+    ref.usda             /ReferenceWithLocalClass/Class.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class/PrivatePrimFromClass>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class/PrivatePrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class/PublicPrimFromClass>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class/PublicPrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class/ChildFromClass>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass
+
+Property names:
+     ['relInClass']
+
+Property stacks:
+/PermissionsAcrossInherits/Class/ChildFromClass.relInClass:
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
+
+Relationship targets:
+/PermissionsAcrossInherits/Class/ChildFromClass.relInClass:
+    /PermissionsAcrossInherits/Class/PrivatePrimFromClass
+    /PermissionsAcrossInherits/Class/PublicPrimFromClass
+    /PermissionsAcrossInherits/Class.privateAttrFromClass
+    /PermissionsAcrossInherits/Class.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance>
+
+Prim Stack:
+    root.usda            /PermissionsAcrossInherits/Instance
+    ref.usda             /ReferenceWithLocalClass/Instance
+    ref.usda             /ReferenceWithLocalClass/Class
+
+Child names:
+     ['PrivatePrimFromClass', 'PublicPrimFromClass', 'ChildFromClass']
+
+Property names:
+     ['privateAttrFromClass', 'publicAttrFromClass', 'relInInstance', 'relInRootInstance']
+
+Property stacks:
+/PermissionsAcrossInherits/Instance.privateAttrFromClass:
+    ref.usda             /ReferenceWithLocalClass/Class.privateAttrFromClass
+/PermissionsAcrossInherits/Instance.publicAttrFromClass:
+    ref.usda             /ReferenceWithLocalClass/Class.publicAttrFromClass
+/PermissionsAcrossInherits/Instance.relInInstance:
+    ref.usda             /ReferenceWithLocalClass/Instance.relInInstance
+/PermissionsAcrossInherits/Instance.relInRootInstance:
+    root.usda            /PermissionsAcrossInherits/Instance.relInRootInstance
+
+Relationship targets:
+/PermissionsAcrossInherits/Instance.relInInstance:
+    /PermissionsAcrossInherits/Instance/PublicPrimFromClass
+    /PermissionsAcrossInherits/Instance.publicAttrFromClass
+/PermissionsAcrossInherits/Instance.relInRootInstance:
+    /PermissionsAcrossInherits/Instance/PublicPrimFromClass
+    /PermissionsAcrossInherits/Instance.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance/PrivatePrimFromClass>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class/PrivatePrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance/PublicPrimFromClass>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class/PublicPrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance/ChildFromClass>
+
+Prim Stack:
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass
+
+Property names:
+     ['relInClass']
+
+Property stacks:
+/PermissionsAcrossInherits/Instance/ChildFromClass.relInClass:
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
+
+Relationship targets:
+/PermissionsAcrossInherits/Instance/ChildFromClass.relInClass:
+    /PermissionsAcrossInherits/Instance/PrivatePrimFromClass
+    /PermissionsAcrossInherits/Instance/PublicPrimFromClass
+    /PermissionsAcrossInherits/Instance.privateAttrFromClass
+    /PermissionsAcrossInherits/Instance.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_1>
+
+Prim Stack:
+    root.usda            /CulledPermissions_1
+    culled.usda          /CulledPermissions_1
+
+Child names:
+     ['Foo']
+
+Property names:
+     ['rel']
+
+Property stacks:
+/CulledPermissions_1.rel:
+    culled.usda          /CulledPermissions_1.rel
+
+Relationship targets:
+/CulledPermissions_1.rel:
+    /CulledPermissions_1/Foo/NonExistentPrim
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_1/Foo>
+
+Prim Stack:
+    culled.usda          /CulledPermissions_1/Foo
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_2>
+
+Prim Stack:
+    root.usda            /CulledPermissions_2
+    culled.usda          /CulledPermissions_2_1
+    culled.usda          /CulledPermissions_2_2
+
+Child names:
+     ['Foo']
+
+Property names:
+     ['rel']
+
+Property stacks:
+/CulledPermissions_2.rel:
+    culled.usda          /CulledPermissions_2_2.rel
+
+Relationship targets:
+/CulledPermissions_2.rel:
+    /CulledPermissions_2/Foo.x
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_2/Foo>
+
+Prim Stack:
+    culled.usda          /CulledPermissions_2_1/Foo
+
+Property names:
+     ['x']
+
+Property stacks:
+/CulledPermissions_2/Foo.x:
+    culled.usda          /CulledPermissions_2_1/Foo.x
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3>
+
+Prim Stack:
+    root.usda            /CulledPermissions_3
+    root.usda            /CulledPermissions_3{pin=stable}
+    culled_stable.usda   /CulledModel
+    culled_payload.usda  /CulledModelPayload
+
+Variant Selections:
+    {pin = stable}
+
+Child names:
+     ['sim']
+
+Property names:
+     ['colliders']
+
+Property stacks:
+/CulledPermissions_3.colliders:
+    culled_stable.usda   /CulledModel.colliders
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3/sim>
+
+Prim Stack:
+    culled_payload.usda  /CulledModelPayload/sim
+
+Child names:
+     ['CollisionRig']
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3/sim/CollisionRig>
+
+Prim Stack:
+    culled_payload.usda  /CulledModelPayload/sim/CollisionRig
+
+Child names:
+     ['FiztCollBody']
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3/sim/CollisionRig/FiztCollBody>
+
+Prim Stack:
+    culled_payload.usda  /CulledModelPayload/sim/CollisionRig/FiztCollBody
+

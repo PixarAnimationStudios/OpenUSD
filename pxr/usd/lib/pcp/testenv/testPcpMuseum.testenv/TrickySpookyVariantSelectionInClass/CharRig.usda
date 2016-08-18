@@ -1,0 +1,58 @@
+#usda 1.0
+
+def Scope "CharRig" (
+    relocates = {
+        <Rig/LeftLegRig/Anim>: <Anim/LeftLeg>,
+        <Rig/RightLegRig/Anim>: <Anim/RightLeg>
+    }
+)
+{
+    def Scope "Anim" {
+    }
+
+    def Scope "Rig" {
+        class Scope "SymLegRig" (
+            references = @LegRig.usda@</LegRig>
+        )
+        {
+        }
+
+        def Scope "LeftLegRig" (
+            inherits = </CharRig/Rig/SymLegRig>
+        )
+        {
+        }
+
+        def Scope "RightLegRig" (
+            inherits = </CharRig/Rig/SymLegRig>
+        )
+        {
+        }
+    }
+
+    def Scope "InheritTest" (
+        '''
+        This scope holds a fairly contrived set of inherits arcs used
+        to demonstrate that the problem that occurs with relocates above
+        does not actually depend on relocates specifically -- it applies
+        to any kind of arc that picks up ancestral opinions, like local
+        inherits.
+        '''
+    ) {
+        class Scope "_class_X" {
+        }
+
+        def Scope "X" (
+            references = @LegRig.usda@</LegRig>
+            inherits = </CharRig/InheritTest/_class_X>
+        ) {
+            over "Anim" {
+            }
+        }
+
+        def Scope "Y" (
+            inherits = </CharRig/InheritTest/X/Anim>
+        ) {
+        }
+    }
+}

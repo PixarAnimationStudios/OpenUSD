@@ -1,0 +1,10 @@
+#usda 1.0
+
+def "ModelGroup" (
+    references = @group.usda@</ModelGroup>
+    relocates = {
+        <Model> : <Model_1>
+    }
+)
+{
+}

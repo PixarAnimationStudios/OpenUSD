@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    """
+    This museum case exhibits the interaction between relocated prims and
+    inherited opinions. A relocated prim will still inherit the same 
+    opinions it would have had it not been relocated. This is commonly 
+    referred to as 'spooky inherits'.
+
+    In this museum case, we have a symmetric rig defined in rig.usda
+    that is referenced by the model in model.usda. Within the model, the
+    LRig instance is relocated to the Anim scope. Finally, this model is
+    referenced in by root.usda.
+
+    Due to spooky inherits, the final composed prim for /Model_1/Anim/LAnim
+    should include opinions from the global class /_class_Model in root.usda
+    and model.usda.
+    """
+)
+
+def Scope "Model_1" (
+    references = @model.usda@</Model>
+)
+{
+}
+
+class Scope "_class_Model"
+{
+    over "Rig"
+    {
+        over "SymRig"
+        {
+        }
+
+        over "LRig"
+        {
+        }
+    }
+
+    over "Anim"
+    {
+        over "LAnim"
+        {
+        }
+    }
+}

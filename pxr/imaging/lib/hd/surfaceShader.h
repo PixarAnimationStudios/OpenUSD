@@ -24,6 +24,7 @@
 #ifndef HD_SURFACESHADER_H
 #define HD_SURFACESHADER_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/version.h"
 
@@ -44,6 +45,8 @@ typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 typedef std::vector<HdTextureResourceSharedPtr> HdTextureResourceSharedPtrVector;
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 
+/// \class HdSurfaceShader
+///
 /// A scene-based SurfaceShader object.
 ///
 /// When surface shaders are expresed in the scene graph, the HdSceneDelegate
@@ -52,9 +55,11 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 /// expressed as well.
 class HdSurfaceShader : public HdShader {
 public:
+    HDLIB_API
     HdSurfaceShader(HdSceneDelegate* delegate,
                     SdfPath const & id);
 
+    HDLIB_API
     virtual ~HdSurfaceShader();
 
     /// Returns the HdSceneDelegate which backs this shader.
@@ -67,21 +72,31 @@ public:
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
+    HDLIB_API
     void Sync();
 
     // ---------------------------------------------------------------------- //
     /// \name HdShader Virtual Interface                                      //
     // ---------------------------------------------------------------------- //
+    HDLIB_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    HDLIB_API
     virtual HdShaderParamVector const& GetParams() const;
+    HDLIB_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
+    HDLIB_API
     virtual TextureDescriptorVector GetTextures() const;
+    HDLIB_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    HDLIB_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    HDLIB_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
+    HDLIB_API
     virtual ID ComputeHash() const;
 
     /// Returns if the two shaders can be aggregated in a same drawbatch or not.
+    HDLIB_API
     static bool CanAggregate(HdShaderSharedPtr const &shaderA,
                              HdShaderSharedPtr const &shaderB);
 

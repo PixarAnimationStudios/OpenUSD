@@ -24,6 +24,10 @@ include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS ${_PXR_CXX_FLAGS})
 
+if(POLICY CMP0020)
+    cmake_policy(SET CMP0020 OLD)
+endif()
+
 include(Public)
 
 add_subdirectory(pxr)

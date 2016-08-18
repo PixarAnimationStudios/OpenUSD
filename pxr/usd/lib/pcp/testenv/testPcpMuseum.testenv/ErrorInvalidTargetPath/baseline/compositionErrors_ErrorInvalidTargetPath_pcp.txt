@@ -1,0 +1,13 @@
+------------------------------------------------------------------------
+Errors while composing </Root>
+
+The attribute connection </PrimOutsideReferenceRoot.A> from </A.A> in layer @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidTargetPath/A.usda@ refers to a path outside the scope of the reference from </Root>.  Ignoring.
+The relationship target </PrimOutsideReferenceRoot> from </A.B> in layer @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidTargetPath/A.usda@ refers to a path outside the scope of the reference from </Root>.  Ignoring.
+The attribute connection </Root.x> from </_Class1.prohibitedConnectionToInstance> in layer @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidTargetPath/root.usda@ refers to a path outside the scope of the global inherit from </Root>.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </RootWithReferenceUnderVariant>
+
+The attribute connection </PrimOutsideReferenceRoot.A> from </A.A> in layer @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidTargetPath/A.usda@ refers to a path outside the scope of the reference from </RootWithReferenceUnderVariant{standin=anim}>.  Ignoring.
+The relationship target </PrimOutsideReferenceRoot> from </A.B> in layer @/host/devel/quant/sunya/dev4/fedora-gcc64-opt-g/amber/tests/mentor/amber/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidTargetPath/A.usda@ refers to a path outside the scope of the reference from </RootWithReferenceUnderVariant{standin=anim}>.  Ignoring.
+

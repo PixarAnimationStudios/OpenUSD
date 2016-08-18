@@ -1,0 +1,91 @@
+#usda 1.0
+(
+    """
+    This museum exhibit demonstrates the interaction between permissions
+    and relationship targets/attribute connections. In general, connections
+    are invalid if the object they target are private relative to the
+    location where the connection is authored.
+    """
+)
+
+def Scope "PermissionsAcrossReferences" (
+    add references = @ref.usda@</Reference>
+)
+{
+    custom double privateAttrFromRoot (permission = private)
+    custom double publicAttrFromRoot
+
+    def Scope "PrivatePrimFromRoot" (
+        permission = private
+    )
+    {
+    }
+
+    def Scope "PublicPrimFromRoot"
+    {
+    }
+
+    def Scope "ChildFromRoot"
+    {
+        custom rel relInRoot = [
+            </PermissionsAcrossReferences/PrivatePrimFromRef>,
+            </PermissionsAcrossReferences/PublicPrimFromRef>,
+            </PermissionsAcrossReferences/PrivatePrimFromRoot>,
+            </PermissionsAcrossReferences/PublicPrimFromRoot>,
+
+            </PermissionsAcrossReferences.privateAttrFromRef>,
+            </PermissionsAcrossReferences.publicAttrFromRef>,
+            </PermissionsAcrossReferences.privateAttrFromRoot>,
+            </PermissionsAcrossReferences.publicAttrFromRoot>
+        ]
+    }
+}    
+
+def Scope "PermissionsAcrossInherits" (
+    add references = @ref.usda@</ReferenceWithLocalClass>
+)
+{
+    over "Instance"
+    {
+        custom rel relInRootInstance = [
+            </PermissionsAcrossInherits/Instance/PrivatePrimFromClass>,
+            </PermissionsAcrossInherits/Instance/PublicPrimFromClass>,
+            </PermissionsAcrossInherits/Instance.privateAttrFromClass>,
+            </PermissionsAcrossInherits/Instance.publicAttrFromClass>
+        ]
+    }
+}
+
+def Scope "CulledPermissions_1" (
+    references = @culled.usda@</CulledPermissions_1>
+)
+{
+}
+
+def Scope "CulledPermissions_2" (
+    references = [ 
+        @culled.usda@</CulledPermissions_2_1>,
+        @culled.usda@</CulledPermissions_2_2>
+    ]
+)
+{
+}
+
+def Scope "CulledPermissions_3" (
+    """
+    This case was adapted from //menv30/brave_clone/chars/mcat30/Merida.usda
+    """
+    add variantSets = ["pin"]
+    variants = {
+        string pin = "stable"
+    }
+)
+{
+    variantSet "pin" = {
+        "stable" (
+            references = @culled_stable.usda@</CulledModel>
+        ) 
+        {
+        }
+    }
+}

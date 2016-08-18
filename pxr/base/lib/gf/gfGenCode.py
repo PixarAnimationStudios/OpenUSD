@@ -36,7 +36,7 @@ import os, sys, itertools
 from argparse import ArgumentParser
 
 from jinja2 import Environment, FileSystemLoader
-from jinja2.exceptions import TemplateError
+from jinja2.exceptions import TemplateError, TemplateSyntaxError
 
 # Write filePath if its content differs from \p content.  If unchanged, print a
 # message indicating that.  If filePath is not writable, print a diff.
@@ -101,14 +101,18 @@ def MakeMatrixFn(defaultN):
     return Matrix
 
 def GenerateFromTemplates(env, templates, suffix, outputPath, verbose=True):
-    try:
-        for tmpl in templates:
-            template = env.get_template(tmpl % '.template')
+    for tmpl in templates:
+        tmplName = tmpl % '.template'
+
+        try:
             _WriteFile(os.path.join(outputPath, tmpl % suffix),
-                       template.render(), verbose=verbose)
-    except TemplateError as err:
-        print '\t', err,
-        print 'Aborting ...'
+                env.get_template(tmplName).render(), verbose)
+        except TemplateSyntaxError as err:
+            print >>sys.stderr, \
+                'Syntax Error: {0.name}:{0.lineno}: {0.message}'.format(err)
+        except TemplateError as err:
+            print >>sys.stderr, \
+                'Template Error: {}: {}'.format(err, tmplName)
 
 def VecName(dim, scl):
     return 'GfVec%s%s' % (dim, scl[0])
@@ -198,15 +202,15 @@ def GetMatrixSpecs(dim):
 
     matrixSpecs = sorted(
         [dict(SCL=scl,
-              DIM=dim,
+              DIM=i,
               FILESUFFIX=scl[0],
-              SUFFIX=str(dim) + scl[0],
-              MAT=MatrixName(dim, scl),
-              LIST=MakeListFn(dim),
-              MATRIX=MakeMatrixFn(dim),
+              SUFFIX=str(i) + scl[0],
+              MAT=MatrixName(i, scl),
+              LIST=MakeListFn(i),
+              MATRIX=MakeMatrixFn(i),
               MATNAME=MatrixName,
               SCALARS=scalarTypes)
-         for scl, dim in itertools.product(scalarTypes, dimensions)],
+         for scl, i in itertools.product(scalarTypes, dimensions)],
         key=lambda d: RankScalar(d['SCL']))
 
     return dict(templates=['matrix%s%%s.h' % dim,
@@ -243,7 +247,7 @@ def ValidateFiles(srcDir, dstDir):
             diffs.append(diff)
             continue
 
-    if missing or diffs:
+    if missing:
         msg = []
         if missing:
             msg.append('*** Missing Generated Files: ' + ', '.join(missing))
@@ -289,3 +293,4 @@ if __name__ == '__main__':
         if args.validate:
             import shutil
             shutil.rmtree(args.dstDir)
+

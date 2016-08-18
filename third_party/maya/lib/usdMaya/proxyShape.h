@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_PROXYSHAPE_H
 #define PXRUSDMAYA_PROXYSHAPE_H
 
+#include "usdMaya/api.h"
 #include "usdMaya/usdPrimProvider.h"
 
 #include <maya/MPxSurfaceShape.h>
@@ -37,10 +38,11 @@
 #include "pxr/usd/sdf/path.h"
 
 
+USDMAYA_API
 extern TfEnvSetting<bool> PIXMAYA_ENABLE_BOUNDING_BOX_MODE;
 
 
-class UsdMayaProxyShape : public MPxSurfaceShape,
+class USDMAYA_API UsdMayaProxyShape : public MPxSurfaceShape,
     public PxrUsdMayaUsdPrimProvider
 {
     public:

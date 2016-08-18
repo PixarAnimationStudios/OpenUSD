@@ -24,16 +24,20 @@
 #ifndef PXR_SCREEN_WINDOW_PARAMETERS_H
 #define PXR_SCREEN_WINDOW_PARAMETERS_H
 
+#include "pxr/imaging/cameraUtil/api.h"
 #include "pxr/base/gf/camera.h"
 
+/// \class CameraUtilScreenWindowParameters
+///
 /// Given a camera object, compute parameters suitable for setting up
 /// RenderMan.
+///
 class CameraUtilScreenWindowParameters
 {
 public:
     /// Constructs screenwindow parameter. The optional \p fitDirection
     /// indicates in which direction the screenwindow will have length 2.
-    CameraUtilScreenWindowParameters(const GfCamera &camera,
+    CAMERAUTIL_API CameraUtilScreenWindowParameters(const GfCamera &camera,
                                      GfCamera::FOVDirection fitDirection =
                                      GfCamera::FOVHorizontal);
     

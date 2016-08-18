@@ -1,0 +1,19 @@
+#sdf 1.4.32
+(
+    """Tests metadata on mappers"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "test"
+{
+    custom double attr = 1
+    custom double attr2
+    double attr2.connect = </test.attr>
+    double attr2.mapper[ </test.attr> ] = TestMapper (
+        symmetryArguments = {
+            bool reflectMapperInput = 1
+        }
+    )
+}
+

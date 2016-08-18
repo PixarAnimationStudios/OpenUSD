@@ -341,7 +341,7 @@ UsdGeomXformable::SetResetXformStack(bool resetXformStack) const
         if (_XformOpOrderHasResetXformStack(opOrderVec))
             return true;
 
-        VtTokenArray newOpOrderVec(opOrderVec.size() + 1);
+        VtTokenArray newOpOrderVec(static_cast<int>(opOrderVec.size()) + 1);
 
         newOpOrderVec[0] = UsdGeomXformOpTypes->resetXformStack;
         for (size_t i = 0; i < opOrderVec.size(); i++)

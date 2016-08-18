@@ -24,7 +24,7 @@
 #ifndef GLFQ_GLDEBUG_CONTEXT_H
 #define GLFQ_GLDEBUG_CONTEXT_H
 
-#include "pxr/base/arch/defines.h"
+#include "pxr/imaging/glfq/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/weakBase.h"
 
@@ -36,6 +36,8 @@ class GlfQGLPlatformDebugContext;
 
 TF_DECLARE_WEAK_PTRS(GlfQGLDebugContext);
 
+/// \class GlfQGLDebugContext
+///
 /// Extends QGLContext to support OpenGL Debug Output.
 ///
 /// Unextended Qt does not support the creation of a GL context that
@@ -47,13 +49,18 @@ public:
     typedef QGLContext Parent;
 
 public:
+    GLFQ_API
     GlfQGLDebugContext(const QGLFormat & format);
+    GLFQ_API
     virtual ~GlfQGLDebugContext();
 
     // QGLContext overrides
+    GLFQ_API
     virtual bool create(const QGLContext * shareContext);
+    GLFQ_API
     virtual void makeCurrent();
 #if defined(ARCH_OS_DARWIN)
+    GLFQ_API
     virtual void* chooseMacVisual(GDHandle handle);
 #endif
 

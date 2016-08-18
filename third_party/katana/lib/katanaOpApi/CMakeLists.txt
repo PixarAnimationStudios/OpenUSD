@@ -14,6 +14,21 @@ file(GLOB cppFiles
     ${KATANA_API_SOURCE_DIR}/pystring/.cpp
 )
 
+add_definitions(
+    /DFNATTRIBUTE_STATIC
+    /DFNASSET_STATIC
+    /DFNGEOLIB_STATIC
+    /DFNGEOLIBSERVICES_STATIC
+    /DFNPLUGINMANAGER_STATIC
+    /DFNLOGGING_STATIC
+)
+
+# https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
+add_definitions("/wd4251")
+
+# https://msdn.microsoft.com/en-us/library/3tdb471s.aspx
+add_definitions("/wd4275")
+
 pxr_static_library(${PXR_PACKAGE}
     INCLUDE_DIRS
         ${KATANA_API_INCLUDE_DIRS}

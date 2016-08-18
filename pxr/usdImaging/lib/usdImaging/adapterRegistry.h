@@ -24,6 +24,7 @@
 #ifndef USD_ADAPTER_REGISTRY_H
 #define USD_ADAPTER_REGISTRY_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
@@ -38,10 +39,14 @@ typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens, 
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens,
+                         USDIMAGING_API,
                          USD_IMAGING_ADAPTER_KEY_TOKENS);
 
+/// \class UsdImagingAdapterRegistry
+///
 /// Registry of PrimAdapter plug-ins.
+///
 class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry> 
 {
     friend class TfSingleton<UsdImagingAdapterRegistry>;

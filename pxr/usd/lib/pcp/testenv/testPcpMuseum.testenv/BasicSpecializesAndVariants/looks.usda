@@ -1,0 +1,25 @@
+#usda 1.0
+
+def "Looks"
+{
+    class "Metal" (
+        variantSets = ["v"]
+    )
+    {
+        variantSet "v" = {
+            "from_metal" {
+            }
+            "from_brass" {
+            }
+        }
+    }
+
+    def "Brass" (
+        specializes = </Looks/Metal>
+        variants = {
+            string "v" = "from_brass"
+        }
+    )
+    {
+    }
+}

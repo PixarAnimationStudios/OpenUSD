@@ -33,8 +33,12 @@
 
 #include <cstdio>
 #include <iostream>
+#if defined(ARCH_OS_WINDOWS)
+#include <ciso646>
+#else
 #include <unistd.h>
 #include <sys/param.h>
+#endif
 
 using std::string;
 using std::vector;
@@ -95,7 +99,7 @@ TfLogStackTrace(const std::string &reason, bool logtodb)
     int fd = _MakeStackFile(&tmpFile);
 
     if (fd != -1) {
-        FILE* fout = fdopen(fd, "w");
+		FILE* fout = ArchFdOpen(fd, "w");
         fprintf(stderr, "Writing stack for %s to %s because of %s.\n",
             ArchGetProgramNameForErrors(),
             tmpFile.c_str(), reason.c_str());

@@ -1,0 +1,49 @@
+Loading @testPcpMuseum.testenv/TypicalReferenceToChargroupWithRename/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Group_1>
+
+Prim Stack:
+    root.usda            /Group_1
+    group.usda           /Group
+
+Child names:
+     ['Model_1']
+
+Prohibited child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </Group_1/Model_1>
+
+Prim Stack:
+    root.usda            /Group_1/Model_1
+    group.usda           /Group/Model
+    model.usda           /Model
+
+Child names:
+     ['LArm', 'SymArm']
+
+------------------------------------------------------------------------
+Results for composing </Group_1/Model_1/LArm>
+
+Prim Stack:
+    root.usda            /Group_1/Model_1/LArm
+    root.usda            /Group_1/Model_1/SymArm
+    group.usda           /Group/Model/LArm
+    group.usda           /Group/Model/SymArm
+    model.usda           /Model/LArm
+    model.usda           /Model/SymArm
+
+------------------------------------------------------------------------
+Results for composing </Group_1/Model_1/SymArm>
+
+Prim Stack:
+    root.usda            /Group_1/Model_1/SymArm
+    group.usda           /Group/Model/SymArm
+    model.usda           /Model/SymArm
+

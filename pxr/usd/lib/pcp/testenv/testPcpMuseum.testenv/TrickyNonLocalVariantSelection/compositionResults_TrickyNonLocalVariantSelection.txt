@@ -1,0 +1,24 @@
+Loading @testPcpMuseum.testenv/TrickyNonLocalVariantSelection/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    model.usda           /Model
+    model.usda           /Model{costume=basicCostume}
+
+Variant Selections:
+    {costume = basicCostume}
+
+Property names:
+     ['b']
+
+Property stacks:
+/Model.b:
+    model.usda           /Model{costume=basicCostume}.b
+

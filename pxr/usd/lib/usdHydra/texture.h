@@ -24,6 +24,9 @@
 #ifndef USDHYDRA_GENERATED_TEXTURE_H
 #define USDHYDRA_GENERATED_TEXTURE_H
 
+/// \file usdHydra/texture.h
+
+#include "pxr/usd/usdHydra/api.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +47,8 @@ class SdfAssetPath;
 // TEXTURE                                                                    //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdHydraTexture
+///
 ///
 class UsdHydraTexture : public UsdShadeShader
 {
@@ -72,15 +77,16 @@ public:
     }
 
     /// Destructor.
+    USDHYDRA_API
     virtual ~UsdHydraTexture();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
-    static const TfTokenVector &
+    USDHYDRA_API static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdHydraTexture holding the prim adhering to this
+    /// Return a UsdHydraTexture holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -89,7 +95,7 @@ public:
     /// UsdHydraTexture(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    static UsdHydraTexture
+    USDHYDRA_API static UsdHydraTexture
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -101,6 +107,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDHYDRA_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -113,6 +120,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Asset
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: @@
+    USDHYDRA_API
     UsdAttribute GetFilenameAttr() const;
 
     /// See GetFilenameAttr(), and also 
@@ -120,6 +128,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDHYDRA_API
     UsdAttribute CreateFilenameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -132,6 +141,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDHYDRA_API
     UsdAttribute GetFrameAttr() const;
 
     /// See GetFrameAttr(), and also 
@@ -139,6 +149,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDHYDRA_API
     UsdAttribute CreateFrameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -152,6 +163,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
+    USDHYDRA_API
     UsdAttribute GetTextureMemoryAttr() const;
 
     /// See GetTextureMemoryAttr(), and also 
@@ -159,6 +171,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDHYDRA_API
     UsdAttribute CreateTextureMemoryAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

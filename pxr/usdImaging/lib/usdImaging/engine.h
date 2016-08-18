@@ -23,6 +23,7 @@
 //
 #pragma once
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -44,9 +45,13 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
 
+/// \class UsdImagingEngine
+///
 /// Interface class for render engines.
+///
 class UsdImagingEngine : private boost::noncopyable {
 public:
+    USDIMAGING_API
     virtual ~UsdImagingEngine();
 
     enum DrawMode {
@@ -148,7 +153,9 @@ public:
     typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
 
     /// Support for batched drawing
+    USDIMAGING_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    USDIMAGING_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
     /// Entry point for kicking off a render
@@ -156,25 +163,31 @@ public:
 
     virtual void InvalidateBuffers() = 0;
 
+    USDIMAGING_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
     /// Helper function to extract camera state from opengl and then
     /// call SetCameraState.
+    USDIMAGING_API
     void SetCameraStateFromOpenGL();
 
     /// Helper function to extract lighting state from opengl and then
     /// call SetLights.
+    USDIMAGING_API
     virtual void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
+    USDIMAGING_API
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     /// Sets the root transform.
+    USDIMAGING_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
     /// Sets the root visibility.
+    USDIMAGING_API
     virtual void SetRootVisibility(bool isVisible);
 
     // selection highlighting
@@ -182,18 +195,22 @@ public:
     /// Sets (replaces) the list of prim paths that should be included in selection
     /// highlighting. These paths may include root paths which will be expanded
     /// internally.
+    USDIMAGING_API
     virtual void SetSelected(SdfPathVector const& paths);
 
     /// Clear the list of prim paths that should be included in selection
     /// highlighting.
+    USDIMAGING_API
     virtual void ClearSelected();
 
     /// Add a path with instanceIndex to the list of prim paths that should be
     /// included in selection highlighting. UsdImagingDelegate::ALL_INSTANCES
     /// can be used for highlighting all instances if path is an instancer.
+    USDIMAGING_API
     virtual void AddSelected(SdfPath const &path, int instanceIndex);
 
     /// Sets the selection highlighting color.
+    USDIMAGING_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
     /// Finds closest point of interesection with a frustum by rendering.
@@ -207,6 +224,7 @@ public:
     /// intersection point in world space (i.e. \p projectionMatrix and
     /// \p viewMatrix factored back out of the result).
     ///
+    USDIMAGING_API
     virtual bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -243,6 +261,7 @@ public:
     /// hits to be accumulated across multiple calls to \cTestIntersection. Hits
     /// to any single SdfPath will be overwritten on successive calls.
     ///
+    USDIMAGING_API
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -263,6 +282,7 @@ public:
     ///
     /// XXX: consider renaming to GetRprimPathFromPrimIdColor
     ///
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromPrimIdColor(
         GfVec4i const & primIdColor,
         GfVec4i const & instanceIdColor,
@@ -277,6 +297,7 @@ public:
     /// of all instances in the instancer. Note that if the instancer instances
     /// heterogeneously, instanceIndex of the prototype rprim doesn't match
     /// the absoluteInstanceIndex in the instancer (see hd/sceneDelegate.h)
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoRprimPath,
         int instanceIndex,
@@ -284,13 +305,16 @@ public:
 
     /// Returns true if the resulting image is fully converged.
     /// (otherwise, caller may need to call Render() again to refine the result)
+    USDIMAGING_API
     virtual bool IsConverged() const;
 
     /// Return the typevector of available render-graph delegate plugins.
+    USDIMAGING_API
     virtual std::vector<TfType> GetRenderGraphPlugins();
 
     /// Set the current render-graph delegate to \p type.
     /// the plugin for the type will be loaded if not yet.
+    USDIMAGING_API
     virtual bool SetRenderGraphPlugin(TfType const &type);
 
 protected:

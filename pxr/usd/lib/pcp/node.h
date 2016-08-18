@@ -24,6 +24,7 @@
 #ifndef PCP_NODE_H
 #define PCP_NODE_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -43,6 +44,8 @@ class PcpNodeRef_ChildrenReverseIterator;
 
 TF_DECLARE_WEAK_PTRS(PcpPrimIndex_Graph);
 
+/// \class PcpNode
+///
 /// PcpNode represents a node in an expression tree for compositing
 /// scene description.
 ///
@@ -107,19 +110,19 @@ public:
     /// @{
 
     /// Returns the type of arc connecting this node to its parent node.
-    PcpArcType GetArcType() const;
+    PCP_API PcpArcType GetArcType() const;
 
     /// Returns this node's immediate parent node. Will return NULL if this
     /// node is a root node.
-    PcpNodeRef GetParentNode() const;
+	PCP_API PcpNodeRef GetParentNode() const;
 
     /// Returns an iterator range over the children nodes in strongest to
     /// weakest order.
-    child_const_range GetChildrenRange() const;
+	PCP_API child_const_range GetChildrenRange() const;
 
     /// Inserts a new child node for \p site, connected to this node via
     /// \p arc.
-    PcpNodeRef InsertChild(const PcpLayerStackSite& site, const PcpArc& arc);
+	PCP_API PcpNodeRef InsertChild(const PcpLayerStackSite& site, const PcpArc& arc);
 
     /// Inserts \p subgraph as a child of this node, with the root node of
     /// \p subtree connected to this node via \p arc.
@@ -130,46 +133,46 @@ public:
     /// is the node that caused this node to be brought into the prim index.
     /// In most cases, this is the same as the parent node. For implied 
     /// inherits, the origin is the node from which this node was propagated.
-    PcpNodeRef GetOriginNode() const;
+	PCP_API PcpNodeRef GetOriginNode() const;
 
     /// Walk up to the root origin node for this node. This is the very
     /// first node that caused this node to be added to the graph. For
     /// instance, the root origin node of an implied inherit is the
     /// original inherit node.
-    PcpNodeRef GetOriginRootNode() const;
+	PCP_API PcpNodeRef GetOriginRootNode() const;
 
     /// Walk up to the root node of this expression.
-    PcpNodeRef GetRootNode() const;
+	PCP_API PcpNodeRef GetRootNode() const;
 
     /// Returns mapping function used to translate paths and values from
     /// this node to its parent node.
-    const PcpMapExpression& GetMapToParent() const;
+	PCP_API const PcpMapExpression& GetMapToParent() const;
 
     /// Returns mapping function used to translate paths and values from
     /// this node directly to the root node.
-    const PcpMapExpression& GetMapToRoot() const;
+	PCP_API const PcpMapExpression& GetMapToRoot() const;
 
     /// Returns this node's index among siblings with the same arc type
     /// at this node's origin.
-    int GetSiblingNumAtOrigin() const;
+	PCP_API int GetSiblingNumAtOrigin() const;
 
     /// Returns the absolute namespace depth of the node that introduced
     /// this node. Note that this does *not* count any variant selections.
-    int GetNamespaceDepth() const;
+	PCP_API int GetNamespaceDepth() const;
 
     /// Return the number of levels of namespace this node's site is
     /// below the level at which it was introduced by an arc.
-    int GetDepthBelowIntroduction() const;
+	PCP_API int GetDepthBelowIntroduction() const;
 
     /// Returns the path for this node's site when it was introduced.
-    SdfPath GetPathAtIntroduction() const;
+	PCP_API SdfPath GetPathAtIntroduction() const;
 
     /// Get the path that introduced this node.
     /// Specifically, this is the path the parent node had at the level
     /// of namespace where this node was added as a child.
     /// For a root node, this returns the absolute root path.
     /// See also GetDepthBelowIntroduction().
-    SdfPath GetIntroPath() const;
+	PCP_API SdfPath GetIntroPath() const;
 
     /// @} 
 
@@ -179,67 +182,67 @@ public:
     /// @{
 
     /// Get the site this node represents.
-    PcpLayerStackSite GetSite() const;
+	PCP_API PcpLayerStackSite GetSite() const;
 
     /// Returns the path for the site this node represents.
-    const SdfPath& GetPath() const;
+	PCP_API const SdfPath& GetPath() const;
 
     /// Returns the layer stack for the site this node represents.
-    const PcpLayerStackPtr& GetLayerStack() const;
+	PCP_API const PcpLayerStackPtr& GetLayerStack() const;
 
     /// Returns true if this node is a source of direct opinions.
     /// There should only be one direct node per prim index.
-    bool IsDirect() const;
+	PCP_API bool IsDirect() const;
 
     /// Returns true if this node is due to an ancestral opinion.
-    bool IsDueToAncestor() const;
+	PCP_API bool IsDueToAncestor() const;
 
     /// Get/set whether this node provides any symmetry opinions, either
     /// directly or from a namespace ancestor.
-    void SetHasSymmetry(bool hasSymmetry);
-    bool HasSymmetry() const;
+	PCP_API void SetHasSymmetry(bool hasSymmetry);
+	PCP_API bool HasSymmetry() const;
 
     /// Get/set whether this node provides any variant selection opinions,
     /// either directly or from a namespace ancestor.
-    void SetHasVariantSelections(bool hasVariantSelections);
-    bool HasVariantSelections() const;
+	PCP_API void SetHasVariantSelections(bool hasVariantSelections);
+	PCP_API bool HasVariantSelections() const;
 
     /// Get/set the permission for this node. This indicates whether specs
     /// on this node can be accessed from other nodes.
-    void SetPermission(SdfPermission perm);
-    SdfPermission GetPermission() const;
+	PCP_API void SetPermission(SdfPermission perm);
+	PCP_API SdfPermission GetPermission() const;
 
     /// Get/set whether this node is inert. An inert node never provides
     /// any opinions to a prim index. Such a node may exist purely as a
     /// marker to represent certain composition structure, but should never 
     /// contribute opinions.
-    void SetInert(bool inert);
-    bool IsInert() const;
+	PCP_API void SetInert(bool inert);
+	PCP_API bool IsInert() const;
     
     /// Get/set whether this node is culled. If a node is culled, it and
     /// all descendant nodes provide no opinions to the index. A culled
     /// node is also considered inert.
-    void SetCulled(bool culled);
-    bool IsCulled() const;
+	PCP_API void SetCulled(bool culled);
+	PCP_API bool IsCulled() const;
 
     /// Get/set whether this node is restricted. A restricted node is a
     /// node that cannot contribute opinions to the index due to permissions.
-    void SetRestricted(bool restricted);
-    bool IsRestricted() const;
+	PCP_API void SetRestricted(bool restricted);
+	PCP_API bool IsRestricted() const;
 
     /// Get/set whether this node should contribute specs for dependency
     /// tracking even if it is not allowed to contribute opinions.
-    void SetShouldContributeDependencies(bool shouldContribute);
-    bool ShouldContributeDependencies() const;
+	PCP_API void SetShouldContributeDependencies(bool shouldContribute);
+	PCP_API bool ShouldContributeDependencies() const;
 
     /// Returns true if this node is allowed to contribute opinions
     /// for composition, false otherwise.
-    bool CanContributeSpecs() const;
+	PCP_API bool CanContributeSpecs() const;
     
     /// Returns true if this node has opinions authored
     /// for composition, false otherwise.
-    void SetHasSpecs(bool hasSpecs);
-    bool HasSpecs() const;
+	PCP_API void SetHasSpecs(bool hasSpecs);
+	PCP_API bool HasSpecs() const;
 
     /// @}
 
@@ -284,8 +287,10 @@ typedef TfHashSet<PcpNodeRef, PcpNodeRef::Hash> PcpNodeRefHashSet;
 typedef std::vector<PcpNodeRef> PcpNodeRefVector;
 
 /// \class PcpNodeRef_ChildrenIterator
+///
 /// Object used to iterate over child nodes (not all descendant nodes) of a
 /// node in the prim index graph in strong-to-weak order.
+///
 class PcpNodeRef_ChildrenIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeRef_ChildrenIterator, 
@@ -327,8 +332,10 @@ private:
 };
 
 /// \class PcpNodeRef_ChildrenReverseIterator
+///
 /// Object used to iterate over nodes in the prim index graph in weak-to-strong
 /// order.
+///
 class PcpNodeRef_ChildrenReverseIterator
     : public boost::iterator_facade<
                  /* Derived =   */ PcpNodeRef_ChildrenReverseIterator, 

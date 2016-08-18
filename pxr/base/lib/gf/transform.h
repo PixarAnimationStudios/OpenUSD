@@ -24,73 +24,67 @@
 #ifndef GF_TRANSFORM_H
 #define GF_TRANSFORM_H
 
+/// \file gf/transform.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
 class GfMatrix4d;
 
-/*!
- * \file transform.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-//!
-// \class GfTransform transform.h "pxr/base/gf/transform.h"
-// \ingroup group_gf_LinearAlgebra
-// \brief Basic type: Compound linear transformation.
-//
-// This class represents a linear transformation specified as a series
-// of individual components: a \em translation, a \em rotation, a \em
-// scale, a \em pivotPosition, and a \em pivotOrientation.  When
-// applied to a point, the point will be transformed as follows (in
-// order):
-//
-//      - Scaled by the \em scale with respect to \em pivotPosition and 
-//          the orientation specified by the \em pivotOrientation.
-//      - Rotated by the \em rotation about \em pivotPosition.
-//      - Translated by \em Translation
-//
-// That is, the cumulative matrix that this represents looks like this.
-//
-// \code
-// M = -P * -O * S * O * R * P * T
-// \endcode
-//
-// where
-//      - \em T is the \em translation matrix
-//      - \em P is the matrix that translates by \em pivotPosition
-//      - \em R is the \em rotation matrix
-//      - \em O is the matrix that rotates to \em pivotOrientation
-//      - \em S is the \em scale matrix
-//
-
+/// \class GfTransform
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type: Compound linear transformation.
+///
+/// This class represents a linear transformation specified as a series of
+/// individual components: a \em translation, a \em rotation, a \em scale, a
+/// \em pivotPosition, and a \em pivotOrientation.  When applied to a point,
+/// the point will be transformed as follows (in order):
+///
+/// \li Scaled by the \em scale with respect to \em pivotPosition and the
+/// orientation specified by the \em pivotOrientation.
+/// \li Rotated by the \em rotation about \em pivotPosition.
+/// \li Translated by \em Translation
+///
+/// That is, the cumulative matrix that this represents looks like this.
+///
+/// \code
+/// M = -P * -O * S * O * R * P * T
+/// \endcode
+///
+/// where
+/// \li \em T is the \em translation matrix
+/// \li \em P is the matrix that translates by \em pivotPosition
+/// \li \em R is the \em rotation matrix
+/// \li \em O is the matrix that rotates to \em pivotOrientation
+/// \li \em S is the \em scale matrix
+///
 class GfTransform {
 
   public:
 
-    //!
-    // The default constructor sets the component values to the
-    // identity transformation.
+    /// The default constructor sets the component values to the
+    /// identity transformation.
     GfTransform() {
-	SetIdentity();
+        SetIdentity();
     }
 
-    //!
-    // This constructor initializes the transformation from all
-    // component values.  This is the constructor used by 2x code.
+    /// This constructor initializes the transformation from all
+    /// component values.  This is the constructor used by 2x code.
     GfTransform(const GfVec3d &scale,
-		const GfRotation &pivotOrientation,
-		const GfRotation &rotation,
-		const GfVec3d &pivotPosition,
-		const GfVec3d &translation) {
-	Set(scale, pivotOrientation, rotation, pivotPosition, translation);
+                const GfRotation &pivotOrientation,
+                const GfRotation &rotation,
+                const GfVec3d &pivotPosition,
+                const GfVec3d &translation) {
+        Set(scale, pivotOrientation, rotation, pivotPosition, translation);
     }
 
-    //!
-    // This constructor initializes the transformation from all
-    // component values.  This is the constructor used by 3x code.
+    /// This constructor initializes the transformation from all
+    /// component values.  This is the constructor used by 3x code.
     GfTransform(const GfVec3d &translation,
                 const GfRotation &rotation,
                 const GfVec3d &scale,
@@ -99,26 +93,24 @@ class GfTransform {
         Set(translation, rotation, scale, pivotPosition, pivotOrientation);
     }
 
-    //!
-    // This constructor initializes the transformation with a matrix.  See
-    // SetMatrix() for more information.
+    /// This constructor initializes the transformation with a matrix.  See
+    /// SetMatrix() for more information.
     GfTransform(const GfMatrix4d &m) {
         SetIdentity();
         SetMatrix(m);
     }
 
-    //!
-    // Sets the transformation from all component values.
-    // This constructor orders its arguments the way that 2x expects.
-    GfTransform &	Set(const GfVec3d &scale,
-			    const GfRotation &pivotOrientation,
-			    const GfRotation &rotation,
-			    const GfVec3d &pivotPosition,
-			    const GfVec3d &translation);
+    /// Sets the transformation from all component values.
+    /// This constructor orders its arguments the way that 2x expects.
+    GF_API
+    GfTransform &       Set(const GfVec3d &scale,
+                            const GfRotation &pivotOrientation,
+                            const GfRotation &rotation,
+                            const GfVec3d &pivotPosition,
+                            const GfVec3d &translation);
 
-    //!
-    // Sets the transformation from all component values.
-    // This constructor orders its arguments the way that 3x expects.
+    /// Sets the transformation from all component values.
+    /// This constructor orders its arguments the way that 3x expects.
     GfTransform &       Set(const GfVec3d &translation,
                             const GfRotation &rotation,
                             const GfVec3d &scale,
@@ -128,145 +120,128 @@ class GfTransform {
                    pivotPosition, translation);
     }
 
-    //!
-    // Sets the transform components to implement the transformation
-    // represented by matrix \p m , ignoring any projection. This
-    // tries to leave the current center unchanged.
-    GfTransform &	SetMatrix(const GfMatrix4d &m);
+    /// Sets the transform components to implement the transformation
+    /// represented by matrix \p m , ignoring any projection. This tries to
+    /// leave the current center unchanged.
+    GF_API
+    GfTransform &       SetMatrix(const GfMatrix4d &m);
 
-    //!
-    // Sets the transformation to the identity transformation.
-    GfTransform &	SetIdentity();
+    /// Sets the transformation to the identity transformation.
+    GF_API
+    GfTransform &       SetIdentity();
 
-    //!
-    // Sets the scale component, leaving all others untouched.
-    void		SetScale(const GfVec3d &scale) {
-	_scale = scale;
+    /// Sets the scale component, leaving all others untouched.
+    void                SetScale(const GfVec3d &scale) {
+        _scale = scale;
     }
 
-    //!
-    // Sets the pivot orientation component, leaving all others untouched.
-    void		SetPivotOrientation(const GfRotation &pivotOrient) {
-	_pivotOrientation = pivotOrient;
+    /// Sets the pivot orientation component, leaving all others untouched.
+    void                SetPivotOrientation(const GfRotation &pivotOrient) {
+        _pivotOrientation = pivotOrient;
     }
 
-    //!
-    // Sets the pivot orientation component, leaving all others untouched.
-    void		SetScaleOrientation(const GfRotation &pivotOrient) {
+    /// Sets the pivot orientation component, leaving all others untouched.
+    void                SetScaleOrientation(const GfRotation &pivotOrient) {
         SetPivotOrientation(pivotOrient);
     }
 
-    //!
-    // Sets the rotation component, leaving all others untouched.
-    void		SetRotation(const GfRotation &rotation) {
-	_rotation = rotation;
+    /// Sets the rotation component, leaving all others untouched.
+    void                SetRotation(const GfRotation &rotation) {
+        _rotation = rotation;
     }
 
-    //!
-    // Sets the pivot position component, leaving all others untouched.
+    /// Sets the pivot position component, leaving all others untouched.
     void                SetPivotPosition(const GfVec3d &pivPos) {
         _pivotPosition = pivPos;
     }
 
-    //!
-    // Sets the pivot position component, leaving all others untouched.
+    /// Sets the pivot position component, leaving all others untouched.
     void                SetCenter(const GfVec3d &pivPos) {
         SetPivotPosition(pivPos);
     }
 
-    //!
-    // Sets the translation component, leaving all others untouched.
-    void		SetTranslation(const GfVec3d &translation) {
-	_translation = translation;
+    /// Sets the translation component, leaving all others untouched.
+    void                SetTranslation(const GfVec3d &translation) {
+        _translation = translation;
     }
 
-    //!
-    // Returns the scale component.
-    const GfVec3d &	GetScale() const {
-	return _scale;
+    /// Returns the scale component.
+    const GfVec3d &     GetScale() const {
+        return _scale;
     }
 
-    //!
-    // Returns the pivot orientation component.
-    const GfRotation &	GetPivotOrientation() const {
-	return _pivotOrientation;
+    /// Returns the pivot orientation component.
+    const GfRotation &  GetPivotOrientation() const {
+        return _pivotOrientation;
     }
 
-    //!
-    // Returns the scale orientation component.
-    const GfRotation &	GetScaleOrientation() const {
-	return GetPivotOrientation();
+    /// Returns the scale orientation component.
+    const GfRotation &  GetScaleOrientation() const {
+        return GetPivotOrientation();
     }
 
-    //!
-    // Returns the rotation component.
-    const GfRotation &	GetRotation() const {
-	return _rotation;
+    /// Returns the rotation component.
+    const GfRotation &  GetRotation() const {
+        return _rotation;
     }
 
-    //!
-    // Returns the pivot position component.
-    const GfVec3d &	GetPivotPosition() const {
-	return _pivotPosition;
+    /// Returns the pivot position component.
+    const GfVec3d &     GetPivotPosition() const {
+        return _pivotPosition;
     }
 
-    //!
-    // Returns the pivot position component.
-    const GfVec3d &	GetCenter() const {
-	return GetPivotPosition();
+    /// Returns the pivot position component.
+    const GfVec3d &     GetCenter() const {
+        return GetPivotPosition();
     }
 
-    //!
-    // Returns the translation component.
-    const GfVec3d &	GetTranslation() const {
-	return _translation;
+    /// Returns the translation component.
+    const GfVec3d &     GetTranslation() const {
+        return _translation;
     }
 
-    //!
-    // Returns a \c GfMatrix4d that implements the cumulative
-    // transformation.
-    GfMatrix4d		GetMatrix() const;
+    /// Returns a \c GfMatrix4d that implements the cumulative transformation.
+    GF_API
+    GfMatrix4d          GetMatrix() const;
 
-    //!
-    // Component-wise transform equality test. All components must
-    // match exactly for transforms to be considered equal.
-    bool		operator ==(const GfTransform &xf) const;
+    /// Component-wise transform equality test. All components must match
+    /// exactly for transforms to be considered equal.
+    GF_API
+    bool                operator ==(const GfTransform &xf) const;
 
-    //!
-    // Component-wise transform inequality test. All components must
-    // match exactly for transforms to be considered equal.
-    bool		operator !=(const GfTransform &xf) const {
-	return ! (*this == xf);
+    /// Component-wise transform inequality test. All components must match
+    /// exactly for transforms to be considered equal.
+    bool                operator !=(const GfTransform &xf) const {
+        return ! (*this == xf);
     }
 
-    //!
-    // Post-multiplies transform \p xf into this transform.
-    GfTransform &	operator *=(const GfTransform &xf);
+    /// Post-multiplies transform \p xf into this transform.
+    GF_API
+    GfTransform &       operator *=(const GfTransform &xf);
 
-    //!
-    // Returns the product of transforms \p xf1 and \p xf2 .
-    friend GfTransform	operator *(const GfTransform &xf1,
-				   const GfTransform &xf2) {
-	GfTransform xf = xf1;
-	return xf *= xf2;
+    /// Returns the product of transforms \p xf1 and \p xf2.
+    friend GfTransform  operator *(const GfTransform &xf1,
+                                   const GfTransform &xf2) {
+        GfTransform xf = xf1;
+        return xf *= xf2;
     }
 
   private:
-    //! translation
+    /// translation
     GfVec3d             _translation;
-    //! rotation
+    /// rotation
     GfRotation          _rotation;
-    //! scale factors
+    /// scale factors
     GfVec3d             _scale;
-    //! orientation used for scaling and rotation
+    /// orientation used for scaling and rotation
     GfRotation          _pivotOrientation;
-    //! center of rotation and scaling
+    /// center of rotation and scaling
     GfVec3d             _pivotPosition;
 };
 
 /// Output a GfTransform using the format 
 /// [scale, scaleorientation, rotation, center, translation].
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream&, const GfTransform&);
+GF_API std::ostream& operator<<(std::ostream&, const GfTransform&);
 
 #endif // GF_TRANSFORM_H

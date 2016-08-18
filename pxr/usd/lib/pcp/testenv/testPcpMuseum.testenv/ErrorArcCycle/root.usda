@@ -1,0 +1,101 @@
+#usda 1.0
+(
+    """
+    This example has a prim, GroupRoot, with a reference to
+    A.usda. It references B.usda, which references A.usda
+    again, causing a cycle.
+
+    There is another prim, Parent, which has two children
+    that inherit from each other, causing an inheritance cycle.
+
+    Next, there's AnotherParent, which has a child,
+    AnotherChild. AnotherChild references Model which references
+    AnotherParent, causing an ancestral reference cycle.
+
+    Next, there's YetAnotherParent, which has a child "Child"
+    that inherits YetAnotherParent.
+
+    Next, there's a pair of CoRecursiveParent prims.
+    """
+)
+
+def "GroupRoot" (
+    add references = @A.usda@</GroupA>
+)
+{
+}
+def "Parent" 
+{
+    over "Child1" (
+        add inherits = </Parent/Child2>
+    )
+    {
+    }
+    over "Child2" (
+        add inherits = </Parent/Child1>
+    )
+    {
+    }
+}
+def "AnotherParent" 
+{
+    over "AnotherChild" (
+        add references = @model.usda@</Model>
+    )
+    {
+    }
+}
+
+def "YetAnotherParent" 
+{
+    over "Child" (
+        add inherits = </YetAnotherParent>
+    )
+    {
+    }
+}
+
+def "CoRecursiveParent1" 
+{
+    over "Child1" (
+        add inherits = </CoRecursiveParent2>
+    )
+    {
+    }
+}
+def "CoRecursiveParent2" 
+{
+    over "Child2" (
+        add inherits = </CoRecursiveParent1>
+    )
+    {
+    }
+}
+
+def "InheritOfChild" (
+    add inherits = <Child>
+)
+{
+    class "Child"
+    {
+    }
+}
+
+def "RelocatedInheritOfChild" (
+    relocates = {
+        <Child/Object> : <Object>
+    }
+)
+{
+    def "Child" (
+        inherits = </RelocatedInheritOfChild/Child/Class>
+    )
+    {
+        class "Class"
+        {
+            def "Object"
+            {
+            }
+        }
+    }
+}

@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #define ADDITION_OPERATOR
-#include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/typeHeaders.h"
 
 #include <string>
 using std::string;

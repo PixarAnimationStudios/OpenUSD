@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_STAGEDATA_H
 #define PXRUSDMAYA_STAGEDATA_H
 
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <maya/MPxGeometryData.h>
@@ -59,6 +60,7 @@ class UsdMayaStageData : public MPxGeometryData {
         /**
          * creator method
          */
+        USDMAYA_API
         static void* creator(
                 const PluginStaticData& _psData);
 

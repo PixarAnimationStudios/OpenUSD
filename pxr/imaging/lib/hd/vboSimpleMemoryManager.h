@@ -25,6 +25,7 @@
 #define HD_VBO_SIMPLE_MEMORY_MANAGER_H
 
 #include "pxr/base/tf/singleton.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/bufferArray.h"
@@ -32,8 +33,12 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
-/// VBO simple memory manager
+/// \class HdVBOSimpleMemoryManager
+///
+/// VBO simple memory manager.
+///
 /// This class doesn't perform any aggregation.
+///
 class HdVBOSimpleMemoryManager : public HdAggregationStrategy {
 public:
     /// Factory for creating HdBufferArray managed by
@@ -58,7 +63,10 @@ protected:
     friend class TfSingleton<HdVBOSimpleMemoryManager>;
     class _SimpleBufferArray;
 
-    /// specialized buffer array range for SimpleBufferArray
+    /// \class _SimpleBufferArrayRange
+    ///
+    /// Specialized buffer array range for SimpleBufferArray.
+    ///
     class _SimpleBufferArrayRange : public HdBufferArrayRange
     {
     public:
@@ -153,7 +161,10 @@ protected:
     typedef boost::weak_ptr<_SimpleBufferArrayRange>
         _SimpleBufferArrayRangePtr;
 
-    /// Simple buffer array (non-aggregated)
+    /// \class _SimpleBufferArray
+    ///
+    /// Simple buffer array (non-aggregated).
+    ///
     class _SimpleBufferArray : public HdBufferArray
     {
     public:
@@ -200,6 +211,5 @@ protected:
         }
     };
 };
-
 
 #endif  // HD_VBO_SIMPLE_MEMORY_MANAGER_H

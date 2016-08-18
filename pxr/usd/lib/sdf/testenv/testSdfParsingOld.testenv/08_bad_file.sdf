@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    """Tests for error condition while scanning string values."""
+)
+
+def MfScope "Root" {
+    string value = "This is an unterminated string;
+}

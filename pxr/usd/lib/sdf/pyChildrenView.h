@@ -21,16 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyChildrenView.h
-
 #ifndef SDF_PYCHILDRENVIEW_H
 #define SDF_PYCHILDRENVIEW_H
+
+/// \file sdf/pyChildrenView.h
+
+#include <boost/python.hpp>
 
 #include "pxr/usd/sdf/childrenView.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
 
 template <class _View>
 class SdfPyWrapChildrenView {

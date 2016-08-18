@@ -32,10 +32,13 @@
 
 #include <string>
 #include <typeinfo>
+#include <ciso646>
 
 /// \class ArIsContextObject
+///
 /// Metafunction to determine whether the templated object type is a
 /// valid context object.
+///
 template <class T>
 struct ArIsContextObject
 {
@@ -47,6 +50,7 @@ template <class Context>
 std::string ArGetDebugString(const Context& context); 
 
 /// \class ArResolverContext
+///
 /// An asset resolver context allows clients to provide additional data
 /// to the resolver for use during resolution. Clients may provide this
 /// data via a context object of their own (subject to restrictions below).
@@ -78,7 +82,7 @@ std::string ArGetDebugString(const Context& context);
 /// \sa ArResolver::BindContext
 /// \sa ArResolver::UnbindContext
 /// \sa ArResolverContextBinder
-class AR_API ArResolverContext
+class ArResolverContext
 {
 public:
     /// Construct an empty asset resolver context.

@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/tuple.hpp>
+
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -28,10 +32,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/tuple.hpp>
 
 #include <string>
 #include <vector>

@@ -1,0 +1,89 @@
+Loading @testPcpMuseum.testenv/BasicRelocateToAnimInterface/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    charRig.usda         /CharRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </Model/Anim>
+
+Prim Stack:
+    root.usda            /Model/Anim
+    charRig.usda         /CharRig/Anim
+
+Child names:
+     ['Path']
+
+------------------------------------------------------------------------
+Results for composing </Model/Anim/Path>
+
+Prim Stack:
+    root.usda            /Model/Anim/Path
+    charRig.usda         /CharRig/Anim/Path
+    pathRig.usda         /PathRig/Path
+
+Child names:
+     ['AnimScope']
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Model/Anim/Path/AnimScope>
+
+Prim Stack:
+    root.usda            /Model/Anim/Path/AnimScope
+    charRig.usda         /CharRig/Anim/Path/AnimScope
+    pathRig.usda         /PathRig/Path/Anim
+
+Property names:
+     ['track']
+
+Property stacks:
+/Model/Anim/Path/AnimScope.track:
+    root.usda            /Model/Anim/Path/AnimScope.track
+    charRig.usda         /CharRig/Anim/Path/AnimScope.track
+    pathRig.usda         /PathRig/Path/Anim.track
+
+------------------------------------------------------------------------
+Results for composing </Model/Rig>
+
+Prim Stack:
+    root.usda            /Model/Rig
+    charRig.usda         /CharRig/Rig
+
+Child names:
+     ['PathRig']
+
+------------------------------------------------------------------------
+Results for composing </Model/Rig/PathRig>
+
+Prim Stack:
+    root.usda            /Model/Rig/PathRig
+    charRig.usda         /CharRig/Rig/PathRig
+    pathRig.usda         /PathRig
+
+Prohibited child names:
+     ['Path']
+
+Property names:
+     ['relationshipToPathAvar']
+
+Property stacks:
+/Model/Rig/PathRig.relationshipToPathAvar:
+    pathRig.usda         /PathRig.relationshipToPathAvar
+
+Relationship targets:
+/Model/Rig/PathRig.relationshipToPathAvar:
+    /Model/Anim/Path/AnimScope.track
+

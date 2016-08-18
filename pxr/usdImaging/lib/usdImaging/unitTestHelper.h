@@ -37,6 +37,8 @@
 
 typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 
+/// \class UsdImaging_TestDriver
+///
 /// A unit test driver that exercises the core engine.
 ///
 /// \note This test driver does NOT assume OpenGL is available; in the even

@@ -24,6 +24,7 @@
 #ifndef USD_TREEITERATOR_H
 #define USD_TREEITERATOR_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -31,10 +32,10 @@
 #include <vector>
 #include <iterator>
 
-
 /// \class UsdTreeIterator
-/// \brief An object with iterator semantics that will traverse the subtree
-/// of prims rooted at a given prim.
+///
+/// An object with iterator semantics that will traverse the subtree of prims
+/// rooted at a given prim.
 ///
 /// In addition to providing an alternative to UsdPrim::GetChildren()-based
 /// recursion, UsdTreeIterator provides a compact expression for performing
@@ -98,6 +99,7 @@
 /// Finally, since iterators in python are not directly dereferencable, we
 /// provide the \em python \em only methods GetCurrentPrim() and IsValid(),
 /// documented in the python help system.
+///
 class UsdTreeIterator : public boost::iterator_adaptor<
     UsdTreeIterator,               // crtp base.
     Usd_PrimDataConstPtr,          // base iterator.
@@ -165,7 +167,7 @@ public:
     /// Create a TreeIterator that traverses all the prims on \p stage, and
     /// visits those that pass the "canonical" predicate (as defined by
     /// UsdPrim::GetChildren()) with pre-order visitation.
-    static UsdTreeIterator
+	USD_API static UsdTreeIterator
     Stage(const UsdStagePtr &stage,
           const Usd_PrimFlagsPredicate &predicate=
           (UsdPrimIsActive and UsdPrimIsDefined and
@@ -202,7 +204,7 @@ public:
 
     /// Behave as if the current prim has no children when next advanced.  Issue
     /// an error if this is a pre- and post-order iterator that IsPostVisit().
-    void PruneChildren();
+	USD_API void PruneChildren();
 
 private:
     UsdTreeIterator(Usd_PrimDataConstPtr start,
@@ -249,8 +251,8 @@ private:
             _isPost == other._isPost;
     }
 
-    void increment();
-    reference dereference() const { return UsdPrim(base()); }
+	USD_API void increment();
+	USD_API reference dereference() const { return UsdPrim(base()); }
 
     ////////////////////////////////////////////////////////////////////////
     // Data members.

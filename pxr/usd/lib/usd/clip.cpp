@@ -426,7 +426,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
 
     boost::optional<ExternalTime> translatedLower, translatedUpper;
 
-    for (int i1 = m1, i2 = m2; i1 >= 0 and i2 >= 0; --i1, --i2) {
+    for (int i1 = static_cast<int>(m1), i2 = static_cast<int>(m2); i1 >= 0 and i2 >= 0; --i1, --i2) {
         const TimeMapping& map1 = times[i1];
         const TimeMapping& map2 = times[i2];
 
@@ -518,7 +518,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
     //
     // To deal with this, every internal time sample has to be checked 
     // against the entire mapping function.
-    BOOST_FOREACH(InternalTime t, timeSamplesInClip) {
+    for (InternalTime t: timeSamplesInClip) {
         for (size_t i = 0; i < times.size() - 1; ++i) {
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
@@ -534,7 +534,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
     // apply the same clamping behavior as GetBracketingTimeSamples to
     // maintain consistency.
     if (timeSamples.empty()) {
-        BOOST_FOREACH(InternalTime t, timeSamplesInClip) {
+        for (InternalTime t: timeSamplesInClip) {
             if (t < times.front().second) {
                 timeSamples.insert(times.front().first);
             }

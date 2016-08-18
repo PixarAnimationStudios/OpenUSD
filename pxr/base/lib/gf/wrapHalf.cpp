@@ -28,6 +28,8 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/converter/from_python.hpp>
 
+#include <ciso646>
+
 using namespace boost::python;
 
 namespace {

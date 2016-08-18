@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_JOBARGS_H
 #define PXRUSDMAYA_JOBARGS_H
 
+#include "usdMaya/api.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"
@@ -36,7 +37,7 @@
     (currentLayer) \
     (modelingVariant)
 
-TF_DECLARE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, 
+TF_DECLARE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, USDMAYA_API,
         PXRUSDMAYA_JOBARGS_TOKENS);
 
 struct JobExportArgs

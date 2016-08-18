@@ -26,6 +26,15 @@
 
 #define BOOST_PYTHON_MAX_ARITY 20
 
+#include <boost/python/class.hpp>
+#include <boost/python/detail/api_placeholder.hpp>
+#include <boost/python/errors.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/return_arg.hpp>
+#include <boost/python/tuple.hpp>
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 
@@ -37,15 +46,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include <boost/python/class.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
 
 #include <string>
 #include <vector>

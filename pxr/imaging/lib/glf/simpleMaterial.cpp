@@ -23,9 +23,9 @@
 //
 /// \file simpleMaterial.cpp
 
+#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/imaging/garch/gl.h"
 
 GlfSimpleMaterial::GlfSimpleMaterial() :
     _ambient(0.2, 0.2, 0.2, 1),

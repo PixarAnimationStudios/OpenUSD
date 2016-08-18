@@ -24,16 +24,20 @@
 #ifndef SDF_PYLISTOP_H
 #define SDF_PYLISTOP_H
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/listOp.h"
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
 
 /// \class SdfPyWrapListOp<T>
+///
 /// Helper class for wrapping SdfListOp objects for Python. The template
-/// parameter is the specific SdfListOp type being wrapped (e.g., SdfPathListOp)
+/// parameter is the specific SdfListOp type being wrapped (e.g.,
+/// SdfPathListOp)
+///
 template <class T>
 class SdfPyWrapListOp {
 public:

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/specType.cpp
-
 #ifndef SDF_SPECTYPE_H
 #define SDF_SPECTYPE_H
+
+/// \file sdf/specType.h
 
 #include "pxr/usd/sdf/types.h"
 
@@ -35,6 +35,7 @@ class SdfSpec;
 class TfType;
 
 /// \class SdfSpecTypeRegistration
+///
 /// Provides functions to register spec types with the runtime typing system
 /// used to cast between C++ spec types. Implementations of C++ spec types
 /// should use as follows:
@@ -48,6 +49,7 @@ class TfType;
 /// TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration) {
 ///    SdfSpecTypeRegistration::RegisterAbstractSpecType<MyPropertySpec>();
 /// }
+///
 class SdfSpecTypeRegistration
 {
 public:

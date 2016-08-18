@@ -1,0 +1,111 @@
+#usda 1.0
+(
+    endFrame = 40
+    startFrame = 1
+)
+
+def Scope "World"
+{
+    def BasisCurves "BSplineOpen"
+    {
+        uniform token basis = "bspline"
+        int[] curveVertexCounts = [4]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, 5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "BSplineClosed"
+    {
+        uniform token basis = "bspline"
+        int[] curveVertexCounts = [4]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        uniform token wrap = "periodic"
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-5, 0, 5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "BezierOpen"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, 2, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "BezierClosedBad"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        uniform token wrap = "periodic"
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-5, 0, 2, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "BezierClosed"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [6]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(1, 0, -1), (0, 0, -0.5), (0, 0, 0.5), (1, 0, 1), (1, 0, 0.5), (1.5, 0, 0.4)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        uniform token wrap = "periodic"
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 0, 2, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "LinearOpen"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "linear"
+        float[] widths = [0.2]
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, -1, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "LinearClosed"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        PointFloat[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "linear"
+        float[] widths = [0.2]
+        uniform token wrap = "periodic"
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-5, 0, -1, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+

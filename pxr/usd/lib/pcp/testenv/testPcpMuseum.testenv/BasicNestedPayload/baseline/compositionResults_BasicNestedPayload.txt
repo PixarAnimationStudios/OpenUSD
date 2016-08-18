@@ -1,0 +1,130 @@
+Loading @testPcpMuseum.testenv/BasicNestedPayload/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Set>
+
+Prim Stack:
+    root.usda            /Set
+    set.usda             /Set
+    set_payload.usda     /Set
+
+Child names:
+     ['Prop']
+
+------------------------------------------------------------------------
+Results for composing </Set/Prop>
+
+Prim Stack:
+    set.usda             /Set/Prop
+    set_payload.usda     /Set/Prop
+    prop.usda            /Prop
+    prop_payload.usda    /Prop
+
+Child names:
+     ['PropScope']
+
+------------------------------------------------------------------------
+Results for composing </Set/Prop/PropScope>
+
+Prim Stack:
+    set.usda             /Set/Prop/PropScope
+    set_payload.usda     /Set/Prop/PropScope
+    prop.usda            /Prop/PropScope
+    prop_payload.usda    /Prop/PropScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set/Prop/PropScope.x:
+    set_payload.usda     /Set/Prop/PropScope.x
+    prop_payload.usda    /Prop/PropScope.x
+
+------------------------------------------------------------------------
+Results for composing </Set2>
+
+Prim Stack:
+    root.usda            /Set2
+    set_payload.usda     /Set
+
+Child names:
+     ['Prop']
+
+------------------------------------------------------------------------
+Results for composing </Set2/Prop>
+
+Prim Stack:
+    root.usda            /Set2/Prop
+    prop_payload.usda    /Prop
+    set_payload.usda     /Set/Prop
+    prop.usda            /Prop
+    prop_payload.usda    /Prop
+
+Child names:
+     ['PropScope']
+
+------------------------------------------------------------------------
+Results for composing </Set2/Prop/PropScope>
+
+Prim Stack:
+    prop_payload.usda    /Prop/PropScope
+    set_payload.usda     /Set/Prop/PropScope
+    prop.usda            /Prop/PropScope
+    prop_payload.usda    /Prop/PropScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set2/Prop/PropScope.x:
+    prop_payload.usda    /Prop/PropScope.x
+    set_payload.usda     /Set/Prop/PropScope.x
+    prop_payload.usda    /Prop/PropScope.x
+
+------------------------------------------------------------------------
+Results for composing </Set3>
+
+Prim Stack:
+    root.usda            /Set3
+    set.usda             /Set
+    set_payload.usda     /Set
+
+Child names:
+     ['Prop']
+
+------------------------------------------------------------------------
+Results for composing </Set3/Prop>
+
+Prim Stack:
+    root.usda            /Set3/Prop
+    set.usda             /Set/Prop
+    set_payload.usda     /Set/Prop
+    prop.usda            /Prop
+    prop_payload.usda    /Prop
+
+Child names:
+     ['PropScope']
+
+------------------------------------------------------------------------
+Results for composing </Set3/Prop/PropScope>
+
+Prim Stack:
+    root.usda            /Set3/Prop/PropScope
+    set.usda             /Set/Prop/PropScope
+    set_payload.usda     /Set/Prop/PropScope
+    prop.usda            /Prop/PropScope
+    prop_payload.usda    /Prop/PropScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set3/Prop/PropScope.x:
+    root.usda            /Set3/Prop/PropScope.x
+    set_payload.usda     /Set/Prop/PropScope.x
+    prop_payload.usda    /Prop/PropScope.x
+

@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    """
+    This exercises classes nested in namespace.
+
+    The model inherits a global class.
+    The global class contains a local class,
+    which contains an additional local class.
+    """
+)
+
+def "Model_1" (
+    add references = @model.usda@</Model>
+)
+{
+    over "_class_Nested" {
+        over "Sym" {
+        }
+        over "Left" {
+        }
+    }
+    over "Instance" {
+        over "Sym" {
+        }
+        over "Left" {
+        }
+    }
+}

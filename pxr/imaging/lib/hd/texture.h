@@ -24,6 +24,7 @@
 #ifndef HD_TEXTURE_H
 #define HD_TEXTURE_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -39,10 +40,12 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 
-/// XXX: Docs
+// XXX: Docs
 class HdTexture {
 public:
+    HDLIB_API
     HdTexture(HdSceneDelegate* delegate, SdfPath const & id);
+    HDLIB_API
     virtual ~HdTexture();
 
     /// Returns the HdSceneDelegate which backs this texture.
@@ -55,6 +58,7 @@ public:
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
+    HDLIB_API
     void Sync();
 
     // ---------------------------------------------------------------------- //
@@ -62,12 +66,15 @@ public:
     // ---------------------------------------------------------------------- //
     
     /// Returns the binary data for the texture.
+    HDLIB_API
     HdTextureResourceSharedPtr GetTextureData() const;
 
     /// Returns true if the texture should be interpreted as a PTex texture.
+    HDLIB_API
     bool IsPtex() const;
 
     /// Returns true if mipmaps should be generated when loading.
+    HDLIB_API
     bool ShouldGenerateMipMaps() const;
 
 private:

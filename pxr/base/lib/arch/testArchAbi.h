@@ -22,8 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #if defined(_WIN32)
+#include "pxr/base/arch/defines.h"
+
+#if defined(ARCH_OS_WINDOWS)
 #ifndef ARCH_ABI_API
-#define ARCH_ABI_API __declspec(dllimport)
+#define ARCH_ABI_API ARCH_EXPORT
 #endif
 #else
 #define ARCH_ABI_API __attribute__((visibility("default")))

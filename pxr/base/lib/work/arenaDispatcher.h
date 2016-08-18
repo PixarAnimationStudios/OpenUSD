@@ -24,11 +24,11 @@
 #ifndef WORK_ARENA_DISPATCHER_H
 #define WORK_ARENA_DISPATCHER_H
 
-///
-///\file work/arenaDispatcher.h
+/// \file work/arenaDispatcher.h
 
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/threadLimits.h"
+#include "pxr/base/work/api.h"
 
 #include <tbb/task_arena.h>
 
@@ -36,16 +36,15 @@
 #include <type_traits>
 #include <utility>
 
-
 /// \class WorkArenaDispatcher
 ///
-/// This is a specialization of the WorkDispatcher. It uses an isolated arena
+/// This is a specialization of the WorkDispatcher that uses an isolated arena
 /// to Run() all its tasks in. The WorkArenaDispatcher is useful where it must
-/// be guaranteed that a specific set of tasks shall not be stolen by any other
-/// dispatcher, or where stealing from other dispatchers could cause lock
-/// dependencies that may lead to deadlocks.
-/// Note that a regular WorkDispatcher can provide better throughput, and should
-/// thus be the preferred over the WorkArenaDispatcher.
+/// be guaranteed that a specific set of tasks shall not be stolen by any
+/// other dispatcher, or where stealing from other dispatchers could cause
+/// lock dependencies that may lead to deadlocks. Note that a regular
+/// WorkDispatcher can provide better throughput, and should thus be the
+/// preferred over the WorkArenaDispatcher.
 ///
 /// The interface of the WorkArenaDispatcher, and thread-safety notes about its
 /// API are identical to those of the WorkDispatcher.
@@ -58,7 +57,7 @@ public:
     WorkArenaDispatcher() : _arena(WorkGetConcurrencyLimit()) {}
 
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    ~WorkArenaDispatcher();
+	WORK_API ~WorkArenaDispatcher();
 
     WorkArenaDispatcher(WorkArenaDispatcher const &) = delete;
     WorkArenaDispatcher &operator=(WorkArenaDispatcher const &) = delete;
@@ -90,13 +89,13 @@ public:
 #endif // doxygen
 
     /// Block until the work started by Run() completes.
-    void Wait();
+	WORK_API void Wait();
 
     /// Cancel remaining work and return immediately.
     ///
     /// This call does not block.  Call Wait() after Cancel() to wait for
     /// pending tasks to complete.
-    void Cancel();
+	WORK_API void Cancel();
 
 private:
     template <class Fn>

@@ -161,9 +161,9 @@ _JsValueToImplValue(
 {
     switch (value.GetType()) {
     case JsValue::ObjectType:
-        return _ToImplObjectValue(value.GetObject(), allocator);
+        return _ToImplObjectValue(value.GetJsObject(), allocator);
     case JsValue::ArrayType:
-        return _ToImplArrayValue(value.GetArray(), allocator);
+        return _ToImplArrayValue(value.GetJsArray(), allocator);
     case JsValue::BoolType:
         return rj::Value(value.GetBool());
     case JsValue::StringType:
@@ -233,7 +233,7 @@ JsParseString(
                     nlpos = i;
                 }
             }
-            error->column = eoff - nlpos;
+            error->column = static_cast<unsigned int>(eoff - nlpos);
             error->reason = rj::GetParseError_En(result.Code());
         }
         return JsValue();

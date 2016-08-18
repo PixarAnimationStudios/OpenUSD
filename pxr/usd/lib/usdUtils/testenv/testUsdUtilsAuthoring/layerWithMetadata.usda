@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    "Final composite scene"
+    defaultPrim = "World"
+    endTimeCode = 311
+    startTimeCode = 136
+    subLayers = [
+        @/no/such/layer.usd@
+    ]
+)
+

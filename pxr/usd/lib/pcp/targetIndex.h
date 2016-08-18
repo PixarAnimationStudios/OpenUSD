@@ -24,6 +24,7 @@
 #ifndef PCP_TARGET_INDEX_H
 #define PCP_TARGET_INDEX_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
@@ -38,6 +39,7 @@ class PcpPropertyIndex;
 /// paths of a relationship or attribute.  Note that this is just
 /// the result; it does not retain all of the input arguments used
 /// in computing the index, such as the owning property.
+///
 struct PcpTargetIndex {
     SdfPathVector paths;
     PcpErrorVector localErrors;
@@ -54,7 +56,7 @@ struct PcpTargetIndex {
 ///
 /// Note that this function will skip the validation checks performed
 /// by PcpBuildFilteredTargetIndex. See documentation below for details.
-void
+PCP_API void
 PcpBuildTargetIndex(
     const PcpSite& propSite,
     const PcpPropertyIndex& propIndex,
@@ -78,7 +80,7 @@ PcpBuildTargetIndex(
 ///
 /// \p allErrors will contain any errors encountered while
 /// performing this operation.
-void
+PCP_API void
 PcpBuildFilteredTargetIndex(
     const PcpSite& propSite,
     const PcpPropertyIndex& propIndex,

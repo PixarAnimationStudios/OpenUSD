@@ -24,6 +24,10 @@
 #ifndef ARCH_ALIGN_H
 #define ARCH_ALIGN_H
 
+/// \file arch/align.h
+/// \ingroup group_arch_Memory
+/// Provide architecture-specific memory-alignment information.
+
 #if !defined(__cplusplus)
 #error This include file can only be included in C++ programs.
 #endif
@@ -32,51 +36,34 @@
 #include <cstddef>
 #include <cstdint>
 
-/*!
- * \file align.h
- * \brief Provide architecture-specific memory-alignment information.
- * \ingroup group_arch_Memory
- */
+/// \addtogroup group_arch_Memory
+///@{
 
-/*
- * This is valid on all our current platforms, both for 32-bit and
- * 64-bit compiles.
- */
-
-/*!
- * \brief Return suitably aligned memory size.
- * \ingroup group_arch_Memory
- *
- * Requests to \c malloc() or \c ::new for a given size are often
- * rounded upward.  Given a request for \c nBytes bytes of storage,
- * this function returns the amount that would actually be consumed
- * by the system to satisfy it.  This is needed for efficient user-defined
- * memory management (which you should \e NOT do yourself: see
- * instead \c classAllocator.h).  [Ensure this filename is correct]
- */
-
+/// Return suitably aligned memory size.
+///
+/// Requests to \c malloc() or \c ::new for a given size are often rounded
+/// upward.  Given a request for \c nBytes bytes of storage, this function
+/// returns the amount that would actually be consumed by the system to
+/// satisfy it. This is needed for efficient user-defined memory management.
+///
 inline size_t
 ArchAlignMemorySize(size_t nBytes) {
     return (nBytes + 7) & (~0x7);
 }
 
-/*!
- * \brief Maximum extra space needed for alignment.
- * \ingroup group_arch_Memory
- * \hideinitializer
- *
- * The \c ArchAlignMemorySize() can increase the required memory by no more
- * than \c ARCH_MAX_ALIGNMENT_INCREASE.
- */
+/// Maximum extra space needed for alignment.
+///
+/// The \c ArchAlignMemorySize() can increase the required memory by no more
+/// than \c ARCH_MAX_ALIGNMENT_INCREASE.
+///
+/// \hideinitializer
 #define ARCH_MAX_ALIGNMENT_INCREASE	7
 
-/*!
- * \brief Align memory to the next "best" alignment value.
- * \ingroup group_arch_Memory
- *
- * This will take a pointer and bump it to the next ideal alignment boundary
- * that will work for all data types.
- */
+/// Align memory to the next "best" alignment value.
+///
+/// This will take a pointer and bump it to the next ideal alignment boundary
+/// that will work for all data types.
+///
 inline void *
 ArchAlignMemory(void *base)
 {
@@ -84,13 +71,11 @@ ArchAlignMemory(void *base)
 	((reinterpret_cast<uintptr_t>(base) + 7) & ~0x7);
 }
 
-/*!
- * \brief The size of a CPU cache line in bytes.
- * \ingroup group_arch_Memory
- *
- * The size of a CPU cache line on the current processor architecture in bytes.
- */
+/// The size of a CPU cache line on the current processor architecture in bytes.
+///
+/// \hideinitializer
 #define ARCH_CACHE_LINE_SIZE 64
 
+///@}
 
 #endif	// ARCH_ALIGN_H 

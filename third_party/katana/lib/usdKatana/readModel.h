@@ -24,12 +24,14 @@
 #ifndef PXRUSDKATANA_READMODEL_H
 #define PXRUSDKATANA_READMODEL_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdPrim;
 
 /// \brief read \p model into \p attrs.
-void
+USDKATANA_API void
 PxrUsdKatanaReadModel(
         const UsdPrim& model,
         const PxrUsdKatanaUsdInPrivateData& data,

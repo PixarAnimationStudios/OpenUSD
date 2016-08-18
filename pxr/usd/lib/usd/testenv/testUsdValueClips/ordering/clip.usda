@@ -1,0 +1,14 @@
+#usda 1.0
+
+def "Model"
+{
+    float baz = 1.0
+    float baz.timeSamples = {
+        5.0: 50.0
+    }
+
+    float foo = 1.0
+    float foo.timeSamples = {
+        5.0: 50.0
+    }
+}

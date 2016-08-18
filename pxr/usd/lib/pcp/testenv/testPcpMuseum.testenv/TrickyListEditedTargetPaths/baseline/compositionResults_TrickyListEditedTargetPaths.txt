@@ -1,0 +1,96 @@
+Loading @testPcpMuseum.testenv/TrickyListEditedTargetPaths/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences>
+
+Prim Stack:
+    root.usda            /ExternalReferences
+    ref.usda             /Ref
+
+Child names:
+     ['Child']
+
+Property names:
+     ['relToExternalPrim', 'relToExternalPrim2', 'relToExternalPrim3', 'relToExternalPrim4']
+
+Property stacks:
+/ExternalReferences.relToExternalPrim:
+    root.usda            /ExternalReferences.relToExternalPrim
+    ref.usda             /Ref.relToExternalPrim
+/ExternalReferences.relToExternalPrim2:
+    root.usda            /ExternalReferences.relToExternalPrim2
+    ref.usda             /Ref.relToExternalPrim2
+/ExternalReferences.relToExternalPrim3:
+    root.usda            /ExternalReferences.relToExternalPrim3
+    ref.usda             /Ref.relToExternalPrim3
+/ExternalReferences.relToExternalPrim4:
+    root.usda            /ExternalReferences.relToExternalPrim4
+    ref.usda             /Ref.relToExternalPrim4
+
+Relationship targets:
+/ExternalReferences.relToExternalPrim:
+    /Root/Child
+/ExternalReferences.relToExternalPrim3:
+    /Root/Child
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences/Child>
+
+Prim Stack:
+    root.usda            /ExternalReferences/Child
+    ref.usda             /Ref/Child
+
+------------------------------------------------------------------------
+Results for composing </Permissions>
+
+Prim Stack:
+    root.usda            /Permissions
+    ref.usda             /PermissionsRef_1
+    ref2.usda            /PermissionsRef_2
+
+Child names:
+     ['PrivateChild', 'PublicChild']
+
+Property names:
+     ['PrivateProp', 'relToPrivateProp', 'relToPrivateProp2', 'relToPrivatePrim', 'relToPrivatePrim2', 'PublicProp']
+
+Property stacks:
+/Permissions.PrivateProp:
+    ref2.usda            /PermissionsRef_2.PrivateProp
+/Permissions.PublicProp:
+    root.usda            /Permissions.PublicProp
+/Permissions.relToPrivatePrim:
+    root.usda            /Permissions.relToPrivatePrim
+    ref.usda             /PermissionsRef_1.relToPrivatePrim
+/Permissions.relToPrivatePrim2:
+    root.usda            /Permissions.relToPrivatePrim2
+    ref.usda             /PermissionsRef_1.relToPrivatePrim2
+/Permissions.relToPrivateProp:
+    root.usda            /Permissions.relToPrivateProp
+    ref.usda             /PermissionsRef_1.relToPrivateProp
+/Permissions.relToPrivateProp2:
+    root.usda            /Permissions.relToPrivateProp2
+    ref.usda             /PermissionsRef_1.relToPrivateProp2
+
+Relationship targets:
+/Permissions.relToPrivatePrim2:
+    /Permissions/PublicChild
+/Permissions.relToPrivateProp2:
+    /Permissions.PublicProp
+
+------------------------------------------------------------------------
+Results for composing </Permissions/PrivateChild>
+
+Prim Stack:
+    ref2.usda            /PermissionsRef_2/PrivateChild
+
+------------------------------------------------------------------------
+Results for composing </Permissions/PublicChild>
+
+Prim Stack:
+    root.usda            /Permissions/PublicChild
+

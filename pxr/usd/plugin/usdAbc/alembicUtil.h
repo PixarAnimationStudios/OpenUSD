@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file alembicUtil.h
 #ifndef USDABC_ALEMBICUTIL_H
 #define USDABC_ALEMBICUTIL_H
+
+/// \file usdAbc/alembicUtil.h
 
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/sdf/abstractData.h"

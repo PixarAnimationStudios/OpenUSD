@@ -21,12 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/types.h"
-
-#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/api.h"
 
 #include "pxr/base/tf/type.h"
 
@@ -51,22 +52,22 @@ using std::vector;
 // etc.
 #define VT_ZERO_0_CONSTRUCTOR(r, unused, elem)      \
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
+VT_API VT_TYPE(elem) VtZero() {                     \
     return (VT_TYPE(elem))(0);                      \
 }
 #define VT_ZERO_0FLOAT_CONSTRUCTOR(r, unused, elem) \
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
+VT_API VT_TYPE(elem) VtZero() {                     \
     return VT_TYPE(elem)(0.0f);                     \
 }
 #define VT_ZERO_0DOUBLE_CONSTRUCTOR(r, unused, elem)\
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
-    return VT_TYPE(elem)(0.0);                     \
+VT_API VT_TYPE(elem) VtZero() {                     \
+    return VT_TYPE(elem)(0.0);                      \
 }
 #define VT_ZERO_EMPTY_CONSTRUCTOR(r, unused, elem)  \
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
+VT_API VT_TYPE(elem) VtZero() {                     \
     return VT_TYPE(elem)() ;                        \
 }
 
@@ -119,7 +120,7 @@ struct _ConvertRng {
 template <class FromArray, class ToArray, template <class> class Convert>
 VtValue _ConvertArray(VtValue const &array) {
     const FromArray &src = array.Get<FromArray>();
-    ToArray dst(src.size());
+    ToArray dst(static_cast<unsigned int>(src.size()));
     std::transform(src.begin(), src.end(), dst.begin(),
                    Convert<typename ToArray::ElementType>());
     return VtValue::Take(dst);

@@ -1,0 +1,48 @@
+#usda 1.0
+
+def "C" (
+    relocates = {
+        <ArmsRig/LArmRig/ArmRegion/Region>: <CollisionRig/Body/CollBody/SimRegions/LArm>, 
+    }
+)
+{
+    def MfScope "ArmsRig" (
+        references = @ArmsRig.usda@</ArmsRig>
+    )
+    {
+        over "_Class_ArmRig"
+        {
+            def MfScope "ArmRegion" (
+                inherits = </C/CollisionRig/Body/_class_Region>
+            )
+            {
+            }
+        }
+    }
+
+    def MfScope "CollisionRig"
+    {
+        class MfScope "_Class_CollisionRig"
+        {
+            class Scope "_class_Region"
+            {
+                def PepBase "Region"
+                {
+                }
+            }
+
+            def PepBase "CollBody"
+            {
+                def Scope "SimRegions"
+                {
+                }
+            }
+        }
+
+        def MfScope "Body" (
+            inherits = </C/CollisionRig/_Class_CollisionRig>
+        )
+        {
+        }
+    }
+}

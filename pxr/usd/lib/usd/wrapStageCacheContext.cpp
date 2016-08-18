@@ -21,15 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/functional/factory.hpp>
+#include <boost/python.hpp>
+
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
-
-#include <boost/functional/factory.hpp>
-#include <boost/python.hpp>
-
 #include <vector>
 
 using std::vector;

@@ -1,0 +1,17 @@
+#usda 1.0
+(
+   """
+   This captures a crash bug that was due to invalid dependencies being
+   registered, which was due to failed path translations when composing
+   variant selections.
+
+   The crash was detected in the b750MultishotSwitchMem/Time performance tests.
+   The assets here are stripped down versions of FergusCloak from brave.
+   """
+)
+
+def Model "FergusCloak" (
+    references = @FergusCloak_standins.usda@</FergusCloak>
+)
+{
+}

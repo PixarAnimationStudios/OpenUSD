@@ -24,6 +24,7 @@
 #ifndef HD_TASK_H
 #define HD_TASK_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -50,13 +51,17 @@ typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor, TfToken::Toke
 
 class HdTask {
 public:
+	HDLIB_API
     HdTask();
+	HDLIB_API
     virtual ~HdTask();
 
     /// Sync the resources
+	HDLIB_API
     void Sync(HdTaskContext* ctx);
 
     /// Execute the task
+	HDLIB_API
     void Execute(HdTaskContext* ctx);
 
 protected:
@@ -73,12 +78,17 @@ protected:
 
     // Protected versions of Sync and Execute are provided for derived classes
     // to override.
+	HDLIB_API
     virtual void _Sync( HdTaskContext* ctx) = 0;
+	HDLIB_API
     virtual void _Execute(HdTaskContext* ctx) = 0;
+	HDLIB_API
     virtual void _MarkClean();
 
     // Child tasks 
+	HDLIB_API
     virtual void _SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children);
+	HDLIB_API
     virtual void _ExecuteChildren(HdTaskContext* ctx);
 
 private:
@@ -117,10 +127,14 @@ HdTask::_GetTaskContextData(HdTaskContext const* ctx,
 ///////////////////////////////////////////////////////////////////////////////
 
 
+/// \class HdSceneTask
+///
 /// An HdTask that lives in the RenderIndex and is backed by a SceneDelegate.
 /// The default sync
+///
 class HdSceneTask : public HdTask {
 public:
+	HDLIB_API
     HdSceneTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     SdfPath const&         GetId()       const { return _id; }
@@ -133,10 +147,13 @@ protected:
         int                        collectionVersion;
     };
 
+	HDLIB_API
     virtual void _MarkClean();
+	HDLIB_API
     virtual void _SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children);
 
     /// Obtains the set of dirty bits for the task.
+	HDLIB_API
     HdChangeTracker::DirtyBits _GetTaskDirtyBits();
 
     /// Obtains the set of dirty bits of the task
@@ -145,6 +162,7 @@ protected:
     /// Both results are returned in the dirtyState parameter.
     ///
     /// dirtyState must not be null
+	HDLIB_API
     void _GetTaskDirtyState(TfToken const& collectionId, _TaskDirtyState *dirtyState);
 
     /// Extracts a typed value out of the task context at the given id.
@@ -179,7 +197,6 @@ HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
 
     return true;
 }
-
 
 // Task parameters for scene based synchronization
 struct HdTaskParams {

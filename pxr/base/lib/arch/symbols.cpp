@@ -23,8 +23,13 @@
 //
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/errno.h"
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <dlfcn.h>
+#elif defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#include <Dbghelp.h>
 #endif
 
 bool
@@ -49,6 +54,26 @@ ArchGetAddressInfo(
             *symbolAddress = info.dli_saddr;
         }
         return true;
+    }
+#elif defined(ARCH_OS_WINDOWS)
+    HMODULE module = nullptr;
+
+    if (objectPath)
+    {
+        if (::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                reinterpret_cast<LPCSTR>(address),
+                                &module))
+        {
+            char modName[ARCH_PATH_MAX + 1] = {0};
+            if(GetModuleFileName(module, modName, ARCH_PATH_MAX))
+            {
+                objectPath->assign(modName);
+                return true;
+            }
+        }
+        else
+            ArchStrSysError(::GetLastError());
     }
 #endif
     return false;

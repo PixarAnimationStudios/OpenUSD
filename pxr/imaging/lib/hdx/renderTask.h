@@ -24,6 +24,7 @@
 #ifndef HDX_RENDER_TASK_H
 #define HDX_RENDER_TASK_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
@@ -37,18 +38,23 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
+/// \class HdxRenderTask
+///
 /// A task for rendering geometry to pixels.
 ///
 class HdxRenderTask : public HdSceneTask 
 {
 public:
+    HDXLIB_API
     HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
 
 protected:
     /// Execute render pass task
+    HDXLIB_API
     virtual void _Execute(HdTaskContext* ctx);
 
     /// Sync the render pass resources
+    HDXLIB_API
     virtual void _Sync(HdTaskContext* ctx);
 
 private:

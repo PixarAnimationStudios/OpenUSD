@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file InterfaceFactory.h
-
 #ifndef PLUG_INTERFACEFACTORY_H
 #define PLUG_INTERFACEFACTORY_H
+
+/// \file plug/interfaceFactory.h
 
 #include "pxr/base/tf/type.h"
 #include <boost/static_assert.hpp>

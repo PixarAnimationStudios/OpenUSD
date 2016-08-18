@@ -1,0 +1,17 @@
+#usda 1.0
+
+class "Base"
+{
+}
+
+class "Specializes" (
+    specializes = </Base>
+)
+{
+}
+
+def "Ref" (
+    specializes = </Specializes>
+)
+{
+}

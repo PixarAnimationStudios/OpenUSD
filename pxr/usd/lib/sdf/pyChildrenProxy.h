@@ -21,18 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyChildrenProxy.h
-
 #ifndef SDF_PYCHILDRENPROXY_H
 #define SDF_PYCHILDRENPROXY_H
+
+/// \file sdf/pyChildrenProxy.h
+
+#include <boost/python.hpp>
+#include <boost/python/slice.hpp>
 
 #include "pxr/usd/sdf/childrenProxy.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
 
 template <class _View>
 class SdfPyChildrenProxy {

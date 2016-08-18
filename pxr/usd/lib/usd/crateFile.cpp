@@ -25,6 +25,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -56,6 +57,8 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -72,41 +75,20 @@
 #include <tuple>
 #include <type_traits>
 
-#include <sys/mman.h>
-
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
 
 // Write nbytes bytes to fd at pos.
 static inline ssize_t
-WriteToFd(int fd, void const *bytes, ssize_t nbytes, int64_t pos) {
-    // It's claimed that correct, modern POSIX will never return 0 for (p)write
-    // unless nbytes is zero.  It will either be the case that some bytes were
-    // written, or we get an error return.
-
-    // Write and check if all got written (most common case).
-    ssize_t nwritten = pwrite(fd, bytes, nbytes, pos);
-    if (ARCH_LIKELY(nwritten == nbytes))
-        return nwritten;
-
-    // Track a total and retry until we write everything or hit an error.
-    ssize_t total = std::max<ssize_t>(nwritten, 0);
-    while (nwritten != -1) {
-        // Update bookkeeping and retry.
-        total += nwritten;
-        nbytes -= nwritten;
-        pos += nwritten;
-        bytes = static_cast<char const *>(bytes) + nwritten;
-        nwritten = pwrite(fd, bytes, nbytes, pos);
-        if (ARCH_LIKELY(nwritten == nbytes))
-            return total + nwritten;
+WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
+    int64_t nwritten = ArchPWrite(file, bytes, nbytes, pos);
+    if (ARCH_UNLIKELY(nwritten < 0)) {
+        TF_RUNTIME_ERROR("Failed writing usdc data: %s", ArchStrerror().c_str());
+        nwritten = 0;
     }
-
-    // Error case.
-    TF_RUNTIME_ERROR("Failed writing usdc data: %s", ArchStrerror().c_str());
-    return total;
-}    
+    return nwritten;
+}
 
 namespace {
 
@@ -187,7 +169,7 @@ static constexpr ValueRep ValueRepForArray(uint64_t payload = 0) {
 int64_t
 _GetFileSize(FILE *f)
 {
-    const int fd = fileno(f);
+    const int fd = ArchFileNo(f);
     struct stat fileInfo;
     if (fstat(fd, &fileInfo) != 0) {
         TF_RUNTIME_ERROR("Error retrieving file size");
@@ -290,15 +272,15 @@ private:
 };
 
 struct _PreadStream {
-    explicit _PreadStream(FILE *file) : _cur(0), _fd(fileno(file)) {}
+    explicit _PreadStream(FILE *file) : _cur(0), _file(file) {}
     inline void Read(void *dest, size_t nBytes) {
-        _cur += pread(_fd, dest, nBytes, _cur);
+        _cur += ArchPRead(_file, dest, nBytes, _cur);
     }
-    inline off_t Tell() const { return _cur; }
-    inline void Seek(off_t offset) { _cur = offset; }
+    inline int64_t Tell() const { return _cur; }
+    inline void Seek(int64_t offset) { _cur = offset; }
 private:
-    off_t _cur;
-    int _fd;
+    int64_t _cur;
+    FILE *_file;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -329,8 +311,7 @@ CrateFile::_TableOfContents::GetMinimumSectionStart() const
 struct CrateFile::_PackingContext
 {
     _PackingContext(CrateFile *crate, FILE *file) 
-        : file(file)
-        , filefd(fileno(file)) {
+        : file(file) {
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
         WorkArenaDispatcher wd;
@@ -413,9 +394,8 @@ struct CrateFile::_PackingContext
     // Unknown sections we're moving to the new structural area.
     vector<tuple<string, unique_ptr<char[]>, size_t>> unknownSections;
 
-    // File we're writing to, and corresponding file descriptor.
+    // File we're writing to.
     FILE *file;
-    int filefd;
     // Current position in output file.
     int64_t outFilePos;
 };
@@ -665,7 +645,7 @@ class CrateFile::_Writer
 {
 public:
     explicit _Writer(CrateFile *crate)
-        : crate(crate), sinkfd(crate->_packCtx->filefd) {}
+        : crate(crate), sink(crate->_packCtx->file) {}
 
     // Recursive write helper.  We use these when writing values if we may
     // invoke _PackValue() recursively.  Since _PackValue() may or may not write
@@ -723,7 +703,7 @@ public:
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     Write(T const &bits) {
         crate->_packCtx->outFilePos += WriteToFd(
-            sinkfd, &bits, sizeof(bits), crate->_packCtx->outFilePos);
+            sink, &bits, sizeof(bits), crate->_packCtx->outFilePos);
     }
 
     template <class U, class T>
@@ -810,7 +790,7 @@ public:
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     WriteContiguous(T const *values, size_t sz) {
         crate->_packCtx->outFilePos += WriteToFd(
-            sinkfd, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
+            sink, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
     }
 
     template <class T>
@@ -820,7 +800,7 @@ public:
     }
 
     CrateFile *crate;
-    int sinkfd;
+    FILE *sink;
 };
 
 
@@ -1013,19 +993,12 @@ CrateFile::CreateNew()
 }
 
 /* static */
-CrateFile::_UniqueMap
+ArchConstFileMapping
 CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
-    _UniqueMap map;
-    auto fileSize = _GetFileSize(file);
-    if (fileSize > 0) {
-        map = _UniqueMap(
-            static_cast<char *>(
-                mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fileno(file), 0)),
-            _Munmapper(fileSize));
-        if (not map)
-            TF_RUNTIME_ERROR("Couldn't mmap file '%s'", fileName);
-    }
+    ArchConstFileMapping map = ArchMapFileReadOnly(file);
+    if (not map)
+        TF_RUNTIME_ERROR("Couldn't map file '%s'", fileName);
     return map;
 }
 
@@ -1048,7 +1021,7 @@ CrateFile::Open(string const &fileName)
     auto fileSize = _GetFileSize(inputFile.get());
     if (not TfGetenvBool("USDC_USE_PREAD", false)) {
         // Map the file.
-        _UniqueMap mapStart = _MmapFile(fileName.c_str(), inputFile.get());
+        auto mapStart = _MmapFile(fileName.c_str(), inputFile.get());
         result.reset(new CrateFile(fileName, std::move(mapStart), fileSize));
     } else {
         result.reset(new CrateFile(fileName, std::move(inputFile), fileSize));
@@ -1087,7 +1060,7 @@ CrateFile::CrateFile(bool useMmap)
 }
 
 CrateFile::CrateFile(
-    string const &fileName, _UniqueMap mapStart, int64_t fileSize)
+    string const &fileName, ArchConstFileMapping mapStart, int64_t fileSize)
     : _mapStart(std::move(mapStart))
     , _fileName(fileName)
     , _useMmap(true)
@@ -1389,6 +1362,8 @@ CrateFile::_WritePaths(_Writer &w)
     // Write the total # of paths.
     w.WriteAs<uint64_t>(_paths.size());
     _WritePathTree(w, pathToIndexTable.begin(), pathToIndexTable.end());
+
+    WorkSwapDestroyAsync(pathToIndexTable);
 }
 
 template <class Iter>
@@ -1596,11 +1571,21 @@ CrateFile::_ReadTokens(Reader reader)
     // Now we read that many null-terminated strings into _tokens.
     char const *p = chars.get();
     _tokens.clear();
-    _tokens.reserve(numTokens);
-    while (numTokens--) {
-        _tokens.emplace_back(p);
+    _tokens.resize(numTokens);
+
+    WorkArenaDispatcher wd;
+    struct MakeToken {
+        void operator()() const { (*tokens)[index] = TfToken(str); }
+        vector<TfToken> *tokens;
+        size_t index;
+        char const *str;
+    };
+    for (size_t i = 0; i != numTokens; ++i) {
+        MakeToken mt { &_tokens, i, p };
+        wd.Run(mt);
         p += strlen(p) + 1;
     }
+    wd.Wait();
 }
 
 template <class Reader>
@@ -2007,14 +1992,6 @@ CrateFile::_IsKnownSection(char const *name) {
 }
 
 void
-CrateFile::_Munmapper::operator()(char *mapStart) const
-{
-    if (mapStart) {
-        munmap(mapStart, fileSize);
-    }
-}
-
-void
 CrateFile::_Fcloser::operator()(FILE *f) const
 {
     if (f) {
@@ -2037,7 +2014,7 @@ CrateFile::_Section::_Section(char const *inName, int64_t start, int64_t size)
 {
     memset(name, 0, sizeof(name));
     if (TF_VERIFY(strlen(inName) <= _SectionNameMaxLength))
-        strcpy(name, inName);
+        TfStringCopy(name, size, inName);
 }
 
 std::ostream &

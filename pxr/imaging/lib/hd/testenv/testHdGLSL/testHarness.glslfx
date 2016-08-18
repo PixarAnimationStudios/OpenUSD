@@ -1,0 +1,249 @@
+-- glslfx version 0.1
+
+#import $TOOLS/hd/shaders/instancing.glslfx
+
+-- configuration
+{
+    "parameters": {
+        "matrix0" : {
+            "default" : [0.1, 0.2, 0.4],
+            "documentation" : "Base color of surface.",
+            "role" : "color"
+        }
+    },
+    "techniques": {
+        "default": {
+            "instanceTransform0": {
+                "source": [
+                    "Test.Common",
+                    "Test.InstanceTransform.Common",
+                    "Test.InstanceTransform.0",
+                    "Instancing.Transform",
+                    "Test.InstanceTransform"
+                    ]
+            },
+            "instanceTransform1": {
+                "source": [
+                    "Test.Common",
+                    "Test.InstanceTransform.Common",
+                    "Test.InstanceTransform.1",
+                    "Instancing.Transform",
+                    "Test.InstanceTransform"
+                    ]
+            },
+            "instanceTransform2": {
+                "source": [
+                    "Test.Common",
+                    "Test.InstanceTransform.Common",
+                    "Test.InstanceTransform.2",
+                    "Instancing.Transform",
+                    "Test.InstanceTransform"
+                    ]
+            },
+            "instanceTransform3": {
+                "source": [
+                    "Test.Common",
+                    "Test.InstanceTransform.Common",
+                    "Test.InstanceTransform.3",
+                    "Instancing.Transform",
+                    "Test.InstanceTransform"
+                    ]
+            },
+            "determinant": {
+                "source": [
+                    "Test.Common",
+                    "Test.Determinant"
+                    ]
+            }
+        }
+    }
+}
+
+-- glsl Test.Common
+layout (local_size_x = 1, local_size_y = 1, local_size_z= 1) in;
+
+// SSBOs. test cases set the result on return.
+//        f,v,mvalues can be used for both input and output.
+//
+// 0 : result        : The return value of tests. true means success.
+// 1 : fvalues[64]   : float values { 0.0, 1.0, 2.0, ... }
+// 2 : vvalues[16]   : vec4 values  { (0,1,2,3), (4,5,6,7), ... }
+// 3 : mvalues[4]    : mat4 values  { (0-15), (16-31), ... }
+layout (std430, binding=0) buffer retval { bool result; };
+layout (std430, binding=1) buffer fval { float fvalues[]; };
+layout (std430, binding=2) buffer vval { vec4  vvalues[]; };
+layout (std430, binding=3) buffer mval { mat4  mvalues[]; };
+
+#define TEST_SUCCESS    {result = true; return;}
+#define TEST_FAIL       {result = false; return;}
+#define VERIFY(x)       {if (!(x)) { result=false; return; }}
+
+-- glsl Test.InstanceTransform.Common
+#define HD_HAS_instancerTransform
+#define HD_HAS_instancerTransformInverse
+mat4 HdGet_instancerTransform(int arrayIndex) { return mat4(1); }
+mat4 HdGet_instancerTransformInverse(int arrayIndex) { return mat4(1); }
+
+// ---------------------------------------------------------------------------
+//    no SRT
+// ---------------------------------------------------------------------------
+-- glsl Test.InstanceTransform.0
+
+mat4 outTransformRef = mat4(1);
+mat4 outTransformInverseRef = mat4(1);
+
+// ---------------------------------------------------------------------------
+//    translate only
+// ---------------------------------------------------------------------------
+-- glsl Test.InstanceTransform.1
+
+#define HD_INSTANCER_NUM_LEVELS 1
+#define HD_HAS_INSTANCE_translate
+vec3 HdGetInstance_translate(int level, vec3 defval) {
+    return vec3(1, 2, 3);
+}
+
+mat4 outTransformRef = mat4(1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            1, 2, 3, 1);
+mat4 outTransformInverseRef = mat4(1, 0, 0, 0,
+                                   0, 1, 0, 0,
+                                   0, 0, 1, 0,
+                                   -1, -2, -3, 1);
+
+// ---------------------------------------------------------------------------
+//    rotate only
+// ---------------------------------------------------------------------------
+-- glsl Test.InstanceTransform.2
+
+#define HD_INSTANCER_NUM_LEVELS 1
+#define HD_HAS_INSTANCE_rotate
+// q = pixar.Gf.Quaternion(0.5, pixar.Gf.Vec3d(0.1, 0.2, 0.3)).Normalize()
+vec4 HdGetInstance_rotate(int level, vec4 defval) {
+    return vec4(0.80064076902543568,
+                0.16012815380508716,
+                0.32025630761017432,
+                0.48038446141526137);
+}
+mat4 outTransformRef        = mat4( 0.333333,  0.871795, -0.358974, 0.000000,
+                                   -0.666667,  0.487180,  0.564103, 0.000000,
+                                    0.666667,  0.051282,  0.743590, 0.000000,
+                                    0.000000,  0.000000,  0.000000, 1.000000);
+mat4 outTransformInverseRef = mat4( 0.333333, -0.666667,  0.666667, 0.000000,
+                                    0.871795,  0.487180,  0.051282, 0.000000,
+                                   -0.358974,  0.564103,  0.743590, 0.000000,
+                                    0.000000,  0.000000,  0.000000, 1.000000);
+
+// ---------------------------------------------------------------------------
+//    S, R, T
+// ---------------------------------------------------------------------------
+-- glsl Test.InstanceTransform.3
+
+#define HD_INSTANCER_NUM_LEVELS 1
+#define HD_HAS_INSTANCE_rotate
+// q = pixar.Gf.Quaternion(0.5, pixar.Gf.Vec3d(0.1, 0.2, 0.3)).Normalize()
+vec4 HdGetInstance_rotate(int level, vec4 defval) {
+    return vec4(0.80064076902543568,
+                0.16012815380508716,
+                0.32025630761017432,
+                0.48038446141526137); }
+#define HD_HAS_INSTANCE_translate
+vec3 HdGetInstance_translate(int level, vec3 defval) {
+    return vec3(1, 2, 3);
+}
+#define HD_HAS_INSTANCE_scale
+vec3 HdGetInstance_scale(int level, vec3 defval) {
+    return vec3(0.6, 0.3, 0.8);
+}
+
+/*
+>>> from pxr import Gf
+>>> x = Gf.Transform()
+>>> x.SetScale(Gf.Vec3d(0.6, 0.3, 0.8))
+>>> x.SetRotation(Gf.Rotation(Gf.Quaternion(0.5, Gf.Vec3d(0.1,0.2,0.3)).Normalize()))
+>>> x.SetTranslation(Gf.Vec3d(1,2,3))
+>>> x.GetMatrix()
+Gf.Matrix4d(0.2, 0.5230769230769231, -0.21538461538461542, 0.0,
+            -0.19999999999999996, 0.14615384615384616, 0.1692307692307692, 0.0,
+            0.5333333333333334, 0.04102564102564102, 0.5948717948717949, 0.0,
+            1.0, 2.0, 3.0, 1.0)
+>>> x.GetMatrix().GetInverse()
+Gf.Matrix4d(0.5555555555555555, -2.222222222222222, 0.8333333333333333, 0.0,
+            1.4529914529914527, 1.6239316239316242, 0.0641025641025641, 0.0,
+            -0.5982905982905983, 1.8803418803418808, 0.9294871794871793, 0.0,
+            -1.6666666666666656, -6.666666666666669, -3.75, 1.0)
+*/
+
+mat4 outTransformRef        = mat4(0.200000,  0.523076, -0.215384, 0.000000,
+                                  -0.200000,  0.146154,  0.169231, 0.000000,
+                                   0.533333,  0.041026,  0.594872, 0.000000,
+                                   1.000000,  2.000000,  3.000000, 1.000000);
+mat4 outTransformInverseRef = mat4(0.555556, -2.222222,  0.833333, 0.000000,
+                                   1.452991,  1.623932,  0.064103, 0.000000,
+                                  -0.598291,  1.880342,  0.929487, 0.000000,
+                                  -1.666667, -6.666667, -3.750000, 1.000000);
+
+// ---------------------------------------------------------------------------
+//    instance main
+// ---------------------------------------------------------------------------
+-- glsl Test.InstanceTransform
+
+bool isClose(mat4 a, mat4 b)
+{
+    mat4 m = a-b;
+    float eps = 1e-6;
+
+    return all(lessThan(abs(m[0]), vec4(eps))) &&
+           all(lessThan(abs(m[1]), vec4(eps))) &&
+           all(lessThan(abs(m[2]), vec4(eps))) &&
+           all(lessThan(abs(m[3]), vec4(eps)));
+}
+
+void main()
+{
+    mat4 outTransform = GetInstanceTransform();
+    mat4 outTransformInverse = GetInstanceTransformInverse();
+
+    mvalues[0] = outTransform;
+    mvalues[1] = outTransformInverse;
+
+    VERIFY(isClose(outTransform, outTransformRef));
+    VERIFY(isClose(outTransformInverse, outTransformInverseRef));
+
+    TEST_SUCCESS;
+}
+
+// ---------------------------------------------------------------------------
+//    determinant
+// ---------------------------------------------------------------------------
+-- glsl Test.Determinant
+
+void main()
+{
+    mat4 m0 = mat4( 0,  1,  2,  3,
+                    3,  6,  4,  1,
+                    0,  3,  2,  1,
+                   12, 13, 14, 15);  // det4 = 48, det3 = 12
+
+    VERIFY(determinant(m0) == 48);
+    VERIFY(determinant(transpose(m0)) == 48);
+    VERIFY(determinant(mat3(m0)) == 12);
+    VERIFY(determinant(transpose(mat3(m0))) == 12);
+
+#if 1
+    // the following test was failing on 319.32, and is passing on 340.46
+    mat4 m1 = mvalues[0];
+    m1[1] = vec4(3, 6, 4, 1);
+    m1[2] = vec4(0, 3, 2, 1);  // becomes same matrix as above because
+                               // mvalues are initialized as [0, 1, 2, 3, ... ]
+
+    VERIFY(m0 == m1);
+    VERIFY(determinant(m1) == 48);
+    VERIFY(determinant(mat3(m1)) == 12);
+
+    mvalues[0] = m1;
+#endif
+
+    TEST_SUCCESS;
+}

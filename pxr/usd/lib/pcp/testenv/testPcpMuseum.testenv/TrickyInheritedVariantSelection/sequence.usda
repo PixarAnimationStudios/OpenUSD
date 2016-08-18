@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def "Sullivan" (
+    variantSets = ["pin", "shade"]
+    add inherits = [</_pinclass_Sullivan>, </_shadeclass_Sullivan>]
+    references = @model-pin.usda@</SullivanNoPin>
+)
+{
+    variantSet "pin" = {
+        "ModelPin" (
+            references = @model-pin.usda@</SullivanModelPin>
+        ) {
+        }
+        "ShotPin" (
+            references = @model-pin.usda@</SullivanShotPin>
+            add inherits = </_extraclass_Sullivan>
+            reorder inherits = [</_extraclass_Sullivan>, </_shadeclass_Sullivan>]
+        ) {
+        }
+    }
+}
+
+class "_pinclass_Sullivan" (
+    variants = {
+        string pin = "ModelPin"
+    }
+)
+{
+}
+
+class "_shadeclass_Sullivan" (
+    variants = {
+        string shade = "FlatShade"
+    }
+)
+{
+}
+
+class "_extraclass_Sullivan"
+{
+}

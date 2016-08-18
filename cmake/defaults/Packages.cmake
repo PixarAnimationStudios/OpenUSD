@@ -30,10 +30,12 @@ find_package(PythonInterp 2.7 REQUIRED)
 # --Boost
 find_package(Boost
     COMPONENTS
+        date_time
         iostreams
         python
         regex
         system
+        thread
         program_options
     REQUIRED
 )
@@ -58,17 +60,27 @@ find_library(M_LIB m)
 find_package(Jinja2)
 
 if (NOT PXR_MALLOC_LIBRARY)
-    message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified") 
+    if (NOT WIN32)
+        message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified")
+    endif()
 endif()
 
 # Developer Options Package Requirements
 # ----------------------------------------------
 if (PXR_VALIDATE_GENERATED_CODE)
-    find_package(BISON 2.4.1 EXACT)
+    if(WIN32)
+        find_package(BISON 2.7 EXACT)
+    else()
+        find_package(BISON 2.4.1 EXACT)
+    endif()
     # Flex 2.5.39+ is required, generated API is generated incorrectly in
     # 2.5.35, at least. scan_bytes generates with (..., int len, ...) instead of
     # the correct (..., yy_size_t len, ...).  Lower at your own peril.
-    find_package(FLEX 2.5.39 EXACT)
+    if(WIN32)
+        find_package(FLEX 2.5.37 EXACT)
+    else()
+        find_package(FLEX 2.5.39 EXACT)
+    endif()
 endif()
 
 
@@ -85,13 +97,17 @@ if (PXR_BUILD_IMAGING)
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     find_package(PTex REQUIRED)
-    # --X11
-    find_package(X11)
+    if(UNIX)
+        # --X11
+        find_package(X11)
+    endif()
     # --Qt
     find_package(Qt4)
     if (QT4_FOUND)
-        find_package(PySideTools REQUIRED)
+        find_package(PySide REQUIRED)
     endif()
+    # --Zlib
+    find_package(ZLIB REQUIRED)
 endif()
 
 # Third Party Plugin Package Requirements

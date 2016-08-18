@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/package.h
 #ifndef GLF_PACKAGE_H
 #define GLF_PACKAGE_H
+
+/// \file glf/package.h
 
 #include "pxr/base/tf/token.h"
 

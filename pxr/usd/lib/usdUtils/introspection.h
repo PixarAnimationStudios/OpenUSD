@@ -24,6 +24,13 @@
 #ifndef _USDUTILS_PINTROSPECTION_H_
 #define _USDUTILS_PINTROSPECTION_H_
 
+/// \file usdUtils/introspection.h
+///
+/// Collection of module-scoped utilities for introspecting a given USD stage.
+/// Future additions might include full-on dependency extraction, queries like
+/// "Does this stage contain this asset?", "usd grep" functionality, etc.
+
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -33,12 +40,6 @@
 #include "pxr/base/vt/dictionary.h"
 
 SDF_DECLARE_HANDLES(SdfLayer);
-
-/// \file introspection.h
-/// Collection of module-scoped utilities for introspecting a given USD stage.
-/// Future additions might include full-on dependency extraction, queries like 
-/// "Does this stage contain this asset?", "usd grep" functionality, etc.
-/// 
 
 #define USDUTILS_USDSTAGE_STATS         \
     (approxMemoryInMb)                  \
@@ -60,7 +61,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
     (primCountsByType)                  \
         (untyped)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys, USDUTILS_USDSTAGE_STATS);
+TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys, USDUTILS_API, USDUTILS_USDSTAGE_STATS);
 
 /// Opens the given layer on a USD stage and collects various stats. 
 /// The stats are populated in the dictionary-valued output param \p stats.
@@ -101,6 +102,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys, USDUTILS_USDSTAGE_STATS);
 /// \note Only component models are included in 'modelCount' and 
 /// 'instancedModelCount'.
 ///
+USDUTILS_API
 UsdStageRefPtr UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath, 
                                             VtDictionary *stats);
 
@@ -110,6 +112,7 @@ UsdStageRefPtr UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath,
 /// Returns the total number of prims on the stage, including active, inactive.
 /// pure overs, prims inside masters etc.
 /// 
+USDUTILS_API
 size_t UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage, 
                                     VtDictionary *stats);
 

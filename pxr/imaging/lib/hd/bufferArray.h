@@ -44,8 +44,11 @@ typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::weak_ptr<HdBufferArrayRange> HdBufferArrayRangePtr;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
+/// \class HdBufferArray
+///
 /// Similar to a VAO, this object is a bundle of coherent buffers. This object
-/// can be shared across multiple HdRprims, in the context of buffer aggregation.
+/// can be shared across multiple HdRprims, in the context of buffer
+/// aggregation.
 ///
 class HdBufferArray : public boost::enable_shared_from_this<HdBufferArray>,
     boost::noncopyable {

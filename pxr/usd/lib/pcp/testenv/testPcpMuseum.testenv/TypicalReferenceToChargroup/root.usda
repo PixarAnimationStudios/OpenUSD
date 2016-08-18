@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    """
+    This layer references in a ModelGroup and sets its standin to sim.
+    The group should internally select the correspond sim standin on
+    its model children.
+    """
+)
+
+def "Group" (
+    add references = @group.usda@</Group>
+    variants = {
+        string standin = "sim"
+    }
+)
+{
+    over "Model" (
+        doc = "This prim ends up having {standin=render} in Csd today, but we want this to instead respect the selection made by the modelgroup (sim).  See bug 33728 for some relevant history."
+    )
+    {
+    }
+}

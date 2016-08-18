@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    """
+    This CharRig references a FaceRig, which in turn has a child scope
+    reference to a LipRig.
+
+    LipRig has a variantSet controlling how many lip controls it exposes.
+    FaceRig relocates those LipRig controls into its anim interface.
+
+    CharRig then selects a LipRigStyle variant.  The expected result is
+    that the number of controls in CharRig's anim scope will change --
+    but this is a "spooky" effect in the sense that the anim scope
+    in CharRig has no knowledge that, across a reference, it was
+    relocated from underneath the rig.
+
+    This test exercises several features in combination:
+
+    - references (to pull together separate rigs)
+    - relocates (to relocate rig anim scopes to the Anim interface)
+    - variants (to configure the rigs in a particular char)
+    - path translation (to wire the rig internals up to the anim avars)
+
+    See bug 54719.
+    """
+)
+
+def Scope "CharRig" (
+    add references = @FaceRig.usda@</FaceRig>
+)
+{
+    over "Anim" {
+        over "Lip" (
+            doc = '''
+            We intend to see scopes Lip1 and Lip2 here, since we set
+            LipRigStyle = TwoLips.  Csd does not do this correctly
+            (see bug 54719), whereas Pcp does.
+            '''
+        )
+        {
+        }
+    }
+
+    over "Rig" {
+        over "LipRig" (
+            variants = {
+                string LipRigStyle = "TwoLips"
+            }
+        )
+        {
+        }
+    }
+}

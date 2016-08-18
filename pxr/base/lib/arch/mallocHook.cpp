@@ -21,22 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/arch/mallocHook.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/env.h"
+#include "pxr/base/arch/mallocHook.h"
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/env.h"
 
+#if !defined(ARCH_OS_WINDOWS)
 #include <dlfcn.h>
+#endif
 #include <string.h>
+#include <ciso646>
 
 #if defined(ARCH_OS_DARWIN)
-#include <sys/malloc.h>
+#  include <sys/malloc.h>
 #else
-#include <malloc.h>
-#endif /* defined(ARCH_OS_DARWIN) */
-
+#  include <malloc.h>
 #if not defined(__MALLOC_HOOK_VOLATILE)
 #define __MALLOC_HOOK_VOLATILE
-#endif /* not defined(__MALLOC_HOOK_VOLATILE) */
+#endif /* not defined __MALLOC_HOOK_VOLATILE */
+#endif /* defined(ARCH_OS_LINUX) */
 
 using std::string;
 
@@ -81,6 +85,7 @@ static bool
 _MallocProvidedBySameLibraryAs(const char* functionName,
                                bool skipMallocCheck)
 {
+#if !defined(ARCH_OS_WINDOWS)
     const void* function = dlsym(RTLD_DEFAULT, functionName);
     if (!function) {
         return false;
@@ -93,6 +98,9 @@ _MallocProvidedBySameLibraryAs(const char* functionName,
     }
 
     return (skipMallocCheck || mallocInfo.dli_fbase == functionInfo.dli_fbase);
+#else
+    return false;
+#endif
 }
 
 static inline bool
@@ -107,7 +115,7 @@ _CheckMallocTagImpl(const char* impl, const char* libname)
 bool
 ArchIsPxmallocActive()
 {
-    const char* impl = getenv("TF_MALLOC_TAG_IMPL");
+    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "pxmalloc")) {
         return false;
     }
@@ -118,7 +126,7 @@ ArchIsPxmallocActive()
 bool
 ArchIsPtmallocActive()
 {
-    const char* impl = getenv("TF_MALLOC_TAG_IMPL");
+    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "ptmalloc")) {
         return false;
     }
@@ -129,7 +137,7 @@ ArchIsPtmallocActive()
 bool
 ArchIsJemallocActive()
 {
-    const char* impl = getenv("TF_MALLOC_TAG_IMPL");
+    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "jemalloc")) {
         return false;
     }
@@ -152,7 +160,7 @@ ArchIsStlAllocatorOff()
      * isn't, it's just a preference, not behavior that has to correct
      * to avoid a crash.
      */
-    static bool isOff = bool(getenv("GLIBCXX_FORCE_NEW"));
+    static bool isOff = bool(ArchGetEnv("GLIBCXX_FORCE_NEW"));
     return isOff;
 #else
     return false;

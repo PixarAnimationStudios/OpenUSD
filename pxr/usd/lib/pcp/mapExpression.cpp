@@ -133,8 +133,9 @@ PcpMapExpression::Variable::~Variable()
 }
 
 // Private implementation for Variable.
-struct Pcp_VariableImpl : PcpMapExpression::Variable
+class Pcp_VariableImpl : public PcpMapExpression::Variable
 {
+public:
     virtual ~Pcp_VariableImpl() {}
 
     Pcp_VariableImpl(const PcpMapExpression::_NodeRefPtr &node) : _node(node) {}

@@ -27,6 +27,8 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <ciso646>
+
 using std::string;
 using std::vector;
 

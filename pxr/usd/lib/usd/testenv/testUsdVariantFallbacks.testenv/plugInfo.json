@@ -1,0 +1,15 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "testUsdVariantFallbacks",
+            "Info": {
+                "UsdVariantFallbacks": {
+                    "displayColor": [
+                        "green"
+                    ]
+                }
+            }
+        }
+    ]
+}

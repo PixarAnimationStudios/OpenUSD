@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    '''
+    This test exercises nested class inheritance at multiple
+    levels of namespace.
+    '''
+)
+
+def "CharRig"
+{
+    over "Rig"
+    {
+        def MfScope "HandsRig" (
+            references = @HandsRig.usda@</HandsRig>
+        )
+        {
+            over "LHandRig"
+            {
+                over "_Class_FingerRig"
+                {
+                }
+                over "IndexRig"
+                {
+                }
+            }
+
+            over "SymHandRig"
+            {
+                over "_Class_FingerRig"
+                {
+                }
+                over "IndexRig"
+                {
+                }
+            }
+
+            over "_Class_HandRig"
+            {
+                over "_Class_FingerRig"
+                {
+                }
+
+                over "IndexRig"
+                {
+                }
+            }
+        }
+    }
+}

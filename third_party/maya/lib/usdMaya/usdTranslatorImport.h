@@ -29,6 +29,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_IMPORT_H
 #define PXRUSDMAYA_TRANSLATOR_IMPORT_H
 
+#include "usdMaya/api.h"
 #include <maya/MPxFileTranslator.h>
 
 #include <string>
@@ -45,6 +46,7 @@ class usdTranslatorImport : public MPxFileTranslator {
         /**
          * method to create usdTranslatorImport file translator
          */
+        USDMAYA_API
         static void * creator(const std::string& assemblyTypeName,
                               const std::string& proxyShapeTypeName);
 

@@ -142,7 +142,7 @@ PxrUsdKatanaReadBasisCurves(
     FnKat::GroupBuilder geometryBuilder;
 
     FnKat::GroupAttribute curveAttr = _GetCurveAttrs(
-        basisCurves, data.GetUsdInArgs()->GetCurrentTime());
+        basisCurves, data.GetUsdInArgs()->GetCurrentTimeD());
     
     if (curveAttr.isValid()) {
         geometryBuilder.update(curveAttr);

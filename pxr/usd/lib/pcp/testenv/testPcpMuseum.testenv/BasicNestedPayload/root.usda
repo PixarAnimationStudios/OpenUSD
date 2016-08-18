@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates the behavior when payloads 
+    are nested in namespace. 
+
+    The key property of payloads that we want to demonstrate
+    is that loading a payload should not change values that 
+    were present when the the payload wasn't loaded. This
+    is to avoid situations where users are working and
+    making changes without payloads loaded, then find 
+    everything changed beneath them when they do load 
+    the payload.
+
+    To maintain this property with payloads nested in
+    namespace, the strength ordering of ancestral payloads
+    vs. descendant payloads needs to be flipped. This
+    is the opposite of the behavior for all other arcs,
+    where deeper opinions are stronger than ancestral
+    opinions.
+
+    """
+)
+
+def Scope "Set" (
+    """
+    In this example, the referenced set has a payload
+    that has an opinion about a prop and a payloaded
+    reference to that prop. Loading the prop's payload
+    should not override the opinion in the set, since
+    that would violate the rule about payloads described
+    above.
+    """
+    references = @set.usda@</Set>
+)
+{
+}
+
+def Scope "Set2" (
+    """
+    This example is similar to above, but verifies that we have
+    the same behavior when the descendant payload arc is not
+    expressed within the ancestral payload.
+    """
+    payload = @set_payload.usda@</Set>
+)
+{
+    def Scope "Prop" (
+        payload = @prop_payload.usda@</Prop>
+    )
+    {
+    }
+}
+
+def Scope "Set3" (
+    """
+    This example simply verifies that local opinions are stronger
+    than the opinions expressed in the payloads.
+    """
+    references = @set.usda@</Set>
+)
+{
+    over "Prop"
+    {
+        over "PropScope"
+        {
+            string x = "from root"
+        }
+    }        
+}

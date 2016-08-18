@@ -1,0 +1,19 @@
+#usda 1.0
+(
+)
+
+def Prim "Model" (
+    add variantSets = ["standin"]
+)
+{
+    variantSet "standin" = {
+        "sim"
+        {
+            custom string standin_name = "sim"
+        }
+        "render"
+        {
+            custom string standin_name = "render"
+        }
+    }
+}

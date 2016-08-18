@@ -21,12 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/payload.h
-
 #ifndef SDF_PAYLOAD_H
 #define SDF_PAYLOAD_H
 
+/// \file sdf/payload.h
+
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include <boost/operators.hpp>
@@ -39,8 +40,8 @@ class SdfPayload;
 
 typedef std::vector<SdfPayload> SdfPayloadVector;
 
-
 /// \class SdfPayload
+///
 /// Represents a payload and all its meta data.
 ///
 /// A payload represents a prim reference to an external layer.  A payload
@@ -55,6 +56,7 @@ class SdfPayload : boost::totally_ordered<SdfPayload> {
 public:
     /// Creates a payload.
     ///
+	SDF_API
     SdfPayload(
         const std::string &assetPath = std::string(),
         const SdfPath &primPath = SdfPath());
@@ -80,14 +82,14 @@ public:
     }
 
     /// Bool conversion; true if the payload is not empty.
-    operator bool() const;
+	SDF_API operator bool() const;
 
     /// Returns whether this payload equals \a rhs.
-    bool operator==(const SdfPayload &rhs) const;
+	SDF_API bool operator==(const SdfPayload &rhs) const;
 
     /// Returns whether this payload is less than \a rhs.
     /// The meaning of less than is arbitrary but stable.
-    bool operator<(const SdfPayload &rhs) const;
+	SDF_API bool operator<(const SdfPayload &rhs) const;
 
 private:
     friend inline size_t hash_value(const SdfPayload &p) {
@@ -104,9 +106,8 @@ private:
     SdfPath _primPath;
 };
 
-///
 /// Writes the string representation of \a SdfPayload to \a out.
-std::ostream & operator<<( std::ostream &out,
-                           const SdfPayload &payload );
+SDF_API
+std::ostream & operator<<(std::ostream &out, const SdfPayload &payload);
 
 #endif

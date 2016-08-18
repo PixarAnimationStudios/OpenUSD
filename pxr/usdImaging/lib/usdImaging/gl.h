@@ -23,6 +23,7 @@
 //
 #pragma once
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/engine.h"
 
 #include <boost/shared_ptr.hpp>
@@ -37,7 +38,8 @@ typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
 typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 
 /// \class UsdImagingGL
-/// \brief Convenience class that abstracts whether we are rendering via
+///
+/// Convenience class that abstracts whether we are rendering via
 /// a high-performance Hd render engine, or a simple vbo renderer that can
 /// run on old openGl versions.
 ///
@@ -47,28 +49,35 @@ typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 /// \li the environment variable HD_ENABLED is unset, or set to "1"
 /// 
 /// So, to disable Hd rendering for testing purposes, set HD_ENABLED to "0"
+///
 class UsdImagingGL : public UsdImagingEngine {
 public:
 
     /// Returns true if Hydra is enabled for GL drawing.
+    USDIMAGING_API
     static bool IsEnabledHydra();
 
+    USDIMAGING_API
     UsdImagingGL();
+    USDIMAGING_API
     UsdImagingGL(const SdfPath& rootPath,
                  const SdfPathVector& excludedPaths,
                  const SdfPathVector& invisedPaths=SdfPathVector(),
                  const SdfPath& sharedId = SdfPath::AbsoluteRootPath(),
                  const UsdImagingGLSharedPtr& sharedImaging = UsdImagingGLSharedPtr());
 
+    USDIMAGING_API
     virtual ~UsdImagingGL();
 
     // Support for batched rendering
     // Currently, supported only when Hydra is enabled
+    USDIMAGING_API
     static bool IsBatchingSupported();
 
     // Prepares the given sub-index delegates for drawing.
     // This is equivalent to calling PrepareBatch on each renderer in
     // \p renderers with the corresponding root prim, time, and parameters.
+    USDIMAGING_API
     static void PrepareBatch(
         const UsdImagingGLSharedPtrVector& renderers,
         const UsdPrimVector& rootPrims,
@@ -80,11 +89,13 @@ public:
     /// This can be called many times for different sub-indexes (prim paths)
     /// over the stage, and then all rendered together with a call to
     /// RenderBatch()
+    USDIMAGING_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
 
     /// Draws all sub-indices indentified by \p paths.  Presumes that each
     /// sub-index has already been prepared for drawing by calling
     /// PrepareBatch()
+    USDIMAGING_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
     /// Render everything at and beneath \p root, using the configuration in
@@ -94,51 +105,69 @@ public:
     /// root for all future calls to Render().  That is, you can call Render()
     /// again on \p root or any descendant of \p root, but not on any parent,
     /// sibling, or cousin of \p root.
+    USDIMAGING_API
     virtual void Render(const UsdPrim& root, RenderParams params);
 
+    USDIMAGING_API
     virtual void InvalidateBuffers();
 
+    USDIMAGING_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
     /// Helper function to extract lighting state from opengl and then
     /// call SetLights.
+    USDIMAGING_API
     virtual void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
+    USDIMAGING_API
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
+    USDIMAGING_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
+    USDIMAGING_API
     virtual void SetRootVisibility(bool isVisible);
 
     /// Set the paths for selection highlighting. Note that these paths may 
     /// include prefix root paths, which will be expanded internally.
+    USDIMAGING_API
     virtual void SetSelected(SdfPathVector const& paths);
 
+    USDIMAGING_API
     virtual void ClearSelected();
+
+    USDIMAGING_API
     virtual void AddSelected(SdfPath const &path, int instanceIndex);
 
     /// Set the color for selection highlighting.
+    USDIMAGING_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromPrimIdColor(
         GfVec4i const& primIdColor,
         GfVec4i const& instanceIdColor,
         int* instanceIndexOut = NULL);
 
+    USDIMAGING_API
     virtual SdfPath GetPrimPathFromInstanceIndex(
         const SdfPath& protoPrimPath,
         int instanceIndex,
         int *absoluteInstanceIndex = NULL);
 
+    USDIMAGING_API
     virtual bool IsConverged() const;
 
+    USDIMAGING_API
     virtual std::vector<TfType> GetRenderGraphPlugins();
 
+    USDIMAGING_API
     virtual bool SetRenderGraphPlugin(TfType const &type);
 
+    USDIMAGING_API
     virtual bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -150,6 +179,7 @@ public:
         SdfPath *outHitInstancerPath = NULL,
         int *outHitInstanceIndex = NULL);
 
+    USDIMAGING_API
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,

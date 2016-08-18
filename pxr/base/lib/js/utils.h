@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file js/utils.h
-
 #ifndef JS_UTILS_H
 #define JS_UTILS_H
+
+/// \file js/utils.h
 
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/value.h"
@@ -39,8 +38,8 @@ typedef boost::optional<JsValue> JsOptionalValue;
 /// such key exists, and the supplied default is not supplied, this method
 /// returns an uninitialized optional JsValue. Otherwise, the \p 
 /// defaultValue is returned.
-JS_API
-JsOptionalValue JsFindValue(
+
+JS_API JsOptionalValue JsFindValue(
     const JsObject& object,
     const std::string& key,
     const JsOptionalValue& defaultValue = boost::none);

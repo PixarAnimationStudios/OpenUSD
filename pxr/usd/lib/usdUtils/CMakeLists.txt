@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdUtils)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(usdUtils
     LIBRARIES
         arch
@@ -24,7 +28,11 @@ pxr_shared_library(usdUtils
         stitch
         stitchClips
 
+    PUBLIC_HEADERS
+        api.h
+        
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

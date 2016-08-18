@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    """
+    This museum case illustrates a tricky situation involving spooky inherits
+    in a symmetric rig, where child prims in an instance of the rig have been 
+    subject to multiple relocations.
+
+    We primarily want to look at /CharRig/Anim/Legs/LHip/Knee. This prim
+    comes from across a few reference and inherit arcs. In addition, both
+    LHip and Knee have been relocated from their original locations
+    LLegRig/TentacleRig/Tentacle and LLegRig/TentacleRig/Tentacle/Seg2
+    in LegsRig.usda. Notice that these prims are in the same branch of
+    namespace -- this differs from TrickyMultipleRelocationsAndClasses, where
+    prims from different branches of namespace were relocated into a single
+    branch.
+    
+    Pcp needs to maintain enough information to correctly include the opinions 
+    from implied spooky inherit authored in this layer at 
+    /CharRig/Rig/LegsRig/SymLegRig/TentacleRig/Tentacle/Seg2.
+
+    This was derived from //m2/modchars/src/Art/menv30/Art_masterrig.usda.
+    """
+)
+
+def Scope "CharRig" (
+    relocates = {
+        <Rig/LegsRig/Legs> : <Anim/Legs>
+    }
+)
+{
+    def Scope "Rig"
+    {
+        def Scope "LegsRig" (
+            references = @LegsRig.usda@</LegsRig>
+        )
+        {
+            over "SymLegRig"
+            {
+                over "TentacleRig"
+                {
+                    over "Tentacle"
+                    {
+                        over "Seg2"
+                        {
+                            custom double JointBlend = 1
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    over "Anim"
+    {
+    }
+}
+

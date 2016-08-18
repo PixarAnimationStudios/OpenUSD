@@ -24,11 +24,17 @@
 #ifndef TF_TOKEN_H
 #define TF_TOKEN_H
 
+/// \file tf/token.h
+///
+/// \c TfToken class for efficient string referencing and hashing, plus
+/// conversions to and from stl string containers.
+
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/traits.h"
-
+#include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/hashset.h"
 #include <atomic>
 #include <iosfwd>
@@ -37,66 +43,55 @@
 #include <map>
 #include <set>
 
-/*!
- * \file token.h
- *
- * \c TfToken class for efficient string referencing and hashing, plus
- * conversions to and from stl string containers.
- */
-
-/*! 
- * \class TfToken Token.h "pxr/base/tf/token.h"
- * \ingroup group_tf_String
- * \brief Token for efficient comparison, assignment, and hashing of known
- * strings.
- *
- * A TfToken is a handle for a registered string, and can be compared,
- * assigned, and hashed in constant time.  It is useful when a bounded
- * number of strings are used as fixed symbols (but never modified).
- *
- * For example, the set of avar names in a shot is large but bounded,
- * and once an avar name is discovered, it is never manipulated.  If
- * these names were passed around as strings, every comparison and
- * hash would be linear in the number of characters.  (String
- * assignment itself is sometimes a constant time operation, but it is
- * sometimes linear in the length of the string as well as requiring a
- * memory allocation.)
- *
- * To use TfToken, simply create an instance from a string or
- * const char*.  If the string hasn't been seen before, a copy of it
- * is added to a global table.  The resulting TfToken is simply a
- * wrapper around an string*, pointing that canonical copy of the
- * string.  Thus, operations on the token are very fast.  (The
- * string's hash is simply the address of the canonical copy, so
- * hashing the string is constant time.)
- *
- * The free functions \c TfToTokenVector() and \c TfToStringVector()
- * provide conversions to and from vectors of \c string.
- * 
- * Note: Access to the global table is protected by a mutex.  This is
- * a good idea as long as clients do not construct tokens from strings
- * too frequently.  Construct tokens only as often as you must (for example,
- * as you read data files), and <i>never</i> in inner loops.  Of course,
- * once you have a token, feel free to compare, assign, and hash it as
- * often as you like.  (That's what it's for.)  In order to help prevent
- * tokens from being re-created over and over, auto type conversion from
- * \c string and \c char* to \c TfToken is disabled (you must use
- * the explicit \c TfToken constructors).  However, auto conversion from
- * \c TfToken to \c string and \c char* is provided.
- */
-
+/// \class TfToken
+/// \ingroup group_tf_String
+///
+/// Token for efficient comparison, assignment, and hashing of known strings.
+///
+/// A TfToken is a handle for a registered string, and can be compared,
+/// assigned, and hashed in constant time.  It is useful when a bounded number
+/// of strings are used as fixed symbols (but never modified).
+///
+/// For example, the set of avar names in a shot is large but bounded, and
+/// once an avar name is discovered, it is never manipulated.  If these names
+/// were passed around as strings, every comparison and hash would be linear
+/// in the number of characters.  (String assignment itself is sometimes a
+/// constant time operation, but it is sometimes linear in the length of the
+/// string as well as requiring a memory allocation.)
+///
+/// To use TfToken, simply create an instance from a string or const char*.
+/// If the string hasn't been seen before, a copy of it is added to a global
+/// table.  The resulting TfToken is simply a wrapper around an string*,
+/// pointing that canonical copy of the string.  Thus, operations on the token
+/// are very fast.  (The string's hash is simply the address of the canonical
+/// copy, so hashing the string is constant time.)
+///
+/// The free functions \c TfToTokenVector() and \c TfToStringVector() provide
+/// conversions to and from vectors of \c string.
+/// 
+/// Note: Access to the global table is protected by a mutex.  This is a good
+/// idea as long as clients do not construct tokens from strings too
+/// frequently.  Construct tokens only as often as you must (for example, as
+/// you read data files), and <i>never</i> in inner loops.  Of course, once
+/// you have a token, feel free to compare, assign, and hash it as often as
+/// you like.  (That's what it's for.)  In order to help prevent tokens from
+/// being re-created over and over, auto type conversion from \c string and \c
+/// char* to \c TfToken is disabled (you must use the explicit \c TfToken
+/// constructors).  However, auto conversion from \c TfToken to \c string and
+/// \c char* is provided.
+///
 class TfToken
 {
 public:
     enum _ImmortalTag { Immortal };
 
-    //! Create the empty token, containing the empty string.
+    /// Create the empty token, containing the empty string.
     TfToken() {}
 
-    //! Copy constructor.
+    /// Copy constructor.
     TfToken(TfToken const& rhs) : _rep(rhs._rep) { _AddRef(); }
     
-    //! Assignment.
+    /// Assignment.
     TfToken& operator= (TfToken const& rhs) {
         if (&rhs != this) {
         rhs._AddRef();
@@ -106,54 +101,54 @@ public:
         return *this;
     }
 
-    //! Destructor.
+    /// Destructor.
     ~TfToken() { _RemoveRef(); }
     
-    //! Acquire a token for the given string.
+    /// Acquire a token for the given string.
     //
     // This constructor involves a string hash and a lookup in the global
     // table, and so should not be done more often than necessary.  When
     // possible, create a token once and reuse it many times.
-    explicit TfToken(std::string const& s);
-    //! \overload
+	TF_API explicit TfToken(std::string const& s);
+    /// \overload
     // Create a token for \p s, and make it immortal.  If \p s exists in the
     // token table already and is not immortal, make it immortal.  Immortal
     // tokens are faster to copy than mortal tokens, but they will never expire
     // and release their memory.
-    TfToken(std::string const& s, _ImmortalTag);
+	TF_API TfToken(std::string const& s, _ImmortalTag);
 
-    //! Acquire a token for the given string.
+    /// Acquire a token for the given string.
     //
     // This constructor involves a string hash and a lookup in the global
     // table, and so should not be done more often than necessary.  When
     // possible, create a token once and reuse it many times.
-    explicit TfToken(char const* s);
-    //! \overload
+	TF_API explicit TfToken(char const* s);
+    /// \overload
     // Create a token for \p s, and make it immortal.  If \p s exists in the
     // token table already and is not immortal, make it immortal.  Immortal
     // tokens are faster to copy than mortal tokens, but they will never expire
     // and release their memory.
-    TfToken(char const* s, _ImmortalTag);
+	TF_API TfToken(char const* s, _ImmortalTag);
 
-    //! Find the token for the given string, if one exists.
+    /// Find the token for the given string, if one exists.
     //
     // If a token has previous been created for the given string, this
     // will return it.  Otherwise, the empty token will be returned.
-    static TfToken Find(std::string const& s);
+	TF_API static TfToken Find(std::string const& s);
 
-    //! Return a size_t hash for this token.
+    /// Return a size_t hash for this token.
     //
     // The hash is based on the token's storage identity; this is immutable
     // as long as the token is in use anywhere in the process.
     //
     size_t Hash() const { return TfHash()(_rep.Get()); }
 
-    //! Functor to use for hash maps from tokens to other things.
+    /// Functor to use for hash maps from tokens to other things.
     struct HashFunctor {
         size_t operator()(TfToken const& token) const { return token.Hash(); }
     };
 
-    //! Functor to be used with std::set when lexicographical ordering
+    /// Functor to be used with std::set when lexicographical ordering
     // isn't crucial and you just want uniqueness and fast lookup
     // without the overhead of an TfHashSet.
     struct LTTokenFunctor {
@@ -162,128 +157,128 @@ public:
         }
     };
 
-    //! Functor for comparing two tokens, for use in TfHashSet.
+    /// Functor for comparing two tokens, for use in TfHashSet.
     struct TokensEqualFunctor {
         bool operator()(TfToken const& t1, TfToken const& t2) const {
             return t1 == t2;
         }
     };
 
-    //! \typedef TfHashSet<TfToken, TfToken::HashFunctor, TfToken::TokensEqualFunctor> HashSet;
-    //
-    // \brief Predefined type for TfHashSet of tokens, since it's so awkward to
-    // manually specify.
-    //
+    /// \typedef TfHashSet<TfToken, TfToken::HashFunctor, TfToken::TokensEqualFunctor> HashSet;
+    ///
+    /// Predefined type for TfHashSet of tokens, since it's so awkward to
+    /// manually specify.
+    ///
     typedef TfHashSet<TfToken, TfToken::HashFunctor, TfToken::TokensEqualFunctor> HashSet;
     
-    //! \typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
-    //
-    // \brief Predefined type for set of tokens, for when faster lookup is
-    // desired, without paying the memory or initialization cost of a
-    // TfHashSet.
-    //
+    /// \typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
+    ///
+    /// Predefined type for set of tokens, for when faster lookup is
+    /// desired, without paying the memory or initialization cost of a
+    /// TfHashSet.
+    ///
     typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
     
-    //! Return the text that this token represents.
-    //
-    // \note The returned pointer value is not valid after this TfToken
-    // object has been destroyed.
-    //
+    /// Return the text that this token represents.
+    ///
+    /// \note The returned pointer value is not valid after this TfToken
+    /// object has been destroyed.
+    ///
     char const* GetText() const {
         return _rep ? _rep->_str.c_str() : _emptyStr;
     }
 
-    //! Return the string that this token represents.
+    /// Return the string that this token represents.
     std::string const& GetString() const {
         return _rep ? _rep->_str : _GetEmptyString();
     }
 
-    //! Swap this token with another.
+    /// Swap this token with another.
     inline void Swap(TfToken &other) {
         std::swap(_rep, other._rep);
     }
     
-    //! Equality operator
+    /// Equality operator
     bool operator==(TfToken const& o) const {
         return _rep.Get() == o._rep.Get();
     }
 
-    //! Equality operator
+    /// Equality operator
     bool operator!=(TfToken const& o) const {
         return !(*this == o);
     }
 
-    //! Equality operator for \c char strings.  Not as fast as direct
-    // token to token equality testing
-    bool operator==(std::string const& o) const;
+    /// Equality operator for \c char strings.  Not as fast as direct
+    /// token to token equality testing
+	TF_API bool operator==(std::string const& o) const;
 
-    //! Equality operator for \c char strings.  Not as fast as direct
-    // token to token equality testing
-    bool operator==(const char *) const;
+    /// Equality operator for \c char strings.  Not as fast as direct
+    /// token to token equality testing
+	TF_API bool operator==(const char *) const;
 
-    //! \overload
+    /// \overload
     friend bool operator==(std::string const& o, TfToken const& t) {
         return t == o;
     }
 
-    //! \overload
+    /// \overload
     friend bool operator==(const char *o, TfToken const& t) {
         return t == o;
     }
 
-    //! Inequality operator for \c string's.  Not as fast as direct
-    // token to token equality testing
+    /// Inequality operator for \c string's.  Not as fast as direct
+    /// token to token equality testing
     bool operator!=(std::string const& o) const {
         return !(*this == o);
     }
 
-    //! \overload
+    /// \overload
     friend bool operator!=(std::string const& o, TfToken const& t)  {
         return !(t == o);
     }
 
-    //! Inequality operator for \c char strings.  Not as fast as direct
-    // token to token equality testing
+    /// Inequality operator for \c char strings.  Not as fast as direct
+    /// token to token equality testing
     bool operator!=(char const* o) const {
         return !(*this == o);
     }
 
-    //! \overload
+    /// \overload
     friend bool operator!=(char const* o, TfToken const& t) {
         return !(t == o);
     }
 
-    //! Less-than operator that compares tokenized strings lexicographically.
-    // Allows \c TfToken to be used in \c std::set
+    /// Less-than operator that compares tokenized strings lexicographically.
+    /// Allows \c TfToken to be used in \c std::set
     inline bool operator<(TfToken const& o) const {
         return GetString() < o.GetString();
     }
 
-    //! Greater-than operator that compares tokenized strings lexicographically.
+    /// Greater-than operator that compares tokenized strings lexicographically.
     inline bool operator>(TfToken const& o) const {
         return GetString() > o.GetString();
     }
 
-    //! Greater-than-or-equal operator that compares tokenized strings
-    // lexicographically.
+    /// Greater-than-or-equal operator that compares tokenized strings
+    /// lexicographically.
     inline bool operator>=(TfToken const& o) const {
         return !(*this < o);
     }
 
-    //! Less-than-or-equal operator that compares tokenized strings
-    // lexicographically.
+    /// Less-than-or-equal operator that compares tokenized strings
+    /// lexicographically.
     inline bool operator<=(TfToken const& o) const {
         return !(*this > o);
     }
 
-    //! Allow \c TfToken to be auto-converted to \c string
+    /// Allow \c TfToken to be auto-converted to \c string
     operator std::string const& () const { return GetString(); }
     
-    //! Returns \c true iff this token contains the empty string \c ""
+    /// Returns \c true iff this token contains the empty string \c ""
     bool IsEmpty() const { return !_rep; }
 
-    //! Stream insertion.
-    friend std::ostream &operator <<(std::ostream &stream, TfToken const&);
+    /// Stream insertion.
+    friend TF_API std::ostream &operator <<(std::ostream &stream, TfToken const&);
 
 private:
     // Add global swap overload.
@@ -330,7 +325,7 @@ private:
         }
     }
     
-    void _PossiblyDestroyRep() const;
+    void TF_API _PossiblyDestroyRep() const;
     
     struct _Rep {
         _Rep() {}
@@ -371,39 +366,37 @@ private:
     };
 
     friend struct TfTokenFastArbitraryLessThan;
-    friend class Tf_TokenRegistry;
+    friend struct Tf_TokenRegistry;
+    friend class TfSingleton<TfToken>;
     
-    static std::string const& _GetEmptyString();
-    static char const* _emptyStr;
+	TF_API static std::string const& _GetEmptyString();
+	TF_API static char const* _emptyStr;
 
     mutable TfPointerAndBits<const _Rep> _rep;
 };
 
+TF_API_TEMPLATE_CLASS(TfSingleton<TfToken>);
 
-//!
-// Fast but non-lexicographical (in fact, arbitrary) less-than comparison for
-// TfTokens.  Should only be used in performance-critical cases.
+/// Fast but non-lexicographical (in fact, arbitrary) less-than comparison for
+/// TfTokens.  Should only be used in performance-critical cases.
 struct TfTokenFastArbitraryLessThan {
     inline bool operator()(TfToken const &lhs, TfToken const &rhs) const {
         return lhs._rep.Get() < rhs._rep.Get();
     }
 };
             
-
-//!
-// Convert the vector of strings \p sv into a vector of \c TfToken
-std::vector<TfToken>
+/// Convert the vector of strings \p sv into a vector of \c TfToken
+TF_API std::vector<TfToken>
 TfToTokenVector(const std::vector<std::string> &sv);
 
-//!
-// Convert the vector of \c TfToken \p tv into a vector of strings
+/// Convert the vector of \c TfToken \p tv into a vector of strings
 std::vector<std::string>
 TfToStringVector(const std::vector<TfToken> &tv);
 
-// Overload hash_value for TfToken.
+/// Overload hash_value for TfToken.
 inline size_t hash_value(const TfToken& x) { return x.Hash(); }
 
-// Convenience types.
+/// Convenience types.
 typedef std::vector<TfToken> TfTokenVector;
 
 #endif

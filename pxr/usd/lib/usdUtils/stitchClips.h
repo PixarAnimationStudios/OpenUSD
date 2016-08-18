@@ -24,16 +24,23 @@
 #ifndef _USDUTILS_STITCH_CLIPS_H_
 #define _USDUTILS_STITCH_CLIPS_H_
 
+/// \file usdUtils/stitchClips.h
+///
+/// Collection of utilities for sequencing multiple layers each holding
+/// sequential time-varying data into
+/// \ref Usd_ClipsOverview "USD Value Clips".
+
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 SDF_DECLARE_HANDLES(SdfLayer);
 
 #include <limits>
 
-/// A function that creates layers that use USD's value
-/// clip functionality to effectively merge the time samples
-/// in the given \p clipLayers under \p clipPath without 
-/// copying the samples into a separate layer.
+/// A function that creates layers that use
+/// \ref Usd_ClipsOverview "USD Value Clips"
+/// to effectively merge the time samples in the given \p clipLayers under \p
+/// clipPath without copying the samples into a separate layer.
 ///
 /// \p resultLayer            The layer to which clip meta data and frame data 
 ///                           will be written
@@ -87,7 +94,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// 
 /// Note: if this function fails, the root layer will be not be created.
 /// If the topology is not being reused, it will not be generated either.
-bool 
+USDUTILS_API bool 
 UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath, 
@@ -95,6 +102,5 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                         = true,
                     const double startTimeCode 
                         = std::numeric_limits<double>::max());
-
 
 #endif // _USDUTILS_STITCH_CLIPS_H_

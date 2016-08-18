@@ -1,0 +1,23 @@
+------------------------------------------------------------------------
+Errors while composing </Root>
+
+The layer at @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@ has an illegal opinion about an attribute </Root.attr> which is private across a reference, inherit, or variant.  Ignoring.
+The layer at @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@ has an illegal opinion about a relationship </Root.privateRel> which is private across a reference, inherit, or variant.  Ignoring.
+The layer at @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@ has an illegal opinion about an attribute </Root.publicRel[/Root.A_attr].a> which is private across a reference, inherit, or variant.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </Parent/Child>
+
+@menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@</Parent/Child>
+will be ignored because:
+@menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/A.usda@</Parent/Child>
+is private and overrides its opinions.
+
+------------------------------------------------------------------------
+Errors while composing </Model>
+
+@menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@</Model>
+CANNOT inherit from:
+@menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@</_PrivateClass>
+which is private.
+

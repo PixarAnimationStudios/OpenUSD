@@ -24,13 +24,15 @@
 #ifndef _USDUTILS_AUTHORING_H_
 #define _USDUTILS_AUTHORING_H_
 
-#include "pxr/usd/sdf/declareHandles.h"
-
-SDF_DECLARE_HANDLES(SdfLayer);
-
-/// \file authoring.h 
+/// \file usdUtils/authoring.h 
+///
 /// A collection of utilities for higher-level authoring and copying scene
 /// description than provided by the core Usd and Sdf API's
+
+#include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/usd/usdUtils/api.h"
+
+SDF_DECLARE_HANDLES(SdfLayer);
 
 /// Given two layers \p source and \p destination, copy the authored metadata
 /// from one to the other.  By default, copy **all** authored metadata;
@@ -42,6 +44,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// in \p source will be replaced.
 ///
 /// \return \c true on success, \c false on error.
+USDUTILS_API
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
                                bool skipSublayers = false);

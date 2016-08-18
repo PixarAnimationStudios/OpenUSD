@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/mapperArgSpec.h
-
 #ifndef SDF_MAPPERARGSPEC_H
 #define SDF_MAPPERARGSPEC_H
 
+/// \file sdf/mapperArgSpec.h
+
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/base/vt/value.h"
@@ -34,9 +35,9 @@
 SDF_DECLARE_HANDLES(SdfMapperArgSpec);
 SDF_DECLARE_HANDLES(SdfMapperSpec);
 
-///
 /// \class SdfMapperArgSpec 
-/// \brief Represents an argument to a specific mapper.
+///
+/// Represents an argument to a specific mapper.
 ///
 class SdfMapperArgSpec : public SdfSpec 
 {
@@ -51,12 +52,13 @@ public:
     /// \name Spec creation
     /// @{
 
-    /// \brief Create a mapper arg spec.
+    /// Create a mapper arg spec.
     ///
     /// Creates and returns a new mapper arg owned by mapper \a owner with
     /// the name \p name and value \p value.
     ///
     /// Mapper args must be created in the context of an existing mapper.
+    SDF_API
     static SdfMapperArgSpecHandle New(const SdfMapperSpecHandle& owner, 
                                       const std::string& name, 
                                       const VtValue& value);
@@ -65,15 +67,19 @@ public:
     /// @{
 
     /// Returns the mapper that owns this arg.
+    SDF_API
     SdfMapperSpecHandle GetMapper() const;
 
     /// Returns the name for the mapper arg.
+    SDF_API
     const std::string& GetName() const;
 
     /// Returns the name for the mapper arg.
+    SDF_API
     const TfToken& GetNameToken() const;
 
     /// Sets the name of this mapper arg.
+    SDF_API
     void SetName(const std::string& name);
 
     /// @}
@@ -81,9 +87,11 @@ public:
     /// @{
 
     /// Returns the value of the mapper arg.
+    SDF_API
     VtValue GetValue() const;
 
     /// Sets the value of the mapper arg.
+    SDF_API
     void SetValue(const VtValue& value);
 
     /// @}

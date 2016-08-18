@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    """
+    This example exercises a tricky combination of variant sets
+    and ancestral payloads.
+    
+    In this test, A1 has a payload to A.  The payload contains
+    a child B, with a variant set v and selection {v=v1}.
+    Back in A1, there is an override for B that payloads
+    another prim that makes a different selection {v=v2}.
+    How does this variant get decided?
+
+    A simple strength order traversal provides the appropriate
+    variant selection. Since ancestral payloads are stronger than
+    descendant payloads (see BasicNestedPayload museum case),
+    the variant selection in A1's payload wins over B's payload,
+    giving {v=v1}
+    """
+)
+
+def Scope "A1" (
+    payload = @model.usda@</A>
+)
+{
+    over "B" (
+        payload = @model.usda@</B>
+    ) {
+    }
+}

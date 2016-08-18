@@ -1,0 +1,49 @@
+Loading @testPcpMuseum.testenv/ErrorOpinionAtRelocationSource/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </CharRig>
+
+Prim Stack:
+    root.usda            /CharRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim>
+
+Prim Stack:
+    root.usda            /CharRig/Anim
+
+Child names:
+     ['Path']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim/Path>
+
+Prim Stack:
+    pathRig.usda         /PathRig/Path
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig
+
+Child names:
+     ['PathRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/PathRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/PathRig
+    pathRig.usda         /PathRig
+
+Prohibited child names:
+     ['Path']
+

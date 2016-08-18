@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+Errors while computing Layer Stack
+
+The following sublayers for layer @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorOwner/root.usda@ have the same owner 'foo': @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorOwner/stronger.usda@, @menv/Core/lib/Pcp/testenv/testPcpMuseum.testenv/ErrorOwner/owned.usda@
+

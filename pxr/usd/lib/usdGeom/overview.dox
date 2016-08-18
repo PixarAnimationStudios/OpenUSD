@@ -5,9 +5,9 @@
 \mainpage UsdGeom : USD Geometry Schema
 \endif
 
-\brief <b>UsdGeom</b> defines the 3D graphics-related prim and property
-schemas that together form a basis for interchanging geometry between DCC
-tools in a graphics pipeline.
+<b>UsdGeom</b> defines the 3D graphics-related prim and property schemas that
+together form a basis for interchanging geometry between DCC tools in a
+graphics pipeline.
 
 \section UsdGeom_Structure Class Structure
 

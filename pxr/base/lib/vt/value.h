@@ -38,6 +38,7 @@
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
+#include "pxr/base/vt/api.h"
 
 #include <boost/aligned_storage.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -58,12 +59,11 @@
 #include <typeinfo>
 #include <iostream>
 
-//! \brief Make a default value.  VtValue uses this to create values to be
-// returned from failed calls to \a Get.  Clients may specialize this for their
-// own types.
+/// Make a default value.
+/// VtValue uses this to create values to be returned from failed calls to \a
+/// Get. Clients may specialize this for their own types.
 template <class T>
 struct Vt_DefaultValueFactory;
-
 
 // This is a helper class used by Vt_DefaultValueFactory to return a value with
 // its type erased and only known at runtime via a std::type_info.
@@ -101,7 +101,7 @@ class VtValue;
 
 // Overload VtStreamOut for vector<VtValue>.  Produces output like [value1,
 // value2, ... valueN].
-std::ostream &VtStreamOut(std::vector<VtValue> const &val, std::ostream &);
+VT_API std::ostream &VtStreamOut(std::vector<VtValue> const &val, std::ostream &);
 
 // Base implementations for VtGetProxied{Type,Value}.
 template <class T>
@@ -126,43 +126,43 @@ template <class T>
 struct Vt_ValueGetStored 
     : Vt_ValueStoredType<typename boost::decay<T>::type> {};
 
-//! \brief Provides a container which may hold any type, and provides
-// introspection and iteration over array types.  See \a VtIsArray for more
-// info.
-//
-// \section VtValue_Casting Held-type Conversion with VtValue::Cast
-//
-// VtValue provides a suite of "Cast" methods that convert or create
-// a VtValue holding a requested type (via template parameter, typeid,
-// or type-matching to another VtValue) from the type of the currently-held
-// value.  Clients can add conversions between their own types using the
-// RegisterCast(), RegisterSimpleCast(), and RegisterSimpleBidirectionalCast()
-// methods.  Conversions from plugins can be guaranteed to be registered before
-// they are needed by registering them from within a
-// \code
-// TF_REGISTRY_FUNCTION(VtValue) {
-// }
-// \endcode
-// block.
-//
-// \subsection VtValue_builtin_conversions Builtin Type Conversion
-//
-// Conversions between most of the basic "value types" that are intrinsically
-// convertible are builtin, including all numeric types (including Gf's
-// \c half), std::string/TfToken, GfVec* (for vecs of the same dimension), and
-// VtArray<T> for floating-point POD and GfVec of the preceding.
-//
-// \subsection VtValue_numeric_conversion Numeric Conversion Safety
-//
-// The conversions between all scalar numeric types are performed with range
-// checks such as provided by boost::numeric_cast(), and will fail, returning
-// an empty VtValue if the source value is out of range of the destination
-// type.
-//
-// Conversions between GfVec and other compound-numeric types provide no more
-// or less safety or checking than the conversion constructors of the types
-// themselves.  This includes VtArray, even VtArray<T> for T in scalar types
-// that are range-checked when held singly.
+/// Provides a container which may hold any type, and provides introspection
+/// and iteration over array types.  See \a VtIsArray for more info.
+///
+/// \section VtValue_Casting Held-type Conversion with VtValue::Cast
+///
+/// VtValue provides a suite of "Cast" methods that convert or create a
+/// VtValue holding a requested type (via template parameter, typeid, or
+/// type-matching to another VtValue) from the type of the currently-held
+/// value.  Clients can add conversions between their own types using the
+/// RegisterCast(), RegisterSimpleCast(), and
+/// RegisterSimpleBidirectionalCast() methods.  Conversions from plugins can
+/// be guaranteed to be registered before they are needed by registering them
+/// from within a
+/// \code
+/// TF_REGISTRY_FUNCTION(VtValue) {
+/// }
+/// \endcode
+/// block.
+///
+/// \subsection VtValue_builtin_conversions Builtin Type Conversion
+///
+/// Conversions between most of the basic "value types" that are intrinsically
+/// convertible are builtin, including all numeric types (including Gf's \c
+/// half), std::string/TfToken, GfVec* (for vecs of the same dimension), and
+/// VtArray<T> for floating-point POD and GfVec of the preceding.
+///
+/// \subsection VtValue_numeric_conversion Numeric Conversion Safety
+///
+/// The conversions between all scalar numeric types are performed with range
+/// checks such as provided by boost::numeric_cast(), and will fail, returning
+/// an empty VtValue if the source value is out of range of the destination
+/// type.
+///
+/// Conversions between GfVec and other compound-numeric types provide no more
+/// or less safety or checking than the conversion constructors of the types
+/// themselves.  This includes VtArray, even VtArray<T> for T in scalar types
+/// that are range-checked when held singly.
 class VtValue
 {
     static const unsigned int _LocalFlag       = 1 << 0;
@@ -486,10 +486,10 @@ class VtValue
 
 public:
 
-    //! \brief Default ctor gives empty VtValue.
+    /// Default ctor gives empty VtValue.
     VtValue() {}
 
-    //! \brief Copy construct with \p other.
+    /// Copy construct with \p other.
     VtValue(VtValue const &other) {
         // If other is local, can memcpy without derefing info ptrs.
         _info = other._info;
@@ -500,34 +500,35 @@ public:
         }
     }
 
-    //! \brief Construct a VtValue holding a copy of \p obj.
-    // 
-    // If T is a char pointer or array, produce a VtValue holding a std::string.
-    // If T is boost::python::object, produce a VtValue holding a
-    // TfPyObjWrapper.
+    /// Construct a VtValue holding a copy of \p obj.
+    /// 
+    /// If T is a char pointer or array, produce a VtValue holding a
+    /// std::string. If T is boost::python::object, produce a VtValue holding
+    /// a TfPyObjWrapper.
     template <class T>
     explicit VtValue(T const &obj) {
         _Init(obj);
     }
 
-    //! \brief Create a new VtValue, taking its contents from \p obj.  This is
-    // equivalent to creating a VtValue holding a value-initialized \p T
-    // instance, then invoking swap(<held-value>, obj), leaving obj in a
-    // default-constructed (value-initialized) state.  In the case that \p obj
-    // is expensive to copy, it may be significantly faster to use this idiom
-    // when \p obj need not retain its contents:
-    //
-    // \code
-    // MyExpensiveObject obj = CreateObject();
-    // return VtValue::Take(obj);
-    // \endcode
-    //
-    // Rather than:
-    //
-    // \code
-    // MyExpensiveObject obj = CreateObject();
-    // return VtValue(obj);
-    // \endcode
+    /// Create a new VtValue, taking its contents from \p obj.
+    /// 
+    /// This is equivalent to creating a VtValue holding a value-initialized
+    /// \p T instance, then invoking swap(<held-value>, obj), leaving obj in a
+    /// default-constructed (value-initialized) state.  In the case that \p
+    /// obj is expensive to copy, it may be significantly faster to use this
+    /// idiom when \p obj need not retain its contents:
+    ///
+    /// \code
+    /// MyExpensiveObject obj = CreateObject();
+    /// return VtValue::Take(obj);
+    /// \endcode
+    ///
+    /// Rather than:
+    ///
+    /// \code
+    /// MyExpensiveObject obj = CreateObject();
+    /// return VtValue(obj);
+    /// \endcode
     template <class T>
     static VtValue Take(T &obj) {
         VtValue ret;
@@ -535,17 +536,17 @@ public:
         return ret;
     }
 
-    //! \brief Destructor.
+    /// Destructor.
     ~VtValue() { _Clear(); }
 
-    //! \brief Assignment from another \a VtValue.
+    /// Assignment from another \a VtValue.
     VtValue &operator=(VtValue const &other) {
         if (ARCH_LIKELY(this != &other))
             _Copy(other, *this);
         return *this;
     }
 
-    //! \brief Assignment operator from any type.
+    /// Assignment operator from any type.
     template <class T>
     inline
     typename boost::enable_if_c<
@@ -558,7 +559,7 @@ public:
         return *this;
     }
 
-    //! \brief Assignment operator from any type.
+    /// Assignment operator from any type.
     template <class T>
     typename boost::disable_if_c<
         _TypeInfoFor<T>::Type::IsLocal and
@@ -570,7 +571,7 @@ public:
         return *this;
     }
 
-    //! \brief Assigning a char const * gives a VtValue holding a std::string.
+    /// Assigning a char const * gives a VtValue holding a std::string.
     VtValue &operator=(char const *cstr) {
         std::string tmp(cstr);
         _Clear();
@@ -578,12 +579,12 @@ public:
         return *this;
     }
 
-    //! \brief Assigning a char * gives a VtValue holding a std::string.
+    /// Assigning a char * gives a VtValue holding a std::string.
     VtValue &operator=(char *cstr) {
         return *this = const_cast<char const *>(cstr);
     }
 
-    //! \brief Swap this with \a rhs.
+    /// Swap this with \a rhs.
     VtValue &Swap(VtValue &rhs) {
         // Do nothing if both empty.  Otherwise general swap.
         if (not IsEmpty() or not rhs.IsEmpty()) {
@@ -595,10 +596,10 @@ public:
         return *this;
     }
 
-    //! Overloaded swap() for generic code/stl/etc.
+    /// Overloaded swap() for generic code/stl/etc.
     friend void swap(VtValue &lhs, VtValue &rhs) { lhs.Swap(rhs); }
 
-    //! \brief Swap the held value with \a rhs.  If this value is holding a T,
+    /// Swap the held value with \a rhs.  If this value is holding a T,
     // make an unqualified call to swap(<held-value>, rhs).  If this value is
     // not holding a T, replace the held value with a value-initialized T
     // instance first, then swap.
@@ -611,10 +612,10 @@ public:
         UncheckedSwap(rhs);
     }
 
-    //! \brief Swap the held value with \a rhs.  This VtValue must be holding an
-    // object of type \p T.  If it does not, this invokes undefined behavior.
-    // Use Swap() if this VtValue is not known to contain an object of type
-    // \p T.
+    /// Swap the held value with \a rhs.  This VtValue must be holding an
+    /// object of type \p T.  If it does not, this invokes undefined behavior.
+    /// Use Swap() if this VtValue is not known to contain an object of type
+    /// \p T.
     template <class T>
     typename boost::enable_if<
         boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
@@ -623,12 +624,12 @@ public:
         swap(_GetMutable<T>(), rhs);
     }
 
-    //! \overload
+    /// \overload
     void UncheckedSwap(VtValue &rhs) { Swap(rhs); }
 
-    //! \brief Make this value empty and return the held \p T instance.  If
-    // this value does not hold a \p T instance, make this value empty and
-    // return a default-constructed \p T.
+    /// Make this value empty and return the held \p T instance.  If
+    /// this value does not hold a \p T instance, make this value empty and
+    /// return a default-constructed \p T.
     template <class T>
     T Remove() {
         T result;
@@ -637,9 +638,9 @@ public:
         return result;
     }
 
-    //! \brief Make this value empty and return the held \p T instance.  If this
-    // value does not hold a \p T instance, this method invokes undefined
-    // behavior.
+    /// Make this value empty and return the held \p T instance.  If this
+    /// value does not hold a \p T instance, this method invokes undefined
+    /// behavior.
     template <class T>
     T UncheckedRemove() {
         T result;
@@ -648,48 +649,47 @@ public:
         return result;
     }
 
-    //! \brief Return true if this value is holding an object of type \p T,
-    // false otherwise.
+    /// Return true if this value is holding an object of type \p T, false
+    /// otherwise.
     template <class T>
     bool IsHolding() const {
         return _info and _TypeIs<T>();
     }
 
-    //! \brief Returns true iff this is holding an array type (see
-    // VtIsArray<>).
-    bool IsArrayValued() const;
+    /// Returns true iff this is holding an array type (see VtIsArray<>).
+	VT_API bool IsArrayValued() const;
 
-    //! \brief Return the number of elements in the held value if
-    //! IsArrayValued(), return 0 otherwise.
-    size_t GetArraySize() const { return _GetNumElements(); }
+    /// Return the number of elements in the held value if IsArrayValued(),
+    /// return 0 otherwise.
+	VT_API size_t GetArraySize() const { return _GetNumElements(); }
 
-    //! \brief Returns the typeid of the type held by this value.
-    std::type_info const &GetTypeid() const;
+    /// Returns the typeid of the type held by this value.
+	VT_API std::type_info const &GetTypeid() const;
 
-    //! \brief Return the typeid of elements in a array valued type.  If not
-    // holding an array valued type, return typeid(void).
-    std::type_info const &GetElementTypeid() const;
+    /// Return the typeid of elements in a array valued type.  If not
+    /// holding an array valued type, return typeid(void).
+	VT_API std::type_info const &GetElementTypeid() const;
 
-    //! \brief Returns the TfType of the type held by this value.
-    TfType GetType() const;
+    /// Returns the TfType of the type held by this value.
+	VT_API TfType GetType() const;
 
-    //! \brief Return the type name of the held typeid.
-    std::string GetTypeName() const;
+    /// Return the type name of the held typeid.
+	VT_API std::string GetTypeName() const;
 
-    //! \brief Returns a const reference to the held object if the held object
-    // is of type \a T.  Invokes undefined behavior otherwise.  This is the
-    // fastest \a Get() method to use after a successful \a IsHolding() check.
+    /// Returns a const reference to the held object if the held object
+    /// is of type \a T.  Invokes undefined behavior otherwise.  This is the
+    /// fastest \a Get() method to use after a successful \a IsHolding() check.
     template <class T>
     T const &UncheckedGet() const { return _Get<T>(); }
 
-    //! \brief Returns a const reference to the held object if the held object
-    // is of type \a T.  Issues an error and returns a const reference to a
-    // default value if the held object is not of type \a T.  Use \a IsHolding
-    // to verify correct type before calling this function.  The default value
-    // returned in case of type mismatch is constructed using
-    // Vt_DefaultValueFactory<T>.  That may be specialized for client types.
-    // The default implementation of the default value factory produces a
-    // value-initialized T.
+    /// Returns a const reference to the held object if the held object
+    /// is of type \a T.  Issues an error and returns a const reference to a
+    /// default value if the held object is not of type \a T.  Use \a IsHolding
+    /// to verify correct type before calling this function.  The default value
+    /// returned in case of type mismatch is constructed using
+    /// Vt_DefaultValueFactory<T>.  That may be specialized for client types.
+    /// The default implementation of the default value factory produces a
+    /// value-initialized T.
     template <class T>
     T const &Get() const {
         typedef Vt_DefaultValueFactory<T> Factory;
@@ -704,82 +704,82 @@ public:
         return _Get<T>();
     }
 
-    //! \brief Return a copy of the held object if the held object is of type T.
-    // Return a copy of the default value \a def otherwise.  Note that this
-    // always returns a copy, as opposed to \a Get() which always returns a
-    // reference.
+    /// Return a copy of the held object if the held object is of type T.
+    /// Return a copy of the default value \a def otherwise.  Note that this
+    /// always returns a copy, as opposed to \a Get() which always returns a
+    /// reference.
     template <class T>
     T GetWithDefault(T const &def = T()) const {
         return IsHolding<T>() ? UncheckedGet<T>() : def;
     }
 
-    //! \brief Register a cast from VtValue holding From to VtValue holding To.
+    /// Register a cast from VtValue holding From to VtValue holding To.
     template <typename From, typename To>
     static void RegisterCast(VtValue (*castFn)(VtValue const &)) {
         _RegisterCast(typeid(From), typeid(To), castFn);
     }
 
-    //! \brief Register a simple cast from VtValue holding From to VtValue
+    /// Register a simple cast from VtValue holding From to VtValue
     // holding To.
     template <typename From, typename To>
     static void RegisterSimpleCast() {
         _RegisterCast(typeid(From), typeid(To), _SimpleCast<From, To>);
     }
 
-    //! \brief Register a two-way cast from VtValue holding From to VtValue
-    // holding To.
+    /// Register a two-way cast from VtValue holding From to VtValue
+    /// holding To.
     template <typename From, typename To>
     static void RegisterSimpleBidirectionalCast() {
         RegisterSimpleCast<From, To>();
         RegisterSimpleCast<To, From>();
     }
 
-    //! \brief Return a VtValue holding \c val cast to hold T.  Return empty
-    // VtValue if cast fails.
-    //
-    // This Cast() function is safe to call in multiple threads as it does not
-    // mutate the operant \p val.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return a VtValue holding \c val cast to hold T.  Return empty VtValue
+    /// if cast fails.
+    ///
+    /// This Cast() function is safe to call in multiple threads as it does
+    /// not mutate the operant \p val.
+    ///
+    /// \sa \ref VtValue_Casting
     template <typename T>
     static VtValue Cast(VtValue const &val) {
         VtValue ret = val;
         return ret.Cast<T>();
     }
 
-    //! \brief Return a VtValue holding \c val cast to same type that \c other
-    // is holding.  Return empty VtValue if cast fails.
-    //
-    // This Cast() function is safe to call in multiple threads as it does not
-    // mutate the operant \p val.
-    //
-    // \sa \ref VtValue_Casting
-    static VtValue CastToTypeOf(VtValue const &val, VtValue const &other);
+    /// Return a VtValue holding \c val cast to same type that \c other is
+    /// holding.  Return empty VtValue if cast fails.
+    ///
+    /// This Cast() function is safe to call in multiple threads as it does not
+    /// mutate the operant \p val.
+    ///
+    /// \sa \ref VtValue_Casting
+	VT_API static VtValue CastToTypeOf(VtValue const &val, VtValue const &other);
 
-    //! \brief Return a VtValue holding \a val cast to \a type.  Return empty
-    // VtValue if cast fails.
-    //
-    // This Cast() function is safe to call in multiple threads as it does not
-    // mutate the operant \p val.
-    //
-    // \sa \ref VtValue_Casting
-    static VtValue CastToTypeid(VtValue const &val, std::type_info const &type);
+    /// Return a VtValue holding \a val cast to \a type.  Return empty VtValue
+    /// if cast fails.
+    ///
+    /// This Cast() function is safe to call in multiple threads as it does not
+    /// mutate the operant \p val.
+    ///
+    /// \sa \ref VtValue_Casting
+	VT_API static VtValue CastToTypeid(VtValue const &val, std::type_info const &type);
 
-    //! \brief Return if a value of type \a from can be cast to type \a to.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return if a value of type \a from can be cast to type \a to.
+    ///
+    /// \sa \ref VtValue_Casting
     static bool CanCastFromTypeidToTypeid(std::type_info const &from,
                                           std::type_info const &to) {
         return _CanCast(from, to);
     }
 
-    //! \brief Return \c this holding value type cast to T.  This value is left
-    // empty if the cast fails.
-    //
-    // \note Since this method mutates this value, it is not safe to invoke on
-    // the same VtValue in multiple threads simultaneously.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return \c this holding value type cast to T.  This value is left
+    /// empty if the cast fails.
+    ///
+    /// \note Since this method mutates this value, it is not safe to invoke on
+    /// the same VtValue in multiple threads simultaneously.
+    ///
+    /// \sa \ref VtValue_Casting
     template <typename T>
     VtValue &Cast() {
         if (IsHolding<T>())
@@ -787,62 +787,61 @@ public:
         return *this = _PerformCast(typeid(T), *this);
     }
 
-    //! \brief Return \c this holding value type cast to same type that
-    // \c other is holding.  This value is left empty if the cast fails.
-    //
-    // \note Since this method mutates this value, it is not safe to invoke on
-    // the same VtValue in multiple threads simultaneously.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return \c this holding value type cast to same type that
+    /// \c other is holding.  This value is left empty if the cast fails.
+    ///
+    /// \note Since this method mutates this value, it is not safe to invoke on
+    /// the same VtValue in multiple threads simultaneously.
+    ///
+    /// \sa \ref VtValue_Casting
     VtValue &CastToTypeOf(VtValue const &other) {
         return *this = _PerformCast(other.GetTypeid(), *this);
     }
 
-    //! \brief Return \c this holding value type cast to \a type.  This value is
-    // left empty if the cast fails.
-    //
-    // \note Since this method mutates this value, it is not safe to invoke on
-    // the same VtValue in multiple threads simultaneously.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return \c this holding value type cast to \a type.  This value is
+    /// left empty if the cast fails.
+    ///
+    /// \note Since this method mutates this value, it is not safe to invoke on
+    /// the same VtValue in multiple threads simultaneously.
+    ///
+    /// \sa \ref VtValue_Casting
     VtValue &CastToTypeid(std::type_info const &type) {
         return *this = _PerformCast(type, *this);
     }
 
-    //! \brief Return if \c this can be cast to \a T.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return if \c this can be cast to \a T.
+    ///
+    /// \sa \ref VtValue_Casting
     template <typename T>
     bool CanCast() const {
         return _CanCast(GetTypeid(), typeid(T));
     }
 
-    //! \brief Return if \c this can be cast to \a type.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return if \c this can be cast to \a type.
+    ///
+    /// \sa \ref VtValue_Casting
     bool CanCastToTypeOf(VtValue const &other) const {
         return _CanCast(GetTypeid(), other.GetTypeid());
     }
 
-    //! \brief Return if \c this can be cast to \a type.
-    //
-    // \sa \ref VtValue_Casting
+    /// Return if \c this can be cast to \a type.
+    ///
+    /// \sa \ref VtValue_Casting
     bool CanCastToTypeid(std::type_info const &type) const {
         return _CanCast(GetTypeid(), type);
     }
 
-    //! \brief Returns true iff this value is empty.
+    /// Returns true iff this value is empty.
     bool IsEmpty() const { return not _info; }
 
-    //! \brief Return a hash code for the held object by calling VtHashValue()
-    // on it.
-    size_t GetHash() const;
+    /// Return a hash code for the held object by calling VtHashValue() on it.
+	VT_API size_t GetHash() const;
 
     friend inline size_t hash_value(VtValue const &val) {
         return val.GetHash();
     }
 
-    //! \brief Tests for equality
+    /// Tests for equality.
     template <typename T>
     friend bool operator == (VtValue const &lhs, T const &rhs) {
         typedef typename Vt_ValueGetStored<T>::Type Stored;
@@ -853,7 +852,7 @@ public:
         return rhs == lhs;
     }
 
-    //! \brief Tests for inequality.
+    /// Tests for inequality.
     template <typename T>
     friend bool operator != (VtValue const &lhs, T const &rhs) {
         return not (lhs == rhs);
@@ -863,7 +862,7 @@ public:
         return not (lhs == rhs);
     }
 
-    //! \brief Test two values for equality.
+    /// Test two values for equality.
     bool operator == (const VtValue &rhs) const {
         bool empty = IsEmpty(), rhsEmpty = rhs.IsEmpty();
         if (empty or rhsEmpty)
@@ -874,13 +873,13 @@ public:
     }
     bool operator != (const VtValue &rhs) const { return not (*this == rhs); }
 
-    //! \brief Calls through to operator << on the held object.
-    friend std::ostream &operator << (std::ostream &out, const VtValue &self);
+    /// Calls through to operator << on the held object.
+	VT_API friend std::ostream &operator << (std::ostream &out, const VtValue &self);
 
 private:
     const Vt_Reserved* _GetReserved() const;
     size_t _GetNumElements() const;
-    friend class Vt_ValueReservedAccess;
+    friend struct Vt_ValueReservedAccess;
 
     static void _Copy(VtValue const &src, VtValue &dst) {
         if (src.IsEmpty()) {
@@ -926,9 +925,9 @@ private:
         return ARCH_UNLIKELY(_IsProxy() and not cmp) ? _TypeIsImpl(t) : cmp;
     }
 
-    bool _TypeIsImpl(std::type_info const &queriedType) const;
+    VT_API bool _TypeIsImpl(std::type_info const &queriedType) const;
 
-    bool _EqualityImpl(VtValue const &rhs) const;
+    VT_API bool _EqualityImpl(VtValue const &rhs) const;
 
     template <class Proxy>
     typename boost::enable_if<VtIsValueProxy<Proxy>, Proxy &>::type
@@ -963,7 +962,7 @@ private:
 
     // Helper invoked in case Get fails.  Reports an error and returns a default
     // value for \a queryType.
-    void const *
+    VT_API void const *
     _FailGet(Vt_DefaultValueHolder (*factory)(),
              std::type_info const &queryType) const;
 
@@ -984,13 +983,13 @@ private:
         return _info.BitsAs<unsigned int>() & _ProxyFlag;
     }
 
-    static void _RegisterCast(std::type_info const &from,
+    VT_API static void _RegisterCast(std::type_info const &from,
                               std::type_info const &to,
                               VtValue (*castFn)(VtValue const &));
 
-    static VtValue _PerformCast(std::type_info const &to, VtValue const &val);
+    VT_API static VtValue _PerformCast(std::type_info const &to, VtValue const &val);
 
-    static bool _CanCast(std::type_info const &from, std::type_info const &to);
+	VT_API static bool _CanCast(std::type_info const &from, std::type_info const &to);
 
     // helper template function for simple casts from From to To.
     template <typename From, typename To>
@@ -1005,18 +1004,18 @@ private:
     friend TfPyObjWrapper
     Vt_GetPythonObjectFromHeldValue(VtValue const &self);
 
-    TfPyObjWrapper _GetPythonObject() const;
+    VT_API TfPyObjWrapper _GetPythonObject() const;
 
     _Storage _storage;
     TfPointerAndBits<const _TypeInfo> _info;
 };
 
-//! \brief Make a default value.  VtValue uses this to create values to be
-// returned from failed calls to \a Get.  Clients may specialize this for their
-// own types.
+/// Make a default value.  VtValue uses this to create values to be returned
+/// from failed calls to \a Get.  Clients may specialize this for their own
+/// types.
 template <class T>
 struct Vt_DefaultValueFactory {
-    //! \brief This function *must* return an object of type \a T.
+    /// This function *must* return an object of type \a T.
     static Vt_DefaultValueHolder Invoke() {
         return Vt_DefaultValueHolder::Create<T>(
             boost::value_initialized<T>().data());
@@ -1044,7 +1043,7 @@ struct Vt_ValueReservedAccess {
 // the factory for these types. 
 //
 #define _VT_DECLARE_ZERO_VALUE_FACTORY(r, unused, elem)                 \
-template <>                                                             \
+template <> VT_API                                                            \
 Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke();
 
 BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,
@@ -1055,11 +1054,11 @@ BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,
 
 #undef _VT_DECLARE_ZERO_VALUE_FACTORY
 
+//
+// The Get()/IsHolding routines needs to be special-cased to handle getting a
+// VtValue *as* a VtValue.
+//
 
-/*
- * The Get()/IsHolding routines needs to be special-cased to handle
- * getting a VtValue *as* a VtValue.
- */
 template <>
 inline const VtValue&
 VtValue::Get<VtValue>() const {

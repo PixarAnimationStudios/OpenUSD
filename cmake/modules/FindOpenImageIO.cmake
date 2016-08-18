@@ -21,6 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
 if(UNIX)
     find_path(OIIO_BASE_DIR
             include/OpenImageIO/oiioversion.h
@@ -40,7 +41,25 @@ if(UNIX)
         DOC
             "OpenImageIO library path"
     )
-endif(UNIX)
+elseif(WIN32)
+    find_path(OIIO_BASE_DIR
+            include/OpenImageIO/oiioversion.h
+        HINTS
+            "${OIIO_LOCATION}"
+            "$ENV{OIIO_LOCATION}"
+    )
+    find_path(OIIO_LIBRARY_DIR
+            OpenImageIO.lib
+        HINTS
+            "${OIIO_LOCATION}"
+            "$ENV{OIIO_LOCATION}"
+            "${OIIO_BASE_DIR}"
+        PATH_SUFFIXES
+            lib/
+        DOC
+            "OpenImageIO library path"
+    )
+endif()
 
 find_path(OIIO_INCLUDE_DIR
         OpenImageIO/oiioversion.h

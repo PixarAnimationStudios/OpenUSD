@@ -24,6 +24,7 @@
 #ifndef HD_SCENE_DELEGATE_H
 #define HD_SCENE_DELEGATE_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/basisCurvesTopology.h"
@@ -47,7 +48,8 @@
 
 typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
 
-
+/// \class HdSyncRequestVector
+///
 /// The SceneDelegate is requested to synchronize prims as the result of
 /// executing a specific render pass, the following data structure is passed
 /// back to the delegate to drive synchronization.
@@ -70,18 +72,23 @@ struct HdSyncRequestVector {
 };
 
 
+/// \class HdSceneDelegate
+///
 /// Adapter class providing data exchange with the client scene graph.
 ///
 class HdSceneDelegate {
 public:
 
     /// Default constructor initializes its own RenderIndex.
+	HDLIB_API
     HdSceneDelegate();
     
     /// Constructor used for nested delegate objects which share a RenderIndex.
+	HDLIB_API
     HdSceneDelegate(HdRenderIndexSharedPtr const& parentIndex, 
                     SdfPath const& delegateID);
 
+	HDLIB_API
     virtual ~HdSceneDelegate();
 
     /// Returns the RenderIndex owned by this delegate.
@@ -94,10 +101,12 @@ public:
     SdfPath const& GetDelegateID() const { return _delegateID; }
 
     /// Synchronizes the delegate state for the given request vector.
+	HDLIB_API
     virtual void Sync(HdSyncRequestVector* request);
 
     /// Opportunity for the delegate to clean itself up after
     /// performing parrellel work during sync phase
+	HDLIB_API
     virtual void PostSyncCleanup();
 
     // -----------------------------------------------------------------------//
@@ -105,6 +114,7 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Returns true if the named option is enabled by the delegate.
+	HDLIB_API
     virtual bool IsEnabled(TfToken const& option) const;
 
     // -----------------------------------------------------------------------//
@@ -112,6 +122,7 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Returns true if the prim identified by \p id is in the named collection.
+	HDLIB_API
     virtual bool IsInCollection(SdfPath const& id, 
                                 TfToken const& collectionName);
 
@@ -120,39 +131,50 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Gets the topological mesh data for a given prim.
+	HDLIB_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
 
     /// Gets the topological curve data for a given prim.
+	HDLIB_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
 
     /// Gets the subdivision surface tags (sharpness, holes, etc).
+	HDLIB_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
 
     /// Returns the prim extent in world space (completely untransformed).
+	HDLIB_API
     virtual GfRange3d GetExtent(SdfPath const & id);
 
     /// Returns the object space transform, including all parent transforms.
+	HDLIB_API
     virtual GfMatrix4d GetTransform(SdfPath const & id);
 
     /// Returns the authored visible state of the prim.
+	HDLIB_API
     virtual bool GetVisible(SdfPath const & id);
 
     /// Returns the doubleSided state for the given prim.
+	HDLIB_API
     virtual bool GetDoubleSided(SdfPath const & id);
 
     /// Returns the cullstyle for the given prim.
+	HDLIB_API
     virtual HdCullStyle GetCullStyle(SdfPath const &id);
 
     /// Returns the refinement level for the given prim in the range [0,8].
     ///
     /// The refinement level indicates how many iterations to apply when
     /// subdividing subdivision surfaces or other refinable primitives.
+	HDLIB_API
     virtual int GetRefineLevel(SdfPath const& id);
 
     /// Returns a named value.
+	HDLIB_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
 
     /// Returns the authored repr (if any) for the given prim.
+	HDLIB_API
     virtual TfToken GetReprName(SdfPath const &id);
 
     // -----------------------------------------------------------------------//
@@ -171,10 +193,12 @@ public:
     ///    GetInstanceIndices(C) : [5]
     ///    GetInstanceIndices(D) : []
     ///
+	HDLIB_API
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
                                           SdfPath const &prototypeId);
 
     /// Returns the instancer transform.
+	HDLIB_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
                                              SdfPath const &prototypeId);
 
@@ -195,6 +219,7 @@ public:
     /// is an instanceIndex of the instancer for the given instanceIndex of
     /// the prototype.
     ///
+	HDLIB_API
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
                                             int *absoluteInstanceIndex);
@@ -204,22 +229,28 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Returns the source code for the given surface shader ID.
+	HDLIB_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
 
     /// Returns the displacement source code for the given surface shader ID.
+	HDLIB_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
 
     /// Returns a vector of shader parameter names. These names can be used to
     /// fetch parameter values.
+	HDLIB_API
     virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
 
     /// Returns a single value for the given shader and named parameter.
+	HDLIB_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 
                                   TfToken const &paramName);
 
+	HDLIB_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const& shaderId);
 
     /// Returns a vector of texture IDs for the given surface shader ID.
+	HDLIB_API
     virtual SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
 
     // -----------------------------------------------------------------------//
@@ -227,9 +258,11 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Returns the texture resource ID for a given texture ID.
+	HDLIB_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
 
     /// Returns the texture resource for a given texture ID.
+	HDLIB_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
     // -----------------------------------------------------------------------//
@@ -238,6 +271,7 @@ public:
 
     /// Returns an array of clip plane equations in eye-space with y-up
     /// orientation.
+	HDLIB_API
     virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
 
     // -----------------------------------------------------------------------//
@@ -245,28 +279,36 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Returns the vertex-rate primVar names.
+	HDLIB_API
     virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
 
     /// Returns the varying-rate primVar names.
+	HDLIB_API
     virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
 
     /// Returns the Facevarying-rate primVar names.
+	HDLIB_API
     virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
 
     /// Returns the Uniform-rate primVar names.
+	HDLIB_API
     virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
 
     /// Returns the Constant-rate primVar names.
+	HDLIB_API
     virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
 
     /// Returns the Instance-rate primVar names.
+	HDLIB_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
 
     /// Returns the primVar data type.
+	HDLIB_API
     virtual int GetPrimVarDataType(SdfPath const& id, TfToken const& key);
 
     /// Returns the number of components in the primVar, for example a
     /// vec4-valued primVar would return 4.
+	HDLIB_API
     virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
 private:

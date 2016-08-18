@@ -24,15 +24,8 @@
 #ifndef TF_PYENUM_H
 #define TF_PYENUM_H
 
-#include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/type.h"
-
-#include "pxr/base/arch/demangle.h"
-#include "pxr/base/tf/enum.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/stringUtils.h"
+/// \file tf/pyEnum.h
+/// Provide facilities for wrapping enums for script.
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/python/class.hpp>
@@ -47,22 +40,28 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/tuple.hpp>
 
+#include "pxr/base/tf/api.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/type.h"
+
+#include "pxr/base/arch/demangle.h"
+#include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/hashmap.h"
 #include <string>
 
+/// \class Tf_PyEnum
 ///
-/// \file tf/PyEnum.h
-/// \brief Provide facilities for wrapping enums for script.
-///
-
-/*! \class Tf_PyEnum
- * \brief Base class of all python enum classes.
- */
+/// Base class of all python enum classes.
 class Tf_PyEnum { };
 
-/*! \class Tf_PyEnumRegistry
- * \brief This is a private class that manages registered enum objects.
- */
+/// \class Tf_PyEnumRegistry
+///
+/// This is a private class that manages registered enum objects.
+/// \private
 class Tf_PyEnumRegistry {
 
   public:
@@ -75,10 +74,11 @@ class Tf_PyEnumRegistry {
     
   public:
 
-    static This &GetInstance() {
+    TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     }
     
+    TF_API
     void RegisterValue(TfEnum const &e, boost::python::object const &obj);
 
     template <typename T>
@@ -104,11 +104,11 @@ class Tf_PyEnumRegistry {
             // In the case of producing a TfEnum or an integer, any
             // registered enum type is fine.  In all other cases, the
             // enum types must match.
-            if (boost::is_same<T, TfEnum>::value or
-                (boost::is_integral<T>::value and not boost::is_enum<T>::value))
+            if (boost::is_same<T, TfEnum>::value ||
+                (boost::is_integral<T>::value && !boost::is_enum<T>::value))
                 return i != o2e.end() ? obj : 0;
             else
-                return (i != o2e.end() and i->second.IsA<T>()) ? obj : 0;
+                return (i != o2e.end() && i->second.IsA<T>()) ? obj : 0;
         }
         static void construct(PyObject *src, boost::python::converter::
                               rvalue_from_python_stage1_data *data) {
@@ -149,10 +149,11 @@ class Tf_PyEnumRegistry {
 
 };
 
+TF_API_TEMPLATE_CLASS(TfSingleton<Tf_PyEnumRegistry>);
 
 // Private function used for __repr__ of wrapped enum types.
+TF_API
 std::string Tf_PyEnumRepr(boost::python::object const &self);
-
 
 // Private base class for types which are instantiated and exposed to python
 // for each registered enum type.
@@ -192,7 +193,7 @@ struct Tf_PyEnumWrapper
         if (lhs == rhs)
             return false;
         // If types don't match, string compare names.
-        if (not lhs.value.IsA(rhs.value.GetType()))
+        if (!lhs.value.IsA(rhs.value.GetType()))
             return TfEnum::GetFullName(lhs.value) <
                 TfEnum::GetFullName(rhs.value);
         // If types do match, numerically compare values.
@@ -200,12 +201,10 @@ struct Tf_PyEnumWrapper
     }
     
     //
-    // XXX Bitwise operators for Enums are a 
-    // temporary measure to support the use of Enums as Bitmasks
-    // in libSd.  It should be noted that
-    // Enums are NOT closed under these operators.
-    // The proper place for such operators is in a
-    // yet-nonexistent Bitmask type.  
+    // XXX Bitwise operators for Enums are a temporary measure to support the
+    // use of Enums as Bitmasks in libSd.  It should be noted that Enums are
+    // NOT closed under these operators. The proper place for such operators
+    // is in a yet-nonexistent Bitmask type.  
     //
 
     friend TfEnum operator |(Tf_PyEnumWrapper const &lhs,
@@ -306,43 +305,42 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
 
 // Removes the MFB package prefix from name if it starts with it, and replaces
 // spaces with underscores.
+TF_API
 std::string Tf_PyCleanEnumName(std::string name);
 
-/*!
- * \class TfPyWrapEnum
- * \brief Used to wrap enum types for script.
- *
- * TfPyWrapEnum provides a way to wrap enums for python, tying in with the \a
- * TfEnum system, and potentially providing automatic wrapping by using names
- * registered with the \a TfEnum system and by making some assumptions about the
- * way we structure our code.  Enums may be manually wrapped as well.
- *
- * Example usage.  For an enum that looks like this:
- *
- * \code
- * enum FooChoices {
- *    FooFirst,
- *    FooSecond,
- *    FooThird
- * };
- * \endcode
- *
- * Which has been registered in the \a TfEnum system and has names provided for
- * all values, it may be wrapped like this:
- *
- * \code
- * TfPyWrapEnum<FooChoices>().ExportValues();
- * \endcode
- *
- * The enum will appear in script as Foo.Choices.{First, Second, Third} and the
- * values will also appear as Foo.{First, Second, Third}.
- *
- * An enum may be given an explicit name by passing a string to TfPyWrapEnum's
- * constructor.  Also, values with explict names may be added by calling \a
- * AddValue().  You must either add all names explicitly or none.  If you add
- * none, you must call \a ExportValues for implicit names to be populated.
- * 
- */
+/// \class TfPyWrapEnum
+///
+/// Used to wrap enum types for script.
+///
+/// TfPyWrapEnum provides a way to wrap enums for python, tying in with the \a
+/// TfEnum system, and potentially providing automatic wrapping by using names
+/// registered with the \a TfEnum system and by making some assumptions about
+/// the way we structure our code.  Enums may be manually wrapped as well.
+///
+/// Example usage.  For an enum that looks like this:
+/// \code
+/// enum FooChoices {
+///    FooFirst,
+///    FooSecond,
+///    FooThird
+/// };
+/// \endcode
+///
+/// Which has been registered in the \a TfEnum system and has names provided for
+/// all values, it may be wrapped like this:
+/// \code
+/// TfPyWrapEnum<FooChoices>().ExportValues();
+/// \endcode
+///
+/// The enum will appear in script as Foo.Choices.{First, Second, Third} and
+/// the values will also appear as Foo.{First, Second, Third}.
+///
+/// An enum may be given an explicit name by passing a string to
+/// TfPyWrapEnum's constructor.  Also, values with explict names may be added
+/// by calling \a AddValue().  You must either add all names explicitly or
+/// none.  If you add none, you must call \a ExportValues for implicit names
+/// to be populated.
+/// 
 template <typename T>
 struct TfPyWrapEnum {
 
@@ -353,9 +351,10 @@ private:
 
 public:
 
-    //! \brief Construct an enum wrapper object.  If \a name is provided, it is
-    // used as the name of the enum.  Otherwise the type name of \a T is used,
-    // with a leading MFB package name stripped.
+    /// Construct an enum wrapper object.
+    /// If \a name is provided, it is used as the name of the enum.  Otherwise
+    /// the type name of \a T is used, with a leading MFB package name
+    /// stripped.
     explicit TfPyWrapEnum( std::string const &name = std::string())
     {
         using namespace boost::python;
@@ -406,13 +405,13 @@ public:
     
   private:
 
-    //! \brief Export all values in this enum to the enclosing scope.  If no
-    // explicit names have been registered, this will export the TfEnum
-    // registered names and values (if any).
+    /// Export all values in this enum to the enclosing scope.
+    /// If no explicit names have been registered, this will export the TfEnum
+    /// registered names and values (if any).
     void _ExportValues(bool cleanNames, _EnumPyClassType &enumClass) {
         using namespace boost::python;
 
-        list valueList;
+        boost::python::list valueList;
 
         std::vector<std::string> names = TfEnum::GetAllNames<T>();
         TF_FOR_ALL(name, names) {
@@ -452,10 +451,9 @@ public:
         }
 
         // Add a tuple of all the values to the enum class.
-        enumClass.setattr("allValues", tuple(valueList));
+        enumClass.setattr("allValues", boost::python::tuple(valueList));
     }
 
 };
-
 
 #endif // TF_PYENUM_H

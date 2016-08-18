@@ -1,6 +1,10 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE pcp)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(pcp
     LIBRARIES
         tf
@@ -15,6 +19,9 @@ pxr_shared_library(pcp
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
+        
+    PUBLIC_HEADERS
+        api.h
 
     PUBLIC_CLASSES
         arc
@@ -54,6 +61,7 @@ pxr_shared_library(pcp
         utils
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

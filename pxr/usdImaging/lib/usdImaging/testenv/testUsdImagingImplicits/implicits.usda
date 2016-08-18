@@ -1,0 +1,300 @@
+#usda 1.0
+(
+    doc = """Implicit Geometry"""
+    endFrame = 20
+    startFrame = 1
+)
+
+def Xform "Fallback"
+{
+    def Xform "Sphere"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 0, -2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Sphere "Sphere"
+        {
+            ColorFloat[] primvars:displayColor = [(.8, .8, .1)]
+        }
+    }
+
+    def Xform "Capsule"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, -2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Capsule "XAxis"
+        {
+            Vec3f[] extent = [(-1, -.5, -.5), (1, .5, .5)]
+            ColorFloat[] primvars:displayColor = [(.8, .1, .1)]
+            uniform token axis = "X"
+        }
+        def Capsule "YAxis"
+        {
+            Vec3f[] extent = [(-.5, -1, -.5), (.5, 1, .5)]
+            ColorFloat[] primvars:displayColor = [(.1, .8, .1)]
+            uniform token axis = "Y"
+        }
+        def Capsule "ZAxis"
+        {
+            ColorFloat[] primvars:displayColor = [(.1, .1, .8)]
+            uniform token axis = "Z"
+        }
+    }
+
+    def Xform "Cylinder"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, -2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cylinder "XAxis"
+        {
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            ColorFloat[] primvars:displayColor = [(.8, .1, .1)]
+            uniform token axis = "X"
+        }
+        def Cylinder "YAxis"
+        {
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            ColorFloat[] primvars:displayColor = [(.1, .8, .1)]
+            uniform token axis = "Y"
+        }
+        def Cylinder "ZAxis"
+        {
+            ColorFloat[] primvars:displayColor = [(.1, .1, .8)]
+            uniform token axis = "Z"
+        }
+    }
+
+    def Xform "Cones"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (4, 0, -2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cone "XAxis"
+        {
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            ColorFloat[] primvars:displayColor = [(.8, .1, .1)]
+            uniform token axis = "X"
+        }
+        def Cone "YAxis"
+        {
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            ColorFloat[] primvars:displayColor = [(.1, .8, .1)]
+            uniform token axis = "Y"
+        }
+        def Cone "ZAxis"
+        {
+            ColorFloat[] primvars:displayColor = [(.1, .1, .8)]
+            uniform token axis = "Z"
+        }
+    }
+}
+
+def Xform "Custom"
+{
+    def Xform "Sphere"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Sphere "Sphere"
+        {
+            Vec3f[] extent = [(-0.25, -0.25, -0.25), (0.25, 0.25, 0.25)]
+            ColorFloat[] primvars:displayColor = [(.8, .8, .1)]
+            uniform double radius = 0.25
+        }
+    }
+
+    def Xform "Capsule"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Capsule "XAxis"
+        {
+            Vec3f[] extent = [(-1, -.25, -.25), (1, .25, .25)]
+            ColorFloat[] primvars:displayColor = [(.8, .1, .1)]
+            uniform token axis = "X"
+            double radius = 0.25
+            double height = 1.5
+        }
+        def Capsule "YAxis"
+        {
+            Vec3f[] extent = [(-.25, -1, -.25), (.25, 1, .25)]
+            ColorFloat[] primvars:displayColor = [(.1, .8, .1)]
+            uniform token axis = "Y"
+            double radius = 0.25
+            double height = 1.5
+        }
+        def Capsule "ZAxis"
+        {
+            Vec3f[] extent = [(-.25, -.25, -1), (.25, .25, 1)]
+            ColorFloat[] primvars:displayColor = [(.1, .1, .8)]
+            uniform token axis = "Z"
+            double radius = 0.25
+            double height = 1.5
+        }
+    }
+
+    def Xform "Cylinder"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cylinder "XAxis"
+        {
+            Vec3f[] extent = [(-1, -.25, -.25), (1, .25, .25)]
+            ColorFloat[] primvars:displayColor = [(.8, .1, .1)]
+            uniform token axis = "X"
+            double radius = 0.25
+            double height = 2.0
+        }
+        def Cylinder "YAxis"
+        {
+            Vec3f[] extent = [(-.25, -1, -.25), (.25, 1, .25)]
+            ColorFloat[] primvars:displayColor = [(.1, .8, .1)]
+            uniform token axis = "Y"
+            double radius = 0.25
+            double height = 2.0
+        }
+        def Cylinder "ZAxis"
+        {
+            Vec3f[] extent = [(-.25, -.25, -1), (.25, .25, 1)]
+            ColorFloat[] primvars:displayColor = [(.1, .1, .8)]
+            uniform token axis = "Z"
+            double radius = 0.25
+            double height = 2.0
+        }
+    }
+
+    def Xform "Cone"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (4, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cone "XAxis"
+        {
+            Vec3f[] extent = [(-1, -.25, -.25), (1, .25, .25)]
+            ColorFloat[] primvars:displayColor = [(.8, .1, .1)]
+            uniform token axis = "X"
+            double radius = 0.25
+            double height = 2.0
+        }
+        def Cone "YAxis"
+        {
+            Vec3f[] extent = [(-.25, -1, -.25), (.25, 1, .25)]
+            ColorFloat[] primvars:displayColor = [(.1, .8, .1)]
+            uniform token axis = "Y"
+            double radius = 0.25
+            double height = 2.0
+        }
+        def Cone "ZAxis"
+        {
+            Vec3f[] extent = [(-.25, -.25, -1), (.25, .25, 1)]
+            ColorFloat[] primvars:displayColor = [(.1, .1, .8)]
+            uniform token axis = "Z"
+            double radius = 0.25
+            double height = 2.0
+        }
+    }
+}
+
+def Xform "Animated"
+{
+    def Xform "Spheres"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 0, 2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Sphere "Sphere"
+        {
+            Vec3f[] extent.timeSamples = {
+                1: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+                10: [(-0.25, -0.25, -0.25), (0.25, 0.25, 0.25)],
+                20: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+            }
+            double radius.timeSamples = {
+                1: 0.5,
+                10: 0.25,
+                20: 0.5,
+            }
+        }
+    }
+
+    def Xform "Capsules"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Capsule "XAxis"
+        {
+            Vec3f[] extent.timeSamples = {
+                1: [(-0.25, -0.25, -0.75), (0.25, 0.25, 0.75)],
+                10: [(-0.5, -0.5, -0.75), (0.5, 0.5, 0.75)],
+                20: [(-0.25, -0.25, -0.75), (0.25, 0.25, 0.75)],
+            }
+            double height.timeSamples = {
+                1: 1.0,
+                10: 0.5,
+                20: 1.0,
+            }
+            double radius.timeSamples = {
+                1: 0.25,
+                10: 0.5,
+                20: 0.25,
+            }
+        }
+    }
+
+    def Xform "Cylinders"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cylinder "XAxis"
+        {
+            Vec3f[] extent.timeSamples = {
+                1: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+                10: [(-1.0, -1.0, -0.25), (1.0, 1.0, 0.25)],
+                20: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+            }
+            double height.timeSamples = {
+                1: 1.0,
+                10: 0.5,
+                20: 1.0,
+            }
+            double radius.timeSamples = {
+                1: 0.5,
+                10: 1.0,
+                20: 0.5,
+            }
+        }
+    }
+
+    def Xform "Cones"
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (4, 0, 2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cone "XAxis"
+        {
+            Vec3f[] extent.timeSamples = {
+                1: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+                10: [(-1.0, -1.0, -0.25), (1.0, 1.0, 0.25)],
+                20: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+            }
+            double height.timeSamples = {
+                1: 1.0,
+                10: 0.5,
+                20: 1.0,
+            }
+            double radius.timeSamples = {
+                1: 0.5,
+                10: 1.0,
+                20: 0.5,
+            }
+        }
+    }
+}
+

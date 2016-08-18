@@ -32,7 +32,9 @@
 #include <boost/operators.hpp>
 
 /// \enum PcpArcType
+///
 /// Describes the type of arc connecting two nodes in the prim index.
+///
 enum PcpArcType {
     // The root arc is a special value used for the direct/root node of 
     // the prim index. Unlike the following arcs, it has no parent node.
@@ -119,8 +121,10 @@ PcpIsLocalClassBasedArc(PcpArcType arcType)
 }
 
 /// \struct PcpSiteTrackerSegment
+///
 /// Used to keep track of which sites have been visited and through
 /// what type of arcs. 
+///
 struct PcpSiteTrackerSegment {
     PcpLayerStackSite site;
     PcpArcType arcType;
@@ -132,7 +136,9 @@ struct PcpSiteTrackerSegment {
 typedef std::vector<PcpSiteTrackerSegment> PcpSiteTracker;
 
 /// \enum PcpDependencyType
+///
 /// Defines the types of dependencies.
+///
 enum PcpDependencyType {
     PcpDirect    = (1 << 0),
     PcpAncestral = (1 << 1)
@@ -166,7 +172,7 @@ struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
 // Internal type for Sd sites.
 struct Pcp_CompressedSdSite {
     Pcp_CompressedSdSite(size_t nodeIndex_, size_t layerIndex_) :
-        nodeIndex(nodeIndex_), layerIndex(layerIndex_)
+        nodeIndex(static_cast<uint16_t>(nodeIndex_)), layerIndex(static_cast<uint16_t>(layerIndex_))
     {
         TF_VERIFY(nodeIndex_  < (1 << 16));
         TF_VERIFY(layerIndex_ < (1 << 16));

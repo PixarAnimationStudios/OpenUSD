@@ -24,28 +24,30 @@
 #ifndef HD_INSTANCE_REGISTRY_H
 #define HD_INSTANCE_REGISTRY_H
 
+#include "pxr/base/arch/pragmas.h"
+
 #include <mutex>
 #include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
+
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/perfLog.h"
 
-
-/// --------------------------------------------------------------------------
-/// HdInstance
+/// \class HdInstance
 ///
 /// This class is used as a pointer to the shared instance in
-/// HdInstanceRegistry. KEY has to be hashable index type and VALUE is
-/// shared_ptr. In most use cases, the client computes
-/// a hash key which represents large bulky data (like topology, primVars)
-/// and registers it into HdInstanceRegistry. If the key has already been
-/// registered, the registry returns HdInstance and the client can use
-/// GetValue() without setting/computing actual bulky data. If it doesn't
-/// exist, IsFirstInstance() returns true for the first instance and
-/// the client needs to populate an appropriate data into through the
+/// HdInstanceRegistry.
+///
+/// KEY has to be hashable index type and VALUE is shared_ptr. In most use
+/// cases, the client computes a hash key which represents large bulky data
+/// (like topology, primVars) and registers it into HdInstanceRegistry. If the
+/// key has already been registered, the registry returns HdInstance and the
+/// client can use GetValue() without setting/computing actual bulky data. If
+/// it doesn't exist, IsFirstInstance() returns true for the first instance
+/// and the client needs to populate an appropriate data into through the
 /// instance by SetValue().
-
+///
 template <typename KEY, typename VALUE>
 class HdInstance {
 public:
@@ -93,8 +95,7 @@ private:
     bool        _isFirstInstance;
 };
 
-/// --------------------------------------------------------------------------
-/// HdInstanceRegistry
+/// \class HdInstanceRegistry
 ///
 /// HdInstanceRegistry is a dictionary container of HdInstance.
 /// This class is almost just a dictionary from key to value.
@@ -104,7 +105,6 @@ private:
 /// if the shared_ptr is unique (use_count==1). Note that Key is not
 /// involved to determine the lifetime of entries.
 ///
-
 template <typename INSTANCE>
 class HdInstanceRegistry {
 public:
@@ -128,9 +128,11 @@ public:
 
     /// Returns a const iterator being/end of dictionary. Mainly used for
     /// resource auditing.
+    ARCH_PRAGMA_SHIFT_TO_64_BITS
     typedef typename INSTANCE::Dictionary::const_iterator const_iterator;
     const_iterator begin() const { return _dictionary.begin(); }
     const_iterator end() const { return _dictionary.end(); }
+    ARCH_PRAGMA_RESTORE
 
 private:
     template <typename T>
@@ -198,4 +200,3 @@ HdInstanceRegistry<INSTANCE>::GarbageCollect()
 }
 
 #endif  // HD_INSTANCE_REGISTRY_H
-

@@ -1,0 +1,54 @@
+#usda 1.0
+
+def Scope "Model" (
+    add variantSets = ["complexity"]
+    variants = {
+        string complexity = "low"
+    }
+)
+{
+    class Scope "Class"
+    {
+    }
+
+    def Scope "Scope" (
+        add inherits = </Model/Class>
+    )
+    {
+    }
+
+    variantSet "complexity" = {
+        "high" {
+            over "Class" (
+                add references = @ref.usda@</RefFromHighClass>
+            )
+            {
+                def Scope "HighClassStuff"
+                {
+                }
+            }
+            over "Scope" (
+                add references = @ref.usda@</RefFromHighScope>
+            )
+            {
+                def Scope "HighScopeStuff"
+                {
+                }
+            }
+        }
+        "low" {
+            over "Class"
+            {
+                def Scope "LowClassStuff"
+                {
+                }
+            }
+            over "Scope"
+            {
+                def Scope "LowScopeStuff"
+                {
+                }
+            }
+        }
+    }
+}

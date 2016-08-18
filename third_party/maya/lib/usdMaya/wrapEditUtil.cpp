@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/editUtil.h"
-
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
+
+#include "usdMaya/editUtil.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"

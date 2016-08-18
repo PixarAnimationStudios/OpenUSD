@@ -24,8 +24,8 @@
 #ifndef TF_STACKED_H
 #define TF_STACKED_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
-
 #include "pxr/base/arch/demangle.h"
 
 #include <boost/mpl/if.hpp>
@@ -35,7 +35,6 @@
 
 #include <atomic>
 #include <vector>
-
 
 /// \class TfStackedAccess
 ///
@@ -69,145 +68,148 @@ struct TfStackedAccess {
 /// Note that \a Stacked objects that differ only by \a PerThread will not share
 /// stacks.
 ///
-template <class Derived, bool PerThread=true>
-class TfStacked : boost::noncopyable {
-    typedef TfStackedAccess Access;
-public:
-
-    typedef TfStacked _StackedType;
-
-    typedef std::vector<Derived const *> Stack;
-
-    /// Pushes this stacked object onto the stack.
-    TfStacked() {
-        _Push(_AsDerived());
-    }
-
-    /// Pops this stacked object from the stack.
-    ~TfStacked() {
-        _Pop(_AsDerived());
-    }
-
-    /// Returns the top of the stack.  If the stack is empty, returns 0.
-    /// Derived classes can befriend TfStackedAccess and hide (override)
-    /// \a _InitializeStack() to pre-populate the stack if desired.  This way,
-    /// a stack can be made never to be empty.
-    static Derived const *GetStackTop() {
-        Stack const &stack = GetStack();
-        return stack.empty() ? 0 : stack.back();
-    }
-
-    /// Returns the element under the top of the stack.  If the stack contains
-    /// only one element, or is empty, returns 0.  Derived classes can befriend
-    /// TfStackedAccess and hide (override) \a _InitializeStack() to
-    /// pre-populate the stack if desired.  This way, a stack can be made never
-    /// to be empty.
-    static Derived const *GetStackPrevious() {
-        Stack const &stack = GetStack();
-        size_t size = stack.size();
-        return size <= 1 ? 0 : stack[size-2];
-    }
-
-    /// Returns a const reference to the entire stack.
-    static Stack const &GetStack() {
-        return _GetStack();
-    }
-    
-    /// Returns true if \a p is the top of the stack.
-    static bool IsStackTop(Derived const *p) {
-        return GetStackTop() == p;
-    }
-
-private:
-    friend class TfStackedAccess;
-
-    // This function may be hidden (overridden) by derived classes to initialize
-    // (pre-populate) the stack with some items.  One way to do this is to
-    // allocate objects on the heap, never to be freed.  By default, no
-    // initialization is performed.
-    static void _InitializeStack() {}
-
-    // This is a wrapper around Stack that makes sure we call InitializeStack
-    // once per stack instance.
-    class _StackHolder {
-    public:
-        _StackHolder() : _initialized(false) { }
-
-        Stack &Get() {
-            if (not _initialized) {
-                _initialized = true;
-                Access::InitializeStack<Derived>();
-            }
-            return _stack;
-        }
-
-    private:
-        Stack _stack;
-        bool _initialized;
-    };
-
-    struct _PerThreadStackStorage {
-        tbb::enumerable_thread_specific<_StackHolder> stack;
-        Stack &Get() {
-            return stack.local().Get();
-        }
-    };
-
-    struct _GlobalStackStorage {
-        _StackHolder stack;
-        Stack &Get() {
-            return stack.Get();
-        }
-    };
-
-    // Choose the stack storage type based on the \a PerThread argument.
-    typedef typename boost::mpl::if_c<
-        PerThread, _PerThreadStackStorage, _GlobalStackStorage
-    >::type _StackStorage;
-
-    // Push p on the stack.  Only the constructor should call this.
-    static void _Push(Derived const *p) {
-        _GetStack().push_back(p);
-    }
-
-    // Pop p off the stack.  Only the destructor should call this.
-    static void _Pop(Derived const *p) {
-        // Make sure we pop in reverse order.
-        if (ARCH_LIKELY(IsStackTop(p))) {
-            _GetStack().pop_back();
-        } else {
-            // CODE_COVERAGE_OFF
-            TF_FATAL_ERROR("Destroyed %s out of stack order.",
-                           ArchGetDemangled<TfStacked>().c_str());
-            // CODE_COVERAGE_ON
-        }
-    }
-
-    static Stack &_GetStack() {
-        // Technically unsafe double-checked lock to intitialize the stack.
-        if (ARCH_UNLIKELY(not _stackStorage)) {
-            // Make a new stack and try to set it.
-            _StackStorage *old = nullptr;
-            _StackStorage *tmp = new _StackStorage;
-            // Attempt to set the stack.
-            if (!_stackStorage.compare_exchange_strong(old, tmp)) {
-                // Another caller won the race.
-                delete tmp;
-            }
-        }
-        return _stackStorage.load(std::memory_order_relaxed)->Get();
-    }
-
-    Derived *_AsDerived() {
-        return static_cast<Derived *>(this);
-    }
-
-    Derived const *_AsDerived() const {
-        return static_cast<Derived const *>(this);
-    }
-
-    // Holds the objects in the stack.
-    static std::atomic<_StackStorage*> _stackStorage;
-};
+#define TF_DECLARE_STACKED_CLASS(Derived, IsPerThread, eiAPI)                           \
+    template <class Derived, bool PerThread=IsPerThread>                                \
+    class TfStacked : boost::noncopyable {                                              \
+        typedef TfStackedAccess Access;                                                 \
+    public:                                                                             \
+                                                                                        \
+        typedef TfStacked _StackedType;                                                 \
+                                                                                        \
+        typedef std::vector<Derived const *> Stack;                                     \
+                                                                                        \
+        /* Pushes this stacked object onto the stack. */                                \
+        TfStacked() {                                                                   \
+            _Push(_AsDerived());                                                        \
+        }                                                                               \
+                                                                                        \
+        /* Pops this stacked object from the stack. */                                  \
+        ~TfStacked() {                                                                  \
+            _Pop(_AsDerived());                                                         \
+        }                                                                               \
+                                                                                        \
+        /* Returns the top of the stack.  If the stack is empty, returns 0.       */    \
+        /* Derived classes can befriend TfStackedAccess and hide (override)       */    \
+        /* \a _InitializeStack() to pre-populate the stack if desired.  This way, */    \
+        /* a stack can be made never to be empty.                                 */    \
+        static Derived const *GetStackTop() {                                           \
+            Stack const &stack = GetStack();                                            \
+            return stack.empty() ? 0 : stack.back();                                    \
+        }                                                                               \
+                                                                                        \
+        /* Returns the element under the top of the stack.  If the stack contains  */   \
+        /* only one element, or is empty, returns 0.  Derived classes can befriend */   \
+        /* TfStackedAccess and hide (override) \a _InitializeStack() to            */   \
+        /* pre-populate the stack if desired.  This way, a stack can be made never */   \
+        /* to be empty.                                                            */   \
+        static Derived const *GetStackPrevious() {                                      \
+            Stack const &stack = GetStack();                                            \
+            size_t size = stack.size();                                                 \
+            return size <= 1 ? 0 : stack[size-2];                                       \
+        }                                                                               \
+                                                                                        \
+        /* Returns a const reference to the entire stack. */                            \
+        static Stack const &GetStack() {                                                \
+            return _GetStack();                                                         \
+        }                                                                               \
+                                                                                        \
+        /* Returns true if \a p is the top of the stack. */                             \
+        static bool IsStackTop(Derived const *p) {                                      \
+            return GetStackTop() == p;                                                  \
+        }                                                                               \
+                                                                                        \
+    private:                                                                            \
+        friend struct TfStackedAccess;                                                  \
+                                                                                        \
+        /* This function may be hidden (overridden) by derived classes to initialize */ \
+        /* (pre-populate) the stack with some items.  One way to do this is to       */ \
+        /* allocate objects on the heap, never to be freed.  By default, no          */ \
+        /* initialization is performed.                                              */ \
+        static void _InitializeStack() {}                                               \
+                                                                                        \
+        /* This is a wrapper around Stack that makes sure we call InitializeStack    */ \
+        /* once per stack instance.                                                  */ \
+        class _StackHolder {                                                            \
+        public:                                                                         \
+            _StackHolder() : _initialized(false) { }                                    \
+                                                                                        \
+            Stack &Get() {                                                              \
+                if (not _initialized) {                                                 \
+                    _initialized = true;                                                \
+                    Access::InitializeStack<Derived>();                                 \
+                }                                                                       \
+                return _stack;                                                          \
+            }                                                                           \
+                                                                                        \
+        private:                                                                        \
+            Stack _stack;                                                               \
+            bool _initialized;                                                          \
+        };                                                                              \
+                                                                                        \
+        struct _PerThreadStackStorage {                                                 \
+            tbb::enumerable_thread_specific<_StackHolder> stack;                        \
+            Stack &Get() {                                                              \
+                return stack.local().Get();                                             \
+            }                                                                           \
+        };                                                                              \
+                                                                                        \
+        struct _GlobalStackStorage {                                                    \
+            _StackHolder stack;                                                         \
+            Stack &Get() {                                                              \
+                return stack.Get();                                                     \
+            }                                                                           \
+        };                                                                              \
+                                                                                        \
+        /* Choose the stack storage type based on the \a PerThread argument. */         \
+        typedef typename boost::mpl::if_c<                                              \
+            PerThread, _PerThreadStackStorage, _GlobalStackStorage                      \
+        >::type _StackStorage;                                                          \
+                                                                                        \
+        /* Push p on the stack.  Only the constructor should call this. */              \
+        static void _Push(Derived const *p) {                                           \
+            _GetStack().push_back(p);                                                   \
+        }                                                                               \
+                                                                                        \
+        /* Pop p off the stack.  Only the destructor should call this. */               \
+        static void _Pop(Derived const *p) {                                            \
+            /* Make sure we pop in reverse order. */                                    \
+            if (ARCH_LIKELY(IsStackTop(p))) {                                           \
+                _GetStack().pop_back();                                                 \
+            } else {                                                                    \
+                /* CODE_COVERAGE_OFF */                                                 \
+                TF_FATAL_ERROR("Destroyed %s out of stack order.",                      \
+                    ArchGetDemangled<TfStacked>().c_str());                             \
+                /* CODE_COVERAGE_ON */                                                  \
+            }                                                                           \
+        }                                                                               \
+                                                                                        \
+        static Stack &_GetStack() {                                                     \
+            /* Technically unsafe double-checked lock to intitialize the stack. */      \
+            if (ARCH_UNLIKELY(not static_cast<void*>(_stackStorage))) {                 \
+                /* Make a new stack and try to set it. */                               \
+                _StackStorage *old = nullptr;                                           \
+                _StackStorage *tmp = new _StackStorage;                                 \
+                /* Attempt to set the stack. */                                         \
+                if (!_stackStorage.compare_exchange_strong(old, tmp)) {                 \
+                    /* Another caller won the race. */                                  \
+                    delete tmp;                                                         \
+                }                                                                       \
+            }                                                                           \
+            return _stackStorage.load(std::memory_order_relaxed)->Get();                \
+        }                                                                               \
+                                                                                        \
+        Derived *_AsDerived() {                                                         \
+            return static_cast<Derived *>(this);                                        \
+        }                                                                               \
+                                                                                        \
+        Derived const *_AsDerived() const {                                             \
+            return static_cast<Derived const *>(this);                                  \
+        }                                                                               \
+                                                                                        \
+        /* Holds the objects in the stack. */                                           \
+        static eiAPI std::atomic<_StackStorage*> _stackStorage;                         \
+    };                                                                                  \
+                                                                                        \
+    class Derived: public TfStacked<Derived, /* thread safe */ IsPerThread>
 
 #endif // TF_STACKED_H

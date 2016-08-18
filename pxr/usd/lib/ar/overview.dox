@@ -1,9 +1,28 @@
 /*!
-\page prf_page_front Asset Resolution (Ar)
+\page ar_page_front Ar: Asset Resolution
 \if ( PIXAR_MFB_BUILD )
 \mainpage Ar : Asset Resolution
 \publicLib
 \endif
 
+\section ar_overview Overview
+
+The Ar module defines a plugin point for asset resolution, an important
+part of referenced scene description.  The interface class ArResolver
+can be derived and customized for each installation of USD.  Each custom
+implementation can also reason about its own ArResolverContext type,
+which allows a singel process to access multiple different state-sets
+(contexts) to guide asset resolution differently for different 
+datasets/contexts.
+
+Since resolving assets to filesystem paths can be expensive, and typically
+clients (such as USD) will commonly attempt to resolve the same assets over 
+and over again, we also provide an RAII ArResolverScopedCache that can
+greatly speed up asset resolution by caching results.
+
+Finally, if no custom implementation of ArResolver is found, we will fall back
+to a Ar_DefaultResolver, which performs simple searchpath-based
+resolution, based on an environment variable <tt>PXR_AR_DEFAULT_SEARCH_PATH</tt>
+that is expected to hold a colon-separated list of filesystem paths to search.
 
 */

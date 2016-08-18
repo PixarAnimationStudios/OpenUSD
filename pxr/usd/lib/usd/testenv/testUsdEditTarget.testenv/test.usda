@@ -1,0 +1,51 @@
+#usda 1.0
+
+class "_class_Sarah"
+{
+    custom color3d displayColor = (1, 1, 1)
+}
+
+def "Sarah" (
+    add references = @test.usda@</Sarah_Defaults>
+    add variantSets = "displayColor"
+    add inherits = </_class_Sarah>
+    variants = {
+        string displayColor = "red"
+    }
+)
+{
+    custom color3d displayColor = (0.1, 0.2, 0.3)
+
+    variantSet "displayColor" = {
+        "green" {
+            custom color3d displayColor = (0, 1, 0)
+        }
+        "red" {
+            custom color3d displayColor = (1, 0, 0)
+        }
+    }
+}
+
+def "Sarah_Defaults" (
+    add references = @test.usda@</Sarah_Base>
+)
+{
+    custom color3d displayColor = (0, 0, 1)
+}
+
+def Scope "Sarah_Base" (
+    add variantSets = "displayColor"
+    variants = {
+        string displayColor = "red"
+    }
+)
+{
+    variantSet "displayColor" = {
+        "green" {
+            custom color3d displayColor = (0, 0.8, 0)
+        }
+        "red" {
+            custom color3d displayColor = (0.8, 0, 0)
+        }
+    }
+}

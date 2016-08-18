@@ -1,0 +1,15 @@
+-- glslfx version 0.1
+
+#import common.glslfx
+
+-- glsl textureTest.Texture
+
+uniform sampler2D texture_color;
+uniform mat4 textureCoordTransform;
+
+vec4
+MultiTextureCallback(vec4 Cin)
+{
+    return texture2D(texture_color,
+                     (textureCoordTransform * gl_TexCoord[0]).st);
+}

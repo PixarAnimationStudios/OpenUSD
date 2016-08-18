@@ -1,0 +1,43 @@
+#usda 1.0
+(
+    """
+    This museum case tests instancing functionality when instanced
+    prims contain variants. Locally-defined variants at the instance
+    root are treated like the instance root: they may override property
+    values but may not override or define new name children.
+    """
+)
+
+over "Flattened_Master_1"
+{
+    def "geom"
+    {
+        double x = 10
+    }
+}
+
+def "InstancedModel" (
+    instanceable = true
+    add references = </Flattened_Master_1>
+)
+{
+    double x = 1
+}
+
+def "UninstancedModel" (
+    instanceable = false
+)
+{
+    double x = 4
+
+    def "geom"
+    {
+        double x = 4
+    }
+
+    def "from_b_variant"
+    {
+    }
+}
+
+

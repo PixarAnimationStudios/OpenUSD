@@ -32,8 +32,9 @@
 
 class HdBasisCurvesTopology;
 
-/// compute basis curves indices as a computation on CPU
+/// \class Hd_BasisCurvesIndexBuilderComputation
 ///
+/// Compute basis curves indices as a computation on CPU.
 ///
 class Hd_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:

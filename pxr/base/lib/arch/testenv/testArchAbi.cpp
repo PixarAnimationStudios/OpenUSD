@@ -21,14 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/library.h"
 #include "pxr/base/arch/testArchAbi.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/vsnprintf.h"
 #include <cassert>
 #include <iostream>
 #include <typeinfo>
-#ifdef _WIN32
-#include <windows.h>
+#include <ciso646>
+#ifdef ARCH_OS_WINDOWS
+#include <Windows.h>
 #define GETSYM GetProcAddress
 #else
 #include <dlfcn.h>
@@ -43,8 +45,8 @@ main(int argc, char** argv)
 {
     // Load the plugin and get the factory function.
     std::string error;
-#ifdef _WIN32
-    HMODULE plugin = LoadLibrary(".\\libtestArchAbiPlugin.dll");
+#ifdef ARCH_OS_WINDOWS
+    HMODULE plugin = (HMODULE)ArchOpenLibrary(".\\libtestArchAbiPlugin.dll", ARCH_LIBRARY_LAZY);
     if (not plugin) {
         error = ArchStringPrintf("%ld", (long)GetLastError());
     }
@@ -53,7 +55,7 @@ main(int argc, char** argv)
     // Up two directories.
     path = path.substr(0, path.rfind('/', path.rfind('/') - 1));
     path += "/tests/lib/libtestArchAbiPlugin.so";
-    void* plugin = dlopen(path.c_str(), RTLD_LAZY);
+    void* plugin = ArchOpenLibrary(path.c_str(), ARCH_LIBRARY_LAZY);
     if (not plugin) {
         error += dlerror();
     }

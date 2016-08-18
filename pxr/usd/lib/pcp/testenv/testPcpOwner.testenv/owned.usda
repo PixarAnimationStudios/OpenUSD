@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    owner = "_PLACEHOLDER_"
+)
+
+over "Sphere"
+{
+    double radius = 999;
+}

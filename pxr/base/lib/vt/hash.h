@@ -24,6 +24,7 @@
 #ifndef VT_HASH_H
 #define VT_HASH_H
 
+#include "pxr/base/vt/api.h"
 #include "pxr/base/tf/hash.h"
 #include <boost/functional/hash.hpp>
 #include <typeinfo>
@@ -32,7 +33,7 @@
 namespace Vt_HashDetail {
 
 // Issue a coding error when we attempt to hash a t.
-void _IssueUnimplementedHashError(std::type_info const &t);
+VT_API void _IssueUnimplementedHashError(std::type_info const &t);
 
 // We make unqualified calls, intending to pick up boost::hash_value if an
 // overload isn't found by ADL.
@@ -74,18 +75,18 @@ _HashValueImpl(T const &val, ...)
 } // Vt_HashDetail
 
 
-//! \brief A constexpr function that returns true if T is hashable via
-// VtHashValue, false otherwise.  This is true if we can either invoke
-// (boost::)hash_value() or TfHash()() on a T instance.
+/// A constexpr function that returns true if T is hashable via VtHashValue,
+/// false otherwise.  This is true if we can either invoke
+/// (boost::)hash_value() or TfHash()() on a T instance.
 template <class T>
 constexpr bool
 VtIsHashable() {
     return Vt_HashDetail::_IsHashable<T>(0);
 }
 
-//! \brief Compute a hash code for \p val by invoking (boost::)hash_value(val)
-// if possible, otherwise by invoking TfHash()(val), or if neither are possible
-// issue a coding error and return 0.
+/// Compute a hash code for \p val by invoking (boost::)hash_value(val) if
+/// possible, otherwise by invoking TfHash()(val), or if neither are possible
+/// issue a coding error and return 0.
 template <class T>
 size_t VtHashValue(T const &val)
 {

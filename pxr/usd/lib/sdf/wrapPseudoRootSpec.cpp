@@ -23,9 +23,10 @@
 //
 /// \file wrapPseudoRootSpec.cpp
 
+#include <boost/python.hpp>
+
 #include "pxr/usd/sdf/pseudoRootSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

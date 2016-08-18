@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "SimplePayload"
+{
+    def Scope "Child"
+    {
+    }
+}
+

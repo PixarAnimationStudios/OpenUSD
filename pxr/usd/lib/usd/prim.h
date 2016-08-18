@@ -24,8 +24,9 @@
 #ifndef USD_PRIM_H
 #define USD_PRIM_H
 
-/// \file prim.h
+/// \file usd/prim.h
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -70,7 +71,8 @@ class UsdPrimSubtreeIterator;
 typedef boost::iterator_range<UsdPrimSubtreeIterator> UsdPrimSubtreeRange;
 
 /// \class UsdPrim
-/// \brief UsdPrim is the sole persistent scenegraph object on a UsdStage, and
+///
+/// UsdPrim is the sole persistent scenegraph object on a UsdStage, and
 /// is the embodiment of a "Prim" as described in the <em>Universal Scene
 /// Description Composition Compendium</em>
 ///
@@ -138,9 +140,9 @@ public:
 
     /// Return this prim's definition from the UsdSchemaRegistry based on the
     /// prim's type if one exists, otherwise return null.
-    SdfPrimSpecHandle GetPrimDefinition() const;
+	USD_API SdfPrimSpecHandle GetPrimDefinition() const;
 
-    /// \brief Return this prim's composed specifier.
+    /// Return this prim's composed specifier.
     SdfSpecifier GetSpecifier() const { return _Prim()->GetSpecifier(); };
 
     /// Return a list of PrimSpecs that provide opinions for this prim
@@ -152,30 +154,30 @@ public:
     /// PrimStack for the purposes of expedited value resolution for prim
     /// metadata, since not all metadata resolves with simple "strongest
     /// opinion wins" semantics.
-    SdfPrimSpecHandleVector GetPrimStack() const;
+    USD_API SdfPrimSpecHandleVector GetPrimStack() const;
 
-    /// \brief Author an opinion for this Prim's specifier at the current edit
+    /// Author an opinion for this Prim's specifier at the current edit
     /// target.
     bool SetSpecifier(SdfSpecifier specifier) const {
         return SetMetadata(SdfFieldKeys->Specifier, specifier);
     }
 
-    /// \brief Return this prim's composed type name.  Note that this value is
+    /// Return this prim's composed type name.  Note that this value is
     /// cached and is efficient to query.
     const TfToken &GetTypeName() const { return _Prim()->GetTypeName(); };
 
-    /// \brief Author this Prim's typeName at the current EditTarget.
+    /// Author this Prim's typeName at the current EditTarget.
     bool SetTypeName(const TfToken & typeName) const {
         return SetMetadata(SdfFieldKeys->TypeName, typeName);
     }
 
-    /// \brief Clear the opinion for this Prim's typeName at the current edit
+    /// Clear the opinion for this Prim's typeName at the current edit
     /// target.
     bool ClearTypeName() const {
         return ClearMetadata(SdfFieldKeys->TypeName);
     }
 
-    /// \brief Return true if a typeName has been authored.
+    /// Return true if a typeName has been authored.
     bool HasAuthoredTypeName() const {
         return HasAuthoredMetadata(SdfFieldKeys->TypeName);
     }
@@ -235,7 +237,7 @@ public:
     ///
     /// \sa GetAuthoredPropertyNames()
     /// \sa UsdProperty::IsAuthored()
-    TfTokenVector GetPropertyNames() const;
+	USD_API TfTokenVector GetPropertyNames() const;
 
     /// Return this prim's property names (attributes and relationships) that
     /// have authored scene description, ordered according to the strongest
@@ -244,7 +246,7 @@ public:
     ///
     /// \sa GetPropertyNames()
     /// \sa UsdProperty::IsAuthored() 
-    TfTokenVector GetAuthoredPropertyNames() const;
+	USD_API TfTokenVector GetAuthoredPropertyNames() const;
 
     /// Return all of this prim's properties (attributes and relationships),
     /// including all builtin properties, ordered by name according to the
@@ -283,7 +285,7 @@ public:
     ///
     /// \sa GetAuthoredProperties()
     /// \sa UsdProperty::IsAuthored()
-    std::vector<UsdProperty> GetProperties() const;
+	USD_API std::vector<UsdProperty> GetProperties() const;
 
     /// Return this prim's properties (attributes and relationships) that have
     /// authored scene description, ordered by name according to the strongest
@@ -292,7 +294,7 @@ public:
     ///
     /// \sa GetProperties()
     /// \sa UsdProperty::IsAuthored()
-    std::vector<UsdProperty> GetAuthoredProperties() const;
+	USD_API std::vector<UsdProperty> GetAuthoredProperties() const;
 
     /// Return this prim's properties that are inside the given property
     /// namespace ordered according to the strongest propertyOrder statement in
@@ -305,14 +307,14 @@ public:
     /// GetProperties().
     ///
     /// For details of namespaced properties, see \ref Usd_Ordering
-    std::vector<UsdProperty>
+	USD_API std::vector<UsdProperty>
     GetPropertiesInNamespace(const std::vector<std::string> &namespaces) const;
 
     /// \overload
     /// \p namespaces must be an already-concatenated ordered set of namespaces,
     /// and may or may not terminate with the namespace-separator character. If
     /// \p namespaces is empty, this method is equivalent to GetProperties().
-    std::vector<UsdProperty>
+	USD_API std::vector<UsdProperty>
     GetPropertiesInNamespace(const std::string &namespaces) const;
 
     /// Like GetPropertiesInNamespace(), but exclude properties that do not have
@@ -320,7 +322,7 @@ public:
     /// UsdProperty::IsAuthored().
     ///
     /// For details of namespaced properties, see \ref Usd_Ordering
-    std::vector<UsdProperty>
+	USD_API std::vector<UsdProperty>
     GetAuthoredPropertiesInNamespace(
         const std::vector<std::string> &namespaces) const;
 
@@ -329,20 +331,20 @@ public:
     /// and may or may not terminate with the namespace-separator character. If
     /// \p namespaces is empty, this method is equivalent to
     /// GetAuthoredProperties().
-    std::vector<UsdProperty>
+	USD_API std::vector<UsdProperty>
     GetAuthoredPropertiesInNamespace(const std::string &namespaces) const;
 
     /// Return the strongest propertyOrder metadata value authored on this prim.
-    TfTokenVector GetPropertyOrder() const;
+	USD_API TfTokenVector GetPropertyOrder() const;
 
     /// Author an opinion for propertyOrder metadata on this prim at the current
     /// EditTarget.
-    void SetPropertyOrder(const TfTokenVector &order) const;
+	USD_API void SetPropertyOrder(const TfTokenVector &order) const;
 
     /// Remove all scene description for the property with the
     /// given \p propName <em>in the current UsdEditTarget</em>.
     /// Return true if the property is removed, false otherwise.
-    bool RemoveProperty(const TfToken &propName);
+	USD_API bool RemoveProperty(const TfToken &propName);
 
     /// Return a UsdProperty with the name \a propName. The property 
     /// returned may or may not \b actually exist so it must be checked for
@@ -356,20 +358,20 @@ public:
     ///    // myProp was not defined/authored
     /// }
     /// \endcode
-    UsdProperty GetProperty(const TfToken &propName) const;
+	USD_API UsdProperty GetProperty(const TfToken &propName) const;
 
     /// Return true if this prim has an property named \p propName, false
     /// otherwise.
-    bool HasProperty(const TfToken &propName) const;
+	USD_API bool HasProperty(const TfToken &propName) const;
 
 private:
     friend void wrapUsdPrim();
-    /// \brief The non-templated implementation of UsdPrim::IsA using the
+    /// The non-templated implementation of UsdPrim::IsA using the
     /// TfType system.
-    bool _IsA(const TfType& schemaType) const;
+	USD_API bool _IsA(const TfType& schemaType) const;
 
 public:
-    /// \brief Return true if the UsdPrim is/inherits a Schema of type T.
+    /// Return true if the UsdPrim is/inherits a Schema of type T.
     ///
     /// This will also return true if the UsdPrim is a schema that inherits
     /// from schema \c T.
@@ -390,7 +392,7 @@ public:
     /// \code
     /// prim.GetStage()->GetPrimAtPath(prim.GetPath().AppendChild(name))
     /// \endcode
-    UsdPrim GetChild(const TfToken &name) const;
+	USD_API UsdPrim GetChild(const TfToken &name) const;
 
     /// Return this prim's active, loaded, defined, non-abstract children as an
     /// iterable range.  Equivalent to:
@@ -486,13 +488,13 @@ public:
     /// \endcode
     ///
     /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
-    UsdPrim GetNextSibling() const;
+	USD_API UsdPrim GetNextSibling() const;
 
     /// Return this prim's next sibling that matches \p predicate if it has one,
     /// otherwise return the invalid UsdPrim.
     ///
     /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
-    UsdPrim GetFilteredNextSibling(
+	USD_API UsdPrim GetFilteredNextSibling(
         const Usd_PrimFlagsPredicate &predicate) const;
 
     // --------------------------------------------------------------------- //
@@ -504,7 +506,7 @@ public:
     ///
     /// The returned object also provides the API for adding new VariantSets
     /// to the prim.
-    UsdVariantSets GetVariantSets() const;
+	USD_API UsdVariantSets GetVariantSets() const;
 
     /// Retrieve a specifically named VariantSet for editing or constructing
     /// a UsdEditTarget.
@@ -513,14 +515,15 @@ public:
     /// \code
     /// prim.GetVariantSets().GetVariantSet(variantSetName)
     /// \endcode
+	USD_API
     UsdVariantSet GetVariantSet(const std::string& variantSetName) const;
 
-    /// \brief Return true if this prim has any authored VariantSets.
+    /// Return true if this prim has any authored VariantSets.
     ///
     /// \note this connotes only the *existence* of one of more VariantSets,
     /// *not* that such VariantSets necessarily contain any variants or
     /// variant opinions.
-    bool HasVariantSets() const;
+	USD_API bool HasVariantSets() const;
 
 
     /// Return a const reference to the PcpPrimIndex for this prim.
@@ -584,14 +587,14 @@ public:
     /// the provided \a typeName and \a custom for the required metadata fields.
     /// Note that these supplied arguments are only ever used in this particular
     /// circumstance, in all other cases they are ignored.
-    UsdAttribute
+	USD_API UsdAttribute
     CreateAttribute(const TfToken& name,
                     const SdfValueTypeName &typeName,
                     bool custom,
                     SdfVariability variability = SdfVariabilityVarying) const;
     /// \overload
     /// Create a custom attribute with \p name, \p typeName and \p variability.
-    UsdAttribute
+	USD_API UsdAttribute
     CreateAttribute(const TfToken& name,
                     const SdfValueTypeName &typeName,
                     SdfVariability variability = SdfVariabilityVarying) const;
@@ -600,7 +603,7 @@ public:
     /// This overload of CreateAttribute() accepts a vector of name components
     /// used to construct a \em namespaced property name.  For details, see
     /// \ref Usd_Ordering
-    UsdAttribute CreateAttribute(
+	USD_API UsdAttribute CreateAttribute(
         const std::vector<std::string> &nameElts,
         const SdfValueTypeName &typeName,
         bool custom,
@@ -608,17 +611,17 @@ public:
     /// \overload
     /// Create a custom attribute with \p nameElts, \p typeName, and
     /// \p variability.
-    UsdAttribute CreateAttribute(
+	USD_API UsdAttribute CreateAttribute(
         const std::vector<std::string> &nameElts,
         const SdfValueTypeName &typeName,
         SdfVariability variability = SdfVariabilityVarying) const;
 
     /// Like GetProperties(), but exclude all relationships from the result.
-    std::vector<UsdAttribute> GetAttributes() const;
+	USD_API std::vector<UsdAttribute> GetAttributes() const;
 
     /// Like GetAttributes(), but exclude attributes without authored scene
     /// description from the result.  See UsdProperty::IsAuthored().
-    std::vector<UsdAttribute> GetAuthoredAttributes() const;
+	USD_API std::vector<UsdAttribute> GetAuthoredAttributes() const;
 
     /// Return a UsdAttribute with the name \a attrName. The attribute 
     /// returned may or may not \b actually exist so it must be checked for
@@ -632,11 +635,11 @@ public:
     ///    // myAttr was not defined/authored
     /// }
     /// \endcode
-    UsdAttribute GetAttribute(const TfToken& attrName) const;
+	USD_API UsdAttribute GetAttribute(const TfToken& attrName) const;
 
     /// Return true if this prim has an attribute named \p attrName, false
     /// otherwise.
-    bool HasAttribute(const TfToken& attrName) const;
+	USD_API bool HasAttribute(const TfToken& attrName) const;
 
     // --------------------------------------------------------------------- //
     /// \name Relationships
@@ -678,23 +681,23 @@ public:
     /// - Otherwise author a uniform relationship spec at the current
     /// EditTarget, honoring \p custom .
     ///
-    UsdRelationship CreateRelationship(const TfToken& relName,
+	USD_API UsdRelationship CreateRelationship(const TfToken& relName,
                                        bool custom=true) const;
 
     /// \overload 
     /// This overload of CreateRelationship() accepts a vector of
     /// name components used to construct a \em namespaced property name.
     /// For details, see \ref Usd_Ordering
-    UsdRelationship CreateRelationship(const std::vector<std::string> &nameElts,
+	USD_API UsdRelationship CreateRelationship(const std::vector<std::string> &nameElts,
                                        bool custom=true)
         const;
 
     /// Like GetProperties(), but exclude all attributes from the result.
-    std::vector<UsdRelationship> GetRelationships() const;
+	USD_API std::vector<UsdRelationship> GetRelationships() const;
 
     /// Like GetRelationships(), but exclude relationships without authored
     /// scene description from the result.  See UsdProperty::IsAuthored().
-    std::vector<UsdRelationship> GetAuthoredRelationships() const;
+	USD_API std::vector<UsdRelationship> GetAuthoredRelationships() const;
 
     /// Return a UsdRelationship with the name \a relName. The relationship
     /// returned may or may not \b actually exist so it must be checked for
@@ -708,54 +711,54 @@ public:
     ///    // myRel was not defined/authored
     /// }
     /// \endcode
-    UsdRelationship GetRelationship(const TfToken& relName) const;
+	USD_API UsdRelationship GetRelationship(const TfToken& relName) const;
 
     /// Return true if this prim has a relationship named \p relName, false
     /// otherwise.
-    bool HasRelationship(const TfToken& relName) const;
+	USD_API bool HasRelationship(const TfToken& relName) const;
 
     // --------------------------------------------------------------------- //
     /// \name Payloads, Load and Unload 
     // --------------------------------------------------------------------- //
 
-    /// \brief Clears the payload at the current EditTarget for this prim. 
+    /// Clears the payload at the current EditTarget for this prim. 
     /// Return false if the payload could not be cleared.
-    bool ClearPayload() const;
+	USD_API bool ClearPayload() const;
 
-    /// \brief Fetch the payload for this prim; return true if a value was
+    /// Fetch the payload for this prim; return true if a value was
     /// read, otherwise return false, leaving \p payload unaltered.
     ///
     /// \sa \ref Usd_Payloads
-    bool GetPayload(SdfPayload* payload) const;
+	USD_API bool GetPayload(SdfPayload* payload) const;
    
-    /// \brief Return true if a payload is present on this prim.
+    /// Return true if a payload is present on this prim.
     ///
     /// \sa \ref Usd_Payloads
-    bool HasPayload() const;
+	USD_API bool HasPayload() const;
 
-    /// \brief Author payload metadata for this prim at the current edit
+    /// Author payload metadata for this prim at the current edit
     /// target. Return true on success, false if the value could not be set. 
     ///
     /// \sa \ref Usd_Payloads
-    bool SetPayload(const SdfPayload& payload) const;
+	USD_API bool SetPayload(const SdfPayload& payload) const;
 
-    /// \brief Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
-    bool SetPayload(
+    /// Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
+	USD_API bool SetPayload(
         const std::string& assetPath, const SdfPath& primPath) const;
     
-    /// \brief Shorthand for SetPayload(SdfPayload(layer->GetIdentifer(),
+    /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifer(),
     /// primPath)).
-    bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
+	USD_API bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
 
-    /// \brief Loads this prim, all its ancestors, and all its descendants.
+    /// Loads this prim, all its ancestors, and all its descendants.
     ///
     /// See UsdStage::Load for additional details.
-    void Load() const;
+	USD_API void Load() const;
 
-    /// \brief Unloads this prim and all its descendants.
+    /// Unloads this prim and all its descendants.
     ///
     /// See UsdStage::Unload for additional details.
-    void Unload() const;
+	USD_API void Unload() const;
 
     // --------------------------------------------------------------------- //
     /// \name References 
@@ -767,10 +770,10 @@ public:
     /// There is currently no facility for \em listing the currently authored
     /// references on a prim... the problem is somewhat ill-defined, and
     /// requires some thought.
-    UsdReferences GetReferences() const;
+	USD_API UsdReferences GetReferences() const;
 
-    /// \brief Return true if this prim has any authored references.
-    bool HasAuthoredReferences() const;
+    /// Return true if this prim has any authored references.
+	USD_API bool HasAuthoredReferences() const;
 
     // --------------------------------------------------------------------- //
     /// \name Inherits 
@@ -782,10 +785,10 @@ public:
     /// There is currently no facility for \em listing the currently authored
     /// inherits on a prim... the problem is somewhat ill-defined, and
     /// requires some thought.
-    UsdInherits GetInherits() const;
+	USD_API UsdInherits GetInherits() const;
 
-    /// \brief Return true if this prim has any authored inherits.
-    bool HasAuthoredInherits() const;
+    /// Return true if this prim has any authored inherits.
+	USD_API bool HasAuthoredInherits() const;
 
     // --------------------------------------------------------------------- //
     /// \name Specializes 
@@ -797,10 +800,10 @@ public:
     /// There is currently no facility for \em listing the currently authored
     /// specializes on a prim... the problem is somewhat ill-defined, and
     /// requires some thought.
-    UsdSpecializes GetSpecializes() const;
+	USD_API UsdSpecializes GetSpecializes() const;
 
-    /// \brief Returns true if this prim has any authored specializes.
-    bool HasAuthoredSpecializes() const;
+    /// Returns true if this prim has any authored specializes.
+	USD_API bool HasAuthoredSpecializes() const;
 
     // --------------------------------------------------------------------- //
     /// \name Instancing
@@ -855,7 +858,7 @@ public:
 
     /// If this prim is an instance, return the UsdPrim for the corresponding
     /// master. Otherwise, return an invalid UsdPrim.
-    UsdPrim GetMaster() const;
+	USD_API UsdPrim GetMaster() const;
 
 private:
     friend class UsdObject;

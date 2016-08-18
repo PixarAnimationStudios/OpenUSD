@@ -1,0 +1,17 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "Prim"
+{
+    custom rel foo
+    rel foo[</Target/Path>] {
+        double attr = 1
+    }
+    rel foo[</Target/Path2>] {
+        reorder attributes = ["hello", "there"]
+    }
+}
+

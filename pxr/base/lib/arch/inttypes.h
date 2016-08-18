@@ -24,20 +24,18 @@
 #ifndef ARCH_INTTYPES_H
 #define ARCH_INTTYPES_H
 
+/// \file arch/inttypes.h
+/// \ingroup group_arch_Bits
+/// Define integral types.
+///
+/// By including this file, the "standard" integer types \c int16_t,
+/// \c int32_t, and \c int64_t are all defined, as are their unsigned
+/// counterparts \c uint16_t, \c uint32_t, and \c uint64_t.
+
 #include "pxr/base/arch/defines.h"
 #include <stdint.h>
 #include <inttypes.h>
 #include <sys/types.h>
-
-/*!
- * \file inttypes.h
- * \brief Define integral types.
- * \ingroup group_arch_Bits
- *
- * By including this file, the "standard" integer types \c int16_t,
- * \c int32_t, and \c int64_t are all defined, as are their unsigned
- * counterparts \c uint16_t, \c uint32_t, and \c uint64_t.
- */
 
 typedef unsigned char uchar;
 

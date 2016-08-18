@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    """
+    This model's CharRig relocates the Path prim from the PathRig out into the anim interface scope.
+    """
+)
+
+def "Model" (
+    add references = @charRig.usda@</CharRig>
+)
+{
+    over "Anim"
+    {
+        over "Path"
+        {
+            over "AnimScope"
+            {
+                custom double track
+            }
+        }
+    }
+
+    over "Rig"
+    {
+        over "PathRig"
+        {
+            over "Path" (
+                doc = "This is a prohibited location in namespace due to the relocation.  This opinion should be skipped over!"
+            )
+            {
+                custom double track
+            }
+        }
+    }
+}

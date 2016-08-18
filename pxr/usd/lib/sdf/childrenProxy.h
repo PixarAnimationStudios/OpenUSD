@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/childrenProxy.h
-
 #ifndef SDF_CHILDRENPROXY_H
 #define SDF_CHILDRENPROXY_H
+
+/// \file sdf/childrenProxy.h
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/base/vt/value.h"

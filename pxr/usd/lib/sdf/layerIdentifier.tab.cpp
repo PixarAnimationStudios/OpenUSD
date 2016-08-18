@@ -1082,13 +1082,6 @@ yydestruct (yymsg, yytype, yyvaluep, context)
   if (!yymsg)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
-
-  switch (yytype)
-    {
-
-      default:
-	break;
-    }
 }
 
 /* Prevent warnings from -Wmissing-prototypes.  */

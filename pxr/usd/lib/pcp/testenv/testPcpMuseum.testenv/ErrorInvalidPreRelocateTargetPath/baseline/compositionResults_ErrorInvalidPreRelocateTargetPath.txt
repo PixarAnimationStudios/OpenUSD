@@ -1,0 +1,146 @@
+Loading @testPcpMuseum.testenv/ErrorInvalidPreRelocateTargetPath/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+     sub1.usda
+     sub2.usda
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot>
+
+Prim Stack:
+    root.usda            /SublayerRoot
+    sub1.usda            /SublayerRoot
+    sub2.usda            /SublayerRoot
+    ref.usda             /Ref
+
+Child names:
+     ['Rig', 'Anim']
+
+Property names:
+     ['badRelA', 'badRelB', 'goodRelA', 'goodRelB', 'badAttrA', 'goodAttrA']
+
+Property stacks:
+/SublayerRoot.badAttrA:
+    sub2.usda            /SublayerRoot.badAttrA
+/SublayerRoot.badRelA:
+    sub2.usda            /SublayerRoot.badRelA
+/SublayerRoot.badRelB:
+    sub2.usda            /SublayerRoot.badRelB
+/SublayerRoot.goodAttrA:
+    sub2.usda            /SublayerRoot.goodAttrA
+/SublayerRoot.goodRelA:
+    sub2.usda            /SublayerRoot.goodRelA
+/SublayerRoot.goodRelB:
+    sub2.usda            /SublayerRoot.goodRelB
+
+Relationship targets:
+/SublayerRoot.goodRelA:
+    /SublayerRoot/Anim/Scope
+/SublayerRoot.goodRelB:
+    /SublayerRoot/Anim/Scope.x
+
+Attribute connections:
+/SublayerRoot.goodAttrA:
+    /SublayerRoot/Anim/Scope.x
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot/Rig>
+
+Prim Stack:
+    ref.usda             /Ref/Rig
+
+Prohibited child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot/Anim>
+
+Prim Stack:
+    sub1.usda            /SublayerRoot/Anim
+
+Child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot/Anim/Scope>
+
+Prim Stack:
+    ref.usda             /Ref/Rig/Scope
+
+Property names:
+     ['x']
+
+Property stacks:
+/SublayerRoot/Anim/Scope.x:
+    ref.usda             /Ref/Rig/Scope.x
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    ref.usda             /Ref
+
+Child names:
+     ['Rig', 'Anim']
+
+Property names:
+     ['badRelA', 'badRelB', 'goodRelA', 'goodRelB', 'badAttrA', 'goodAttrA']
+
+Property stacks:
+/Root.badAttrA:
+    root.usda            /Root.badAttrA
+/Root.badRelA:
+    root.usda            /Root.badRelA
+/Root.badRelB:
+    root.usda            /Root.badRelB
+/Root.goodAttrA:
+    root.usda            /Root.goodAttrA
+/Root.goodRelA:
+    root.usda            /Root.goodRelA
+/Root.goodRelB:
+    root.usda            /Root.goodRelB
+
+Relationship targets:
+/Root.goodRelA:
+    /Root/Anim/Scope
+/Root.goodRelB:
+    /Root/Anim/Scope.x
+
+Attribute connections:
+/Root.goodAttrA:
+    /Root/Anim/Scope.x
+
+------------------------------------------------------------------------
+Results for composing </Root/Rig>
+
+Prim Stack:
+    ref.usda             /Ref/Rig
+
+Prohibited child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim>
+
+Prim Stack:
+    root.usda            /Root/Anim
+
+Child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim/Scope>
+
+Prim Stack:
+    ref.usda             /Ref/Rig/Scope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Root/Anim/Scope.x:
+    ref.usda             /Ref/Rig/Scope.x
+

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include "pxr/base/tf/pyEnum.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/treeIterator.h"
@@ -31,13 +33,10 @@
 
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
-
-#include <boost/python/class.hpp>
 
 using std::string;
 
@@ -371,3 +370,5 @@ void wrapUsdStage()
              return_value_policy<TfPySequenceToList>())
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(UsdStage)

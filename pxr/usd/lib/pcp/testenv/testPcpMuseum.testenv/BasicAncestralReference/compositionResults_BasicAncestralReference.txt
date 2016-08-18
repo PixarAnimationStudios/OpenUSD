@@ -1,0 +1,39 @@
+Loading @testPcpMuseum.testenv/BasicAncestralReference/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    A.usda               /A
+
+Child names:
+     ['B']
+
+Property names:
+     ['A_attr']
+
+Property stacks:
+/A.A_attr:
+    A.usda               /A.A_attr
+
+------------------------------------------------------------------------
+Results for composing </A/B>
+
+Prim Stack:
+    root.usda            /A/B
+    B.usda               /B
+    A.usda               /A/B
+
+Property names:
+     ['B_attr']
+
+Property stacks:
+/A/B.B_attr:
+    B.usda               /B.B_attr
+    A.usda               /A/B.B_attr
+

@@ -1,0 +1,50 @@
+Loading @testPcpMuseum.testenv/TrickyNestedSpecializes2/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Class_1>
+
+Prim Stack:
+    root.usda            /Class_1
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Class_1/Child>
+
+Prim Stack:
+    root.usda            /Class_1/Child
+
+------------------------------------------------------------------------
+Results for composing </Class_2>
+
+Prim Stack:
+    root.usda            /Class_2
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    ref.usda             /Ref
+    root.usda            /Class_1
+    ref.usda             /Class_1
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Root/Child>
+
+Prim Stack:
+    root.usda            /Root/Child
+    ref.usda             /Ref/Child
+    root.usda            /Class_2
+    ref.usda             /Class_2
+    root.usda            /Class_1/Child
+    ref.usda             /Class_1/Child
+

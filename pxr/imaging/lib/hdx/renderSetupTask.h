@@ -24,6 +24,7 @@
 #ifndef HDX_RENDER_SETUP_TASK_H
 #define HDX_RENDER_SETUP_TASK_H
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/enums.h"
@@ -40,8 +41,10 @@ typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 struct HdxRenderTaskParams;
 
-/// A task for setting up render pass state
-///  (camera, renderpass shader, GL states)
+/// \class HdxRenderSetupTask
+///
+/// A task for setting up render pass state (camera, renderpass shader, GL
+/// states).
 ///
 class HdxRenderSetupTask : public HdSceneTask
 {
@@ -70,7 +73,9 @@ private:
     HdCameraSharedPtr _camera;
 };
 
-/// RenderTask parameters (renderpass state)
+/// \class HdxRenderTaskParams
+///
+/// RenderTask parameters (renderpass state).
 ///
 struct HdxRenderTaskParams : public HdTaskParams
 {
@@ -132,10 +137,9 @@ struct HdxRenderTaskParams : public HdTaskParams
     GfVec4d viewport;
 };
 
-
 // VtValue requirements
-std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv);
-bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
-bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
+HDXLIB_API std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv);
+HDXLIB_API bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
+HDXLIB_API bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
 
 #endif //HDX_RENDER_SETUP_TASK_H

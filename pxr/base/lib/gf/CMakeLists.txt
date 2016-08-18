@@ -4,6 +4,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE gf)
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 pxr_shared_library(gf
     LIBRARIES
         arch
@@ -69,6 +73,7 @@ pxr_shared_library(gf
         vec4i
 
     PUBLIC_HEADERS
+        api.h
         declare.h
         limits.h
         traits.h
@@ -77,6 +82,7 @@ pxr_shared_library(gf
         ostreamHelpers
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -156,131 +162,133 @@ else()
     )
 endif()
         
-pxr_build_test(testGfHardToReach
-    LIBRARIES
-        gf
-    CPPFILES
-        testenv/testGfHardToReach.cpp
-) 
+if(UNIX)        
+    pxr_build_test(testGfHardToReach
+        LIBRARIES
+            gf
+        CPPFILES
+            testenv/testGfHardToReach.cpp
+    ) 
 
-pxr_test_scripts(
-    testenv/testGfBBox3d.py
-    testenv/testGfCamera.py
-    testenv/testGfColorRamp.py
-    testenv/testGfDecomposeRotation.py
-    testenv/testGfFrustum.py
-    testenv/testGfGamma.py
-    testenv/testGfHomogeneous.py
-    testenv/testGfInterval.py
-    testenv/testGfLine.py
-    testenv/testGfLineSeg.py
-    testenv/testGfMath.py
-    testenv/testGfMatrix.py
-    testenv/testGfMultiInterval.py
-    testenv/testGfPlane.py
-    testenv/testGfQuaternion.py
-    testenv/testGfRange.py
-    testenv/testGfRay.py
-    testenv/testGfRect2i.py
-    testenv/testGfRGB.py
-    testenv/testGfRotation.py
-    testenv/testGfSize.py
-    testenv/testGfTransform.py
-    testenv/testGfVec.py
-)
+    pxr_test_scripts(
+        testenv/testGfBBox3d.py
+        testenv/testGfCamera.py
+        testenv/testGfColorRamp.py
+        testenv/testGfDecomposeRotation.py
+        testenv/testGfFrustum.py
+        testenv/testGfGamma.py
+        testenv/testGfHomogeneous.py
+        testenv/testGfInterval.py
+        testenv/testGfLine.py
+        testenv/testGfLineSeg.py
+        testenv/testGfMath.py
+        testenv/testGfMatrix.py
+        testenv/testGfMultiInterval.py
+        testenv/testGfPlane.py
+        testenv/testGfQuaternion.py
+        testenv/testGfRange.py
+        testenv/testGfRay.py
+        testenv/testGfRect2i.py
+        testenv/testGfRGB.py
+        testenv/testGfRotation.py
+        testenv/testGfSize.py
+        testenv/testGfTransform.py
+        testenv/testGfVec.py
+    )
 
-pxr_register_test(testGfBBox3d
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfBBox3d"
-)
-pxr_register_test(testGfColorRamp
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfColorRamp"
-)
-pxr_register_test(testGfDecomposeRotation
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
-)
-pxr_register_test(testGfFrustum
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"
-)
-pxr_register_test(testGfGamma
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfGamma"
-)
-pxr_register_test(testGfHardToReach
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfHardToReach"
-)
-pxr_register_test(testGfHomogeneous
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfHomogeneous"
-)
-pxr_register_test(testGfInterval
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfInterval"
-)
-pxr_register_test(testGfMultiInterval
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMultiInterval"
-)
-pxr_register_test(testGfLine
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfLine"
-)
-pxr_register_test(testGfLineSeg
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfLineSeg"
-)
-pxr_register_test(testGfMath
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMath"
-)
-pxr_register_test(testGfMatrix
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMatrix"
-)
-pxr_register_test(testGfPlane
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfPlane"
-)
-pxr_register_test(testGfQuaternion
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfQuaternion"
-)
-pxr_register_test(testGfRange
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRange"
-)
-pxr_register_test(testGfRay
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRay"
-)
-pxr_register_test(testGfRect2i
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRect2i"
-)
-pxr_register_test(testGfRGB
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRGB"
-)
-pxr_register_test(testGfRotation
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRotation"
-)
-pxr_register_test(testGfSize
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfSize"
-)
-pxr_register_test(testGfTransform
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfTransform"
-)
-pxr_register_test(testGfVec
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfVec"
-)
-pxr_register_test(testGfCamera
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfCamera"
-)
+    pxr_register_test(testGfBBox3d
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfBBox3d"
+    )
+    pxr_register_test(testGfColorRamp
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfColorRamp"
+    )
+    pxr_register_test(testGfDecomposeRotation
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
+    )
+    pxr_register_test(testGfFrustum
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"
+    )
+    pxr_register_test(testGfGamma
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfGamma"
+    )
+    pxr_register_test(testGfHardToReach
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfHardToReach"
+    )
+    pxr_register_test(testGfHomogeneous
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfHomogeneous"
+    )
+    pxr_register_test(testGfInterval
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfInterval"
+    )
+    pxr_register_test(testGfMultiInterval
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMultiInterval"
+    )
+    pxr_register_test(testGfLine
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfLine"
+    )
+    pxr_register_test(testGfLineSeg
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfLineSeg"
+    )
+    pxr_register_test(testGfMath
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMath"
+    )
+    pxr_register_test(testGfMatrix
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMatrix"
+    )
+    pxr_register_test(testGfPlane
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfPlane"
+    )
+    pxr_register_test(testGfQuaternion
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfQuaternion"
+    )
+    pxr_register_test(testGfRange
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRange"
+    )
+    pxr_register_test(testGfRay
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRay"
+    )
+    pxr_register_test(testGfRect2i
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRect2i"
+    )
+    pxr_register_test(testGfRGB
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRGB"
+    )
+    pxr_register_test(testGfRotation
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRotation"
+    )
+    pxr_register_test(testGfSize
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfSize"
+    )
+    pxr_register_test(testGfTransform
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfTransform"
+    )
+    pxr_register_test(testGfVec
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfVec"
+    )
+    pxr_register_test(testGfCamera
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfCamera"
+    )
+endif()

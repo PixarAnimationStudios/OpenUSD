@@ -1,0 +1,50 @@
+Loading @testPcpMuseum.testenv/TrickyInheritedVariantSelection/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Sullivan>
+
+Prim Stack:
+    root.usda            /Sullivan
+    root.usda            /_extraclass_Sullivan
+    root.usda            /_pinclass_Sullivan
+    root.usda            /_shadeclass_Sullivan
+    sequence.usda        /Sullivan
+    sequence.usda        /_pinclass_Sullivan
+    sequence.usda        /_shadeclass_Sullivan
+    sequence.usda        /Sullivan{pin=ShotPin}
+    sequence.usda        /_extraclass_Sullivan
+    model-pin.usda       /SullivanShotPin
+    model-pin.usda       /SullivanShotPin{shade=PhongShade}
+    model-shade.usda     /SullivanShotPinPhongShade
+    model-shade.usda     /SullivanShotPinNoShade
+    model-pin.usda       /SullivanNoPin
+    model-pin.usda       /SullivanNoPin{shade=PhongShade}
+    model-shade.usda     /SullivanNoPinPhongShade
+    model-shade.usda     /SullivanNoPinNoShade
+
+Variant Selections:
+    {pin = ShotPin}
+    {shade = PhongShade}
+
+------------------------------------------------------------------------
+Results for composing </_pinclass_Sullivan>
+
+Prim Stack:
+    root.usda            /_pinclass_Sullivan
+
+------------------------------------------------------------------------
+Results for composing </_shadeclass_Sullivan>
+
+Prim Stack:
+    root.usda            /_shadeclass_Sullivan
+
+------------------------------------------------------------------------
+Results for composing </_extraclass_Sullivan>
+
+Prim Stack:
+    root.usda            /_extraclass_Sullivan
+

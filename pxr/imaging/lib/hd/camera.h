@@ -24,6 +24,7 @@
 #ifndef HD_CAMERA_H
 #define HD_CAMERA_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -35,13 +36,17 @@
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
 
+/// \class HdCamera
+///
 /// A camera model, used in conjunction with HdRenderPass.
-
+///
 class HdCamera {
 public:
     typedef std::vector<GfVec4d> ClipPlanesVector;
 
+	HDLIB_API
     HdCamera(HdSceneDelegate* delegate, SdfPath const & id);
+	HDLIB_API
     ~HdCamera();  // note: not virtual (for now)
 
     /// Returns the HdSceneDelegate which backs this texture.
@@ -54,12 +59,14 @@ public:
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
+	HDLIB_API
     void Sync();
 
     // ---------------------------------------------------------------------- //
     /// \name Camera API
     // ---------------------------------------------------------------------- //
 
+	HDLIB_API
     VtValue Get(TfToken const &name);
 
 private:

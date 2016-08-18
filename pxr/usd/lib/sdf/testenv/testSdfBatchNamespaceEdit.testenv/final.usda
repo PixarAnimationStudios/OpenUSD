@@ -1,0 +1,83 @@
+#usda 1.0
+
+def Scope "C"
+{
+    custom double b
+}
+
+def Scope "B"
+{
+    custom double c
+}
+
+def Scope "L"
+{
+    def Scope "J"
+    {
+    }
+}
+
+def Scope "P"
+{
+    custom rel j
+    add rel j = </S.j> {
+        custom double o (
+            "m"
+        )
+    }
+    custom rel k
+    add rel k = </P.j> {
+        custom double o (
+            "n"
+        )
+    }
+    custom double c (
+        "b"
+    )
+    custom double b (
+        "c"
+    )
+}
+
+def Scope "Q"
+{
+    custom double g (
+        "g"
+    )
+    custom double h (
+        "i"
+    )
+
+    def Scope "R"
+    {
+        custom double h (
+            "h"
+        )
+    }
+}
+
+def Scope "S"
+{
+    custom rel j
+    custom rel k
+}
+
+def Scope "V" (
+    variantSets = "v"
+)
+{
+    variantSet "v" = {
+        "one" {
+
+        }
+        "two" {
+            custom double u
+
+        }
+    }
+}
+
+def Scope "K"
+{
+}
+

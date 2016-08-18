@@ -24,6 +24,7 @@
 #ifndef HDX_UNIT_TEST_DELEGATE
 #define HDX_UNIT_TEST_DELEGATE
 
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/glf/simpleLight.h"
@@ -40,7 +41,7 @@
 #define HDX_UNIT_TEST_TOKENS                             \
     (geometryAndGuides)
 
-TF_DECLARE_PUBLIC_TOKENS(Hdx_UnitTestTokens, HDX_UNIT_TEST_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(Hdx_UnitTestTokens, HDXLIB_API, HDX_UNIT_TEST_TOKENS);
 
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
@@ -151,6 +152,5 @@ private:
 
     SdfPath _cameraId;
 };
-
 
 #endif  // HDX_UNIT_TEST_DELEGATE

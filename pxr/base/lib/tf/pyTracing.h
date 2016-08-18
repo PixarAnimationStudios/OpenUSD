@@ -24,11 +24,14 @@
 #ifndef TF_PYTRACING_H
 #define TF_PYTRACING_H
 
+#include "pxr/base/tf/api.h"
+
 #include <Python.h>
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
+/// \struct PyTraceInfo
 /// Structure passed to python trace functions.  See the Python C API
 /// documentation reference for the meaning of \a what and \a arg.
 struct TfPyTraceInfo {
@@ -42,16 +45,15 @@ struct TfPyTraceInfo {
 typedef boost::function<void (TfPyTraceInfo const &)> TfPyTraceFn;
 typedef boost::shared_ptr<TfPyTraceFn> TfPyTraceFnId;
 
-/// Register \a f as a python trace function.  It will be invoked for python
-/// tracing events.  If python is not yet initialized, the function will not be
-/// invoked until python is initialized.
-TfPyTraceFnId TfPyRegisterTraceFn(TfPyTraceFn const &f);
-
-
-// For internal use only.  Do not use.
-void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info);
+/// Register \a f as a python trace function.
+/// It will be invoked for python tracing events. If python is not yet
+/// initialized, the function will not be invoked until python is initialized.
+TF_API TfPyTraceFnId TfPyRegisterTraceFn(TfPyTraceFn const &f);
 
 // For internal use only.  Do not use.
-void Tf_PyTracingPythonInitialized();
+TF_API void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info);
+
+// For internal use only.  Do not use.
+TF_API void Tf_PyTracingPythonInitialized();
 
 #endif // TF_PYTRACING_H

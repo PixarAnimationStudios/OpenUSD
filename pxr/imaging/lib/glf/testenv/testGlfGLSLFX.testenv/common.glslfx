@@ -1,0 +1,30 @@
+-- glslfx version 0.1
+
+#import $TOOLS/glos/shaders/simpleLightingShader.glslfx
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "vertexShader": {
+                "source": [ "SimpleLighting.Lighting",
+                            "textureTest.TexCoord",
+                            "SimpleLighting.Vertex" ]
+            },
+            "fragmentShader": {
+                "source": [ "SimpleLighting.Lighting",
+                            "textureTest.Texture",
+                            "SimpleLighting.Fragment" ]
+            }
+        }
+    }
+}
+
+-- glsl textureTest.TexCoord
+
+in vec4 menvTextureCoords;
+
+void texCoordCallback()
+{
+    gl_TexCoord[0] = menvTextureCoords;
+}

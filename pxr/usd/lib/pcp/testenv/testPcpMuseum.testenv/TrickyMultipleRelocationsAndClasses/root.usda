@@ -1,0 +1,54 @@
+#usda 1.0
+(
+    """
+    This museum case depicts a rig construction where parts of different
+    class instances are relocated to form a single hierarchy, which itself
+    is then relocated. 
+
+    This was adapted from the ExampleRig in testCsdRelocateComposition, 
+    which itself was adapted from assets from brave -- see bug 30371.
+    """
+)
+
+def Scope "HumanRig" (
+    relocates = {
+        <rig/Face/Anim/Face>: <Face>,
+    }
+)
+{
+    def Scope "rig"
+    {
+        def Scope "Face" (
+            references = @FaceRig.usda@</FaceRig>
+        )
+        {
+            over "EyeLidRig"
+            {
+                over "SymEyeLidRig"
+                {
+                    over "Anim"
+                    {
+                        over "Lids"
+                        {
+                            custom double value = 42
+                        }
+                    }
+                }
+            }
+
+            over "EyeRig"
+            {
+                over "SymEyeRig"
+                {
+                    over "Anim"
+                    {
+                        over "Eye"
+                        {
+                            custom double value = 808
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

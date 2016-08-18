@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    """
+    This museum case is similar to TrickyInheritsAndRelocates4, but
+    involves a class hierarchy.
+
+    /CharRig/Anim/Arms/R1Arm/Knot03 involves several relocates,
+    and class hierarchies at different levels of namespace. This
+    museum case demonstrates that these class hierarchies are
+    propagated across relocates so that opinions in the classes
+    are taken into account during composition.
+    """
+)
+
+def Scope "CharRig" (
+    relocates = {
+        <Rig/TentaclesRig/Arms> : <Anim/Arms>
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "Rig"
+    {
+        def Scope "TentaclesRig" (
+            references = @./TentaclesRig.usda@</TentaclesRig>
+        )
+        {
+            over "TentacleRigs"
+            {
+                over "_Class_TentacleRig"
+                {
+                    over "TentacleInterface"
+                    {
+                        over "_Class_KnotRig"
+                        {
+                            over "Anim"
+                            {
+                                custom string foo = "from CharRig"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

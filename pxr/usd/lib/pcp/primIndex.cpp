@@ -698,21 +698,30 @@ _FindStartingNodeForImpliedClasses(const PcpNodeRef& n)
     return startNode;
 }
 
-/// This is a convenience function that creates a constant
-/// with a single mapping.
-///
-/// \param sourcePath The single source path.
-/// \param targetPath The single target path.
-/// \param offset The time offset to apply from source to target.
+// This is a convenience function to create a map expression
+// that maps a given source path to a target node, composing in
+// relocations and layer offsets if any exist.
 static PcpMapExpression
 _CreateMapExpressionForArc(const SdfPath &sourcePath, 
-                           const SdfPath &targetPath, 
+                           const PcpNodeRef &targetNode,
+                           const PcpPrimIndexInputs &inputs,
                            const SdfLayerOffset &offset = SdfLayerOffset())
 {
+    const SdfPath targetPath = targetNode.GetPath().StripAllVariantSelections();
+
     PcpMapFunction::PathMap sourceToTargetMap;
     sourceToTargetMap[sourcePath] = targetPath;
-    return PcpMapExpression::Constant(
+    PcpMapExpression arcExpr = PcpMapExpression::Constant(
         PcpMapFunction::Create( sourceToTargetMap, offset ) );
+
+    // Apply relocations that affect namespace at and below this site.
+    if (not inputs.usd) {
+        arcExpr = targetNode.GetLayerStack()
+            ->GetExpressionForRelocatesAtPath(targetNode.GetPath())
+            .Compose(arcExpr);
+    }
+
+    return arcExpr;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1242,17 +1251,6 @@ _AddArc(
         skipDuplicateNodes ? "true" : "false",
         skipImpliedSpecializes ? "true" : "false");
 
-    // Apply relocations that affect namespace at and below this site.
-    // Do not do this for arcs that originated elsewhere -- we will
-    // have already folded relocations into their map function;
-    // see _EvalImpliedClasses().
-    if (not indexer->inputs.usd and origin == parent) {
-        PcpLayerStackSite parentSite(parent.GetSite());
-        mapExpr = parentSite.layerStack
-            ->GetExpressionForRelocatesAtPath(parentSite.path)
-            .Compose(mapExpr);
-    }
-
     if (not TF_VERIFY(not mapExpr.IsNull())) {
         return PcpNodeRef();
     }
@@ -1768,16 +1766,15 @@ _EvalNodeReferences(
         // not map across.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ refPath,
-                /* target */ node.GetPath().StripAllVariantSelections(),
-                layerOffset);
+                /* source */ refPath, /* targetNode */ node, 
+                indexer->inputs, layerOffset);
 
         _AddArc( PcpArcTypeReference,
                  /* parent = */ node,
                  /* origin = */ node,
                  PcpLayerStackSite( refLayerStack, refPath ),
                  mapExpr,
-                 /* arcSiblingNum = */ refArcNum,
+                 /* arcSiblingNum = */ static_cast<int>(refArcNum),
                  directNodeShouldContributeSpecs,
                  /* includeAncestralOpinions = */ false,
                  /* requirePrimAtTarget = */ true,
@@ -2268,15 +2265,15 @@ _AddClassBasedArcs(
         // Every other path maps to itself.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ classArcs[arcNum],
-                /* target */ node.GetPath().StripAllVariantSelections())
+                /* source */ classArcs[arcNum], /* targetNode */ node,
+                indexer->inputs)
             .AddRootIdentity();
 
         _AddClassBasedArc(arcType,
             /* parent = */ node,
             /* origin = */ node,
             mapExpr,
-            arcNum,
+			static_cast<int>(arcNum),
             /* ignoreIfSameAsSite = */ PcpLayerStackSite(),
             /* requirePrimAtTarget = */ true,
             indexer);
@@ -3269,7 +3266,7 @@ _EvalNodeVariants(
 
     // Compose the selection for each variant set.
     // Variant sets are ordered strong-to-weak.
-    for (int vsetNum=0, numVsets=vsetNames.size();
+    for (size_t vsetNum=0, numVsets=vsetNames.size();
          vsetNum < numVsets; ++vsetNum) {
 
         const std::string & vset = vsetNames[vsetNum];
@@ -3351,7 +3348,7 @@ _EvalNodeVariants(
                  /* origin = */ node,
                  PcpLayerStackSite( node.GetLayerStack(), varPath ),
                  identityMapExpr,
-                 /* arcSiblingNum = */ vsetNum, 
+                 /* arcSiblingNum = */ static_cast<int>(vsetNum), 
                  /* directNodeShouldContributeSpecs = */ true,
                  /* includeAncestralOpinions = */ false,
                  /* requirePrimAtTarget = */ true,
@@ -3544,9 +3541,8 @@ _EvalNodePayload(
 
     PcpMapExpression mapExpr = 
         _CreateMapExpressionForArc(
-            /* source */ payloadPath,
-            /* target */ node.GetPath().StripAllVariantSelections(),
-            offset );
+            /* source */ payloadPath, /* target */ node, 
+            indexer->inputs, offset);
 
     _AddArc( PcpArcTypePayload,
              /* parent = */ node,

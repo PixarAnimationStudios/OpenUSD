@@ -1,0 +1,81 @@
+#usda 1.0
+(
+    """
+    This museum exhibit demonstrates basic referencing behavior
+    supported by Pcp.
+    """
+    subLayers = [
+        @sublayer.usda@
+    ]
+    defaultPrim = "InternalReference"
+)
+
+def Scope "PrimWithReferences" (
+    references = [
+        @ref.usda@</PrimA>,
+        @ref2.usda@</PrimB>
+    ]
+)
+{
+}
+
+over "PrimB" (
+    """
+    These overs for prims referenced by PrimWithReferences above
+    should not factor into composition.
+    """
+)
+{
+    over "PrimB_Child"
+    {
+    }
+}
+
+def Scope "PrimWithSelfReference" (
+    references = [
+        @root.usda@</InternalReference>,
+        @sublayer.usda@</InternalSublayerReference>
+    ]
+)
+{
+}
+
+def Scope "PrimWithInternalReference" (
+    references = [
+        </InternalReference>,
+        </InternalReference2>
+    ]
+)
+{
+}       
+
+def Scope "InternalReference"
+{
+    def Scope "InternalReference_Child"
+    {
+    }
+}
+
+over "InternalSublayerReference" (
+     """
+     These overs for prims referenced by PrimWithInternalReference above
+     should not factor into composition.
+     """
+)
+{
+    over "InternalSublayerReference_Child"
+    {
+    }
+}
+
+def Scope "PrimWithDefaultReferenceTarget" (
+    references = @defaultRef.usda@
+)
+{
+}
+
+def Scope "PrimWithDefaultReferenceTarget2" (
+    references = <>
+)
+{
+}

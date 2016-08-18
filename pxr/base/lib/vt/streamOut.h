@@ -25,6 +25,7 @@
 #define VT_STREAMOUT_H
 
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/vt/api.h"
 
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/has_left_shift.hpp>
@@ -37,7 +38,7 @@
 // Helper that's used to stream a generic string for a type that isn't
 // streamable and doesn't provide VtStreamOut.  Inserts a message like
 // <'typeName' @ 0xXXXXXXXX>.
-std::ostream &
+VT_API std::ostream &
 Vt_StreamOutGeneric(std::type_info const &type,
                     void const *addr,
                     std::ostream &stream);
@@ -64,11 +65,9 @@ Vt_StreamOutImpl(T const &obj, std::ostream &stream)
         typeid(T), static_cast<void const *>(&obj), stream);
 }
 
-/*!
- * \brief VtValue and VtArray make unqualified calls to VtStreamOut when writing
- * values to streams.  Clients may overload VtStreamOut for their own types if
- * desired.
- */
+/// VtValue and VtArray make unqualified calls to VtStreamOut when writing
+/// values to streams.  Clients may overload VtStreamOut for their own types
+/// if desired.
 template <class T>
 typename boost::disable_if<boost::is_enum<T>, std::ostream &>::type
 VtStreamOut(T const &obj, std::ostream &stream)
@@ -81,23 +80,23 @@ VtStreamOut(EnumT const &e, std::ostream &stream)
 {
     return VtStreamOut(TfEnum::GetName(e), stream);
 }
-std::ostream &VtStreamOut(bool const &, std::ostream &);
-std::ostream &VtStreamOut(char const &, std::ostream &);
-std::ostream &VtStreamOut(unsigned char const &, std::ostream &);
-std::ostream &VtStreamOut(signed char const &, std::ostream &);
-std::ostream &VtStreamOut(float const &, std::ostream &);
-std::ostream &VtStreamOut(double const &, std::ostream &);
-std::ostream &VtStreamOut(class TfPyObjWrapper const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(bool const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(char const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(unsigned char const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(signed char const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(float const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(double const &, std::ostream &);
+VT_API std::ostream &VtStreamOut(class TfPyObjWrapper const &, std::ostream &);
 
 class VtStreamOutIterator {
 public:
-    virtual ~VtStreamOutIterator();
+    VT_API virtual ~VtStreamOutIterator();
     virtual void Next(std::ostream&) = 0;
 };
 
 struct Vt_Reserved;
 
-void VtStreamOutArray(VtStreamOutIterator*, size_t size,
+VT_API void VtStreamOutArray(VtStreamOutIterator*, size_t size,
                       const Vt_Reserved*, std::ostream&);
 
 #endif // VT_STREAMOUT_H

@@ -21,10 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/pyEnum.h"
-
 #include <boost/python/def.hpp>
+#include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/diagnostic.h"
 
 using namespace std;
 using namespace boost::python;

@@ -881,8 +881,8 @@ SdfPath::GetCommonPrefix(const SdfPath &path) const {
     SdfPath path1 = *this;
     SdfPath path2 = path;
 
-    int count1 = path1.GetPathElementCount();
-    int count2 = path2.GetPathElementCount();
+    int count1 = static_cast<int>(path1.GetPathElementCount());
+    int count2 = static_cast<int>(path2.GetPathElementCount());
 
     if (count1 > count2) {
         for (int i=0; i < (count1-count2); ++i) {

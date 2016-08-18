@@ -352,7 +352,7 @@ GfRay::Intersect(const GfVec3d& center, double radius,
     C = x3*x3 + y3*y3 + z3*z3 + x1*x1 + y1*y1 + z1*z1
         - 2*(x3*x1 +y3*y1 +z3*z1) - radius*radius;
 
-    return _SolveQuadratic(A, B, C, enterDistance, exitDistance) > 0;
+    return _SolveQuadratic(A, B, C, enterDistance, exitDistance);
 }
 
 bool
@@ -373,7 +373,7 @@ GfRay::Intersect(const GfVec3d &origin,
     double b = 2.0 * GfDot(u, v);
     double c = GfDot(v, v) - GfSqr(radius);
     
-    return _SolveQuadratic(a, b, c, enterDistance, exitDistance) > 0;
+    return _SolveQuadratic(a, b, c, enterDistance, exitDistance);
 }
 
 bool

@@ -1,0 +1,81 @@
+#usda 1.0
+(
+    endFrame = 1
+    startFrame = 1
+)
+
+def Cube "Cube"
+{
+    custom Matrix4d xformOp:transform = (  (.7,.5,.5,0), 
+                                           (-.7,.5,.5,0), 
+                                           (0,-.7,.7,0), 
+                                           (0,0,0,1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "Cubes"
+{
+    custom Matrix4d xformOp:transform = (  (.7,.5,.5,0), 
+                                           (-.7,.5,.5,0), 
+                                           (0,-.7,.7,0), 
+                                           (0,0,0,1) )
+
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def "pCube1" (
+        instanceable = true
+        references = </Cube>
+    )
+    {
+        double size = 0.2
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (6, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "pCube2" (
+        instanceable = true
+        references = </Cube>
+    )
+    {
+        double size = 3
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 6, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "pCube3" (
+        instanceable = true
+        references = </Cube>
+    )
+    {
+        double size = 4
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-6, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "pCube4" (
+        instanceable = true
+        references = </Cube>
+    )
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -6, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "pCube5" (
+        instanceable = true
+        references = </Cube>
+    )
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 6, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "pCube6" (
+        instanceable = true
+        references = </Cube>
+    )
+    {
+        custom Matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -6, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}

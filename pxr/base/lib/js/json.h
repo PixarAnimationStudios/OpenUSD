@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file js/json.h
 
 #ifndef JS_JSON_H
 #define JS_JSON_H
+
+/// \file js/json.h
+/// Top-level entrypoints for reading and writing JSON.
 
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/value.h"
@@ -33,8 +34,9 @@
 #include <string>
 
 /// \struct JsParseError
+///
 /// A struct containing information about a JSON parsing error.
-struct JS_API JsParseError {
+struct JsParseError {
     JsParseError() : line(0), column(0) { }
     unsigned int line;
     unsigned int column;
@@ -43,21 +45,17 @@ struct JS_API JsParseError {
 
 /// Parse the contents of input stream \p istr and return a JsValue. On
 /// failure, this returns a null JsValue.
-JS_API
-JsValue JsParseStream(std::istream& istr, JsParseError* error = 0);
+JS_API JsValue JsParseStream(std::istream& istr, JsParseError* error = 0);
 
 /// Parse the contents of the JSON string \p data and return it as a JsValue.
 /// On failure, this returns a null JsValue.
-JS_API
-JsValue JsParseString(const std::string& data, JsParseError* error = 0);
+JS_API JsValue JsParseString(const std::string& data, JsParseError* error = 0);
 
 /// Convert the JsValue \p value to JSON and write the result to output stream
 /// \p ostr.
-JS_API
-void JsWriteToStream(const JsValue& value, std::ostream& ostr);
+JS_API void JsWriteToStream(const JsValue& value, std::ostream& ostr);
 
 /// Convert the JsValue \p value to JSON and return it as a string.
-JS_API
-std::string JsWriteToString(const JsValue& value);
+JS_API std::string JsWriteToString(const JsValue& value);
 
 #endif // JS_JSON_H

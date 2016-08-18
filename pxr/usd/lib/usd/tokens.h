@@ -24,6 +24,8 @@
 #ifndef USD_TOKENS_H
 #define USD_TOKENS_H
 
+/// \file usd/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -31,9 +33,8 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file pxr/usd/usd/tokens.h
 
 /// \hideinitializer
 #define USD_TOKENS \
@@ -44,7 +45,8 @@
     (clipTimes)
 
 /// \anchor UsdTokens
-/// \brief <b>UsdTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing
@@ -67,6 +69,6 @@
 /// \li <b>clipManifestAssetPath</b> -  Asset path for the clip manifest. The clip manifest indicates which attributes have time samples authored in the clips specified on this prim. During value resolution, we will only look for time samples  in clips if the attribute exists and is declared as varying in the manifest. Note that the clip manifest is only consulted to check check if an attribute exists and what its variability is. Other values and metadata authored in the manifest will be ignored.  For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim', and we want values for the attribute '/Prim_1.size', we will only look within this prims' clips if the attribute '/Prim.size' exists and is varying in the manifest. 
 /// \li <b>clipPrimPath</b> -  Path to the prim in the clips from which time samples will be read. This prim's path will be substituted with this value to determine the final path in the clip from which to read data. For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim',  and we want to get values for the attribute '/Prim_1.size'. The clip prim path will be substituted in, yielding '/Prim.size', and each clip will be examined for values at that path. 
 /// \li <b>clipTimes</b> -  List of pairs (stage time, clip time) indicating the time in the active clip that should be consulted for values at the corresponding stage time.   During value resolution, this list will be sorted by stage time;  times will then be linearly interpolated between consecutive entries. For instance, for clip times [(0.0, 0.0), (10.0, 20.0)],  at stage time 0, values from the active clip at time 0 will be used, at stage time 5, values from the active clip at time 10, and at stage  time 10, clip values at time 20. 
-TF_DECLARE_PUBLIC_TOKENS(UsdTokens, USD_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdTokens, USD_API, USD_TOKENS);
 
 #endif

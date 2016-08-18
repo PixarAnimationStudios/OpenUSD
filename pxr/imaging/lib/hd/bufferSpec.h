@@ -32,7 +32,9 @@
 
 typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
 
-/// HdBufferSpec describes each named resource of buffer array.
+/// \class HdBufferSpec
+///
+/// Describes each named resource of buffer array.
 ///
 /// for example:
 /// HdBufferSpecVector
@@ -40,8 +42,8 @@ typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
 ///    1: name = normals, glDataType = GL_FLOAT, numComponents = 3
 ///    2: name = colors, glDataType = GL_FLOAT, numComponents = 4
 ///
-
-struct HdBufferSpec {
+class HdBufferSpec {
+public:
     /// Constructor.
     HdBufferSpec(TfToken const &name, GLenum glDataType, int numComponents,
                  int arraySize=1) :
@@ -68,10 +70,10 @@ struct HdBufferSpec {
     static HdBufferSpecVector ComputeUnion(HdBufferSpecVector const &spec1,
                                            HdBufferSpecVector const &spec2);
 
-    /// Debug output
+    /// Debug output.
     static void Dump(HdBufferSpecVector const &specs);
 
-    /// equality checks
+    /// Equality checks.
     bool operator == (HdBufferSpec const &other) const {
         return name == other.name and
             glDataType == other.glDataType and
@@ -82,7 +84,7 @@ struct HdBufferSpec {
         return not (*this == other);
     }
 
-    /// ordering
+    /// Ordering.
     bool operator < (HdBufferSpec const &other) const {
         return name < other.name or (name == other.name and
               (glDataType < other.glDataType or (glDataType == other.glDataType and

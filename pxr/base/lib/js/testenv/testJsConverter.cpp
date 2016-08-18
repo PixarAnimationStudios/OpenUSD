@@ -102,7 +102,7 @@ _CheckArrayOf(
     assert(value.IsArrayOf<T>());
 
     const std::vector<T> array = value.GetArrayOf<T>();
-    const JsArray& expArray = value.GetArray();
+    const JsArray& expArray = value.GetJsArray();
 
     indent << "array.size = " << array.size()
         << ", expArray.size = " << expArray.size() << std::endl;
@@ -195,9 +195,9 @@ int main(int argc, char const *argv[])
     assert(value.IsObject());
 
     std::cout << "unwrapping envelope" << std::endl;
-    JsObject envelope = value.GetObject();
+    JsObject envelope = value.GetJsObject();
     assert(envelope["Object"].IsObject());
-    JsObject object = envelope["Object"].GetObject();
+    JsObject object = envelope["Object"].GetJsObject();
     assert(not object.empty());
 
     // Convert the top-level value to another container type.
@@ -226,7 +226,7 @@ int main(int argc, char const *argv[])
             indent << "checking array conversion" << std::endl;
             assert(object[p.first].IsArray());
             assert(IsHolding<_AnyVector>(p.second));
-            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetArray());
+            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
 
@@ -245,7 +245,7 @@ int main(int argc, char const *argv[])
             assert(object[p.first].IsArray());
             assert(object[p.first].Is<JsArray>());
             assert(IsHolding<_AnyVector>(p.second));
-            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetArray());
+            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<string>(object[p.first]);
@@ -254,7 +254,7 @@ int main(int argc, char const *argv[])
             assert(object[p.first].IsArray());
             assert(object[p.first].Is<JsArray>());
             assert(IsHolding<_AnyVector>(p.second));
-            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetArray());
+            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<int64_t>(object[p.first]);
@@ -263,7 +263,7 @@ int main(int argc, char const *argv[])
             assert(object[p.first].IsArray());
             assert(object[p.first].Is<JsArray>());
             assert(IsHolding<_AnyVector>(p.second));
-            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetArray());
+            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<uint64_t>(object[p.first]);
@@ -272,7 +272,7 @@ int main(int argc, char const *argv[])
             assert(object[p.first].IsArray());
             assert(object[p.first].Is<JsArray>());
             assert(IsHolding<_AnyVector>(p.second));
-            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetArray());
+            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<double>(object[p.first]);
@@ -281,7 +281,7 @@ int main(int argc, char const *argv[])
             assert(object[p.first].IsArray());
             assert(object[p.first].Is<JsArray>());
             assert(IsHolding<_AnyVector>(p.second));
-            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetArray());
+            _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<bool>(object[p.first]);

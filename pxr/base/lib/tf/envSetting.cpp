@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+#include <boost/noncopyable.hpp>
+#include "pxr/base/arch/env.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stl.h"
@@ -31,8 +35,8 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/pyUtils.h"
-#include <boost/python.hpp>
-#include <boost/noncopyable.hpp>
+#include "pxr/base/arch/fileSystem.h"
+#include <ciso646>
 
 using std::string;
 
@@ -44,7 +48,8 @@ public:
 
     Tf_EnvSettingRegistry() {
         string fileName = TfGetenv("PIXAR_TF_ENV_SETTING_FILE", "");
-        if (FILE* fp = fopen(fileName.c_str(), "r")) {
+		FILE* fp;
+		if (fp = ArchOpenFile(fileName.c_str(), "r")) {
             char buffer[1024];
             bool syncPython = TfPyIsInitialized();
             int lineNo = 0;
@@ -64,9 +69,9 @@ public:
                     string key = TfStringTrim(string(buffer, eqPtr));
                     string value = TfStringTrim(string(eqPtr+1));
                     if (!key.empty()) {
-                        setenv(key.c_str(), value.c_str(), 0 /* overwrite */);
+                        ArchSetEnv(key.c_str(), value.c_str(), 0 /* overwrite */);
                         if (syncPython) {
-                            if (TfSafeString(getenv(key.c_str())) == value)
+							if (TfSafeString(ArchGetEnv(key.c_str())) == value)
                                 TfPySetenv(key, value);
                         }
                     }
@@ -240,23 +245,25 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
 }
 
 // Explicitly instantiate for the supported types: bool, int, and string.
-template void Tf_InitializeEnvSetting(TfEnvSetting<bool> *);
-template void Tf_InitializeEnvSetting(TfEnvSetting<int> *);
-template void Tf_InitializeEnvSetting(TfEnvSetting<string> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<bool> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
+TF_API
 boost::python::object
 Tf_GetEnvSettingByName(string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
 }
 
+TF_API
 boost::python::object
 Tf_GetEnvSettingDictionary()
 {
     return Tf_EnvSettingRegistry::GetInstance().GetAllEntries();
 }
 
-void Tf_InitEnvSettings()
+void TF_API Tf_InitEnvSettings()
 {
     // Cause the registry to be created.  Crucially, this subscribes to
     // Tf_EnvSettingRegistry, ensuring that all env settings are defined

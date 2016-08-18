@@ -36,6 +36,7 @@
 #include "usdMaya/Chaser.h"
 #include "usdMaya/ChaserRegistry.h"
 
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
 
@@ -114,14 +115,15 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     
     MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
 
+    ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
-        mStage = UsdStage::Open(SdfLayer::FindOrOpen(mFileName));
+        mStage = UsdStage::Open(SdfLayer::FindOrOpen(mFileName), resolverCtx);
         if (!mStage) {
             MGlobal::displayError("Failed to open stage file "+MString(mFileName.c_str()));
             return false;
             }
     } else {
-        mStage = UsdStage::CreateNew(mFileName);
+        mStage = UsdStage::CreateNew(mFileName, resolverCtx);
         if (!mStage) {
             MGlobal::displayError("Failed to create stage file "+MString(mFileName.c_str()));
             return false;

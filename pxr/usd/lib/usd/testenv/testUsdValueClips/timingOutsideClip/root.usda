@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Model" (
+    references = @ref.usda@</Model>
+
+    clipAssetPaths = [@clip.usda@]
+    clipPrimPath = "/Model"
+    clipActive = [(0, 0)]
+    clipTimes = [(0, 30), (10, 40)]
+)
+{
+}

@@ -24,6 +24,7 @@
 #ifndef HD_BASIS_CURVES_TOPOLOGY_H
 #define HD_BASIS_CURVES_TOPOLOGY_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -41,6 +42,8 @@ typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologyShar
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 
+/// \class HdBasisCurvesTopology
+///
 /// Topology data for basisCurves.
 ///
 /// HtBasisCurvesTopology holds the raw input topology data for basisCurves
@@ -71,22 +74,26 @@ typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 ///
 ///     Wrap can be either periodic or nonperiodic (segmented is unsupported).
 ///
-///  For each type of line, the generated vertex indices can pass through
-///    an optional index buffer to map the generated indices to actual
-///    indices in the vertex buffer.
+///  For each type of line, the generated vertex indices can pass through an
+///  optional index buffer to map the generated indices to actual indices in
+///  the vertex buffer.
 ///
 class HdBasisCurvesTopology : public HdTopology {
 public:
 
+    HDLIB_API
     HdBasisCurvesTopology();
+    HDLIB_API
     HdBasisCurvesTopology(const HdBasisCurvesTopology &src);
 
+    HDLIB_API
     HdBasisCurvesTopology(
         TfToken curveType,
         TfToken curveBasis,
         TfToken curveWrap,
         const VtIntArray &curveVertexCounts,
         const VtIntArray &curveIndices);
+    HDLIB_API
     virtual ~HdBasisCurvesTopology();
 
 
@@ -109,18 +116,24 @@ public:
     bool HasIndices() const { return !_curveIndices.empty(); }
 
     /// Returns the hash value of this topology to be used for instancing.
+    HDLIB_API
     virtual ID ComputeHash() const;
 
     /// Equality check between two basisCurves topologies.
+    HDLIB_API
     bool operator==(HdBasisCurvesTopology const &other) const;
+    HDLIB_API
     bool operator!=(HdBasisCurvesTopology const &other) const;
 
+    HDLIB_API
     HdBufferSourceSharedPtr GetIndexBuilderComputation(bool supportSmoothCurves);
 
     /// Figure out how many vertices / control points this topology references
+    HDLIB_API
     size_t CalculateNeededNumberOfControlPoints() const;
 
     /// Figure out how many control points with varying data this topology needs
+    HDLIB_API
     size_t CalculateNeededNumberOfVaryingControlPoints() const;
 
 private:
@@ -131,6 +144,6 @@ private:
     VtIntArray _curveIndices;
 };
 
-std::ostream& operator << (std::ostream &out, HdBasisCurvesTopology const &topo);
+HDLIB_API std::ostream& operator << (std::ostream &out, HdBasisCurvesTopology const &topo);
 
 #endif // HD_BASIS_CURVES_TOPOLOGY_H

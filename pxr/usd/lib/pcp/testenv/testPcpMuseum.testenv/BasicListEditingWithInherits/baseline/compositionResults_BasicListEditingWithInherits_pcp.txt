@@ -1,0 +1,59 @@
+Loading @testPcpMuseum.testenv/BasicListEditingWithInherits/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    model.usda           /Model
+
+Child names:
+     ['SymRig', 'LeftRig']
+
+------------------------------------------------------------------------
+Results for composing </Model/SymRig>
+
+Prim Stack:
+    model.usda           /Model/SymRig
+
+Child names:
+     ['C2', 'C1']
+
+------------------------------------------------------------------------
+Results for composing </Model/SymRig/C2>
+
+Prim Stack:
+    model.usda           /Model/SymRig/C2
+
+------------------------------------------------------------------------
+Results for composing </Model/SymRig/C1>
+
+Prim Stack:
+    model.usda           /Model/SymRig/C1
+
+------------------------------------------------------------------------
+Results for composing </Model/LeftRig>
+
+Prim Stack:
+    model.usda           /Model/LeftRig
+    model.usda           /Model/SymRig
+
+Child names:
+     ['C1', 'C2']
+
+------------------------------------------------------------------------
+Results for composing </Model/LeftRig/C1>
+
+Prim Stack:
+    model.usda           /Model/SymRig/C1
+
+------------------------------------------------------------------------
+Results for composing </Model/LeftRig/C2>
+
+Prim Stack:
+    model.usda           /Model/SymRig/C2
+

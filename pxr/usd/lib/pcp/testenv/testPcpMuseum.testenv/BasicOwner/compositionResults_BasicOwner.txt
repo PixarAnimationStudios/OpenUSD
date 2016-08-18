@@ -1,0 +1,29 @@
+Loading session @testPcpMuseum.testenv/BasicOwner/session.usda@
+
+Loading @testPcpMuseum.testenv/BasicOwner/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     session.usda
+     root.usda
+     owned.usda
+     stronger.usda
+     weaker.usda
+
+------------------------------------------------------------------------
+Results for composing </Sphere>
+
+Prim Stack:
+    owned.usda           /Sphere
+    stronger.usda        /Sphere
+    weaker.usda          /Sphere
+
+Property names:
+     ['radius']
+
+Property stacks:
+/Sphere.radius:
+    owned.usda           /Sphere.radius
+    stronger.usda        /Sphere.radius
+    weaker.usda          /Sphere.radius
+

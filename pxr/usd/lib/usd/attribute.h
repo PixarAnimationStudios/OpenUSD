@@ -24,6 +24,7 @@
 #ifndef USD_ATTRIBUTE_H
 #define USD_ATTRIBUTE_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/property.h"
 
@@ -33,22 +34,19 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/interval.h"
 
-#include <boost/mpl/not.hpp>
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_pointer.hpp>
-
 #include <string>
+#include <type_traits>
 #include <vector>
 
 class UsdAttribute;
 
-/// \brief A std::vector of UsdAttributes.
+/// A std::vector of UsdAttributes.
 typedef std::vector<UsdAttribute> UsdAttributeVector;
 
 /// \class UsdAttribute
 ///
-/// \brief Scenegraph object for authoring and retrieving numeric, string,
-/// and array valued data, sampled over time.
+/// Scenegraph object for authoring and retrieving numeric, string, and array
+/// valued data, sampled over time.
 ///
 /// The allowed value types for UsdAttribute are dictated by the Sdf
 /// ("Scene Description Foundations") core's data model, which we summarize in
@@ -148,13 +146,15 @@ public:
     /// \name Core Metadata
     // --------------------------------------------------------------------- //
 
+    /// @{
+
     /// An attribute's variability expresses whether it is intended to have
     /// time-samples (\c SdfVariabilityVarying), or only a single default 
     /// value (\c SdfVariabilityUniform).
     ///
     /// Variability is required meta-data of all attributes, and its fallback
     /// value is SdfVariabilityVarying.
-    SdfVariability GetVariability() const;
+	USD_API SdfVariability GetVariability() const;
 
     /// Set the value for variability at the current EditTarget, return true
     /// on success, false if the value can not be written.
@@ -162,10 +162,10 @@ public:
     /// \b Note that this value should not be changed as it is typically either
     /// automatically authored or provided by a property defintion. This method
     /// is provided primarily for fixing invalid scene description.
-    bool SetVariability(SdfVariability variability) const;
+	USD_API bool SetVariability(SdfVariability variability) const;
 
     /// Return the "scene description" value type name for this attribute.
-    SdfValueTypeName GetTypeName() const;
+	USD_API SdfValueTypeName GetTypeName() const;
 
     /// Set the value for typeName at the current EditTarget, return true on
     /// success, false if the value can not be written.
@@ -173,17 +173,21 @@ public:
     /// \b Note that this value should not be changed as it is typically either
     /// automatically authored or provided by a property definition. This method
     /// is provided primarily for fixing invalid scene description.
-    bool SetTypeName(const SdfValueTypeName& typeName) const;
+	USD_API bool SetTypeName(const SdfValueTypeName& typeName) const;
 
     /// Return the roleName for this attribute's typeName.
-    TfToken GetRoleName() const;
+	USD_API TfToken GetRoleName() const;
+
+    /// @}
 
     // --------------------------------------------------------------------- //
     /// \anchor Usd_AttributeValueMethods
     /// \name Value & Time-Sample Accessors
     // --------------------------------------------------------------------- //
 
-    /// \brief Populates a vector with authored sample times.
+    /// @{
+
+    /// Populates a vector with authored sample times.
     /// Returns false only on error.
     ///
     /// This method uses the standard resolution semantics, so if a stronger
@@ -195,9 +199,9 @@ public:
     /// expensive, especially if many clips are involved.     
     /// 
     /// \sa UsdAttribute::GetTimeSamplesInInterval
-    bool GetTimeSamples(std::vector<double>* times) const;
+	USD_API bool GetTimeSamples(std::vector<double>* times) const;
 
-    /// \brief Populates a vector with authored sample times in \p interval. 
+    /// Populates a vector with authored sample times in \p interval. 
     /// The interval may have any combination of open/infinite and 
     /// closed/finite endpoints; it may not have open/finite endpoints, however,
     /// this restriction may be lifted in the future.
@@ -206,10 +210,10 @@ public:
     /// \note This function will only query the value clips that may 
     /// contribute time samples for this attribute in the given interval, 
     /// opening them if necessary.
-    bool GetTimeSamplesInInterval(const GfInterval& interval,
+	USD_API bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
 
-    /// \brief Returns the number of time samples that have been authored.
+    /// Returns the number of time samples that have been authored.
     ///
     /// This method uses the standard resolution semantics, so if a stronger
     /// default value is authored over weaker time samples, the default value
@@ -218,9 +222,9 @@ public:
     /// \note This function will query all value clips that may contribute 
     /// time samples for this attribute, opening them if needed. This may be
     /// expensive, especially if many clips are involved.
-    size_t GetNumTimeSamples() const;
+	USD_API size_t GetNumTimeSamples() const;
 
-    /// \brief Populate \a lower and \a upper with the next greater and lesser
+    /// Populate \a lower and \a upper with the next greater and lesser
     /// value relative to the \a desiredTime. Return false if no value exists
     /// or an error occurs, true if either a default value or timeSamples exist.
     ///
@@ -245,22 +249,22 @@ public:
     ///
     /// All four cases above are considered to be successful, thus the return
     /// value will be true and no error message will be emitted.
-    bool GetBracketingTimeSamples(double desiredTime, 
+	USD_API bool GetBracketingTimeSamples(double desiredTime, 
                                   double* lower, 
                                   double* upper, 
                                   bool* hasTimeSamples) const;
 
     /// Return true if this attribute has an authored default value, authored
     /// time samples or a fallback value provided by a registered schema.
-    bool HasValue() const;
+	USD_API bool HasValue() const;
 
     /// Return true if this attribute has either an authored default value or
     /// authored time samples.
-    bool HasAuthoredValueOpinion() const;
+	USD_API bool HasAuthoredValueOpinion() const;
 
     /// Return true if this attribute has a fallback value provided by 
     /// a registered schema.
-    bool HasFallbackValue() const;
+	USD_API bool HasFallbackValue() const;
 
     /// Return true if it is possible, but not certain, that this attribute's
     /// value changes over time, false otherwise. 
@@ -271,7 +275,7 @@ public:
     /// This function is equivalent to checking if GetNumTimeSamples() > 1,
     /// but may be more efficient since it does not actually need to get a
     /// full count of all time samples.
-    bool ValueMightBeTimeVarying() const;
+	USD_API bool ValueMightBeTimeVarying() const;
 
     /// Perform value resolution to fetch the value of this attribute at the
     /// requested UsdTimeCode \p time, which defaults to \em default.
@@ -306,12 +310,12 @@ public:
     /// retrieve resolved asset paths from SdfAssetPath-valued attributes.
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType);
+        static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         return _Get(value, time);
     }
     /// \overload 
     /// Type-erased access, often not as efficient as typed access.
-    bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
+	USD_API bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Set the value of this attribute in the current UsdEditTarget to
     /// \p value at UsdTimeCode \p time, which defaults to \em default.
@@ -328,44 +332,46 @@ public:
     /// or if there is no existing definition for the attribute.
     template <typename T>
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(boost::mpl::not_< boost::is_pointer<T> >::value);
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType 
-                            or std::is_same<T, SdfValueBlock>::value);
+        static_assert(!std::is_pointer<T>::value, "");
+        static_assert(SdfValueTypeTraits<T>::IsValueType ||
+                      std::is_same<T, SdfValueBlock>::value, "");
 
         SdfAbstractDataConstTypedValue<T> in(&value);
         return _UntypedSet(in, time);
     }
 
     /// \overload 
-    bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
+	USD_API bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// \brief Clears the authored default value and all time samples for this
+    /// Clears the authored default value and all time samples for this
     /// attribute at the current EditTarget and returns true on success.
     ///
     /// Calling clear when either no value is authored or no spec is present,
     /// is a silent no-op returning true.    
     ///
     /// This method does not affect any other data authored on this attribute.
-    bool Clear() const;
+	USD_API bool Clear() const;
 
-    /// \brief Clears the authored value for this attribute at the given 
+    /// Clears the authored value for this attribute at the given 
     /// \a time, at the current EditTarget and returns true on success. 
     /// UsdTimeCode::Default() can be used to clear the default value.
     ///
     /// Calling clear when either no value is authored or no spec is present,
     /// is a silent no-op returning true. 
-    bool ClearAtTime(UsdTimeCode time) const;
+	USD_API bool ClearAtTime(UsdTimeCode time) const;
 
-    /// \brief Shorthand for ClearAtTime(UsdTimeCode::Default()).
-    bool ClearDefault() const;
+    /// Shorthand for ClearAtTime(UsdTimeCode::Default()).
+	USD_API bool ClearDefault() const;
 
-    /// \brief Removes all time samples on an attribute and sets a block
+    /// Removes all time samples on an attribute and sets a block
     /// value as the default. See \c SdfValueBlock for more information
     /// on the type being authored. This value covers all lower opinions
     /// in the LayerStack. During value resolution, if a block is authored,
     /// if there is a fallback, the client will receive that, otherwise they
     /// will receive false when calling Get(). 
-    void Block();
+	USD_API void Block();
+
+    /// @}
 
     // ---------------------------------------------------------------------- //
     // Private Methods and Members 
@@ -392,7 +398,7 @@ private:
     bool _Create(const SdfValueTypeName &typeName, bool custom,
                  const SdfVariability &variability) const;
 
-    bool _UntypedSet(const SdfAbstractDataConstValue& value, 
+    USD_API bool _UntypedSet(const SdfAbstractDataConstValue& value, 
                      UsdTimeCode t) const;
 
     template <typename T>

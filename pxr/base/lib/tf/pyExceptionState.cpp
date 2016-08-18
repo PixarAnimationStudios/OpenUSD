@@ -38,8 +38,8 @@ TfPyExceptionState::GetExceptionString() const
         object tbModule(handle<>(PyImport_ImportModule("traceback")));
         object exception = tbModule.attr("format_exception")(_type, _value, 
                                                                     _trace);
-        long size = len(exception);
-        for (long i = 0; i < size; ++i) {
+		boost::python::ssize_t size = len(exception);
+        for (boost::python::ssize_t i = 0; i < size; ++i) {
             s += extract<string>(exception[i]);
         }
     } catch (boost::python::error_already_set const &) {

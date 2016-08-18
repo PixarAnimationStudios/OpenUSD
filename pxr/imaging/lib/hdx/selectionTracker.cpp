@@ -113,7 +113,7 @@ HdxSelectionTracker::GetBuffers(HdRenderIndex const* index,
     size_t const N = 1000;
     int const INVALID = -1;
     WorkParallelForN(numPrims/N + 1,
-       [&ids, &index, this](size_t begin, size_t end) mutable {
+       [&ids, &index, INVALID, &N, this](size_t begin, size_t end) mutable {
         end = std::min(end*N, ids.size());
         begin = begin*N;
         for (size_t i = begin; i < end; i++) {
@@ -206,7 +206,7 @@ HdxSelectionTracker::GetBuffers(HdRenderIndex const* index,
         // Elements
         // ------------------------------------------------------------------ //
         // Find element sizes, for this object.
-        int elemOffset = output.size();
+        int elemOffset = static_cast<int>(output.size());
         if (VtIntArray const *faceIndices
             = TfMapLookupPtr(_selection->selectedFaces, objPath)) {
             if (faceIndices->size()) {
@@ -278,7 +278,7 @@ HdxSelectionTracker::GetBuffers(HdRenderIndex const* index,
                     level, levelMin, levelMax);
 
                 int objLevelSize = levelMax - levelMin +2+1;
-                int levelOffset = output.size();
+                int levelOffset = static_cast<int>(output.size());
                 output.insert(output.end(), objLevelSize, SELECT_NONE);
                 output[levelOffset + 0] = levelMin;
                 output[levelOffset + 1] = levelMax + 1;

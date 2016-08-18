@@ -21,15 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file glf/glew.h
-
 #ifndef GLF_GLEW_H
 #define GLF_GLEW_H
 
+/// \file glf/glew.h
+
 #include <GL/glew.h>
 
-/// \brief A thread safe wrapper around glewInit()
-void GlfGlewInit();
+#include "pxr/imaging/glf/api.h"
+
+/// A thread safe wrapper around glewInit()
+GLF_API void GlfGlewInit();
 
 #endif

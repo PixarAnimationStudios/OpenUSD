@@ -115,7 +115,10 @@
 // the unload code is safe to call at this time.
 //
 
+#include <boost/foreach.hpp>
+#include <boost/function.hpp>
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -127,9 +130,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/symbols.h"
-
-#include <boost/foreach.hpp>
-#include <boost/function.hpp>
 
 #include <tbb/enumerable_thread_specific.h>
 
@@ -176,7 +176,8 @@ GetLibraryPath(const char* libraryName,
 
 class Tf_RegistryManagerImpl : boost::noncopyable {
 public:
-    typedef size_t LibraryIdentifier;
+    typedef int LibraryIdentifier;
+
     typedef TfRegistryManager::RegistrationFunctionType RegistrationFunction;
     typedef TfRegistryManager::UnloadFunctionType UnloadFunction;
 
@@ -424,7 +425,7 @@ Tf_RegistryManagerImpl::_RegisterLibraryNoLock(const char* libraryName)
     // Return a unique identifier for libraryName.
     LibraryIdentifier& identifier = _libraryNameMap[libraryName];
     if (identifier == 0) {
-        identifier = _libraryNameMap.size();
+        identifier = static_cast<int>(_libraryNameMap.size());
     }
     return identifier;
 }

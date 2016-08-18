@@ -1,0 +1,33 @@
+#usda 1.0
+
+def Scope "TentaclesRig" (
+    relocates = {
+        <TentacleRigs/R1TentacleRig/Tentacle> : <Arms/R1Arm>
+    }
+)
+{
+    def Scope "Arms"
+    {
+    }
+
+    def Scope "TentacleRigs"
+    {
+        class Scope "_Class_TentacleRig" (
+            references = @./TentacleRig.usda@</TentacleRig>
+        )
+        {
+        }
+
+        class Scope "Sym1TentacleRig" (
+            inherits = </TentaclesRig/TentacleRigs/_Class_TentacleRig>
+        )
+        {
+        }
+
+        def Scope "R1TentacleRig" (
+            inherits = </TentaclesRig/TentacleRigs/Sym1TentacleRig>
+        )
+        {
+        }
+    }
+}

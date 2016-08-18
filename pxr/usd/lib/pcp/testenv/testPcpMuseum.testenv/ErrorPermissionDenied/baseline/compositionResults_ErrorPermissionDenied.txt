@@ -1,0 +1,81 @@
+Loading @testPcpMuseum.testenv/ErrorPermissionDenied/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    A.usda               /A
+
+Property names:
+     ['A_attr', 'attr', 'privateRel', 'publicRel', 'localAttr']
+
+Property stacks:
+/Root.A_attr:
+    A.usda               /A.A_attr
+/Root.attr:
+    A.usda               /A.attr
+/Root.localAttr:
+    root.usda            /Root.localAttr
+/Root.privateRel:
+    A.usda               /A.privateRel
+/Root.privateRel[/Root.A_attr].a:
+    A.usda               /A.privateRel[/A.A_attr].a
+/Root.publicRel:
+    root.usda            /Root.publicRel
+    A.usda               /A.publicRel
+/Root.publicRel[/Root.A_attr].a:
+    A.usda               /A.publicRel[/A.A_attr].a
+
+Relationship targets:
+/Root.privateRel:
+    /Root.A_attr
+/Root.publicRel:
+    /Root.A_attr
+
+------------------------------------------------------------------------
+Results for composing </Parent>
+
+Prim Stack:
+    root.usda            /Parent
+    A.usda               /Parent
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child>
+
+Prim Stack:
+    A.usda               /Parent/Child
+
+------------------------------------------------------------------------
+Results for composing </_PrivateClass>
+
+Prim Stack:
+    root.usda            /_PrivateClass
+
+Property names:
+     ['attr']
+
+Property stacks:
+/_PrivateClass.attr:
+    root.usda            /_PrivateClass.attr
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model.attr:
+    root.usda            /Model.attr
+

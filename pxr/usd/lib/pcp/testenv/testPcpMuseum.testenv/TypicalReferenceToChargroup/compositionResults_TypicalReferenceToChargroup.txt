@@ -1,0 +1,47 @@
+Loading @testPcpMuseum.testenv/TypicalReferenceToChargroup/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.usda            /Group
+    group.usda           /Group
+    group.usda           /Group{standin=sim}
+
+Variant Selections:
+    {standin = sim}
+
+Child names:
+     ['Model']
+
+Property names:
+     ['standin_name']
+
+Property stacks:
+/Group.standin_name:
+    group.usda           /Group{standin=sim}.standin_name
+
+------------------------------------------------------------------------
+Results for composing </Group/Model>
+
+Prim Stack:
+    root.usda            /Group/Model
+    group.usda           /Group/Model
+    group.usda           /Group{standin=sim}Model
+    model.usda           /Model
+    model.usda           /Model{standin=render}
+
+Variant Selections:
+    {standin = render}
+
+Property names:
+     ['standin_name']
+
+Property stacks:
+/Group/Model.standin_name:
+    model.usda           /Model{standin=render}.standin_name
+

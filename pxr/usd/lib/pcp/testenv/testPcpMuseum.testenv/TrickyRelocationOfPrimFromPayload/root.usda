@@ -1,0 +1,37 @@
+#usda 1.0
+(
+    """
+    This museum exhibits some tricky interactions between relocations and 
+    payloads.
+
+    In the root layer, we have two model prims. The first is a payloaded
+    model with a relocation that tries move a prim in the payload. After
+    the payload is included, this relocation takes effect. The second
+    is a reference to a payloaded model, with the same relocation authored
+    in the referenced layer. In this case, the relocation does not take
+    effect. This is expected behavior due to payloads being treated as
+    though they were authored in the root layer stack; relocations in
+    intermediate scenes get ignored.
+
+    The payload itself has some relocations. In all cases, relocations
+    internal to the payload should be respected.
+    """
+)
+
+def "PayloadedModel" (
+    payload = @model_payload.usda@</Model>
+    relocates = {
+        <Anim> : <Test/Anim>
+    }
+)
+{
+    def Scope "Test"
+    {
+    }
+}
+
+def "ReferencePayloadedModel" (
+    add references = @model.usda@</Model>
+)
+{
+}

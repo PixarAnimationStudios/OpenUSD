@@ -24,6 +24,7 @@
 #ifndef TF_SCRIPT_MODULE_LOADER_H
 #define TF_SCRIPT_MODULE_LOADER_H
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
@@ -37,53 +38,59 @@
 #include <string>
 #include <vector>
 
-//! \class TfScriptModuleLoader
-//
-// Provides low-level facilities for shared libraries with script
-// bindings to register themselves with their dependences, and provides a
-// mechanism whereby those script modules will be loaded when necessary.
-// Currently, this is when one of our script modules is loaded, when
-// TfPyInitialize is called, and when Plug opens shared libraries.
-//
-// Generally, user code will not make use of this.
-//
+/// \class TfScriptModuleLoader
+///
+/// Provides low-level facilities for shared libraries with script bindings to
+/// register themselves with their dependences, and provides a mechanism
+/// whereby those script modules will be loaded when necessary. Currently,
+/// this is when one of our script modules is loaded, when TfPyInitialize is
+/// called, and when Plug opens shared libraries.
+///
+/// Generally, user code will not make use of this.
+///
 class TfScriptModuleLoader : public TfWeakBase {
 
   public:
 
     typedef TfScriptModuleLoader This;
 
-    //! \brief Return the singleton instance.
-    static This &GetInstance() {
+    /// Return the singleton instance.
+    TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     } 
 
-    //! \brief Register a library named \a name and with script module \a
-    // moduleName and libraries which must be loaded first \a predecessors.  The
-    // script module will be loaded when necessary.  This should
-    // generally not be called by user code.
+    /// Register a library named \a name and with script module \a moduleName
+    /// and libraries which must be loaded first \a predecessors. The script
+    /// module will be loaded when necessary. This should generally not be
+    /// called by user code.
+    TF_API
     void RegisterLibrary(TfToken const &name, TfToken const &moduleName,
                          std::vector<TfToken> const &predecessors);
 
-    //! \brief Load all the script modules for any libraries registered
-    // using \a RegisterLibrary if necessary.  Loads the modules in
-    // dependency order as defined in \a RegisterLibrary.
+    /// Load all the script modules for any libraries registered using \a
+    /// RegisterLibrary if necessary. Loads the modules in dependency order as
+    /// defined in \a RegisterLibrary.
+    TF_API
     void LoadModules();
 
-    //! \brief Load all the script modules for any libraries registered
-    // using \a RegisterLibrary that depend on library \a name.
+    /// Load all the script modules for any libraries registered using \a
+    /// RegisterLibrary that depend on library \a name.
+    TF_API
     void LoadModulesForLibrary(TfToken const &name);
 
-    //! \brief Return a list of all currently known modules in a valid
-    // dependency order.
+    /// Return a list of all currently known modules in a valid dependency
+    /// order.
+    TF_API
     std::vector<std::string> GetModuleNames() const;
 
-    //! \brief Return a python dict containing all currently known modules under
-    // their canonical names.
+    /// Return a python dict containing all currently known modules under
+    /// their canonical names.
+    TF_API
     boost::python::dict GetModulesDict() const;
     
-    //! \brief Write a graphviz dot-file for the dependency graph of all
-    // currently known libraries/modules to \a file.
+    /// Write a graphviz dot-file for the dependency graph of all. currently
+    /// known libraries/modules to \a file.
+    TF_API
     void WriteDotFile(std::string const &file) const;
     
   private:
@@ -125,7 +132,8 @@ class TfScriptModuleLoader : public TfWeakBase {
 
     // This is only used to handle reentrant loading requests.
     std::deque<TfToken> _remainingLoadWork;
-
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfScriptModuleLoader>);
 
 #endif // TF_SCRIPT_MODULE_LOADER_H

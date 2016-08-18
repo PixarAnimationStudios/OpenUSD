@@ -1,0 +1,64 @@
+Loading @testPcpMuseum.testenv/TrickyInheritsInVariants2/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_Model>
+
+Prim Stack:
+    root.usda            /_class_Model
+
+------------------------------------------------------------------------
+Results for composing </Sarah>
+
+Prim Stack:
+    root.usda            /Sarah
+    root.usda            /_class_Model
+    Sarah_modelComplexity.usda /Sarah
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}
+    Sarah_rig.usda       /Sarah
+
+Variant Selections:
+    {modelComplexity = full}
+
+Child names:
+     ['FaceRig']
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig>
+
+Prim Stack:
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig
+    Sarah_rig.usda       /Sarah/FaceRig
+
+Child names:
+     ['EyesRig']
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig/EyesRig>
+
+Prim Stack:
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig
+
+Child names:
+     ['SymEyeRig', 'LEyeRig']
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig/EyesRig/SymEyeRig>
+
+Prim Stack:
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig/SymEyeRig
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig/EyesRig/LEyeRig>
+
+Prim Stack:
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig/LEyeRig
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig/LEyeRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig/SymEyeRig
+

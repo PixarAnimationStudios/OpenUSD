@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/base/plug/plugin.h"
 
 #include "pxr/base/js/converter.h"
@@ -29,7 +31,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/python.hpp>
 #include <string>
 
 using namespace boost::python;
@@ -92,7 +93,7 @@ void wrapPlugin()
               arg("includeSubclasses") = false))
 
         .def("MakeResourcePath", &This::MakeResourcePath)
-        .def("FindResource", &This::FindResource,
+        .def("FindPluginResource", &This::FindPluginResource,
              (arg("path"), 
               arg("verify") = true))
         ;
@@ -103,3 +104,5 @@ void wrapPlugin()
     boost::python::to_python_converter<std::vector<object>,
         TfPySequenceToPython<std::vector<object> > >();
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(PlugPlugin)

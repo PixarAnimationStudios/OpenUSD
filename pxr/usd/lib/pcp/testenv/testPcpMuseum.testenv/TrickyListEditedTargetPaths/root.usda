@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    """
+    This museum case exhibits tricky cases where invalid
+    target paths that are defined in a weaker location are
+    deleted or overridden in a stronger location. Because
+    the erroneous paths don't wind up in the composed result,
+    the associated composition errors don't show up either.
+    """
+)
+
+def "ExternalReferences" (
+    """
+    In the referenced layer, the relationships in this prim
+    are set to target a prim outside the reference root, which
+    is normally an error. In the root layer, we override those 
+    external reference targets. This should cause the composition 
+    errors to be elided.
+    """
+    references = @./ref.usda@</Ref>
+)
+{
+    rel relToExternalPrim = </Root/Child>
+    rel relToExternalPrim2 = None
+    rel relToExternalPrim3 = </Root/Child>
+    rel relToExternalPrim4 = None
+
+    over "Child"
+    {
+    }
+}
+
+def "Permissions" (
+    """
+    In the referenced layer, these relationships target properties and
+    child prims that are marked as private. In this layer, we delete
+    or override those targets, so the associated permission denied errors
+    will be elided.
+    """
+    references = @./ref.usda@</PermissionsRef_1>
+)
+{
+    double PublicProp = 1.0
+
+    def "PublicChild"
+    {
+    }
+
+    delete rel relToPrivateProp = </Permissions.PrivateProp>
+    rel relToPrivateProp2 = </Permissions.PublicProp>
+    delete rel relToPrivatePrim = </Permissions/PrivateChild>
+    rel relToPrivatePrim2 = </Permissions/PublicChild>
+}

@@ -24,6 +24,7 @@
 #ifndef PCP_MAP_EXPRESSION_H
 #define PCP_MAP_EXPRESSION_H
 
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -33,7 +34,10 @@
 #include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
 
-/// PcpMapExpression is an expression that yields a PcpMapFunction value.
+/// \class PcpMapExpression
+///
+/// An expression that yields a PcpMapFunction value.
+///
 /// Expressions comprise constant values, variables, and operators
 /// applied to sub-expressions.  Expressions cache their computed values
 /// internally.  Assigning a new value to a variable automatically
@@ -44,6 +48,7 @@
 /// handling of relocates edits.  It represents a tree of the namespace
 /// mapping operations and their inputs, so we can narrowly redo the
 /// computation when one of the inputs changes.
+///
 class PcpMapExpression
 {
 public:
@@ -54,25 +59,25 @@ public:
     /// The computed result is cached.
     /// The return value is a reference to the internal cached value.
     /// The cache is automatically invalidated as needed.
-    const Value & Evaluate() const;
+	PCP_API const Value & Evaluate() const;
 
     /// Default-construct a NULL expression.
-    PcpMapExpression();
+	PCP_API PcpMapExpression();
 
     /// Swap this expression with the other.
-    void Swap(PcpMapExpression &other);
+	PCP_API void Swap(PcpMapExpression &other);
 
     /// Return true if this is a null expression.
-    bool IsNull() const;
+	PCP_API bool IsNull() const;
 
     /// \name Creating expressions
     /// @{
 
     /// Return an expression representing PcpMapFunction::Identity().
-    static PcpMapExpression Identity();
+	PCP_API static PcpMapExpression Identity();
 
     /// Create a new constant.
-    static PcpMapExpression Constant( const Value & constValue );
+	PCP_API static PcpMapExpression Constant( const Value & constValue );
 
     /// A Variable is a mutable memory cell that holds a value.
     /// Changing a variable's value invalidates any expressions using
@@ -99,18 +104,18 @@ public:
     /// After the reference is dropped, expressions using the variable
     /// will continue to be valid, but there will be no way to further
     /// change the value of the variable.
-    static VariableRefPtr NewVariable( const Value & initialValue );
+	PCP_API static VariableRefPtr NewVariable( const Value & initialValue );
 
     /// Create a new PcpMapExpression representing the application of
     /// f's value, followed by the application of this expression's value.
-    PcpMapExpression Compose(const PcpMapExpression &f) const;
+	PCP_API PcpMapExpression Compose(const PcpMapExpression &f) const;
 
     /// Create a new PcpMapExpression representing the inverse of f.
-    PcpMapExpression Inverse() const;
+	PCP_API PcpMapExpression Inverse() const;
 
     /// Return a new expression representing this expression with an added
     /// (if necessary) mapping from </> to </>.
-    PcpMapExpression AddRootIdentity() const;
+	PCP_API PcpMapExpression AddRootIdentity() const;
 
     /// @}
 
@@ -155,7 +160,7 @@ private:
     friend class Pcp_Statistics;
     friend class Pcp_VariableImpl;
 
-    struct _Node;
+    class _Node;
     typedef boost::intrusive_ptr<_Node> _NodeRefPtr;
 
     explicit PcpMapExpression(const _NodeRefPtr & node) : _node(node) {}
@@ -228,8 +233,8 @@ private: // data
 
         // Ref-counting ops manage _refCount.
         // Need to friend them here to have access to _refCount.
-        friend void intrusive_ptr_add_ref(_Node*);
-        friend void intrusive_ptr_release(_Node*);
+        friend PCP_API void intrusive_ptr_add_ref(_Node*);
+        friend PCP_API void intrusive_ptr_release(_Node*);
 
         // Registry of node instances, identified by Key.
         // Note: variable nodes are not tracked by the registry.
@@ -244,8 +249,8 @@ private: // data
     };
 
     // Need to friend them here to have visibility to private class _Node.
-    friend void intrusive_ptr_add_ref(_Node*);
-    friend void intrusive_ptr_release(_Node*);
+    friend PCP_API void intrusive_ptr_add_ref(_Node*);
+    friend PCP_API void intrusive_ptr_release(_Node*);
 
     _NodeRefPtr _node;
 };

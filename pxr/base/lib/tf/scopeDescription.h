@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/preprocessor/if.hpp>
@@ -35,24 +36,25 @@
 
 /// \class TfScopeDescription
 ///
-/// \brief This class is used to provide high-level descriptions about scopes of
-/// execution that could possibly block.  This class should not be used anywhere
-/// in an inner-loop.  It is meant to be used in high-level scopes where we can
-/// provide descriptions relevant to application users.
-class TfScopeDescription : boost::noncopyable
+/// This class is used to provide high-level descriptions about scopes of
+/// execution that could possibly block. This class should not be used
+/// anywhere in an inner-loop. It is meant to be used in high-level scopes
+/// where we can provide descriptions relevant to application users.
+class TF_API TfScopeDescription : boost::noncopyable
 {
 public:
-    /// \brief Construct with a description.  Push \a description on the stack
-    /// of descriptions.  Note that currently, descriptions are only
-    /// pushed/popped for execution in the main thread.
+    /// Construct with a description.
+    /// Push \a description on the stack of descriptions. Note that currently,
+    /// descriptions are only pushed/popped for execution in the main thread.
     explicit TfScopeDescription(std::string const &description);
 
-    /// \brief Destructor.  Pop the description stack.  Note that currently,
-    /// descriptions are only pushed/popped for execution in the main thread.
+    /// Destructor.
+    /// Pop the description stack. Note that currently, descriptions are only
+    /// pushed/popped for execution in the main thread.
     ~TfScopeDescription();
 
-    /// \brief Replace the description stack entry for this scope with the
-    /// given \a description.  Note that currently, this only has an effect on
+    /// Replace the description stack entry for this scope with the given \a
+    /// description. Note that currently, this only has an effect on
     /// TfScopeDescriptions constructed in the main thread.
     void SetDescription(std::string const &description);
 
@@ -67,15 +69,14 @@ private:
     static const int InvalidIndex = -1;
 };
 
-
-/// \brief Return a copy of the current description stack as a vector of
-/// strings.  The most recently pushed description is at back(), and the least
-/// recently pushed description is at front().
-std::vector<std::string>
+/// Return a copy of the current description stack as a vector of strings.
+/// The most recently pushed description is at back(), and the least recently
+/// pushed description is at front().
+TF_API std::vector<std::string>
 TfGetCurrentScopeDescriptionStack();
 
-/// \brief Macro that accepts either a single string, or printf-style arguments
-/// and creates a scope description local variable with the resulting string.
+/// Macro that accepts either a single string, or printf-style arguments and
+/// creates a scope description local variable with the resulting string.
 #define TF_DESCRIBE_SCOPE(fmt, ...)                                            \
     TfScopeDescription __scope_description__                                   \
     (BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__),                                     \

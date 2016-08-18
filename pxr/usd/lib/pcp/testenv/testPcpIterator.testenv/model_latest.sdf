@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+def Model "Model" (
+    doc = "The latest built version of this model."
+    add variantSets = "standin"
+    payload = @model_latest_payload.sdf@</Model>
+)
+{
+    custom double a
+    variantSet "standin" = {
+        "render" {
+            custom string standin_name = "render"
+        }
+        "anim" {
+            custom string standin_name = "render"
+        }
+        "sim" {
+            custom string standin_name = "sim"
+        }
+    }
+}

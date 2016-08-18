@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/preprocessor.hpp>
+#include <boost/python.hpp>
+
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/arrayPyBuffer.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
@@ -31,9 +35,7 @@
 
 #include "pxr/base/tf/pyLock.h"
 
-#include <boost/preprocessor.hpp>
-#include <boost/python.hpp>
-
+#include <algorithm>
 #include <numeric>
 #include <string>
 #include <type_traits>
@@ -299,7 +301,7 @@ Vt_getbuffer(PyObject *self, Py_buffer *view, int flags)
         view->format = NULL;
     }
     if ((flags & PyBUF_ND) == PyBUF_ND) {
-        view->ndim = wrapper->shape.size();
+        view->ndim = static_cast<int>(wrapper->shape.size());
         view->shape = wrapper->shape.data();
     } else {
         view->ndim = 0;
@@ -586,7 +588,7 @@ VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
 BOOST_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
 
-void Vt_AddBufferProtocolSupportToVtArrays()
+VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
 
 // Add the buffer protocol support to every array type that we support it for.
@@ -596,8 +598,9 @@ void Vt_AddBufferProtocolSupportToVtArrays()
         Vt_CastBufferToArray<VT_TYPE(elem)>);                           \
     VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >(    \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                           \
-    def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem)) "ArrayFromBuffer",       \
-        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
+    boost::python::def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem))			\
+						"ArrayFromBuffer",								\
+						Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
 BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 

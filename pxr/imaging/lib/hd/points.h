@@ -23,6 +23,8 @@
 //
 #ifndef HD_POINTS_H
 #define HD_POINTS_H
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/enums.h"
@@ -34,7 +36,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-/// descriptor to configure a drawItem for a repr
+/// \class HdPointsReprDesc
+///
+/// Descriptor to configure a drawItem for a repr.
 ///
 struct HdPointsReprDesc {
     HdPointsReprDesc(
@@ -45,20 +49,25 @@ struct HdPointsReprDesc {
     HdPointsGeomStyle geomStyle:1;
 };
 
+/// \class HdPoints
+///
 /// Points.
 ///
 class HdPoints: public HdRprim {
 public:
     HD_MALLOC_TAG_NEW("new HdPoints");
+    HDLIB_API
     HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
              SdfPath const& surfaceShaderId,
              SdfPath const& instancerId = SdfPath());
 
     /// Configure geometric style of drawItems for \p reprName
+    HDLIB_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdPointsReprDesc desc);
 
     /// Return the dirtyBits mask to be tracked for \p reprName
+    HDLIB_API
     static int GetDirtyBitsMask(TfToken const &reprName);
 
 protected:

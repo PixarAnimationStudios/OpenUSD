@@ -143,3 +143,4 @@ void wrapFileFormat()
         "Tokens", SdfFileFormatTokens, SDF_FILE_FORMAT_TOKENS);
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(SdfFileFormat)

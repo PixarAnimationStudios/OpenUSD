@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyListEditorProxy.h
-
 #ifndef SDF_PYLISTEDITORPROXY_H
 #define SDF_PYLISTEDITORPROXY_H
+
+/// \file sdf/pyListEditorProxy.h
+
+#include <boost/python.hpp>
 
 #include "pxr/usd/sdf/listEditorProxy.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -37,7 +39,6 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
 
 class Sdf_PyListEditorUtils {
 public:

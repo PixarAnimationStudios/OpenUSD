@@ -55,7 +55,6 @@
 #include <string>
 #include <vector>
 
-
 // for now, we hard code this to use displayColor.  But maybe the more
 // appropriate thing to do is just to leave shadingMode a lone and pass
 // "displayColor" in from the UsdMayaRepresentationFull

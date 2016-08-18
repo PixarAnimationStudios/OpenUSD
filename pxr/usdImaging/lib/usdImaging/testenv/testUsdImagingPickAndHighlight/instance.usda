@@ -1,0 +1,134 @@
+#usda 1.0
+
+def Mesh "Plane1" (
+    active = false
+)
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, -1, 1)]
+    token faceVaryingLinearInterpolation = "boundaries"
+    int[] faceVertexCounts = [4]
+    PointIndex[] faceVertexIndices = [0, 1, 3, 2]
+    token interpolateBoundary = "edgeOnly"
+    PointFloat[] points = [(-1, -1, -1), (1, -1, -1), (-1, -1, 1), (1, -1, 1)]
+    uniform token subdivisionScheme = "catmullClark"
+    ColorFloat[] primvars:displayColor = [(1,0,0)]
+}
+
+def Mesh "Plane2" (
+    active = false
+)
+{
+    Vec3f[] extent = [(-1, -1, -1), (1, -1, 1)]
+    token faceVaryingLinearInterpolation = "boundaries"
+    int[] faceVertexCounts = [4]
+    PointIndex[] faceVertexIndices = [0, 1, 3, 2]
+    token interpolateBoundary = "edgeAndCorner"
+    PointFloat[] points = [(-1, -1, -1), (1, -1, -1), (-1, -1, 1), (1, -1, 1)]
+    uniform token subdivisionScheme = "catmullClark"
+    ColorFloat[] primvars:displayColor = [(0,1,0)]
+}
+
+def Xform "Mesh" (
+    active = false
+)
+{
+    def "Plane1" (
+        active = true
+        references = </Plane1>
+    )
+    {
+        custom Vec3d xformOp:translate = (0, -1, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def "Plane2" (
+        active = true
+        references = </Plane2>
+    )
+    {
+        custom Vec3d xformOp:translate = (0, 1, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "Parent" (
+    active = false
+)
+{
+    def "Mesh1" (
+        active = true
+        instanceable = true
+        references = </Mesh>
+    )
+    {
+    }
+}
+
+def Xform "Instance" (
+    active = true
+)
+{
+    def "I1" (
+        instanceable = true
+        active = true
+        references = </Parent>
+    )
+    {
+    }
+    def "I2" (
+        instanceable = true
+        active = true
+        references = </Parent>
+    )
+    {
+        custom Vec3d xformOp:translate = (0, 0, -3)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "Group" (
+    active = true
+)
+{
+    def "GI1" (
+        instanceable = true
+        active = true
+        references = </Instance>
+    )
+    {
+    }
+    def "GI2" (
+        instanceable = true
+        active = true
+        references = </Instance>
+    )
+    {
+        custom Vec3d xformOp:translate = (3, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    custom Vec3d xformOp:translate = (3, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Instance2" (
+    active = true
+)
+{
+    def "GG1" (
+        instanceable = true
+        active = true
+        references = </Group>
+    )
+    {
+    }
+    def "GG2" (
+        instanceable = true
+        active = true
+        references = </Group>
+    )
+    {
+        custom Vec3d xformOp:translate = (3, 0, -6)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    custom Vec3d xformOp:translate = (6, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

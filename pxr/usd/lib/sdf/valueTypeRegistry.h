@@ -34,7 +34,10 @@
 
 class TfType;
 
+/// \class Sdf_ValueTypeRegistry
+///
 /// A registry of value type names used by a schema.
+///
 class Sdf_ValueTypeRegistry : boost::noncopyable {
 public:
     Sdf_ValueTypeRegistry();

@@ -1,0 +1,8 @@
+#usda 1.0
+
+def "refSphere" (
+    payload = @helloworld.usda@</hello>
+)
+{
+}
+

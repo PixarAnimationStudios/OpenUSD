@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    """
+    This example exercises error output for invalid payload arcs.
+    """
+)
+
+def "BadPayload_NonExistentFile" (
+    payload = @./payload_non_existent_file.usda@</Prim>
+)
+{
+}
+
+def "BadPayload_NonExistentPrim" (
+    payload = @./payload.usda@</NonExistentPrim>
+)
+{
+}

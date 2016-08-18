@@ -33,32 +33,33 @@
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
-
 template <typename T> struct Tf_PySequenceToListConverter;
 template <typename T> struct Tf_PyMapToDictionaryConverter;
 template <typename T> struct Tf_PySequenceToTupleConverter;
 template <typename First, typename Second> struct Tf_PyPairToTupleConverter;
 
-
-/*!
- * \brief A boost::python result converter generator which converts standard
- * library sequences to lists.
- *
- * The way to use this is as a return value policy for a function which returns
- * a sequence or a const reference to a sequence.  For example this function:
- *
- * vector<double> getDoubles() {
- *     vector<double> ret;
- *     ret.push_back(1.0);
- *     ret.push_back(2.0);
- *     ret.push_back(3.0);
- *     return ret;
- * }
- *
- * May be wrapped as:
- *
- * def("getDoubles", &getDoubles, return_value_policy<TfPySequenceToList>())
- */
+/// \class TfPySequenceToList
+///
+/// A \c boost::python result converter generator which converts standard
+/// library sequences to lists.
+///
+/// The way to use this is as a return value policy for a function which
+/// returns a sequence or a const reference to a sequence.  For example this
+/// function:
+/// \code
+/// vector<double> getDoubles() {
+///     vector<double> ret;
+///     ret.push_back(1.0);
+///     ret.push_back(2.0);
+///     ret.push_back(3.0);
+///     return ret;
+/// }
+/// \endcode
+///
+/// May be wrapped as:
+/// \code
+/// def("getDoubles", &getDoubles, return_value_policy<TfPySequenceToList>())
+/// \endcode
 struct TfPySequenceToList {
     template <typename T>
     struct apply {
@@ -66,11 +67,10 @@ struct TfPySequenceToList {
     };
 };
 
-/*!
- * \brief A boost::python result converter generator which converts standard
- * library maps to dictionaries.
- */
-
+/// \class TfPyMapToDictionary
+///
+/// A \c boost::python result converter generator which converts standard
+/// library maps to dictionaries.
 struct TfPyMapToDictionary {
     template <typename T>
     struct apply {
@@ -78,10 +78,11 @@ struct TfPyMapToDictionary {
     };
 };
 
-/*!
- * \brief A boost::python result converter generator which converts standard
- * library sequences to tuples.  See \a TfPySequenceToList.
- */
+/// \class TfPySequenceToTuple
+///
+/// A \c boost::python result converter generator which converts standard
+/// library sequences to tuples.
+/// \see TfPySequenceToList.
 struct TfPySequenceToTuple {
     template <typename T>
     struct apply {
@@ -89,10 +90,8 @@ struct TfPySequenceToTuple {
     };
 };
 
-/*!
- * \brief A boost::python result converter generator which converts standard
- * library pairs to tuples.
- */
+/// A \c boost::python result converter generator which converts standard
+/// library pairs to tuples.
 struct TfPyPairToTuple {
     template <typename T>
     struct apply {
@@ -115,11 +114,10 @@ struct Tf_PySequenceToListConverter {
     }
 };
 
-
 template <typename T>
 struct Tf_PyMapToDictionaryConverter {
     typedef typename boost::remove_reference<T>::type SeqType;
-    // XXX: convertible() should be made more robust by checking that the 
+    // TODO: convertible() should be made more robust by checking that the
     // value_type of the container is pair<const key_type, data_type> 
     bool convertible() const {
         return true;

@@ -46,3 +46,5 @@ void wrapLayerBase()
 
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(SdfLayerBase)

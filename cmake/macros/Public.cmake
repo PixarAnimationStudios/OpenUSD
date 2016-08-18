@@ -41,6 +41,18 @@ function(pxr_python_bins)
             DESTINATION ${installDir}
             RENAME ${file}
         )
+
+		# Windows by default cannot execute Python files so here
+		# we create a batch file wrapper that invokes the python
+		# files.
+		if(WIN32)
+			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython ${file} %*")
+			install(PROGRAMS
+				"${CMAKE_BINARY_DIR}/${pyFile}.cmd"
+				DESTINATION ${installDir}
+				RENAME "${file}.cmd"
+			)
+		endif()
     endforeach()
 endfunction() # pxr_install_python_bins
 
@@ -96,6 +108,32 @@ function(pxr_cpp_bin BIN_NAME)
 
 endfunction()
 
+function(pxr_add_filename_property LIBRARY_NAME FILELIST)
+    foreach(cppfile ${FILELIST})
+
+        get_filename_component(fileExt "${cppfile}" EXT)
+
+        if("${fileExt}" STREQUAL "")
+            get_filename_component(
+                cppModuleName
+                "${cppfile}"
+                NAME_WE)
+
+            set_source_files_properties(${cppfile}.cpp PROPERTIES COMPILE_FLAGS
+                                -D__FILENAME__=${LIBRARY_NAME}${cppModuleName})
+
+        elseif(fileExt MATCHES .cpp)
+            get_filename_component(
+                cppModuleName
+                "${cppfile}"
+                NAME_WE)
+
+            set_source_files_properties(${cppfile} PROPERTIES COMPILE_FLAGS
+                                -D__FILENAME__=${LIBRARY_NAME}${cppModuleName})
+        endif()
+    endforeach()
+endfunction()
+
 function(pxr_shared_library LIBRARY_NAME)
     set(options PYTHON_LIBRARY)
     set(multiValueArgs
@@ -106,6 +144,7 @@ function(pxr_shared_library LIBRARY_NAME)
         CPPFILES
         PYMODULE_CPPFILES
         PYTHON_FILES
+        PYSIDE_UI_FILES
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
@@ -134,6 +173,24 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PUBLIC_HEADERS} ${${LIBRARY_NAME}_PUBLIC_HEADERS}
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
+
+    if(sl_CPPFILES)
+        pxr_add_filename_property(${LIBRARY_NAME} "${sl_CPPFILES}")
+    endif()
+    if(sl_PRIVATE_CLASSES)
+        pxr_add_filename_property(${LIBRARY_NAME} "${sl_PRIVATE_CLASSES}")
+    endif()
+    if(sl_PUBLIC_CLASSES)
+        pxr_add_filename_property(${LIBRARY_NAME} "${sl_PUBLIC_CLASSES}")
+    endif()
+
+    if(WIN32)
+        if(MSVC)
+            set_target_properties(
+                ${LIBRARY_NAME}
+                PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+        endif()
+    endif()
 
     if(sl_PYTHON_FILES)
         _install_python(${LIBRARY_NAME}
@@ -169,12 +226,24 @@ function(pxr_shared_library LIBRARY_NAME)
             set(rpath "$ORIGIN/../../../../${PXR_INSTALL_SUBDIR}/lib:${rpath}")
         endif()
 
-        set_target_properties(${LIBRARY_NAME} 
-            PROPERTIES 
-                PREFIX ""
-                FOLDER "${PXR_PREFIX}/_python"
-                INSTALL_RPATH ${rpath}
-        )
+        if(WIN32)
+			add_definitions(-D_BUILDING_PYD=1)
+            set_target_properties(${LIBRARY_NAME} 
+                PROPERTIES 
+                    PREFIX ""
+                    SUFFIX ".pyd"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
+            )
+        else()
+            set_target_properties(${LIBRARY_NAME} 
+                PROPERTIES 
+                    PREFIX ""
+                    SUFFIX ".pyd"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
+            )
+        endif()
     else()
         _get_install_dir(lib LIB_INSTALL_PREFIX)
         _get_share_install_dir(SHARE_INSTALL_PREFIX)
@@ -201,9 +270,14 @@ function(pxr_shared_library LIBRARY_NAME)
         set(installLocation ${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX})
     endif()
 
+	if(WIN32)
+		set(_PxrUserLocation "$ENV{ProgramData}\\usd\\plugins")
+	else()
+		set(_PxrUserLocation "/usr/local/share/usd/plugins")
+	endif()
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
+            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
     )
 
     # Always bake the rpath.
@@ -257,8 +331,10 @@ function(pxr_shared_library LIBRARY_NAME)
 
     install(TARGETS ${LIBRARY_NAME}
         EXPORT pxrTargets
+		ARCHIVE DESTINATION ${LIB_INSTALL_PREFIX}
         LIBRARY DESTINATION ${LIB_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${LIB_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${LIB_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 
@@ -301,6 +377,11 @@ function(pxr_shared_library LIBRARY_NAME)
     if (sl_RESOURCE_FILES)
         _install_resource_files(${sl_RESOURCE_FILES})
     endif()
+
+    if (sl_PYSIDE_UI_FILES)
+        _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
+    endif()        
+
 endfunction() # pxr_shared_library
 
 function(pxr_static_library LIBRARY_NAME)
@@ -449,6 +530,7 @@ function(pxr_plugin PLUGIN_NAME)
         CPPFILES
         PYMODULE_CPPFILES
         PYTHON_FILES
+        PYSIDE_UI_FILES
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
@@ -563,6 +645,7 @@ function(pxr_plugin PLUGIN_NAME)
 
     install(TARGETS ${PLUGIN_NAME}
         EXPORT pxrTargets
+		ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
         LIBRARY DESTINATION ${PLUGIN_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
@@ -600,6 +683,13 @@ function(pxr_plugin PLUGIN_NAME)
 
         _install_resource_files(${sl_RESOURCE_FILES})
     endif()
+
+    if (sl_PYSIDE_UI_FILES)
+        _get_install_dir(plugin PLUGINS_PREFIX)
+        set(LIBRARY_NAME ${PLUGIN_NAME})
+
+        _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
+    endif()        
 
     # Build python module.
     if(DEFINED sl_PYMODULE_CPPFILES)
@@ -698,6 +788,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
     )
 
     install(TARGETS ${LIBRARY_NAME}
+		ARCHIVE DESTINATION "tests/lib"
         LIBRARY DESTINATION "tests/lib"
         ARCHIVE DESTINATION "tests/lib"
     )
@@ -744,7 +835,7 @@ endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
     cmake_parse_arguments(bt
-        "" 
+        ""
         "SRC;DEST"
         ""
         ${ARGN}
@@ -758,13 +849,13 @@ endfunction() # pxr_install_test_dir
 
 function(pxr_register_test TEST_NAME)
     cmake_parse_arguments(bt
-        "PYTHON" 
+        "PYTHON"
         "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;EXPECTED_RETURN_CODE;TESTENV"
         "ENV"
         ${ARGN}
     )
 
-    # This harness is a filter which allows us to manipulate the test run, 
+    # This harness is a filter which allows us to manipulate the test run,
     # e.g. by changing the environment, changing the expected return code, etc.
     set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
 
@@ -799,7 +890,7 @@ function(pxr_register_test TEST_NAME)
     endif()
 
     if (bt_EXPECTED_RETURN_CODE)
-        set(testWrapperCmd ${testWrapperCmd} 
+        set(testWrapperCmd ${testWrapperCmd}
             --expected-return-code=${bt_EXPECTED_RETURN_CODE})
     endif()
 
@@ -846,7 +937,7 @@ function(pxr_katana_nodetypes NODE_TYPES)
         set(importLines "import ${nodeType}\n")
     endforeach()
 
-    install(PROGRAMS 
+    install(PROGRAMS
         ${pyFiles}
         DESTINATION ${installDir}
     )

@@ -85,7 +85,7 @@ PxrUsdKatanaUsdInPrivateData::_GetNoMotion()
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) const
 {
-    double currentTime = _usdInArgs->GetCurrentTime();
+    double currentTime = _usdInArgs->GetCurrentTimeD();
 
     if (attr and not PxrUsdKatanaUtils::IsAttributeVarying(attr, currentTime))
     {

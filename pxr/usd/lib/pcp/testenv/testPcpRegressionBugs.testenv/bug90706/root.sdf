@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+def "Sarah" (
+    variants = {
+        string displayColor = "red"
+    }
+    add variantSets = "displayColor"
+)
+{
+    def Scope "EmptyPrim"
+    {
+    }
+    variantSet "displayColor" = {
+        "green" {
+        }
+        "red" {
+        }
+    }
+}
+

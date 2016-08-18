@@ -1,0 +1,89 @@
+Loading @testPcpMuseum.testenv/BasicLocalAndGlobalClassCombination/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.usda            /Model_1
+    model.usda           /Model
+    model.usda           /_class_Model
+
+Child names:
+     ['_class_Nested', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_Nested>
+
+Prim Stack:
+    root.usda            /Model_1/_class_Nested
+    model.usda           /Model/_class_Nested
+    model.usda           /_class_Model/_class_Nested
+
+Child names:
+     ['Sym', 'Left']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_Nested/Sym>
+
+Prim Stack:
+    root.usda            /Model_1/_class_Nested/Sym
+    model.usda           /Model/_class_Nested/Sym
+    model.usda           /_class_Model/_class_Nested/Sym
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_Nested/Left>
+
+Prim Stack:
+    root.usda            /Model_1/_class_Nested/Left
+    root.usda            /Model_1/_class_Nested/Sym
+    model.usda           /Model/_class_Nested/Left
+    model.usda           /Model/_class_Nested/Sym
+    model.usda           /_class_Model/_class_Nested/Left
+    model.usda           /_class_Model/_class_Nested/Sym
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.usda            /Model_1/Instance
+    root.usda            /Model_1/_class_Nested
+    model.usda           /Model/Instance
+    model.usda           /Model/_class_Nested
+    model.usda           /_class_Model/Instance
+    model.usda           /_class_Model/_class_Nested
+
+Child names:
+     ['Sym', 'Left']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Sym>
+
+Prim Stack:
+    root.usda            /Model_1/Instance/Sym
+    root.usda            /Model_1/_class_Nested/Sym
+    model.usda           /Model/Instance/Sym
+    model.usda           /Model/_class_Nested/Sym
+    model.usda           /_class_Model/Instance/Sym
+    model.usda           /_class_Model/_class_Nested/Sym
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Left>
+
+Prim Stack:
+    root.usda            /Model_1/Instance/Left
+    root.usda            /Model_1/Instance/Sym
+    root.usda            /Model_1/_class_Nested/Left
+    root.usda            /Model_1/_class_Nested/Sym
+    model.usda           /Model/Instance/Left
+    model.usda           /Model/Instance/Sym
+    model.usda           /Model/_class_Nested/Left
+    model.usda           /Model/_class_Nested/Sym
+    model.usda           /_class_Model/Instance/Left
+    model.usda           /_class_Model/Instance/Sym
+    model.usda           /_class_Model/_class_Nested/Left
+    model.usda           /_class_Model/_class_Nested/Sym
+

@@ -24,10 +24,14 @@
 #ifndef TF_CXXCAST_H
 #define TF_CXXCAST_H
 
+/// \file tf/cxxCast.h
+/// C++ Cast Utilities.
+
 #ifndef __cplusplus
 #error This include file can only be included in C++ programs.
 #endif
 
+#include <ciso646>
 #include <type_traits>
 
 template <class Src, class Dst>
@@ -43,20 +47,18 @@ using Tf_CopyVolatile =
 template <class Src, class Dst>
 using Tf_CopyCV = Tf_CopyConst<Src, Tf_CopyVolatile<Src, Dst>>;
 
-/*!
- * \brief Return a pointer to the most-derived object.
- *
- * A dynamic_cast to \c void* is legal only for pointers to polymorphic
- * objects.  This function returns the original pointer for non-polymorphic
- * types, and a pointer to the most-derived type of the object.
- * Said differently, given a pointer of static type \c B*, and given that
- * the object really points to an object of type \c D*, this function
- * returns the address of the object considered as a \c D*; however, for
- * non-polymorphic objects, the actual type of an object is taken to be \c B,
- * since one cannot prove that that the type is actually different.
- *
- * Note: this function is public, but should be used sparingly (or not all).
- */
+/// Return a pointer to the most-derived object.
+///
+/// A \c dynamic_cast to \c void* is legal only for pointers to polymorphic
+/// objects. This function returns the original pointer for non-polymorphic
+/// types, and a pointer to the most-derived type of the object.
+/// Said differently, given a pointer of static type \c B*, and given that
+/// the object really points to an object of type \c D*, this function
+/// returns the address of the object considered as a \c D*; however, for
+/// non-polymorphic objects, the actual type of an object is taken to be \c B,
+/// since one cannot prove that that the type is actually different.
+///
+/// \warning This function is public, but should be used sparingly (or not all).
 template <typename T>
 inline typename std::enable_if<
     std::is_polymorphic<T>::value, Tf_CopyCV<T, void>*>::type

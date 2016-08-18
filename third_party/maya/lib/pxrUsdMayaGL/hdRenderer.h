@@ -28,6 +28,7 @@
 #ifndef PXRUSDMAYAGL_HDRENDERER_H
 #define PXRUSDMAYAGL_HDRENDERER_H
 
+#include "pxrUsdMayaGL/api.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImaging/gl.h"
 #include <boost/scoped_ptr.hpp>
@@ -71,7 +72,7 @@ class MPxSurfaceShape;
 ///   _hdRenderer.Render(..., params);
 /// }
 /// \endcode
-class UsdMayaGLHdRenderer
+class USDMAYAGL_API UsdMayaGLHdRenderer
 {
 public:
 

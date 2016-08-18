@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/tokens.h
-///
-
 #ifndef PXOSD_TOKENS_H
 #define PXOSD_TOKENS_H
 
+/// \file pxOsd/tokens.h
+
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/imaging/pxOsd/api.h"
+
 
 #define PXOSD_OPENSUBDIV_TOKENS  \
     (all)                        \
@@ -49,6 +49,6 @@
     (rightHanded)                \
     (smooth)
 
-TF_DECLARE_PUBLIC_TOKENS(PxOsdOpenSubdivTokens, PXOSD_OPENSUBDIV_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(PxOsdOpenSubdivTokens, PXOSD_API, PXOSD_OPENSUBDIV_TOKENS);
 
 #endif // PXOSD_REFINER_FACTORY_H

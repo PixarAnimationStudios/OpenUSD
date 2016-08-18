@@ -24,9 +24,9 @@
 #ifndef ARCH_DEFINES_H
 #define ARCH_DEFINES_H
 
-/*
- * OS
- */
+//
+// OS
+//
 
 #if defined(__linux__)
 #define ARCH_OS_LINUX
@@ -42,9 +42,9 @@
 #define ARCH_OS_WINDOWS
 #endif
 
-/*
- * Processor
- */
+//
+// Processor
+//
 
 #if defined(i386) || defined(__i386__) || defined(__x86_64__) || \
     defined(_M_IX86) || defined(_M_X64)
@@ -53,11 +53,9 @@
 #define ARCH_CPU_ARM
 #endif
 
-
-
-/*
- * Bits
- */
+//
+// Bits
+//
 
 #if defined(__x86_64__) || defined(__aarch64__) || defined(_M_X64)
 #define ARCH_BITS_64
@@ -65,11 +63,9 @@
 #error "Unsupported architecture.  x86_64 or ARM64 required."
 #endif
 
-
-
-/*
- * Compiler
- */
+//
+// Compiler
+//
 
 #if defined(__clang__)
 #define ARCH_COMPILER_CLANG
@@ -85,14 +81,13 @@
 #define ARCH_COMPILER_ICC
 #elif defined(_MSC_VER)
 #define ARCH_COMPILER_MSVC
-#define ARCH_COMPILER_MSVC_VERSION _MSC_VER
+#define ARCH_COMPILER_MSVC_VERSION	_MSC_VER
 #endif
 
+//
+// Features
+//
 
-
-/*
- * Features
- */
 // XXX -- This is an interim solution during the port to C++11.  We want to
 //        use pure C++11 so we don't want to use the __typeof__ extension.
 //        Once we don't require backward compatibility we can find and fix
@@ -115,6 +110,11 @@
 template <typename T> struct Arch_TypeOfRemoveReference { typedef T type; };
 template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 #define ARCH_TYPEOF(x) typename Arch_TypeOfRemoveReference<decltype((x))>::type
+#elif defined(ARCH_OS_WINDOWS)
+#define ARCH_TYPEOF(x) decltype(x)
+#else
+// This extension is widely supported so fallback to it.
+#define ARCH_TYPEOF __typeof__
 #endif
 
 // The current version of Apple clang does not support the thread_local
@@ -126,6 +126,11 @@ template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
+#endif
+
+// Some static asserts are not supported due to difference in size types.
+#if defined(ARCH_OS_LINUX)
+    #define ARCH_COMPILER_HAS_STATIC_ASSERT
 #endif
 
 #endif // ARCH_DEFINES_H 

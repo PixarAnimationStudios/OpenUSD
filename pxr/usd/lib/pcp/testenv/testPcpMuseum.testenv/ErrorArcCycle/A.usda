@@ -1,0 +1,13 @@
+#usda 1.0
+
+def Prim "GroupA" (
+    add references = @B.usda@</GroupB>
+)
+{
+    custom double A_attr
+
+    def Prim "ChildA"
+    {
+        custom double A_attr
+    }
+}

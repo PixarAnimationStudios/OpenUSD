@@ -24,6 +24,8 @@
 #ifndef SDF_CHANGEBLOCK_H
 #define SDF_CHANGEBLOCK_H
 
+#include "pxr/usd/sdf/api.h"
+
 /// \class SdfChangeBlock
 ///
 /// <b>DANGER DANGER DANGER</b>
@@ -65,7 +67,9 @@
 ///
 class SdfChangeBlock {
 public:
+    SDF_API
     SdfChangeBlock();
+    SDF_API
     ~SdfChangeBlock();
 };
 

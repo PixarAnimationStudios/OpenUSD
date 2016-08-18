@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    """
+    This layer references in a model group and renames a model in
+    that group using relocates. The model contains a local class
+    (SymArm) and an instance (LArm). We expect opinions about
+    both to be picked up from the model itself, from the group,
+    and from the prim referencing the group (across the relocates).
+    """
+)
+
+def "Group_1" (
+    add references = @group.usda@</Group>
+    relocates = {
+        <Model> : <Model_1>
+    }
+)
+{
+    over "Model_1"
+    {
+        over "LArm"
+        {
+        }
+
+        over "SymArm"
+        {
+        }
+    }
+}

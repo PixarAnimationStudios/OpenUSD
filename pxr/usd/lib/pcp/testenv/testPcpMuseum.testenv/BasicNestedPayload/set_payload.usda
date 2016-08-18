@@ -1,0 +1,14 @@
+#usda 1.0
+
+def Scope "Set"
+{
+    def Scope "Prop" (
+        references = @prop.usda@</Prop>
+    )
+    {
+        over "PropScope"
+        {
+            string x = "from set_payload"
+        }
+    }
+}

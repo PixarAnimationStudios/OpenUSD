@@ -26,6 +26,8 @@
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>
 
+#include "pxr/imaging/glf/baseTexture.h"
+
 using namespace boost::python;
 
 void wrapBaseTexture()
@@ -57,5 +59,5 @@ void wrapBaseTexture()
             return_value_policy<return_by_value>()))
         ;
 }
-    
 
+TF_REFPTR_CONST_VOLATILE_GET(GlfBaseTexture)

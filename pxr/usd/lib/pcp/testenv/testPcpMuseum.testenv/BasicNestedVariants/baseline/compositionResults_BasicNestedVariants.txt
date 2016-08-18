@@ -1,0 +1,37 @@
+Loading @testPcpMuseum.testenv/BasicNestedVariants/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Foo>
+
+Prim Stack:
+    root.usda            /Foo
+    root.usda            /Foo{which=A}
+
+Variant Selections:
+    {which = A}
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </Foo/A>
+
+Prim Stack:
+    root.usda            /Foo{which=A}A
+
+Child names:
+     ['Number']
+
+------------------------------------------------------------------------
+Results for composing </Foo/A/Number>
+
+Prim Stack:
+    root.usda            /Foo{which=A}A/Number
+
+Variant Selections:
+    {count = one}
+

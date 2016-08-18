@@ -20,12 +20,13 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
-// \file glf/textureHandle.h
 
 #ifndef GLF_TEXTURE_HANDLE_H
 #define GLF_TEXTURE_HANDLE_H
 
+/// \file glf/textureHandle.h
+
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/imaging/garch/gl.h"
@@ -41,17 +42,20 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfTextureHandle);
 
 class GlfTextureHandle : public TfRefBase, public TfWeakBase {
 public:
-
+    GLF_API
     static GlfTextureHandleRefPtr New(GlfTextureRefPtr texture);
 
+    GLF_API
     virtual ~GlfTextureHandle();
 
     GlfTexturePtr GetTexture() {
         return _texture;
     }
 
+    GLF_API
     void AddMemoryRequest(size_t targetMemory);
 
+    GLF_API
     void DeleteMemoryRequest(size_t targetMemory);
 
 protected:

@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glext.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
@@ -33,6 +34,8 @@
 
 typedef boost::shared_ptr<class HdResource> HdResourceSharedPtr;
 
+/// \class HdResource
+///
 /// Base class for all GPU resource objects.
 ///
 class HdResource : boost::noncopyable {

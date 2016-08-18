@@ -1,0 +1,13 @@
+#usda 1.0
+
+def "Model" (
+    payload = @model_payload.usda@</Model>
+    relocates = {
+        <Anim> : <Test/Anim>
+    }
+)
+{
+    def Scope "Test"
+    {
+    }
+}

@@ -1,0 +1,21 @@
+#usda 1.0
+
+over "NestedSpecializes"
+{
+}
+
+over "Specializes"
+{
+    over "Nested"
+    {
+    }
+}
+
+def "Ref" (
+    references = @./ref2.usda@</Ref2>
+)
+{
+    over "Nested"
+    {
+    }
+}

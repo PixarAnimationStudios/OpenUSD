@@ -27,8 +27,11 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/computation.h"
 
-/// HdCopyComputationGPU is a gpu computation which transfers
-/// a vbo range specified by src and name to the given range.
+/// \class HdCopyComputationGPU
+///
+/// A GPU computation which transfers a vbo range specified by src and name to
+/// the given range.
+///
 class HdCopyComputationGPU : public HdComputation
 {
 public:
@@ -45,6 +48,5 @@ private:
     HdBufferArrayRangeSharedPtr _src;
     TfToken _name;
 };
-
 
 #endif  // HD_COMPUTATION_H

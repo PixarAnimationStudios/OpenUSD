@@ -150,13 +150,15 @@ HdxRenderSetupTask::SyncCamera()
                 return;
             }
 
-            CameraUtilConformWindowPolicy policy = 
+            const CameraUtilConformWindowPolicy policy = 
                 windowPolicy.Get<CameraUtilConformWindowPolicy>();
 
             // Extract the frustum and calculate the correctly fitted/cropped
             // viewport
-            GfFrustum frustum = ComputeFittedFrustum(frustumVt.Get<GfFrustum>(), 
-                                                     policy, _viewport);
+            GfFrustum frustum = frustumVt.Get<GfFrustum>();
+            CameraUtilConformWindow(
+                &frustum, policy,
+                _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
 
             // Now that we have the actual frustum let's calculate the matrices
             // so we can upload them to the gpu via the raster state

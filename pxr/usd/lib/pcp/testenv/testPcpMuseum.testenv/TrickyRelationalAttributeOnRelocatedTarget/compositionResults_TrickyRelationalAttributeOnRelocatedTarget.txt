@@ -1,0 +1,76 @@
+Loading @testPcpMuseum.testenv/TrickyRelationalAttributeOnRelocatedTarget/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    CharRig.usda         /CharRig
+
+Child names:
+     ['EyeLidRig', 'Eye', 'EyeRig']
+
+------------------------------------------------------------------------
+Results for composing </Model/EyeLidRig>
+
+Prim Stack:
+    CharRig.usda         /CharRig/EyeLidRig
+    EyeLidRig.usda       /EyeLidRig
+
+Prohibited child names:
+     ['Lids']
+
+------------------------------------------------------------------------
+Results for composing </Model/Eye>
+
+Prim Stack:
+    CharRig.usda         /CharRig/Eye
+
+Child names:
+     ['Lids']
+
+------------------------------------------------------------------------
+Results for composing </Model/Eye/Lids>
+
+Prim Stack:
+    EyeLidRig.usda       /EyeLidRig/Lids
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model/Eye/Lids.attr:
+    EyeLidRig.usda       /EyeLidRig/Lids.attr
+
+------------------------------------------------------------------------
+Results for composing </Model/EyeRig>
+
+Prim Stack:
+    CharRig.usda         /CharRig/EyeRig
+
+Child names:
+     ['Widget']
+
+------------------------------------------------------------------------
+Results for composing </Model/EyeRig/Widget>
+
+Prim Stack:
+    CharRig.usda         /CharRig/EyeRig/Widget
+
+Property names:
+     ['rel']
+
+Property stacks:
+/Model/EyeRig/Widget.rel:
+    CharRig.usda         /CharRig/EyeRig/Widget.rel
+/Model/EyeRig/Widget.rel[/Model/Eye/Lids.attr].rel_attr:
+    CharRig.usda         /CharRig/EyeRig/Widget.rel[/CharRig/Eye/Lids.attr].rel_attr
+
+Relationship targets:
+/Model/EyeRig/Widget.rel:
+    /Model/Eye/Lids.attr
+

@@ -1,0 +1,109 @@
+Loading @testPcpMuseum.testenv/BasicSpecializesAndInherits/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Inherits_1>
+
+Prim Stack:
+    root.usda            /Inherits_1
+
+------------------------------------------------------------------------
+Results for composing </Specializes_1>
+
+Prim Stack:
+    root.usda            /Specializes_1
+    root.usda            /Inherits_1
+
+------------------------------------------------------------------------
+Results for composing </Instance_1>
+
+Prim Stack:
+    root.usda            /Instance_1
+    root.usda            /Specializes_1
+    root.usda            /Inherits_1
+
+------------------------------------------------------------------------
+Results for composing </Inherits_2>
+
+Prim Stack:
+    root.usda            /Inherits_2
+
+------------------------------------------------------------------------
+Results for composing </Specializes_2>
+
+Prim Stack:
+    root.usda            /Specializes_2
+
+------------------------------------------------------------------------
+Results for composing </Instance_2>
+
+Prim Stack:
+    root.usda            /Instance_2
+    ref.usda             /Ref
+    root.usda            /Specializes_2
+    root.usda            /Inherits_2
+    ref.usda             /Specializes_2
+    ref.usda             /Inherits_2
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks>
+
+Prim Stack:
+    root.usda            /Model/Looks
+    looks.usda           /Looks
+
+Child names:
+     ['BaseMaterial', 'Material', 'Metal', 'Brass']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/BaseMaterial>
+
+Prim Stack:
+    root.usda            /Model/Looks/BaseMaterial
+    looks.usda           /Looks/BaseMaterial
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Material>
+
+Prim Stack:
+    root.usda            /Model/Looks/Material
+    root.usda            /Model/Looks/BaseMaterial
+    looks.usda           /Looks/Material
+    looks.usda           /Looks/BaseMaterial
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Metal>
+
+Prim Stack:
+    root.usda            /Model/Looks/Metal
+    root.usda            /Model/Looks/Material
+    root.usda            /Model/Looks/BaseMaterial
+    looks.usda           /Looks/Metal
+    looks.usda           /Looks/Material
+    looks.usda           /Looks/BaseMaterial
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Brass>
+
+Prim Stack:
+    root.usda            /Model/Looks/Brass
+    looks.usda           /Looks/Brass
+    root.usda            /Model/Looks/Metal
+    root.usda            /Model/Looks/Material
+    root.usda            /Model/Looks/BaseMaterial
+    looks.usda           /Looks/Metal
+    looks.usda           /Looks/Material
+    looks.usda           /Looks/BaseMaterial
+

@@ -1,0 +1,36 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates the expected behavior when
+    a relocated prim inherits from multiple classes. In this
+    example, the prim @b.usda@</Group> inherits from global
+    classes _class_A and _class_B. When that prim is referenced
+    into and relocated in the root layer, it should inherit
+    opinions from the corresponding classes in the root layer.
+
+    This is a stripped-down case pulled from bug 81276.
+    """
+)
+
+def "Group" (
+    add references = @b.usda@</Group>
+    relocates = {
+        <Char>: <Char_Named>
+    }
+)
+{
+}
+
+over "_class_A"
+{
+    def Scope "PrimFromClassA"
+    {
+    }
+}
+
+over "_class_B"
+{
+    def Scope "PrimFromClassB"
+    {
+    }
+}

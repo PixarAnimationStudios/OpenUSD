@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file rankedTypeMap.h
-
 #ifndef GLF_RANKED_TYPE_MAP_H
 #define GLF_RANKED_TYPE_MAP_H
+
+/// \file glf/rankedTypeMap.h
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -34,7 +34,10 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+/// \class GlfRankedTypeMap
+///
 /// Holds a token-to-type map with support for precedence per type.
+///
 class GlfRankedTypeMap {
 public:
     typedef TfToken key_type;

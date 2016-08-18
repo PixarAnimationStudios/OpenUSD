@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -129,7 +130,7 @@ static const unsigned BITS_FOR_INDEX = 64 - BITS_FOR_MALLOC_SIZE;
 static const size_t MAX_PATH_NODES = 1 << BITS_FOR_INDEX;
 static const unsigned HIWORD_INDEX_BIT_OFFSET = BITS_FOR_MALLOC_SIZE - 32;
 static const unsigned HIWORD_INDEX_MASK = ~(~0U << HIWORD_INDEX_BIT_OFFSET);  // (HIWORD_INDEX_BIT_OFFSET no. of 1 bits.)
-static const unsigned long MALLOC_SIZE_MASK = ~(~0UL << BITS_FOR_MALLOC_SIZE) & ~0x7UL;
+static const unsigned long long MALLOC_SIZE_MASK = ~(~0ULL << BITS_FOR_MALLOC_SIZE) & ~0x7ULL;
 
 static bool Tf_MatchesMallocTagDebugName(const string& name);
 static bool Tf_MatchesMallocTagTraceName(const string& name);
@@ -172,8 +173,11 @@ struct Tf_MallocBlockInfo {
     uint32_t pathNodeIndex:BITS_FOR_INDEX;
 };
 
+#if defined(ARCH_COMPILER_HAS_STATIC_ASSERT)
+
 static_assert(sizeof(Tf_MallocBlockInfo) == 8, 
               "Unexpected size for Tf_MallocBlockInfo");
+#endif
 
 /*
  * Utility for checking a const char* against a table of match strings.
@@ -322,7 +326,7 @@ Tf_MallocCallSite* Tf_GetOrCreateCallSite(Tf_MallocCallSiteTable* table,
 
     if (it == table->end()) {
         Tf_MallocCallSite* site =
-            new Tf_MallocCallSite(name, table->size());
+            new Tf_MallocCallSite(name, static_cast<uint32_t>(table->size()));
         // site->_name is const so it is ok to use c_str() as the key.
         (*table)[site->_name.c_str()] = site;
         if (site->_trace) {
@@ -473,7 +477,7 @@ Tf_MallocGlobalData::_RegisterPathNode(Tf_MallocPathNode* pathNode)
         return false;
 
     }
-    pathNode->_index = _allPathNodes.size();
+    pathNode->_index = static_cast<uint32_t>(_allPathNodes.size());
     _allPathNodes.push_back(pathNode);
     return true;
 }
@@ -1573,7 +1577,7 @@ _PrintMallocNode(
 
     string name = string(indent, ' ') +
         node.siteName.substr(0, maxNameWidth-indent);
-    int postLen = maxNameWidth - name.length();
+    int postLen = static_cast<int>(maxNameWidth - name.length());
     if (postLen > 0) {
         name += string(postLen, ' ');
     }
@@ -1876,5 +1880,3 @@ TfMallocTag::_TemporaryTaggingState::~_TemporaryTaggingState()
 {
     TfMallocTag::_SetTagging(_oldState);
 }
-
-

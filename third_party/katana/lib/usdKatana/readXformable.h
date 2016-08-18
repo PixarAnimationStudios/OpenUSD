@@ -24,12 +24,14 @@
 #ifndef PXRUSDKATANA_READXFORMABLE_H
 #define PXRUSDKATANA_READXFORMABLE_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomXformable;
 
 /// \brief read \p xform into \p attrs.
-void
+USDKATANA_API void
 PxrUsdKatanaReadXformable(
         const UsdGeomXformable& xform,
         const PxrUsdKatanaUsdInPrivateData& data,

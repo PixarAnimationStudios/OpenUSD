@@ -103,10 +103,10 @@ Hd_TriangleIndexBuilderComputation::Resolve()
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
     int const * holeFacesPtr = _topology->GetHoleIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    int numVertIndices = _topology->GetFaceVertexIndices().size();
+    int numFaces = static_cast<int>(_topology->GetFaceVertexCounts().size());
+    int numVertIndices = (int)(_topology->GetFaceVertexIndices().size());
     int numTris = 0;
-    int numHoleFaces = _topology->GetHoleIndices().size();
+    int numHoleFaces = static_cast<int>(_topology->GetHoleIndices().size());
     bool invalidTopology = false;
     int holeIndex = 0;
     for (int i=0; i<numFaces; ++i) {
@@ -235,7 +235,7 @@ _TriangulateFaceVarying(HdBufferSourceSharedPtr const &source,
     bool invalidTopology = false;
     int numFVarValues = 0;
     int holeIndex = 0;
-    int numHoleFaces = holeFaces.size();
+    int numHoleFaces = static_cast<int>(holeFaces.size());
     for (int i = 0; i < faceVertexCounts.size(); ++i) {
         int nv = faceVertexCounts[i] - 2;
         if (nv < 1) {

@@ -1,0 +1,53 @@
+#usda 1.0
+
+def Scope "SlugJ" (
+    add references = [
+        @SlugJ_shaderDisplayDefs.usda@</ShaderBindingVariants>
+    ]
+)
+{
+    def Scope "Shaders"
+    {
+        def Scope "BGVariant_Surface"
+        {
+        }
+    }
+}
+
+def Scope "ShaderBindingVariants" (
+    add variantSets = "shaderBindingVariant"
+)
+{
+    variantSet "shaderBindingVariant" = {
+        "Dry" {
+            over "Shaders"
+            {
+                over "BGVariant_Surface"
+                {
+                    string activeBinding = "Dry"
+                }
+            }
+
+        }
+        "Hair" {
+            over "Shaders"
+            {
+                over "BGVariant_Surface"
+                {
+                    string activeBinding = "Hair"
+                }
+            }
+
+        }
+        "Wet" {
+            over "Shaders"
+            {
+                over "BGVariant_Surface"
+                {
+                    string activeBinding = "Wet"
+                }
+            }
+
+        }
+    }
+}

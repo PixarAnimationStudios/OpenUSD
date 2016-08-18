@@ -28,6 +28,8 @@
 
 class UsdGeomCapsule;
 
+/// \class UsdImagingCapsuleAdapter
+///
 /// Delegate support for UsdGeomCapsule.
 ///
 class UsdImagingCapsuleAdapter : public UsdImagingGprimAdapter {

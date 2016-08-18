@@ -1,0 +1,116 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+)
+
+def Scope "Looks"
+{
+    def Look "UvLook1"
+    {
+        rel hydraLook:surface = </Shaders/SurfUvTexture1>
+    }
+    def Look "UvLook2"
+    {
+        rel hydraLook:surface = </Shaders/SurfUvTexture2>
+    }
+    def Look "UvLook3"
+    {
+        rel hydraLook:surface = </Shaders/SurfUvTexture3>
+    }
+}
+
+def Scope "Shaders"
+{
+    def HydraPbsSurface "SurfUvTexture1"
+    {
+        uniform Vec3f diffuseColor = (1, 0, 1)
+        uniform asset info:source = @shader1.glslfx@
+        uniform asset diffuseColor:texture = @texture1.jpg@ (
+             uvPrimvar = "map1_uv"
+        )
+    }
+    def HydraPbsSurface "SurfUvTexture2"
+    {
+        uniform Vec3f diffuseColor = (1, 0, 1)
+        uniform asset info:source = @shader1.glslfx@
+        uniform asset diffuseColor:texture = @texture2.jpg@ (
+             uvPrimvar = "map1_uv"
+        )
+    }
+    def HydraPbsSurface "SurfUvTexture3"
+    {
+        uniform Vec3f diffuseColor = (1, 0, 1)
+        uniform asset info:source = @shader1.glslfx@
+        uniform asset diffuseColor:texture = @texture3.jpg@ (
+             uvPrimvar = "map1_uv"
+        )
+    }
+}
+
+def Xform "Parent"
+{
+    def Xform "Meshes"
+    {
+        def Scope "UV"
+        {
+            def Mesh "MeshTest_Uv1"
+            {
+                Vec3f[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingLinearInterpolation = "boundaries"
+                int[] faceVertexCounts = [4]
+                PointIndex[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel look:binding = </Looks/UvLook1>
+                PointFloat[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                ColorFloat[] primvars:displayColor = [(0.5, 0.5, 0.9)] (
+                    interpolation = "uniform"
+                )
+                ColorFloat[] primvars:displayColor2 = [(0, 0.1, 0.9), (0.9, 0.1, 0), (0.1, 0.9, 0), (0, 0.9, 0.9)] (
+                    interpolation = "vertex"
+                )
+                custom Vec2f[] primvars:map1_uv = [(0, 1), (1, 1), (0, 0), (1, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom Vec3d xformOp:translate = (-4.25, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "MeshTest_Uv2"
+            {
+                Vec3f[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingLinearInterpolation = "boundaries"
+                int[] faceVertexCounts = [4]
+                PointIndex[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel look:binding = </Looks/UvLook2>
+                PointFloat[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom Vec2f[] primvars:map1_uv = [(0, 1), (0.4, 1), (0, 0), (0.4, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom Vec3d xformOp:translate = (-4.25, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "MeshTest_Uv3"
+            {
+                Vec3f[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingLinearInterpolation = "boundaries"
+                int[] faceVertexCounts = [4]
+                PointIndex[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel look:binding = </Looks/UvLook3>
+                PointFloat[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom Vec2f[] primvars:map1_uv = [(0, 1), (0.4, 1), (0, 0), (0.4, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom Vec3d xformOp:translate = (0, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+}
+

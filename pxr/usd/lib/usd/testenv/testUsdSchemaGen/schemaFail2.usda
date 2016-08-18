@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    "This file is a contrived schema file."
+    subLayers = [
+        @baseSchema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+        string libraryPrefix = "UsdContrived"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+class "Base" (
+    inherits = </Typed>
+    doc = "This doc should only exist on the \"Base\" class."
+) {
+    
+    # This would result in the token id "myVaryingToken" mapping to both
+    # "myVarying:Token" and "myVaryingToken" and should cause schemaGen to fail.
+    token myVarying:Token = "VariableTokenDefault" (
+        allowedTokens = ["VariableTokenAllowed1", "myVaryingToken"])
+}
+

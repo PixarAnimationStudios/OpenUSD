@@ -24,15 +24,15 @@
 #ifndef PCP_DIAGNOSTIC_H
 #define PCP_DIAGNOSTIC_H
 
+/// \file pcp/diagnostic.h
+/// Diagnostic helpers.
+
 #include "pxr/usd/pcp/errors.h"
 
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/iteration/local.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
-
-/// \file
-/// \brief Diagnostic helpers.
 
 class PcpLayerStackSite;
 class PcpNodeRef;
@@ -62,9 +62,11 @@ void PcpDumpDotGraph(const PcpNodeRef& node,
 // #define PCP_DIAGNOSTIC_VALIDATION
 
 /// \name PcpPrimIndex Debugging Output
+///
 /// The following macros are used to annotate the prim indexing process.
 /// The annotations can be output to the terminal or to .dot graphs to allow 
 /// users to trace the steps in indexing.
+///
 /// @{
 
 /// Opens a scope indicating the construction of the prim index

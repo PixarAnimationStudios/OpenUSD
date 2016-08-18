@@ -1,0 +1,28 @@
+#usda 1.0
+
+def "Group"
+{
+    def "Model_1" (
+        add references = @model.usda@</Model>
+    )
+    {
+    }
+
+    def "Model_2" (
+        add references = @model.usda@</Model>
+    )
+    {
+    }
+
+    def "Model_Special" (
+        add references = @model.usda@</Model>
+    )
+    {
+        string value = "Model group's special value just for this instance."
+    }
+}
+
+class Prim "_class_Model"
+{
+    string value = "Model group's value for the class."
+}

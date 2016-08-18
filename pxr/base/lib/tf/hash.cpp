@@ -25,6 +25,7 @@
 //#include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include <cstring>
 
@@ -38,6 +39,12 @@ size_t
 TfHash::operator()(const TfType& t) const
 {
     return (*this)(t._info);
+}
+
+size_t
+TfHash::operator()(const TfToken& t) const
+{
+    return t.Hash();
 }
 
 size_t

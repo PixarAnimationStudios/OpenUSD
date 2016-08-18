@@ -24,12 +24,14 @@
 #ifndef PXRUSDKATANA_READPOINTS_H
 #define PXRUSDKATANA_READPOINTS_H
 
+#include "usdKatana/api.h"
+
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomPoints;
 
 /// \brief read \p points into \p attrs.
-void
+USDKATANA_API void
 PxrUsdKatanaReadPoints(
         const UsdGeomPoints& points,
         const PxrUsdKatanaUsdInPrivateData& data,

@@ -99,7 +99,7 @@ _GetElementParameterConnection(
         bool create)
 {
     const UsdPrim& prim = attr.GetPrim();
-    const TfToken& relName = _GetConnectionRelName(attr.GetName(), element);
+    const TfToken& relName = _GetConnectionRelName(attr.GetName(), static_cast<int>(element));
     if (UsdRelationship rel = prim.GetRelationship(relName)) {
         return rel;
     }
@@ -456,7 +456,7 @@ UsdShadeParameter::GetConnectedSources(
     if (((not _attr.GetMetadata(_tokens->arrayConnectionSize, &numElts)) or
          (numElts < 0)) and
         not connections.empty()){
-        numElts = 1 + _ElementIndexFromConnection(connections.back());
+        numElts = 1 + static_cast<int>(_ElementIndexFromConnection(connections.back()));
     }
     if (numElts <= 0){
         return false;

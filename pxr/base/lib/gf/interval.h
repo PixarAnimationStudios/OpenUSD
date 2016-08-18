@@ -24,29 +24,27 @@
 #ifndef GF_INTERVAL_H
 #define GF_INTERVAL_H
 
+/// \file gf/interval.h
+/// \ingroup group_gf_BasicMath
+
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/api.h" 
 
 #include <boost/functional/hash.hpp>
 
 #include <float.h>
 #include <iosfwd>
 #include <limits>
+#include <ciso646>
 
-/*!
- * \file interval.h
- * \ingroup group_gf_BasicMath
- */
-
-/*!
- * \class GfInterval
- * \ingroup group_gf_BasicMath
- * A basic mathematical interval class.
- *
- * Can represent intervals with either open or closed boundary
- * conditions.
- *
- * \note Lack of TfPickling was deliberate, please don't add.
- */
+/// \class GfInterval
+/// \ingroup group_gf_BasicMath
+///
+/// A basic mathematical interval class.
+///
+/// Can represent intervals with either open or closed boundary
+/// conditions.
+///
 class GfInterval
 {
 public:
@@ -414,12 +412,12 @@ private:
             b : a;
     }
 
-    //! Data
+    /// Data
     _Bound _min, _max;
 };
 
 /// Output a GfInterval using the format (x, y).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream &operator<<(std::ostream&, const GfInterval&);
+GF_API std::ostream &operator<<(std::ostream&, const GfInterval&);
 
 #endif /* GF_INTERVAL_H */

@@ -31,15 +31,15 @@
 
 #include <boost/python/override.hpp>
 
-///
 /// \class TfPyMethodResult
-/// \brief A reimplementation of boost::python::detail::method_result
+///
+/// A reimplementation of boost::python::detail::method_result.
 ///
 /// This class is reimplemented from the boost class simply because the
 /// provided class only allows construction from it's friended class
-/// boost::python::override, which we also reimplement below. see
-/// TfPyOverride for more details
+/// boost::python::override, which we also reimplement below.
 ///
+/// \see TfPyOverride
 class TfPyMethodResult
 {
 private:
@@ -95,9 +95,9 @@ private:
     mutable boost::python::handle<> m_obj;
 };
 
-///
 /// \class TfPyOverride
-/// \brief A reimplementation of boost::python::override
+///
+/// A reimplementation of boost::python::override.
 ///
 /// This class is reimplemented from the boost class simply because the
 /// provided class only allows construction from, ultimately,
@@ -106,7 +106,7 @@ private:
 /// lives not on the directly wrapped C++ class, but a wrapped ancestor.
 /// So we provide our own version, TfPyOverride, with a public constructor.
 ///
-/// Note that clients must have the python GIL when constructing a 
+/// Note that clients must have the python GIL when constructing a
 /// TfPyOverride object.
 ///
 class TfPyOverride : public TfPyObjWrapper
@@ -117,8 +117,8 @@ public:
         : TfPyObjWrapper(boost::python::object(callable))
     {}
 
-    /// Call the override.  Clients need not hold the GIL to invoke the call
-    /// operator.
+    /// Call the override.
+    /// Clients need not hold the GIL to invoke the call operator.
     TfPyMethodResult
     operator()() const
     {

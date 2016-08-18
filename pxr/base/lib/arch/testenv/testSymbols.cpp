@@ -24,6 +24,7 @@
 #include "pxr/base/arch/symbols.h"
 #include <stdio.h>
 #include <assert.h>
+#include <ciso646>
 
 static void Code() { }
 static int data = 1;

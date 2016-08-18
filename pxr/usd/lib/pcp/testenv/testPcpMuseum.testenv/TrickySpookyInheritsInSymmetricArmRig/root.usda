@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    """
+    LArm is an anim scope relocated from under an LArm rig that inherits a SymArm rig. Even though it has been relocated, it needs to retain the knowledge of its ancestor's inherits arc to SymArm, in order to include the the class's anim prim.
+    """
+)
+
+def "CharRig" (
+    add references = @humanRig.usda@</HumanRig>
+)
+{
+    over "Anim"
+    {
+        over "LArm"
+        {
+        }
+    }
+}

@@ -213,19 +213,12 @@ CameraUtilConformWindow(
 }
 
 
-GfFrustum
-ComputeFittedFrustum( const GfFrustum &frustum,
-                      const CameraUtilConformWindowPolicy policy,
-                      const GfVec4d viewport)
+void
+CameraUtilConformWindow(
+    GfFrustum *frustum,
+    CameraUtilConformWindowPolicy policy, double targetAspect)
 {
-    const GfVec2d viewportSize = GfVec2d(viewport[2], viewport[3]);
-    const GfRange2d screenWindow = frustum.GetWindow();
-    const double targetAspect = (viewportSize[1] != 0.0) ?
-                                viewportSize[0] / viewportSize[1] :
-                                1.0;
-    GfFrustum newFrustum = frustum;
     GfRange2d screenWindowFitted = CameraUtilConformedWindow(
-        screenWindow, policy, targetAspect);
-    newFrustum.SetWindow(screenWindowFitted);
-    return newFrustum;
+        frustum->GetWindow(), policy, targetAspect);
+    frustum->SetWindow(screenWindowFitted);
 }

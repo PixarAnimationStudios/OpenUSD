@@ -1,0 +1,34 @@
+------------------------------------------------------------------------
+Errors while composing </ConnectionToLocalClass/Instance_1>
+
+The attribute connection </ConnectionToLocalClass/Instance_1.y> from </ConnectionToLocalClass/LocalClass.x> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@ refers to a path outside the scope of the local inherit from </ConnectionToLocalClass/Instance_1>.  Ignoring.
+The attribute connection </ConnectionToLocalClass/Instance_2.y> from </ConnectionToLocalClass/LocalClass.x> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </ConnectionToLocalClass/Instance_2>
+
+The attribute connection </ConnectionToLocalClass/Instance_1.y> from </ConnectionToLocalClass/LocalClass.x> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </ConnectionToLocalClass/Instance_2.y> from </ConnectionToLocalClass/LocalClass.x> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@ refers to a path outside the scope of the local inherit from </ConnectionToLocalClass/Instance_2>.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Cycle detected:
+@/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@</FaceRig/BrowRig/Anim/LBrow>
+CANNOT inherit from:
+@/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@</FaceRig/BrowRig/Anim/LBrow>
+
+The attribute connection </BrowRig/Anim/RBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/ref.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </BrowRig/Anim/LBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/ref.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Cycle detected:
+@/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@</FaceRig/BrowRig/Anim/RBrow>
+CANNOT inherit from:
+@/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/root.usda@</FaceRig/BrowRig/Anim/RBrow>
+
+The attribute connection </BrowRig/Anim/RBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/ref.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </BrowRig/Anim/LBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @/scratch/build_local/dev/src/inst/fedora-gcc64-opt/pxr/tests/mentor/pxr/usd/lib/pcp/data/testPcpMuseum.testenv/ErrorInvalidInstanceTargetPath/ref.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+

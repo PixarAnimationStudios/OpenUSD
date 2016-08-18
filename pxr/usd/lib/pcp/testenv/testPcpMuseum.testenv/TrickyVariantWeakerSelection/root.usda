@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    """
+    This example exercises a variant set where a selection is
+    defined at a weaker site.
+    """
+)
+
+def Scope "A" (
+    variantSets = ["v"]
+    references = [ @model.usda@</A> ]
+) {
+    variantSet "v" = {
+        "v1" {
+            string v1 = "v1_root"
+        }
+        "v2" {
+            string v2 = "v2_root"
+        }
+    }
+}

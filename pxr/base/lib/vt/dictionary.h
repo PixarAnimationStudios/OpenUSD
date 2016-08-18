@@ -26,8 +26,11 @@
 #ifndef VT_DICTIONARY_H
 #define VT_DICTIONARY_H
 
+/// \file vt/dictionary.h
+
 #include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/api.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/move.h"
@@ -49,16 +52,12 @@
 #  define VT_DICTIONARY_MAX_ARITY 7
 #endif // VT_DICTIONARY_MAX_ARITY
 
-
-/// \file vt/dictionary.h
-
-
 /// \defgroup group_vtdict_functions VtDictionary Functions
 /// Functions for manipulating VtDictionary objects.
  
-///
 /// \class VtDictionary
-/// \brief A map with string keys and VtValue values.
+///
+/// A map with string keys and VtValue values.
 ///
 /// VtDictionary converts to and from a python dictionary as long
 /// as each element contains either
@@ -68,6 +67,7 @@
 ///
 /// For a list of functions that can manipulate VtDictionary objects, see the  
 /// \link group_vtdict_functions VtDictionary Functions \endlink group page .
+///
 class VtDictionary {
     typedef std::map<std::string, VtValue> _Map;
     std::unique_ptr<_Map> _dictMap;
@@ -179,61 +179,80 @@ public:
     }
 
     /// Creates a copy of the supplied \p VtDictionary
+    VT_API
     VtDictionary(VtDictionary const& other);
 
     /// Creates a new VtDictionary by moving the supplied \p VtDictionary.
+    VT_API
     VtDictionary(VtDictionary && other) = default;
 
     /// Copy assignment operator
+    VT_API
     VtDictionary& operator=(VtDictionary const& other);
 
     /// Move assignment operator
+    VT_API
     VtDictionary& operator=(VtDictionary && other) = default;
 
     /// Returns a reference to the \p VtValue that is associated with a 
     /// particular key.
+    VT_API
     VtValue& operator[](const std::string& key);
 
     /// Counts the number of elements whose key is \p key. 
+    VT_API
     size_type count(const std::string& key) const;
 
     /// Erases the element whose key is \p key. 
+    VT_API
     size_type erase(const std::string& key);
 
     /// Erases the element pointed to by \p it. 
+    VT_API
     void erase(iterator it);
 
     /// Erases all elements in a range.
+    VT_API
     void erase(iterator f, iterator l);
 
     /// Erases all of the elements. 
+    VT_API
     void clear();
 
     /// Finds an element whose key is \p key. 
+    VT_API
     iterator find(const std::string& key);
 
     /// Finds an element whose key is \p key. 
+    VT_API
     const_iterator find(const std::string& key) const;
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
+    VT_API
     iterator begin();
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
+    VT_API
     const_iterator begin() const;
 
     /// Returns an \p iterator pointing to the end of the \p VtDictionary. 
+    VT_API
     iterator end();
     
     /// Returns an \p iterator pointing to the end of the \p VtDictionary. 
+    VT_API
     const_iterator end() const;
 
     /// Returns the size of the VtDictionary. 
+    VT_API
     size_type size() const;
 	
     /// \c true if the \p VtDictionary's size is 0. 
+    VT_API
     bool empty() const;
     
     /// Swaps the contents of two \p VtDictionaries. 
+    VT_API
     void swap(VtDictionary& dict); 
 
     // Global overload for swap for unqualified calls in generic code.
@@ -260,6 +279,7 @@ public:
     }
 
     /// Inserts \p obj into the \p VtDictionary. 
+    VT_API
     std::pair<iterator, bool> insert(const value_type& obj);
 
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
@@ -267,6 +287,7 @@ public:
     /// produced by calling TfStringTokenize() with \p keyPath and
     /// \p delimiters.  \p keyPath may identify a leaf element or an entire
     /// sub-dictionary.  Return null if no such element at \p keyPath exists.
+    VT_API
     VtValue const *
     GetValueAtPath(std::string const &keyPath,
                    char const *delimiters = ":") const;
@@ -274,6 +295,7 @@ public:
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
     /// may identify a leaf element or an entire sub-dictionary.  Return null if
     /// no such element at \p keyPath exists.
+    VT_API
     VtValue const *
     GetValueAtPath(std::vector<std::string> const &keyPath) const;
 
@@ -283,6 +305,7 @@ public:
     /// sub-dictionaries as necessary according to the path elements in
     /// \p keyPath.  If \p keyPath identifies a full sub-dictionary, replace the
     /// entire sub-dictionary with \p value.
+    VT_API
     void SetValueAtPath(std::string const &keyPath,
                         VtValue const &value, char const *delimiters = ":");
 
@@ -290,6 +313,7 @@ public:
     /// necessary according to the path elements in \p keyPath.  If \p keyPath
     /// identifies a full sub-dictionary, replace the entire sub-dictionary with
     /// \p value.
+    VT_API
     void SetValueAtPath(std::vector<std::string> const &keyPath,
                         VtValue const &value);
 
@@ -298,12 +322,14 @@ public:
     /// TfStringTokenize() with \p keyPath and \p delimiters.  If no such
     /// element exists at \p keyPath, do nothing.  If \p keyPath identifies a
     /// sub-dictionary, erase the entire sub-dictionary.
+    VT_API
     void EraseValueAtPath(std::string const &keyPath,
         char const *delimiters = ":");
 
     /// Erase the value at \a keyPath.  If no such element exists at \p keyPath,
     /// do nothing.  If \p keyPath identifies a sub-dictionary, erase the entire
     /// sub-dictionary.
+    VT_API
     void EraseValueAtPath(std::vector<std::string> const &keyPath);
 
 private:
@@ -321,17 +347,17 @@ private:
 };
 
 /// Equality comparison.
-bool operator==(VtDictionary const &, VtDictionary const &);
-bool operator!=(VtDictionary const &, VtDictionary const &);
+VT_API bool operator==(VtDictionary const &, VtDictionary const &);
+VT_API bool operator!=(VtDictionary const &, VtDictionary const &);
 
 /// Write the contents of a VtDictionary to a stream, formatted like "{ 'key1':
 /// value1, 'key2': value2 }".
-std::ostream &operator<<(std::ostream &, VtDictionary const &);
+VT_API  std::ostream &operator<<(std::ostream &, VtDictionary const &);
 
 //
 // Return a const reference to an empty VtDictionary.
 //
-VtDictionary const &VtGetEmptyDictionary();
+VT_API VtDictionary const &VtGetEmptyDictionary();
 
 /// Returns true if \p dictionary contains \p key and the corresponding value
 /// is of type \p T.
@@ -351,7 +377,7 @@ VtDictionaryIsHolding( const VtDictionary &dictionary,
 }
 
 
-/// \brief Return a value held in a VtDictionary by reference.
+/// Return a value held in a VtDictionary by reference.
 ///
 /// If \p key is in \p dictionary and the corresponding value is of type
 /// \p T, returns a reference to the value.
@@ -359,8 +385,8 @@ VtDictionaryIsHolding( const VtDictionary &dictionary,
 /// \remark If \p key is not in \p dictionary, or the value for \p key is of
 /// the wrong type, a fatal error occurs, so clients should always call
 /// VtDictionaryIsHolding first.
-/// \ingroup group_vtdict_functions
 ///
+/// \ingroup group_vtdict_functions
 template <typename T>
 const T &
 VtDictionaryGet( const VtDictionary &dictionary,
@@ -398,9 +424,8 @@ struct Vt_DefaultGenerator {
 // VtDictionaryGet.
 extern Vt_DefaultGenerator VtDefault;
 
-
-/// \brief Return a value held in a VtDictionary, or a default value either if
-/// the supplied key is missing or if the types do not match.
+/// Return a value held in a VtDictionary, or a default value either if the
+/// supplied key is missing or if the types do not match.
 ///
 /// For example, this code will get a bool value under key "key" if "key" has a
 /// boolean value in the dictionary.   If there is no such key, or the value
@@ -409,8 +434,8 @@ extern Vt_DefaultGenerator VtDefault;
 /// \code
 ///     bool val = VtDictionaryGet<bool>(dict, "key", VtDefault = false);
 /// \endcode
-/// \ingroup group_vtdict_functions
 ///
+/// \ingroup group_vtdict_functions
 template <class T, class U>
 T VtDictionaryGet( const VtDictionary &dictionary,
                    const std::string &key,
@@ -424,126 +449,115 @@ T VtDictionaryGet( const VtDictionary &dictionary,
 
 
 
-/// \brief Creates a dictionary containing \p strong composed over \p weak.
+/// Creates a dictionary containing \p strong composed over \p weak.
 ///
-/// The new dictionary will contain all key-value pairs from
-/// \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The new dictionary will contain all key-value pairs from \p strong
+/// together with the key-value pairs from \p weak whose keys are not in \p
+/// strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-VtDictionary
+VT_API VtDictionary
 VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p strong to become \p strong composed over \p weak.
+/// Updates \p strong to become \p strong composed over \p weak.
 ///
-/// The updated contents of \p strong will be all key-value pairs
-/// from \p stong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p strong will be all key-value pairs from \p
+/// stong together with the key-value pairs from \p weak whose keys are not in
+/// \p strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-void
+VT_API void
 VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p weak to become \p strong composed over \p weak.
+/// Updates \p weak to become \p strong composed over \p weak.
 ///
-/// The updated contents of \p weak will be all key-value pairs
-/// from \p stong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p weak will be all key-value pairs from \p stong
+/// together with the key-value pairs from \p weak whose keys are not in \p
+/// strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-void
+VT_API void
 VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
                  bool coerceToWeakerOpinionType = false);
 
-/// \brief Returns a dictionary containing \p strong recursively
-/// composed over \p weak.
+/// Returns a dictionary containing \p strong recursively composed over \p
+/// weak.
 ///
-/// The new dictionary will be all key-value pairs
-/// from \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The new dictionary will be all key-value pairs from \p strong together
+/// with the key-value pairs from \p weak whose keys are not in \p strong.
 ///
-/// If a value for a key is in turn a dictionary, and both \a strong and \a weak
-/// have values for that key, then the result  may not contain strong's 
-/// exact value for the subdict.
-/// Rather, the result will contain a subdict that is the result of a 
-/// recursive call to this method.  Hence, the subdict, too, will
-/// contain values from \a weak that are not found in \a strong.
+/// If a value for a key is in turn a dictionary, and both \a strong and \a
+/// weak have values for that key, then the result  may not contain strong's
+/// exact value for the subdict. Rather, the result will contain a subdict
+/// that is the result of a recursive call to this method.  Hence, the
+/// subdict, too, will contain values from \a weak that are not found in \a
+/// strong.
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-///
-VtDictionary
+VT_API VtDictionary
 VtDictionaryOverRecursive(const VtDictionary &strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p strong to become \p strong composed recursively over 
-/// \p weak.
+/// Updates \p strong to become \p strong composed recursively over \p weak.
 ///
-/// The updated contents of \p strong will be all key-value pairs
-/// from \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p strong will be all key-value pairs from \p
+/// strong together with the key-value pairs from \p weak whose keys are not
+/// in \p strong.
 ///
-/// If a value for a key is in turn a dictionary, and both \a strong and \a weak
-/// have values for that key, then \a strong's subdict may not be left 
-/// untouched.  Rather, the dictionary will 
-/// be replaced by the result of a recursive call to this method in which
-/// \a strong's subdictionary will have entries added if they are contained
-/// in \a weak but not in \a strong
+/// If a value for a key is in turn a dictionary, and both \a strong and \a
+/// weak have values for that key, then \a strong's subdict may not be left
+/// untouched.  Rather, the dictionary will be replaced by the result of a
+/// recursive call to this method in which \a strong's subdictionary will have
+/// entries added if they are contained in \a weak but not in \a strong
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-void
+VT_API void
 VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
-/// \brief Updates \p weak to become \p strong composed recursively over 
-/// \p weak.
+/// Updates \p weak to become \p strong composed recursively over \p weak.
 ///
-/// The updated contents of \p weak will be all key-value pairs
-/// from \p strong together with the key-value pairs from \p weak
-/// whose keys are not in \p strong.
+/// The updated contents of \p weak will be all key-value pairs from \p strong
+/// together with the key-value pairs from \p weak whose keys are not in \p
+/// strong.
 ///
-/// If a value is in turn a dictionary, the dictionary in \a weak may not 
-/// be replaced wholesale by that of \a strong. Rather, the dictionary will 
-/// be replaced by the result of a recursive call to this method in which
-/// \a weak's subdictionary is recursively overlayed by \a strong's 
+/// If a value is in turn a dictionary, the dictionary in \a weak may not be
+/// replaced wholesale by that of \a strong. Rather, the dictionary will be
+/// replaced by the result of a recursive call to this method in which \a
+/// weak's subdictionary is recursively overlayed by \a strong's
 /// subdictionary.
 ///
-/// The result is that no key/value pairs of \a will be lost in 
-/// nested dictionaries. Rather, only non-dictionary values will be overwritten
+/// The result is that no key/value pairs of \a will be lost in nested
+/// dictionaries. Rather, only non-dictionary values will be overwritten
 ///
-/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value
-/// to the weaker value's type, if there is a weaker value.  This
-/// is mainly intended to promote to enum types.
+/// If \p coerceToWeakerOpinionType is \c true then coerce a strong value to
+/// the weaker value's type, if there is a weaker value.  This is mainly
+/// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-///
-void
+VT_API void
 VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -556,27 +570,27 @@ struct VtDictionaryHash {
 
 /// Evaluates the specified \p content string as a python dictionary and
 /// returns it as a VtDictionary.
-VtDictionary VtDictionaryFromPythonString(
+VT_API VtDictionary VtDictionaryFromPythonString(
     const std::string& content);
 
 /// Same as VtDictionaryFromPythonString but with more flexible failure
 /// policy.  Returns \c true if successful with the result in \p dict,
 /// otherwise returns \c false.
 /// 
-bool VtDictionaryFromPythonString(
+VT_API bool VtDictionaryFromPythonString(
     const std::string& content, 
     VtDictionary* dict);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and returns the formatted string. The pprint module is used to format the
 /// dictionary.
-std::string VtDictionaryPrettyPrint(
+VT_API std::string VtDictionaryPrettyPrint(
     const VtDictionary& vtdict);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and inserts it into the stream. The pprint module is used to format the
 /// dictionary.
-std::ostream& VtDictionaryPrettyPrint(
+VT_API std::ostream& VtDictionaryPrettyPrint(
     const VtDictionary& vtdict,
     std::ostream& ostream);
 
@@ -599,21 +613,17 @@ bool VtDictionaryPrettyPrintToFile(
 #include "pxr/base/vt/dictionary.h"
 */
 
-
 #endif /* VT_DICTIONARY_H */
-
 
 #else // BOOST_PP_IS_ITERATING
 
-
 #define N BOOST_PP_ITERATION()
 
-
-/// \brief In-place creation of a VtDictionary.
+/// In-place creation of a VtDictionary.
 ///
 /// Creates a VtDictionary from a set of VtKeyValue pairs.
-/// \ingroup group_vtdict_functions
 ///
+/// \ingroup group_vtdict_functions
 inline VtDictionary VtMakeDictionary(
     BOOST_PP_ENUM_PARAMS(N, const VtKeyValue &keyValue))
 {
@@ -638,6 +648,5 @@ inline VtDictionary VtMakeDictionary(
 }
 
 #undef N
-
 
 #endif // BOOST_PP_IS_ITERATING

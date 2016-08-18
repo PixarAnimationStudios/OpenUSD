@@ -29,22 +29,26 @@
 #include <boost/noncopyable.hpp>
 
 /// \class ArResolverScopedCache
+///
 /// Helper object for managing asset resolver cache scopes.
 ///
 /// \see ArResolverContext::_BeginCacheScope
 /// \see ArResolverContext::_EndCacheScope
-class AR_API ArResolverScopedCache
+class ArResolverScopedCache
     : public boost::noncopyable
 {
 public:
     /// Begin an asset resolver cache scope.
+    AR_API
     ArResolverScopedCache();
 
     /// Begin an asset resolver cache scope that shares data
     /// with the given \p parent scope.
+    AR_API
     explicit ArResolverScopedCache(const ArResolverScopedCache* parent);
 
     /// End an asset resolver cache scope.
+    AR_API
     ~ArResolverScopedCache();
 
 private:

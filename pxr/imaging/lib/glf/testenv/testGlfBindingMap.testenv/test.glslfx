@@ -1,0 +1,59 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "vertexShader": {
+                "source": [ "Vertex" ]
+            },
+            "fragmentShader": {
+                "source": [ "Fragment" ]
+            }
+        }
+    }
+}
+
+-- glsl Vertex
+
+layout(std140) uniform block0 {
+    mat4 matrix0;
+    mat4 matrix1;
+    vec3 vec0;
+    vec3 vec1;
+    float float0;
+};
+
+in vec4 vsIn0;
+in vec4 vsIn1;
+out vec4 fsIn;
+
+void main()
+{
+    fsIn = vsIn0 * matrix0 + vsIn1;
+}
+
+-- glsl Fragment
+
+in vec4 fsIn;
+out vec4 fsOut;
+
+uniform float fsUniform;
+uniform sampler2D textureImage;
+
+layout(std140) uniform block0 {
+    mat4 matrix0;
+    mat4 matrix1;
+    vec3 vec0;
+    vec3 vec1;
+    float float0;
+};
+
+layout(std140) uniform block1 {
+    float float1;
+};
+
+void main()
+{
+    fsOut = float0 * float1 * fsIn + fsUniform * texture(textureImage, fsIn.xy);
+}

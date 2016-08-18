@@ -1,0 +1,113 @@
+Loading @testPcpMuseum.testenv/TrickySpookyVariantSelection/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </CharRig>
+
+Prim Stack:
+    root.usda            /CharRig
+    FaceRig.usda         /FaceRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim>
+
+Prim Stack:
+    root.usda            /CharRig/Anim
+    FaceRig.usda         /FaceRig/Anim
+
+Child names:
+     ['Lip']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim/Lip>
+
+Prim Stack:
+    root.usda            /CharRig/Anim/Lip
+    FaceRig.usda         /FaceRig/Anim/Lip
+    LipRig.usda          /LipRig/Anim
+    SingleLip.usda       /LipsRig/Anim
+
+Property names:
+     ['Lip1']
+
+Property stacks:
+/CharRig/Anim/Lip.Lip1:
+    SingleLip.usda       /LipsRig/Anim.Lip1
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig
+    FaceRig.usda         /FaceRig/Rig
+
+Child names:
+     ['LipRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LipRig>
+
+Prim Stack:
+    root.usda            /CharRig/Rig/LipRig
+    FaceRig.usda         /FaceRig/Rig/LipRig
+    LipRig.usda          /LipRig
+    LipRig.usda          /LipRig{LipRigStyle=TwoLips}
+    TwoLips.usda         /LipsRig
+    SingleLip.usda       /LipsRig
+
+Variant Selections:
+    {LipRigStyle = TwoLips}
+
+Child names:
+     ['Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LipRig/Rig>
+
+Prim Stack:
+    TwoLips.usda         /LipsRig/Rig
+    SingleLip.usda       /LipsRig/Rig
+
+Child names:
+     ['Lip1Sculpt', 'Lip2Sculpt']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LipRig/Rig/Lip1Sculpt>
+
+Prim Stack:
+    SingleLip.usda       /LipsRig/Rig/Lip1Sculpt
+
+Property names:
+     ['amount']
+
+Property stacks:
+/CharRig/Rig/LipRig/Rig/Lip1Sculpt.amount:
+    SingleLip.usda       /LipsRig/Rig/Lip1Sculpt.amount
+
+Attribute connections:
+/CharRig/Rig/LipRig/Rig/Lip1Sculpt.amount:
+    /CharRig/Anim/Lip.Lip1
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LipRig/Rig/Lip2Sculpt>
+
+Prim Stack:
+    TwoLips.usda         /LipsRig/Rig/Lip2Sculpt
+
+Property names:
+     ['amount']
+
+Property stacks:
+/CharRig/Rig/LipRig/Rig/Lip2Sculpt.amount:
+    TwoLips.usda         /LipsRig/Rig/Lip2Sculpt.amount
+
+Attribute connections:
+/CharRig/Rig/LipRig/Rig/Lip2Sculpt.amount:
+    /CharRig/Anim/Lip.Lip2
+

@@ -24,6 +24,8 @@
 #ifndef USDGEOM_TOKENS_H
 #define USDGEOM_TOKENS_H
 
+/// \file usdGeom/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -31,9 +33,8 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file pxr/usd/usdGeom/tokens.h
 
 /// \hideinitializer
 #define USDGEOM_TOKENS \
@@ -154,7 +155,8 @@
     ((z, "Z"))
 
 /// \anchor UsdGeomTokens
-/// \brief <b>UsdGeomTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdGeomTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing
@@ -287,6 +289,6 @@
 /// \li <b>xformOpOrder</b> - UsdGeomXformable
 /// \li <b>y</b> - Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
 /// \li <b>z</b> - Possible value for UsdGeomCone::GetAxisAttr(), Default value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Default value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr(), Default value for UsdGeomCylinder::GetAxisAttr()
-TF_DECLARE_PUBLIC_TOKENS(UsdGeomTokens, USDGEOM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdGeomTokens, USDGEOM_API, USDGEOM_TOKENS);
 
 #endif

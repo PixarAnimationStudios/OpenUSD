@@ -24,72 +24,53 @@
 #ifndef TF_GETENV_H
 #define TF_GETENV_H
 
-/*!
- * \file getenv.h
- * \brief Functions for accessing environment variables
- * \ingroup group_tf_SystemsExt
- */
+/// \file tf/getenv.h
+/// \ingroup group_tf_SystemsExt
+/// Functions for accessing environment variables.
 
+#include <string>
 
-#include    <string>
+/// \addtogroup group_tf_SystemsExt
+///@{
+#include	"pxr/base/tf/api.h"
 
-
-
-
-/*!
- * \brief Return an environment variable as a string.
- * \ingroup group_tf_SystemsExt
- *
- * Return the value of the environment variable \c envName
- * as a string.  If the variable is unset, or is the empty string,
- * then \c defaultValue is returned.
- */
-
+/// Return an environment variable as a string.
+///
+/// Return the value of the environment variable \c envName
+/// as a string.  If the variable is unset, or is the empty string,
+/// then \c defaultValue is returned.
+TF_API
 std::string TfGetenv(const std::string& envName,
                      const std::string& defaultValue = "");
 
-/*!
- * \brief Return an environment variable as an integer.
- * \ingroup group_tf_SystemsExt
- *
- * Return the value of the environment variable \c envName
- * as an integer.  If the variable is unset, or is the empty string,
- * then \c defaultValue is returned.  Otherwise, the function uses
- * atoi() to convert the string to an integer: the implication being that
- * if the string is not a valid integer, you get back whatever value atoi()
- * comes up with.
- */
-
+/// Return an environment variable as an integer.
+///
+/// Return the value of the environment variable \c envName as an integer.  If
+/// the variable is unset, or is the empty string, then \c defaultValue is
+/// returned.  Otherwise, the function uses atoi() to convert the string to an
+/// integer: the implication being that if the string is not a valid integer,
+/// you get back whatever value atoi() comes up with.
 int TfGetenvInt(const std::string& envName, int defaultValue);
 
-/*!
- * \brief Return an environment variable as a boolean.
- * \ingroup group_tf_SystemsExt
- *
- * Return the value of the environment variable \c envName
- * as a boolean.  If the variable is unset, or is the empty string,
- * then \c defaultValue is returned. A value of \c true
- * is returned if the environment variable is any of
- * "true", "yes", "on" or "1"; the match is not case sensitive.
- * All other values yield a return value of \c false.
- */
+/// Return an environment variable as a boolean.
+///
+/// Return the value of the environment variable \c envName as a boolean.  If
+/// the variable is unset, or is the empty string, then \c defaultValue is
+/// returned. A value of \c true is returned if the environment variable is
+/// any of "true", "yes", "on" or "1"; the match is not case sensitive. All
+/// other values yield a return value of \c false.
+TF_API bool TfGetenvBool(const std::string&, bool defaultValue);
 
-bool TfGetenvBool(const std::string&, bool defaultValue);
-
-/*!
- * \brief Return an environment variable as a double.
- * \ingroup group_tf_SystemsExt
- *
- * Return the value of the environment variable \c envName as a double.  If the
- * variable is unset, or is the empty string, then \c defaultValue is returned.
- * Otherwise, the function uses TfStringToDouble() to convert the string to a
- * double: the implication being that if the string is not a valid double, you
- * get back whatever value TfStringToDouble() comes up with.
- */
-
+/// Return an environment variable as a double.
+///
+/// Return the value of the environment variable \c envName as a double.  If
+/// the variable is unset, or is the empty string, then \c defaultValue is
+/// returned. Otherwise, the function uses TfStringToDouble() to convert the
+/// string to a double: the implication being that if the string is not a
+/// valid double, you get back whatever value TfStringToDouble() comes up
+/// with.
 double TfGetenvDouble(const std::string& envName, double defaultValue);
 
-
-
+///@}
 
 #endif

@@ -1,0 +1,33 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Model "FergusCloak" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "anim" (
+            references = @FergusCloak_anim.usda@</FergusCloak>
+        ) {
+
+        }
+        "layout" (
+            references = @FergusCloak_layout.usda@</FergusCloak>
+        ) {
+
+        }
+        "render" (
+            references = @FergusCloak_render.usda@</FergusCloak>
+        ) {
+
+        }
+        "sim" (
+            references = @FergusCloak_sim.usda@</FergusCloak>
+        ) {
+
+        }
+    }
+}

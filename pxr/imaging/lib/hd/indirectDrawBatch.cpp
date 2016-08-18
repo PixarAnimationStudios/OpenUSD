@@ -180,7 +180,7 @@ Hd_IndirectDrawBatch::_CompileBatch()
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    int drawCount = _drawItemInstances.size();
+    int drawCount = (int)_drawItemInstances.size();
     if (_drawItemInstances.empty()) return;
 
     // note that when chaging struct definition of XFB culling,
@@ -1221,7 +1221,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
         binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
-            reinterpret_cast<const GLvoid*>(cullCommandBuffer->GetOffset()),
+            reinterpret_cast<const GLvoid*>((intptr_t)(cullCommandBuffer->GetOffset())),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
@@ -1233,7 +1233,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
         binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
-            reinterpret_cast<const GLvoid*>(cullCommandBuffer->GetOffset()),
+            reinterpret_cast<const GLvoid*>((intptr_t)(cullCommandBuffer->GetOffset())),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 

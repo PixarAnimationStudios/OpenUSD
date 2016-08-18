@@ -1,0 +1,26 @@
+Loading @testPcpMuseum.testenv/TrickyVariantWeakerSelection/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    root.usda            /A{v=v2}
+    model.usda           /A
+    model.usda           /A{v=v2}
+
+Variant Selections:
+    {v = v2}
+
+Property names:
+     ['v2']
+
+Property stacks:
+/A.v2:
+    root.usda            /A{v=v2}.v2
+    model.usda           /A{v=v2}.v2
+

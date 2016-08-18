@@ -1,0 +1,90 @@
+Loading @testPcpMuseum.testenv/TrickyVariantAncestralSelection/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_A1>
+
+Prim Stack:
+    root.usda            /_class_A1
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </_class_A1/B>
+
+Prim Stack:
+    root.usda            /_class_A1/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </_class_A1/B/C>
+
+Prim Stack:
+    root.usda            /_class_A1/B/C
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    root.usda            /_class_A1
+    ref.usda             /A1
+    ref.usda             /_class_A1
+    ref2.usda            /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </Root/B>
+
+Prim Stack:
+    root.usda            /_class_A1/B
+    ref.usda             /A1/B
+    ref2.usda            /B
+    ref2.usda            /A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </Root/B/C>
+
+Prim Stack:
+    root.usda            /_class_A1/B/C
+    ref.usda             /A1/B/C
+    ref2.usda            /C
+    ref2.usda            /C{v1=B}
+    ref2.usda            /C{v2=Z}
+    ref2.usda            /B/C
+    ref2.usda            /B/C{v1=B}
+    ref2.usda            /B/C{v2=Z}
+    ref2.usda            /A/B/C
+    ref2.usda            /A/B/C{v1=A}
+    ref2.usda            /A/B/C{v2=Z}
+
+Variant Selections:
+    {v1 = C}
+    {v2 = Z}
+
+Child names:
+     ['v2_Z', 'v1_B']
+
+------------------------------------------------------------------------
+Results for composing </Root/B/C/v2_Z>
+
+Prim Stack:
+    ref2.usda            /C{v2=Z}v2_Z
+
+------------------------------------------------------------------------
+Results for composing </Root/B/C/v1_B>
+
+Prim Stack:
+    ref2.usda            /C{v1=B}v1_B
+

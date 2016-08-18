@@ -1,0 +1,11 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "MyTruck"
+{
+    custom double[] a = [1, 2, 3]
+}
+

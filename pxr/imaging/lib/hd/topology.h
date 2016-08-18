@@ -23,6 +23,8 @@
 //
 #ifndef _HD_TOPOLOGY_H_
 #define _HD_TOPOLOGY_H_
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/arch/inttypes.h"
 
@@ -42,7 +44,7 @@ public:
     virtual ID ComputeHash() const = 0;
 };
 
-std::ostream& operator << (std::ostream &out, HdTopology const &);
+HDLIB_API std::ostream& operator << (std::ostream &out, HdTopology const &);
 
 #endif // _HD_TOPOLOGY_H_
 

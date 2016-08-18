@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/drawTarget.h"
-
-#include "pxr/base/tf/makePyConstructor.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyEnum.h"
-
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
+
+#include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
+#include "pxr/base/tf/pyResultConversions.h"
+
+#include "pxr/imaging/glf/drawTarget.h"
 
 using namespace boost::python;
 
@@ -67,3 +67,5 @@ void wrapDrawTarget()
         
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(GlfDrawTarget)

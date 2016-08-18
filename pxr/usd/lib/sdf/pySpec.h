@@ -26,19 +26,44 @@
 #ifndef SDF_PYSPEC_H
 #define SDF_PYSPEC_H
 
-///
 /// \file sdf/pySpec.h
 ///
-/// \brief SdfSpec Python wrapping utilities.
+/// SdfSpec Python wrapping utilities.
 ///
-
-#include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/base/tf/tf.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/pyError.h"
-#include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/arch/demangle.h"
+/// An SdfSpec subclass is not the representation of scene data.  An SdfSpec
+/// simply provides an interface to data stored in some internal representation.
+/// SdfSpec subclasses are value types and their lifetimes don't reflect the 
+/// lifetime of the scene data.  However, clients still create scene data using 
+/// the New methods on SdfSpec subclasses.
+///
+/// When wrapping to Python we need to wrap the New methods as the constructors. 
+/// This used to look like this:
+///
+/// \code
+///   class_<MyClass, MyClassHandle>("MyClass", no_init)
+///       .def(TfPyRefAndWeakPtr())
+///       .def(TfMakePyConstructor(&MyClass::New))
+///       ...
+/// \endcode
+///
+/// But we can't use TfMakePyConstructor() because an SdfSpec handle is
+/// not a weak pointer.  Furthermore, we don't have the problem of needing
+/// to store a ref pointer in the Python object.  But we do still need
+/// conversion of spec types to yield the most-derived type in python.
+///
+/// This file introduces a few boost::python::class_ def visitors to make
+/// wrapping specs easy.  Spec wrapping should now look like:
+///
+/// \code
+///   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, boost::noncopyable>
+///       ("MyClass", no_init)
+///       .def(SdfPySpec())  // or SdfPyAbstractSpec()
+///       .def(SdfMakePySpecConstructor(&MyClass::New))
+///       ...
+/// \endcode
+///
+/// If you need a custom repr you can use SdfPySpecNoRepr() or
+/// SdfPyAbstractSpecNoRepr() and def("__repr__", ...).
 
 #include <boost/bind.hpp>
 #include <boost/preprocessor.hpp>
@@ -49,54 +74,23 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/tuple.hpp>
 
+#include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/arch/demangle.h"
+
 #include <string>
 
 class SdfSpec;
-
-//
-// Helper for wrapping SdfSpec subclasses.
-//
-// An SdfSpec subclass is not the representation of scene data.  An SdfSpec
-// simply provides an interface to data stored in some internal representation.
-// SdfSpec subclasses are value types and their lifetimes don't reflect the 
-// lifetime of the scene data.  However, clients still create scene data using 
-// the New methods on SdfSpec subclasses.
-//
-// When wrapping to Python we need to wrap the New methods as the constructors. 
-// This used to look like this:
-//
-// \code
-//   class_<MyClass, MyClassHandle>("MyClass", no_init)
-//       .def(TfPyRefAndWeakPtr())
-//       .def(TfMakePyConstructor(&MyClass::New))
-//       ...
-// \endcode
-//
-// But we can't use TfMakePyConstructor() because an SdfSpec handle is
-// not a weak pointer.  Furthermore, we don't have the problem of needing
-// to store a ref pointer in the Python object.  But we do still need
-// conversion of spec types to yield the most-derived type in python.
-//
-// This file introduces a few boost::python::class_ def visitors to make
-// wrapping specs easy.  Spec wrapping should now look like:
-//
-// \code
-//   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, boost::noncopyable>
-//       ("MyClass", no_init)
-//       .def(SdfPySpec())  // or SdfPyAbstractSpec()
-//       .def(SdfMakePySpecConstructor(&MyClass::New))
-//       ...
-// \endcode
-//
-// If you need a custom repr you can use SdfPySpecNoRepr() or
-// SdfPyAbstractSpecNoRepr() and def("__repr__", ...).
-//
 
 namespace Sdf_PySpecDetail {
 
 namespace bp = boost::python;
 
-bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
+SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 
 template <typename CTOR>
 struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
@@ -207,13 +201,13 @@ SdfMakePySpecConstructor(T *func, const std::string &doc = std::string())
 namespace Sdf_PySpecDetail {
 
 // Create the repr for a spec using Sdf.Find().
-std::string _SpecRepr(const bp::object&, const SdfSpec*);
+SDF_API std::string _SpecRepr(const bp::object&, const SdfSpec*);
 
 // Registration for spec types to functions to create a holder with the spec
 // corresponding to the spec type.
 typedef PyObject* (*_HolderCreator)(const SdfSpec&);
-void _RegisterHolderCreator(const std::type_info&, _HolderCreator);
-PyObject* _CreateHolder(const std::type_info&, const SdfSpec&);
+SDF_API void _RegisterHolderCreator(const std::type_info&, _HolderCreator);
+SDF_API PyObject* _CreateHolder(const std::type_info&, const SdfSpec&);
 
 template <class _SpecType>
 struct _ConstHandleToPython {

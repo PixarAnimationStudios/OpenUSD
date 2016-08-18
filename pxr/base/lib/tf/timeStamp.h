@@ -24,128 +24,109 @@
 #ifndef TF_TIME_STAMP_H
 #define TF_TIME_STAMP_H
 
+/// \file tf/timeStamp.h
+/// \ingroup group_tf_Multithreading
 
 #include "pxr/base/arch/inttypes.h"
-
+#include "pxr/base/tf/api.h"
 #include <iosfwd>
 
-//!
-// \file timeStamp.h
-// \ingroup group_tf_Multithreading
-//
-
-
-
-//!
-// \brief Class that contains a time stamp.
-// \ingroup group_tf_Multithreading
-//
-// This class contains a 64-bit timestamp. 
+/// \class TfTimeStamp
+/// \ingroup group_tf_Multithreading
+///
+/// Class that contains a time stamp.
+///
+/// This class contains a 64-bit timestamp. 
+///
 class TfTimeStamp
 {
 public:
-    //! 
-    // Default constructor. Leaves timestamp uninitialized.
+    /// Default constructor. Leaves timestamp uninitialized.
     inline TfTimeStamp() {}
 
-    //!
-    // Initializes timestamp to given value.
+    /// Initializes timestamp to given value.
     inline TfTimeStamp(const uint64_t &value) {
         _value = value;
     }
 
-    //!
-    // Copy constructor.
+    /// Copy constructor.
     inline TfTimeStamp(const TfTimeStamp &timeStamp) {
         _value = timeStamp._value;
     }
 
-    //!
-    // Assignment operator
+    /// Assignment operator
     inline const TfTimeStamp & operator=(const TfTimeStamp &timeStamp) {
         _value = timeStamp._value;
         return *this;
     }
 
-    //!
-    // Cast operator to an uint64_t
-    operator            uint64_t() const {
+    /// Cast operator to an uint64_t
+    operator uint64_t() const {
         return _value;
     }
 
-    //! 
-    // Set timestamp.
-    void                Set(uint64_t value) {
+    /// Set timestamp.
+    void Set(uint64_t value) {
         _value = value;
     }
 
-    //! 
-    // Get timestamp.
-    uint64_t            Get() const {
+    /// Get timestamp.
+    uint64_t Get() const {
         return _value;
     }
 
-    //!
-    // Increment the timestamp by one.
-    TfTimeStamp         Increment() {
+    /// Increment the timestamp by one.
+    TfTimeStamp Increment() {
         ++_value;
         return *this;
     }
 
-    //!
-    // Decrement the timestamp by one.
-    TfTimeStamp         Decrement() {
+    /// Decrement the timestamp by one.
+    TfTimeStamp Decrement() {
         --_value;
         return *this;
     }
 
-    //!
-    // Equality operator.
-    bool                operator==(const TfTimeStamp &timeStamp) {
+    /// Equality operator.
+    bool operator==(const TfTimeStamp &timeStamp) {
         return _value == timeStamp._value;
     }
 
-    //!
-    // Inequality operator.
-    bool                operator!=(const TfTimeStamp &timeStamp) {
+    /// Inequality operator.
+    bool operator!=(const TfTimeStamp &timeStamp) {
         return _value != timeStamp._value;
     }
 
-    //!
-    // Greater than operator.
-    bool                operator>(const TfTimeStamp &timeStamp) {
+    /// Greater than operator.
+    bool operator>(const TfTimeStamp &timeStamp) {
         return _value > timeStamp._value;
     }
 
-    //!
-    // Less than operator.
-    bool                operator<(const TfTimeStamp &timeStamp) {
+    /// Less than operator.
+    bool operator<(const TfTimeStamp &timeStamp) {
         return _value < timeStamp._value;
     }
 
-    //!
-    // Greater than or equal operator.
-    bool                operator>=(const TfTimeStamp &timeStamp) {
+    /// Greater than or equal operator.
+    bool operator>=(const TfTimeStamp &timeStamp) {
         return _value >= timeStamp._value;
     }
 
-    //!
-    // Less than or equal operator.
-    bool                operator<=(const TfTimeStamp &timeStamp) {
+    /// Less than or equal operator.
+    bool operator<=(const TfTimeStamp &timeStamp) {
         return _value <= timeStamp._value;
     }
 
 private:
-    uint64_t            _value;
+    uint64_t _value;
 };
 
 /// \name Related
 /// @{
 
 /// Stream insertion operator for the string representation of this timestamp
-std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
+TF_API std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
 
 /// @}
-
 
 #endif // TF_TIME_STAMP_H

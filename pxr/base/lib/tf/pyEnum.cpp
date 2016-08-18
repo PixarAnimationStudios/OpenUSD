@@ -21,11 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/pyEnum.h"
-
-#include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyWrapContext.h"
+#include "pxr/base/tf/instantiateSingleton.h"
+
+
 
 TF_INSTANTIATE_SINGLETON(Tf_PyEnumRegistry);
 

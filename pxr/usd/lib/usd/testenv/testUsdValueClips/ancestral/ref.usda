@@ -1,0 +1,25 @@
+#usda 1.0
+
+def "ModelGroup" (
+    kind = "group"
+)
+{
+    float attr = 1.0
+    float attr.timeSamples = {
+        5: 5.0,
+        10: 10.0,
+        15: 15.0
+    }
+
+    def "Model" (
+        kind = "model"
+    )
+    {
+        float attr = 1.0
+        float attr.timeSamples = {
+            5: 5.0,
+            10: 10.0,
+            15: 15.0
+        }
+    }
+}

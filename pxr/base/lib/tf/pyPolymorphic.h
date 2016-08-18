@@ -24,9 +24,7 @@
 #ifndef TF_PYPOLYMORPHIC_H
 #define TF_PYPOLYMORPHIC_H
 
-///
-/// \file PyPolymorphic.h
-///
+/// \file tf/pyPolymorphic.h
 
 #include "pxr/base/tf/pyOverride.h"
 
@@ -46,8 +44,7 @@
 
 #include <type_traits>
 
-// XXX All this stuff with holding onto the class needs to go away
-// 2/07.
+// TODO: All this stuff with holding onto the class needs to go away.
 
 template <typename Derived>
 struct TfPyPolymorphic :

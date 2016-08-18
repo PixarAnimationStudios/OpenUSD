@@ -24,6 +24,7 @@
 #ifndef HD_LIGHT_H
 #define HD_LIGHT_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
@@ -40,11 +41,15 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdLight> HdLightSharedPtr;
 typedef std::vector<HdLightSharedPtr> HdLightSharedPtrVector;
 
+/// \class HdLight
+///
 /// A light model, used in conjunction with HdRenderPass.
-
+///
 class HdLight {
 public:
+	HDLIB_API
     HdLight(HdSceneDelegate* delegate, SdfPath const & id);
+	HDLIB_API
     ~HdLight(); // note: not virtual (for now)
 
     /// Returns the HdSceneDelegate which backs this texture.
@@ -57,6 +62,7 @@ public:
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
+	HDLIB_API
     void Sync();
 
     // ---------------------------------------------------------------------- //

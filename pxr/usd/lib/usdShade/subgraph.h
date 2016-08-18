@@ -24,6 +24,9 @@
 #ifndef USDSHADE_GENERATED_SUBGRAPH_H
 #define USDSHADE_GENERATED_SUBGRAPH_H
 
+/// \file usdShade/subgraph.h
+
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -49,6 +52,8 @@ class SdfAssetPath;
 // SUBGRAPH                                                                   //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeSubgraph
+///
 /// A subgraph is a container for shading nodes, as well as other 
 /// subgraphs. It has a public input interface and provides a list of public 
 /// outputs, called terminals.
@@ -94,15 +99,17 @@ public:
     }
 
     /// Destructor.
+    USDSHADE_API
     virtual ~UsdShadeSubgraph();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDSHADE_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeSubgraph holding the prim adhering to this
+    /// Return a UsdShadeSubgraph holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -111,10 +118,11 @@ public:
     /// UsdShadeSubgraph(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDSHADE_API
     static UsdShadeSubgraph
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -136,6 +144,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDSHADE_API
     static UsdShadeSubgraph
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -147,6 +156,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDSHADE_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -193,13 +203,14 @@ public:
     /// \todo describe scoped interfaces and fix bug/108940 to account for them
     /// @{
 
-    /// \brief Create an interface attribute
+    /// Create an interface attribute.
     ///
     /// \p interfaceAttrName may be any legal property name, including
     /// arbitrary namespaces
     ///
     /// \todo clarify error behavior if typeName does not match existing,
     /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
+    USDSHADE_API
     UsdShadeInterfaceAttribute CreateInterfaceAttribute(
             const TfToken& interfaceAttrName,
             const SdfValueTypeName& typeName);
@@ -213,11 +224,13 @@ public:
     /// UsdShadeInterfaceAtribute(prim->GetAttribute(interfaceAttrName))
     /// \endcode
     /// will not, unless \p interfaceAttrName is properly namespace prefixed.
+    USDSHADE_API
     UsdShadeInterfaceAttribute GetInterfaceAttribute(
             const TfToken& interfaceAttrName) const;
 
     /// Returns all interface attributes that drive parameters of a
     /// \p renderTarget shading network.
+    USDSHADE_API
     std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes(
             const TfToken& renderTarget) const;
 
@@ -227,12 +240,14 @@ public:
 
     /// Create and set a custom terminal of a subgraph
     /// 
+    USDSHADE_API
     UsdRelationship CreateTerminal(
         const TfToken& terminalName,
         const SdfPath& targetPath) const;
 
     /// Get a terminal of a subgraph
     /// 
+    USDSHADE_API
     UsdRelationship GetTerminal(
         const TfToken& terminalName) const;
 };

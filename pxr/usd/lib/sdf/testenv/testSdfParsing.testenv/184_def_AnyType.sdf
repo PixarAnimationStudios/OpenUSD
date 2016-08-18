@@ -1,0 +1,29 @@
+#sdf 1.4.32
+(
+    "Exercise prim specs with empty typenames."
+)
+
+def __AnyType__ "DefWithAnyType"
+{
+}
+
+def "DefWithEmptyType"
+{
+}
+
+over __AnyType__ "OverWithAnyType"
+{
+}
+
+over "OverWithEmptyType"
+{
+}
+
+class __AnyType__ "ClassWithAnyType"
+{
+}
+
+class "ClassWithEmptyType"
+{
+}
+

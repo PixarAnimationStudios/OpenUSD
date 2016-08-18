@@ -1,0 +1,32 @@
+#usda 1.0
+
+class "_class_StdAvarsModel"
+{
+}
+
+
+class "_class_camera" (
+    inherits = </_class_StdAvarsModel>
+)
+{
+}
+
+def "camera" (
+    inherits = </_class_camera>
+)
+{
+    def Scope "Lens" (inherits = </camera/_localclass_Lens>)
+    {
+    }
+
+    class "_localclass_Lens"
+    {
+        custom double focus = inf (avar = true)
+    }
+
+    def Scope "Rig"
+    {
+        add rel controls = </camera/Lens.focus>
+        add double focusDistance.connect = </camera/Lens.focus>
+    }
+}

@@ -33,10 +33,7 @@ void Arch_InitTickTimer();
 
 namespace {
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Arch_InitConfig()
+ARCH_CONSTRUCTOR_DEFINE(102, Arch_InitConfig)
 {
     // Initialize the application start time.  First so it's a close as
     // possible to the real start time.

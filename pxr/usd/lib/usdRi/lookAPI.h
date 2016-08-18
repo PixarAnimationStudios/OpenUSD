@@ -24,6 +24,9 @@
 #ifndef USDRI_GENERATED_LOOKAPI_H
 #define USDRI_GENERATED_LOOKAPI_H
 
+/// \file usdRi/lookAPI.h
+
+#include "pxr/usd/usdRi/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -54,6 +57,8 @@ class SdfAssetPath;
 // RILOOKAPI                                                                  //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdRiLookAPI
+///
 /// This API provides the relationships to prman shaders and RIS objects.
 ///
 class UsdRiLookAPI : public UsdSchemaBase
@@ -83,15 +88,17 @@ public:
     }
 
     /// Destructor.
+    USDRI_API
     virtual ~UsdRiLookAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDRI_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdRiLookAPI holding the prim adhering to this
+    /// Return a UsdRiLookAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -100,6 +107,7 @@ public:
     /// UsdRiLookAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDRI_API
     static UsdRiLookAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -112,6 +120,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDRI_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -120,10 +129,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetSurfaceRel() const;
 
     /// See GetSurfaceRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateSurfaceRel() const;
 
 public:
@@ -132,10 +143,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetDisplacementRel() const;
 
     /// See GetDisplacementRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateDisplacementRel() const;
 
 public:
@@ -144,10 +157,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetVolumeRel() const;
 
     /// See GetVolumeRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateVolumeRel() const;
 
 public:
@@ -156,10 +171,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetCoshadersRel() const;
 
     /// See GetCoshadersRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateCoshadersRel() const;
 
 public:
@@ -168,10 +185,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetBxdfRel() const;
 
     /// See GetBxdfRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateBxdfRel() const;
 
 public:
@@ -180,10 +199,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetPatternsRel() const;
 
     /// See GetPatternsRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreatePatternsRel() const;
 
 public:
@@ -205,18 +226,22 @@ public:
     
     /// Returns a valid rsl shader object if exactly one such prim is targeted
     /// by the surface relationship.
+    USDRI_API
     UsdRiRslShader GetSurface() const;
 
     /// Returns a valid rsl shader object if exactly one such prim is targeted
     /// by the displacement relationship.
+    USDRI_API
     UsdRiRslShader GetDisplacement() const;
 
     /// Returns a valid rsl shader object if exactly one such prim is targeted
     /// by the volume relationship.
+    USDRI_API
     UsdRiRslShader GetVolume() const;
 
     /// Returns the valid rsl shader objects targeted by the coshaders
     /// relationship.
+    USDRI_API
     std::vector<UsdRiRslShader> GetCoshaders() const;
 
     /// Returns the UsdRiRisBxdf object targeted by the bxdf relationship, if
@@ -226,33 +251,39 @@ public:
     /// If the relationship targets zero, or more than one target, or the
     /// target is not a valid UsdRiRisBxdf object, an invalid UsdRiRisBxdf
     /// object is returned.
+    USDRI_API
     UsdRiRisBxdf GetBxdf();
 
     /// Returns a vector with the UsdRiRisPattern objects targeted by the 
     /// patterns relationship.
+    USDRI_API
     std::vector<UsdRiRisPattern> GetPatterns();
 
-    /// \brief Set the ri shadeParameter recipient of the named
+    /// Set the ri shadeParameter recipient of the named
     ///  \p interfaceAttr, which may also drive parameters in other shading
     /// API's with which we are not concerned.
     /// \sa UsdShadeInterfaceAttribute::SetRecipient()
+    USDRI_API
     bool SetInterfaceRecipient(
             UsdShadeInterfaceAttribute& interfaceAttr,
             const SdfPath& recipientPath);
 
     /// \overload
+    USDRI_API
     bool SetInterfaceRecipient(
             UsdShadeInterfaceAttribute& interfaceAttr,
             const UsdShadeParameter& recipient);
 
-    /// \brief Retrieve all ri shadeParameters driven by the named 
+    /// Retrieve all ri shadeParameters driven by the named 
     /// \p interfaceAttr
     /// \sa UsdShadeInterfaceAttribute::GetRecipientParameters()
+    USDRI_API
     std::vector<UsdShadeParameter> GetInterfaceRecipientParameters(
             const UsdShadeInterfaceAttribute& interfaceAttr) const;
 
-    /// \brief Retrieve all interfaceAttributes on this Look that drive
+    /// Retrieve all interfaceAttributes on this Look that drive
     /// any ri shadeParameter
+    USDRI_API
     std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes() const;
 };
 

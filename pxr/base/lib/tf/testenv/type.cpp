@@ -26,6 +26,7 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/notice.h"
+#include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/regTest.h"
@@ -560,7 +561,7 @@ Test_TfType()
     // Start up Python.
     TfPyInitialize();
     TF_FOR_ALL(it, allTypeSet)
-        assert( TfPyIsNone( it->GetPythonClass() ) );
+        assert( TfPyIsNone( it->GetPythonClass().Get() ) );
 
     ////////////////////////////////////////////////////////////////////////
     // Test looking up types via aliases

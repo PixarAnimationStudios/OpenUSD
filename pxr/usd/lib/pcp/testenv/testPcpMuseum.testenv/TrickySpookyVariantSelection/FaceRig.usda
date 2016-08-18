@@ -1,0 +1,21 @@
+#usda 1.0
+
+def Scope "FaceRig" (
+    relocates = {
+        <Rig/LipRig/Anim>: <Anim/Lip>
+    }
+)
+{
+    def Scope "Anim" {
+        over "Lip" {
+        }
+    }
+
+    def Scope "Rig" {
+        def Scope "LipRig" (
+            add references = @LipRig.usda@</LipRig>
+        )
+        {
+        }
+    }
+}

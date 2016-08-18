@@ -31,6 +31,9 @@
 #include <atomic>
 #include <tbb/concurrent_vector.h>
 
+#include "pxr/base/tf/singleton.h"
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -60,6 +63,8 @@ typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 
+/// \class HdResourceRegistry
+///
 /// A central registry of all GPU resources.
 ///
 class HdResourceRegistry : public boost::noncopyable  {
@@ -67,26 +72,31 @@ public:
     HD_MALLOC_TAG_NEW("new HdResourceRegistry");
 
     /// Returns an instance of resource registry
+    HDLIB_API
     static HdResourceRegistry& GetInstance() {
         return TfSingleton<HdResourceRegistry>::GetInstance();
     }
 
     /// Allocate new non uniform buffer array range
+	HDLIB_API
     HdBufferArrayRangeSharedPtr AllocateNonUniformBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Allocate new uniform buffer range
+	HDLIB_API
     HdBufferArrayRangeSharedPtr AllocateUniformBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Allocate new shader storage buffer range
+	HDLIB_API
     HdBufferArrayRangeSharedPtr AllocateShaderStorageBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Allocate single entry (non-aggregated) buffer array range
+	HDLIB_API
     HdBufferArrayRangeSharedPtr AllocateSingleBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
@@ -95,6 +105,7 @@ public:
     /// If not, allocate new bufferArrayRange with merged buffer specs,
     /// register migration computation and return the new range.
     /// Otherwise just return the same range.
+	HDLIB_API
     HdBufferArrayRangeSharedPtr MergeBufferArrayRange(
         HdAggregationStrategy *strategy,
         HdBufferArrayRegistry &bufferArrayRegistry,
@@ -121,14 +132,17 @@ public:
         HdBufferArrayRangeSharedPtr const &range);
 
     /// Append source data for given range to be committed later.
+	HDLIB_API
     void AddSources(HdBufferArrayRangeSharedPtr const &range,
                     HdBufferSourceVector &sources);
 
     /// Append a source data for given range to be committed later.
+	HDLIB_API
     void AddSource(HdBufferArrayRangeSharedPtr const &range,
                    HdBufferSourceSharedPtr const &source);
 
     /// Append a source data just to be resolved (used for cpu computations).
+	HDLIB_API
     void AddSource(HdBufferSourceSharedPtr const &source);
 
     /// Append a gpu computation into queue.
@@ -137,14 +151,17 @@ public:
     ///
     /// note: GPU computations will be executed in the order that
     /// they are registered.
+	HDLIB_API
     void AddComputation(HdBufferArrayRangeSharedPtr const &range,
                         HdComputationSharedPtr const &computaion);
 
     /// Commits all in-flight source data to the GPU, freeing the source
     /// buffers.
+	HDLIB_API
     void Commit();
 
     /// cleanup all buffers and remove if empty
+	HDLIB_API
     void GarbageCollect();
 
     /// Set the aggregation strategy for non uniform parameters
@@ -165,6 +182,7 @@ public:
 
     /// Returns a report of resource allocation by role in bytes and
     /// a summary total allocation of GPU memory in bytes for this registry.
+	HDLIB_API
     VtDictionary GetResourceAllocation() const;
 
     /// Topology instancing
@@ -180,12 +198,15 @@ public:
     /// Note: As entries can be added by multiple threads the routine
     /// returns a lock on the instance registry.  This lock should be held
     /// until the HdInstance object is destroyed.
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterMeshTopology(HdTopology::ID id, 
          HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *pInstance);
 
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterBasisCurvesTopology(HdTopology::ID id,
          HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *pInstance);
 
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterVertexAdjacency(HdTopology::ID id,
          HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> *pInstance);
 
@@ -193,40 +214,49 @@ public:
     /// Returns the HdInstance points to shared HdBufferArrayRange,
     /// distinguished by given ID.
     /// *Refer the comment on RegisterTopology for the same consideration.
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterMeshIndexRange(HdTopology::ID id, TfToken const &name,
          HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterBasisCurvesIndexRange(HdTopology::ID id, TfToken const &name,
          HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
     /// Registere a geometric shader.
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterGeometricShader(HdShaderKey::ID id,
          HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr> *pInstance);
 
     /// Register a GLSL program into the program registry.
     /// note: Currently no garbage collection enforced on the shader registry
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterGLSLProgram(HdGLSLProgram::ID id,
         HdInstance<HdGLSLProgram::ID, HdGLSLProgramSharedPtr> *pInstance);
 
     /// Register a texture into the texture registry.
     /// XXX garbage collection?
+	HDLIB_API
     std::unique_lock<std::mutex> RegisterTextureResource(HdTextureResource::ID id,
          HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *pInstance);
 
     /// Register a buffer allocated with \a count * \a commandNumUints *
     /// sizeof(GLuint) to be used as an indirect dispatch buffer.
+	HDLIB_API
     HdDispatchBufferSharedPtr RegisterDispatchBuffer(
         TfToken const &role, int count, int commandNumUints);
 
     /// Register a buffer initialized with \a dataSize bytes of \a data
     /// to be used as a persistently mapped shader storage buffer.
+	HDLIB_API
     HdPersistentBufferSharedPtr RegisterPersistentBuffer(
         TfToken const &role, size_t dataSize, void *data);
 
     /// Remove any entries associated with expired dispatch buffers.
+	HDLIB_API
     void GarbageCollectDispatchBuffers();
 
     /// Remove any entries associated with expired persistently mapped buffers.
+	HDLIB_API
     void GarbageCollectPersistentBuffers();
 
     /// Debug dump
@@ -236,7 +266,10 @@ public:
 private:
     friend class TfSingleton<HdResourceRegistry>;
 
+	HDLIB_API
     HdResourceRegistry();
+
+	HDLIB_API
     ~HdResourceRegistry();
 
     // aggregated buffer array
@@ -337,5 +370,7 @@ private:
     _PersistentBufferRegistry _persistentBufferRegistry;
 
 };
+
+HDLIB_API_TEMPLATE_CLASS(TfSingleton<HdResourceRegistry>);
 
 #endif //HD_RESOURCE_REGISTRY_H

@@ -35,6 +35,8 @@
 
 class UsdImaging_UnitTestDrawingQGLWidget;
 
+/// \class UsdImaging_UnitTestGLDrawing
+///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
 class UsdImaging_UnitTestGLDrawing {

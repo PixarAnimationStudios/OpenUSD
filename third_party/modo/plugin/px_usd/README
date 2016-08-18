@@ -1,0 +1,169 @@
+Instancing
+----------
+Instances can only be references to top level things.
+
+First time we loop through, for each mesh instance item we build up a
+map for the master item and all of its instances.
+
+Then on the second time through we iterate over all the keys in that
+map, making a class named "<name>__component__" for each master mesh
+item, and then use that as the reference for all the
+instances. Additionally, we don't repeat mesh data when we get to the
+master, rather we have that also be a reference, although we should
+put a piece of meta-data in there so that we could reconstruct the
+modo structure if we were to roundtrip this data eventually.
+
+
+
+Building on a Pixar Linux machine:
+----------------------------------
+
+- State file:
+If you are rebuilding your plug-in, you may want to delete your
+state/cache info before relaunching, which is kept in the file
+
+~/.luxology/.modo801rc
+
+On the mac the state file is here:
+
+~/Library/Preferences/com.luxology.modo801
+
+Building on a Linux:
+--------------------
+You'll need the mfb libraries:
+        amber/usd 
+        amber/usdGeom
+        lava/usdUtils
+
+and the system libraries:
+        ILMBASE
+        BOOST
+
+along with Luxology's "common" SDK.
+
+Building on a Mac:
+------------------
+
+- ILMBase/OpenEXR:
+Also, if you want to build this on a Mac (even though we don't have
+USD there yet), you can - you'll just need to install ilmbase on your
+Mac. Go to here:
+
+http://www.openexr.com/downloads.html
+
+And download ilmbase (you don't need EXR, just ilmbase), and follow
+the instructions there. For version 2.2.0, I downloaded the file,
+uncompressed it, then in a shell did:
+
+./configure
+make
+sudo make install
+
+The important part here is that it installs the headers in 
+
+/usr/local/include/OpenEXR/
+
+and the necessary libs in /usr/local/lib
+
+both of which are referenced in the the build settings of the
+
+io_scene_usd 
+
+build target in the Xcode project.
+
+- launch modo from Xcode:
+
+You may have to add your local install of modo as your Executable
+target when debugging your plug-in. To do this, select "io_scene_usd"
+as your scheme in the upper left of the Xcode window, and select
+"Edit Scheme". In the "Run" section, Go to "Executable" and point
+it to your copy of modo. Note that you will get a pop-up in modo
+saying "Not Found", which I assume is because Xcode launches 
+modo with some argument that is not a filename. Don't worry about it.
+
+building on Windows:
+--------------------
+
+Our friends at Luxology tell me that the code will compile on Windows
+if you do the following:
+
+"Add /Qrestrict to the compile flags, and add the appropriate paths to
+lxsdk & libimath"
+
+I have not heard if it runs successfully, and I have no direct
+experience compiling it there.
+
+Running on the command line:
+----------------------------
+To integrate modo & this plug-in into our standard build process,
+we'll want to be able to run modo from the command line, open a 
+file, load our plug-in, and export it as USD.
+
+To do this, here's some info from our friends at Luxology:
+
+"""
+The command-line version of MODO is called 'modo_cl'. Command-line
+options look like "-opt[:value]" and anything else is treated as a
+file to load. It then reads and executes commands from stdin. It can
+also take a single command argument.
+
+This will load the file and execute the macro from stdin:
+
+     modo_cl file.lxo < macro.lxm
+
+You could also execute the macro as the command argument:
+
+    modo_cl file.lxo -cmd:@macro
+
+Or fire the export command directly:
+
+   modo_cl file.lxo "-cmd:scene.saveAs {/tmp/file.usda} w_USD true"
+
+Also if you'd prefer to run a python script you can set the
+interpreter for stdin to python:
+
+     modo_cl -console:python < script.py
+"""
+
+Additionally, the command to load a plugin looks like this:
+
+plugin.add /Users/wave/trees/third/modopkg/plugin/LXSDK_73514/samples/build/Debug/io_scene_usd.lx
+
+so if we have:
+- our compiled export plugin, say "io_scene_usd.lx"
+- a build directory, say "/Users/wave/trees/third/modopkg/plugin/LXSDK_73514/samples/build/Debug/"
+- input model file "./foo.lxo"
+
+And we want:
+- an output file "./foo.geom.usda"
+
+We need a text file "convertFoo.lxm" that contains:
+
+plugin.add /Users/wave/trees/third/modopkg/plugin/LXSDK_73514/samples/build/Debug/io_scene_usd.lx
+scene.saveAs {./foo.geom.usda} w_USD true
+
+and then we would run that from the command line:
+
+/Applications/modo.app/Contents/MacOS/modo_cl ./foo.lxo < convertFoo.lxm
+
+The output at the shell will look like this:
+
+@start  modo_cl [77509]  Luxology LLC
+> + ok
+> + ok
+> @exit
+
+and then it will exit cleanly.
+
+############## installing it so modo picks it up
+
+You can set an environment variable with MODO where it will search for
+extra content, like Kits, which is how you package up a plugin.
+
+We want a directory Kits/, that has a Kits/px_usd/
+
+Inside that directory our index.cfg file goes, and inside that is a
+Kits/px_usd/unix/ directory, that has our built px_usd.lx plugin
+
+If we set the environment variable NEXUS_CONTENT to the directory
+above Kits/, then modo will load our plug-in automatically.

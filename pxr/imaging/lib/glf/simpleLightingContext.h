@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/simpleLightingContext.h
-
 #ifndef GLF_SIMPLE_LIGHTING_CONTEXT_H
 #define GLF_SIMPLE_LIGHTING_CONTEXT_H
 
+/// \file glf/simpleLightingContext.h
+
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/imaging/glf/simpleShadowArray.h"
@@ -46,45 +47,45 @@ class GlfSimpleLightingContext : public TfRefBase, public TfWeakBase {
 public:
     typedef GlfSimpleLightingContext This;
 
-    static GlfSimpleLightingContextRefPtr New();
+    GLF_API static GlfSimpleLightingContextRefPtr New();
 
-    void SetLights(GlfSimpleLightVector const & lights);
-    GlfSimpleLightVector & GetLights();
+    GLF_API void SetLights(GlfSimpleLightVector const & lights);
+    GLF_API GlfSimpleLightVector & GetLights();
 
     // returns the effective number of lights taken into account
     // in composable/compatible shader constraints
-    int GetNumLightsUsed() const;
+    GLF_API int GetNumLightsUsed() const;
 
-    void SetShadows(GlfSimpleShadowArrayRefPtr const & shadows);
-    GlfSimpleShadowArrayRefPtr const & GetShadows();
+    GLF_API void SetShadows(GlfSimpleShadowArrayRefPtr const & shadows);
+    GLF_API GlfSimpleShadowArrayRefPtr const & GetShadows();
 
-    void SetMaterial(GlfSimpleMaterial const & material);
-    GlfSimpleMaterial const & GetMaterial() const;
+    GLF_API void SetMaterial(GlfSimpleMaterial const & material);
+    GLF_API GlfSimpleMaterial const & GetMaterial() const;
 
-    void SetSceneAmbient(GfVec4f const & sceneAmbient);
-    GfVec4f const & GetSceneAmbient() const;
+    GLF_API void SetSceneAmbient(GfVec4f const & sceneAmbient);
+    GLF_API GfVec4f const & GetSceneAmbient() const;
 
-    void SetCamera(GfMatrix4d const &worldToViewMatrix,
+    GLF_API void SetCamera(GfMatrix4d const &worldToViewMatrix,
                    GfMatrix4d const &projectionMatrix);
 
-    void SetUseLighting(bool val);
-    bool GetUseLighting() const;
+    GLF_API void SetUseLighting(bool val);
+    GLF_API bool GetUseLighting() const;
 
     // returns true if any light has shadow enabled.
-    bool GetUseShadows() const;
+    GLF_API bool GetUseShadows() const;
 
-    void SetUseColorMaterialDiffuse(bool val);
-    bool GetUseColorMaterialDiffuse() const;
+    GLF_API void SetUseColorMaterialDiffuse(bool val);
+    GLF_API bool GetUseColorMaterialDiffuse() const;
 
-    void InitUniformBlockBindings(GlfBindingMapPtr const &bindingMap) const;
-    void InitSamplerUnitBindings(GlfBindingMapPtr const &bindingMap) const;
+    GLF_API void InitUniformBlockBindings(GlfBindingMapPtr const &bindingMap) const;
+    GLF_API void InitSamplerUnitBindings(GlfBindingMapPtr const &bindingMap) const;
 
-    void BindUniformBlocks(GlfBindingMapPtr const &bindingMap);
-    void BindSamplers(GlfBindingMapPtr const &bindingMap);
+    GLF_API void BindUniformBlocks(GlfBindingMapPtr const &bindingMap);
+    GLF_API void BindSamplers(GlfBindingMapPtr const &bindingMap);
 
-    void UnbindSamplers(GlfBindingMapPtr const &bindingMap);
+    GLF_API void UnbindSamplers(GlfBindingMapPtr const &bindingMap);
 
-    void SetStateFromOpenGL();
+    GLF_API void SetStateFromOpenGL();
 
 protected:
     GlfSimpleLightingContext();

@@ -24,20 +24,25 @@
 #ifndef GF_CAMERA_H
 #define GF_CAMERA_H
 
+/// \file gf/camera.h
+/// \ingroup group_gf_BasicGeometry
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/range1f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/api.h"
 
 #include <vector>
 
 class GfFrustum;
 
-/// 
 /// \class GfCamera
-/// \brief Object-based represention of a camera.
+/// \ingroup group_gf_BasicGeometry
+/// \brief Object-based representation of a camera.
 ///
 /// This class provides a thin wrapper on the camera data model,
 /// with a small number of computations.
+///
 class GfCamera
 {
 public:
@@ -55,32 +60,32 @@ public:
 
     /// The unit for horizontal and vertical aperture. The horizontal and
     /// vertical aperture are in mm (if world units are assumed to be cm).
-    static const double APERTURE_UNIT;
+	GF_API static const double APERTURE_UNIT;
     /// The unit for focal length. Similar to APERTURE_UNIT.
-    static const double FOCAL_LENGTH_UNIT;
+	GF_API static const double FOCAL_LENGTH_UNIT;
     
     /// Namespace constants to help make transition code more readable
     /// \deprecated
-    static const bool ZUp;
-    static const bool YUp;
+	GF_API static const bool ZUp;
+	GF_API static const bool YUp;
 
     /// Left-multiply the transform of a "Y-up, -Z-facing" camera by this matrix
     /// to get a "Z-up, Y-facing" camera
     /// \deprecated
-    static const GfMatrix4d Y_UP_TO_Z_UP_MATRIX;
+	GF_API static const GfMatrix4d Y_UP_TO_Z_UP_MATRIX;
     /// Left-multiply the transform of a "Z-up, Y-facing" camera by this matrix
     /// to get a "Y-up, -Z-facing" camera
     /// \deprecated
-    static const GfMatrix4d Z_UP_TO_Y_UP_MATRIX;
+	GF_API static const GfMatrix4d Z_UP_TO_Y_UP_MATRIX;
 
     /// Default horizontal and vertical aperture, based on a 35mm
     /// (non-anamorphic) projector aperture (0.825 x 0602 inches, converted to
     /// mm).
-    static const double DEFAULT_HORIZONTAL_APERTURE;
-    static const double DEFAULT_VERTICAL_APERTURE;
+	GF_API static const double DEFAULT_HORIZONTAL_APERTURE;
+	GF_API static const double DEFAULT_VERTICAL_APERTURE;
 
 public:
-    GfCamera(
+	GF_API GfCamera(
         const GfMatrix4d &transform = GfMatrix4d(1.0),
         Projection projection = Perspective,
         float horizontalAperture = DEFAULT_HORIZONTAL_APERTURE,
@@ -94,10 +99,10 @@ public:
         float focusDistance = 0.0);
 
     /// Sets the transform of the filmback in world space to \p val. 
-    void SetTransform(const GfMatrix4d &val);
+	GF_API void SetTransform(const GfMatrix4d &val);
 
     /// Sets the projection type.
-    void SetProjection(const Projection &val);
+	GF_API void SetProjection(const Projection &val);
 
     /// \name Physics based camera setup
 
@@ -108,19 +113,19 @@ public:
     /// @{
     
     /// Sets the focal length, cm.
-    void SetFocalLength(const float val);
+	GF_API void SetFocalLength(const float val);
 
     /// Sets the width of the projector aperture, mm.
-    void SetHorizontalAperture(const float val);
+	GF_API void SetHorizontalAperture(const float val);
 
     /// Sets the height of the projector aperture, mm.
-    void SetVerticalAperture(const float val);
+	GF_API void SetVerticalAperture(const float val);
 
     /// Sets the horizontal offset of the projector aperture, mm.
-    void SetHorizontalApertureOffset(const float val);
+	GF_API void SetHorizontalApertureOffset(const float val);
 
     /// Sets the vertical offset of the projector aperture, mm.
-    void SetVerticalApertureOffset(const float val);
+	GF_API void SetVerticalApertureOffset(const float val);
     /// @}
 
     /// \name Frustum geometry setup
@@ -133,7 +138,7 @@ public:
     /// Do not pass values for \p horionztalAperture unless you care about
     /// DepthOfField.
 
-    void SetPerspectiveFromAspectRatioAndFieldOfView(
+	GF_API void SetPerspectiveFromAspectRatioAndFieldOfView(
         float aspectRatio,
         float fieldOfView,
         FOVDirection direction,
@@ -144,13 +149,13 @@ public:
     /// orthographic height (in cm) is equal to \p orthographicSize
     /// (depending on direction).
 
-    void SetOrthographicFromAspectRatioAndSize(
+	GF_API void SetOrthographicFromAspectRatioAndSize(
         float aspectRatio, float orthographicSize, FOVDirection direction);
 
     /// @}
 
     /// Sets the clipping range, cm.
-    void SetClippingRange(const GfRange1f &val);
+	GF_API void SetClippingRange(const GfRange1f &val);
 
     /// Sets additional arbitrarily oriented clipping planes.
     /// A vector (a,b,c,d) encodes a clipping plane that clips off points
@@ -159,65 +164,65 @@ public:
     ///        a * x + b * y + c * z + d * 1 < 0
     ///
     /// where (x,y,z) are the coordinates in the camera's space.
-    void SetClippingPlanes(const std::vector<GfVec4f> &val);
+	GF_API void SetClippingPlanes(const std::vector<GfVec4f> &val);
 
     /// Sets the lens aperture, unitless.
-    void SetFStop(const float val);
+	GF_API void SetFStop(const float val);
 
     /// Sets the focus distance, cm.
-    void SetFocusDistance(const float val);
+	GF_API void SetFocusDistance(const float val);
 
     /// Returns the transform of the filmback in world space.  This is
     /// exactly the transform specified via SetTransform().
-    GfMatrix4d GetTransform() const;
+	GF_API GfMatrix4d GetTransform() const;
 
     /// Returns the projection type.
-    Projection GetProjection() const;
+	GF_API Projection GetProjection() const;
 
     /// Returns the width of the projector aperture.
-    float GetHorizontalAperture() const;
+	GF_API float GetHorizontalAperture() const;
 
     /// Returns the height of the projector aperture.
-    float GetVerticalAperture() const;
+	GF_API float GetVerticalAperture() const;
 
     /// Returns the horizontal offset of the projector aperture, mm.
     /// In particular, an offset is necessary when writing out a stereo camera
     /// with finite convergence distance as two cameras.
-    float GetHorizontalApertureOffset() const;
+	GF_API float GetHorizontalApertureOffset() const;
 
     /// Returns the vertical offset of the projector aperture, mm.
-    float GetVerticalApertureOffset() const;
+	GF_API float GetVerticalApertureOffset() const;
 
     /// Returns the projector aperture aspect ratio.
-    float GetAspectRatio() const;
+	GF_API float GetAspectRatio() const;
 
     /// Returns the focal length.
-    float GetFocalLength() const;
+	GF_API float GetFocalLength() const;
 
     /// Returns the horizontal or vertical field of view in degrees.
-    float GetFieldOfView(FOVDirection direction) const;
+	GF_API float GetFieldOfView(FOVDirection direction) const;
 
     /// Returns the clipping range.
-    GfRange1f GetClippingRange() const;
+	GF_API GfRange1f GetClippingRange() const;
 
     /// Returns additional clipping planes.
-    const std::vector<GfVec4f> &GetClippingPlanes() const;
+	GF_API const std::vector<GfVec4f> &GetClippingPlanes() const;
 
     /// Returns the computed, world-space camera frustum.  The frustum
     /// will always be that of a Y-up, -Z-looking camera.
-    GfFrustum GetFrustum() const;
+	GF_API GfFrustum GetFrustum() const;
 
     /// Returns the lens aperture.
-    float GetFStop() const;
+	GF_API float GetFStop() const;
 
     /// Returns the focus distance.
-    float GetFocusDistance() const;
+	GF_API float GetFocusDistance() const;
 
     /// Equality operator. true iff all parts match.
-    bool operator==(const GfCamera& other) const;
+	GF_API bool operator==(const GfCamera& other) const;
 
     // Inequality operator. true iff not equality.
-    bool operator!=(const GfCamera& other) const;
+	GF_API bool operator!=(const GfCamera& other) const;
 
 private:
     // frustum

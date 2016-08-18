@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    """
+    TODO
+    """
+)
+
+def "Model" (
+    add inherits = </_class_Model>
+)
+{
+    over "_class_Nested" {
+        over "Sym" {
+        }
+        over "Left" {
+        }
+    }
+    over "Instance" {
+        over "Sym" {
+        }
+        over "Left" {
+        }
+    }
+}
+
+class Prim "_class_Model"
+{
+    over "_class_Nested"
+    {
+        over "Sym"
+        {
+        }
+        over "Left" (
+            add inherits = </_class_Model/_class_Nested/Sym>
+        ) {
+        }
+    }
+
+    over "Instance" (
+        add inherits = </_class_Model/_class_Nested>
+    ) {
+        over "Sym" {
+        }
+        over "Left" {
+        }
+    }
+}

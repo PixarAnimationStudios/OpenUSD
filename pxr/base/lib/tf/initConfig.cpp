@@ -26,6 +26,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/error.h"
 
 #include <string>
 
@@ -33,10 +34,7 @@ extern void Tf_DebugInitFromEnvironment();
 
 namespace {
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Tf_InitConfig()
+ARCH_CONSTRUCTOR_DEFINE(102, Tf_InitConfig)
 {
     std::string capture = TfGetenv("TF_MALLOC_TAG_CAPTURE");
     std::string debug   = TfGetenv("TF_MALLOC_TAG_DEBUG");
@@ -65,10 +63,7 @@ Tf_InitConfig()
 // descriptions and exits.  If we call this before registry functions were
 // executed we would not see any added inside TF_REGISTRY_FUNCTION, which is
 // most of them.
-ARCH_CONSTRUCTOR(302)
-static
-void
-Tf_InitConfigPost()
+ARCH_CONSTRUCTOR_DEFINE(302, Tf_InitConfigPost)
 {
     Tf_DebugInitFromEnvironment();
 }

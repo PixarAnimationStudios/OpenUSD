@@ -24,126 +24,119 @@
 #ifndef TF_TRAITS_H
 #define TF_TRAITS_H
 
+/// \file tf/traits.h
+/// \ingroup group_tf_RuntimeTyping
+
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_const.hpp>
 
-/*!
- * \file traits.h
- * \ingroup group_tf_RuntimeTyping
- */
-
-
-
 class TfWeakPtrFacadeBase;
-
-/*!
- * \class TfTraits Traits.h pxr/base/tf/traits.h
- * \ingroup group_tf_RuntimeTyping
- * \brief Type-querying abilities.
- *
- * \c TfTraits is a class used for compile-time type queries.
- * Types retrieved from \c TfTraits are compile-time types,
- * while values are compile-time values (i.e. constants).
- *
- * <B> Types </B>
- *
- * The following types are defined by \c TfTraits:
- * \code
- *    TfTraits::Type<T>::UnderlyingType
- * \endcode
- *
- * The above removes a single level of pointer-ness or a reference
- * from \c T, as well as any constness and returns the result.
- * For example, both \c int and \c int* are mapped to \c int,
- * but \c int** is mapped to \c int*.
- *
- * \code
- *    TfTraits::Type<T>::NoRefType;
- * \endcode
- *
- * The above transforms a reference-type into a non-reference type.
- * For example, both \c int& and \c int are mapped to \c int,
- * but \c int* is mapped to \c int*.
- *
- * \code
- *    TfTraits::Type<T>::PointerType;
- * \endcode
- *
- * The above transforms any type \c T to \c T*, except that
- * a type \c T& is transformed to \c T*.
- *
- * \code
- *     TfTraits::Type<T>::RefType
- * \endcode
- * The above transforms a non-reference-type into a reference type.
- * For example, both \c int& and \c int are mapped to \c int&. 
- * However, \c RefType is not defined if \c T is an array (either dimensioned
- * or undimensioned).
- * 
- * \code
- *     TfTraits::Type<T>::AvoidCopyingType
- * \endcode                             
- * 
- * The above maps all types \c T back to themselves, except for
- * a type that is neither a pointer nor reference; in this case,
- * the type is mapped to a reference to a const reference to itself
- * (i.e. an \c & ) is added to the type.
- *
- * \code
- *     TfTraits::Type<T>::PtrOrRefType
- * \endcode                             
- *
- * The above maps all types \c T back to themselves, except for
- * a type that is neither a pointer nor reference; in this case,
- * the type is mapped to a reference to a reference to itself
- * (i.e. an \c & ) is added to the type.  This differs from
- * \c AvoidCopyingType in that it does not produce a \c const reference.
- *
- * <B> Values </B>
- *
- * Any values retrieved using \c TfTraits are actually compile-time
- * constants; as a result, an \c if/else test with such a value usually
- * results in only one branch of the conditional actually generating code
- * (although both branches must be legal C++).
- *
- * The following boolean values are defined:
- *
- * \code
- *     TfTraits::Type<T>::isPointer
- *     TfTraits::Type<T>::isReference
- *     TfTraits::Type<T>::isConst
- *     TfTraits::TypeCompare<A,B>::isEqual
- * \endcode                             
- *
- * The \c isPointer value is true for any type \c T that is either a
- * pointer or an array; the \c isReference is true if \c T is a reference,
- * and \c isConst is true if \c T is constant qualified.
- *
- *
- * <B> Examples </B>
- *
- * \code
- * template <class T>
- * void PassThru(T arg1) {
- *     // this always avoids any significant copying:
- *     // cache1 is either a pointer or a reference
- *     TfTraits::Type<T>::AvoidCopyingType cache1 = arg1;
- *
- *     typedef TfTraits::Type<T>::UnderlyingType UT;
- *
- *     if (TfTraits::Type<UT>::isPointer) {
- *        cout << "hey, this is a pointer to a pointer!\n";
- *     }
- *     if (TfTraits::Type<T>::isConst) {
- *        cout << "original arg was constant\n";
- *     }
- * }
- * \endcode
- */
-
 template <class T> class TfRefPtr;
 
+/// \class TfTraits
+/// \ingroup group_tf_RuntimeTyping
+///
+/// Type-querying abilities.
+///
+/// \c TfTraits is a class used for compile-time type queries. Types retrieved
+/// from \c TfTraits are compile-time types, while values are compile-time
+/// values (i.e. constants).
+///
+/// <b>Types</b>
+///
+/// The following types are defined by \c TfTraits:
+/// \code
+///    TfTraits::Type<T>::UnderlyingType
+/// \endcode
+///
+/// The above removes a single level of pointer-ness or a reference from \c T,
+/// as well as any constness and returns the result. For example, both \c int
+/// and \c int* are mapped to \c int, but \c int** is mapped to \c int*.
+///
+/// \code
+///    TfTraits::Type<T>::NoRefType;
+/// \endcode
+///
+/// The above transforms a reference-type into a non-reference type. For
+/// example, both \c int& and \c int are mapped to \c int, but \c int* is
+/// mapped to \c int*.
+///
+/// \code
+///    TfTraits::Type<T>::PointerType;
+/// \endcode
+///
+/// The above transforms any type \c T to \c T*, except that a type \c T& is
+/// transformed to \c T*.
+///
+/// \code
+///     TfTraits::Type<T>::RefType
+/// \endcode
+///
+/// The above transforms a non-reference-type into a reference type. For
+/// example, both \c int& and \c int are mapped to \c int&. However, \c
+/// RefType is not defined if \c T is an array (either dimensioned or
+/// undimensioned).
+/// 
+/// \code
+///     TfTraits::Type<T>::AvoidCopyingType
+/// \endcode                             
+/// 
+/// The above maps all types \c T back to themselves, except for a type that
+/// is neither a pointer nor reference; in this case, the type is mapped to a
+/// reference to a const reference to itself (i.e. an \c & ) is added to the
+/// type.
+///
+/// \code
+///     TfTraits::Type<T>::PtrOrRefType
+/// \endcode                             
+///
+/// The above maps all types \c T back to themselves, except for a type that
+/// is neither a pointer nor reference; in this case, the type is mapped to a
+/// reference to a reference to itself (i.e. an \c & ) is added to the type.
+/// This differs from \c AvoidCopyingType in that it does not produce a \c
+/// const reference.
+///
+/// <b>Values</b>
+///
+/// Any values retrieved using \c TfTraits are actually compile-time
+/// constants; as a result, an \c if/else test with such a value usually
+/// results in only one branch of the conditional actually generating code
+/// (although both branches must be legal C++).
+///
+/// The following boolean values are defined:
+///
+/// \code
+///     TfTraits::Type<T>::isPointer
+///     TfTraits::Type<T>::isReference
+///     TfTraits::Type<T>::isConst
+///     TfTraits::TypeCompare<A,B>::isEqual
+/// \endcode                             
+///
+/// The \c isPointer value is true for any type \c T that is either a pointer
+/// or an array; the \c isReference is true if \c T is a reference, and \c
+/// isConst is true if \c T is constant qualified.
+///
+/// <b>Examples</b>
+///
+/// \code
+/// template <class T>
+/// void PassThru(T arg1) {
+///     // this always avoids any significant copying:
+///     // cache1 is either a pointer or a reference
+///     TfTraits::Type<T>::AvoidCopyingType cache1 = arg1;
+///
+///     typedef TfTraits::Type<T>::UnderlyingType UT;
+///
+///     if (TfTraits::Type<UT>::isPointer) {
+///        cout << "hey, this is a pointer to a pointer!\n";
+///     }
+///     if (TfTraits::Type<T>::isConst) {
+///        cout << "original arg was constant\n";
+///     }
+/// }
+/// \endcode
+///
 struct TfTraits {
     
     template <class T, class Enable = void>

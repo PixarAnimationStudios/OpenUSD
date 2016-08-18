@@ -1,0 +1,8 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    """Tests for end-of-input condition while scanning list values."""
+)
+
+def MfScope "Root" {
+    double value = (0, 1, 2

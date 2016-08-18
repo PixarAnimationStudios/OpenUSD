@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/base/plug/testPlugBase.h"
 
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
-
-#include <boost/python.hpp>
 
 using namespace boost::python;
 
@@ -55,3 +55,8 @@ void wrap_TestPlugBase()
     wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
     wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase1)
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase2)
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase3)
+TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase4)

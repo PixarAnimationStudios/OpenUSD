@@ -30,6 +30,8 @@
 
 #include <string>
 
+#include "usdMaya/api.h"
+
 class usdReadJob;
 
 class usdImport : public MPxCommand
@@ -44,8 +46,9 @@ class usdImport : public MPxCommand
     virtual MStatus undoIt();
     virtual bool  isUndoable () const { return true; };
 
-
+    USDMAYA_API
     static MSyntax  createSyntax();
+    USDMAYA_API
     static void* creator(const std::string& assemblyTypeName,
                          const std::string& proxyShapeTypeName);
 

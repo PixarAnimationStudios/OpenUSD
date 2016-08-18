@@ -1,0 +1,57 @@
+Loading @testPcpMuseum.testenv/TrickyNestedSpecializes/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </NestedSpecializes>
+
+Prim Stack:
+    root.usda            /NestedSpecializes
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.usda            /Specializes
+
+Child names:
+     ['Nested']
+
+------------------------------------------------------------------------
+Results for composing </Specializes/Nested>
+
+Prim Stack:
+    root.usda            /Specializes/Nested
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    ref.usda             /Ref
+    ref2.usda            /Ref2
+    root.usda            /Specializes
+    ref.usda             /Specializes
+    ref2.usda            /Specializes
+
+Child names:
+     ['Nested']
+
+------------------------------------------------------------------------
+Results for composing </Root/Nested>
+
+Prim Stack:
+    root.usda            /Root/Nested
+    ref.usda             /Ref/Nested
+    ref2.usda            /Ref2/Nested
+    root.usda            /Specializes/Nested
+    ref.usda             /Specializes/Nested
+    ref2.usda            /Specializes/Nested
+    ref3.usda            /Ref3
+    root.usda            /NestedSpecializes
+    ref.usda             /NestedSpecializes
+    ref2.usda            /NestedSpecializes
+    ref3.usda            /NestedSpecializes
+

@@ -1,0 +1,67 @@
+Loading @testPcpMuseum.testenv/TrickyClassHierarchy/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Sullivan_1>
+
+Prim Stack:
+    root.usda            /Sullivan_1
+    root.usda            /_Class_Sullivan
+    root.usda            /_Class_Char
+    root.usda            /_Class_Model
+    Sullivan.usda        /Sullivan
+    Sullivan.usda        /_Class_Sullivan
+    Sullivan.usda        /_Class_Char
+    Sullivan.usda        /_Class_Model
+
+Property names:
+     ['name']
+
+Property stacks:
+/Sullivan_1.name:
+    root.usda            /_Class_Sullivan.name
+    root.usda            /_Class_Char.name
+    root.usda            /_Class_Model.name
+
+------------------------------------------------------------------------
+Results for composing </_Class_Sullivan>
+
+Prim Stack:
+    root.usda            /_Class_Sullivan
+
+Property names:
+     ['name']
+
+Property stacks:
+/_Class_Sullivan.name:
+    root.usda            /_Class_Sullivan.name
+
+------------------------------------------------------------------------
+Results for composing </_Class_Char>
+
+Prim Stack:
+    root.usda            /_Class_Char
+
+Property names:
+     ['name']
+
+Property stacks:
+/_Class_Char.name:
+    root.usda            /_Class_Char.name
+
+------------------------------------------------------------------------
+Results for composing </_Class_Model>
+
+Prim Stack:
+    root.usda            /_Class_Model
+
+Property names:
+     ['name']
+
+Property stacks:
+/_Class_Model.name:
+    root.usda            /_Class_Model.name
+

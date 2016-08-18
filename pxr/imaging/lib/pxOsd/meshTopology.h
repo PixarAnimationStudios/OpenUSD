@@ -21,13 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/meshTopology.h
-///
-
 #ifndef PXOSD_MESH_TOPOLOGY_H
 #define PXOSD_MESH_TOPOLOGY_H
 
+/// \file pxOsd/meshTopology.h
+
+#include "pxr/imaging/pxOsd/api.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/base/vt/array.h"
@@ -40,6 +39,7 @@
 
 typedef boost::shared_ptr<class PxOsdMeshTopology> PxOsdMeshTopologySharedPtr;
 
+/// \class PxOsdMeshTopology
 ///
 /// Topology data for meshes.
 ///
@@ -49,19 +49,19 @@ public:
 
     typedef size_t ID;
 
-    PxOsdMeshTopology();
+    PXOSD_API PxOsdMeshTopology();
 
-    ~PxOsdMeshTopology();
+    PXOSD_API ~PxOsdMeshTopology();
 
-    PxOsdMeshTopology(const PxOsdMeshTopology &);
+    PXOSD_API PxOsdMeshTopology(const PxOsdMeshTopology &);
 
-    PxOsdMeshTopology(
+    PXOSD_API PxOsdMeshTopology(
         TfToken scheme,
         TfToken orientation,
         VtIntArray faceVertexCounts,
         VtIntArray faceVertexIndices);
 
-    PxOsdMeshTopology(
+    PXOSD_API PxOsdMeshTopology(
         TfToken scheme,
         TfToken orientation,
         VtIntArray faceVertexCounts,
@@ -110,7 +110,7 @@ public:
     /// \note Currently this tag is a duplicate from PxOsdSubdivTags, which is
     /// used for refined holes. This distinction allows the user to enable or
     /// disable holes in either representation independently.
-    void SetHoleIndices(VtIntArray const &holeFaceIndices);
+    PXOSD_API void SetHoleIndices(VtIntArray const &holeFaceIndices);
 
     /// Returns the hole face indices.
     VtIntArray const &GetHoleIndices() const {
@@ -143,10 +143,10 @@ public:
 public:
 
     /// Returns the hash value of this topology to be used for instancing.
-    ID ComputeHash() const;
+    PXOSD_API ID ComputeHash() const;
 
     /// Equality check between two mesh topologies.
-    bool operator==(PxOsdMeshTopology const &other) const;
+    PXOSD_API bool operator==(PxOsdMeshTopology const &other) const;
 
 private:
 
@@ -163,7 +163,7 @@ private:
     PxOsdSubdivTags _subdivTags;
 };
 
-std::ostream& operator << (std::ostream &out, PxOsdMeshTopology const &);
-bool operator!=(const PxOsdMeshTopology& lhs, const PxOsdMeshTopology& rhs);
+PXOSD_API std::ostream& operator << (std::ostream &out, PxOsdMeshTopology const &);
+PXOSD_API bool operator!=(const PxOsdMeshTopology& lhs, const PxOsdMeshTopology& rhs);
 
 #endif // PXOSD_MESH_TOPOLOGY_H

@@ -24,6 +24,9 @@
 #ifndef USDGEOM_GENERATED_NURBSCURVES_H
 #define USDGEOM_GENERATED_NURBSCURVES_H
 
+/// \file usdGeom/nurbsCurves.h
+
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +47,8 @@ class SdfAssetPath;
 // NURBSCURVES                                                                //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdGeomNurbsCurves
+///
 /// Nurbs curves are analagous to Maya Nurbs Curves,  used for 
 /// interchange of rigging and modeling curves.  Unlike Maya Curves, this 
 /// curve spec supports batching of multiple curves into a single prim and 
@@ -89,15 +94,17 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomNurbsCurves();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomNurbsCurves holding the prim adhering to this
+    /// Return a UsdGeomNurbsCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -106,10 +113,11 @@ public:
     /// UsdGeomNurbsCurves(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomNurbsCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -131,6 +139,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDGEOM_API
     static UsdGeomNurbsCurves
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -142,6 +151,7 @@ private:
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -155,6 +165,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->IntArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: []
+    USDGEOM_API
     UsdAttribute GetOrderAttr() const;
 
     /// See GetOrderAttr(), and also 
@@ -162,6 +173,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateOrderAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -174,6 +186,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->DoubleArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetKnotsAttr() const;
 
     /// See GetKnotsAttr(), and also 
@@ -181,6 +194,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateKnotsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -193,6 +207,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double2Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetRangesAttr() const;
 
     /// See GetRangesAttr(), and also 
@@ -200,6 +215,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateRangesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

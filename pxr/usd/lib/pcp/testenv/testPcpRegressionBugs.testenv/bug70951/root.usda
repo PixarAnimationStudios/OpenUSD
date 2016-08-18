@@ -1,0 +1,16 @@
+#usda 1.0
+
+def Scope "World"
+{
+    def Scope "anim"
+    {
+        def Scope "chars"
+        {
+            def Scope "JoyGroup" (
+                add references = @JoyGroup.usda@</JoyGroup>
+            )
+            {
+            }
+        }
+    }
+}

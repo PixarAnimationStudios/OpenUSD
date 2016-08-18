@@ -1,0 +1,12 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def GprimSphere "mysphere"
+{
+    custom Vec3d[] emptylist1 = []
+    custom Vec3d[] emptylist2 = []
+}
+

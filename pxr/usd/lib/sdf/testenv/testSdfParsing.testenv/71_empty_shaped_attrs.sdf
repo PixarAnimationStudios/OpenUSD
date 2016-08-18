@@ -1,0 +1,12 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def GprimSphere "mysphere"
+{
+    custom double3[] emptylist1 = []
+    custom double3[] emptylist2 = []
+}
+

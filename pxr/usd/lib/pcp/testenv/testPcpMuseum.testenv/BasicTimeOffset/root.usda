@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    """
+    Museum case demonstrating time offset behaviors.
+    """
+)
+
+def "Root" (
+    """
+    This example has a prim, Root, which references
+    A.usda with a time offset. A.usda sublayers
+    B.usda with another time offset. In B.usda,
+    there is a prim, Model, with some animation, 
+    which should get shifted due to the offsets.
+
+    In B.usda, there is also a child prim, Anim, 
+    which has an Align avar that constrains to a 
+    sibling prim, Frame, on frame 5. The constraint 
+    path must be translated across the reference 
+    from Model to Root. It must also be shifted
+    by the offsets.
+    """
+    references = @A.usda@</Model> (offset = 10)
+)
+{
+}
+
+def "RefPayload" (
+    """
+    This example references a layer stack that introduces
+    a payload in a sublayer. Both the reference and sublayer
+    have offsets; the net effect of these offsets should
+    be applied to the payload. 
+    """
+    references = @ref.usda@</Ref> (offset = 10)
+)
+{
+}
+
+def "MultiRef" (
+    """
+    This is similar to the RefPayload test case above, 
+    but uses another reference instead of a payload. The
+    net effect of all the offsets should be applied to
+    this reference node just like the payload in the
+    other test case.
+    """
+    references = @ref.usda@</Ref2> (offset = 10)
+)
+{
+}

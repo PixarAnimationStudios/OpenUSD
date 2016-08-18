@@ -24,6 +24,9 @@
 #ifndef TF_TF_H
 #define TF_TF_H
 
+/// \file tf/tf.h
+/// A file containing basic constants and definitions.
+
 #if defined(__cplusplus) || defined(doxygen)
 
 #include <math.h>
@@ -41,82 +44,70 @@
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
 
-//!
-// \file tf.h
-// \brief A file containing basic constants and definitions.
-//
 
-
-
-//!
-// This value may be used by functions that return a \c size_t
-// to indicate that a special or error condition has occurred.
-// \ingroup group_tf_TfError
+/// This value may be used by functions that return a \c size_t to indicate
+/// that a special or error condition has occurred.
+/// \ingroup group_tf_TfError
 #define TF_BAD_SIZE_T SIZE_MAX
 
-//! \addtogroup group_tf_BasicMath
-// @{
+/// \addtogroup group_tf_BasicMath
+///@{
 
-//!
-// \brief Returns the absolute value of the given \c int value.
+/// Returns the absolute value of the given \c int value.
 inline int TfAbs(int v) {
     return (v < 0 ? -v : v);
 }
 
-//!
-// \brief Returns the absolute value of the given \c double value.
+/// Returns the absolute value of the given \c double value.
 inline double TfAbs(double v) {
     return fabs(v);
 }
 
-//!
-// \brief Returns the smaller of the two given \c  values.
+/// Returns the smaller of the two given \c  values.
 template <class T>
 inline T TfMin(const T& v1, const T& v2) {
     return (v1 < v2 ? v1 : v2);
 }
 
-//!
-// \brief Returns the larger of the two given \c  values.
+/// Returns the larger of the two given \c  values.
 template <class T>
 inline T TfMax(const T& v1, const T& v2) {
     return (v1 > v2 ? v1 : v2);
 }
 
-//! @}
+///@}
 
-//!
-// \struct TfDeleter Tf.h pxr/base/tf/Tf.h
-// \ingroup group_tf_Stl
-// \brief Function object for deleting any pointer.
-//
-// An STL collection of pointers does not automatically delete each
-// pointer when the collection itself is destroyed. Instead of writing
-// \code
-//    for (list<Otter*>::iterator i = otters.begin(); i != otters.end(); ++i)
-//         delete *i;
-// \endcode
-// you can use \c TfDeleter and simply write
-// \code
-// #include <algorithm>
-//
-//    for_each(otters.begin(), otters.end(), TfDeleter());
-// \endcode
-//
-// \note \c TfDeleter calls the non-array version of \c delete.
-// Don't use \c TfDeleter if you allocated your space using \c new[]
-// (and consider using a \c vector<> in place of a built-in array).
-// Also, note that you need to put parenthesis after \c TfDeleter
-// in the call to \c for_each().
-//
-// Finally, \c TfDeleter also works for map-like collections.
-// Note that this works as follows: if \c TfDeleter is handed
-// a datatype of type \c std::pair<T1,T2*>, then the second element
-// of the pair is deleted, but the first (whether or not it is a pointer)
-// is left alone.  In other words, if you give \c TfDeleter() a pair of
-// pointers, it only deletes the second, but never the first.  This is the
-// desired behavior for maps.
-
+/// \struct TfDeleter
+/// Function object for deleting any pointer.
+///
+/// An STL collection of pointers does not automatically delete each
+/// pointer when the collection itself is destroyed. Instead of writing
+/// \code
+///    for (list<Otter*>::iterator i = otters.begin(); i != otters.end(); ++i)
+///         delete *i;
+/// \endcode
+/// you can use \c TfDeleter and simply write
+/// \code
+/// #include <algorithm>
+///
+///    for_each(otters.begin(), otters.end(), TfDeleter());
+/// \endcode
+///
+/// \note \c TfDeleter calls the non-array version of \c delete.
+/// Don't use \c TfDeleter if you allocated your space using \c new[]
+/// (and consider using a \c vector<> in place of a built-in array).
+/// Also, note that you need to put parenthesis after \c TfDeleter
+/// in the call to \c for_each().
+///
+/// Finally, \c TfDeleter also works for map-like collections.
+/// Note that this works as follows: if \c TfDeleter is handed
+/// a datatype of type \c std::pair<T1,T2*>, then the second element
+/// of the pair is deleted, but the first (whether or not it is a pointer)
+/// is left alone.  In other words, if you give \c TfDeleter() a pair of
+/// pointers, it only deletes the second, but never the first.  This is the
+/// desired behavior for maps.
+///
+/// \ingroup group_tf_Stl
 struct TfDeleter {
     template <class T>
     void operator() (T* t) const {
@@ -165,40 +156,26 @@ struct TfDeleter {
 
 #define TF_DEV_BUILD ARCH_DEV_BUILD
 
-#else // defined(__cplusplus)
-
-/* 
- * The following three macros are purposefully not documented and are for use
- * only by legacy code.  New code should not need to use these macros.
- */
-
-#define TF_ABS(v)       ((v) < 0 ? -(v) : (v))
-
-#define TF_MIN(v0, v1)  ((v0) < (v1) ? (v0) : (v1)) 
-
-#define TF_MAX(v0, v1)  ((v0) > (v1) ? (v0) : (v1)) 
-
 #endif // defined(__cplusplus)
 
-
-//!
-// \ingroup group_tf_TfCompilerAids
-// Stops compiler from producing unused argument or variable warnings.
-// This is useful mainly in C, because in C++ you can just leave
-// the variable unnamed.  However, there are situations where this
-// can be useful even in C++, such as
-// \code
-// void
-// MyClass::Method( int foo )
-// {
-// #if defined(__APPLE__)
-//     TF_UNUSED( foo );
-//     // do something that doesn't need foo...
-// #else
-//     // do something that needs foo
-// #endif
-// } 
-// \endcode
+/// Stops compiler from producing unused argument or variable warnings.
+/// This is useful mainly in C, because in C++ you can just leave
+/// the variable unnamed.  However, there are situations where this
+/// can be useful even in C++, such as
+/// \code
+/// void
+/// MyClass::Method( int foo )
+/// {
+/// #if defined(__APPLE__)
+///     TF_UNUSED( foo );
+///     // do something that doesn't need foo...
+/// #else
+///     // do something that needs foo
+/// #endif
+/// } 
+/// \endcode
+///
+/// \ingroup group_tf_TfCompilerAids
 #define TF_UNUSED(x)    (void) x
 
 #endif // TF_H

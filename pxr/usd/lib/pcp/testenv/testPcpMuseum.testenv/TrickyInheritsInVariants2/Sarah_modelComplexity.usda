@@ -1,0 +1,44 @@
+#usda 1.0
+
+def "Sarah" (
+    add variantSets = "modelComplexity"
+    variants = {
+        string modelComplexity = "tidscene"
+    }
+)
+{
+    variantSet "modelComplexity" = {
+        "full" (
+            add references = @Sarah_rig.usda@</Sarah>
+        ) {
+            over "FaceRig"
+            {
+                over "EyesRig"
+                {
+                    over "SymEyeRig"
+                    {
+                    }
+                    over "LEyeRig"
+                    {
+                    }
+                }
+            }
+        }
+        "tidscene" (
+            add references = @Sarah_rig2.usda@</Sarah>
+        ) {
+            over "FaceRig"
+            {
+                over "EyesRig"
+                {
+                    over "SymEyeRig"
+                    {
+                    }
+                    over "LEyeRig"
+                    {
+                    }
+                }
+            }
+        }
+    }
+}

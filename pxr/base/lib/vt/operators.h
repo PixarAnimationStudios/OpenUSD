@@ -274,9 +274,9 @@
 
 struct Vt_Reserved;
 
-bool
+VT_API bool
 Vt_ArrayStackCheck(size_t size, const Vt_Reserved* reserved);
-bool
+VT_API bool
 Vt_ArrayCompareSize(size_t aSize, const Vt_Reserved* aReserved,
                     size_t bSize, const Vt_Reserved* bReserved);
 

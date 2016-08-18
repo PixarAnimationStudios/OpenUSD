@@ -24,7 +24,9 @@
 #ifndef SDF_IDENTITY_H
 #define SDF_IDENTITY_H
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include <boost/intrusive_ptr.hpp>
@@ -34,17 +36,20 @@
 class Sdf_IdentityRegistry;
 SDF_DECLARE_HANDLES(SdfLayer);
 
-// \class Sdf_Identity
-// \brief Identifies the logical object behind an SdfSpec.
-//
-// This is simply the layer the spec belongs to and the path
-// to the spec.
+/// \class Sdf_Identity
+///
+/// Identifies the logical object behind an SdfSpec.
+///
+/// This is simply the layer the spec belongs to and the path to the spec.
+///
 class Sdf_Identity : public boost::noncopyable {
 public:
     /// Returns the layer that this identity refers to.
+    SDF_API
     const SdfLayerHandle &GetLayer() const;
 
     /// Returns the path that this identity refers to.
+    SDF_API
     const SdfPath &GetPath() const;
 
 private:
@@ -54,7 +59,9 @@ private:
 
     friend class Sdf_IdentityRegistry;
 
+    SDF_API
     Sdf_Identity(Sdf_IdentityRegistry *registry, const SdfPath &path);
+    SDF_API
     ~Sdf_Identity();
 
     void _Forget();
@@ -73,7 +80,6 @@ inline void intrusive_ptr_release(Sdf_Identity* p) {
         delete p;
     }
 }
-
 
 class Sdf_IdentityRegistry : public boost::noncopyable {
 public:

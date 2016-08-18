@@ -30,27 +30,7 @@
 #ifndef TF_STATIC_TOKENS_H
 #define TF_STATIC_TOKENS_H
 
-#include "pxr/base/tf/preprocessorUtils.h"
-#include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/token.h"
-#include <vector>
-
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/logical/and.hpp>
-#include <boost/preprocessor/logical/not.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/seq/filter.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/seq/push_back.hpp>
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-
-
-///////////////////////////////////////////////////////////////////////////////
+/// \file tf/staticTokens.h
 ///
 /// This file defines some macros that are useful for declaring and using
 /// static TfTokens.  Typically, using static TfTokens is either cumbersome,
@@ -92,26 +72,52 @@
 ///
 /// There are PUBLIC and PRIVATE versions of the macros.  The PRIVATE ones are
 /// intended to be used when the tokens will only be used in a single .cpp
-/// file, in which case they can be made file static.  In the case of the 
+/// file, in which case they can be made file static.  In the case of the
 /// PRIVATE, you only need to use the DEFINE macro.
-///
 
-/// Macro to define public tokens.  This declares a list of tokens that can
-/// be used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
-///
-#define TF_DECLARE_PUBLIC_TOKENS(key, seq)                                  \
-    _TF_DECLARE_TOKENS(key, seq)                                            \
+#include "pxr/base/tf/preprocessorUtils.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
+
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/control/iif.hpp>
+#include <boost/preprocessor/control/expr_iif.hpp>
+#include <boost/preprocessor/logical/and.hpp>
+#include <boost/preprocessor/logical/not.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
+#include <boost/preprocessor/seq/filter.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/seq/for_each_i.hpp>
+#include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/seq/push_back.hpp>
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/tuple/elem.hpp>
+
+/// Macro to define public tokens. This declares a list of tokens that can be
+/// used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
+/// \hideinitializer
+#define _TF_DECLARE_PUBLIC_TOKENS3(key, eiapi, seq)                         \
+    _TF_DECLARE_TOKENS3(key, seq, eiapi)                                    \
+    extern eiapi TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
+
+#define TF_DECLARE_PUBLIC_TOKENS2(key, seq)									\
+    _TF_DECLARE_TOKENS2(key, seq)		                                    \
     extern TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
+
+#define _TF_DECLARE_PUBLIC_TOKENS(N) _TF_DECLARE_PUBLIC_TOKENS##N
+#define _TF_DECLARE_PUBLIC_TOKENS_EVAL(N) _TF_DECLARE_PUBLIC_TOKENS(N)
+#define TF_DECLARE_PUBLIC_TOKENS(...) _TF_NUM_ARGS_EXPAND( _TF_DECLARE_PUBLIC_TOKENS_EVAL(_TF_NUM_ARGS_EXPAND( TF_NUM_ARGS(__VA_ARGS__) ))(__VA_ARGS__) )
 
 /// Macro to define public tokens.  Use in conjunction with
 /// TF_DECLARE_PUBLIC_TOKENS.
-///
+/// \hideinitializer
 #define TF_DEFINE_PUBLIC_TOKENS(key, seq)                                   \
     _TF_DEFINE_TOKENS(key, seq)                                             \
     TfStaticData<_TF_TOKENS_STRUCT_NAME(key)> key
 
 /// Macro to define private tokens.
-///
+/// \hideinitializer
 #define TF_DEFINE_PRIVATE_TOKENS(key, seq)                                  \
     namespace {                                                             \
     struct _TF_TOKENS_STRUCT_NAME_PRIVATE(key) {                            \
@@ -178,9 +184,15 @@
 
 // Private macro used to generate a struct of TfTokens.
 //
-#define _TF_DECLARE_TOKENS(key, seq)                                        \
+#define _TF_DECLARE_TOKENS3(key, seq, eiapi)                                \
     struct _TF_TOKENS_STRUCT_NAME(key) {                                    \
-        _TF_TOKENS_STRUCT_NAME(key)();                                      \
+        eiapi _TF_TOKENS_STRUCT_NAME(key)();                                \
+        _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
+    };
+
+#define _TF_DECLARE_TOKENS2(key, seq)										\
+    struct _TF_TOKENS_STRUCT_NAME(key) {                                    \
+        _TF_TOKENS_STRUCT_NAME(key)();										\
         _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
     };
 
@@ -191,12 +203,15 @@
 //
 #define _TF_TOKENS_DEFINE_MEMBER(r, data, i, elem)                          \
     BOOST_PP_COMMA_IF(i)                                                    \
-    BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                                      \
-        BOOST_PP_TUPLE_ELEM(2, 0, elem)(BOOST_PP_TUPLE_ELEM(2, 1, elem),    \
-                                        TfToken::Immortal),                 \
-        _TF_TOKENS_INITIALIZE_MEMBER(~, ~, elem))
+    BOOST_PP_TUPLE_ELEM(1, 0, BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),            \
+        (_TF_TOKENS_INITIALIZE_MEMBER_TUPLE(elem)),                         \
+        (_TF_TOKENS_INITIALIZE_MEMBER(elem))))
 
-#define _TF_TOKENS_INITIALIZE_MEMBER(r, data, elem)                         \
+#define _TF_TOKENS_INITIALIZE_MEMBER_TUPLE(elem)                            \
+    BOOST_PP_TUPLE_ELEM(2, 0, elem)(BOOST_PP_TUPLE_ELEM(2, 1, elem),        \
+                                        TfToken::Immortal)                  \
+
+#define _TF_TOKENS_INITIALIZE_MEMBER(elem)                                  \
     elem(BOOST_PP_STRINGIZE(elem), TfToken::Immortal)
 
 #define _TF_TOKENS_DEFINE_ARRAY_MEMBER(r, data, i, elem)                    \
@@ -268,4 +283,3 @@
     }
 
 #endif
-

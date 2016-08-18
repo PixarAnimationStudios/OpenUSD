@@ -24,6 +24,7 @@
 #ifndef USDKATANA_CACHE_H
 #define USDKATANA_CACHE_H
 
+#include "usdKatana/api.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/singleton.h"
@@ -65,34 +66,39 @@ class UsdKatanaCache : public TfSingleton<UsdKatanaCache>
     _RendererCache _rendererCache;
 
 public:
-
+    USDKATANA_API
     static UsdKatanaCache& GetInstance() {
         return TfSingleton<UsdKatanaCache>::GetInstance();
     }
 
     /// Clear all caches
+    USDKATANA_API
     void Flush();
 
     /// Get (or create) a cached usd stage with a sessionlayer containing the
     /// specified variant selections
-    UsdStageRefPtr const& GetStage(std::string const& fileName, 
+    USDKATANA_API
+    UsdStageRefPtr const GetStage(std::string const& fileName,
                              std::string const& variantSelections,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate);
 
     /// Same as above, variant selections as an std::set<SdfPath> instead of str
-    UsdStageRefPtr const& GetStage(std::string const& fileName, 
+    USDKATANA_API
+    UsdStageRefPtr const GetStage(std::string const& fileName,
                              std::set<SdfPath> const& variantSelections,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate);
     
     // Equivalent to GetStage above but without caching
+    USDKATANA_API
     UsdStageRefPtr const GetUncachedStage(std::string const& fileName, 
                              std::string const& variantSelections,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate);
     
     // Equivalent to GetStage above but without caching
+    USDKATANA_API
     UsdStageRefPtr const GetUncachedStage(std::string const& fileName, 
                              std::set<SdfPath> const& variantSelections,
                              std::string const& ignoreLayerRegex,
@@ -101,11 +107,13 @@ public:
 
 
     /// Get (or create) a cached renderer for a given prim path.
+    USDKATANA_API
     UsdImagingGLSharedPtr const& GetRenderer(UsdStageRefPtr const& stage,
                                              UsdPrim const& root,
                                              std::string const& variants);
 
     /// Converts std::set<SdfPath> variant selections into string
+    USDKATANA_API
     static std::string 
     GetVariantSelectionString(std::set<SdfPath> const& variantSelections);
 };

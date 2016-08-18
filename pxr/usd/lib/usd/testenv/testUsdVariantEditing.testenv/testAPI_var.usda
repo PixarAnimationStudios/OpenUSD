@@ -1,0 +1,29 @@
+#usda 1.0
+
+def "Sarah" (
+    add variantSets = "displayColor"
+    variants = {
+        string displayColor = "red"
+    }
+)
+{
+    def Scope "EmptyPrim"
+    {
+    }
+
+    variantSet "displayColor" = {
+        "green" {
+            custom color3d color = (0, 1, 0)
+        }
+        "red" {
+            custom color3d color = (1, 0, 0)
+        }
+    }
+}
+
+
+def "Sarah_ref" (
+    add references = @./testAPI_var.usda@</Sarah>
+)
+{
+}

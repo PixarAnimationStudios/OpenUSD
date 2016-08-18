@@ -611,7 +611,7 @@ Pcp_GraphOutputManager::_UpdateCurrentDotGraphLabel()
         "\n</td></tr>"
         "\n</table>";
 
-    int numPhases = _GetNumPhases();
+    size_t numPhases = _GetNumPhases();
 
     // Generate the left side of the label, which shows the current phase and
     // any associated messages.

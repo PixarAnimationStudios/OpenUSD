@@ -1,0 +1,50 @@
+#usda 1.0
+(
+   """
+   This museum case exercises various situations where attribute
+   connections or relationship targets point to the original
+   source path of a relocated prim. This is an error, since
+   relocations virtually move the source prim to the desired
+   location; nothing is left behind at the source.
+   """
+   subLayers = [
+       @sub1.usda@,
+       @sub2.usda@
+   ]
+)
+
+def "Root" (
+    """Exercise simple case where relationships and attributes target
+    a scope within a rig that has been relocated out to a different scope."""
+    references = @ref.usda@</Ref>
+    relocates = {
+        <Rig/Scope> : <Anim/Scope>
+    }
+)
+{
+    custom rel badRelA = </Root/Rig/Scope>
+    custom rel badRelB = </Root/Rig/Scope.x>
+    custom rel goodRelA = </Root/Anim/Scope>
+    custom rel goodRelB = </Root/Anim/Scope.x>
+
+    custom double badAttrA
+    double badAttrA.connect = </Root/Rig/Scope.x>
+
+    custom double goodAttrA
+    double goodAttrA.connect = </Root/Anim/Scope.x>
+
+    def Scope "Anim"
+    {
+    }
+}
+
+over "SublayerRoot" (
+    """Exercise case involving sublayers. sub2.usda has attributes
+    and relationships that target a scope within a rig, but with no
+    relocates. sub1.usda relocates that scope. Even though sub2.usda
+    has no idea about the relocates, its relationship targets and
+    connections pointing to the rig scope are invalid when composed
+    with sub1.usda's relocates."""
+)
+{
+}

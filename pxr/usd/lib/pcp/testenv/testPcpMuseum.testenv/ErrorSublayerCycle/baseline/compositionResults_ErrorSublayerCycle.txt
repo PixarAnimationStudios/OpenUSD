@@ -1,0 +1,41 @@
+Loading @testPcpMuseum.testenv/ErrorSublayerCycle/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+     A.usda
+     B.usda
+     B.usda
+     A.usda
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    A.usda               /A
+    A.usda               /A
+
+Property names:
+     ['A_attr']
+
+Property stacks:
+/A.A_attr:
+    A.usda               /A.A_attr
+    A.usda               /A.A_attr
+
+------------------------------------------------------------------------
+Results for composing </B>
+
+Prim Stack:
+    B.usda               /B
+    B.usda               /B
+
+Property names:
+     ['B_attr']
+
+Property stacks:
+/B.B_attr:
+    B.usda               /B.B_attr
+    B.usda               /B.B_attr
+

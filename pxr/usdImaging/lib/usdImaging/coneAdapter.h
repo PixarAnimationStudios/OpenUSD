@@ -28,6 +28,8 @@
 
 class UsdGeomCone;
 
+/// \class UsdImagingConeAdapter
+///
 /// Delegate support for UsdGeomCone.
 ///
 class UsdImagingConeAdapter : public UsdImagingGprimAdapter {

@@ -21,24 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/mapperSpec.h
-
 #ifndef SDF_MAPPERSPEC_H
 #define SDF_MAPPERSPEC_H
 
+/// \file sdf/mapperSpec.h
+
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/types.h"
 #include <string>
 
-///
 /// \class SdfMapperSpec 
-/// \brief Represents the mapper to be used for values coming from 
-/// a particular connection path of an attribute.
+///
+/// Represents the mapper to be used for values coming from a particular
+/// connection path of an attribute.
 ///
 /// When instantiated on a stage, the appropriate subclass of MfMapper
 /// will be chosen based on the mapper spec's type name.
+///
 class SdfMapperSpec : public SdfSpec 
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeMapper, SdfMapperSpec, SdfSpec);
@@ -51,12 +53,13 @@ public:
     /// \name Spec creation
     /// @{
 
-    /// \brief Create a mapper spec.
+    /// Create a mapper spec.
     ///
     /// Creates and returns a new mapper owned by the attribute \p owner
     /// with the type name \p typeName.
     ///
     /// Mappers must be created in the context of an existing attribute.
+    SDF_API
     static SdfMapperSpecHandle New(const SdfAttributeSpecHandle& owner,
                                    const SdfPath& connPath,
                                    const std::string& typeName);
@@ -67,10 +70,12 @@ public:
     /// @{
 
     /// Returns the attribute that owns this mapper.
+    SDF_API
     SdfAttributeSpecHandle GetAttribute() const;
 
     ///
     /// Returns the connection path this mapper is associated with.
+    SDF_API
     SdfPath GetConnectionTargetPath() const;
 
     /// @}
@@ -78,30 +83,35 @@ public:
     /// @{
 
     /// Returns the type name for the mapper.
+    SDF_API
     std::string GetTypeName() const;
     
     /// Sets the type name for the mapper.
+    SDF_API
     void SetTypeName(const std::string& typeName);
 
     /// @}
     /// \name Args
     /// @{
 
-    /// \brief Returns the mapper's args.
+    /// Returns the mapper's args.
     ///
     /// The returned object is a proxy through which the args can be accessed
     /// or deleted.  It is not allowed to create new arguments using the list;
     /// Construct an \c SdfMapperArgSpec directly to do that.
+    SDF_API
     SdfMapperArgsProxy GetArgs() const;
 
     /// @}
     /// \name Symmetry args
     /// @{
 
-    /// \brief Returns the mapper's symmetry args.
+    /// Returns the mapper's symmetry args.
+    SDF_API
     SdfDictionaryProxy GetSymmetryArgs() const;
     
-    /// \brief Sets the mapper's symmetry args
+    /// Sets the mapper's symmetry args
+    SDF_API
     void SetSymmetryArgs(const VtDictionary& args);
 
     /// @}

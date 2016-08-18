@@ -118,8 +118,8 @@ _GetUnderlyingFileFormat(const SdfAbstractDataConstPtr& data)
     // XXX -- Magic knowledge of non-local format.
     static SdfAbstractDataRefPtr usdbData = _NewUsdbData();
     if (usdbData and 
-        typeid(*boost::get_pointer(data)) ==
-                typeid(*boost::get_pointer(usdbData))) {
+        typeid(*get_pointer(data)) ==
+                typeid(*get_pointer(usdbData))) {
         return _GetFileFormat(UsdUsdbFileFormatTokens->Id);
     }
 

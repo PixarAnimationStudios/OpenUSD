@@ -29,7 +29,7 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <opensubdiv3/far/topologyRefinerFactory.h>
+#include <opensubdiv/far/topologyRefinerFactory.h>
 
 #include <boost/bind.hpp>
 
@@ -64,7 +64,7 @@ Converter::GetType() const {
     } else if (scheme==PxOsdOpenSubdivTokens->loop) {
         type = SCHEME_LOOP;
         // in loop case, all input faces have to be triangle.
-        int numFaces = topology.GetFaceVertexCounts().size();
+        int numFaces = static_cast<int>(topology.GetFaceVertexCounts().size());
         int const * numVertsPtr = topology.GetFaceVertexCounts().cdata();
         if (std::find_if(numVertsPtr, numVertsPtr + numFaces,
                          boost::bind(std::not_equal_to<int>(), _1, 3))
@@ -204,7 +204,7 @@ TopologyRefinerFactory<Converter>::resizeComponentTopology(
 
     PxOsdMeshTopology const topology = converter.topology;
 
-    int numFaces = topology.GetFaceVertexCounts().size();
+    int numFaces = static_cast<int>(topology.GetFaceVertexCounts().size());
     int maxVertIndex = 0;
 
     int const * vertCounts = topology.GetFaceVertexCounts().cdata(),
@@ -348,7 +348,7 @@ TopologyRefinerFactory<Converter>::assignComponentTags(
 
     VtIntArray const holeIndices = tags.GetHoleIndices();
 
-    int numHoles = holeIndices.size();
+    int numHoles = static_cast<int>(holeIndices.size());
 
     for (int i=0; i < numHoles; ++i) {
         int face = holeIndices[i];
@@ -388,7 +388,7 @@ TopologyRefinerFactory<Converter>::assignFaceVaryingTopology(
                      PxOsdOpenSubdivTokens->rightHanded);
 
         for (size_t i=0, ofs=0; i < nfaces; ++i) {
-            Far::IndexArray faceIndices = getBaseFaceFVarValues(refiner, i, channel);
+            Far::IndexArray faceIndices = getBaseFaceFVarValues(refiner, static_cast<Far::Index>(i), static_cast<int>(channel));
             size_t numVerts = faceIndices.size();
 
             if (not TF_VERIFY(ofs + numVerts <= fvIndices.size())) {
@@ -397,12 +397,12 @@ TopologyRefinerFactory<Converter>::assignFaceVaryingTopology(
 
             if (flip) {
                 faceIndices[0] = fvIndices[ofs++];
-                for (int j = numVerts-1; j > 0; --j) {
+                for (int j = static_cast<int>(numVerts)-1; j > 0; --j) {
                     faceIndices[j] = fvIndices[ofs++];
                 }
             } else {
                 for (size_t j = 0; j < numVerts; ++j) {
-                    faceIndices[j] = fvIndices[ofs++];
+                    faceIndices[static_cast<int>(j)] = fvIndices[ofs++];
                 }
             }
         }

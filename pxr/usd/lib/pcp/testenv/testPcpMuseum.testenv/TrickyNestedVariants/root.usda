@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    """
+    This example has variants on prims inside variants.
+    It exercises nested variant composition and strength order.
+    """
+)
+
+def MfScope "A" (
+    variantSets = ["v1"]
+    variants = { string v1 = "x" }
+)
+{
+    variantSet "v1" = {
+        "x" ( add references = [ @ref.usda@</RAx> ] ) {
+            over "B" (
+                add variantSets = ["v2"]
+                variants = { string v2 = "y" }
+            )
+            {
+                variantSet "v2" = {
+                    "y" ( add references = [ @ref.usda@</RBxy> ] ) {
+                        over "C" (
+                            add variantSets = ["v3"]
+                            variants = { string v3 = "z" }
+                        )
+                        {
+                            variantSet "v3" = {
+                                "z" ( add references = [ @ref.usda@</RCxyz> ] ) {
+                                }
+                            }
+                        }
+                    }
+                }
+                def MfScope "C" ( add references = [ @ref.usda@</RCx> ] ) {
+                }
+            }
+        }
+    }
+    def MfScope "B" ( add references = [ @ref.usda@</RB> ] ) {
+        def MfScope "C" ( add references = [ @ref.usda@</RC> ] ) {
+        }
+    }
+}

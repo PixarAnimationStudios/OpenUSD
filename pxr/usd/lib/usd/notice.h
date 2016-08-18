@@ -24,6 +24,7 @@
 #ifndef USD_NOTICE_H
 #define USD_NOTICE_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 
@@ -31,14 +32,18 @@
 #include "pxr/base/tf/notice.h"
 
 /// \class UsdNotice
+///
 /// Container class for Usd notices
+///
 class UsdNotice {
 public:
 
     /// Base class for UsdStage notices.
     class StageNotice : public TfNotice {
     public:
+        USD_API
         StageNotice(const UsdStageWeakPtr &stage);
+        USD_API
         virtual ~StageNotice();
 
         /// Return the stage associated with this notice.
@@ -49,6 +54,7 @@ public:
     };
 
     /// \class StageContentsChanged
+    ///
     /// Ultra-conservative notice sent when the given UsdStage's contents
     /// have changed in any way.  This notice is sent when \em any authoring
     /// is performed in any of the stage's participatory layers, in the
@@ -58,14 +64,16 @@ public:
     /// Receipt of this notice should cause clients to disregard any cached
     /// values for properties or metadata.  It does not \em necessarily imply
     /// invalidation of UsdPrim s.
+    ///
     class StageContentsChanged : public StageNotice {
     public:
         explicit StageContentsChanged(const UsdStageWeakPtr& stage)
             : StageNotice(stage) {}
-        virtual ~StageContentsChanged();
+        USD_API virtual ~StageContentsChanged();
     };
 
     /// \class ObjectsChanged
+    ///
     /// Notice sent in response to authored changes that affect UsdObjects.
     ///
     /// The kinds of object changes are divided into two categories: "resync"
@@ -90,6 +98,7 @@ public:
     /// ChangedInfoOnly() methods).  Clients that wish to reason about all
     /// changes as a whole should use the GetResyncedPaths() and
     /// GetChangedInfoOnlyPaths() methods.
+    ///
     class ObjectsChanged : public StageNotice {
         friend class UsdStage;
         ObjectsChanged(const UsdStageWeakPtr &stage,
@@ -99,7 +108,7 @@ public:
             , _resyncedPaths(resyncedPaths)
             , _changedInfoPaths(changedInfoPaths) {}
     public:
-        virtual ~ObjectsChanged();
+        USD_API virtual ~ObjectsChanged();
 
         /// Return true if \p obj was possibly affected by the layer changes
         /// that generated this notice.  This is the case if either the object
@@ -155,16 +164,17 @@ public:
     };
 
     /// \class StageEditTargetChanged
+    ///
     /// Notice sent when a stage's EditTarget has changed.  Sent in the
     /// thread that changed the target.
+    ///
     class StageEditTargetChanged : public StageNotice {
     public:
         explicit StageEditTargetChanged(const UsdStageWeakPtr &stage)
             : StageNotice(stage) {}
-        virtual ~StageEditTargetChanged();
+        USD_API virtual ~StageEditTargetChanged();
     };
 
 };
 
 #endif // USD_NOTICE_H
-

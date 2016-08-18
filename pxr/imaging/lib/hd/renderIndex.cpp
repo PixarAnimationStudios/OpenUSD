@@ -161,10 +161,14 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     if (rit == _rprimMap.end())
         return;
 
+    _RprimInfo &rprimInfo = rit->second;
+
+    SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
+
     _DelegateRprimMap::iterator dit = _delegateRprimMap.find(
                                                     rit->second.delegateID);
     SdfPathVector* vec = &dit->second;
-    size_t rem = rit->second.childIndex;
+    size_t rem = rprimInfo.childIndex;
 
     TF_VERIFY(rem < vec->size());
     TF_VERIFY(vec->size() > 0);
@@ -187,6 +191,10 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     // entry as well.
     if (vec->empty()) {
         _delegateRprimMap.erase(dit);
+    }
+
+    if (not instancerId.IsEmpty()) {
+        _tracker.InstancerRPrimRemoved(instancerId, id);
     }
 
     _tracker.RprimRemoved(id);
@@ -283,6 +291,12 @@ HdRenderIndex::_TrackDelegateRprim(HdSceneDelegate* delegate,
 
     _RprimInfo info = { delegate->GetDelegateID(), vec->size()-1, rprim };
     _rprimMap[rprimID] = info;
+
+    SdfPath instanceId = rprim->GetInstancerId();
+
+    if (not instanceId.IsEmpty()) {
+        _tracker.InstancerRPrimInserted(instanceId, rprimID);
+    }
 }
 
 // -------------------------------------------------------------------------- //
@@ -877,7 +891,7 @@ HdRenderIndex::SyncAll()
             int reprIndex = (int)reprs.size();
             for (size_t i = 0; i < reprs.size(); ++i) {
                 if (reprs[i] == reprSpec) {
-                    reprIndex = i;
+                    reprIndex = (int)i;
                     break;
                 }
             }
@@ -898,7 +912,9 @@ HdRenderIndex::SyncAll()
 
             // PERFORMANCE: this loop can be expensive.
             for (auto const& sdfPath : hdDirtyList->GetDirtyRprims()) {
+				ARCH_PRAGMA_SHIFT_TO_64_BITS
                 dirtyIds[sdfPath] |= (1 << reprIndex);
+				ARCH_PRAGMA_RESTORE
             }
         }
     }

@@ -21,37 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/simpleMaterial.h
 #ifndef GLF_SIMPLE_MATERIAL_H
 #define GLF_SIMPLE_MATERIAL_H
 
+/// \file glf/simpleMaterial.h
+
+#include "pxr/imaging/glf/api.h"
 #include "pxr/base/gf/vec4f.h"
 
 class GlfSimpleMaterial {
 public:
-    GlfSimpleMaterial();
-    virtual ~GlfSimpleMaterial();
+    GLF_API GlfSimpleMaterial();
+    GLF_API virtual ~GlfSimpleMaterial();
 
-    GfVec4f const & GetAmbient() const;
-    void SetAmbient(GfVec4f const & ambient);
+    GLF_API GfVec4f const & GetAmbient() const;
+    GLF_API void SetAmbient(GfVec4f const & ambient);
 
-    GfVec4f const & GetDiffuse() const;
-    void SetDiffuse(GfVec4f const & diffuse);
+    GLF_API GfVec4f const & GetDiffuse() const;
+    GLF_API void SetDiffuse(GfVec4f const & diffuse);
 
-    GfVec4f const & GetSpecular() const;
-    void SetSpecular(GfVec4f const & specular);
+    GLF_API GfVec4f const & GetSpecular() const;
+    GLF_API void SetSpecular(GfVec4f const & specular);
 
-    GfVec4f const & GetEmission() const;
-    void SetEmission(GfVec4f const & specular);
+    GLF_API GfVec4f const & GetEmission() const;
+    GLF_API void SetEmission(GfVec4f const & specular);
 
-    double GetShininess() const;
-    void SetShininess(double specular);
+    GLF_API double GetShininess() const;
+    GLF_API void SetShininess(double specular);
 
-    virtual void Bind();
-    virtual void Unbind();
+    GLF_API virtual void Bind();
+    GLF_API virtual void Unbind();
 
-    bool operator ==(GlfSimpleMaterial const & other) const;
-    bool operator !=(GlfSimpleMaterial const & other) const;
+    GLF_API bool operator ==(GlfSimpleMaterial const & other) const;
+    GLF_API bool operator !=(GlfSimpleMaterial const & other) const;
 
 private:
     GfVec4f _ambient;

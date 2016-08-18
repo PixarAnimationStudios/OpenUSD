@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    bool a1 = false
+    string a1.connect = </Foo.a>
+}
+

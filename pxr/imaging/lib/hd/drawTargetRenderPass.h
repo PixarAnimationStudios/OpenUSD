@@ -24,6 +24,7 @@
 #ifndef HD_DRAW_TARGET_RENDER_PASS_H
 #define HD_DRAW_TARGET_RENDER_PASS_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/simpleLightingShader.h"
@@ -36,23 +37,32 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 class HdDrawTargetRenderPassState;
 
-/// Represents an render pass that renders to a draw target
-/// XXX::  This is a temporary api to aid transition to Hydra.
-/// and subject to major changes.  It is likely this functionality
-/// will be absorbed into the base class.
+/// \class HdDrawTargetRenderPass
+///
+/// Represents an render pass that renders to a draw target.
+///
+/// \note This is a temporary API to aid transition to Hydra, and is subject
+/// to major changes.  It is likely this functionality will be absorbed into
+/// the base class.
+///
 class HdDrawTargetRenderPass : public HdTask {
 public:
+	HDLIB_API
     HdDrawTargetRenderPass(HdRenderIndex *index);
+	HDLIB_API
     virtual ~HdDrawTargetRenderPass();
 
     /// Sets the target draw object of this render pass containing
     /// the color buffers and depth buffer to use.
+	HDLIB_API
     void SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget);
 
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
+	HDLIB_API
     void SetRenderPassState(HdDrawTargetRenderPassState *renderPassState);
 
+	HDLIB_API
     void SetRprimCollection(HdRprimCollection const& col);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {

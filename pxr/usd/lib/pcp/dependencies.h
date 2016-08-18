@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pcp/dependencies.h
-
 #ifndef PCP_DEPENDENCIES_H
 #define PCP_DEPENDENCIES_H
+
+/// \file pcp/dependencies.h
 
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
@@ -41,7 +41,8 @@ class PcpPrimIndexDependencies;
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 /// \class Pcp_Dependencies
-/// \brief Track dependencies between Sdf sites and Pcp sites.
+///
+/// Track dependencies between Sdf sites and Pcp sites.
 ///
 /// This object keeps track of which Pcp sites depend on which Sdf sites.
 /// Clients can provide a collection of Sdf sites and get back a collection
@@ -196,7 +197,7 @@ private:
         bool spooky);
 
 private:
-    boost::scoped_ptr<class Pcp_DependenciesData> _data;
+    boost::scoped_ptr<struct Pcp_DependenciesData> _data;
 };
 
 #endif

@@ -1,0 +1,281 @@
+Iterating over root nodes for </Model>:
+ @root.sdf@</Model>	root
+
+Reverse iterating over root nodes for </Model>:
+ @root.sdf@</Model>	root
+
+Iterating over root prim specs for </Model>:
+ @root.sdf@</Model>	root
+
+Reverse iterating over root prim specs for </Model>:
+ @root.sdf@</Model>	root
+
+====================
+
+Iterating over local inherit nodes for </Model>:
+
+Reverse iterating over local inherit nodes for </Model>:
+
+Iterating over local inherit prim specs for </Model>:
+
+Reverse iterating over local inherit prim specs for </Model>:
+
+====================
+
+Iterating over global inherit nodes for </Model>:
+ @root.sdf@</Class>	global inherit
+
+Reverse iterating over global inherit nodes for </Model>:
+ @root.sdf@</Class>	global inherit
+
+Iterating over global inherit prim specs for </Model>:
+ @root.sdf@</Class>	global inherit
+
+Reverse iterating over global inherit prim specs for </Model>:
+ @root.sdf@</Class>	global inherit
+
+====================
+
+Iterating over variant nodes for </Model>:
+
+Reverse iterating over variant nodes for </Model>:
+
+Iterating over variant prim specs for </Model>:
+
+Reverse iterating over variant prim specs for </Model>:
+
+====================
+
+Iterating over reference nodes for </Model>:
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over reference nodes for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+
+Iterating over reference prim specs for </Model>:
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+
+Reverse iterating over reference prim specs for </Model>:
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+
+====================
+
+Iterating over payload nodes for </Model>:
+
+Reverse iterating over payload nodes for </Model>:
+
+Iterating over payload prim specs for </Model>:
+
+Reverse iterating over payload prim specs for </Model>:
+
+====================
+
+Iterating over local specializes nodes for </Model>:
+
+Reverse iterating over local specializes nodes for </Model>:
+
+Iterating over local specializes prim specs for </Model>:
+
+Reverse iterating over local specializes prim specs for </Model>:
+
+====================
+
+Iterating over global specializes nodes for </Model>:
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over global specializes nodes for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+
+Iterating over global specializes prim specs for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over global specializes prim specs for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+
+====================
+
+Iterating over all nodes for </Model>:
+ @root.sdf@</Model>	root
+ @root.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over all nodes for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @root.sdf@</Class>	global inherit
+ @root.sdf@</Model>	root
+
+Iterating over all prim specs for </Model>:
+ @root.sdf@</Model>	root
+ @root.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over all prim specs for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @root.sdf@</Class>	global inherit
+ @root.sdf@</Model>	root
+
+====================
+
+Iterating over all inherits nodes for </Model>:
+ @root.sdf@</Class>	global inherit
+
+Reverse iterating over all inherits nodes for </Model>:
+ @root.sdf@</Class>	global inherit
+
+Iterating over all inherits prim specs for </Model>:
+ @root.sdf@</Class>	global inherit
+
+Reverse iterating over all inherits prim specs for </Model>:
+ @root.sdf@</Class>	global inherit
+
+====================
+
+Iterating over weaker than root nodes for </Model>:
+ @root.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over weaker than root nodes for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @root.sdf@</Class>	global inherit
+
+Iterating over weaker than root prim specs for </Model>:
+ @root.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over weaker than root prim specs for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @root.sdf@</Class>	global inherit
+
+====================
+
+Iterating over stronger than payload nodes for </Model>:
+ @root.sdf@</Model>	root
+ @root.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over stronger than payload nodes for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @root.sdf@</Specializes>	global specializes
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @root.sdf@</Class>	global inherit
+ @root.sdf@</Model>	root
+
+Iterating over stronger than payload prim specs for </Model>:
+ @root.sdf@</Model>	root
+ @root.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @model_latest.sdf@</Model>	reference
+ @model_latest_payload.sdf@</Model>	payload
+ @mcat.sdf@</Specializes>	global specializes
+
+Reverse iterating over stronger than payload prim specs for </Model>:
+ @mcat.sdf@</Specializes>	global specializes
+ @model_latest_payload.sdf@</Model>	payload
+ @model_latest.sdf@</Model>	reference
+ @mcat.sdf@</Model{pin=latest}>	variant
+ @mcat.sdf@</Class>	global inherit
+ @mcat.sdf@</Model>	reference
+ @root.sdf@</Class>	global inherit
+ @root.sdf@</Model>	root
+
+====================
+
+Iterating over local property specs for </Model.a>:
+ @root.sdf@</Model.a> from node @root.sdf@</Model>	root
+
+Reverse iterating over local property specs for </Model.a>:
+ @root.sdf@</Model.a> from node @root.sdf@</Model>	root
+
+====================
+
+Iterating over all property specs for </Model.a>:
+ @root.sdf@</Model.a> from node @root.sdf@</Model>	root
+ @root.sdf@</Class.a> from node @root.sdf@</Class>	global inherit
+ @model_latest.sdf@</Model.a> from node @model_latest.sdf@</Model>	reference
+
+Reverse iterating over all property specs for </Model.a>:
+ @model_latest.sdf@</Model.a> from node @model_latest.sdf@</Model>	reference
+ @root.sdf@</Class.a> from node @root.sdf@</Class>	global inherit
+ @root.sdf@</Model.a> from node @root.sdf@</Model>	root

@@ -1,0 +1,65 @@
+Loading @testPcpMuseum.testenv/BasicInstancingAndNestedInstances/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Set_1>
+
+Prim Stack:
+    root.usda            /Set_1
+    set.usda             /Set
+
+Child names:
+     ['PropInstance_1', 'PropInstance2', 'PropNotAnInstance_1']
+
+------------------------------------------------------------------------
+Results for composing </Set_1/PropInstance_1>
+
+Prim Stack:
+    set.usda             /Set/PropInstance_1
+    prop.usda            /Prop
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Set_1/PropInstance_1/geom>
+
+Prim Stack:
+    prop.usda            /Prop/geom
+
+------------------------------------------------------------------------
+Results for composing </Set_1/PropInstance2>
+
+Prim Stack:
+    set.usda             /Set/PropInstance2
+    prop.usda            /Prop
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Set_1/PropInstance2/geom>
+
+Prim Stack:
+    prop.usda            /Prop/geom
+
+------------------------------------------------------------------------
+Results for composing </Set_1/PropNotAnInstance_1>
+
+Prim Stack:
+    set.usda             /Set/PropNotAnInstance_1
+    prop.usda            /Prop
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Set_1/PropNotAnInstance_1/geom>
+
+Prim Stack:
+    set.usda             /Set/PropNotAnInstance_1/geom
+    prop.usda            /Prop/geom
+

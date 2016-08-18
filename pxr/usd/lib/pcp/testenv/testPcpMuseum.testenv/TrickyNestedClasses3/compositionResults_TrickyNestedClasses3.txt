@@ -1,0 +1,109 @@
+Loading @testPcpMuseum.testenv/TrickyNestedClasses3/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.usda            /Rig
+    rig.usda             /Rig
+
+Child names:
+     ['SymRig', '_class_SubRig', 'LRig', 'RRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymRig>
+
+Prim Stack:
+    root.usda            /Rig/SymRig
+    rig.usda             /Rig/SymRig
+
+Child names:
+     ['SubRig1', 'SubRig2']
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymRig/SubRig1>
+
+Prim Stack:
+    root.usda            /Rig/SymRig/SubRig1
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/SymRig/SubRig1
+    rig.usda             /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymRig/SubRig2>
+
+Prim Stack:
+    root.usda            /Rig/SymRig/SubRig2
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/SymRig/SubRig2
+    rig.usda             /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/_class_SubRig>
+
+Prim Stack:
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/LRig>
+
+Prim Stack:
+    root.usda            /Rig/SymRig
+    rig.usda             /Rig/LRig
+    rig.usda             /Rig/SymRig
+
+Child names:
+     ['SubRig1', 'SubRig2']
+
+------------------------------------------------------------------------
+Results for composing </Rig/LRig/SubRig1>
+
+Prim Stack:
+    root.usda            /Rig/SymRig/SubRig1
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/SymRig/SubRig1
+    rig.usda             /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/LRig/SubRig2>
+
+Prim Stack:
+    root.usda            /Rig/SymRig/SubRig2
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/SymRig/SubRig2
+    rig.usda             /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/RRig>
+
+Prim Stack:
+    root.usda            /Rig/SymRig
+    rig.usda             /Rig/RRig
+    rig.usda             /Rig/SymRig
+
+Child names:
+     ['SubRig1', 'SubRig2']
+
+------------------------------------------------------------------------
+Results for composing </Rig/RRig/SubRig1>
+
+Prim Stack:
+    root.usda            /Rig/SymRig/SubRig1
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/SymRig/SubRig1
+    rig.usda             /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/RRig/SubRig2>
+
+Prim Stack:
+    root.usda            /Rig/SymRig/SubRig2
+    root.usda            /Rig/_class_SubRig
+    rig.usda             /Rig/SymRig/SubRig2
+    rig.usda             /Rig/_class_SubRig
+

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file tf/DiagnosticNotice.h
-///
 #ifndef TF_DIAGNOSTIC_NOTICE_H
 #define TF_DIAGNOSTIC_NOTICE_H
+
+/// \file tf/diagnosticNotice.h
 
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/diagnosticBase.h"
@@ -35,25 +35,30 @@ class TfDiagnosticBase;
 
 #include <string>
 
-/*! \class TfDiagnosticNotice
- *  \brief This is a wrapper class containing the actual notices
- *         that TfDiagnosticMgr sends.
- */
+/// \class TfDiagnosticNotice
+///
+/// This is a wrapper class containing the actual notices that TfDiagnosticMgr
+/// sends.
 class TfDiagnosticNotice {
 public:
 
-    //! Return if warnings/error are echoed to stderr.
+    /// Return if warnings/error are echoed to stderr.
+    TF_API
     static bool GetStderrOutputState();
 
-    //! Set stderr output state, returning the previous state.
+    /// Set stderr output state, returning the previous state.
+    TF_API
     static bool SetStderrOutputState(bool state);
 
-    /// \brief Base notification class for TfDiagnosticMgr.
+    /// Base notification class for TfDiagnosticMgr.
     class Base : public TfNotice {
     public:
+        TF_API
         Base();
+        TF_API
         TfDiagnosticBase const& GetDiagnosticData() const;
 
+        TF_API
         ~Base();
 
         bool IsFatal() const {
@@ -75,10 +80,12 @@ public:
         TfDiagnosticBase const* _data;
     };
 
-    /// \brief Notification sent when an error is issued.
+    /// Notification sent when an error is issued.
     class IssuedError: public Base {
       public:
+        TF_API
         IssuedError(const TfError &error);
+        TF_API
         virtual ~IssuedError();
 
         const TfError &GetError() const { return _error; }
@@ -87,10 +94,12 @@ public:
         const TfError &_error;
     };
 
-    /// \brief Notification sent when a warning is issued.
+    /// Notification sent when a warning is issued.
     class IssuedWarning : public Base {
       public:
+        TF_API
         IssuedWarning(const TfWarning &warning);
+        TF_API
         virtual ~IssuedWarning();
 
         const TfWarning &GetWarning() const { return _warning; }
@@ -99,10 +108,12 @@ public:
         const TfWarning &_warning;
     };
 
-    /// \brief Notification sent when a status message is issued.
+    /// Notification sent when a status message is issued.
     class IssuedStatus : public Base {
       public:
+        TF_API
         IssuedStatus(const TfStatus &status);
+        TF_API
         virtual ~IssuedStatus();
 
         const TfStatus &GetStatus() const { return _status; }
@@ -111,12 +122,15 @@ public:
         const TfStatus &_status;
     };
 
-    /// \brief Notification sent when a fatal error is encountered.
+    /// Notification sent when a fatal error is encountered.
     class IssuedFatalError : public Base {
       public:
+        TF_API
         IssuedFatalError(const std::string &msg, const TfCallContext &context);
+        TF_API
         virtual ~IssuedFatalError();
 
+        TF_API
         void SetData(TfDiagnosticBase const&);
         
         const std::string &GetMessage() const { return _msg; }

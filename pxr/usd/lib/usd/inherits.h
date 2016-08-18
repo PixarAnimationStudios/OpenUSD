@@ -24,6 +24,7 @@
 #ifndef USD_INHERITS_H
 #define USD_INHERITS_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -32,8 +33,11 @@
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
+/// \class UsdInherits
+///
 /// A proxy class for applying listOp edits to the inherit paths list for a
 /// prim.
+///
 class UsdInherits {
     friend class UsdPrim;
 
@@ -42,19 +46,23 @@ class UsdInherits {
 public:
 
     /// Add a path to the inheritPaths listOp at the current EditTarget.
+    USD_API
     bool Add(const SdfPath &primPath);
 
     /// Removes the specified path from the inheritPaths listOp at the
     /// current EditTarget.
+    USD_API
     bool Remove(const SdfPath &primPath);
 
     /// Removes the authored inheritPaths listOp edits at the current edit
     /// target.
+    USD_API
     bool Clear();
 
     /// Explicitly set the inherited paths, potentially blocking weaker opinions
     /// that add or remove items, returning true on success, false if the edit
     /// could not be performed.
+    USD_API
     bool SetItems(const SdfPathVector& items);
 
     /// Return the prim this object is bound to.

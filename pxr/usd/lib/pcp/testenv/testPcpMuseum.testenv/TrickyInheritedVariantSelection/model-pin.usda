@@ -1,0 +1,68 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "SullivanNoPin" (
+    variantSets = ["pin", "shade"]
+    references = @model-shade.usda@</SullivanNoPinNoShade>
+)
+{
+    variantSet "shade" = {
+        "NoShade" (
+            references = @model-shade.usda@</SullivanNoPinNoShade>
+        ) {
+        }
+        "FlatShade" (
+            references = @model-shade.usda@</SullivanNoPinFlatShade>
+        ) {
+        }
+        "PhongShade" (
+            references = @model-shade.usda@</SullivanNoPinPhongShade>
+        ) {
+        }
+    }
+}
+
+def Scope "SullivanModelPin" (
+    references = @model-shade.usda@</SullivanModelPinNoShade>
+    variantSets = ["pin", "shade"]
+)
+{
+    variantSet "shade" = {
+        "NoShade" (
+            references = @model-shade.usda@</SullivanModelPinNoShade>
+        ) {
+        }
+        "FlatShade" (
+            references = @model-shade.usda@</SullivanModelPinFlatShade>
+        ) {
+        }
+        "PhongShade" (
+            references = @model-shade.usda@</SullivanModelPinPhongShade>
+        ) {
+        }
+    }
+}
+
+def Scope "SullivanShotPin" (
+    references = @model-shade.usda@</SullivanShotPinNoShade>
+    variantSets = ["pin", "shade"]
+)
+{
+    variantSet "shade" = {
+        "NoShade" (
+            references = @model-shade.usda@</SullivanShotPinNoShade>
+        ) {
+        }
+        "FlatShade" (
+            references = @model-shade.usda@</SullivanShotPinFlatShade>
+        ) {
+        }
+        "PhongShade" (
+            references = @model-shade.usda@</SullivanShotPinPhongShade>
+        ) {
+        }
+    }
+}

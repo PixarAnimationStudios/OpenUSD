@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/stageCache.h"
 
 class UsdMayaStageCache {
@@ -29,7 +30,9 @@ public:
     // Return the singleton stage cache for use by all USD clients within Maya.
     // 2 stage caches are maintained; 1 for stages that have been
     // force-populated, and 1 for stages that have not been force-populated.
+    USDMAYA_API
     static UsdStageCache &Get(bool forcePopulate=true);
     // Clear the cache
+    USDMAYA_API
     static void Clear();
 };

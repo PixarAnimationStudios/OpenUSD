@@ -1,0 +1,22 @@
+#usda 1.0
+
+class Scope "_class_A1"
+{
+}
+
+def Scope "A1" (
+    references = @ref2.usda@</A>
+    inherits = </_class_A1>
+)
+{
+    over "B" (
+        references = @ref2.usda@</B>
+    )
+    {
+        over "C" (
+            references = @ref2.usda@</C>
+        )
+        {
+        }
+    }
+}

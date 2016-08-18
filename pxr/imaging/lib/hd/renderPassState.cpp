@@ -135,7 +135,7 @@ HdRenderPassState::Sync()
         if (clipPlanes.size() > 0) {
             bufferSpecs.push_back(
                 HdBufferSpec(
-                    HdShaderTokens->clipPlanes, GL_FLOAT, 4, clipPlanes.size()));
+                    HdShaderTokens->clipPlanes, GL_FLOAT, 4, (int)clipPlanes.size()));
         }
 
         // allocate interleaved buffer
@@ -391,7 +391,7 @@ HdRenderPassState::Bind()
     }
     glEnable(GL_PROGRAM_POINT_SIZE);
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
-        glEnable(GL_CLIP_DISTANCE0 + i);
+        glEnable((GLenum)(GL_CLIP_DISTANCE0 + i));
     }
 }
 

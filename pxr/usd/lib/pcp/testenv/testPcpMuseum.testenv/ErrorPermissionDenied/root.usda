@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    """
+    This example has a prim, Root, with a reference to
+    A.usda. Root has an opinion about attr, which is
+    private in A.usda. This results in a property
+    permission error. In addition, Root has opinions about
+    a relationship and relational attribute that has been 
+    marked private in A.usda. This should also result in 
+    permission errors, and the opinions should be ignored.
+
+    There is another prim, Parent, with a child prim, Child.
+    Parent has a reference to A.usda, where Child is
+    private. This results in a prim permission error.
+
+    There is also a prim, Model, which inherits from
+    _PrivateClass. Since _PrivateClass is private, this
+    will result in an arc permission error.
+    """
+)
+
+def "Root" (
+    add references = @A.usda@</A>
+)
+{
+    custom double attr = 2
+    custom double localAttr = 3
+
+    add rel privateRel = </Root.localAttr>
+    rel privateRel[</Root.A_attr>] {
+        string a = "root"
+    }
+
+    rel publicRel[</Root.A_attr>] {
+        string a = "root"
+    }
+}
+def "Parent" (
+    add references = @A.usda@</Parent>
+)
+{
+    over "Child" 
+    {
+    }
+}
+def "_PrivateClass" (
+    permission = private
+)
+{
+    custom double attr = -1
+}
+def "Model" (
+    add inherits = </_PrivateClass>
+)
+{
+    custom double attr = 0
+}

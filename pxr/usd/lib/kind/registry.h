@@ -24,15 +24,17 @@
 #ifndef AMBER_KIND_REGISTRY_H
 #define AMBER_KIND_REGISTRY_H
 
+/// \file kind/registry.h
+
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
+#include "pxr/usd/kind/api.h"
+
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashmap.h"
-
-/// \file kind/registry.h
 
 /// \hideinitializer
 #define KIND_TOKENS \
@@ -43,11 +45,10 @@
     (subcomponent)
 
 /// \anchor KindTokens
-/// \brief <b>KindTokens</b> provides static, efficient TfToken's for
-/// built-in Kinds
+/// Provides static, efficient TfToken's for built-in Kinds
 ///
 /// See \ref kind_coreKinds for description of the builtin kinds.
-TF_DECLARE_PUBLIC_TOKENS(KindTokens, KIND_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(KindTokens, KIND_API, KIND_TOKENS);
 
 /// \class KindRegistry
 ///
@@ -68,15 +69,15 @@ class KindRegistry : public TfWeakBase, boost::noncopyable
 {
 public:
     /// Return the single \c KindRegistry instance.
-    static KindRegistry& GetInstance();
+	KIND_API static KindRegistry& GetInstance();
 
     /// Test whether \a kind is known to the registry.
-    static bool HasKind(const TfToken& kind);
+	KIND_API static bool HasKind(const TfToken& kind);
 
     /// Return the base kind of the given kind.
     /// If there is no base, the result will be an empty token.
     /// Issues a coding error if \a kind is unknown to the registry.
-    static TfToken GetBaseKind(const TfToken &kind);
+	KIND_API static TfToken GetBaseKind(const TfToken &kind);
 
     /// Test whether \a derivedKind is the same as \a baseKind or
     /// has it as a base kind (either directly or indirectly).
@@ -87,14 +88,14 @@ public:
     /// will simply return false.
     ///
     /// Therefore this method will not raise any errors.
-    static bool IsA(const TfToken& derivedKind, const TfToken &baseKind);
+	KIND_API static bool IsA(const TfToken& derivedKind, const TfToken &baseKind);
 
     /// Return an unordered set of all kinds known to the registry, as a
     /// TfToken::HashSet for fast membership queries.
-    static TfToken::HashSet GetAllKinds();
+	KIND_API static TfToken::HashSet GetAllKinds();
 
 private:
-    friend class TfSingleton<KindRegistry>;
+    friend class KIND_API TfSingleton<KindRegistry>;
 
     KindRegistry();
     virtual ~KindRegistry();
@@ -124,6 +125,8 @@ private:
 private:
     _KindMap _kindMap;
 };
+
+KIND_API_TEMPLATE_CLASS(TfSingleton<KindRegistry>);
 
 #endif
 

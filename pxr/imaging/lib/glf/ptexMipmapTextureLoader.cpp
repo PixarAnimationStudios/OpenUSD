@@ -31,6 +31,8 @@
 #include <cstring>
 #include <cassert>
 
+#include "pxr/base/arch/defines.h"
+
 // sample neighbor pixels and populate around blocks
 void
 GlfPtexMipmapTextureLoader::Block::guttering(

@@ -1,0 +1,13 @@
+#usda 1.0
+
+def Model "FergusCloak"
+{
+    def Scope "rig"
+    {
+        def Scope "LEdgeRig" (
+            add references = @CurveTrackRig.usda@</CurveTrackRig>
+        )
+        {
+        }
+    }
+}

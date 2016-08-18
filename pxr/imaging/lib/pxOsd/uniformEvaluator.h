@@ -24,20 +24,20 @@
 #ifndef PXOSDUTIL_UNIFORM_EVALUATOR_H
 #define PXOSDUTIL_UNIFORM_EVALUATOR_H
 
-
 #include "pxr/imaging/pxOsd/refinerFactory.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
-#include <opensubdiv3/far/stencilTable.h>
+#include <opensubdiv/far/stencilTable.h>
 
 #include <string>
 #include <vector>
 
-// This class takes a mesh that has undergone uniform refinement to
-// a fixed subdivision level, and creates required run time OpenSubdiv
-// data structures used to sample values on subdivision surfaces.
-//
-//
+/// \class PxOsdUniformEvaluator
+///
+/// This class takes a mesh that has undergone uniform refinement to
+/// a fixed subdivision level, and creates required run time OpenSubdiv
+/// data structures used to sample values on subdivision surfaces.
+///
 class PxOsdUniformEvaluator {
   public:
     PxOsdUniformEvaluator();

@@ -34,9 +34,11 @@ class SdfAbstractDataSpecId;
 class UsdAttribute;
 
 /// \class Usd_InterpolatorBase
-/// \brief Base class for objects implementing interpolation for attribute
+///
+/// Base class for objects implementing interpolation for attribute
 /// values. This is invoked during value resolution for times that do not have
 /// authored time samples.
+///
 class Usd_InterpolatorBase
 {
 public:
@@ -51,8 +53,10 @@ public:
 };
 
 /// \class Usd_NullInterpolator
-/// \brief Null interpolator object for use in cases where interpolation is
+///
+/// Null interpolator object for use in cases where interpolation is
 /// not expected.
+///
 class Usd_NullInterpolator
     : public Usd_InterpolatorBase
 {
@@ -75,11 +79,13 @@ public:
 };
 
 /// \class Usd_UntypedInterpolator
-/// \brief Interpolator used for type-erased value access.
+///
+/// Interpolator used for type-erased value access.
 ///
 /// The type-erased value API does not provide information about the
 /// expected value type, so this interpolator needs to do more costly
 /// type lookups to dispatch to the appropriate interpolator.
+///
 class Usd_UntypedInterpolator
     : public Usd_InterpolatorBase
 {
@@ -111,12 +117,14 @@ private:
 };
 
 /// \class Usd_HeldInterpolator
-/// \brief Object implementing "held" interpolation for attribute values.
+///
+/// Object implementing "held" interpolation for attribute values.
 ///
 /// With "held" interpolation, authored time sample values are held constant
 /// across time until the next authored time sample. In other words, the
 /// attribute value for a time with no samples authored is the nearest
 /// preceding value.
+///
 template <class T>
 class Usd_HeldInterpolator 
     : public Usd_InterpolatorBase
@@ -173,10 +181,12 @@ Usd_Lerp(double alpha, const GfQuatd &lower, const GfQuatd &upper)
 }
 
 /// \class Usd_LinearInterpolator
-/// \brief Object implementing linear interpolation for attribute values.
+///
+/// Object implementing linear interpolation for attribute values.
 ///
 /// With linear interpolation, the attribute value for a time with no samples
 /// will be linearly interpolated from the previous and next time samples.
+///
 template <class T>
 class Usd_LinearInterpolator
     : public Usd_InterpolatorBase

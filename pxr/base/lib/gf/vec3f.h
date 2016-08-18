@@ -28,10 +28,14 @@
 #ifndef GF_VEC3F_H
 #define GF_VEC3F_H
 
+/// \file gf/vec3f.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -43,21 +47,14 @@
 template <>
 struct GfIsGfVec<class GfVec3f> { static const bool value = true; };
 
-/*!
- * \file vec3f.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-/*!
- * \class GfVec3f vec3f.h "pxr/base/gf/vec3f.h"
- * \ingroup group_gf_LinearAlgebra
- * \brief Basic type for a vector of 3 float components.
- *
- * Represents a vector of 3 components of type \c float.
- * It is intended to be fast and simple.
- *
- */
-
+/// \class GfVec3f
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type for a vector of 3 float components.
+///
+/// Represents a vector of 3 components of type \c float.
+/// It is intended to be fast and simple.
+///
 class GfVec3f
 {
 public:
@@ -68,8 +65,8 @@ public:
     /// Default constructor does no initialization.
     GfVec3f() {}
 
-
-    // Copy constructor.  XXX: Remove this, use compiler-generated.
+    // Copy constructor.
+    // TODO Remove this, use compiler-generated.
     GfVec3f(const GfVec3f &other) {
         *this = other;
     }
@@ -85,18 +82,21 @@ public:
     GfVec3f(float s0, float s1, float s2) {
         Set(s0, s1, s2);
     }
-    
+
     /// Construct with pointer to values.
     template <class Scl>
     explicit GfVec3f(Scl const *p) { Set(p); }
 
     /// Construct from GfVec3d.
+    GF_API
     explicit GfVec3f(class GfVec3d const &other);
 
     /// Implicitly convert from GfVec3h.
+    GF_API
     GfVec3f(class GfVec3h const &other);
 
     /// Implicitly convert from GfVec3i.
+    GF_API
     GfVec3f(class GfVec3i const &other);
  
     /// Create a unit vector along the X-axis.
@@ -117,7 +117,7 @@ public:
         result[2] = 1;
         return result;
     }
-    
+
     /// Create a unit vector along the i-th axis, zero-based.  Return the zero
     /// vector if \p i is greater than or equal to 3.
     static GfVec3f Axis(size_t i) {
@@ -126,7 +126,7 @@ public:
             result[i] = 1;
         return result;
     }
-    
+
     /// Set all elements with passed arguments.
     GfVec3f &Set(float s0, float s1, float s2) {
         _data[0] = s0;
@@ -168,12 +168,15 @@ public:
         return !(*this == other);
     }
 
-    // XXX: Add inequality for other vec types...
+    // TODO Add inequality for other vec types...
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3d const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3h const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3i const &other) const;
     
     /// Create a vec with negated elements.
@@ -208,25 +211,25 @@ public:
         _data[0] *= s;
         _data[1] *= s;
         _data[2] *= s;
-	return *this;
+        return *this;
     }
     GfVec3f operator*(double s) const {
-	return GfVec3f(*this) *= s;
+        return GfVec3f(*this) *= s;
     }
     friend GfVec3f operator*(double s, GfVec3f const &v) {
         return v * s;
     }
 
         /// Division by scalar.
-    // XXX: should divide by the scalar type.
+    // TODO should divide by the scalar type.
     GfVec3f &operator/=(double s) {
-        // XXX: This should not multiply by 1/s, it should do the division.
+        // TODO This should not multiply by 1/s, it should do the division.
         // Doing the division is more numerically stable when s is close to
         // zero.
         return *this *= (1.0 / s);
     }
     GfVec3f operator/(double s) const {
-	return *this * (1.0 / s);
+        return *this * (1.0 / s);
     }
     
     /// See GfDot().
@@ -234,7 +237,7 @@ public:
         return _data[0] * v[0] + _data[1] * v[1] + _data[2] * v[2];
     }
 
-    /// Returns the projection of \p this onto \p v. That is: 
+    /// Returns the projection of \p this onto \p v. That is:
     /// \code
     /// v * (*this * v)
     /// \endcode
@@ -242,12 +245,13 @@ public:
         return v * (*this * v);
     }
 
-    /// Returns the orthogonal complement of \p this->GetProjection(b). That is:
+    /// Returns the orthogonal complement of \p this->GetProjection(b).
+    /// That is:
     /// \code
     ///  *this - this->GetProjection(b)
     /// \endcode
     GfVec3f GetComplement(GfVec3f const &b) const {
-	return *this - this->GetProjection(b);
+        return *this - this->GetProjection(b);
     }
 
     /// Squared length.
@@ -257,7 +261,7 @@ public:
 
     /// Length
     float GetLength() const {
-        // XXX: should use GfSqrt.
+        // TODO should use GfSqrt.
         return sqrt(GetLengthSq());
     }
 
@@ -270,7 +274,7 @@ public:
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
     float Normalize(float eps = GF_MIN_VECTOR_LENGTH) {
-        // XXX: this seems suspect...  suggest dividing by length so long as
+        // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
         float length = GetLength();
         *this /= (length > eps) ? length : eps;
@@ -283,35 +287,37 @@ public:
         return normalized;
     }
 
-    /// Orthogonalize and optionally normalize a set of basis vectors.
-    /// This uses an iterative method that is very stable even when the vectors
-    /// are far from orthogonal (close to colinear).  The number of iterations
-    /// and thus the computation time does increase as the vectors become
-    /// close to colinear, however.
-    /// Returns a bool specifying whether the solution converged after
-    /// a number of iterations.  If it did not converge, the returned vectors
-    /// will be as close as possible to orthogonal within the iteration limit.
-    /// Colinear vectors will be unaltered, and the method will return false.
+    /// Orthogonalize and optionally normalize a set of basis vectors. This
+    /// uses an iterative method that is very stable even when the vectors are
+    /// far from orthogonal (close to colinear).  The number of iterations and
+    /// thus the computation time does increase as the vectors become close to
+    /// colinear, however. Returns a bool specifying whether the solution
+    /// converged after a number of iterations.  If it did not converge, the
+    /// returned vectors will be as close as possible to orthogonal within the
+    /// iteration limit. Colinear vectors will be unaltered, and the method
+    /// will return false.
+    GF_API
     static bool OrthogonalizeBasis(
         GfVec3f *tx, GfVec3f *ty, GfVec3f *tz,
         const bool normalize,
         double eps = GF_MIN_ORTHO_TOLERANCE);
 
-    /// Sets \c v1 and \c v2 to unit vectors such that v1, v2 and *this
-    /// are mutually orthogonal.  If the length L of *this is smaller than
-    /// \c eps, then v1 and v2 will have magnitude L/eps.  As a result,
-    /// the function delivers a continuous result as *this shrinks in length.
+    /// Sets \c v1 and \c v2 to unit vectors such that v1, v2 and *this are
+    /// mutually orthogonal.  If the length L of *this is smaller than \c eps,
+    /// then v1 and v2 will have magnitude L/eps.  As a result, the function
+    /// delivers a continuous result as *this shrinks in length.
+    GF_API
     void BuildOrthonormalFrame(GfVec3f *v1, GfVec3f *v2,
-			       float eps = GF_MIN_VECTOR_LENGTH) const;
+                    float eps = GF_MIN_VECTOR_LENGTH) const;
 
   
 private:
     float _data[3];
 };
 
-/// Output a GfVec3f
+/// Output a GfVec3f.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfVec3f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfVec3f const &);
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3h.h"
@@ -344,7 +350,6 @@ GfDot(GfVec3f const &v1, GfVec3f const &v2) {
 }
 
 
-
 /// Returns the geometric length of \c v.
 inline float
 GfGetLength(GfVec3f const &v)
@@ -362,8 +367,8 @@ GfNormalize(GfVec3f *v, float eps = GF_MIN_VECTOR_LENGTH)
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.
-/// If the length of this vector is smaller than \p eps, the vector divided
-/// by \p eps is returned.
+/// If the length of this vector is smaller than \p eps, the vector divided by
+/// \p eps is returned.
 inline GfVec3f
 GfGetNormalized(GfVec3f const &v, float eps = GF_MIN_VECTOR_LENGTH)
 {
@@ -400,11 +405,11 @@ GfIsClose(GfVec3f const &v1, GfVec3f const &v2, double tolerance)
 }
 
 
-bool
+GF_API bool
 GfOrthogonalizeBasis(GfVec3f *tx, GfVec3f *ty, GfVec3f *tz,
                      bool normalize, double eps = GF_MIN_ORTHO_TOLERANCE);
 
-void
+GF_API void
 GfBuildOrthonormalFrame(GfVec3f const &v0,
                         GfVec3f* v1,
                         GfVec3f* v2,
@@ -420,7 +425,8 @@ GfCross(GfVec3f const &v1, GfVec3f const &v2)
         v1[0] * v2[1] - v1[1] * v2[0]);
 }
 
-/// Returns the cross product of \p v1 and \p v2. See also GfCross().
+/// Returns the cross product of \p v1 and \p v2. 
+/// \see GfCross()
 inline GfVec3f
 operator^(GfVec3f const &v1, GfVec3f const &v2)
 {
@@ -428,7 +434,7 @@ operator^(GfVec3f const &v1, GfVec3f const &v2)
 }
 
 /// Spherical linear interpolation in three dimensions.
-GfVec3f
+GF_API GfVec3f
 GfSlerp(double alpha, GfVec3f const &v0, GfVec3f const &v1);
 
  

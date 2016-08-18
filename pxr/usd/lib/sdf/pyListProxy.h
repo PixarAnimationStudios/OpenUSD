@@ -21,10 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyListProxy.h
-
 #ifndef SDF_PYLISTPROXY_H
 #define SDF_PYLISTPROXY_H
+
+/// \file sdf/pyListProxy.h
+
+#include <boost/python.hpp>
+#include <boost/python/slice.hpp>
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listProxy.h"
@@ -34,8 +37,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <stdexcept>
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
 
 template <class T>
 class SdfPyWrapListProxy {

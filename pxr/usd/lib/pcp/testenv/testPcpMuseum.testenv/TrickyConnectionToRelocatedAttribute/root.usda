@@ -1,0 +1,54 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates attribute connections to attributes in a class that's
+    been relocated. HumanRig references in a sub-rig, FaceRig, in which a local class
+    is inherited by two instances. The anim scopes of these instances are relocated
+    out of the rig. 
+
+    In HumanRig, an attribute connection is added to the anim scope in the class.
+    We expect this connection to be translated so that it points to the attribute
+    in the final relocated location of each instance's anim scope.
+
+    This came from bug 33377.
+    """
+)
+
+def Scope "HumanRig" (
+    relocates = {
+        <rig/Face/Anim>: <Anim/Face>
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "rig"
+    {
+        def Scope "Face" (
+            references = @face_rig.usda@</FaceRig>
+        )
+        {
+            over "rig"
+            {
+                over "SymEyeRig"
+                {
+                    over "Anim"
+                    {
+                        custom double baz = 0
+                    }
+
+                    over "rig"
+                    {
+                        over "Mover"
+                        {
+                            add double bar.connect = </HumanRig/rig/Face/rig/SymEyeRig/Anim.baz>
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

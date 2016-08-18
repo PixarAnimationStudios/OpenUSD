@@ -1,0 +1,107 @@
+Loading @testPcpRegressionBugs.testenv/bug92827/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.usda            /Rig
+
+Child names:
+     ['B', 'Class', 'Other']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Class>
+
+Prim Stack:
+    root.usda            /Rig/Class
+
+Child names:
+     ['A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Class/A>
+
+Prim Stack:
+    root.usda            /Rig/Class/A
+
+Property names:
+     ['foo']
+
+Property stacks:
+/Rig/Class/A.foo:
+    root.usda            /Rig/Class/A.foo
+
+------------------------------------------------------------------------
+Results for composing </Rig/Class/B>
+
+Prim Stack:
+    root.usda            /Rig/Class/B
+
+Property names:
+     ['bar']
+
+Property stacks:
+/Rig/Class/B.bar:
+    root.usda            /Rig/Class/B.bar
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other>
+
+Prim Stack:
+    root.usda            /Rig/Other
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A>
+
+Prim Stack:
+    root.usda            /Rig/Other/A
+
+Child names:
+     ['Instance']
+
+Prohibited child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A/Instance>
+
+Prim Stack:
+    root.usda            /Rig/Other/A/Instance
+    root.usda            /Rig/Class
+
+Child names:
+     ['A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A/Instance/A>
+
+Prim Stack:
+    root.usda            /Rig/Class/A
+
+Property names:
+     ['foo']
+
+Property stacks:
+/Rig/Other/A/Instance/A.foo:
+    root.usda            /Rig/Class/A.foo
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A/Instance/B>
+
+Prim Stack:
+    root.usda            /Rig/Class/B
+
+Property names:
+     ['bar']
+
+Property stacks:
+/Rig/Other/A/Instance/B.bar:
+    root.usda            /Rig/Class/B.bar
+

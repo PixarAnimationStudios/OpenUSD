@@ -1,0 +1,31 @@
+Loading @testPcpMuseum.testenv/BasicPayload/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+
+Child names:
+     ['SimplePayload']
+
+------------------------------------------------------------------------
+Results for composing </Root/SimplePayload>
+
+Prim Stack:
+    root.usda            /Root/SimplePayload
+    payload.usda         /SimplePayload
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Root/SimplePayload/Child>
+
+Prim Stack:
+    payload.usda         /SimplePayload/Child
+

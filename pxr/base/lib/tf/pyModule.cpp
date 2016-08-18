@@ -23,9 +23,12 @@
 //
 // Do not include pyModule.h or we'd need an implementation of WrapModule().
 //#include "pxr/base/tf/pyModule.h"
+#include "pxr/base/arch/defines.h"
+
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyModuleNotice.h"
@@ -37,33 +40,35 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/scoped_ptr.hpp>
-#include "pxr/base/tf/hashset.h"
 
+#include <boost/bind.hpp>
+
+#include <boost/function.hpp>
+
+#include <boost/scoped_ptr.hpp>
 #include <boost/python/docstring_options.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
+
 #include <boost/python/object/function.hpp>
+
 #include <boost/python/str.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/make_function.hpp>
 #include <boost/python/raw_function.hpp>
 #include <boost/python/scope.hpp>
-
 #include <boost/mpl/vector.hpp>
 
 #include <string>
 #include <vector>
+#include <ciso646>
 
 using std::string;
 using std::vector;
 
 using namespace boost::python;
-
 
 class Tf_ModuleProcessor {
 public:
@@ -215,7 +220,6 @@ public:
                    *fullNamePrefix + "." + name, *fullNamePrefix, 0, _1, _2),
                   default_call_policies(),
                   boost::mpl::vector<handle<>, tuple, dict>()));
-
             // set the wrapper function's name, and namespace name.
             // XXX copy __name__, __doc__, possibly __dict__.
             //wrapperFn.attr("__name__") = handle<>(PyObject_GetAttrString(fn, "__name__"));
@@ -374,6 +378,7 @@ void Tf_PyPostProcessModule()
     }
 }
 
+TF_API
 void Tf_PyInitWrapModule(
     void (*wrapModule)(),                     
     const char* packageModule,

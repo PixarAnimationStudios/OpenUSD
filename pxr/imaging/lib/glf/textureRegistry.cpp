@@ -326,7 +326,7 @@ GlfTextureRegistry::_TextureMetadata::_TextureMetadata(
 
 GlfTextureRegistry::_TextureMetadata::_TextureMetadata(
     const TfTokenVector &textures)
-    : _TextureMetadata(textures.data(), textures.size())
+    : _TextureMetadata(textures.data(), static_cast<uint32_t>(textures.size()))
 {}
 
 GlfTextureRegistry::_TextureMetadata::_TextureMetadata(

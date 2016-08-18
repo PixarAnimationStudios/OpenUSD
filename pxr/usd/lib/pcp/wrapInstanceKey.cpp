@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+
 #include "pxr/usd/pcp/instanceKey.h"
 
 #include "pxr/usd/pcp/primIndex.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
- 
 using namespace boost::python;
 
 static size_t

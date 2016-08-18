@@ -6,6 +6,13 @@ if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+    # conversion from 'double' to 'const float' requires a narrowing conversion
+    add_definitions("/wd4838")
+    add_definitions("/DPTEX_STATIC")
+endif()
+
 pxr_shared_library(glf
     LIBRARIES
         arch
@@ -16,14 +23,17 @@ pxr_shared_library(glf
         tf
         tracelite
         sdf
+        ${Boost_CHRONO_LIBRARY}
         ${Boost_PYTHON_LIBRARY}
         ${Boost_SYSTEM_LIBRARY}
+        ${Boost_THREAD_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${OPENGL_glu_LIBRARY}
         ${OIIO_LIBRARIES}
         ${PTEX_LIBRARY}
         ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
+		${ZLIB_LIBRARY_RELEASE}
 
     INCLUDE_DIRS
         ${OIIO_INCLUDE_DIRS}
@@ -68,11 +78,15 @@ pxr_shared_library(glf
         debugCodes
         glContextRegistry
 
+    PUBLIC_HEADERS
+        api.h
+        
     PRIVATE_HEADERS
         rankedTypeMap.h
 
     CPPFILES
         dictionary.cpp
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         oiioImage.cpp
 

@@ -1,0 +1,2 @@
+#usda 1.0
+def Scope "Foo" (payload = @payload_target.usda@</Foo>){}

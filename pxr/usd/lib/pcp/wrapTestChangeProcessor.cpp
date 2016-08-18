@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/changes.h"
 
@@ -30,7 +32,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/weakBase.h"
 #include <boost/noncopyable.hpp>
-#include <boost/python.hpp>
 
 using namespace boost::python;
 

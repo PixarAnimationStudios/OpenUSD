@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/debugCodes.h
-
 #ifndef GLF_DEBUG_CODES_H
 #define GLF_DEBUG_CODES_H
+
+/// \file glf/debugCodes.h
 
 #include "pxr/base/tf/debug.h"
 

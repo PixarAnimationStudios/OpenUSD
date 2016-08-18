@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Model "Model" (
+    relocates = {
+        <Rig/LRig/Anim> : <Anim/LRig>
+    }
+)
+{
+    custom string doc = "Model payload"
+
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "Rig" (
+        add references = @rig.usda@</Rig>
+    )
+    {
+    }
+}

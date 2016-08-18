@@ -24,6 +24,8 @@
 #ifndef {{ Upper(tokensPrefix) }}_TOKENS_H
 #define {{ Upper(tokensPrefix) }}_TOKENS_H
 
+/// \file {{ libraryName }}/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -32,8 +34,6 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file {{ libraryPath }}/tokens.h
 
 /// \hideinitializer
 #define {{ Upper(tokensPrefix) }}_TOKENS \
@@ -45,7 +45,8 @@
 {% endfor %}
 
 /// \anchor {{ tokensPrefix }}Tokens
-/// \brief <b>{{ tokensPrefix }}Tokens</b> provides static, efficient TfToken's for
+///
+/// <b>{{ tokensPrefix }}Tokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

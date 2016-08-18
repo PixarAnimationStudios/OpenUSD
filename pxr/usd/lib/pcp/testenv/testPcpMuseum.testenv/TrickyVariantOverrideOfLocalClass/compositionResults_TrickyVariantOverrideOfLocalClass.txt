@@ -1,0 +1,48 @@
+Loading @testPcpMuseum.testenv/TrickyVariantOverrideOfLocalClass/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </HandRig>
+
+Prim Stack:
+    root.usda            /HandRig
+    root.usda            /HandRig{FingerRigArmature=off}
+
+Variant Selections:
+    {FingerRigArmature = off}
+
+Child names:
+     ['_Class_FingerRig', 'IndexRig']
+
+------------------------------------------------------------------------
+Results for composing </HandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.usda            /HandRig/_Class_FingerRig
+    root.usda            /HandRig{FingerRigArmature=off}_Class_FingerRig
+
+Property names:
+     ['armature_enabled']
+
+Property stacks:
+/HandRig/_Class_FingerRig.armature_enabled:
+    root.usda            /HandRig{FingerRigArmature=off}_Class_FingerRig.armature_enabled
+
+------------------------------------------------------------------------
+Results for composing </HandRig/IndexRig>
+
+Prim Stack:
+    root.usda            /HandRig/IndexRig
+    root.usda            /HandRig/_Class_FingerRig
+    root.usda            /HandRig{FingerRigArmature=off}_Class_FingerRig
+
+Property names:
+     ['armature_enabled']
+
+Property stacks:
+/HandRig/IndexRig.armature_enabled:
+    root.usda            /HandRig{FingerRigArmature=off}_Class_FingerRig.armature_enabled
+

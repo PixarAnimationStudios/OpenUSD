@@ -1,0 +1,196 @@
+Loading session @testPcpMuseum.testenv/BasicReference/session.usda@
+
+Loading @testPcpMuseum.testenv/BasicReference/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     session.usda
+     root.usda
+     sublayer.usda
+
+------------------------------------------------------------------------
+Results for composing </InternalSublayerReference>
+
+Prim Stack:
+    root.usda            /InternalSublayerReference
+    sublayer.usda        /InternalSublayerReference
+
+Child names:
+     ['InternalSublayerReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </InternalSublayerReference/InternalSublayerReference_Child>
+
+Prim Stack:
+    root.usda            /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.usda        /InternalSublayerReference/InternalSublayerReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalReference>
+
+Prim Stack:
+    sublayer.usda        /PrimInSublayerWithInternalReference
+    root.usda            /InternalSublayerReference
+    sublayer.usda        /InternalSublayerReference
+
+Child names:
+     ['InternalSublayerReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalReference/InternalSublayerReference_Child>
+
+Prim Stack:
+    root.usda            /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.usda        /InternalSublayerReference/InternalSublayerReference_Child
+
+------------------------------------------------------------------------
+Results for composing </SublayerPrim>
+
+Prim Stack:
+    sublayer.usda        /SublayerPrim
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalReference2>
+
+Prim Stack:
+    sublayer.usda        /PrimInSublayerWithInternalReference2
+    sublayer.usda        /SublayerPrim
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences>
+
+Prim Stack:
+    root.usda            /PrimWithReferences
+    ref.usda             /PrimA
+    ref2.usda            /PrimC
+    ref2.usda            /PrimB
+
+Child names:
+     ['PrimB_Child', 'PrimC_Child', 'PrimA_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences/PrimB_Child>
+
+Prim Stack:
+    ref2.usda            /PrimB/PrimB_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences/PrimC_Child>
+
+Prim Stack:
+    ref2.usda            /PrimC/PrimC_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences/PrimA_Child>
+
+Prim Stack:
+    ref.usda             /PrimA/PrimA_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimB>
+
+Prim Stack:
+    root.usda            /PrimB
+
+Child names:
+     ['PrimB_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimB/PrimB_Child>
+
+Prim Stack:
+    root.usda            /PrimB/PrimB_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfReference>
+
+Prim Stack:
+    root.usda            /PrimWithSelfReference
+    root.usda            /InternalReference
+    sublayer.usda        /InternalSublayerReference
+
+Child names:
+     ['InternalSublayerReference_Child', 'InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfReference/InternalSublayerReference_Child>
+
+Prim Stack:
+    sublayer.usda        /InternalSublayerReference/InternalSublayerReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfReference/InternalReference_Child>
+
+Prim Stack:
+    root.usda            /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalReference>
+
+Prim Stack:
+    root.usda            /PrimWithInternalReference
+    root.usda            /InternalReference
+    session.usda         /InternalReference2
+
+Child names:
+     ['InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalReference/InternalReference_Child>
+
+Prim Stack:
+    root.usda            /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReference>
+
+Prim Stack:
+    root.usda            /InternalReference
+
+Child names:
+     ['InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </InternalReference/InternalReference_Child>
+
+Prim Stack:
+    root.usda            /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget>
+
+Prim Stack:
+    root.usda            /PrimWithDefaultReferenceTarget
+    defaultRef.usda      /Default
+
+Child names:
+     ['Default_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget/Default_Child>
+
+Prim Stack:
+    defaultRef.usda      /Default/Default_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget2>
+
+Prim Stack:
+    root.usda            /PrimWithDefaultReferenceTarget2
+    root.usda            /InternalReference
+
+Child names:
+     ['InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget2/InternalReference_Child>
+
+Prim Stack:
+    root.usda            /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReference2>
+
+Prim Stack:
+    session.usda         /InternalReference2
+

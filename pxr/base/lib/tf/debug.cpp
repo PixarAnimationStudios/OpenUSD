@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <ciso646>
 
 using boost::function;
 using boost::bind;
@@ -512,7 +513,7 @@ TfDebug::TimedScopeHelper<B>::~TimedScopeHelper()
     }
 }
 
-template class TfDebug::TimedScopeHelper<true>;
+template struct TfDebug::TimedScopeHelper<true>;
     
 /*
  * Scan the environment variable TF_DEBUG for debug symbols.

@@ -24,50 +24,48 @@
 #ifndef TF_DL_H
 #define TF_DL_H
 
+/// \file tf/dl.h
+/// \ingroup group_tf_SystemsExt
+/// Interface for opening code libraries.
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/tf/api.h"
 
-#include <dlfcn.h>
 #include <string>
 
-/*!
- * \file dl.h
- * \ingroup group_tf_SystemsExt
- * \brief Interface for opening code libraries.
- */
+/// \addtogroup group_tf_SystemsExt
+///@{
 
-
-
-/*!
- * \brief Call dlopen() and notify lib/tf that a new module has been loaded.
- * \ingroup group_tf_SystemsExt
- *
- * This is a wrapper around dlopen(), in the sense that this function
- * simply calls dlopen(\p name, \p flag).  It will additionally load
- * script bindings if scripting is initialized and loading is requested.
- * 
- * If \p error is not NULL, it will be set to the return value of
- * a dlerror() call after the dlopen(), or cleared if that value is NULL.
- * It is not reliable to get the error string by calling dlerror()
- * after \c TfDlopen().
- *
- * If you set the environment variable TF_DLOPEN_DEBUG then debug output
- * will be sent to stdout on each invocation of this function.
- */
-
-void* TfDlopen(const std::string &filename, int flag, 
-               std::string *error = NULL, bool loadScriptBindings = true);
+/// Call \c dlopen() and notify \c lib/tf that a new module has been loaded.
+///
+/// This is a wrapper around ArchOpenLibrary(), in the sense that this function
+/// simply calls \c dlopen(\p name, \p flag).  It will additionally load script
+/// bindings if scripting is initialized and loading is requested.
+/// 
+/// If \p error is not \c NULL, it will be set to the return value of a
+/// \c dlerror() call after the \c ArchOpenLibrary(), or cleared if that value
+// is \c NULL. It is not reliable to get the error string by calling
+/// \c dlerror() after \c TfDlopen().
+///
+/// If you set the environment variable \c TF_DLOPEN_DEBUG then debug output
+/// will be sent to \c stdout on each invocation of this function.
+TF_API
+void* TfDlopen(const std::string &filename,
+               int flag, 
+               std::string *error = NULL,
+               bool loadScriptBindings = true);
 
 /*!
  * \brief Call dlclose().
  * \ingroup group_tf_SystemsExt
  */
-
+TF_API
 int TfDlclose(void* handle);
 
+/// \private
 bool Tf_DlOpenIsActive();
+/// \private
 bool Tf_DlCloseIsActive();
 
-
-
-
+///@}
 
 #endif

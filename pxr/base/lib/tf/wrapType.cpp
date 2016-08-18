@@ -21,6 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python/converter/registry.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/has_back_reference.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/overloads.hpp>
+#include <boost/preprocessor.hpp>
+
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
@@ -32,15 +41,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/weakBase.h"
-
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/has_back_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/preprocessor.hpp>
 
 #include <string>
 

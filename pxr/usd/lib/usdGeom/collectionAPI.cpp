@@ -203,7 +203,7 @@ UsdGeomCollectionAPI::AppendTarget(
             targetFaceCounts.push_back(0);
     }
 
-    targetFaceCounts.push_back(faceIndices.size()); 
+    targetFaceCounts.push_back(static_cast<int>(faceIndices.size())); 
     targetFaceIndices.reserve(targetFaceIndices.size() + faceIndices.size());
     TF_FOR_ALL(it, faceIndices) {
         targetFaceIndices.push_back(*it);
@@ -384,7 +384,7 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
         return true;
     } 
 
-    TF_VERIFY(not ((bool)targetFaceCountsAttr xor (bool)targetFaceIndicesAttr));
+    TF_VERIFY(not (((bool)targetFaceCountsAttr) xor ((bool)targetFaceIndicesAttr)));
 
     // The list of all timeSamples at which the collection attributes are 
     // authored.

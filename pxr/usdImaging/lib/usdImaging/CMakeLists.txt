@@ -6,6 +6,10 @@ if (QT4_FOUND)
     list(APPEND optionalPublicClasses unitTestHelper)
 endif()
 
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
+
 # Note: both python include directives are included for compatibility.
 pxr_shared_library(usdImaging
     LIBRARIES
@@ -15,6 +19,7 @@ pxr_shared_library(usdImaging
         tracelite
         vt
         work
+        garch
         glf
         hd
         hdx
@@ -68,6 +73,7 @@ pxr_shared_library(usdImaging
         ${optionalPublicClasses}
 
     PUBLIC_HEADERS
+        api.h
         version.h
 
     PRIVATE_CLASSES
@@ -77,6 +83,7 @@ pxr_shared_library(usdImaging
         unitTestGLDrawing.h
 
     CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

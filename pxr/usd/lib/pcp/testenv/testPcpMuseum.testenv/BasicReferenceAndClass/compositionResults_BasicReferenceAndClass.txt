@@ -1,0 +1,28 @@
+Loading @testPcpMuseum.testenv/BasicReferenceAndClass/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    root.usda            /Class
+    model.usda           /Model
+    model.usda           /Class
+
+Property names:
+     ['x']
+
+Property stacks:
+/Model.x:
+    model.usda           /Class.x
+
+------------------------------------------------------------------------
+Results for composing </Class>
+
+Prim Stack:
+    root.usda            /Class
+

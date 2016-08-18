@@ -1,0 +1,190 @@
+Loading @testPcpMuseum.testenv/BasicInstancing/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_Prop>
+
+Prim Stack:
+    root.usda            /_class_Prop
+
+Child names:
+     ['From_class_in_root', 'geom']
+
+Property names:
+     ['a']
+
+Property stacks:
+/_class_Prop.a:
+    root.usda            /_class_Prop.a
+
+------------------------------------------------------------------------
+Results for composing </_class_Prop/From_class_in_root>
+
+Prim Stack:
+    root.usda            /_class_Prop/From_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </_class_Prop/geom>
+
+Prim Stack:
+    root.usda            /_class_Prop/geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/_class_Prop/geom.x:
+    root.usda            /_class_Prop/geom.x
+
+------------------------------------------------------------------------
+Results for composing </Set_1>
+
+Prim Stack:
+    root.usda            /Set_1
+    set.usda             /Set
+
+Child names:
+     ['InstancedProp', 'UninstancedProp']
+
+------------------------------------------------------------------------
+Results for composing </Set_1/InstancedProp>
+
+Prim Stack:
+    root.usda            /Set_1/InstancedProp
+    root.usda            /_class_Prop
+    set.usda             /Set/InstancedProp
+    set.usda             /_class_Prop
+    prop.usda            /Prop
+    prop.usda            /_class_Prop
+
+Child names:
+     ['geom', 'From_class_in_set', 'From_class_in_root']
+
+Property names:
+     ['a']
+
+Property stacks:
+/Set_1/InstancedProp.a:
+    root.usda            /Set_1/InstancedProp.a
+    root.usda            /_class_Prop.a
+    set.usda             /Set/InstancedProp.a
+    set.usda             /_class_Prop.a
+    prop.usda            /Prop.a
+
+------------------------------------------------------------------------
+Results for composing </Set_1/InstancedProp/geom>
+
+Prim Stack:
+    root.usda            /_class_Prop/geom
+    set.usda             /_class_Prop/geom
+    prop.usda            /Prop/geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set_1/InstancedProp/geom.x:
+    root.usda            /_class_Prop/geom.x
+    set.usda             /_class_Prop/geom.x
+    prop.usda            /Prop/geom.x
+
+------------------------------------------------------------------------
+Results for composing </Set_1/InstancedProp/From_class_in_set>
+
+Prim Stack:
+    set.usda             /_class_Prop/From_class_in_set
+
+------------------------------------------------------------------------
+Results for composing </Set_1/InstancedProp/From_class_in_root>
+
+Prim Stack:
+    root.usda            /_class_Prop/From_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </Set_1/UninstancedProp>
+
+Prim Stack:
+    root.usda            /Set_1/UninstancedProp
+    root.usda            /_class_Prop
+    set.usda             /Set/UninstancedProp
+    set.usda             /_class_Prop
+    prop.usda            /Prop
+    prop.usda            /_class_Prop
+
+Child names:
+     ['geom', 'From_class_in_set', 'From_set', 'From_class_in_root', 'From_root']
+
+Property names:
+     ['a']
+
+Property stacks:
+/Set_1/UninstancedProp.a:
+    root.usda            /Set_1/UninstancedProp.a
+    root.usda            /_class_Prop.a
+    set.usda             /Set/UninstancedProp.a
+    set.usda             /_class_Prop.a
+    prop.usda            /Prop.a
+
+------------------------------------------------------------------------
+Results for composing </Set_1/UninstancedProp/geom>
+
+Prim Stack:
+    root.usda            /Set_1/UninstancedProp/geom
+    root.usda            /_class_Prop/geom
+    set.usda             /Set/UninstancedProp/geom
+    set.usda             /_class_Prop/geom
+    prop.usda            /Prop/geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set_1/UninstancedProp/geom.x:
+    root.usda            /Set_1/UninstancedProp/geom.x
+    root.usda            /_class_Prop/geom.x
+    set.usda             /Set/UninstancedProp/geom.x
+    set.usda             /_class_Prop/geom.x
+    prop.usda            /Prop/geom.x
+
+------------------------------------------------------------------------
+Results for composing </Set_1/UninstancedProp/From_class_in_set>
+
+Prim Stack:
+    set.usda             /_class_Prop/From_class_in_set
+
+------------------------------------------------------------------------
+Results for composing </Set_1/UninstancedProp/From_set>
+
+Prim Stack:
+    set.usda             /Set/UninstancedProp/From_set
+
+------------------------------------------------------------------------
+Results for composing </Set_1/UninstancedProp/From_class_in_root>
+
+Prim Stack:
+    root.usda            /_class_Prop/From_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </Set_1/UninstancedProp/From_root>
+
+Prim Stack:
+    root.usda            /Set_1/UninstancedProp/From_root
+
+------------------------------------------------------------------------
+Results for composing </NotAnInstance>
+
+Prim Stack:
+    root.usda            /NotAnInstance
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </NotAnInstance/Child>
+
+Prim Stack:
+    root.usda            /NotAnInstance/Child
+

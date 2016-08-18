@@ -24,6 +24,7 @@
 #ifndef USD_CLIP_H
 #define USD_CLIP_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/pcp/node.h"
 
 #include "pxr/usd/sdf/assetPath.h"
@@ -50,7 +51,9 @@ bool
 UsdIsClipRelatedField(const TfToken& fieldName);
 
 /// \class Usd_ResolvedClipInfo
+///
 /// Object containing resolved clip metadata for a prim in a LayerStack.
+///
 struct Usd_ResolvedClipInfo
 {
     Usd_ResolvedClipInfo() : indexOfLayerWhereAssetPathsFound(0) { }
@@ -116,8 +119,10 @@ Usd_ResolveClipInfo(
     Usd_ResolvedClipInfo* clipInfo);
 
 /// \class Usd_Clip
+///
 /// Represents a clip from which time samples may be read during
 /// value resolution.
+///
 struct Usd_Clip : public boost::noncopyable
 {
 public:
@@ -256,7 +261,7 @@ private:
 typedef boost::shared_ptr<Usd_Clip> Usd_ClipRefPtr;
 typedef std::vector<Usd_ClipRefPtr> Usd_ClipRefPtrVector;
 
-std::ostream&
+USD_API std::ostream&
 operator<<(std::ostream& out, const Usd_ClipRefPtr& clip);
 
 #endif // USD_CLIP_H

@@ -28,6 +28,9 @@
 #ifndef GF_{{ UPPER(RNG)[2:] }}_H
 #define GF_{{ UPPER(RNG)[2:] }}_H
 
+/// \file gf/range{{ SUFFIX }}.h
+/// \ingroup group_gf_BasicGeometry
+
 {% if DIM > 1 %}
 #include "pxr/base/gf/vec{{ DIM }}d.h"
 #include "pxr/base/gf/vec{{ DIM }}f.h"
@@ -40,32 +43,26 @@
 #include <cstddef>
 #include <iosfwd>
 
-/*!
- * \file range{{ SUFFIX }}.h
- * \ingroup group_gf_BasicGeometry
- */
-
 class GfRange{{ DIM }}d;
 class GfRange{{ DIM }}f;
 
 template <>
 struct GfIsGfRange<class {{ RNG }}> { static const bool value = true; };
 
-//!
-// \class {{ RNG }} range{{ SUFFIX }}.h "pxr/base/gf/range{{ SUFFIX }}.h"
-// \ingroup group_gf_BasicGeometry
-// \brief Basic type: {{ DIM }}-dimensional floating point range.
-//
-// This class represents a {{ DIM }}-dimensional range (or interval)
-// All operations are component-wise and conform to interval mathematics.
-// An empty range is one where max < min.  The default empty is
-// [FLT_MAX,-FLT_MAX]
-
+/// \class {{ RNG }}
+/// \ingroup group_gf_BasicGeometry
+///
+/// Basic type: {{ DIM }}-dimensional floating point range.
+///
+/// This class represents a {{ DIM }}-dimensional range (or interval) All
+/// operations are component-wise and conform to interval mathematics. An
+/// empty range is one where max < min.
+/// The default empty is [FLT_MAX,-FLT_MAX]
 class {{ RNG }}
 {
 public:
 
-    //! Helper typedef.
+    /// Helper typedef.
     typedef {{ MINMAX }} MinMaxType;
 
 {% if DIM == 1 %}
@@ -76,8 +73,8 @@ public:
     typedef {{ MINMAX }}::ScalarType ScalarType;
 {% endif %}
 
-    //!   Sets the range to an empty interval
-    // \warning Only found in libtess (once) and libgpt (once) Deprecated?
+    /// Sets the range to an empty interval
+    // TODO check whether this can be deprecated.
     void inline SetEmpty() {
 {% if DIM == 1 %}
 	_min =  FLT_MAX;
@@ -88,33 +85,33 @@ public:
 {% endif %}
     }
 
-    //! The default constructor creates an empty range.
+    /// The default constructor creates an empty range.
     {{ RNG }}() {
         SetEmpty();
     }
 
-    //! This constructor initializes the minimum and maximum points.
+    /// This constructor initializes the minimum and maximum points.
     {{ RNG }}({{ MINMAXPARM }}min, {{ MINMAXPARM }}max)
         : _min(min), _max(max)
     {
     }
 
-    //! Returns the minimum value of the range.
+    /// Returns the minimum value of the range.
     {{ MINMAXPARM }}GetMin() const { return _min; }
 
-    //! Returns the maximum value of the range.
+    /// Returns the maximum value of the range.
     {{ MINMAXPARM }}GetMax() const { return _max; }
 
-    //! Returns the size of the range.
+    /// Returns the size of the range.
     {{ MINMAX }} GetSize() const { return _max - _min; }
 
-    //! Sets the minimum value of the range.
+    /// Sets the minimum value of the range.
     void SetMin({{ MINMAXPARM }}min) { _min = min; }
 
-    //! Sets the maximum value of the range.
+    /// Sets the maximum value of the range.
     void SetMax({{ MINMAXPARM }}max) { _max = max; }
 
-    //! Returns whether the range is empty (max < min).
+    /// Returns whether the range is empty (max < min).
     bool IsEmpty() const {
 {% if DIM == 1 %}
         return _min > _max;
@@ -123,18 +120,16 @@ public:
 {% endif %}
     }
 
-    //! Modifies the range if necessary to surround the given value.
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Modifies the range if necessary to surround the given value.
+    /// \deprecated Use UnionWith() instead.
     void ExtendBy({{ MINMAXPARM }}point) { UnionWith(point); }
 
-    //! Modifies the range if necessary to surround the given range.
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Modifies the range if necessary to surround the given range.
+    /// \deprecated Use UnionWith() instead.
     void ExtendBy(const {{ RNG }} &range) { UnionWith(range); }
 
-    //!
-    // Returns true if the \p point is located inside the range.
-    // As with all operations of this type, the range is assumed to include its
-    // extrema.
+    /// Returns true if the \p point is located inside the range. As with all
+    /// operations of this type, the range is assumed to include its extrema.
     bool Contains({{ MINMAXPARM }}point) const {
 {% if DIM == 1 %}
         return (point >= _min && point <= _max);
@@ -143,36 +138,31 @@ public:
 {% endif %}
     }
 
-    //!
-    // Returns true if the \p range is located entirely inside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
+    /// Returns true if the \p range is located entirely inside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
     bool Contains(const {{ RNG }} &range) const {
-	return Contains(range._min) && Contains(range._max);
+        return Contains(range._min) && Contains(range._max);
     }
 
-    //!
-    // Returns true if the \p point is located inside the range.
-    // As with all operations of this type, the range is assumed to include its
-    // extrema.
-    // \warning Deprecated - use \c Contains instead.
+    /// Returns true if the \p point is located inside the range. As with all
+    /// operations of this type, the range is assumed to include its extrema.
+    /// \deprecated Use Contains() instead.
     bool IsInside({{ MINMAXPARM }}point) const {
         return Contains(point);
     }
 
-    //!
-    // Returns true if the \p range is located entirely inside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
-    // \warning Deprecated - use \c Contains instead.
+    /// Returns true if the \p range is located entirely inside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
+    /// \deprecated Use Contains() instead.
     bool IsInside(const {{ RNG }} &range) const {
-	return Contains(range);
+        return Contains(range);
     }
 
-    //!
-    // Returns true if the \p range is located entirely outside the range.
-    // As with all operations of this type, the ranges are assumed to
-    // include their extrema.
+    /// Returns true if the \p range is located entirely outside the range. As
+    /// with all operations of this type, the ranges are assumed to include
+    /// their extrema.
     bool IsOutside(const {{ RNG }} &range) const {
 {% if DIM == 1 %}
         return (range._max < _min || range._min > _max);
@@ -181,195 +171,197 @@ public:
 {% endif %}
     }
 
-    //! Returns the smallest \c {{ RNG }} which contains both \p a and \p b
+    /// Returns the smallest \c {{ RNG }} which contains both \p a and \p b.
     static {{ RNG }} GetUnion(const {{ RNG }} &a, const {{ RNG }} &b) {
-	{{ RNG }} res = a;
-	_FindMin(res._min,b._min);
-	_FindMax(res._max,b._max);
-	return res;
+        {{ RNG }} res = a;
+        _FindMin(res._min,b._min);
+        _FindMax(res._max,b._max);
+        return res;
     }
 
-    //! Extend \p this to include \p b
+    /// Extend \p this to include \p b.
     const {{ RNG }} &UnionWith(const {{ RNG }} &b) {
-	_FindMin(_min,b._min);
-	_FindMax(_max,b._max);
-	return *this;
+        _FindMin(_min,b._min);
+        _FindMax(_max,b._max);
+        return *this;
     }
 
-    //! Extend \p this to include \p b
+    /// Extend \p this to include \p b.
     const {{ RNG }} &UnionWith({{ MINMAXPARM }}b) {
-	_FindMin(_min,b);
-	_FindMax(_max,b);
-	return *this;
+        _FindMin(_min,b);
+        _FindMax(_max,b);
+        return *this;
     }
 
-    //! Returns the smallest \c {{ RNG }} which contains both \p a and \p b
-    // \warning Deprecated - use \c GetUnion instead.
+    /// Returns the smallest \c {{ RNG }} which contains both \p a and \p b
+    /// \deprecated Use GetUnion() instead.
     static {{ RNG }} Union(const {{ RNG }} &a, const {{ RNG }} &b) {
         return GetUnion(a, b);
     }
 
-    //! Extend \p this to include \p b
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Extend \p this to include \p b.
+    /// \deprecated Use UnionWith() instead.
     const {{ RNG }} &Union(const {{ RNG }} &b) {
         return UnionWith(b);
     }
 
-    //! Extend \p this to include \p b
-    // \warning Deprecated - use \c UnionWith instead.
+    /// Extend \p this to include \p b.
+    /// \deprecated Use UnionWith() instead.
     const {{ RNG }} &Union({{ MINMAXPARM }}b) {
         return UnionWith(b);
     }
 
-    //! Returns a \c {{ RNG }} that describes the intersection of \p a and \p b
+    /// Returns a \c {{ RNG }} that describes the intersection of \p a and \p b.
     static {{ RNG }} GetIntersection(const {{ RNG }} &a, const {{ RNG }} &b) {
-	{{ RNG }} res = a;
-	_FindMax(res._min,b._min);
-	_FindMin(res._max,b._max);
-	return res;
+        {{ RNG }} res = a;
+        _FindMax(res._min,b._min);
+        _FindMin(res._max,b._max);
+        return res;
     }
 
-    //! Returns a \c {{ RNG }} that describes the intersection of \p a and \p b
-    // \warning Deprecated - use \c GetIntersection instead.
+    /// Returns a \c {{ RNG }} that describes the intersection of \p a and \p b.
+    /// \deprecated Use GetIntersection() instead.
     static {{ RNG }} Intersection(const {{ RNG }} &a, const {{ RNG }} &b) {
         return GetIntersection(a, b);
     }
 
-    //! Modifies this range to hold its intersection with \p b and returns the
-    //  result
+    /// Modifies this range to hold its intersection with \p b and returns the
+    /// result
     const {{ RNG }} &IntersectWith(const {{ RNG }} &b) {
-	_FindMax(_min,b._min);
-	_FindMin(_max,b._max);
-	return *this;
+        _FindMax(_min,b._min);
+        _FindMin(_max,b._max);
+        return *this;
     }
 
-    //! Modifies this range to hold its intersection with \p b and returns the
-    //  result
-    // \warning Deprecated - use \c IntersectWith instead.
+    /// Modifies this range to hold its intersection with \p b and returns the
+    /// result.
+    /// \deprecated Use IntersectWith() instead.
     const {{ RNG }} &Intersection(const {{ RNG }} &b) {
         return IntersectWith(b);
     }
 
-    //! unary sum.
+    /// unary sum.
     {{ RNG }} operator +=(const {{ RNG }} &b) {
-	_min += b._min;
-	_max += b._max;
-	return *this;
+        _min += b._min;
+        _max += b._max;
+        return *this;
     }
 
-    //! unary difference.
+    /// unary difference.
     {{ RNG }} operator -=(const {{ RNG }} &b) {
-	_min -= b._max;
-	_max -= b._min;
-	return *this;
+        _min -= b._max;
+        _max -= b._min;
+        return *this;
     }
 
-    //! unary multiply
+    /// unary multiply.
     {{ RNG }} operator *=(double m) {
-	if (m > 0) {
-	    _min *= m;
-	    _max *= m;
-	} else {
-	    {{ MINMAX }} tmp = _min;
-	    _min = _max * m;
-	    _max = tmp * m;
-	}
-	return *this;
+        if (m > 0) {
+            _min *= m;
+            _max *= m;
+        } else {
+            {{ MINMAX }} tmp = _min;
+            _min = _max * m;
+            _max = tmp * m;
+        }
+        return *this;
     }
-    //! unary division.
+
+    /// unary division.
     {{ RNG }} operator /=(double m) {
-	return *this *= (1.0 / m);
+        return *this *= (1.0 / m);
     }
 
-    //! binary sum.
+    /// binary sum.
     {{ RNG }} operator +(const {{ RNG }} &b) const {
-	return {{ RNG }}(_min + b._min, _max + b._max);
+        return {{ RNG }}(_min + b._min, _max + b._max);
     }
 
 
-    //! binary difference.
+    /// binary difference.
     {{ RNG }} operator -(const {{ RNG }} &b) const {
-	return {{ RNG }}(_min - b._max, _max - b._min);
+        return {{ RNG }}(_min - b._max, _max - b._min);
     }
 
-    //! scalar multiply.
+    /// scalar multiply.
     friend {{ RNG }} operator *(double m, const {{ RNG }} &r) {
-	return (m > 0 ? 
-		{{ RNG }}(r._min*m, r._max*m) : 
-		{{ RNG }}(r._max*m, r._min*m));
+        return (m > 0 ? 
+            {{ RNG }}(r._min*m, r._max*m) : 
+            {{ RNG }}(r._max*m, r._min*m));
     }
 
-    //! scalar multiply.
+    /// scalar multiply.
     friend {{ RNG }} operator *(const {{ RNG }} &r, double m) {
-	return (m > 0 ? 
-		{{ RNG }}(r._min*m, r._max*m) : 
-		{{ RNG }}(r._max*m, r._min*m));
+        return (m > 0 ? 
+            {{ RNG }}(r._min*m, r._max*m) : 
+            {{ RNG }}(r._max*m, r._min*m));
     }
 
-    //! scalar divide.
+    /// scalar divide.
     friend {{ RNG }} operator /(const {{ RNG }} &r, double m) {
-	return r * (1.0 / m);
+        return r * (1.0 / m);
     }
 
-    //! hash.
+    /// hash.
     friend inline size_t hash_value(const {{ RNG }} &r) {
         size_t h = 0;
         boost::hash_combine(h, r._min);
         boost::hash_combine(h, r._max);
         return h;
-    }        
-
-    //! The min and max points must match exactly for equality.
-    bool operator ==(const {{ RNG }} &b) const {
-	return (_min == b._min && _max == b._max);
     }
+
+    /// The min and max points must match exactly for equality.
+    bool operator ==(const {{ RNG }} &b) const {
+        return (_min == b._min && _max == b._max);
+    }
+
     bool operator !=(const {{ RNG }} &b) const {
         return !(*this == b);
     }
 
 {% for S in SCALARS if S != SCL %}
-    //! Compare this range to a {{ RNGNAME(DIM, S) }}.
-    //
-    // The values must match exactly and it does exactly what you
-    // might expect when comparing float and double values.
+    /// Compare this range to a {{ RNGNAME(DIM, S) }}.
+    ///
+    /// The values must match exactly and it does exactly what you might
+    /// expect when comparing float and double values.
     inline bool operator ==(const {{ RNGNAME(DIM, S) }}& other) const;
     inline bool operator !=(const {{ RNGNAME(DIM, S) }}& other) const;
 {% endfor %}
 
-    //! Compute the squared distance from a point to the range.
+    /// Compute the squared distance from a point to the range.
     double GetDistanceSquared({{ MINMAXPARM }}p) const;
 
 {% if DIM == 2 %}
-    //! Returns the ith corner of the range, in the following order:
-    // SW, SE, NW, NE.
+    /// Returns the ith corner of the range, in the following order:
+    /// SW, SE, NW, NE.
     {{ MINMAX }} GetCorner(size_t i) const;
 
-    //! Returns the ith quadrant of the range, in the following order:
-    // SW, SE, NW, NE.
+    /// Returns the ith quadrant of the range, in the following order:
+    /// SW, SE, NW, NE.
     {{ RNG }} GetQuadrant(size_t i) const;
 
-    //! The unit square.
+    /// The unit square.
     static const {{ RNG }} UnitSquare;
 {% elif DIM == 3 %}
-    //! Returns the ith corner of the range, in the following order:
-    // LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
-    // D/U is down/up, and B/F is back/front.
+    /// Returns the ith corner of the range, in the following order:
+    /// LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
+    /// D/U is down/up, and B/F is back/front.
     {{ MINMAX }} GetCorner(size_t i) const;
 
-    //! Returns the ith octant of the range, in the following order:
-    // LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
-    // D/U is down/up, and B/F is back/front.
+    /// Returns the ith octant of the range, in the following order:
+    /// LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
+    /// D/U is down/up, and B/F is back/front.
     {{ RNG }} GetOctant(size_t i) const;
 
-    //! The unit cube.
+    /// The unit cube.
     static const {{ RNG }} UnitCube;
 {% endif %}
 
   private:
-    //! Minimum and maximum points.
+    /// Minimum and maximum points.
     {{ MINMAX }} _min, _max;
 
-    //! Extends minimum point if necessary to contain given point
+    /// Extends minimum point if necessary to contain given point.
     static void _FindMin({{ MINMAX }} &dest, {{ MINMAXPARM }}point) {
 {% if DIM == 1 %}
         if (point < dest) dest = point;
@@ -379,7 +371,7 @@ public:
 {% endif %}
     }
 
-    //! Extends maximum point if necessary to contain given point
+    /// Extends maximum point if necessary to contain given point.
     static void _FindMax({{ MINMAX }} &dest, {{ MINMAXPARM }}point) {
 {% if DIM == 1 %}
         if (point > dest) dest = point;
@@ -390,7 +382,7 @@ public:
     }
 };
 
-/// Output a {{ RNG }}
+/// Output a {{ RNG }}.
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, {{ RNG }} const &);
 

@@ -41,9 +41,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PlugPlugin);
 
 class TfType;
 
+/// \class PlugPlugin
 ///
-/// \class PlugPlugin plugin.h pxr/base/plug/plugin.h
-/// \brief Defines an interface to registered plugins.
+/// Defines an interface to registered plugins.
 ///
 /// Plugins are registered using the interfaces in \c PlugRegistry.
 ///
@@ -52,38 +52,37 @@ class TfType;
 /// the plugin and to retrieve information about the
 /// classes implemented by the plugin.
 ///
-
-class PLUG_API PlugPlugin : public TfRefBase, public TfWeakBase {
+class PlugPlugin : public TfRefBase, public TfWeakBase {
 public:
-    virtual ~PlugPlugin();
+	PLUG_API virtual ~PlugPlugin();
 
-    /// \brief Loads the plugin.
+    /// Loads the plugin.
     /// This is a noop if the plugin is already loaded.
-    bool Load();
+	PLUG_API bool Load();
 
     /// Returns \c true if the plugin is currently loaded.  Resource
     /// plugins always report as loaded.
-    bool IsLoaded() const;
+	PLUG_API bool IsLoaded() const;
 
     /// Returns \c true if the plugin is a python module.
-    bool IsPythonModule() const;
+	PLUG_API bool IsPythonModule() const;
 
     /// Returns \c true if the plugin is resource-only.
-    bool IsResource() const;
+	PLUG_API bool IsResource() const;
 
     /// Returns the dictionary containing meta-data for the plugin.
-    JsObject GetMetadata();
+	PLUG_API JsObject GetMetadata();
 
     /// Returns the metdata sub-dictionary for a particular type.
-    JsObject GetMetadataForType(const TfType &type);
+	PLUG_API JsObject GetMetadataForType(const TfType &type);
 
     /// Returns the dictionary containing the dependencies for the plugin.
-    JsObject GetDependencies();
+	PLUG_API JsObject GetDependencies();
 
     /// Returns true if \p type is declared by this plugin. 
     /// If \p includeSubclasses is specified, also returns true if any 
     /// subclasses of \p type have been declared.
-    bool DeclaresType(const TfType& type, bool includeSubclasses = false) const;
+	PLUG_API bool DeclaresType(const TfType& type, bool includeSubclasses = false) const;
 
     /// Returns the plugin's name.
     std::string const &GetName() const {
@@ -102,13 +101,13 @@ public:
 
     /// Build a plugin resource path by returing a given absolute path or
     /// combining the plugin's resource path with a given relative path.
-    std::string MakeResourcePath(const std::string& path) const;
+	PLUG_API std::string MakeResourcePath(const std::string& path) const;
 
     /// Find a plugin resource by absolute or relative path optionally
     /// verifying that file exists.  If verification fails an empty path
     /// is returned.  Relative paths are relative to the plugin's resource
     /// path.
-    std::string FindResource(const std::string& path, bool verify = true) const;
+    PLUG_API std::string FindPluginResource(const std::string& path, bool verify = true) const;
 
 private:
     enum _Type { LibraryType, PythonType, ResourceType };
@@ -167,7 +166,7 @@ private:
     PLUG_LOCAL
     static void _DefineType( TfType t );
 
-    class _SeenPlugins;
+    struct _SeenPlugins;
     PLUG_LOCAL
     bool _LoadWithDependents(_SeenPlugins * seenPlugins);
 
@@ -179,7 +178,7 @@ private:
     std::string _path;
     std::string _resourcePath;
     JsObject _dict;
-    void *_handle;      // the handle returned by dlopen() is a void*
+    void *_handle;      // the handle returned by ArchOpenLibrary() is a void*
     std::atomic<bool> _isLoaded;
     _Type _type;
 
@@ -187,9 +186,9 @@ private:
     friend class PlugThisPlugin;
 };
 
-/// 
 /// \class PlugThisPlugin
-/// \brief An object that refers to the plugin it's in.
+///
+/// An object that refers to the plugin it's in.
 ///
 /// If you have a plugin that wants access to its own plugInfo metadata
 /// (especially its resources) then make a \b static instance of this
@@ -198,10 +197,10 @@ private:
 /// in the plugin, or a member of any of those.  It must not be allocated
 /// on the stack or the heap or \c Get() will return \c NULL.
 ///
-class PLUG_API PlugThisPlugin : boost::noncopyable {
+class PlugThisPlugin : boost::noncopyable {
 public:
-    PlugThisPlugin();
-    ~PlugThisPlugin();
+    PLUG_API PlugThisPlugin();
+    PLUG_API ~PlugThisPlugin();
 
     /// Returns the plugin or \c NULL if not found.
     const PlugPluginPtr& Get() const
@@ -219,8 +218,8 @@ private:
 /// plugin's resource path.
 PLUG_API
 std::string
-PlugFindResource(const PlugPluginPtr& plugin,
-                 const std::string& path, bool verify = true);
+PlugFindPluginResource(const PlugPluginPtr& plugin,
+                       const std::string& path, bool verify = true);
 
 /// Find a plugin's resource by absolute or relative path optionally
 /// verifying that file exists.  If \c plugin.Get() is \c NULL or
@@ -228,7 +227,7 @@ PlugFindResource(const PlugPluginPtr& plugin,
 /// relative to the plugin's resource path.
 PLUG_API
 std::string
-PlugFindResource(const PlugThisPlugin& plugin,
-                 const std::string& path, bool verify = true);
+PlugFindPluginResource(const PlugThisPlugin& plugin,
+                       const std::string& path, bool verify = true);
 
 #endif // PLUG_PLUGIN_H

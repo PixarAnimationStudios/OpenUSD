@@ -21,17 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyMapEditProxy.h
-
 #ifndef SDF_PYMAPEDITPROXY_H
 #define SDF_PYMAPEDITPROXY_H
+
+/// \file sdf/pyMapEditProxy.h
+
+#include <boost/python.hpp>
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
 
 template <class T>
 class SdfPyWrapMapEditProxy {

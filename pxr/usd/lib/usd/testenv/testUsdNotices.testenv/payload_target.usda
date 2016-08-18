@@ -1,0 +1,11 @@
+#usda 1.0
+def Scope "Foo" {
+    def "Bar" {
+       def "Baz" {
+                PointFloat[] points = []
+                custom Matrix4d xformOp:transform
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+ 
+       }
+    }
+}

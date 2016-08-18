@@ -1,0 +1,53 @@
+#sdf 1.4.32
+(
+    "Test that we can name properties using any of our grammar's keywords"
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "attrs"
+{
+    custom double baseLayer = 0
+    custom double def = 0
+    custom double doc = 0
+    custom double endFrame = 0
+    custom double framePrecision = 0
+    custom double framesPerSecond = 0
+    custom double ignore = 0
+    custom double inherits = 0
+    custom double over = 0
+    custom double permission = 0
+    custom double reference = 0
+    custom double rel = 0
+    custom double renames = 0
+    custom double spline = 0
+    custom double startFrame = 0
+    custom double subLayers = 0
+    custom double taskRestriction = 0
+    custom double tasks = 0
+    custom double uniform = 0
+}
+
+def MfScope "rels"
+{
+    custom rel baseLayer = </Foo>
+    custom rel def = </Foo>
+    custom rel doc = </Foo>
+    custom rel endFrame = </Foo>
+    custom rel framePrecision = </Foo>
+    custom rel framesPerSecond = </Foo>
+    custom rel ignore = </Foo>
+    custom rel inherits = </Foo>
+    custom rel over = </Foo>
+    custom rel permission = </Foo>
+    custom rel reference = </Foo>
+    custom rel rel = </Foo>
+    custom rel renames = </Foo>
+    custom rel spline = </Foo>
+    custom rel startFrame = </Foo>
+    custom rel subLayers = </Foo>
+    custom rel taskRestriction = </Foo>
+    custom rel tasks = </Foo>
+    custom rel uniform = </Foo>
+}
+

@@ -24,6 +24,7 @@
 #ifndef USD_TYPED_H
 #define USD_TYPED_H
 
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -38,6 +39,7 @@
 ///    
 /// UsdTyped implements a typeName-based query for its override of
 /// UsdSchemaBase::_IsCompatible().  It provides no other behavior.
+///
 class UsdTyped : public UsdSchemaBase
 {
 public:
@@ -59,7 +61,7 @@ public:
     {
     }
 
-    virtual ~UsdTyped();
+    USD_API virtual ~UsdTyped();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -71,21 +73,21 @@ public:
         return names;
     }
 
-    /// \brief Return a UsdTyped holding the prim adhering to this
-    /// schema at \p path on \p stage.  If no prim exists at \p path on
-    /// \p stage, or if the prim at that path does not adhere to this schema,
-    /// return an invalid schema object.  This is shorthand for the following:
+    /// Return a UsdTyped holding the prim adhering to this schema at \p path
+    /// on \p stage.  If no prim exists at \p path on \p stage, or if the prim
+    /// at that path does not adhere to this schema, return an invalid schema
+    /// object.  This is shorthand for the following:
     ///
     /// \code
     /// UsdTyped(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    static UsdTyped
+	USD_API static UsdTyped
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
-    virtual const TfType &_GetTfType() const;
+	USD_API virtual bool _IsCompatible(const UsdPrim &prim) const;
+	USD_API virtual const TfType &_GetTfType() const;
 };
 
 #endif // USD_TYPED_H

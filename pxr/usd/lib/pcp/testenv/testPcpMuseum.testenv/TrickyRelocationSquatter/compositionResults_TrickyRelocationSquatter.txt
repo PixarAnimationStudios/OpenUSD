@@ -1,0 +1,55 @@
+Loading @testPcpMuseum.testenv/TrickyRelocationSquatter/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </X>
+
+Prim Stack:
+    root.usda            /X
+    root.usda            /_Class_X
+    rig.usda             /Y
+
+Child names:
+     ['A2', 'B2']
+
+Prohibited child names:
+     ['A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </X/A2>
+
+Prim Stack:
+    root.usda            /X/A2
+    rig.usda             /Y/A
+
+------------------------------------------------------------------------
+Results for composing </X/B2>
+
+Prim Stack:
+    root.usda            /X/B2
+    root.usda            /_Class_X/B
+
+------------------------------------------------------------------------
+Results for composing </_Class_X>
+
+Prim Stack:
+    root.usda            /_Class_X
+
+Child names:
+     ['B', 'B2']
+
+------------------------------------------------------------------------
+Results for composing </_Class_X/B>
+
+Prim Stack:
+    root.usda            /_Class_X/B
+
+------------------------------------------------------------------------
+Results for composing </_Class_X/B2>
+
+Prim Stack:
+    root.usda            /_Class_X/B2
+

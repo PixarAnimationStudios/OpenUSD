@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file tf/pyOptional.h
-///
-
 #ifndef TF_PYOPTIONAL_H
 #define TF_PYOPTIONAL_H
+
+/// \file tf/pyOptional.h
 
 #include "pxr/base/tf/pyUtils.h"
 #include <boost/noncopyable.hpp>
@@ -38,10 +36,6 @@
 
 // Adapted from original at:
 // http://mail.python.org/pipermail/cplusplus-sig/2007-May/012003.html
-
-// Due to this code being essentially copied from an external source, we are not
-// covering it.
-// CODE_COVERAGE_OFF_NO_REPORT
 
 namespace TfPyOptional {
 
@@ -118,7 +112,4 @@ struct python_optional : public boost::noncopyable
 
 } // namespace TfPyOptional
 
-// CODE_COVERAGE_ON_NO_REPORT
-
 #endif // TF_PYOPTIONAL_H
-

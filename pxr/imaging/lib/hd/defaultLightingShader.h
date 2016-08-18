@@ -38,6 +38,8 @@
 
 #include <vector>
 
+/// \class Hd_DefaultLightingShader
+///
 /// A shader that provides fallback lighting behavior.
 ///
 class Hd_DefaultLightingShader : public HdLightingShader {
@@ -45,14 +47,14 @@ public:
     Hd_DefaultLightingShader();
     virtual ~Hd_DefaultLightingShader();
 
-    /// HdShader overrides
+    // HdShader overrides
     virtual ID ComputeHash() const;
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
-    /// HdLightingShader overrides
+    // HdLightingShader overrides
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
                            GfMatrix4d const &projectionMatrix);
 

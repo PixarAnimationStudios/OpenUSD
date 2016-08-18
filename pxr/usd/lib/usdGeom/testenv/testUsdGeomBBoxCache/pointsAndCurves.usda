@@ -1,0 +1,118 @@
+#usda 1.0
+
+def Xform "ValidPrims"
+{
+    def Points "extentAuthored"
+    {
+        float3[] extent = [(-3, 0, -2), (1, 2, 1)]
+        float3[] points = [(1, 0, 1), (-3, 2, -2)]
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -2, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Points "empty"
+    {
+    }
+
+    def Points "noGeometricDataAuthored"
+    {
+        color3f[] primvars:displayColor = [(1, 1, 1)]
+    }
+
+    def BasisCurves "bezierWExtent"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token orientation = "rightHanded"
+        point3f[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        color3f[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-5, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Xform "WarningPrims"
+{
+    def Points "fourPointsWWidth"
+    {
+        float3[] points = [(-5, 2, -3), (3, 4, 7), (0, -3, -5), (4, -1, 0)]
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        float[] widths = [1, 2, 3, 4]
+    }
+
+    def Points "threePointsDecimalWidth"
+    {
+        float3[] points = [(0, 3, -1), (2, 2, 2), (-2, 1.5, 1)]
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+        float[] widths = [1.5, 0.5, 1]
+    }
+
+    def Points "pointsNoWidth"
+    {
+        float3[] points = [(2, -5, 3), (-3, 1, -3)]
+        color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+    }
+
+    def Points "zeroVolumeExtent"
+    {
+        float3[] points = [(-6, 0, 3)]
+        color3f[] primvars:displayColor = [(0.25, 0, 0.75)]
+    }
+
+    def Points "emptyPointsData"
+    {
+        float3[] points = []
+    }
+
+    def BasisCurves "bezierWwidth"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        uniform token orientation = "rightHanded"
+        point3f[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        color3f[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.2]
+        custom matrix4d xformOp:transform = ( (-1, 0, 0, 0), (0, -1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def BasisCurves "bezierWoWidth"
+    {
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [4]
+        uniform token orientation = "rightHanded"
+        point3f[] points = [(0, 0, -1), (-1, 0, -0.5), (-1, 0, 0.5), (0, 0, 1)]
+        color3f[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        custom matrix4d xformOp:transform = ( (-1, 0, 0, 0), (0, -1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Xform "ErrorPrims"
+{
+    def Points "illAuthoredExtent"
+    {
+        float3[] extent = [(-3, 0, -2)]
+        float3[] points = [(-2, -1, 0)]
+        color3f[] primvars:displayColor = [(0.5, 0, 0.5)]
+    }
+
+    def Points "invalidNumWidthsAndPoints"
+    {
+        float3[] points = [(5, -4, -2), (0, 3, -3), (-2, 1.5, 1)]
+        color3f[] primvars:displayColor = [(1, 1, 0)]
+        float[] widths = [2, 1]
+    }
+
+    def Sphere "illAuthoredSphere"
+    {
+        float3[] extent = [(0, 0, 0)]
+    }
+}
+

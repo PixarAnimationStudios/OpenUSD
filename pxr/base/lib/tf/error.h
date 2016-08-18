@@ -24,33 +24,34 @@
 #ifndef TF_ERROR_H
 #define TF_ERROR_H
 
+/// \file tf/error.h
+
 #include "pxr/base/tf/diagnosticBase.h"
 
 class TfDiagnosticMgr;
 
-/*!
- *  \class TfError Error.h pxr/base/tf/error.h
- *  \brief Represents an object that contains error information.
- *  \ingroup group_tf_Diagnostic
- * 
- *  See \ref page_tf_Diagnostic in the C++ API reference for a detailed
- *  description of the error issuing API.  For a example of how to post an
- *  error, see \c TF_ERROR(), also in the C++ API reference.
- *
- *  In the Python API, you can raise several different types of errors,
- *  including coding errors (Tf.RaiseCodingError), run time errors
- *  (Tf.RaiseRuntimeError), fatal errors (Tf.Fatal).
- *
- */
+/// \class TfError
+/// \ingroup group_tf_Diagnostic
+///
+/// Represents an object that contains error information.
+/// 
+/// See \ref page_tf_Diagnostic in the C++ API reference for a detailed
+/// description of the error issuing API.  For a example of how to post an
+/// error, see \c TF_ERROR(), also in the C++ API reference.
+///
+/// In the Python API, you can raise several different types of errors,
+/// including coding errors (Tf.RaiseCodingError), run time errors
+/// (Tf.RaiseRuntimeError), fatal errors (Tf.Fatal).
+///
 class TfError: public TfDiagnosticBase {
 
 public:
-    //! \brief Return the error code posted.
+    /// Return the error code posted.
     TfEnum GetErrorCode() const {
         return GetDiagnosticCode();
     }
 
-    //! \brief Return the diagnostic code posted as a string.
+    /// Return the diagnostic code posted as a string.
     const std::string& GetErrorCodeAsString() const {
         return GetDiagnosticCodeAsString();
     }

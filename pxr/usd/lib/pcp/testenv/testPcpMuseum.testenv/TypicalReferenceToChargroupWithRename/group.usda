@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Prim "Group"
+{
+    def "Model" (
+        add references = @model.usda@</Model>
+    )
+    {
+        over "LArm"
+        {
+        }
+
+        over "SymArm"
+        {
+        }
+    }
+}

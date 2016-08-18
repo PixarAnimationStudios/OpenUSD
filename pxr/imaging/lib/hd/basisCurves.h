@@ -23,6 +23,8 @@
 //
 #ifndef HD_BASIS_CURVES_H
 #define HD_BASIS_CURVES_H
+
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/drawingCoord.h"
@@ -35,7 +37,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-/// descriptor to configure a drawItem for a repr
+/// \class HdBasisCurvesReprDesc
+///
+/// Descriptor to configure a drawItem for a repr.
 ///
 struct HdBasisCurvesReprDesc {
     HdBasisCurvesReprDesc(
@@ -46,23 +50,29 @@ struct HdBasisCurvesReprDesc {
     HdBasisCurvesGeomStyle geomStyle:2;
 };
 
+/// \class HdBasisCurves
+///
 /// A collection of curves using a particular basis.
 ///
 class HdBasisCurves: public HdRprim {
 public:
     HD_MALLOC_TAG_NEW("new HdBasisCurves");
+    HDLIB_API
     HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
                   SdfPath const& surfaceShaderId,
                   SdfPath const& instancerId = SdfPath());
 
     /// Configure geometric style of drawItems for \p reprName
+    HDLIB_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdBasisCurvesReprDesc desc);
 
     /// Return the dirtyBits mask to be tracked for \p reprName
+    HDLIB_API
     static int GetDirtyBitsMask(TfToken const &reprName);
 
     /// Returns whether refinement is always on or not.
+    HDLIB_API
     static bool IsEnabledForceRefinedCurves();
     
 protected:

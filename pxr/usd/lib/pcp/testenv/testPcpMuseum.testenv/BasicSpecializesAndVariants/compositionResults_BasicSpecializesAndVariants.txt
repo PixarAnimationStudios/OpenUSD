@@ -1,0 +1,68 @@
+Loading @testPcpMuseum.testenv/BasicSpecializesAndVariants/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.usda            /Specializes
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    ref.usda             /Ref
+    ref.usda             /Ref{v=ref}
+    root.usda            /Specializes
+    ref.usda             /Specializes
+
+Variant Selections:
+    {v = ref}
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks>
+
+Prim Stack:
+    root.usda            /Model/Looks
+    looks.usda           /Looks
+
+Child names:
+     ['Metal', 'Brass']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Metal>
+
+Prim Stack:
+    root.usda            /Model/Looks/Metal
+    looks.usda           /Looks/Metal
+    looks.usda           /Looks/Metal{v=from_metal}
+
+Variant Selections:
+    {v = from_metal}
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Brass>
+
+Prim Stack:
+    root.usda            /Model/Looks/Brass
+    looks.usda           /Looks/Brass
+    root.usda            /Model/Looks/Metal
+    looks.usda           /Looks/Metal
+    looks.usda           /Looks/Metal{v=from_brass}
+
+Variant Selections:
+    {v = from_brass}
+

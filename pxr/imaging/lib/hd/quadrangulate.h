@@ -24,6 +24,7 @@
 #ifndef HD_QUADRANGULATE_H
 #define HD_QUADRANGULATE_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
@@ -117,7 +118,8 @@ class HdMeshTopology;
     //                   pointsOffset
     //                       <----- numAdditionalPoints  ---->
 
-struct Hd_QuadInfo {
+class Hd_QuadInfo {
+public:
     Hd_QuadInfo() : pointsOffset(0), numAdditionalPoints(0), maxNumVert(0) { }
 
     /// Returns true if the mesh is all-quads.
@@ -139,8 +141,9 @@ struct Hd_QuadInfo {
                            ----------------------------> QuadrangulateComputationGPU
  */
 
-/// quad info computation
+/// \class Hd_QuadInfoBuilderComputation
 ///
+/// Quad info computation.
 ///
 class Hd_QuadInfoBuilderComputation : public HdNullBufferSource {
 public:
@@ -155,8 +158,9 @@ private:
     HdMeshTopology *_topology;
 };
 
-/// quad indices computation CPU
+/// \class Hd_QuadIndexBuilderComputation
 ///
+/// Quad indices computation CPU.
 ///
 class Hd_QuadIndexBuilderComputation : public HdComputedBufferSource {
 public:
@@ -180,8 +184,9 @@ private:
     HdBufferSourceSharedPtr _primitiveParam;
 };
 
-/// quadrangulate table computation (for GPU quadrangulation)
+/// \class Hd_QuadrangulateTableComputation
 ///
+/// Quadrangulate table computation (for GPU quadrangulation).
 ///
 class Hd_QuadrangulateTableComputation : public HdComputedBufferSource {
 public:
@@ -200,8 +205,9 @@ private:
     HdBufferSourceSharedPtr _quadInfoBuilder;
 };
 
-/// CPU quadrangulation
+/// \class Hd_QuadrangulateComputation
 ///
+/// CPU quadrangulation.
 ///
 class Hd_QuadrangulateComputation : public HdComputedBufferSource {
 public:
@@ -227,9 +233,9 @@ private:
     HdBufferSourceSharedPtr _quadInfoBuilder;
 };
 
-
-/// CPU face-varying quadrangulation
+/// \class Hd_QuadrangulateFaceVaryingComputation
 ///
+/// CPU face-varying quadrangulation.
 ///
 class Hd_QuadrangulateFaceVaryingComputation : public HdComputedBufferSource {
 public:
@@ -249,8 +255,9 @@ private:
     HdBufferSourceSharedPtr _source;
 };
 
-/// GPU quadrangulation
+/// \class Hd_QuadrangulateComputationGPU
 ///
+/// GPU quadrangulation.
 ///
 class Hd_QuadrangulateComputationGPU : public HdComputation {
 public:
@@ -269,13 +276,13 @@ private:
     GLenum _dataType;
 };
 
-/// primitiveParam : quads to faces mapping buffer
-///
-/// In order to access per-face signals (face color, face selection etc)
-/// in glsl shader, we need a mapping from primitiveID (triangulated
-/// or quadrangulated, or can be an adaptively refined patch) to authored
-/// face index domain.
-///
+// primitiveParam : quads to faces mapping buffer
+//
+// In order to access per-face signals (face color, face selection etc)
+// in glsl shader, we need a mapping from primitiveID (triangulated
+// or quadrangulated, or can be an adaptively refined patch) to authored
+// face index domain.
+//
 /*
                +--------+-------+
               /|        |    |   \
@@ -287,18 +294,18 @@ private:
         / 0 | 0|        |    |   /
        +-------+--------+-------+
 */
-/// We store this mapping buffer alongside topology index buffers, so
-/// that same aggregation locators can be used for such an additional
-/// buffer as well. This change transforms index buffer from int array
-/// to int[3] array or int[4] array at first. Thanks to the heterogenius
-/// non-interleaved buffer aggregation ability in hd, we'll get this kind
-/// of buffer layout:
-///
-/// ----+-----------+-----------+------
-/// ... |i0 i1 i2 i3|i4 i5 i6 i7| ...    index buffer (for quads)
-/// ----+-----------+-----------+------
-/// ... |     m0    |     m1    | ...    primitive param buffer
-/// ----+-----------+-----------+------
-///
+// We store this mapping buffer alongside topology index buffers, so
+// that same aggregation locators can be used for such an additional
+// buffer as well. This change transforms index buffer from int array
+// to int[3] array or int[4] array at first. Thanks to the heterogenius
+// non-interleaved buffer aggregation ability in hd, we'll get this kind
+// of buffer layout:
+//
+// ----+-----------+-----------+------
+// ... |i0 i1 i2 i3|i4 i5 i6 i7| ...    index buffer (for quads)
+// ----+-----------+-----------+------
+// ... |     m0    |     m1    | ...    primitive param buffer
+// ----+-----------+-----------+------
+//
 
 #endif  // HD_QUADRANGULATE_H

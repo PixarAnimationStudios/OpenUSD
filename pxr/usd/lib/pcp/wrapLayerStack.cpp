@@ -21,12 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <boost/python.hpp>
+
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include <boost/python.hpp>
 
 using namespace boost::python;
 using std::string;
@@ -97,3 +98,5 @@ void wrapLayerStack()
         // TODO: repr, eq, etc.
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(PcpLayerStack)

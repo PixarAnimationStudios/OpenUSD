@@ -1,0 +1,122 @@
+----- begin -----
+gpuMemoryUsed, 0
+garbageCollected = 0
+meshTopology = 0
+basisCurvesTopology = 0
+instMeshTopology = 0
+instBasisCurvesTopology = 0
+instVertexAdjacency = 0
+instMeshTopologyRange = 0
+instBasisCurvesTopologyRange = 0
+----- allocated -----
+drawingShader, 26142
+gpuMemoryUsed, 62102
+primVar, 19688
+topology, 16272
+garbageCollected = 0
+meshTopology = 4
+basisCurvesTopology = 1
+instMeshTopology = 4
+instBasisCurvesTopology = 1
+instVertexAdjacency = 4
+instMeshTopologyRange = 4
+instBasisCurvesTopologyRange = 1
+----- delete a prim -----
+drawingShader, 26142
+gpuMemoryUsed, 62102
+primVar, 19688
+topology, 16272
+garbageCollected = 0
+meshTopology = 4
+basisCurvesTopology = 1
+instMeshTopology = 4
+instBasisCurvesTopology = 1
+instVertexAdjacency = 4
+instMeshTopologyRange = 4
+instBasisCurvesTopologyRange = 1
+----- garbage collected -----
+drawingShader, 26142
+gpuMemoryUsed, 61590
+primVar, 19176
+topology, 16272
+garbageCollected = 1
+meshTopology = 4
+basisCurvesTopology = 1
+instMeshTopology = 4
+instBasisCurvesTopology = 1
+instVertexAdjacency = 4
+instMeshTopologyRange = 4
+instBasisCurvesTopologyRange = 1
+----- delete more prims -----
+drawingShader, 26142
+gpuMemoryUsed, 57214
+primVar, 14992
+topology, 16080
+garbageCollected = 2
+meshTopology = 3
+basisCurvesTopology = 1
+instMeshTopology = 3
+instBasisCurvesTopology = 1
+instVertexAdjacency = 3
+instMeshTopologyRange = 3
+instBasisCurvesTopologyRange = 1
+----- clear all -----
+drawingShader, 26142
+gpuMemoryUsed, 26142
+garbageCollected = 3
+meshTopology = 0
+basisCurvesTopology = 0
+instMeshTopology = 0
+instBasisCurvesTopology = 0
+instVertexAdjacency = 0
+instMeshTopologyRange = 0
+instBasisCurvesTopologyRange = 0
+----- 3 points -----
+drawingShader, 26142
+gpuMemoryUsed, 26178
+primVar, 36
+garbageCollected = 0
+meshTopology = 0
+basisCurvesTopology = 0
+instMeshTopology = 0
+instBasisCurvesTopology = 0
+instVertexAdjacency = 0
+instMeshTopologyRange = 0
+instBasisCurvesTopologyRange = 0
+----- 5 points -----
+drawingShader, 26142
+gpuMemoryUsed, 26202
+primVar, 60
+garbageCollected = 0
+meshTopology = 0
+basisCurvesTopology = 0
+instMeshTopology = 0
+instBasisCurvesTopology = 0
+instVertexAdjacency = 0
+instMeshTopologyRange = 0
+instBasisCurvesTopologyRange = 0
+----- 4 points before GC -----
+drawingShader, 26142
+gpuMemoryUsed, 26190
+primVar, 48
+garbageCollected = 0
+meshTopology = 0
+basisCurvesTopology = 0
+instMeshTopology = 0
+instBasisCurvesTopology = 0
+instVertexAdjacency = 0
+instMeshTopologyRange = 0
+instBasisCurvesTopologyRange = 0
+----- 4 points after GC -----
+drawingShader, 25630
+gpuMemoryUsed, 25678
+primVar, 48
+garbageCollected = 1
+meshTopology = 0
+basisCurvesTopology = 0
+instMeshTopology = 0
+instBasisCurvesTopology = 0
+instVertexAdjacency = 0
+instMeshTopologyRange = 0
+instBasisCurvesTopologyRange = 0
+OK

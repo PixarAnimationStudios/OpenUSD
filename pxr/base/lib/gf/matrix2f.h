@@ -28,18 +28,18 @@
 #ifndef GF_MATRIX2F_H
 #define GF_MATRIX2F_H
 
+/// \file gf/matrix2f.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/gf/api.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <iosfwd>
 #include <vector>
-
-/// \file matrix2f.h
-/// \ingroup group_gf_LinearAlgebra
-///
 
 template <>
 struct GfIsGfMatrix<class GfMatrix2f> { static const bool value = true; };
@@ -47,11 +47,12 @@ struct GfIsGfMatrix<class GfMatrix2f> { static const bool value = true; };
 class GfMatrix2d;
 class GfMatrix2f;
 
-/// \class GfMatrix2f matrix2f.h "pxr/base/gf/matrix2f.h"
+/// \class GfMatrix2f
 /// \ingroup group_gf_LinearAlgebra
-/// \brief Stores a 2x2 matrix of \c float elements. A basic type.
 ///
-/// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c> 
+/// Stores a 2x2 matrix of \c float elements. A basic type.
+///
+/// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c>
 /// indexes the element in the \e i th row and the \e j th column.
 ///
 class GfMatrix2f
@@ -62,8 +63,7 @@ public:
     static const size_t numRows = 2;
     static const size_t numColumns = 2;
 
-    /// Default constructor. Leaves the matrix component values
-    /// undefined.
+    /// Default constructor. Leaves the matrix component values undefined.
     GfMatrix2f() {}
 
     /// Constructor. Initializes the matrix from 4 independent
@@ -75,14 +75,14 @@ public:
             m10, m11);
     }
 
-    /// Constructor. Initializes the matrix from a 2x2 array of
-    /// \c float values, specified in row-major order.
+    /// Constructor. Initializes the matrix from a 2x2 array
+    /// of \c float values, specified in row-major order.
     GfMatrix2f(const float m[2][2]) {
         Set(m);
     }
 
-    /// Constructor. Explicitly initializes the matrix to \e s times
-    /// the identity matrix.
+    /// Constructor. Explicitly initializes the matrix to \e s times the
+    /// identity matrix.
     explicit GfMatrix2f(float s) {
         SetDiagonal(s);
     }
@@ -90,7 +90,7 @@ public:
     /// This explicit constructor initializes the matrix to \p s times
     /// the identity matrix.
     explicit GfMatrix2f(int s) {
-	SetDiagonal(s);
+        SetDiagonal(s);
     }
 
     /// Constructor. Explicitly initializes the matrix to diagonal form,
@@ -99,24 +99,26 @@ public:
         SetDiagonal(v);
     }
 
-    /// Constructor.  Initialize the matrix from a vector of vectors of double.
-    /// The vector is expected to be 2x2.  If it is too big, only the first
-    /// 2 rows and/or columns will be used.  If it is too small, uninitialized
-    /// elements will be filled in with the corresponding elements from an
-    /// identity matrix.
+    /// Constructor.  Initialize the matrix from a vector of vectors of
+    /// double. The vector is expected to be 2x2. If it is
+    /// too big, only the first 2 rows and/or columns will be used.
+    /// If it is too small, uninitialized elements will be filled in with
+    /// the corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit GfMatrix2f(const std::vector< std::vector<double> >& v);
 
-    /// Constructor.  Initialize the matrix from a vector of vectors of float.
-    /// The vector is expected to be 2x2.  If it is too big, only the first
-    /// 2 rows and/or columns will be used.  If it is too small, uninitialized
-    /// elements will be filled in with the corresponding elements from an
-    /// identity matrix.
+    /// Constructor.  Initialize the matrix from a vector of vectors of
+    /// float. The vector is expected to be 2x2. If it is
+    /// too big, only the first 2 rows and/or columns will be used.
+    /// If it is too small, uninitialized elements will be filled in with
+    /// the corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit GfMatrix2f(const std::vector< std::vector<float> >& v);
 
-    //!
-    // This explicit constructor converts a "double" matrix to a "float" matrix.
+    /// This explicit constructor converts a "double" matrix to a "float" matrix.
+    GF_API
     explicit GfMatrix2f(const class GfMatrix2d& m);
 
     /// Sets a row of the matrix from a Vec2.
@@ -141,9 +143,9 @@ public:
         return GfVec2f(_mtx[0][i], _mtx[1][i]);
     }
 
-    /// \brief Sets the matrix from 4 independent \c float values, specified
-    /// in row-major order. For example, parameter \e m10 specifies the
-    /// value in row 1 and column 0.
+    /// Sets the matrix from 4 independent \c float values,
+    /// specified in row-major order. For example, parameter \e m10 specifies
+    /// the value in row 1 and column 0.
     GfMatrix2f& Set(float m00, float m01, 
                     float m10, float m11) {
         _mtx[0][0] = m00; _mtx[0][1] = m01; 
@@ -151,8 +153,8 @@ public:
         return *this;
     }
 
-    /// \brief Sets the matrix from a 2x2 array of \c float values, specified
-    /// in row-major order.
+    /// Sets the matrix from a 2x2 array of \c float
+    /// values, specified in row-major order.
     GfMatrix2f& Set(const float m[2][2]) {
         _mtx[0][0] = m[0][0];
         _mtx[0][1] = m[0][1];
@@ -172,13 +174,16 @@ public:
     }
 
     /// Sets the matrix to \e s times the identity matrix.
+    GF_API
     GfMatrix2f& SetDiagonal(float s);
 
     /// Sets the matrix to have diagonal (<c>v[0], v[1]</c>).
+    GF_API
     GfMatrix2f& SetDiagonal(const GfVec2f&);
 
     /// Fills a 2x2 array of \c float values with the values in
     /// the matrix, specified in row-major order.
+    GF_API
     float* Get(float m[2][2]);
 
     /// Returns vector components as an array of \c float values.
@@ -190,15 +195,15 @@ public:
     const float* GetArray() const {
         return _mtx.GetData();
     }
-    
-    /// Accesses an indexed row \e i of the matrix as an array of 2 \c float
-    /// values so that standard indexing (such as <c>m[0][1]</c>) works
-    /// correctly.
+
+    /// Accesses an indexed row \e i of the matrix as an array of 2 \c
+    /// float values so that standard indexing (such as <c>m[0][1]</c>)
+    /// works correctly.
     float* operator [](int i) { return _mtx[i]; }
 
-    /// Accesses an indexed row \e i of the matrix as an array of 2 \c float
-    /// values so that standard indexing (such as <c>m[0][1]</c>) works
-    /// correctly.
+    /// Accesses an indexed row \e i of the matrix as an array of 2 \c
+    /// float values so that standard indexing (such as <c>m[0][1]</c>)
+    /// works correctly.
     const float* operator [](int i) const { return _mtx[i]; }
 
     /// Hash.
@@ -209,14 +214,16 @@ public:
         while (nElems--)
             boost::hash_combine(h, *p++);
         return h;
-    }        
+    }
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix2d& m) const;
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix2f& m) const;
 
     /// Tests for element-wise matrix inequality. All elements must match
@@ -232,31 +239,34 @@ public:
     }
 
     /// Returns the transpose of the matrix.
+    GF_API
     GfMatrix2f GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
-    /// matrix is singular. (FLT_MAX is the largest value a \c float can have, 
-    /// as defined by the system.) The matrix is considered singular if the 
-    /// determinant is less than or equal to the optional parameter \e eps.
-    /// If \e det is non-null, <c>*det</c> is set to the determinant.
+    /// matrix is singular. (FLT_MAX is the largest value a \c float can have,
+    /// as defined by the system.) The matrix is considered singular if the
+    /// determinant is less than or equal to the optional parameter \e eps. If
+    /// \e det is non-null, <c>*det</c> is set to the determinant.
+    GF_API
     GfMatrix2f GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
+    GF_API
     double GetDeterminant() const;
 
-
     /// Post-multiplies matrix \e m into this matrix.
+    GF_API
     GfMatrix2f& operator *=(const GfMatrix2f& m);
 
     /// Multiplies the matrix by a float.
+    GF_API
     GfMatrix2f& operator *=(double);
 
-    ///
-    // Returns the product of a matrix and a float.
+    /// Returns the product of a matrix and a float.
     friend GfMatrix2f operator *(const GfMatrix2f& m1, double d)
     {
-	GfMatrix2f m = m1;
-	return m *= d;
+        GfMatrix2f m = m1;
+        return m *= d;
     }
 
     ///
@@ -267,12 +277,15 @@ public:
     }
 
     /// Adds matrix \e m to this matrix.
+    GF_API
     GfMatrix2f& operator +=(const GfMatrix2f& m);
 
     /// Subtracts matrix \e m from this matrix.
+    GF_API
     GfMatrix2f& operator -=(const GfMatrix2f& m);
 
     /// Returns the unary negation of matrix \e m.
+    GF_API
     friend GfMatrix2f operator -(const GfMatrix2f& m);
 
     /// Adds matrix \e m2 to \e m1
@@ -283,15 +296,15 @@ public:
         return tmp;
     }
 
-    /// Subtracts matrix \e m2 from \e m1
+    /// Subtracts matrix \e m2 from \e m1.
     friend GfMatrix2f operator -(const GfMatrix2f& m1, const GfMatrix2f& m2)
     {
         GfMatrix2f tmp(m1);
         tmp -= m2;
         return tmp;
     }
-    
-    /// Multiplies matrix \e m1 by \e m2
+
+    /// Multiplies matrix \e m1 by \e m2.
     friend GfMatrix2f operator *(const GfMatrix2f& m1, const GfMatrix2f& m2)
     {
         GfMatrix2f tmp(m1);
@@ -328,6 +341,6 @@ private:
 
 /// Output a GfMatrix2f
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfMatrix2f const &);
+GF_API std::ostream& operator<<(std::ostream &, GfMatrix2f const &);
 
 #endif // GF_MATRIX2F_H

@@ -26,6 +26,7 @@
 
 #include <maya/MObject.h>
 
+#include "usdMaya/api.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
@@ -92,6 +93,7 @@ public:
     
     /// \brief Translates an edit string into a RefEdit structure.
     /// \returns true if translation was successful.
+    USDMAYA_API
     static bool GetEditFromString(
             const MFnAssembly &assemblyFn,
             const std::string &editString,
@@ -100,6 +102,7 @@ public:
         
     /// \brief Inspects all edits on \p assemblyObj and returns a parsed
     /// set of proper edits in \p refEdits and invlaid edits in \p invalidEdits.
+    USDMAYA_API
     static void GetEditsForAssembly(
             const MObject &assemblyObj,
             PathEditMap *refEdits,
@@ -107,12 +110,14 @@ public:
     
     /// \brief Apply \p refEdits to a \p stage for an assembly rooted
     /// at \p proxyRootPrim.
+    USDMAYA_API
     static void ApplyEditsToProxy(
             const PathEditMap &refEdits,
             const UsdStagePtr &stage,
             const UsdPrim &proxyRootPrim,
             std::vector< std::string > *failedEdits );
     
+    USDMAYA_API
     static void GetAvarEdits(
             const PathEditMap &refEdits,
             PathAvarMap *avarMap );

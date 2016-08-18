@@ -34,6 +34,7 @@
 /// As implemented, when a usd file is brought in for an assembly, the
 /// displayColor importer is used.  See DisplayColorShading.cpp
 
+#include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeImporter.h"
 
@@ -46,7 +47,8 @@
     (none) \
     (displayColor) 
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaShadingModeTokens, PXRUSDMAYA_SHADINGMODE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaShadingModeTokens, USDMAYA_API,
+                         PXRUSDMAYA_SHADINGMODE_TOKENS);
 
 TF_DECLARE_WEAK_PTRS(PxrUsdMayaShadingModeRegistry);
 class PxrUsdMayaShadingModeRegistry : public TfWeakBase

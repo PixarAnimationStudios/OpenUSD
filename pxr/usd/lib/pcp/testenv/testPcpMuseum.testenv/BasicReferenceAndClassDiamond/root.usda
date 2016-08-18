@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    """
+    In this example, Model is a root prim with a a reference arc.
+    Below it, there is a local class and an instance of that class.
+    The inheritance arc is set up across the reference (an "ancestral
+    reference").  This raises an interesting problem when composing
+    the Instance prim: does it "compose in" the LocalClass across
+    the reference via two directions, one via the class in this
+    file, and one via the inherits arc across the reference?
+
+    We clearly only want to pick up the LocalClass opinion in
+    model.usda once.
+    """
+)
+
+def "Model_1" (
+    add references = @model.usda@</Model>
+)
+{
+    over "LocalClass"
+    {
+        custom double attr
+    }
+
+    over "Instance"
+    {
+        custom double attr
+    }
+}

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/listProxy.h
-
 #ifndef SDF_LISTPROXY_H
 #define SDF_LISTPROXY_H
+
+/// \file sdf/listProxy.h
 
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/listEditor.h"
@@ -42,12 +42,14 @@
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
-/// \class SdfListProxy ListProxy.h pxr/usd/sdf/ListProxy.h
-/// \brief Represents a single list of list editing operations.
+/// \class SdfListProxy
+///
+/// Represents a single list of list editing operations.
 ///
 /// An SdfListProxy represents a single list of list editing operations, making 
 /// it look like an STL vector (modeling a random access container and back
 /// insertion sequence). 
+///
 template <class _TypePolicy>
 class SdfListProxy :
     boost::totally_ordered<SdfListProxy<_TypePolicy>,
@@ -213,122 +215,122 @@ public:
     {
     }
 
-    /// \brief Return an iterator to the start of the sequence.
+    /// Return an iterator to the start of the sequence.
     iterator begin() {
         return iterator(_GetThis(), 0);
     }
-    /// \brief Return an iterator to the end of the sequence.
+    /// Return an iterator to the end of the sequence.
     iterator end() {
         return iterator(_GetThis(), _GetSize());
     }
 
-    /// \brief Return a reverse iterator to the last item of the sequence.
+    /// Return a reverse iterator to the last item of the sequence.
     reverse_iterator rbegin() {
         return reverse_iterator(end());
     }
-    /// \brief Return a reverse iterator past the start item of the sequence.
+    /// Return a reverse iterator past the start item of the sequence.
     reverse_iterator rend() {
         return reverse_iterator(begin());
     }
 
-    /// \brief Return a const iterator to the start of the sequence.
+    /// Return a const iterator to the start of the sequence.
     const_iterator begin() const {
         return const_iterator(_GetThis(), 0);
     }
-    /// \brief Return a const iterator to the end of the sequence.
+    /// Return a const iterator to the end of the sequence.
     const_iterator end() const {
         return const_iterator(_GetThis(), _GetSize());
     }
 
-    /// \brief Return a const reverse iterator to the last item of the sequence.
+    /// Return a const reverse iterator to the last item of the sequence.
     const_reverse_iterator rbegin() const {
         return const_reverse_iterator(end());
     }
-    /// \brief Return a const reverse iterator past the start item of the
+    /// Return a const reverse iterator past the start item of the
     /// sequence.
     const_reverse_iterator rend() const {
         return const_reverse_iterator(begin());
     }
 
-    /// \brief Return the size of the sequence.
+    /// Return the size of the sequence.
     size_t size() const {
         return _Validate() ? _GetSize() : 0;
     }
 
-    /// \brief Return true if size() == 0.
+    /// Return true if size() == 0.
     bool empty() const { 
         return size() == 0;
     }
 
-    /// \brief Return a \p reference to the item at index \p n.
+    /// Return a \p reference to the item at index \p n.
     reference operator[](size_t n) {
         return reference(_GetThis(), n);
     }
 
-    /// \brief Return a copy of the item at index \p n.
+    /// Return a copy of the item at index \p n.
     value_type operator[](size_t n) const {
         return _Get(n);
     }
 
-    /// \brief Return a \p reference to the item at the front of the sequence.
+    /// Return a \p reference to the item at the front of the sequence.
     reference front() {
         return reference(_GetThis(), 0);
     }
 
-    /// \brief Return a \p reference to the item at the back of the sequence.
+    /// Return a \p reference to the item at the back of the sequence.
     reference back() {
         return reference(_GetThis(), _GetSize() - 1);
     }
 
-    /// \brief Return a copy of the item at the front of the sequence.
+    /// Return a copy of the item at the front of the sequence.
     value_type front() const {
         return _Get(0);
     }
 
-    /// \brief Return a copy of the item at the back of the sequence.
+    /// Return a copy of the item at the back of the sequence.
     value_type back() const {
         return _Get(_GetSize() - 1);
     }
 
-    /// \brief Append \p elem to this sequence.
+    /// Append \p elem to this sequence.
     void push_back(const value_type& elem) {
         _Edit(_GetSize(), 0, value_vector_type(1, elem));
     }
 
-    /// \brief Remove the last element from this sequence.
+    /// Remove the last element from this sequence.
     void pop_back() {
         _Edit(_GetSize() - 1, 1, value_vector_type());
     }
 
-    /// \brief Insert \p x into this sequence at position \p pos.
+    /// Insert \p x into this sequence at position \p pos.
     iterator insert(iterator pos, const value_type& x) {
         _Edit(pos - iterator(this, 0), 0, value_vector_type(1, x));
         return pos;
     }
 
-    /// \brief Insert copies of the elements in [\p f, \p l) into this sequence
+    /// Insert copies of the elements in [\p f, \p l) into this sequence
     /// starting at position \p pos.
     template <class InputIterator>
     void insert(iterator pos, InputIterator f, InputIterator l) {
         _Edit(pos - iterator(this, 0), 0, value_vector_type(f, l));
     }
 
-    /// \brief Erase the element at \p pos.
+    /// Erase the element at \p pos.
     void erase(iterator pos) {
         _Edit(pos - iterator(this, 0), 1, value_vector_type());
     }
 
-    /// \brief Erase all the elements in the range [\p f, \p l).
+    /// Erase all the elements in the range [\p f, \p l).
     void erase(iterator f, iterator l) {
         _Edit(f - iterator(this, 0), l - f, value_vector_type());
     }
 
-    /// \brief Clear the contents of the sequence.
+    /// Clear the contents of the sequence.
     void clear() {
         _Edit(0, _GetSize(), value_vector_type());
     }
 
-    /// \brief Resize the contents of the sequence. 
+    /// Resize the contents of the sequence. 
     ///
     /// Inserts or erases copies of \p t at the end
     /// such that the size becomes \p n.
@@ -342,12 +344,12 @@ public:
         }
     }
 
-    /// \brief Produce a copy of the contents of this sequence into a vector.
+    /// Produce a copy of the contents of this sequence into a vector.
     operator value_vector_type() const {
         return _listEditor ? _listEditor->GetVector(_op) : value_vector_type();
     }
 
-    /// \brief Replace all elements in this sequence with the elements in
+    /// Replace all elements in this sequence with the elements in
     /// the \p other sequence.
     template <class T2>
     This& operator=(const SdfListProxy<T2>& other) {
@@ -355,66 +357,66 @@ public:
         return *this;
     }
 
-    /// \brief Replace all elements in this sequence with the given vector.
+    /// Replace all elements in this sequence with the given vector.
     This& operator=(const value_vector_type& other) {
         _Edit(0, _GetSize(), other);
         return *this;
     }
 
-    /// \brief Replace all elements in this sequence with the given vector.
+    /// Replace all elements in this sequence with the given vector.
     template <class Y>
     This& operator=(const std::vector<Y>& v) {
         _Edit(0, _GetSize(), value_vector_type(v.begin(), v.end()));
         return *this;
     }
 
-    /// \brief Equality comparison.
+    /// Equality comparison.
     template <class T2>
     bool operator==(const SdfListProxy<T2>& y) const {
         return value_vector_type(*this) == value_vector_type(y);
     }
 
-    /// \brief Inequality comparison.
+    /// Inequality comparison.
     template <class T2>
     bool operator!=(const SdfListProxy<T2>& y) const {
         return not (*this == y);
     }
 
-    /// \brief Less-than comparison.
+    /// Less-than comparison.
     template <class T2>
     bool operator<(const SdfListProxy<T2>& y) const {
         return value_vector_type(*this) < value_vector_type(y);
     }
 
-    /// \brief Less-than-or-equal comparison.
+    /// Less-than-or-equal comparison.
     template <class T2>
     bool operator<=(const SdfListProxy<T2>& y) const {
         return value_vector_type(*this) <= value_vector_type(y);
     }
 
-    /// \brief Greater-than comparison.
+    /// Greater-than comparison.
     template <class T2>
     bool operator>(const SdfListProxy<T2>& y) const {
         return not (*this <= y);
     }
 
-    /// \brief Greater-than-or-equal comparison.
+    /// Greater-than-or-equal comparison.
     template <class T2>
     bool operator>=(const SdfListProxy<T2>& y) const {
         return not (*this < y);
     }
 
-    /// \brief Equality comparison.
+    /// Equality comparison.
     bool operator==(const value_vector_type& y) const {
         return value_vector_type(*this) == y;
     }
 
-    /// \brief Less-than comparison.
+    /// Less-than comparison.
     bool operator<(const value_vector_type& y) const {
         return value_vector_type(*this) < y;
     }
 
-    /// \brief Greater-than comparison.
+    /// Greater-than comparison.
     bool operator>(const value_vector_type& y) const {
         return value_vector_type(*this) > y;
     }
@@ -472,7 +474,7 @@ public:
     void Insert(int index, const value_type& value)
     {
         if (index == -1) {
-            index = _GetSize();
+            index = static_cast<int>(_GetSize());
         }
         _Edit(index, 0, value_vector_type(1, value));
     }

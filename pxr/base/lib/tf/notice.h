@@ -24,41 +24,38 @@
 #ifndef TF_NOTICE_H
 #define TF_NOTICE_H
 
+/// \file tf/notice.h
+/// \ingroup group_tf_Notification
+
 #include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakPtr.h"
-
+#include "pxr/base/tf/api.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 
 #include <list>
 #include <typeinfo>
 
-/*!
- * \file notice.h
- * \ingroup group_tf_Notification
- */
-
-
 class Tf_NoticeRegistry;
 
-///
 /// \class TfNotice 
 /// \ingroup group_tf_Notification
-/// \brief The base class for objects used to notify interested parties
-/// (listeners) when events have occured.  The TfNotice class also serves as a 
-/// container for various dispatching routines such as Register() and Send().
+///
+/// The base class for objects used to notify interested parties (listeners)
+/// when events have occured.  The TfNotice class also serves as a container
+/// for various dispatching routines such as Register() and Send().
 ///
 /// See \ref page_tf_Notification in the C++ API reference for a detailed 
 /// description of the notification system.
 ///
-/// \section pycode_TfNotice Python Example: Registering For and Sending Notices
-/// The following code provides examples of how to set up a Notice listener 
-/// connection (represented in Python by the Listener class), including 
-/// creating and sending notices, registering to receive notices, and breaking 
-/// a listener connection.
-/// \code
+/// \section pycode_TfNotice Python Example: Registering For and Sending
+/// Notices The following code provides examples of how to set up a Notice
+/// listener connection (represented in Python by the Listener class),
+/// including creating and sending notices, registering to receive notices,
+/// and breaking a listener connection.
+/// \code{.py}
 /// # To create a new notice type:
 /// class APythonClass(Tf.Notice):
 ///     '''TfNotice sent when APythonClass does something of interest.'''
@@ -86,7 +83,6 @@ class Tf_NoticeRegistry;
 ///
 /// # To revoke interest in a notice
 /// my_listener.Revoke()
-///
 /// \endcode
 /// 
 /// For more on using notices in Python, see the Editor With Notices tutorial.
@@ -96,7 +92,6 @@ private:
     class _DelivererBase;
     typedef TfWeakPtr<_DelivererBase> _DelivererWeakPtr;
     typedef std::list<_DelivererBase*> _DelivererList;
-
     
     ////////////////////////////////////////////////////////////////////////
     // Per-sender delivery, listener gets sender.
@@ -214,78 +209,61 @@ public:
     class Probe;
     typedef TfWeakPtr<Probe> WeakProbePtr;
     
-    /*!
-     * \brief Probe interface class which may be implemented and then
-     * registered via \c InsertProbe to introspect about notices as they
-     * are sent and delivered.
-     */
+    /// Probe interface class which may be implemented and then registered via
+    /// \c InsertProbe to introspect about notices as they are sent and
+    /// delivered.
     class Probe : public TfWeakBase {
       public:
         virtual ~Probe() = 0;
 
-        /*!
-         * \brief This method is called just before \p notice is sent to
-         * any listeners.  \p sender is NULL if \p notice is sent
-         * globally.  In this case, \p senderType will be typeid(void).
-         */
+        /// This method is called just before \p notice is sent to any
+        /// listeners.  \p sender is NULL if \p notice is sent globally.  In
+        /// this case, \p senderType will be typeid(void).
         virtual void BeginSend(const TfNotice &notice,
                                const TfWeakBase *sender,
                                const std::type_info &senderType) = 0;
-        /*!
-         * \brief This method is called after the notice in the
-         * corresponding \c BeginSend call has been delivered to all
-         * listeners.
-         */
+
+        /// This method is called after the notice in the corresponding \c
+        /// BeginSend call has been delivered to all listeners.
         virtual void EndSend() = 0;
 
-        /*!
-         * \brief This method is called just before \p notice is
-         * delivered to a listener.  \p sender is NULL if \p notice is
-         * sent globally or the listener is global.  In this case, \p
-         * senderType will be typeid(void).
-         */
+        /// This method is called just before \p notice is
+        /// delivered to a listener.  \p sender is NULL if \p notice is
+        /// sent globally or the listener is global.  In this case, \p
+        /// senderType will be typeid(void).
         virtual void BeginDelivery(const TfNotice &notice,
                                    const TfWeakBase *sender,
                                    const std::type_info &senderType,
                                    const TfWeakBase *listener,
                                    const std::type_info &listenerType) = 0;
-        /*!
-         * \brief This method is called after the notice in the
-         * corresponding \c BeginDelivery call has finished being
-         * processed by its listener.
-         */
+
+        /// This method is called after the notice in the
+        /// corresponding \c BeginDelivery call has finished being
+        /// processed by its listener.
         virtual void EndDelivery() = 0;
     };
 
-    
-    /*!
-     * \brief Handle-object returned by \c TfNotice::Register().
-     *
-     * When a listener is registered by \c TfNotice::Register(), an object
-     * of type \c TfNotice::Key is returned; this key object can be given
-     * to \c Revoke() to subequently unregister the listener with respect to
-     * that particular notice type and callback method.
-     */
+    /// Handle-object returned by \c TfNotice::Register().
+    ///
+    /// When a listener is registered by \c TfNotice::Register(), an object of
+    /// type \c TfNotice::Key is returned; this key object can be given to \c
+    /// Revoke() to subequently unregister the listener with respect to that
+    /// particular notice type and callback method.
     class Key {
     public:
         Key() {}
 
-        /*!
-         *\brief  Does this key refer to a valid notification?
-         *
-         * \c IsValid will return true if this key refers to a currently
-         * active notification.  Revoking the key will make it invalid
-         * again.
-         */
+        /// Does this key refer to a valid notification?
+        ///
+        /// \c IsValid will return true if this key refers to a currently
+        /// active notification.  Revoking the key will make it invalid again.
         bool IsValid() const {
-            return _deliverer and _deliverer->_IsActive();
+            return _deliverer && _deliverer->_IsActive();
         }
 
-        /*!
-         *\brief Does this key refer to a valid notification?
-         *
-         * The boolean operator is identical to \c IsValid() above.
-         */
+        /// Does this key refer to a valid notification?
+        ///
+        /// The boolean operator is identical to \c IsValid() above.
         operator bool() const {
             return IsValid();
         }
@@ -299,88 +277,79 @@ public:
         friend class TfNotice;
     };
 
-    /*!
-     * \brief A \c TfNotice::Key container.
-     *
-     * Many listeners listen for several notices and must revoke interest
-     * for those several notices at once.  These listeners can put all of
-     * the keys into a \c TfNotice::Keys then call \c Revoke() on it.
-     */
+    /// A \c TfNotice::Key container.
+    ///
+    /// Many listeners listen for several notices and must revoke interest for
+    /// those several notices at once.  These listeners can put all of the
+    /// keys into a \c TfNotice::Keys then call \c Revoke() on it.
     typedef std::vector<Key> Keys;
 
-    /*!
-     * \brief Register a probe that will be invoked when notices are
-     * sent and delivered.  See \c TfNotice::Probe.
-     */
+    /// Register a probe that will be invoked when notices are sent and
+    /// delivered.  
+    /// \see TfNotice::Probe
     static void InsertProbe(const WeakProbePtr &probe);
 
-    /*!
-     * \brief Remove a probe that was previously registered with \c
-     * InsertProbe.  See \c TfNotice::Probe.
-     */
+    /// Remove a probe that was previously registered with \c InsertProbe.
+    /// \see TfNotice::Probe
     static void RemoveProbe(const WeakProbePtr &probe);
 
-
-    /*!
-     * \brief Register a listener as being interested in a \c TfNotice.
-     *
-     * Registration of interest in a notice class \c N automatically registers
-     * interest in all classes derived from \c N.  When a notice of appropriate
-     * type is received, the listening object's member-function \p method is
-     * called with the notice.
-     *
-     * Supports several forms of registration.
-     *
-     * - Listening for a notice from a particular sender.
-     *
-     * \code
-     * // Listener does not receive sender.
-     * void Listener::_HandleNotice(SomeNotice const &notice) [const];
-     * Register(listenerPtr, &Listener::_HandleNotice, senderPtr);
-     *
-     * // Listener receives sender.
-     * void Listener::_HandleNoticeSender(SomeNotice const &notice,
-     *                                    SenderPtr const &sender) [const];
-     * Register(listenerPtr, &Listener::_HandleNoticeSender, senderPtr);
-     * \endcode
-     *
-     * - Listening for a notice globally.  Prefer listening to a notice from a
-     * particular sender whenever possible (as above).
-     *
-     * \code
-     * void Listener::_HandleGlobalNotice(SomeNotice const &notice) [const];
-     * Register(listenerPtr, &Listener::_HandleGlobalNotice);
-     * \endcode
-     *
-     * - Listening for a notice dynamically, with a type that is unknown at
-     * compile-time.  This facility is used for some internal mechanisms, such
-     * as bridging notice delivery into Python, and is not meant for public
-     * consumption.
-     *
-     * \code
-     * void Listener::_HandleGenericNotice(TfNotice const &notice,
-     *                                     TfType const &noticeType,
-     *                                     TfWeakBase *sender,
-     *                                     void const *senderUniqueId,
-     *                                     std::type_info const &senderType)
-     *                                     [const];
-     * Register(listenerPtr,
-     *          &Listener::_HandleGenericNotice, noticeType, senderPtr);
-     * \endcode
-     * 
-     * The listener being registered must be pointed to by a \c TfWeakPtrFacade,
-     * like a TfWeakPtr or another TfWeakPtrFacade-based Handle.  The sender
-     * being registered for (if any) must also be pointed to by a \c
-     * TfWeakPtrFacade.
-     *
-     * Note that the notification center only holds onto the listening object
-     * via a \c TfWeakPtr.  That is, it does not influence the lifetime of that
-     * object.
-     *
-     * To reverse the registration, call \c Key::Revoke() on the \c Key object
-     * returned by this call.
-     */
-
+    /// Register a listener as being interested in a \c TfNotice.
+    ///
+    /// Registration of interest in a notice class \c N automatically
+    /// registers interest in all classes derived from \c N.  When a notice of
+    /// appropriate type is received, the listening object's member-function
+    /// \p method is called with the notice.
+    ///
+    /// Supports several forms of registration.
+    ///
+    /// - Listening for a notice from a particular sender.
+    ///
+    /// \code
+    /// // Listener does not receive sender.
+    /// void Listener::_HandleNotice(SomeNotice const &notice) [const];
+    /// Register(listenerPtr, &Listener::_HandleNotice, senderPtr);
+    ///
+    /// // Listener receives sender.
+    /// void Listener::_HandleNoticeSender(SomeNotice const &notice,
+    ///                                    SenderPtr const &sender) [const];
+    /// Register(listenerPtr, &Listener::_HandleNoticeSender, senderPtr);
+    /// \endcode
+    ///
+    /// - Listening for a notice globally.  Prefer listening to a notice from a
+    /// particular sender whenever possible (as above).
+    ///
+    /// \code
+    /// void Listener::_HandleGlobalNotice(SomeNotice const &notice) [const];
+    /// Register(listenerPtr, &Listener::_HandleGlobalNotice);
+    /// \endcode
+    ///
+    /// - Listening for a notice dynamically, with a type that is unknown at
+    /// compile-time.  This facility is used for some internal mechanisms,
+    /// such as bridging notice delivery into Python, and is not meant for
+    /// public consumption.
+    ///
+    /// \code
+    /// void Listener::_HandleGenericNotice(TfNotice const &notice,
+    ///                                     TfType const &noticeType,
+    ///                                     TfWeakBase *sender,
+    ///                                     void const *senderUniqueId,
+    ///                                     std::type_info const &senderType)
+    ///                                     [const];
+    /// Register(listenerPtr,
+    ///          &Listener::_HandleGenericNotice, noticeType, senderPtr);
+    /// \endcode
+    /// 
+    /// The listener being registered must be pointed to by a \c
+    /// TfWeakPtrFacade, like a TfWeakPtr or another TfWeakPtrFacade-based
+    /// Handle.  The sender being registered for (if any) must also be pointed
+    /// to by a \c TfWeakPtrFacade.
+    ///
+    /// Note that the notification center only holds onto the listening object
+    /// via a \c TfWeakPtr.  That is, it does not influence the lifetime of
+    /// that object.
+    ///
+    /// To reverse the registration, call \c Key::Revoke() on the \c Key
+    /// object returned by this call.
     template <class LPtr, class MethodPtr>
     static TfNotice::Key
     Register(LPtr const &listener, MethodPtr method) {
@@ -400,89 +369,78 @@ public:
         return _Register(_MakeDeliverer(noticeType, listener, method, sender));
     }
     
-    /*!
-     * \brief Revoke interest by a listener.
-     *
-     * This revokes interest by the listener for the particular
-     * notice type and call-back method for which this key was
-     * created.
-     *
-     * \c Revoke will return a bool value indicating whether or not
-     * the key was successfully revoked.  Subsequent calls to \c Revoke
-     * with the same key will return false.
-     */
-    static bool Revoke(TfNotice::Key& key);
+    /// Revoke interest by a listener.
+    ///
+    /// This revokes interest by the listener for the particular notice type
+    /// and call-back method for which this key was created.
+    ///
+    /// \c Revoke will return a bool value indicating whether or not the key
+    /// was successfully revoked.  Subsequent calls to \c Revoke with the same
+    /// key will return false.
+	TF_API static bool Revoke(TfNotice::Key& key);
     
-    /*!
-     * \brief Revoke interest by listeners.
-     *
-     * This revokes interest by the listeners for the particular
-     * notice types and call-back methods for which the keys were
-     * created.  It then clears the keys container.
-     */
-    static void Revoke(TfNotice::Keys* keys);
+    /// Revoke interest by listeners.
+    ///
+    /// This revokes interest by the listeners for the particular
+    /// notice types and call-back methods for which the keys were
+    /// created.  It then clears the keys container.
+	TF_API static void Revoke(TfNotice::Keys* keys);
 
-    /*!
-     * \brief Deliver the notice to interested listeners, returning the number
-     * of interested listeners.  
-     *
-     * For most clients it is recommended to use the Send(sender) version of
-     * Send() rather than this one.  Clients that use this form of Send
-     * will prevent listeners from being able to register to receive notices
-     * based on the sender of the notice.
-     *
-     * ONLY listeners that registered globally will get the notice.
-     *
-     * Listeners are invoked synchronously and in arbitrary order. The value
-     * returned is the total number of times the notice was sent to listeners.
-     * Note that a listener is called in the thread in which \c Send() is called
-     * and \e not necessarily in the thread that \c Register() was called in.
-     */
+    /// Deliver the notice to interested listeners, returning the number
+    /// of interested listeners.  
+    ///
+    /// For most clients it is recommended to use the Send(sender) version of
+    /// Send() rather than this one.  Clients that use this form of Send
+    /// will prevent listeners from being able to register to receive notices
+    /// based on the sender of the notice.
+    ///
+    /// ONLY listeners that registered globally will get the notice.
+    ///
+    /// Listeners are invoked synchronously and in arbitrary order. The value
+    /// returned is the total number of times the notice was sent to listeners.
+    /// Note that a listener is called in the thread in which \c Send() is called
+    /// and \e not necessarily in the thread that \c Register() was called in.
+    TF_API 
     size_t Send() const;
     
-    /*!
-     * \brief Deliver the notice to interested listeners, returning the number
-     * of interested listeners.
-     *
-     * This is the recommended form of Send.  It takes the sender as an 
-     * argument.
-     *
-     * Listeners that registered for the given sender AND listeners that
-     * registered globally will get the notice.
-     *
-     * Listeners are invoked synchronously and in arbitrary order. The value
-     * returned is the total number of times the notice was sent to listeners.
-     * Note that a listener is called in the thread in which \c Send() is called
-     * and \e not necessarily in the thread that \c Register() was called in.
-     */
+    /// Deliver the notice to interested listeners, returning the number of
+    /// interested listeners.
+    ///
+    /// This is the recommended form of Send.  It takes the sender as an
+    /// argument.
+    ///
+    /// Listeners that registered for the given sender AND listeners that
+    /// registered globally will get the notice.
+    ///
+    /// Listeners are invoked synchronously and in arbitrary order. The value
+    /// returned is the total number of times the notice was sent to
+    /// listeners. Note that a listener is called in the thread in which \c
+    /// Send() is called and \e not necessarily in the thread that \c
+    /// Register() was called in.
     template <typename SenderPtr>
     size_t Send(SenderPtr const &s) const;
     
-    /*!
-     * \brief Variant of Send() that takes a specific sender in the form of
-     * a TfWeakBase pointer and a typeid.
-     *
-     * This version is used by senders who don't have static knowledge of
-     * sender's type, but have access to its weak base pointer and its
-     * typeid.
-     */
+    /// Variant of Send() that takes a specific sender in the form of a
+    /// TfWeakBase pointer and a typeid.
+    ///
+    /// This version is used by senders who don't have static knowledge of
+    /// sender's type, but have access to its weak base pointer and its
+    /// typeid.
+    TF_API 
     size_t SendWithWeakBase(const TfWeakBase *senderWeakBase,
                             const void *senderUniqueId,
                             const std::type_info &type) const;
 
-    virtual ~TfNotice();
+    TF_API virtual ~TfNotice();
 
-    /*!
-     * \brief Blocks sending of all notices in current thread.
-     *
-     * NOTE: This is intended to be temporary and should NOT be used.
-     *
-     * While one or more \c TfNotice::Block is instantiated, any call to
-     * \c TfNotice::Send in the current thread will be silently ignored.  
-     * This will continue until all \c TfNotice::Block objects are 
-     * destroyed.  Notices that are sent when blocking is active will 
-     * *not* be resent.
-     */
+    /// Blocks sending of all notices in current thread.
+    ///
+    /// \note This is intended to be temporary and should NOT be used.
+    ///
+    /// While one or more \c TfNotice::Block is instantiated, any call to \c
+    /// TfNotice::Send in the current thread will be silently ignored.  This
+    /// will continue until all \c TfNotice::Block objects are destroyed.
+    /// Notices that are sent when blocking is active will *not* be resent.
     class Block {
     public:
         Block();
@@ -490,10 +448,8 @@ public:
     };
 
 private:
-    /*
-     * Abstract base class for calling listeners.
-     * A typed-version derives (via templating) off this class.
-     */
+    // Abstract base class for calling listeners.
+    // A typed-version derives (via templating) off this class.
     class _DelivererBase : public TfWeakBase {
     public:
         _DelivererBase()
@@ -501,23 +457,24 @@ private:
         {
         }
         
-        virtual ~_DelivererBase();
+        TF_API virtual ~_DelivererBase();
 
+        TF_API 
         void _BeginDelivery(const TfNotice &notice,
                             const TfWeakBase *sender,
                             const std::type_info &senderType,
                             const TfWeakBase *listener,
                             const std::type_info &listenerType,
                             const std::vector<TfNotice::WeakProbePtr> &probes);
+
+        TF_API 
         void _EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes);
 
-        /*
-         * The derived class converts n to the proper type and
-         * delivers it by calling the listener's method.  The function
-         * returns \c true, unless the listener has expired or been
-         * marked in active (i.e. by TfNotice::Revoke()), in which
-         * case the method call is skipped and \c false is returned.
-         */
+        // The derived class converts n to the proper type and delivers it by
+        // calling the listener's method.  The function returns \c true,
+        // unless the listener has expired or been marked in active (i.e. by
+        // TfNotice::Revoke()), in which case the method call is skipped and
+        // \c false is returned.
         virtual bool
         _SendToListener(const TfNotice &n,
                         const TfType &type,
@@ -558,14 +515,14 @@ private:
         template <class ToNoticeType, class FromNoticeType>
         static inline ToNoticeType const *
         _CastNotice(FromNoticeType const *from) {
-            // Dynamic casting in deliverers is significant overhead, so only do
-            // error checking in debug builds.
+            // Dynamic casting in deliverers is significant overhead, so only
+            // do error checking in debug builds.
             if (TF_DEV_BUILD) {
                 if (!dynamic_cast<ToNoticeType const *>(from)) {
                     ToNoticeType const *castNotice =
                         TfSafeDynamic_cast<ToNoticeType const *>(from);
-                    // this will abort with a clear error message if castNotice
-                    // is NULL
+                    // this will abort with a clear error message if
+                    // castNotice is NULL
                     TfNotice::_VerifyFailedCast(typeid(ToNoticeType),
                                                 *from, castNotice);
                 }
@@ -583,7 +540,6 @@ private:
         
         friend class Tf_NoticeRegistry;
     };
-
 
     template <class Derived>
     class _StandardDeliverer : public _DelivererBase {
@@ -787,17 +743,17 @@ private:
     };
 
 private:
-    /*
-     * Internal non-templated function to install listeners.
-     */
-    static Key _Register(_DelivererBase*);
+    // Internal non-templated function to install listeners.
+    TF_API static Key _Register(_DelivererBase*);
 
-    static void _VerifyFailedCast(const std::type_info& toType,
+    TF_API static void _VerifyFailedCast(const std::type_info& toType,
                                   const TfNotice& notice, const TfNotice* castNotice);
 
+    TF_API 
     size_t _Send(const TfWeakBase* sender,
                  const void *senderUniqueId,
                  const std::type_info & senderType) const;
+    TF_API
     size_t _SendWithType(const TfType & noticeType,
                          const TfWeakBase* sender,
                          const void *senderUniqueId,

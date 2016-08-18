@@ -402,7 +402,7 @@ namespace {
 
     // These keys represent data we wish to filter out of our token search
     // when stitching data in a SdfSpec.
-    TF_MAKE_STATIC_DATA((std::vector<TfToken>), _SortedChildrenTokens) {
+    TF_MAKE_STATIC_DATA(std::vector<TfToken>, _SortedChildrenTokens) {
         *_SortedChildrenTokens = SdfChildrenKeys->allTokens;
         std::sort(_SortedChildrenTokens->begin(), _SortedChildrenTokens->end());
     } 

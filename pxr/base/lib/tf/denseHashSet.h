@@ -24,8 +24,7 @@
 #ifndef TF_DENSE_HASH_SET_H
 #define TF_DENSE_HASH_SET_H
 
-///
-/// \file Tf/DenseHashSet.h
+/// \file tf/denseHashSet.h
 
 #include <vector>
 
@@ -33,13 +32,12 @@
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/scoped_ptr.hpp>
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/hashmap.h"
 #include <boost/utility.hpp>
 
 #include <cstdio>
 
-///////////////////////////////////////////////////////////////////////////////
-///
 /// \class TfDenseHashSet
 ///
 /// This is a space efficent container that mimics the TfHashSet API that
@@ -48,9 +46,7 @@
 /// When the set gets bigger than \p Threshold a TfHashMap is allocated
 /// that is used to accelerate lookup in the vector.
 ///
-/// WARNING:
-///
-/// Note that this differs from a TfHashSet in so far that inserting and
+/// \warning This differs from a TfHashSet in so far that inserting and
 /// removing elements invalidate all iterators of the container.
 ///
 template <

@@ -39,4 +39,3 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("gf"), TfToken("pxr.Gf"), reqs);
 }
-

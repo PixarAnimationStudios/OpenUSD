@@ -23,13 +23,18 @@
 //
 #ifndef __PX_VP20_UTILS_H__
 #define __PX_VP20_UTILS_H__
+
 #include <maya/MDrawContext.h>
+#include "px_vp20/api.h"
 
 class px_vp20Utils
 {
 public:
 	// Take VP2.0 lighting information and import it into opengl lights
+    PX_VP20_API
     static bool setupLightingGL( const MHWRender::MDrawContext& context);
+    
+    PX_VP20_API
     static void unsetLightingGL( const MHWRender::MDrawContext& context);
 
 private:

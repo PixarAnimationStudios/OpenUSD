@@ -21,16 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/cleanupEnabler.h
-
 #ifndef SDF_CLEANUP_ENABLER_H
 #define SDF_CLEANUP_ENABLER_H
 
+/// \file sdf/cleanupEnabler.h
+
 #include "pxr/base/tf/stacked.h"
+#include "pxr/usd/sdf/api.h"
 
 /// \class SdfCleanupEnabler
-/// \brief An RAII class which, when an instance is alive, enables scheduling of
-///        automatic cleanup of SdfLayers.
+///
+/// An RAII class which, when an instance is alive, enables scheduling of
+/// automatic cleanup of SdfLayers.
 /// 
 /// Any affected specs which no longer contribute to the scene will be removed 
 /// when the last SdfCleanupEnabler instance goes out of scope. Note that for 
@@ -61,17 +63,16 @@
 /// }
 /// \endcode
 ///
-class SdfCleanupEnabler : 
-    public TfStacked<SdfCleanupEnabler, /* thread safe */ false>
+TF_DECLARE_STACKED_CLASS(SdfCleanupEnabler, false, SDF_API)
 {
 public:
 
-    SdfCleanupEnabler();
+    SDF_API SdfCleanupEnabler();
 
-    ~SdfCleanupEnabler();
+    SDF_API ~SdfCleanupEnabler();
 
     /// Returns whether cleanup is currently being scheduled.
-    static bool IsCleanupEnabled();
+    SDF_API static bool IsCleanupEnabled();
 };
 
 #endif  // #ifndef SDF_CLEANUP_ENABLER_H
