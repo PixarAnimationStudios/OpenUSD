@@ -119,7 +119,7 @@ public:
     }
 
 private:
-    friend struct TfStackedAccess;
+    friend class TfStackedAccess;
 
     // This function may be hidden (overridden) by derived classes to initialize
     // (pre-populate) the stack with some items.  One way to do this is to

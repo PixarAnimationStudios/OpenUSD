@@ -841,7 +841,7 @@ public:
 
     /// Accessor to \c T's public members.
     T* operator ->() const {
-        if (ARCH_UNLIKELY(!static_cast<void*>(_refBase)))
+        if (ARCH_UNLIKELY(!static_cast<const void*>(_refBase)))
             TF_FATAL_ERROR("attempted member lookup on NULL %s",
                            ArchGetDemangled(typeid(TfRefPtr)).c_str());
         return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
@@ -853,7 +853,7 @@ public:
 
     /// True if the pointer points to an object.
     operator UnspecifiedBoolType() const {
-        return static_cast<void*>(_refBase) ? &TfRefPtr::_refBase : NULL;
+        return static_cast<const void*>(_refBase) ? &TfRefPtr::_refBase : NULL;
     }
 
     /// True if the pointer points to \c NULL.

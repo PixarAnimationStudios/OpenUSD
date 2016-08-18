@@ -113,12 +113,12 @@ TF_API std::string TfAbsPath(std::string const& path);
 /// TfGetExtension('/foo/bar/foo.101.baz')  -> 'baz'
 /// TfGetExtension('/foo/bar/.foo.baz')     -> 'baz'
 /// TfGetExtension('/foo/bar/.foo')         -> ''
-std::string TfGetExtension(std::string const& path);
+TF_API std::string TfGetExtension(std::string const& path);
 
 /// Returns the source path for a symbolic link.
 ///
 /// This is a wrapper to readlink(2).
-std::string TfReadLink(std::string const& path);
+TF_API std::string TfReadLink(std::string const& path);
 
 /*! \brief Determines if a path is absolute.
 *

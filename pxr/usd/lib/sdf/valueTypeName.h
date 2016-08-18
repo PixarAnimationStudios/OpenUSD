@@ -173,7 +173,7 @@ public:
 
 private:
     friend class Sdf_ValueTypeRegistry;
-    friend struct Sdf_ValueTypePrivate;
+    friend class Sdf_ValueTypePrivate;
 
     SDF_API
     explicit SdfValueTypeName(const Sdf_ValueTypeImpl*);

@@ -481,7 +481,7 @@ private:
 
     const SpecDefinition* _CheckAndGetSpecDefinition(SdfSpecType type) const;
 
-    friend struct Sdf_SchemaFieldTypeRegistrar;
+    friend class Sdf_SchemaFieldTypeRegistrar;
     FieldDefinition& _CreateField(
         const TfToken &fieldKey, const VtValue &fallback, bool plugin = false);
 

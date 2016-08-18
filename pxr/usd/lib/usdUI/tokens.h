@@ -33,6 +33,7 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/usd/usdUI/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 /// \hideinitializer
@@ -64,6 +65,6 @@
 /// \li <b>uiNodegraphNodeDisplayColor</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodePos</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeStackingOrder</b> - UsdUINodeGraphNodeAPI
-TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUI_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUIAPI, USDUI_TOKENS);
 
 #endif

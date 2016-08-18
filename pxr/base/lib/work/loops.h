@@ -25,6 +25,7 @@
 #define WORK_LOOPS_H
 
 /// \file work/loops.h
+#include <utility>
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/arch/defines.h"
@@ -75,12 +76,14 @@ WorkParallelForN(size_t n, Fn &&callback)
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkGetConcurrencyLimit() > 1) {
 
-        class Work_ParallelForN_TBB 
+        class Work_ParallelForN_TBB: boost::noncopyable
         {
         public:
             // Private constructor because no one is allowed to create one of
             // these objects from the outside.
             Work_ParallelForN_TBB(Fn &&fn) : _fn(std::forward<Fn>(fn)) { }
+            Work_ParallelForN_TBB(const Work_ParallelForN_TBB& rhs):
+                _fn(std::move(rhs._fn)) {}
 
             void operator()(const tbb::blocked_range<size_t> &r) const {
                 std::forward<Fn>(_fn)(r.begin(), r.end());
@@ -90,7 +93,7 @@ WorkParallelForN(size_t n, Fn &&callback)
             Fn &&_fn;
         };
 
-        // Note that for the tbb version in the future, we will likely want to 
+        // Note that for the tbb version in the future, we will likely want to
         // tune the grain size.
         // In most cases we do not want to inherit cancellation state from the
         // parent context, so we create an isolated task group context.

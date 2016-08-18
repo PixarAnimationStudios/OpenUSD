@@ -190,7 +190,7 @@ protected:
     }
 
     bool _HasRemnant() const {
-        return _remnantPtr.load(std::memory_order_relaxed);
+        return _remnantPtr.load(std::memory_order_relaxed) ? true : false;
     }
 
 private:

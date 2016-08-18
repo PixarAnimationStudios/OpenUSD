@@ -29,6 +29,7 @@
 #include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjectFinder.h"
+#include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/traits.h"

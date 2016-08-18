@@ -37,9 +37,7 @@
 #include <memory>
 #include <sstream>
 
-#include <alloca.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(ARCH_OS_WINDOWS)
@@ -47,6 +45,8 @@
 #include <stdio.h>
 #include <process.h>
 #else
+#include <sys/mman.h>
+#include <alloca.h>
 #include <sys/file.h>
 #include <unistd.h>
 #endif
