@@ -31,22 +31,22 @@ template <class T, int Rows, int Columns>
 class GfMatrixData {
 public:
 
-    /// \brief Return a pointer to a \a row of data.
+    /// Return a pointer to a \a row of data.
     T *operator[](int row) {
         return _data + (row * Columns);
     }
 
-    /// \brief Return a const pointer to a \a row of data.
+    /// Return a const pointer to a \a row of data.
     T const *operator[](int row) const {
         return _data + (row * Columns);
     }
 
-    /// \brief Return a pointer to the start of all the data.
+    /// Return a pointer to the start of all the data.
     T *GetData() {
         return _data;
     }
 
-    /// \brief Return a const pointer to the start of all the data.
+    /// Return a const pointer to the start of all the data.
     T const *GetData() const {
         return _data;
     }
@@ -55,7 +55,5 @@ private:
 
     T _data[Rows * Columns];
 };
-
-
 
 #endif // GF_MATRIX_DATA_H

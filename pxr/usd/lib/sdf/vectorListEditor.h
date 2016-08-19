@@ -66,6 +66,7 @@ struct Sdf_VectorFieldAdapter<std::string, TfToken>
 };
 
 /// \class Sdf_VectorListEditor
+///
 /// An Sdf_ListEditor implementation that represents a single type of list 
 /// editing operation stored in a vector-typed field. 
 ///
@@ -73,6 +74,7 @@ struct Sdf_VectorFieldAdapter<std::string, TfToken>
 /// list editor. By default, it's assumed this value type is also stored in
 /// the underlying field data. This may be overridden by explicitly specifying
 /// the FieldStorageType.
+///
 template <class TypePolicy, 
           class FieldStorageType = typename TypePolicy::value_type>
 class Sdf_VectorListEditor
@@ -86,6 +88,8 @@ private:
 public:
     typedef typename Parent::value_type        value_type;
     typedef typename Parent::value_vector_type value_vector_type;
+
+    virtual ~Sdf_VectorListEditor() = default;
 
     Sdf_VectorListEditor(const SdfSpecHandle& owner, 
                          const TfToken& field, SdfListOpType op,

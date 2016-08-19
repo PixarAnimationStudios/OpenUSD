@@ -59,7 +59,7 @@ class GfQuaternion;
     /// This explicit constructor initializes the matrix to \p s times
     /// the identity matrix.
     explicit {{ MAT }}(int s) {
-	SetDiagonal(s);
+        SetDiagonal(s);
     }
 
 {% endblock customDiagonalConstructors %}

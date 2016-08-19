@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pcp/layerStackIdentifier.h
-
 #ifndef PCP_LAYER_STACK_IDENTIFIER_H
 #define PCP_LAYER_STACK_IDENTIFIER_H
+
+/// \file pcp/layerStackIdentifier.h
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -34,9 +34,11 @@
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// \class PcpLayerStackIdentifier
-/// \brief Arguments used to identify a layer stack.
+///
+/// Arguments used to identify a layer stack.
 ///
 /// Objects of this type are immutable.
+///
 class PcpLayerStackIdentifier :
     boost::totally_ordered<PcpLayerStackIdentifier> {
 public:

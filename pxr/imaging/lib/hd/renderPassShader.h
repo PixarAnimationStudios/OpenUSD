@@ -38,7 +38,9 @@
 
 typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 
-/// A shader that supports common renderPass functionality
+/// \class HdRenderPassShader
+///
+/// A shader that supports common renderPass functionality.
 ///
 class HdRenderPassShader : public HdShader {
 public:

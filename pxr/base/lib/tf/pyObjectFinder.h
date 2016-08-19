@@ -48,7 +48,6 @@ struct Tf_PyObjectFinder : public Tf_PyObjectFinderBase {
     }
 };
 
-
 void Tf_RegisterPythonObjectFinderInternal(std::type_info const &type,
                                            Tf_PyObjectFinderBase const *finder);
 
@@ -60,6 +59,5 @@ void Tf_RegisterPythonObjectFinder() {
 
 boost::python::object
 Tf_FindPythonObject(void const *objPtr, std::type_info const &type);
-
 
 #endif // TF_PYOBJECTFINDER_H

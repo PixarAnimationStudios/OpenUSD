@@ -33,6 +33,8 @@ class GlfQGLPlatformDebugContextPrivate;
 
 TF_DECLARE_WEAK_PTRS(GlfQGLPlatformDebugContext);
 
+/// \class GlfQGLPlatformDebugContext
+///
 /// Platform specific context (e.g. X11/GLX) which supports debug output.
 ///
 class GlfQGLPlatformDebugContext : public TfWeakBase {

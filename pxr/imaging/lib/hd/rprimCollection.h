@@ -31,6 +31,8 @@
 #include <string>
 #include <vector>
 
+/// \class HdRprimCollection
+///
 /// A named, semantic collection of objects.
 ///
 /// Note that the collection object itself doesn't hold HdRprim objects, rather

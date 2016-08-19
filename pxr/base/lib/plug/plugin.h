@@ -41,9 +41,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PlugPlugin);
 
 class TfType;
 
+/// \class PlugPlugin
 ///
-/// \class PlugPlugin plugin.h pxr/base/plug/plugin.h
-/// \brief Defines an interface to registered plugins.
+/// Defines an interface to registered plugins.
 ///
 /// Plugins are registered using the interfaces in \c PlugRegistry.
 ///
@@ -52,12 +52,11 @@ class TfType;
 /// the plugin and to retrieve information about the
 /// classes implemented by the plugin.
 ///
-
 class PLUG_API PlugPlugin : public TfRefBase, public TfWeakBase {
 public:
     virtual ~PlugPlugin();
 
-    /// \brief Loads the plugin.
+    /// Loads the plugin.
     /// This is a noop if the plugin is already loaded.
     bool Load();
 
@@ -108,7 +107,7 @@ public:
     /// verifying that file exists.  If verification fails an empty path
     /// is returned.  Relative paths are relative to the plugin's resource
     /// path.
-    std::string FindResource(const std::string& path, bool verify = true) const;
+    std::string FindPluginResource(const std::string& path, bool verify = true) const;
 
 private:
     enum _Type { LibraryType, PythonType, ResourceType };
@@ -167,7 +166,7 @@ private:
     PLUG_LOCAL
     static void _DefineType( TfType t );
 
-    class _SeenPlugins;
+    struct _SeenPlugins;
     PLUG_LOCAL
     bool _LoadWithDependents(_SeenPlugins * seenPlugins);
 
@@ -187,9 +186,9 @@ private:
     friend class PlugThisPlugin;
 };
 
-/// 
 /// \class PlugThisPlugin
-/// \brief An object that refers to the plugin it's in.
+///
+/// An object that refers to the plugin it's in.
 ///
 /// If you have a plugin that wants access to its own plugInfo metadata
 /// (especially its resources) then make a \b static instance of this
@@ -219,8 +218,8 @@ private:
 /// plugin's resource path.
 PLUG_API
 std::string
-PlugFindResource(const PlugPluginPtr& plugin,
-                 const std::string& path, bool verify = true);
+PlugFindPluginResource(const PlugPluginPtr& plugin,
+                       const std::string& path, bool verify = true);
 
 /// Find a plugin's resource by absolute or relative path optionally
 /// verifying that file exists.  If \c plugin.Get() is \c NULL or
@@ -228,7 +227,7 @@ PlugFindResource(const PlugPluginPtr& plugin,
 /// relative to the plugin's resource path.
 PLUG_API
 std::string
-PlugFindResource(const PlugThisPlugin& plugin,
-                 const std::string& path, bool verify = true);
+PlugFindPluginResource(const PlugThisPlugin& plugin,
+                       const std::string& path, bool verify = true);
 
 #endif // PLUG_PLUGIN_H

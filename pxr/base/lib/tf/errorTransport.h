@@ -24,49 +24,43 @@
 #ifndef TF_ERROR_TRANSPORT
 #define TF_ERROR_TRANSPORT
 
+/// \file tf/errorTransport.h
+
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/arch/hints.h"
 
-/*!
- * \class TfErrorTransport
- * \brief A facility for transporting errors from thread to thread.
- *
- * Typical use is to create a TfErrorMark in the thread that is the error source
- * (e.g. the child thread), then call TfErrorMark::Transport() or
- * TfErrorMark::TransportTo() to lift generated errors out into a
- * TfErrorTransport object.  Later the thread that wants to sink those errors
- * (e.g. the parent thread) invokes TfErrorTransport::Post() to post all
- * contained errors to its own thread's error list.
- */
-struct TfErrorTransport
+/// \class TfErrorTransport
+///
+/// A facility for transporting errors from thread to thread.
+///
+/// Typical use is to create a TfErrorMark in the thread that is the error
+/// source (e.g. the child thread), then call TfErrorMark::Transport() or
+/// TfErrorMark::TransportTo() to lift generated errors out into a
+/// TfErrorTransport object.  Later the thread that wants to sink those errors
+/// (e.g. the parent thread) invokes TfErrorTransport::Post() to post all
+/// contained errors to its own thread's error list.
+class TfErrorTransport
 {
+public:
     typedef TfDiagnosticMgr::ErrorList ErrorList;
 
-    /*!
-     * \brief Construct an empty TfErrorTransport.
-     */
+    /// Construct an empty TfErrorTransport.
     TfErrorTransport() {}
 
-    /*!
-     * \brief Post all contained errors to the current thread's error list,
-     * leaving this TfErrorTransport empty.
-     */
+    /// Post all contained errors to the current thread's error list, leaving
+    /// this TfErrorTransport empty.
     void Post() {
         if (ARCH_UNLIKELY(not IsEmpty()))
             _PostImpl();
     }
 
-    /*!
-     * \brief Return true if this TfErrorTransport contains no errors, false
-     * otherwise.
-     */
+    /// Return true if this TfErrorTransport contains no errors, false
+    /// otherwise.
     bool IsEmpty() const { return _errorList.empty(); }
 
-    /*!
-     * \brief Swap this TfErrorTransport's content with \p other.  This provides
-     * a lightweight way to move the contents of one TfErrorTransport to
-     * another.
-     */
+    /// Swap this TfErrorTransport's content with \p other.  This provides a
+    /// lightweight way to move the contents of one TfErrorTransport to
+    /// another.
     void swap(TfErrorTransport &other) {
         _errorList.swap(other._errorList);
     }

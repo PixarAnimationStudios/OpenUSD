@@ -155,7 +155,7 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
 {
     SdfPathVector mappedPaths;
     mappedPaths.reserve(targets.size());
-    BOOST_FOREACH(const SdfPath &target, targets) {
+    for (const SdfPath &target: targets) {
         std::string errMsg;
         mappedPaths.push_back(_GetTargetForAuthoring(target, &errMsg));
         if (mappedPaths.back().IsEmpty()) {
@@ -179,7 +179,7 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
-    BOOST_FOREACH(const SdfPath &path, mappedPaths) {
+    for (const SdfPath &path: mappedPaths) {
         relSpec->GetTargetPathList().Add(path);
     }
 

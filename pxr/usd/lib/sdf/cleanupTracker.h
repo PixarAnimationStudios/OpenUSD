@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/cleanupTracker.h
-/// 
 #ifndef SDF_CLEANUP_TRACKER_H
 #define SDF_CLEANUP_TRACKER_H
+
+/// \file sdf/cleanupTracker.h
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
@@ -34,18 +34,21 @@ SDF_DECLARE_HANDLES(SdfSpec);
 #include <vector>
 
 /// \class Sdf_CleanupTracker
-/// \brief A singleton that tracks specs edited within an Sdf_CleanupEnabler 
-///        scope. When the last Sdf_CleanupEnabler goes out of scope, the 
-///        specs are removed from the layer if they are inert.
+///
+/// A singleton that tracks specs edited within an Sdf_CleanupEnabler scope.
+///
+/// When the last Sdf_CleanupEnabler goes out of scope, the specs are removed
+/// from the layer if they are inert.
+///
 class Sdf_CleanupTracker : public TfWeakBase
 {
 public:
     
-    /// \brief Retrieves singleton instance.
+    /// Retrieves singleton instance.
     static Sdf_CleanupTracker &GetInstance();
 
-    /// \brief Adds the spec to the vector of tracked specs if there is at 
-    ///        least one Sdf_CleanupEnabler on the stack.
+    /// Adds the spec to the vector of tracked specs if there is at least one
+    /// Sdf_CleanupEnabler on the stack.
     void AddSpecIfTracking(SdfSpecHandle const &spec);
 
     /// Return the authoring monitor indentified by the index
@@ -60,6 +63,5 @@ private:
     
     friend class TfSingleton<Sdf_CleanupTracker>;
 };
-
 
 #endif // SDF_CLEANUP_TRACKER_H

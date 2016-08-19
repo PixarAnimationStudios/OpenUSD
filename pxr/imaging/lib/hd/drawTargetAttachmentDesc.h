@@ -31,9 +31,13 @@
 
 #include <string>
 
+/// \class HdDrawTargetAttachmentDesc
+///
 /// Represents an render to texture render pass.
-/// Note:  This is a temporary api to aid transition to hydra.
-/// and subject to major changes.
+///
+/// \note This is a temporary API to aid transition to hydra, and is subject
+/// to major changes.
+///
 class HdDrawTargetAttachmentDesc final
 {
 public:
@@ -64,7 +68,6 @@ private:
     std::string _name;
     HdFormat    _format;
     VtValue     _clearColor;
-
 };
 
 size_t hash_value(HdDrawTargetAttachmentDesc const &attachment);

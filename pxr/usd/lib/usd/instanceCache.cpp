@@ -113,8 +113,8 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
 
 
     // Remove unregistered prim indexes from the cache.
-    BOOST_FOREACH(_InstanceKeyToPrimIndexesMap::value_type& v,
-                  _pendingRemovedPrimIndexes) {
+    for (_InstanceKeyToPrimIndexesMap::value_type &v:
+             _pendingRemovedPrimIndexes) {
         const Usd_InstanceKey& key = v.first;
         _PrimIndexPaths& primIndexes = v.second;
 
@@ -145,8 +145,8 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
         // ensure we have a consistent assignment of instances to masters.
         typedef std::map<SdfPath, Usd_InstanceKey> _PrimIndexPathToKey;
         std::map<SdfPath, Usd_InstanceKey> keysToProcess;
-        BOOST_FOREACH(_InstanceKeyToPrimIndexesMap::value_type& v,
-                      _pendingAddedPrimIndexes) {
+        for (_InstanceKeyToPrimIndexesMap::value_type& v:
+                 _pendingAddedPrimIndexes) {
             const Usd_InstanceKey& key = v.first;
             const _PrimIndexPaths& primIndexes = v.second;
             if (TF_VERIFY(not primIndexes.empty())) {
@@ -155,15 +155,15 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
             }
         }
 
-        BOOST_FOREACH(const _PrimIndexPathToKey::value_type& v, keysToProcess) {
+        for (const _PrimIndexPathToKey::value_type& v: keysToProcess) {
             const Usd_InstanceKey& key = v.second;
             _PrimIndexPaths& primIndexes = _pendingAddedPrimIndexes[key];
             _CreateOrUpdateMasterForInstances(key, &primIndexes, changes);
         }
     }
     else {
-        BOOST_FOREACH(_InstanceKeyToPrimIndexesMap::value_type& v,
-                      _pendingAddedPrimIndexes) {
+        for(_InstanceKeyToPrimIndexesMap::value_type& v:
+                _pendingAddedPrimIndexes) {
             _CreateOrUpdateMasterForInstances(v.first, &v.second, changes);
         }
     }
@@ -240,7 +240,7 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
 
     // Assign the newly-registered prim indexes to their master.
     const SdfPath& masterPath = result.first->second;
-    BOOST_FOREACH(const SdfPath& primIndexPath, *primIndexPaths) {
+    for (const SdfPath& primIndexPath: *primIndexPaths) {
         _primIndexToMasterMap[primIndexPath] = masterPath;
     }
 
@@ -286,7 +286,7 @@ Usd_InstanceCache::_RemoveInstances(
     // Remove the prim indexes from the prim index <-> master bidirectional
     // mapping.
     _PrimIndexPaths& primIndexesForMaster = _masterToPrimIndexesMap[masterPath];
-    BOOST_FOREACH(const SdfPath& path, primIndexPaths) {
+    for (const SdfPath& path: primIndexPaths) {
         _PrimIndexPaths::iterator it = std::find(
             primIndexesForMaster.begin(), primIndexesForMaster.end(), path);
         if (it != primIndexesForMaster.end()) {
@@ -383,8 +383,8 @@ Usd_InstanceCache::GetAllMasters() const
 {
     vector<SdfPath> paths;
     paths.reserve(_instanceKeyToMasterMap.size());
-    BOOST_FOREACH(const _InstanceKeyToMasterMap::value_type& v,
-                  _instanceKeyToMasterMap) {
+    for (const _InstanceKeyToMasterMap::value_type& v:
+             _instanceKeyToMasterMap) {
         paths.push_back(v.second);
     }
     return paths;

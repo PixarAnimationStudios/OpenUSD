@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file js/utils.h
-
 #ifndef JS_UTILS_H
 #define JS_UTILS_H
+
+/// \file js/utils.h
 
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/value.h"

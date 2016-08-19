@@ -35,20 +35,23 @@ SDF_DECLARE_HANDLES(SdfSpec);
 class TfToken;
 
 /// \class Sdf_ConnectionListEditor
+///
 /// List editor implementation that ensures that the appropriate target
 /// specs are created or destroyed when connection/relationship targets are 
 /// added to the underlying list operation.
+///
 template <class ConnectionChildPolicy>
 class Sdf_ConnectionListEditor 
     : public Sdf_ListOpListEditor<SdfPathKeyPolicy>
 {
 protected:
+    virtual ~Sdf_ConnectionListEditor();
+
     Sdf_ConnectionListEditor(
         const SdfSpecHandle& connectionOwner,
         const TfToken& connectionListField,             
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
     
-protected:
     void _OnEdit(SdfListOpType op,
         SdfSpecType specType,
         const std::vector<SdfPath>& oldItems,
@@ -59,11 +62,15 @@ private:
 };
 
 /// \class Sdf_AttributeConnectionListEditor
+///
 /// List editor implementation for attribute connections.
+///
 class Sdf_AttributeConnectionListEditor
     : public Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>
 {
 public:
+    virtual ~Sdf_AttributeConnectionListEditor();
+
     Sdf_AttributeConnectionListEditor(
         const SdfSpecHandle& owner,
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
@@ -76,11 +83,15 @@ private:
 };
 
 /// \class Sdf_RelationshipTargetListEditor
+///
 /// List editor implementation for attribute connections.
+///
 class Sdf_RelationshipTargetListEditor
     : public Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>
 {
 public:
+    virtual ~Sdf_RelationshipTargetListEditor();
+
     Sdf_RelationshipTargetListEditor(
         const SdfSpecHandle& owner,
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());

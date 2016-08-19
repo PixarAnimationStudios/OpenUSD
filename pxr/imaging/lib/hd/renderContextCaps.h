@@ -27,6 +27,7 @@
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/singleton.h"
 
+/// \class HdRenderContextCaps
 ///
 /// This class is intended to be a cache of the capabilites
 /// (resource limits and features) of the underlying

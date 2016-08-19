@@ -21,13 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/layer.h
-///
-///
-
 #ifndef SDF_LAYER_H
 #define SDF_LAYER_H
+
+/// \file sdf/layer.h
 
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -53,11 +50,12 @@
 TF_DECLARE_WEAK_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
 
-class Sdf_AssetInfo;
+struct Sdf_AssetInfo;
 
 /// \class SdfLayer 
-/// \brief A unit of scene description that you combine with other units of 
-/// scene description to form a shot, model, set, shader, and so on.
+///
+/// A unit of scene description that you combine with other units of scene
+/// description to form a shot, model, set, shader, and so on.
 ///
 /// SdfLayer objects provide a persistent way to store layers on the
 /// filesystem in .menva files.  Currently the supported file format is 
@@ -87,7 +85,6 @@ class Sdf_AssetInfo;
 /// \todo
 /// \li Should have validate... methods for rootPrims
 ///
-
 class SdfLayer : public SdfLayerBase
 {
     typedef SdfLayerBase Parent;
@@ -102,7 +99,7 @@ public:
 
     using SdfLayerBase::FileFormatArguments;
 
-    /// \brief Creates a new empty layer with the given identifier.
+    /// Creates a new empty layer with the given identifier.
     ///
     /// The \p identifier must be either a real filesystem path or an asset
     /// path without version modifier. Attempting to create a layer using an
@@ -118,8 +115,8 @@ public:
                                     const FileFormatArguments &args =
                                     FileFormatArguments());
 
-    /// \brief Creates a new empty layer with the given identifier for a given
-    /// file format class.
+    /// Creates a new empty layer with the given identifier for a given file
+    /// format class.
     ///
     /// This function has the same behavior as the other CreateNew function,
     /// but uses the explicitly-specified \p fileFormat instead of attempting
@@ -130,8 +127,8 @@ public:
                                     const FileFormatArguments &args =
                                     FileFormatArguments());
 
-    /// \brief Creates a new empty layer with the given identifier for a given
-    /// file format class.
+    /// Creates a new empty layer with the given identifier for a given file
+    /// format class.
     ///
     /// This is so that Python File Format classes can create layers
     /// (CreateNew() doesn't work, because it already saves during
@@ -182,7 +179,7 @@ public:
     /// file on the filesystem.
     ///
     /// \p metadataOnly is a flag that asks for only the layer metadata
-    //// to be read in, which can be much faster if that is all that is
+    /// to be read in, which can be much faster if that is all that is
     /// required.  Note that this is just a hint: some FileFormat readers
     /// may disregard this flag and still fully populate the layer contents.
     static SdfLayerRefPtr OpenAsAnonymous(
@@ -192,16 +189,16 @@ public:
     /// Returns the scene description schema for this layer.
     virtual const SdfSchemaBase& GetSchema() const;
 
-    /// \brief Returns the data from the absolute root path of this layer.
+    /// Returns the data from the absolute root path of this layer.
     SdfDataRefPtr GetMetadata() const;
 
     /// Returns handles for all layers currently held by the layer registry.
     static SdfLayerHandleSet GetLoadedLayers();
 
-    /// \brief Returns whether this layer has no significant data.
+    /// Returns whether this layer has no significant data.
     bool IsEmpty() const;
 
-    /// \brief Copies the content of the given layer into this layer.
+    /// Copies the content of the given layer into this layer.
     /// Source layer is unmodified.
     void TransferContent(const SdfLayerHandle& layer);
 
@@ -256,18 +253,18 @@ public:
                 const std::string& comment = std::string(),
                 const FileFormatArguments& args = FileFormatArguments()) const;
 
-    /// \brief Writes this layer to the given string.
+    /// Writes this layer to the given string.
     ///
     /// Returns \c true if successful and sets \p result, otherwise
     /// returns \c false.
     bool ExportToString(std::string* result) const;
 
-    /// \brief Reads this layer from the given string.
+    /// Reads this layer from the given string.
     ///
     /// Returns \c true if successful, otherwise returns \c false.
     bool ImportFromString(const std::string &string);
 
-    /// \brief Clears the layer of all content.
+    /// Clears the layer of all content.
     ///
     /// This restores the layer to a state as if it had just been created
     /// with CreateNew().  This operation is Undo-able.
@@ -276,7 +273,7 @@ public:
     /// by this method.
     void Clear();
 
-    /// \brief Reloads the layer from its persistent representation.
+    /// Reloads the layer from its persistent representation.
     ///
     /// This restores the layer to a state as if it had just been created
     /// with FindOrOpen().  This operation is Undo-able.
@@ -295,7 +292,7 @@ public:
     /// it has changed.
     bool Reload(bool force = false);
 
-    /// \brief Reloads the specified layers.
+    /// Reloads the specified layers.
     ///
     /// Returns \c false if one or more layers failed to reload.
     ///
@@ -318,7 +315,7 @@ public:
     /// Return paths of all external references of layer.
     std::set<std::string> GetExternalReferences();
 
-    /// \brief Updates the external references of the layer.
+    /// Updates the external references of the layer.
     ///
     /// If only the old asset path is given, this update works as delete, 
     /// removing any sublayers or prims referencing the pathtype using the
@@ -379,7 +376,7 @@ public:
     /// asset system.
     void UpdateAssetInfo(const std::string& fileVersion = std::string());
 
-    /// \brief Returns the layer's display name.
+    /// Returns the layer's display name.
     ///
     /// The display name is the base filename of the identifier.
     std::string GetDisplayName() const;
@@ -637,7 +634,7 @@ public:
     /// \name Metadata
     /// @{
 
-    /// \brief Returns the comment string for this layer.
+    /// Returns the comment string for this layer.
     ///
     /// The default value for comment is "".
     std::string GetComment() const;
@@ -645,7 +642,7 @@ public:
     /// Sets the comment string for this layer.
     void SetComment(const std::string &comment);
     
-    /// \brief Return the defaultPrim metadata for this layer.  This field
+    /// Return the defaultPrim metadata for this layer.  This field
     /// indicates the name of which root prim should be targeted by a reference
     /// or payload to this layer that doesn't specify a prim path.
     ///
@@ -667,7 +664,7 @@ public:
     /// GetDefaultPrim() and SetDefaultPrim().
     bool HasDefaultPrim();
 
-    /// \brief Returns the documentation string for this layer.
+    /// Returns the documentation string for this layer.
     ///
     /// The default value for documentation is "".
     std::string GetDocumentation() const;
@@ -675,7 +672,7 @@ public:
     /// Sets the documentation string for this layer.
     void SetDocumentation(const std::string &documentation);
 
-    /// \brief Returns the layer's start timeCode.
+    /// Returns the layer's start timeCode.
     ///
     /// The start and end timeCodes of a layer represent the suggested playback 
     /// range.  However, time-varying content is not limited to the timeCode range 
@@ -693,7 +690,7 @@ public:
     /// Clear the startTimeCode opinion.
     void ClearStartTimeCode();
     
-    /// \brief Returns the layer's end timeCode.
+    /// Returns the layer's end timeCode.
     /// The start and end timeCode of a layer represent a suggested playback range.  
     /// However, time-varying content is not limited to the timeCode range of the 
     /// layer.
@@ -710,7 +707,7 @@ public:
     /// Clear the endTimeCode opinion.
     void ClearEndTimeCode();
     
-    /// \brief Returns the layer's timeCodes per second.
+    /// Returns the layer's timeCodes per second.
     /// 
     /// Scales the time ordinate for samples contained in the file to seconds.  
     /// If timeCodesPerSecond is 24, then a sample at time ordinate 24 should 
@@ -728,7 +725,7 @@ public:
     /// Clear the timeCodesPerSecond opinion.
     void ClearTimeCodesPerSecond();
 
-    /// \brief Returns the layer's frames per second.
+    /// Returns the layer's frames per second.
     /// 
     /// This makes an advisory statement about how the contained data can be 
     /// most usefully consumed and presented.  It's primarily an indication of 
@@ -818,13 +815,13 @@ public:
     /// Returns a vector of the layer's root prims
     RootPrimsView GetRootPrims() const;
 
-    /// \brief Sets a new vector of root prims.
+    /// Sets a new vector of root prims.
     /// You can re-order, insert and remove prims but cannot 
     /// rename them this way.  If any of the listed prims have 
     /// an existing owner, they will be reparented.
     void SetRootPrims(const SdfPrimSpecHandleVector &rootPrims);
 
-    /// \brief Adds a new root prim at the given index.
+    /// Adds a new root prim at the given index.
     /// If the index is -1, the prim is inserted at the end.
     /// The layer will take ownership of the prim, via a TfRefPtr.
     /// Returns true if succesful, false if failed (for example,
@@ -838,7 +835,7 @@ public:
     /// last change block is closed, or now if there are no change blocks.
     void ScheduleRemoveIfInert(const SdfSpec& spec);
 
-    /// \brief Removes scene description that does not affect the scene in the 
+    /// Removes scene description that does not affect the scene in the 
     /// layer namespace beginning with \p prim.
     ///
     /// Calling this method on a prim will only clean up prims with specifier
@@ -852,7 +849,7 @@ public:
     ///       are not considered inert, and thus the prim won't be removed.
     void RemovePrimIfInert(SdfPrimSpecHandle prim);
 
-    /// \brief Removes prop if it has only required fields (i.e. is not 
+    /// Removes prop if it has only required fields (i.e. is not 
     /// contributing any opinions to the scene other than property 
     /// instantiation).
     /// 
@@ -860,20 +857,20 @@ public:
     /// layer root for each successive inert parent.
     void RemovePropertyIfHasOnlyRequiredFields(SdfPropertySpecHandle prop);
 
-    /// \brief Removes all scene description in this layer that does not affect 
-    ///        the scene.
+    /// Removes all scene description in this layer that does not affect the
+    /// scene.
     ///
     /// This method walks the layer namespace hierarchy and removes any prims
     /// and that are not contributing any opinions.
     void RemoveInertSceneDescription();
 
-    /// \brief Returns the list of prim names for this layer's reorder rootPrims
+    /// Returns the list of prim names for this layer's reorder rootPrims
     /// statement.
     ///
     /// See SetRootPrimOrder() for more info.
     SdfNameOrderProxy GetRootPrimOrder() const;
    
-    /// \brief Given a list of (possible sparse) prim names, authors a reorder
+    /// Given a list of (possible sparse) prim names, authors a reorder
     /// rootPrims statement for this prim. 
     ///
     /// This reorder statement can modify the order of root prims that have 
@@ -883,17 +880,17 @@ public:
     /// attention to this statement.
     void SetRootPrimOrder(const std::vector<TfToken>& names);
 
-    /// \brief Adds a new root prim name in the root prim order.
+    /// Adds a new root prim name in the root prim order.
     /// If the index is -1, the name is inserted at the end.
     void InsertInRootPrimOrder(const TfToken &name, int index = -1);
 
-    /// \brief Removes a root prim name from the root prim order.
+    /// Removes a root prim name from the root prim order.
     void RemoveFromRootPrimOrder(const TfToken & name);
 
-    /// \brief Removes a root prim name from the root prim order by index.
+    /// Removes a root prim name from the root prim order by index.
     void RemoveFromRootPrimOrderByIndex(int index);
 
-    /// \brief Reorders the given list of prim names according to the reorder rootPrims
+    /// Reorders the given list of prim names according to the reorder rootPrims
     /// statement for this layer.
     ///
     /// This routine employs the standard list editing operations for ordered
@@ -904,7 +901,7 @@ public:
     /// \name Sublayers
     /// @{
 
-    /// \brief Returns a proxy for this layer's sublayers.
+    /// Returns a proxy for this layer's sublayers.
     ///
     /// Sub-layers are the weaker layers directly included by this layer.
     /// They're in order from strongest to weakest and they're all weaker
@@ -920,7 +917,7 @@ public:
     /// Returns the number of sublayer paths (and offsets).
     size_t GetNumSubLayerPaths() const;
 
-    /// \brief Inserts new sublayer path at the given index.
+    /// Inserts new sublayer path at the given index.
     ///
     /// The default index of -1 means to insert at the end.
     void InsertSubLayerPath(const std::string& path, int index = -1);
@@ -964,7 +961,7 @@ public:
     /// \name Lookup
     /// @{
 
-    /// \brief Returns the layer's pseudo-root prim.
+    /// Returns the layer's pseudo-root prim.
     ///
     /// The layer's root prims are namespace children of the pseudo-root.
     /// The pseudo-root exists to make the namespace hierarchy a tree
@@ -974,7 +971,7 @@ public:
     /// A layer always has a pseudo-root prim.
     SdfPrimSpecHandle GetPseudoRoot() const;
 
-    /// \brief Returns the object at the given \p path.
+    /// Returns the object at the given \p path.
     ///
     /// There is no distinction between an absolute and relative path
     /// at the SdLayer level.
@@ -982,28 +979,28 @@ public:
     /// Returns \c NULL if there is no object at \p path.
     SdfSpecHandle GetObjectAtPath(const SdfPath &path);
 
-    /// \brief Returns the prim at the given \p path.
+    /// Returns the prim at the given \p path.
     ///
     /// Returns \c NULL if there is no prim at \p path.
     /// This is simply a more specifically typed version of
     /// \c GetObjectAtPath().
     SdfPrimSpecHandle GetPrimAtPath(const SdfPath &path);
 
-    /// \brief Returns a property at the given \p path.
+    /// Returns a property at the given \p path.
     ///
     /// Returns \c NULL if there is no property at \p path.
     /// This is simply a more specifically typed version of
     /// \c GetObjectAtPath().
     SdfPropertySpecHandle GetPropertyAtPath(const SdfPath &path);
 
-    /// \brief Returns an attribute at the given \p path.
+    /// Returns an attribute at the given \p path.
     ///
     /// Returns \c NULL if there is no attribute at \p path.
     /// This is simply a more specifically typed version of
     /// \c GetObjectAtPath().
     SdfAttributeSpecHandle GetAttributeAtPath(const SdfPath &path);
 
-    /// \brief Returns a relationship at the given \p path.
+    /// Returns a relationship at the given \p path.
     ///
     /// Returns \c NULL if there is no relationship at \p path.
     /// This is simply a more specifically typed version of
@@ -1014,12 +1011,12 @@ public:
     /// \name Permissions
     /// @{
 
-    /// \brief Returns true if the caller is allowed to modify the layer and 
+    /// Returns true if the caller is allowed to modify the layer and 
     /// false otherwise.  A layer may have to perform some action to acquire 
     /// permission to be editted.
     bool PermissionToEdit() const;
 
-    /// \brief Returns true if the caller is allowed to save the layer to its 
+    /// Returns true if the caller is allowed to save the layer to its 
     /// existing fileName and false otherwise.
     bool PermissionToSave() const;
 
@@ -1209,7 +1206,7 @@ private:
     // reference itself internally without being susceptible to a race.)
     bool _WaitForInitializationAndCheckIfSuccessful();
 
-    // \brief Returns whether or not this menv layer should post change 
+    // Returns whether or not this menv layer should post change 
     // notification.  This simply returns (not _GetIsLoading())
     bool _ShouldNotify() const;
 

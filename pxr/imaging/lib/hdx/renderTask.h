@@ -37,6 +37,8 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
+/// \class HdxRenderTask
+///
 /// A task for rendering geometry to pixels.
 ///
 class HdxRenderTask : public HdSceneTask 

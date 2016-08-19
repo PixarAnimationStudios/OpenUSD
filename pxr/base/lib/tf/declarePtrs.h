@@ -24,24 +24,17 @@
 #ifndef TF_DECLARE_PTR_H
 #define TF_DECLARE_PTR_H
 
+/// \file tf/declarePtrs.h
+/// Standard pointer typedefs.
+///
+/// This file provides typedefs for standard pointer types.
 
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/refPtr.h"
 #include <vector>
 
-/*!
- * \file declarePtrs.h
- * \brief Standard pointer typedefs.
- *
- * This file provides typedefs for standard pointer types.
- *
- */
-
-
-
-/*!
- * \brief Templated struct used for type definition macros.
- */ 
+/// \struct TfDeclarePtrs
+/// Templated struct used for type definition macros.
 template<typename T> struct TfDeclarePtrs {
     typedef TfWeakPtr< T >              Ptr;
     typedef TfWeakPtr< const T >        ConstPtr;
@@ -54,50 +47,43 @@ template<typename T> struct TfDeclarePtrs {
     typedef std::vector< ConstRefPtr >  ConstRefPtrVector;
 };
 
-/*!
- * \hideinitializer
- * \brief Define standard weak pointer types.
- *
- * \param type is a class name.
- *
- * \c TF_DECLARE_WEAK_PTRS(Class) declares ClassPtr, ClassConstPtr,
- * ClassPtrVector and ClassConstPtrVector.
- */
+/// Define standard weak pointer types.
+///
+/// \param type is a class name.
+///
+/// \c TF_DECLARE_WEAK_PTRS(Class) declares ClassPtr, ClassConstPtr,
+/// ClassPtrVector and ClassConstPtrVector.
+///
+/// \hideinitializer
 #define TF_DECLARE_WEAK_PTRS(type)                                      \
     typedef TfDeclarePtrs< class type >::Ptr type##Ptr;                 \
     typedef TfDeclarePtrs< class type >::ConstPtr type##ConstPtr;       \
     typedef TfDeclarePtrs< class type >::PtrVector type##PtrVector;     \
     typedef TfDeclarePtrs< class type >::ConstPtrVector type##ConstPtrVector
 
-/*!
- * \hideinitializer
- * \brief Define standard ref pointer types.
- *
- * \param type is a class name.
- *
- * \c TF_DECLARE_REF_PTRS(Class) declares ClassRefPtr and ClassConstRefPtr.
- */
+/// Define standard ref pointer types.
+///
+/// \param type is a class name.
+///
+/// \c TF_DECLARE_REF_PTRS(Class) declares ClassRefPtr and ClassConstRefPtr.
+///
+/// \hideinitializer
 #define TF_DECLARE_REF_PTRS(type)                                       \
     typedef TfDeclarePtrs< class type >::RefPtr type##RefPtr;           \
     typedef TfDeclarePtrs< class type >::ConstRefPtr type##ConstRefPtr; \
     typedef TfDeclarePtrs< class type >::RefPtrVector type##RefPtrVector; \
     typedef TfDeclarePtrs< class type >::ConstRefPtrVector type##ConstRefPtrVector
 
-/*!
- * \hideinitializer
- * \brief Define standard weak, ref, and vector pointer types.
- *
- * \param type is a class name.
- *
- * \c TF_DECLARE_WEAK_AND_REF_PTRS(Class) declares ClassPtr, ClassConstPtr,
- * ClassPtrVector, ClassConstPtrVector, ClassRefPtr and ClassConstRefPtr.
- */
+/// Define standard weak, ref, and vector pointer types.
+///
+/// \param type is a class name.
+///
+/// \c TF_DECLARE_WEAK_AND_REF_PTRS(Class) declares ClassPtr, ClassConstPtr,
+/// ClassPtrVector, ClassConstPtrVector, ClassRefPtr and ClassConstRefPtr.
+///
+/// \hideinitializer
 #define TF_DECLARE_WEAK_AND_REF_PTRS(type)                              \
     TF_DECLARE_WEAK_PTRS(type);                                         \
     TF_DECLARE_REF_PTRS(type)
-
-
-
-
 
 #endif

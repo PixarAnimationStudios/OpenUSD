@@ -37,7 +37,9 @@
 #include <vector>
 
 /// \enum SdfListOpType
+///
 /// Enum for specifying one of the list editing operation types.
+///
 enum SdfListOpType {
     SdfListOpTypeExplicit,
     SdfListOpTypeAdded,
@@ -45,8 +47,11 @@ enum SdfListOpType {
     SdfListOpTypeOrdered
 };
 
-/// Trait classes for specializing behaviors of SdfListOp
-/// for a given item type.
+/// \struct Sdf_ListOpTraits
+///
+/// Trait classes for specializing behaviors of SdfListOp for a given item
+/// type.
+///
 template <class T>
 struct Sdf_ListOpTraits
 {
@@ -54,7 +59,8 @@ struct Sdf_ListOpTraits
 };
 
 /// \class SdfListOp
-/// \brief Value type representing a list-edit operation.
+///
+/// Value type representing a list-edit operation.
 ///
 /// SdfListOp is a value type representing an operation that edits a list.
 /// It may add or remove items, reorder them, or replace the list entirely.

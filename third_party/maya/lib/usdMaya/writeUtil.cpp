@@ -507,7 +507,7 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
     // std::map, so we'll be considering attributes in sorted order.
     std::set<std::string> exportedUsdAttrNames;
 
-    JsObject exportedAttrs = jsValue.GetObject();
+    const JsObject& exportedAttrs = jsValue.GetJsObject();
     for (JsObject::const_iterator iter = exportedAttrs.begin();
          iter != exportedAttrs.end();
          ++iter) {
@@ -522,7 +522,7 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
             continue;
         }
 
-        const JsObject attrMetadata = iter->second.GetObject();
+        const JsObject& attrMetadata = iter->second.GetJsObject();
 
         // Check the metadata to see if the USD attribute name should be
         // different than the Maya attribute name.

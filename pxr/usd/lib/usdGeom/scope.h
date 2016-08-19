@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_SCOPE_H
 #define USDGEOM_GENERATED_SCOPE_H
 
+/// \file usdGeom/scope.h
+
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -43,6 +45,8 @@ class SdfAssetPath;
 // SCOPE                                                                      //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdGeomScope
+///
 /// Scope is the simplest grouping primitive, and does not carry the
 /// baggage of transformability.  Note that transforms should inherit down
 /// through a Scope successfully - it is just a guaranteed no-op from a
@@ -83,7 +87,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomScope holding the prim adhering to this
+    /// Return a UsdGeomScope holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -95,7 +99,7 @@ public:
     static UsdGeomScope
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

@@ -27,7 +27,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/debug.h"
 
-
 TF_DEBUG_CODES(
 
     HD_BUFFER_ARRAY_INFO,
@@ -71,6 +70,5 @@ TF_DEBUG_CODES(
     HD_TEXTURE_REMOVED
 
 );
-
 
 #endif // HD_DEBUGCODES_H

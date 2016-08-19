@@ -46,7 +46,7 @@
 
 #include <sstream>
 
-#include <opensubdiv3/osd/glslPatchShaderSource.h>
+#include <opensubdiv/osd/glslPatchShaderSource.h>
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

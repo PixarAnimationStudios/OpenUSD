@@ -28,12 +28,12 @@
 #include "pxr/base/tf/pyObjWrapper.h"
 #include <boost/optional.hpp>
 
-/// Convert \p obj which should support the python buffer protocol (e.g. a numpy
-/// array) to a VtArray if possible and return it.  Return empty optional if
-/// \p obj does not support the buffer protocol or does not have compatible type
-/// and dimensions.  If \p err is supplied, set it to an explanatory message in
-/// case of conversion failure.  This function may be invoked for VtArray<T>
-/// where T is one of VT_ARRAY_PYBUFFER_TYPES.
+/// Convert \p obj which should support the python buffer protocol (e.g. a
+/// numpy array) to a VtArray if possible and return it.  Return empty
+/// optional if \p obj does not support the buffer protocol or does not have
+/// compatible type and dimensions.  If \p err is supplied, set it to an
+/// explanatory message in case of conversion failure.  This function may be
+/// invoked for VtArray<T> where T is one of VT_ARRAY_PYBUFFER_TYPES.
 template <class T>
 boost::optional<VtArray<T> >
 VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err=nullptr);

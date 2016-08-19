@@ -24,9 +24,6 @@
 #ifndef USDGEOM_COLLECTION_API_H
 #define USDGEOM_COLLECTION_API_H
 
-
-
-
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
@@ -120,7 +117,7 @@
 class UsdGeomCollectionAPI: public UsdSchemaBase
 {
 public:
-    /// \brief Construct a UsdGeomCollectionAPI with the given \p name on 
+    /// Construct a UsdGeomCollectionAPI with the given \p name on 
     /// the UsdPrim \p prim .
     /// 
     explicit UsdGeomCollectionAPI(const UsdPrim& prim=UsdPrim(), 
@@ -130,7 +127,7 @@ public:
     {
     }
 
-    /// \brief Construct a UsdGeomCollectionAPI with the given \p name on the 
+    /// Construct a UsdGeomCollectionAPI with the given \p name on the 
     /// prim held by \p schemaObj .
     /// 
     explicit UsdGeomCollectionAPI(const UsdSchemaBase& schemaObj, 

@@ -49,6 +49,8 @@ class UsdImagingInstancerContext;
 typedef boost::shared_ptr<class UsdImagingPrimAdapter> 
                                                 UsdImagingPrimAdapterSharedPtr;
 
+/// \class UsdImagingPrimAdapter
+///
 /// Base class for all PrimAdapters.
 ///
 class UsdImagingPrimAdapter 
@@ -259,5 +261,4 @@ public:
     }
 };
 
-#endif //USDIMAGING_PRIM_ADAPTER_H
-
+#endif // USDIMAGING_PRIM_ADAPTER_H

@@ -17,28 +17,40 @@ Describes the use of low-level programming macros to issue coding errors, runtim
 
 If you are already familiar with the TF library diagnostic facilities, here is a quick guide to picking the correct facility:
 
-	- If it is a coding bug:
-		- If you can work around the bug, do so, but use TF_CODING_ERROR() to inform users that the bug exists and to let the system back out changes to authored data if necessary.
-		- If you can't get past the bug, use TF_FATAL_ERROR() to clearly describe what's wrong.  (If the bug doesn't cross API lines, or in regression tests, TF_AXIOM() is also acceptable.  See \ref DiagnosticTF_FATAL_ERROR to make the distinction clear.)
-	- If it is not a coding bug:  Use one of TF_RUNTIME_ERROR(), TF_ERROR(), TF_WARN(), TF_STATUS() to communicate what went wrong.  Use TF_FATAL_ERROR() only if there is no reasonable way for the program to continue onward.
+<ul>
+<li>If it is a coding bug:
+ <ul>
+   <li>If you can work around the bug, do so, but use TF_CODING_ERROR() to
+   inform users that the bug exists and to let the system back out changes to
+   authored data if necessary.</li>
+   <li>If you can't get past the bug, use TF_FATAL_ERROR() to clearly describe
+   what's wrong.  (If the bug doesn't cross API lines, or in regression tests,
+   TF_AXIOM() is also acceptable.  See \ref DiagnosticTF_FATAL_ERROR to make
+   the distinction clear.)</li>
+ </ul>
+ <li>If it is not a coding bug:  Use one of TF_RUNTIME_ERROR(), TF_ERROR(),
+ TF_WARN(), TF_STATUS() to communicate what went wrong.  Use TF_FATAL_ERROR()
+ only if there is no reasonable way for the program to continue onward.</li>
+</ul>
 
 \section DiagnosticIntendedUse Intended Use
 
 The intended use of the diagnostic facilities in the Tf Library is for documenting and communicating various abnormal conditions that can occur in your code.  The facilities in the Tf Library, while effective, are fairly low-level.  If your application or library has access to higher-level and more structured diagnostic facilities, you are urged to make use of them; if not, you should use the facilities in the Tf Library.  Although these facilities are fairly simple, they are also highly configurable.
 
 The diagnostic facilities in the Tf Library are appropriate for the following tasks:
-    - Communicating coding errors (for example, unsatisfied program invariants)
-    - Communicating serious runtime errors whose cause is external (for example, a needed server can't be found, a vital configuration file is missing)
-    - Informing the user of problems that are not handled by other parts of the program.
+
+\li Communicating coding errors (for example, unsatisfied program invariants)
+\li Communicating serious runtime errors whose cause is external (for example, a needed server can't be found, a vital configuration file is missing)
+\li Informing the user of problems that are not handled by other parts of the program.
 
 To communicate errors, warnings, and status messages, the Tf Library first attempts to call a delegate which may be installed by a higher-level library.  If there is no delegate installed, default actions include printing errors and warnings to \c stderr, printing status messages to \c stdout, printing stack traces, and terminating the program on fatal errors.  The following list describes usage scenarios for the diagnostsic facilities in the Tf Libarary:
 
-    \li For non-fatal coding errors (for example, something you didn't expect, non-fatal violation of an API requirement), use TF_CODING_ERROR().
-    \li For fatal coding errors (for example, an unexpected, unrecoverable coding error, violation of an API requirement which cannot be handled), use TF_FATAL_ERROR() or TF_AXIOM().
-    \li For fatal external errors (for example, you wanted to execute "/bin/cat", but it doesn't exist, the database server won't respond) use TF_FATAL_ERROR().
-    \li For non-fatal user errors or conditions (for example, a mesh has bad topology, but there is no facility for fixing it, a color is out of range, etc.) use TF_RUNTIME_ERROR() or to be more specific, TF_ERROR().
-    \li For warnings (conditions which might possibly be an error, but are not always so) use TF_WARN().
-    \li For anything else (not fatal, never an error, but useful to know) use TF_STATUS().
+\li For non-fatal coding errors (for example, something you didn't expect, non-fatal violation of an API requirement), use TF_CODING_ERROR().
+\li For fatal coding errors (for example, an unexpected, unrecoverable coding error, violation of an API requirement which cannot be handled), use TF_FATAL_ERROR() or TF_AXIOM().
+\li For fatal external errors (for example, you wanted to execute "/bin/cat", but it doesn't exist, the database server won't respond) use TF_FATAL_ERROR().
+\li For non-fatal user errors or conditions (for example, a mesh has bad topology, but there is no facility for fixing it, a color is out of range, etc.) use TF_RUNTIME_ERROR() or to be more specific, TF_ERROR().
+\li For warnings (conditions which might possibly be an error, but are not always so) use TF_WARN().
+\li For anything else (not fatal, never an error, but useful to know) use TF_STATUS().
 
 \section DiagnosticTF_FATAL_ERROR Fatal Errors
 

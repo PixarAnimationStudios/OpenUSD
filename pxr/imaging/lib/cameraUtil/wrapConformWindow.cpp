@@ -30,6 +30,7 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/range2d.h"
+#include "pxr/base/gf/frustum.h"
 
 #include "pxr/base/tf/pyEnum.h"
 
@@ -49,14 +50,24 @@ wrapConformWindow()
     typedef GfVec4d (*Signature3)(
         const GfVec4d &, CameraUtilConformWindowPolicy, double);
 
+    typedef void (*Signature4)(
+        GfCamera *, CameraUtilConformWindowPolicy, double);
+
+    typedef void (*Signature5)(
+        GfFrustum *, CameraUtilConformWindowPolicy, double);
+
     def("ConformedWindow", (Signature1)&CameraUtilConformedWindow,
         (arg("window"), arg("policy"), arg("targetAspect")));
     def("ConformedWindow", (Signature2)&CameraUtilConformedWindow,
         (arg("window"), arg("policy"), arg("targetAspect")));
     def("ConformedWindow", (Signature3)&CameraUtilConformedWindow,
         (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformWindow", &CameraUtilConformWindow,
+    
+    def("ConformWindow", (Signature4)&CameraUtilConformWindow,
         (arg("camera"), arg("policy"), arg("targetAspect")));
+
+    def("ConformWindow", (Signature5)&CameraUtilConformWindow,
+        (arg("frustum"), arg("policy"), arg("targetAspect")));
 
     TfPyWrapEnum<CameraUtilConformWindowPolicy>();
 }

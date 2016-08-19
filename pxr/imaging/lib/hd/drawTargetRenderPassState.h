@@ -29,11 +29,15 @@
 
 class VtValue;
 
-/// Represents common non-gl context specific render pass state for a
-/// draw target.
-/// XXX::  This is a temporary api to aid transition to Hydra.
-/// and subject to major changes.  It is likely this functionality
-/// will be absorbed into the base class.
+/// \class HdDrawTargetRenderPassState
+///
+/// Represents common non-gl context specific render pass state for a draw
+/// target.
+///
+/// \note This is a temporary API to aid transition to Hydra, and is subject
+/// to major changes.  It is likely this functionality will be absorbed into
+/// the base class.
+///
 class HdDrawTargetRenderPassState final {
 public:
     HdDrawTargetRenderPassState();
@@ -92,8 +96,6 @@ public:
     {
         return _rprimCollection;
     }
-
-
 
 private:
     std::vector<VtValue> _colorClearValues;

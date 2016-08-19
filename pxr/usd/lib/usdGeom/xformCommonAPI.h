@@ -24,9 +24,6 @@
 #ifndef USDGEOM_GENERATED_XFORMCOMMONAPI_H
 #define USDGEOM_GENERATED_XFORMCOMMONAPI_H
 
-
-
-
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/stage.h"
@@ -43,6 +40,8 @@
 // XFORMCOMMONAPI                                                             //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdGeomXformCommonAPI
+///
 /// This class provides API for authoring and retrieving a standard set of 
 /// component transformations which include a scale, a rotation, a 
 /// scale-rotate pivot and a translation. The goal of the API is to enhance 
@@ -114,7 +113,7 @@ public:
     /// Destructor.
     virtual ~UsdGeomXformCommonAPI();
 
-    /// \brief Return a UsdGeomXformCommonAPI holding the xformable adhering 
+    /// Return a UsdGeomXformCommonAPI holding the xformable adhering 
     /// to this API at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this API,
     /// return an invalid API object.  This is shorthand for the following:

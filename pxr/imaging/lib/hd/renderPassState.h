@@ -44,9 +44,11 @@ typedef boost::shared_ptr<class Hd_DefaultLightingShader>
                 Hd_DefaultLightingShaderSharedPtr;
 typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
 
-/// HdRenderPassState is a set of rendering parameters used among
-/// render passes. Parameters are expressed as GL states, uniforms
-/// or shaders.
+/// \class HdRenderPassState
+///
+/// A set of rendering parameters used among render passes.
+///
+/// Parameters are expressed as GL states, uniforms or shaders.
 ///
 class HdRenderPassState {
 public:
@@ -193,7 +195,6 @@ private:
     bool _alphaToCoverageEnabled;
 
     ClipPlanesVector _clipPlanes;
-
 };
 
 #endif  // HD_RENDER_PASS_STATE_H

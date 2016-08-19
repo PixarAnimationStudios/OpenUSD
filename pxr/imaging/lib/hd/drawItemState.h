@@ -26,6 +26,8 @@
 
 #include "pxr/imaging/hd/version.h"
 
+/// \class HdDrawItemState
+///
 /// The GPU state required to execute an HdDrawItem.
 ///
 /// State carried by this class is distinct in that it becomes part of the draw

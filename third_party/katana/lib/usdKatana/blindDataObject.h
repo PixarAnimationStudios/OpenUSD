@@ -24,8 +24,7 @@
 #ifndef USDKATANA_GENERATED_BLINDDATAOBJECT_H
 #define USDKATANA_GENERATED_BLINDDATAOBJECT_H
 
-
-
+/// \file usdKatana/blindDataObject.h
 
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
@@ -47,6 +46,8 @@ class SdfAssetPath;
 // BLINDDATAOBJECT                                                            //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdKatanaBlindDataObject
+///
 /// Container namespace schema for katana blind data from the klf file
 ///
 class UsdKatanaBlindDataObject : public UsdSchemaBase
@@ -84,7 +85,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdKatanaBlindDataObject holding the prim adhering to this
+    /// Return a UsdKatanaBlindDataObject holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -96,7 +97,7 @@ public:
     static UsdKatanaBlindDataObject
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

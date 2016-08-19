@@ -57,7 +57,7 @@ public:                                                                    \
     explicit SpecType(const Sdf_IdentityRefPtr& identity)                  \
         : BaseSpecType(identity) { }                                       \
 protected:                                                                 \
-    friend class Sdf_CastAccess;                                           \
+    friend struct Sdf_CastAccess;                                          \
     explicit SpecType(const SdfSpec& spec)                                 \
         : BaseSpecType(spec) { }                                           \
 public:                                                                    \

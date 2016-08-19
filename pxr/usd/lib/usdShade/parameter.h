@@ -24,9 +24,6 @@
 #ifndef USDSHADE_PARAMETER_H
 #define USDSHADE_PARAMETER_H
 
-
-
-
 #include "pxr/usd/usd/attribute.h"
 
 #include <vector>
@@ -34,13 +31,15 @@
 class UsdShadeShader;
 
 /// \class UsdShadeParameter
-/// \brief Schema wrapper for UsdAttribute for authoring and introspecting
-/// shader parameters (which are attributes within a shading network).
+///
+/// Schema wrapper for UsdAttribute for authoring and introspecting shader
+/// parameters (which are attributes within a shading network).
+///
 class UsdShadeParameter
 {
 public:
-    // Default constructor returns an invalid Parameter.  Exists for 
-    // container classes
+    /// Default constructor returns an invalid Parameter.  Exists for 
+    /// container classes
     UsdShadeParameter()
     {
         // nothing
@@ -49,17 +48,17 @@ public:
     /// \name Configuring the Parameter's Type
     /// @{
     
-    /// \brief Return true if this Parameter is an array-type.
+    /// Return true if this Parameter is an array-type.
     ///
     /// As described in UsdShadeShader::CreateParameter(), the determination
     /// of array-ness is given by the SdfValueTypeNames \em typeName with
     /// which the Parameter was created.
     bool IsArray() const;
     
-    /// \brief Set the value for the shade parameter.
+    /// Set the value for the shade parameter.
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// \brief Specify an alternative, renderer-specific type to use when
+    /// Specify an alternative, renderer-specific type to use when
     /// emitting/translating this parameter, rather than translating based
     /// on its UsdAttribute::GetTypeName()
     ///
@@ -69,24 +68,23 @@ public:
     /// \return true on success
     bool SetRenderType(TfToken const& renderType) const;
 
-    /// \brief Return this parameter's specialized renderType, or an empty
+    /// Return this parameter's specialized renderType, or an empty
     /// token if none was authored.
     ///
     /// \sa SetRenderType()
     TfToken GetRenderType() const;
 
-    /// \brief Return true if a renderType has been specified for this
+    /// Return true if a renderType has been specified for this
     /// parameter.
     ///
     /// \sa SetRenderType()
     bool HasRenderType() const;
 
     /// @}
-    
     /// \name Connections
     /// @{
 
-    /// \brief Connect parameter to a named output on a given \p source.
+    /// Connect parameter to a named output on a given \p source.
     ///
     /// This action simply records an introspectable relationship:
     /// it implies no actual dataflow in USD, and makes no statement
@@ -123,7 +121,7 @@ public:
             TfToken const &outputName,
             bool outputIsParameter=false) const;
 
-    /// \brief Connect a single element of an array-typed Parameter to the
+    /// Connect a single element of an array-typed Parameter to the
     /// given \p source.
     ///
     /// If called on a non-array Parameter, no action is taken, and we return
@@ -150,7 +148,7 @@ public:
             TfToken const &outputName,
             bool outputIsParameter=false) const;
 
-    /// \brief Disconnect just the given \p elementIndex index of the array.
+    /// Disconnect just the given \p elementIndex index of the array.
     ///
     /// \return false if an error occurred, or if this Parameter is not
     /// array-valued, true otherwise.
@@ -158,7 +156,7 @@ public:
     /// \sa DisconnectSources(), ConnectElementToSource()
     bool DisconnectElement(size_t elementIndex) const;
     
-    /// \brief Disconnects (all, for array parameters) sources for this 
+    /// Disconnects (all, for array parameters) sources for this 
     /// Parameter.
     ///
     /// This may author more scene description than you might expect - we define
@@ -172,7 +170,7 @@ public:
     /// \sa ConnectToSource().
     bool DisconnectSources() const;
 
-    /// \brief Clears (all, for array parameters) sources for this 
+    /// Clears (all, for array parameters) sources for this 
     /// Parameter in the current UsdEditTarget.
     ///
     /// Most of the time, what you probably want is DisconnectSources()
@@ -181,7 +179,7 @@ public:
     /// \sa DisconnectSources(), UsdRelationship::ClearTargets()
     bool ClearSources() const;
 
-    /// \brief If this parameter is connected, retrieve the \p source prim
+    /// If this parameter is connected, retrieve the \p source prim
     /// and \p outputName to which it is connected. For array-valued parameters
     /// that are not connected-as-a-unit, this method returns nothing.
     ///
@@ -206,7 +204,7 @@ public:
             UsdShadeShader *source, 
             TfToken *outputName) const;
 
-    /// \brief Return all connected sources for this Parameter. 
+    /// Return all connected sources for this Parameter. 
     ///
     /// For non-array parameters, or array parameters that are "connected as
     /// a unit", this method returns vectors of length 1. It is
@@ -244,7 +242,7 @@ public:
     /// \endcode
     bool IsConnected() const;
 
-    /// \brief Explicitly state the number of connectable elements in an array
+    /// Explicitly state the number of connectable elements in an array
     /// type Parameter.
     ///
     /// This method need not generally be exercised, and exists primarily to
@@ -264,7 +262,7 @@ public:
     /// the method returns \c false.
     bool SetConnectedArraySize(size_t numElts) const;
     
-    /// \brief Return the number of connectable array-elements present for
+    /// Return the number of connectable array-elements present for
     /// this Parameter
     ///
     /// If the Parameter is not array-typed, returns zero.  Otherwise, if
@@ -277,9 +275,8 @@ public:
     /// \sa ConnectElementToSource(), GetConnectedSources()
     size_t GetConnectedArraySize() const;
     
-    /// @}
-
     // TODO:
+    /// @}
     /// \name Shader Parameter Values API
     /// @{
 
@@ -293,6 +290,8 @@ public:
     // ---------------------------------------------------------------
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
+
+    /// @{
 
     typedef const UsdAttribute UsdShadeParameter::*_UnspecifiedBoolType;
 
@@ -318,12 +317,14 @@ public:
     UsdAttribute const &GetAttr() const { return _attr; }
 
     // TODO
-    /// \brief Return true if the wrapped UsdAttribute::IsDefined(), and in
+    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
     /// addition the attribute is identified as a Parameter.
     bool IsDefined() const { return 
         _attr;
         //IsShaderParameter(_attr); 
     }
+
+    /// @}
 
     /// \anchor UsdShadeParameter_bool_type
     /// Return true if this Primvar is valid for querying and authoring
@@ -339,8 +340,8 @@ public:
 private:
     friend class UsdShadeShader;
 
-    /// \brief infers whether parameter should be scalar or array from the
-    /// provided typeName
+    /// Infers whether parameter should be scalar or array from the provided
+    /// typeName
     UsdShadeParameter(
             UsdPrim prim,
             TfToken const &name,

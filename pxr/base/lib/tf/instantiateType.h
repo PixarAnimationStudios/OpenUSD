@@ -36,9 +36,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/refPtr.h"
 
-/*
- * legacy 2x-style type instantiation.
- */
+// legacy 2x-style type instantiation.
 
 template <typename T, bool AS_REF_PTR>
 struct Tf_TypeFactoryType {
@@ -57,9 +55,7 @@ struct Tf_TypeFactoryType<T, false> {
     };
 };
 
-/*
- * Make the type actually manufacturable.
- */
+// Make the type actually manufacturable.
 template <typename T, bool MANUFACTURABLE>
 struct Tf_MakeTypeManufacturable {
     static void Doit(TfType t) {
@@ -68,9 +64,7 @@ struct Tf_MakeTypeManufacturable {
     }
 };
 
-/*
- * Don't make it manufacturable.
- */
+// Don't make it manufacturable.
 template <typename T>
 struct Tf_MakeTypeManufacturable<T, false> {
     static void Doit(TfType) {
@@ -88,3 +82,4 @@ struct Tf_MakeTypeManufacturable<T, false> {
         TfType t1 = TfType::Define<Type, _TF_REMOVE_PARENS(Bases) >(); \
         Tf_MakeTypeManufacturable<Type, flags&TfType::MANUFACTURABLE>::Doit(t1); \
     }
+

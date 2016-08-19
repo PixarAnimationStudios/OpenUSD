@@ -21,12 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/types.h
-/// \brief Basic Sdf data types
-
-
 #ifndef SDF_TYPES_H
 #define SDF_TYPES_H
+
+/// \file sdf/types.h
+/// Basic Sdf data types
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -308,7 +307,7 @@ const std::string &SdfGetNameForUnit( const TfEnum &unit );
 /// Gets a unit for the given /a name
 const TfEnum &SdfGetUnitFromName( const std::string &name );
 
-/// \brief Converts a string to a bool.
+/// Converts a string to a bool.
 /// Accepts case insensitive "yes", "no", "false", true", "0", "1".
 /// Defaults to "true" if the string is not recognized.
 ///
@@ -604,7 +603,7 @@ private:
     VtValue _value;
 };
 
-/// \brief Writes the string representation of \c SdfUnregisteredValue to \a out.
+/// Writes the string representation of \c SdfUnregisteredValue to \a out.
 std::ostream &operator << (std::ostream &out, const SdfUnregisteredValue &value);
 
 class Sdf_ValueTypeNamesType : boost::noncopyable {

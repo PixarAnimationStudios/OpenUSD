@@ -30,11 +30,14 @@
 
 class UsdGeomGprim;
 
+/// \class UsdImagingGprimAdapter
+///
 /// Delegate support for UsdGeomGrims.
 ///
 /// This adapter is provided as a base class for all adapters that want basic
 /// Gprim data support, such as visibility, doubleSided, extent, displayColor,
 /// purpose, and transform.
+///
 class UsdImagingGprimAdapter : public UsdImagingPrimAdapter {
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
@@ -123,7 +126,5 @@ private:
     /// Returns the surface shader for this prim
     SdfPath _GetSurfaceShader(UsdPrim const& prim);
 };
-
-
 
 #endif //USDIMAGING_GPRIM_ADAPTER_H

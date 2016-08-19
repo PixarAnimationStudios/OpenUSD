@@ -34,7 +34,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-/// descriptor to configure a drawItem for a repr
+/// \class HdPointsReprDesc
+///
+/// Descriptor to configure a drawItem for a repr.
 ///
 struct HdPointsReprDesc {
     HdPointsReprDesc(
@@ -45,6 +47,8 @@ struct HdPointsReprDesc {
     HdPointsGeomStyle geomStyle:1;
 };
 
+/// \class HdPoints
+///
 /// Points.
 ///
 class HdPoints: public HdRprim {

@@ -24,8 +24,7 @@
 #ifndef TF_DENSE_HASH_MAP_H
 #define TF_DENSE_HASH_MAP_H
 
-///
-/// \file Tf/DenseHashMap.h
+/// \file tf/denseHashMap.h
 
 #include <vector>
 
@@ -36,8 +35,6 @@
 #include "pxr/base/tf/hashmap.h"
 #include <boost/utility.hpp>
 
-///////////////////////////////////////////////////////////////////////////////
-///
 /// \class TfDenseHashMap
 ///
 /// This is a space efficent container that mimics the TfHashMap API that
@@ -46,9 +43,7 @@
 /// When the map gets bigger than \p Threshold a TfHashMap is allocated
 /// that is used to accelerate lookup in the vector.
 ///
-/// WARNING:
-///
-/// Note that this differs from a TfHashMap in so far that inserting and
+/// \warning This differs from a TfHashMap in so far that inserting and
 /// removing elements invalidate all iterators of the container.
 ///
 template <

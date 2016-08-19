@@ -24,6 +24,17 @@
 #ifndef TF_DIAGNOSTIC_H
 #define TF_DIAGNOSTIC_H
 
+/// \file tf/diagnostic.h
+/// \ingroup group_tf_Diagnostic
+/// Low-level utilities for informing users of various internal and external
+/// diagnostic conditions.
+///
+/// lib/tf supports a range of error-reporting routines.
+///
+/// For a more detailed explanation of when each of the facilities described
+/// in this file is appropriate, (and more importantly, when they're not!)
+/// see \ref page_tf_Diagnostic.
+
 #include "pxr/base/arch/function.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
@@ -36,299 +47,267 @@
 #include <stdarg.h>
 #include <string>
 
-/*!
- * \file diagnostic.h
- * \brief Low-level utilities for informing users of various internal and
- * external diagnostic conditions.
- * \ingroup group_tf_Diagnostic
- *
- * lib/tf supports a range of error-reporting routines.
- *
- * For a more detailed explanation of when each of the facilities described
- * in this file is appropriate, (and more importantly, when they're not!)
- * see \ref page_tf_Diagnostic.
- */
-
-/*
- * Note: diagnosticLite.h defines the various macros, but we'll document
- * them here.  The following block is only for doxygen, not seen by a real
- * compile.  To see the actual macro definition, look in diagnosticLite.h.
- */
+// Note: diagnosticLite.h defines the various macros, but we'll document
+// them here.  The following block is only for doxygen, not seen by a real
+// compile.  To see the actual macro definition, look in diagnosticLite.h.
 
 #if defined(doxygen)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Issue an internal programming error, but continue execution.
- *
- * Please see \ref page_tf_TfError for more information about how to use
- * TF_ERROR().
- *
- * This is safe to call in secondary threads, but the error will be downgraded
- * to a warning.
- */
+/// \addtogroup group_tf_Diagnostic
+///@{
+
+/// Issue an internal programming error, but continue execution.
+///
+/// Please see \ref page_tf_TfError for more information about how to use
+/// TF_ERROR().
+///
+/// This is safe to call in secondary threads, but the error will be downgraded
+/// to a warning.
+///
+/// \hideinitializer
 #define TF_ERROR(...)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Issue an internal programming error, but continue execution.
- *
- * This macro is a convenience.  It produces a TF_ERROR() with an error code
- * indicating a coding error.  It takes a printf-like format specification or a
- * std::string.  Generally, an error handilng delegate will take action to turn
- * this error into a python exception, and if it remains unhandled at the end of
- * an application iteration will roll-back the undo stack to a last-known-good
- * state.
- *
- * This is safe to call in secondary threads, but the error will be downgraded
- * to a warning.
- */
+/// Issue an internal programming error, but continue execution.
+///
+/// This macro is a convenience.  It produces a TF_ERROR() with an error code
+/// indicating a coding error.  It takes a printf-like format specification or a
+/// std::string.  Generally, an error handilng delegate will take action to turn
+/// this error into a python exception, and if it remains unhandled at the end of
+/// an application iteration will roll-back the undo stack to a last-known-good
+/// state.
+///
+/// This is safe to call in secondary threads, but the error will be downgraded
+/// to a warning.
+///
+/// \hideinitializer
 #define TF_CODING_ERROR(fmt, args)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Issue a generic runtime error, but continue execution.
- *
- * This macro is a convenience.  It produces a TF_ERROR() with an error code
- * indicating a generic runtime error.  It is preferred over TF_ERROR(0),
- * but using a specific error code is preferred over this.  It takes a
- * printf-like format specification or a std::string.  Generally, an error
- * handilng delegate will take action to turn this error into a python
- * exception, and if it remains unhandled at the end of an application iteration
- * will roll-back the undo stack to a last-known-good state.
- *
- * This is safe to call in secondary threads, but the error will be downgraded
- * to a warning.
- */
+/// Issue a generic runtime error, but continue execution.
+///
+/// This macro is a convenience.  It produces a TF_ERROR() with an error code
+/// indicating a generic runtime error.  It is preferred over TF_ERROR(0),
+/// but using a specific error code is preferred over this.  It takes a
+/// printf-like format specification or a std::string.  Generally, an error
+/// handilng delegate will take action to turn this error into a python
+/// exception, and if it remains unhandled at the end of an application iteration
+/// will roll-back the undo stack to a last-known-good state.
+///
+/// This is safe to call in secondary threads, but the error will be downgraded
+/// to a warning.
+///
+/// \hideinitializer
 #define TF_RUNTIME_ERROR(fmt, args)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Issue a fatal error and end the program.
- *
- * This macro takes a printf-like format specification or a std::string.  The
- * program will generally terminate upon a fatal error.
- */
+/// Issue a fatal error and end the program.
+///
+/// This macro takes a printf-like format specification or a std::string.  The
+/// program will generally terminate upon a fatal error.
+///
+/// \hideinitializer
 #define TF_FATAL_ERROR(fmt, args)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Issue a warning, but continue execution.
- *
- * This macro works with a variety of argument sets. It supports simple
- * printf-like format specification or a std::string. It also supports
- * specification of a diagnostic code and a piece of arbitrary information in
- * the form of a TfDiagnosticInfo. The following is a full list of supported
- * argument lists:
- *
- * \code
- * TF_WARN(const char *)           // plain old string
- * TF_WARN(const char *, ...)      // printf like formatting
- * TF_WARN(std::string)            // stl string
- * \endcode
- *
- * A diagnostic code can be passed in along with the warning message. See
- * \ref DiagnosticEnumConventions for an example of registering an enum type
- * and it's values as diagnostic codes.
- *
- * \code
- * TF_WARN(DIAGNOSTIC_ENUM, const char *)
- * TF_WARN(DIAGNOSTIC_ENUM, const char *, ...)
- * TF_WARN(DIAGNOSTIC_ENUM, std::string)
- * \endcode
- *
- * A piece of arbitrary data can also be passed in along with the diagnostic
- * code and warning message as follows:
- *
- * \code
- * TF_WARN(info, DIAGNOSTIC_ENUM, const char *)
- * TF_WARN(info, DIAGNOSTIC_ENUM, const char *, ...)
- * TF_WARN(info, DIAGNOSTIC_ENUM, std::string)
- * \endcode
- *
- * Generally, no adjustment to program state should occur as the result of this
- * macro.  This is in contrast with errors as mentioned above.
- *
- * This is safe to call in secondary threads, but the warning will be printed
- * to stderr rather than being handled by the diagnostic delegate.
- */
+/// Issue a warning, but continue execution.
+///
+/// This macro works with a variety of argument sets. It supports simple
+/// printf-like format specification or a std::string. It also supports
+/// specification of a diagnostic code and a piece of arbitrary information in
+/// the form of a TfDiagnosticInfo. The following is a full list of supported
+/// argument lists:
+///
+/// \code
+/// TF_WARN(const char *)           // plain old string
+/// TF_WARN(const char *, ...)      // printf like formatting
+/// TF_WARN(std::string)            // stl string
+/// \endcode
+///
+/// A diagnostic code can be passed in along with the warning message. See
+/// \ref DiagnosticEnumConventions for an example of registering an enum type
+/// and it's values as diagnostic codes.
+///
+/// \code
+/// TF_WARN(DIAGNOSTIC_ENUM, const char *)
+/// TF_WARN(DIAGNOSTIC_ENUM, const char *, ...)
+/// TF_WARN(DIAGNOSTIC_ENUM, std::string)
+/// \endcode
+///
+/// A piece of arbitrary data can also be passed in along with the diagnostic
+/// code and warning message as follows:
+///
+/// \code
+/// TF_WARN(info, DIAGNOSTIC_ENUM, const char *)
+/// TF_WARN(info, DIAGNOSTIC_ENUM, const char *, ...)
+/// TF_WARN(info, DIAGNOSTIC_ENUM, std::string)
+/// \endcode
+///
+/// Generally, no adjustment to program state should occur as the result of
+/// this macro. This is in contrast with errors as mentioned above.
+///
+/// This is safe to call in secondary threads, but the warning will be printed
+/// to \c stderr rather than being handled by the diagnostic delegate.
+///
+/// \hideinitializer
 #define TF_WARN(...)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Issue a status message, but continue execution.
- *
- * This macro works with a variety of argument sets. It supports simple
- * printf-like format specification or a std::string. It also supports
- * specification of a diagnostic code and a piece of arbitrary information in
- * the form of a TfDiagnosticInfo. The following is a full list of supported
- * argument lists:
- *
- * \code
- * TF_STATUS(const char *)           // plain old string
- * TF_STATUS(const char *, ...)      // printf like formatting
- * TF_STATUS(std::string)            // stl string
- * \endcode
- *
- * A diagnostic code can be passed in along with the status message. See
- * \ref DiagnosticEnumConventions for an example of registering an enum type
- * and it's values as diagnostic codes.
- *
- * \code
- * TF_STATUS(DIAGNOSTIC_ENUM, const char *)
- * TF_STATUS(DIAGNOSTIC_ENUM, const char *, ...)
- * TF_STATUS(DIAGNOSTIC_ENUM, std::string)
- * \endcode
- *
- * A piece of arbitrary data can also be passed in along with the diagnostic
- * code and status message as follows:
- *
- * \code
- * TF_STATUS(info, DIAGNOSTIC_ENUM, const char *)
- * TF_STATUS(info, DIAGNOSTIC_ENUM, const char *, ...)
- * TF_STATUS(info, DIAGNOSTIC_ENUM, std::string)
- * \endcode
- *
- * Generally, no adjustment to program state should occur as the result of this
- * macro.  This is in contrast with errors as mentioned above.
- *
- * This is safe to call in secondary threads, but the message will be printed
- * to stderr rather than being handled by the diagnostic delegate.
- */
+/// Issue a status message, but continue execution.
+///
+/// This macro works with a variety of argument sets. It supports simple
+/// printf-like format specification or a std::string. It also supports
+/// specification of a diagnostic code and a piece of arbitrary information in
+/// the form of a TfDiagnosticInfo. The following is a full list of supported
+/// argument lists:
+///
+/// \code
+/// TF_STATUS(const char *)           // plain old string
+/// TF_STATUS(const char *, ...)      // printf like formatting
+/// TF_STATUS(std::string)            // stl string
+/// \endcode
+///
+/// A diagnostic code can be passed in along with the status message. See
+/// \ref DiagnosticEnumConventions for an example of registering an enum type
+/// and it's values as diagnostic codes.
+///
+/// \code
+/// TF_STATUS(DIAGNOSTIC_ENUM, const char *)
+/// TF_STATUS(DIAGNOSTIC_ENUM, const char *, ...)
+/// TF_STATUS(DIAGNOSTIC_ENUM, std::string)
+/// \endcode
+///
+/// A piece of arbitrary data can also be passed in along with the diagnostic
+/// code and status message as follows:
+///
+/// \code
+/// TF_STATUS(info, DIAGNOSTIC_ENUM, const char *)
+/// TF_STATUS(info, DIAGNOSTIC_ENUM, const char *, ...)
+/// TF_STATUS(info, DIAGNOSTIC_ENUM, std::string)
+/// \endcode
+///
+/// Generally, no adjustment to program state should occur as the result of
+/// this macro. This is in contrast with errors as mentioned above.
+///
+/// This is safe to call in secondary threads, but the message will be printed
+/// to \c stderr rather than being handled by the diagnostic delegate.
+///
+/// \hideinitializer
 #define TF_STATUS(...)
 
-
-
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Aborts if the condition \c cond is not met.
- *
- * \param cond is any expression convertible to bool; if the condition evaluates
- * to \c false, program execution ends with this call.
- *
- * Note that the diagnostic message sent is the code \c cond, in the
- * form of a string.  Unless the condition expression is self-explanatory,
- * use \c TF_FATAL_ERROR().  See \ref DiagnosticTF_FATAL_ERROR
- * for further discussion.
- *
- * Currently, a \c TF_AXIOM() statement is not made a no-op in
- * optimized builds; however, it always possible that either (a) the
- * axiom statement might be removed at some point if the code is
- * deemed correct or (b) in the future, some flavor of build might choose
- * to make axioms be no-ops.  Thus, programmers must make \e certain
- * that the code in \p cond is entirely free of side effects.
- */
+/// Aborts if the condition \c cond is not met.
+///
+/// \param cond is any expression convertible to bool; if the condition evaluates
+/// to \c false, program execution ends with this call.
+///
+/// Note that the diagnostic message sent is the code \c cond, in the form of
+/// a string.  Unless the condition expression is self-explanatory, use
+/// \c TF_FATAL_ERROR().  See \ref DiagnosticTF_FATAL_ERROR for further
+/// discussion.
+///
+/// Currently, a \c TF_AXIOM() statement is not made a no-op in optimized
+/// builds; however, it always possible that either (a) the axiom statement
+/// might be removed at some point if the code is deemed correct or (b) in the
+/// future, some flavor of build might choose to make axioms be no-ops.  Thus,
+/// programmers must make \e certain that the code in \p cond is entirely free
+/// of side effects.
+///
+/// \hideinitializer
 #define TF_AXIOM(cond)
 
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief The same as TF_AXIOM, but compiled only in dev builds.
- *
- * \param cond is any expression convertible to bool; if the condition evaluates
- * to \c false, program execution ends with this call.
- *
- * This macro has the same behavior as TF_AXIOM, but it is compiled only
- * in dev builds. This version should only be used in code that is
- * known (not just suspected!) to be performance critical.
- */
+/// The same as TF_AXIOM, but compiled only in dev builds.
+///
+/// \param cond is any expression convertible to bool; if the condition evaluates
+/// to \c false, program execution ends with this call.
+///
+/// This macro has the same behavior as TF_AXIOM, but it is compiled only
+/// in dev builds. This version should only be used in code that is
+/// known (not just suspected!) to be performance critical.
+///
+/// \hideinitializer
 #define TF_DEV_AXIOM(cond)
 
-
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Checks a condition and reports an error if it evaluates false.
- *
- * This can be thought of as something like a softer, recoverable TF_AXIOM.
- *
- * The macro expands to an expression whose value is either true or false
- * depending on \c cond.  If \c cond evaluates to false, issues a coding error
- * indicating the failure.
- *
- * \param cond is any expression convertible to bool.
- *
- * Usage generally follows patterns like these:
- *
- * // Simple check.  This is like a non-fatal TF_AXIOM.
- * TF_VERIFY(condition);
- *
- * // Avoiding code that requires the condition be met.
- * if (TF_VERIFY(condition)) {
- *     // code requiring condition be met.
- * }
- *
- * // Executing recovery code in case the condition is not met.
- * if (not TF_VERIFY(condition)) {
- *     // recovery code to execute since condition was not met.
- * }
- * 
- * Here are some examples:
- *
- * // List should be empty.  If not, issue an error, clear it out and continue.
- * if (not TF_VERIFY(list.empty()) {
- *     // The list was unexpectedly not empty.  TF_VERIFY will have
- *     // issued a coding error with details.  We clear the list and continue.
- *     list.clear();
- * }
- *
- * // Only add to string if ptr is valid.
- * string result = ...; 
- * if (TF_VERIFY(ptr != NULL)) {
- *     result += ptr->Method();
- * }
- *
- * The macro also optionally accepts printf-style arguments to generate a
- * message emitted in case the condition is not met.  For example:
- *
- * if (not TF_VERIFY(index < size,
- *                   "Index out of bounds (%zu >= %zu)", index, size)) {
- *     // Recovery code...
- * }
- *
- * Unmet conditions generate TF_CODING_ERRORs by default, but setting the
- * environment variable TF_FATAL_VERIFY to 1 will make unmet conditions
- * generate TF_FATAL_ERRORs instead and abort the program.  This is intended for
- * testing.
- *
- * This is safe to call in secondary threads, but the error will be downgraded
- * to a warning.
- */
-
+/// Checks a condition and reports an error if it evaluates false.
+///
+/// This can be thought of as something like a softer, recoverable TF_AXIOM.
+///
+/// The macro expands to an expression whose value is either true or false
+/// depending on \c cond. If \c cond evaluates to false, issues a coding error
+/// indicating the failure.
+///
+/// \param cond is any expression convertible to bool.
+///
+/// Usage generally follows patterns like these:
+/// \code
+/// // Simple check.  This is like a non-fatal TF_AXIOM.
+/// TF_VERIFY(condition);
+///
+/// // Avoiding code that requires the condition be met.
+/// if (TF_VERIFY(condition)) {
+///     // code requiring condition be met.
+/// }
+///
+/// // Executing recovery code in case the condition is not met.
+/// if (not TF_VERIFY(condition)) {
+///     // recovery code to execute since condition was not met.
+/// }
+/// \endcode
+/// 
+/// Here are some examples:
+/// \code
+/// // List should be empty.  If not, issue an error, clear it out and continue.
+/// if (not TF_VERIFY(list.empty()) {
+///     // The list was unexpectedly not empty.  TF_VERIFY will have
+///     // issued a coding error with details.  We clear the list and continue.
+///     list.clear();
+/// }
+///
+/// // Only add to string if ptr is valid.
+/// string result = ...; 
+/// if (TF_VERIFY(ptr != NULL)) {
+///     result += ptr->Method();
+/// }
+/// \endcode
+///
+/// The macro also optionally accepts printf-style arguments to generate a
+/// message emitted in case the condition is not met.  For example:
+/// \code
+/// if (not TF_VERIFY(index < size,
+///                   "Index out of bounds (%zu >= %zu)", index, size)) {
+///     // Recovery code...
+/// }
+/// \endcode
+///
+/// Unmet conditions generate TF_CODING_ERRORs by default, but setting the
+/// environment variable TF_FATAL_VERIFY to 1 will make unmet conditions
+/// generate TF_FATAL_ERRORs instead and abort the program.  This is intended for
+/// testing.
+///
+/// This is safe to call in secondary threads, but the error will be downgraded
+/// to a warning.
+///
+/// \hideinitializer
 #define TF_VERIFY(cond [, format, ...])
 
 #endif  /* defined(doxygen) */
            
-/*
- * The rest of this is seen by a regular compile (or doxygen).
- */
+//
+// The rest of this is seen by a regular compile (or doxygen).
+//
 
 #if defined(__cplusplus) || defined(doxygen)
-/*!
- * \hideinitializer
- * \ingroup group_tf_Diagnostic
- * \brief Get the name of the current function as a \c std::string.
- *
- * This macro will return the name of the current function, nicely
- * formatted, as an \c std::string.  This is meant primarily for
- * diagnostics.  Code should not rely on a specific format, because it
- * may change in the future or vary across architectures.  For example,
- * \code
- * void YourClass::SomeMethod(int x) {
- *     cout << "Debugging info about function " << TF_FUNC_NAME() << "." << endl;
- *     ...
- * }
- * \endcode
- * Should display something like:
- * "Debugging info about function YourClass::SomeMethod."
- */
+
+/// Get the name of the current function as a \c std::string.
+///
+/// This macro will return the name of the current function, nicely
+/// formatted, as an \c std::string.  This is meant primarily for
+/// diagnostics.  Code should not rely on a specific format, because it
+/// may change in the future or vary across architectures.  For example,
+/// \code
+/// void YourClass::SomeMethod(int x) {
+///     cout << "Debugging info about function " << TF_FUNC_NAME() << "." << endl;
+///     ...
+/// }
+/// \endcode
+/// Should display something like:
+/// "Debugging info about function YourClass::SomeMethod."
+///
+/// \hideinitializer
 #define TF_FUNC_NAME()                                 \
     ArchGetPrettierFunctionName(__ARCH_FUNCTION__, __ARCH_PRETTY_FUNCTION__)
 
@@ -336,8 +315,8 @@ void Tf_TerminateHandler();
 
 #if !defined(doxygen)
 
-// Redefine these macros from DiagnosticLite to versions that will accept either
-// string or printf-like args.
+// Redefine these macros from DiagnosticLite to versions that will accept
+// either string or printf-like args.
 
 #ifdef TF_CODING_ERROR
 #undef TF_CODING_ERROR
@@ -367,7 +346,6 @@ void Tf_TerminateHandler();
 #define TF_DIAGNOSTIC_WARNING                                \
     Tf_DiagnosticHelper(TF_CALL_CONTEXT.Hide(),                \
         TF_DIAGNOSTIC_WARNING_TYPE).IssueWarning
-
 
 #ifdef TF_RUNTIME_ERROR
 #undef TF_RUNTIME_ERROR
@@ -436,7 +414,6 @@ void Tf_TerminateHandler();
      Tf_FailedVerifyHelper(TF_CALL_CONTEXT, # cond,                            \
                            Tf_DiagnosticStringPrintf(__VA_ARGS__)))
 
-
 // Helpers for TF_VERIFY
 bool
 Tf_FailedVerifyHelper(TfCallContext const &context,
@@ -453,22 +430,17 @@ std::string Tf_DiagnosticStringPrintf(const char *format, ...)
 
 #endif // __cplusplus || doxygen
 
-/*!
- * \brief Sets program name for reporting errors.
- * \ingroup group_tf_Diagnostic
- *
- * This function simply calls to ArchSetProgramNameForErrors().
- */
+/// Sets program name for reporting errors.
+///
+/// This function simply calls to ArchSetProgramNameForErrors().
 void TfSetProgramNameForErrors(std::string const& programName);
 
-/*!
- * \brief Returns currently set program info. 
- * \ingroup group_tf_Diagnostic
- *
- * This function simply calls to ArchGetProgramNameForErrors().
- */
+/// Returns currently set program info. 
+///
+/// This function simply calls to ArchGetProgramNameForErrors().
 std::string TfGetProgramNameForErrors();
 
+/// \private
 struct Tf_DiagnosticHelper {
     Tf_DiagnosticHelper(TfCallContext const &context,
                         TfDiagnosticType type) :
@@ -496,13 +468,16 @@ struct Tf_DiagnosticHelper {
 
 #endif
 
-/// (Re)install Tf's crash handler.  This should not generally need to be called
-/// since Tf does this itself when loaded.  However, when run in 3rd party
-/// environments that install their own signal handlers, possibly overriding
-/// Tf's, this provides a way to reinstall them, in hopes that they'll stick.
+/// (Re)install Tf's crash handler. This should not generally need to be
+/// called since Tf does this itself when loaded.  However, when run in 3rd
+/// party environments that install their own signal handlers, possibly
+/// overriding Tf's, this provides a way to reinstall them, in hopes that
+/// they'll stick.
 ///
 /// This calls std::set_terminate() and installs signal handlers for SIGSEGV,
 /// SIGBUS, SIGFPE, and SIGABRT.
 void TfInstallTerminateAndCrashHandlers();
+
+///@}
 
 #endif // TF_DIAGNOSTIC_H

@@ -24,9 +24,6 @@
 #ifndef USDGEOM_XFORMCACHE_H
 #define USDGEOM_XFORMCACHE_H
 
-
-
-
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -39,6 +36,7 @@
 #include <boost/functional/hash.hpp>
 
 /// \class UsdGeomXformCache
+///
 /// A caching mechanism for transform matrices. For best performance, this
 /// object should be reused for multiple CTM queries.
 ///
@@ -51,6 +49,7 @@
 /// on changes to the stage from which values were cached. Additionally, a
 /// separate instance of this class should be used per-thread, calling the Get*
 /// methods from multiple threads is not safe, as they mutate internal state.
+///
 class UsdGeomXformCache
 {
 public:

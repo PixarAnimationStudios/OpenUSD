@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyListProxy.h
-
 #ifndef SDF_PYLISTPROXY_H
 #define SDF_PYLISTPROXY_H
+
+/// \file sdf/pyListProxy.h
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listProxy.h"

@@ -21,25 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdInShipped/declareCoreOps.h"
+#ifndef PXRUSDKATANA_READMATERIAL_H
+#define PXRUSDKATANA_READMATERIAL_H
 
-#include "usdKatana/attrMap.h"
-#include "usdKatana/readLook.h"
+class PxrUsdKatanaAttrMap;
+class PxrUsdKatanaUsdInPrivateData;
+class UsdShadeMaterial;
 
-#include "pxr/usd/usdShade/look.h"
+/// \brief read \p Material into \p attrs.  If \p flatten is specified, we treat it
+/// as if it is a "standalone" material (i.e. no "material" inheritance in the
+/// katana sense).
+void
+PxrUsdKatanaReadMaterial(
+        const UsdShadeMaterial& material,
+        bool flatten,
+        const PxrUsdKatanaUsdInPrivateData& data,
+        PxrUsdKatanaAttrMap& attrs,
+        const std::string& looksGroupLocation = "");
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LookOp, privateData, interface)
-{
-    PxrUsdKatanaAttrMap attrs;
-    
-    PxrUsdKatanaReadLook(
-        UsdShadeLook(privateData.GetUsdPrim()),
-        /* flatten */ true,
-        privateData,
-        attrs);
+#endif // PXRUSDKATANA_READMATERIAL_H
 
-    attrs.toInterface(interface);
-
-    // tell the op handling the traversal to skip all children
-    interface.setAttr("__UsdIn.skipAllChildren", FnAttribute::IntAttribute(1));
-}

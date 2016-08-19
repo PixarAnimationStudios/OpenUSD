@@ -32,8 +32,11 @@
 typedef std::vector<class HdBinding> HdBindingVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
+/// \class HdBinding
+///
 /// Bindings are used for buffers or textures, it simple associates a binding
 /// type with a binding location.
+///
 class HdBinding {
 public:
     enum Type { // primvar, drawing coordinate and dispatch buffer bindings

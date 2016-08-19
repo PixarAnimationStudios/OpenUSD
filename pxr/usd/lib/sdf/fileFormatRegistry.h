@@ -21,13 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/fileFormatRegistry.h
-///
-///
-
 #ifndef SDF_FILE_FORMAT_REGISTRY_H
 #define SDF_FILE_FORMAT_REGISTRY_H
+
+/// \file sdf/fileFormatRegistry.h
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hash.h"
@@ -71,13 +68,13 @@ public:
     TfToken GetPrimaryFormatForExtension(const std::string& ext);
 
 private:
-    // \struct _Info
-    //
-    // Information about a file format plugin. This structure initially holds
-    // the type, a pointer to a plugin that has not yet been loaded, and a
-    // null format ref ptr. After the file format is requested, the plugin is
-    // loaded, and the file format is instantiated.
-    //
+    /// \struct _Info
+    ///
+    /// Information about a file format plugin. This structure initially holds
+    /// the type, a pointer to a plugin that has not yet been loaded, and a
+    /// null format ref ptr. After the file format is requested, the plugin is
+    /// loaded, and the file format is instantiated.
+    ///
     class _Info {
     public:
         _Info(const TfToken& formatId,

@@ -24,9 +24,6 @@
 #ifndef USDGEOM_DEBUGCODES_H
 #define USDGEOM_DEBUGCODES_H
 
-
-
-
 #include "pxr/base/tf/debug.h"
 
 TF_DEBUG_CODES( 
@@ -34,6 +31,5 @@ TF_DEBUG_CODES(
     USDGEOM_BBOX, 
     USDGEOM_XFORMCOMMONAPI
 );
-
 
 #endif // USDGEOM_DEBUGCODES_H

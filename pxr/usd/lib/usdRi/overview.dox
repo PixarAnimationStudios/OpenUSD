@@ -1,0 +1,27 @@
+/*!
+\page usdRi_page_front UsdRi: USD Renderman Schemas
+\if ( PIXAR_MFB_BUILD )
+\mainpage  UsdRi: USD Renderman Schemas
+\publicLib
+\endif
+
+\section usdRi_overview Overview
+
+This module provides schemas and utilities for authoring USD that encodes
+Renderman-specific information, and for converting between USD and Ri
+values and datatypes.  There is no inclusion of Renderman headers, so this
+schema module is compilable and useful regardless of whether you have or use
+Renderman.
+
+The primary classes are:
+
+\li UsdRiStatements, which provides API for encoding most Renderman specific 
+concepts, like Ri Attributes, and (scoped) coordinate systems.
+
+\li UsdRiLookAPI, UsdRiRisBxdf and several other shading-schema-related
+classes for encoding Renderman shading interfaces and networks in the UsdShade
+shading model.
+
+\li \ref usdRi/rmanUtilities.h prvides usd/ri conversion utilities
+
+*/

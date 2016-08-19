@@ -43,7 +43,9 @@
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 
-/// Manages the pool of buffer arrays
+/// \class HdBufferArrayRegistry
+///
+/// Manages the pool of buffer arrays.
 ///
 class HdBufferArrayRegistry : public boost::noncopyable {
 public:
@@ -77,11 +79,15 @@ public:
 private:
     typedef std::list<HdBufferArraySharedPtr> _HdBufferArraySharedPtrList;
 
-    /// Entry in the buffer array cache.  The list is the buffer arrays
-    /// which all have the same format.  There is as a lock for modifcations
-    /// to the entry and a condition used to determine if the entry has been consturcted.
+    /// \struct _Entry
+    ///
+    /// Entry in the buffer array cache.  The list is the buffer arrays which
+    /// all have the same format.  There is as a lock for modifications to the
+    /// entry and a condition used to determine if the entry has been
+    /// construction.
     /// 
-    /// A Consrutcted entry always has at least 1 buffer array in its list.
+    /// A constructed entry always has at least 1 buffer array in its list.
+    ///
     struct _Entry
     {
         _HdBufferArraySharedPtrList bufferArrays;

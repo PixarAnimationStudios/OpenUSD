@@ -44,11 +44,11 @@
 #include <vector>
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
-class Plug_RegistrationMetadata;
+struct Plug_RegistrationMetadata;
 
+/// \class PlugRegistry
 ///
-/// \class PlugRegistry registry.h pxr/base/plug/registry.h
-/// \brief Defines an interface for registering plugins.
+/// Defines an interface for registering plugins.
 ///
 /// PlugRegistry maintains a registry of plug-ins known to the system
 /// and provides an interface for base classes to load any plug-ins required

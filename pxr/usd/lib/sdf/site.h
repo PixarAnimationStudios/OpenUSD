@@ -32,9 +32,11 @@
 #include <boost/operators.hpp>
 
 /// \class SdfSite
+///
 /// An SdfSite is a simple representation of a location in a layer where 
 /// opinions may possibly be found. It is simply a pair of layer and path
 /// within that layer.
+///
 class SdfSite 
     : public boost::totally_ordered<SdfSite>
 {

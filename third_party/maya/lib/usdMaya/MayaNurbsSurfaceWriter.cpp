@@ -75,10 +75,11 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         return true; 
     }
 
-    MFnNurbsSurface nurbs( getDagPath(), &status );
+    MFnNurbsSurface nurbs(getDagPath(), &status);
     if (!status) {
         MGlobal::displayError(
-            "MFnNurbsSurface() failed for MayaNurbsSurfaceWriter" );
+            "MayaNurbsSurfaceWriter: MFnNurbsSurface() failed for surface at dagPath: " +
+            getDagPath().fullPathName());
         return false;
     }
     

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file tf/DiagnosticNotice.h
-///
 #ifndef TF_DIAGNOSTIC_NOTICE_H
 #define TF_DIAGNOSTIC_NOTICE_H
+
+/// \file tf/diagnosticNotice.h
 
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/diagnosticBase.h"
@@ -35,20 +35,20 @@ class TfDiagnosticBase;
 
 #include <string>
 
-/*! \class TfDiagnosticNotice
- *  \brief This is a wrapper class containing the actual notices
- *         that TfDiagnosticMgr sends.
- */
+/// \class TfDiagnosticNotice
+///
+/// This is a wrapper class containing the actual notices that TfDiagnosticMgr
+/// sends.
 class TfDiagnosticNotice {
 public:
 
-    //! Return if warnings/error are echoed to stderr.
+    /// Return if warnings/error are echoed to stderr.
     static bool GetStderrOutputState();
 
-    //! Set stderr output state, returning the previous state.
+    /// Set stderr output state, returning the previous state.
     static bool SetStderrOutputState(bool state);
 
-    /// \brief Base notification class for TfDiagnosticMgr.
+    /// Base notification class for TfDiagnosticMgr.
     class Base : public TfNotice {
     public:
         Base();
@@ -75,7 +75,7 @@ public:
         TfDiagnosticBase const* _data;
     };
 
-    /// \brief Notification sent when an error is issued.
+    /// Notification sent when an error is issued.
     class IssuedError: public Base {
       public:
         IssuedError(const TfError &error);
@@ -87,7 +87,7 @@ public:
         const TfError &_error;
     };
 
-    /// \brief Notification sent when a warning is issued.
+    /// Notification sent when a warning is issued.
     class IssuedWarning : public Base {
       public:
         IssuedWarning(const TfWarning &warning);
@@ -99,7 +99,7 @@ public:
         const TfWarning &_warning;
     };
 
-    /// \brief Notification sent when a status message is issued.
+    /// Notification sent when a status message is issued.
     class IssuedStatus : public Base {
       public:
         IssuedStatus(const TfStatus &status);
@@ -111,7 +111,7 @@ public:
         const TfStatus &_status;
     };
 
-    /// \brief Notification sent when a fatal error is encountered.
+    /// Notification sent when a fatal error is encountered.
     class IssuedFatalError : public Base {
       public:
         IssuedFatalError(const std::string &msg, const TfCallContext &context);

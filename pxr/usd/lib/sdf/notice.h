@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file sdf/notice.h
-
-
 #ifndef SDF_NOTICE_H
 #define SDF_NOTICE_H
+
+/// \file sdf/notice.h
 
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -36,17 +34,25 @@
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// \class SdfNotice
-/// Wrapper class for Sdf notices
+///
+/// Wrapper class for Sdf notices.
+///
 class SdfNotice {
 public:
+    /// \class Base
+    ///
     /// Base notification class for scene.  Only useful for type hierarchy
     /// purposes.
+    ///
     class Base : public TfNotice {
     public:
         ~Base();
     };
 
-    /// Base class for LayersDidChange and LayersDidChangeSentPerLayer
+    /// \class BaseLayersDidChange
+    ///
+    /// Base class for LayersDidChange and LayersDidChangeSentPerLayer.
+    ///
     class BaseLayersDidChange {
     public:
         BaseLayersDidChange(const SdfLayerChangeListMap &changeMap,
@@ -69,12 +75,15 @@ public:
         const size_t _serialNumber;
     };
 
+    /// \class LayersDidChangeSentPerLayer
+    ///
     /// Notice sent per-layer indicating all layers whose contents have changed
     /// within a single round of change processing.  If more than one layer
     /// changes in a single round of change processing, we send this notice once
     /// per layer with the same changeMap and serialNumber.  This is so clients
     /// can listen to notices from only the set of layers they care about rather
     /// than listening to the global LayersDidChange notice.
+    ///
     class LayersDidChangeSentPerLayer 
         : public Base, public BaseLayersDidChange {
     public:
@@ -84,7 +93,10 @@ public:
         virtual ~LayersDidChangeSentPerLayer();
     };
 
+    /// \class LayersDidChange
+    ///
     /// Global notice sent to indicate that layer contents have changed.
+    ///
     class LayersDidChange
         : public Base, public BaseLayersDidChange {
     public:
@@ -94,7 +106,10 @@ public:
         virtual ~LayersDidChange();
     };
 
+    /// \class LayerInfoDidChange
+    ///
     /// Sent when the (scene spec) info of a layer have changed.
+    ///
     class LayerInfoDidChange : public Base {
     public:
         LayerInfoDidChange( const TfToken &key ) :
@@ -107,7 +122,10 @@ public:
         TfToken _key;
     };
 
+    /// \class LayerIdentifierDidChange
+    ///
     /// Sent when the identifier of a layer has changed.
+    ///
     class LayerIdentifierDidChange : public Base {
     public:
         LayerIdentifierDidChange(const std::string& oldIdentifier,
@@ -125,34 +143,47 @@ public:
         std::string _newId;
     };
     
+    /// \class LayerDidReplaceContent
+    ///
     /// Sent after a menv layer has been loaded from a file.
+    ///
     class LayerDidReplaceContent : public Base {
     public:
         ~LayerDidReplaceContent();
     };
 
+    /// \class LayerDidReloadContent
     /// Sent after a layer is reloaded.
     class LayerDidReloadContent : public LayerDidReplaceContent {
     public:
         virtual ~LayerDidReloadContent();
     };
     
+    /// \class LayerDidSaveLayerToFile
+    ///
     /// Sent after a layer is saved to file.
+    ///
     class LayerDidSaveLayerToFile : public Base {
     public:
         ~LayerDidSaveLayerToFile();
     };
 
+    /// \class LayerDirtinessChanged
+    ///
     /// Similar behavior to LayersDidChange, but only gets sent if a change
     /// in the dirty status of a layer occurs.
+    ///
     class LayerDirtinessChanged : public Base {
     public:
         ~LayerDirtinessChanged();
     };
 
+    /// \class LayerMutenessChanged
+    ///
     /// Sent after a layer has been added or removed from the set of
     /// muted layers. Note this does not necessarily mean the specified
     /// layer is currently loaded.
+    ///
     class LayerMutenessChanged : public Base {
     public:
         LayerMutenessChanged(const std::string& layerPath, bool wasMuted)

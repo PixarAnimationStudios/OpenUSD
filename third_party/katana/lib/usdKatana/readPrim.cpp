@@ -133,7 +133,7 @@ _GetMaterialAssignAttr(
             // XXX: Looks may have an atypical USD->Katana 
             // path mapping
             std::string location =
-                PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(targetPath, data);
+                PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(targetPath, data);
                 
             // XXX Looks containing only display terminals are causing issues
             //     with katana material manipulation workflows.

@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_MESH_H
 #define USDGEOM_GENERATED_MESH_H
 
+/// \file usdGeom/mesh.h
+
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,6 +46,8 @@ class SdfAssetPath;
 // MESH                                                                       //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdGeomMesh
+///
 /// Encodes a mesh surface whose definition and feature-set
 /// will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
 /// 
@@ -103,7 +107,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomMesh holding the prim adhering to this
+    /// Return a UsdGeomMesh holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -115,7 +119,7 @@ public:
     static UsdGeomMesh
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -417,7 +421,7 @@ public:
 
 public:
     /// \var const float SHARPNESS_INFINITE
-    /// \brief As an element of a 'creaseSharpness' or 'cornerSharpness' array,
+    /// As an element of a 'creaseSharpness' or 'cornerSharpness' array,
     /// indicates that the crease or corner is perfectly sharp.
     static const float SHARPNESS_INFINITE;
 

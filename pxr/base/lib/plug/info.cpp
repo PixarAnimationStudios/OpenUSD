@@ -183,7 +183,7 @@ _ReadPlugInfoObject(const std::string& pathname, JsObject* result)
                          pathname.c_str());
     }
     else {
-        *result = plugInfo.GetObject();
+        *result = plugInfo.GetJsObject();
     }
     return true;
 }
@@ -231,7 +231,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
                              pathname.c_str(), i->first.c_str());
         }
         else {
-            const JsArray& plugins = i->second.GetArray();
+            const JsArray& plugins = i->second.GetJsArray();
             for (size_t j = 0, n = plugins.size(); j != n; ++j) {
                 _AddPlugin(context, pathname, i->first, j, plugins[j]);
             }
@@ -245,7 +245,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
                              pathname.c_str(), i->first.c_str());
         }
         else {
-            const JsArray& includes = i->second.GetArray();
+            const JsArray& includes = i->second.GetJsArray();
             for (size_t j = 0, n = includes.size(); j != n; ++j) {
                 if (not includes[j].IsString()) {
                     TF_RUNTIME_ERROR("Plugin info file %s key '%s' "
@@ -535,7 +535,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
                          locationForErrorReporting.c_str());
         return;
     }
-    const JsObject& topInfo = value.GetObject();
+    const JsObject& topInfo = value.GetJsObject();
 
     // Parse type.
     key = &_Tokens->TypeKey;
@@ -658,7 +658,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
             goto error;
         }
         else {
-            plugInfo = i->second.GetObject();
+            plugInfo = i->second.GetJsObject();
         }
     }
     else {

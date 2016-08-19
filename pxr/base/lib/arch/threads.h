@@ -24,17 +24,12 @@
 #ifndef ARCH_THREADS_H
 #define ARCH_THREADS_H
 
+/// \file arch/threads.h
+/// \ingroup group_arch_Multithreading
+/// Architecture-specific thread function calls.
 
-/*!
- * \file threads.h
- * \brief Architecture-specific thread function calls.
- * \ingroup group_arch_Multithreading
- */
-
-/*!
- * \brief Return true if the calling thread is the main thread, false
- * otherwise.
- */
+/// Return true if the calling thread is the main thread, false otherwise.
+/// \ingroup group_arch_Multithreading
 bool ArchIsMainThread();
 
 #endif // ARCH_THREADS_H

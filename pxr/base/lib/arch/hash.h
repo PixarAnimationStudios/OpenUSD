@@ -24,9 +24,11 @@
 #ifndef ARCH_HASH_H
 #define ARCH_HASH_H
 
+/// \file arch/hash.h
+/// Hash functions.
+
 #include "pxr/base/arch/inttypes.h"
 
-///
 /// Hash \a len bytes of \a data.
 ///
 /// To compute a hash value for data that is not contiguous in memory, iterate
@@ -35,9 +37,18 @@
 /// contiguous pieces as a whole.  Support for that may be added in future.
 ///
 uint32_t ArchHash(const char *data, size_t len);
+/// \overload
 uint32_t ArchHash(const char *data, size_t len, uint32_t seed);
 
+/// Hash \a len bytes of \a data.
+///
+/// To compute a hash value for data that is not contiguous in memory, iterate
+/// over all the contiguous blocks of memory and accumulate the hash value by
+/// passing it on as \p seed.  Note that this is *not* equivalent to hashing the
+/// contiguous pieces as a whole.  Support for that may be added in future.
+///
 uint64_t ArchHash64(const char *data, size_t len);
+/// \overload
 uint64_t ArchHash64(const char *data, size_t len, uint64_t seed);
 
 #endif // ARCH_HASH_H

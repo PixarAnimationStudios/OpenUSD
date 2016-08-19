@@ -46,10 +46,8 @@
 #include <boost/function.hpp>
 #include <boost/preprocessor.hpp>
 
-
 template <typename T>
 struct TfPyFunctionFromPython;
-
 
 #define BOOST_PP_ITERATION_LIMITS (0, TF_MAX_ARITY)
 #define BOOST_PP_FILENAME_1 "pxr/base/tf/pyFunction.h"
@@ -58,12 +56,9 @@ struct TfPyFunctionFromPython;
 #include "pxr/base/tf/pyFunction.h"
 */
 
-
 #endif // TF_PYFUNCTION_H
 
-
 #else // BOOST_PP_IS_ITERATING
-
 
 #define N BOOST_PP_ITERATION()
 
@@ -131,21 +126,21 @@ struct TfPyFunctionFromPython<Ret (BOOST_PP_ENUM_PARAMS(N, A))>
         void *storage = ((converter::rvalue_from_python_storage<FuncType> *)
                          data)->storage.bytes;
 
-        // In the case of instance methods, holding a strong reference will keep
-        // the bound 'self' argument alive indefinitely, which is undesirable.
-        // Unfortunately, we can't just keep a weak reference to the instance
-        // method, because python synthesizes these on-the-fly.  Instead we do
-        // something like what PyQt's SIP does, and break the method into three
-        // parts: the class, the function, and the self parameter.  We keep
-        // strong references to the class and the function, but a weak reference
-        // to 'self'.  Then at call-time, if self has not expired, we build a
-        // new instancemethod and call it.
+        // In the case of instance methods, holding a strong reference will
+        // keep the bound 'self' argument alive indefinitely, which is
+        // undesirable. Unfortunately, we can't just keep a weak reference to
+        // the instance method, because python synthesizes these on-the-fly.
+        // Instead we do something like what PyQt's SIP does, and break the
+        // method into three parts: the class, the function, and the self
+        // parameter.  We keep strong references to the class and the
+        // function, but a weak reference to 'self'.  Then at call-time, if
+        // self has not expired, we build a new instancemethod and call it.
         //
         // Otherwise if the callable is a lambda (checked in a hacky way, but
         // mirroring SIP), we take a strong reference.
         // 
-        // For all other callables, we attempt to take weak references to them.
-        // If that fails, we take a strong reference.
+        // For all other callables, we attempt to take weak references to
+        // them. If that fails, we take a strong reference.
         //
         // This is all sort of contrived, but seems to have the right behavior
         // for most usage patterns.
@@ -153,8 +148,8 @@ struct TfPyFunctionFromPython<Ret (BOOST_PP_ENUM_PARAMS(N, A))>
         object callable(handle<>(borrowed(src)));
         
         if (PyMethod_Check(callable.ptr())) {
-            // Deconstruct the method and attempt to get a weak reference to the
-            // self instance.
+            // Deconstruct the method and attempt to get a weak reference to
+            // the self instance.
             PyObject *method = callable.ptr();
             object cls(handle<>(borrowed(PyMethod_GET_CLASS(method))));
             object func(handle<>(borrowed(PyMethod_GET_FUNCTION(method))));

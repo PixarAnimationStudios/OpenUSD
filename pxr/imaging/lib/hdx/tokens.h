@@ -45,7 +45,6 @@
 
 TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
 
-
 #define HDX_PRIMITIVE_TOKENS    \
     (lightTypePositional)       \
     (lightTypeDirectional)      \

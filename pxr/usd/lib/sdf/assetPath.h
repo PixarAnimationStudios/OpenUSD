@@ -21,16 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/assetPath.h
-
 #ifndef SDF_ASSETPATH_H
 #define SDF_ASSETPATH_H
+
+/// \file sdf/assetPath.h
 
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <string>
 
+/// \class SdfAssetPath
+///
 /// Contains an asset path and an optional resolved path.
 ///
 class SdfAssetPath:

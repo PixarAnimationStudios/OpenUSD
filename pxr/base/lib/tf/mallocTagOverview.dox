@@ -110,17 +110,12 @@ Occasionally, using local variables to delimit the scope of a tag isn't possible
 
 The memory-cost for using the TfMallocTag system is as follows:
 
-    \li Each call to malloc() incurs no extra overhead compared with not using the tagging system.  This is done by "stealing" some number of bits from a control-word that malloc() already tacks on to your memory requests.  The implication of this is that users are restricted to malloc() requests that are no more than 1 terabyte (1<<40 bytes) at a time when the tagging system is activated.
-
-    \li The above applies to using the ptmalloc3 allocator.  For jemalloc, every allocation is stored in a separate table, so there is an additional call to an allocator to add the entry, with possibly an extra memory allocation of its own.
-
-    \li Each different call-site and each different path-node reached during the program requires a small amount of memory to store its statistics, if tagging is on.  Obviously, there is a one-time runtime cost to create each new call-site or path-node, but it is small, and is not repeated.
-
-    \li Pushing and popping call-site objects has effectively no cost if tagging is not active.
-
-    \li Pushing call-site objects requires locking a mutex and doing a single hash-lookup when tagging is active.  Popping call-site objects does not incur a mutex lock.
-
-    \li Calls to malloc() and free() require an extra mutex lock when tagging is active.
+\li Each call to malloc() incurs no extra overhead compared with not using the tagging system.  This is done by "stealing" some number of bits from a control-word that malloc() already tacks on to your memory requests.  The implication of this is that users are restricted to malloc() requests that are no more than 1 terabyte (1<<40 bytes) at a time when the tagging system is activated.
+\li The above applies to using the ptmalloc3 allocator.  For jemalloc, every allocation is stored in a separate table, so there is an additional call to an allocator to add the entry, with possibly an extra memory allocation of its own.
+\li Each different call-site and each different path-node reached during the program requires a small amount of memory to store its statistics, if tagging is on.  Obviously, there is a one-time runtime cost to create each new call-site or path-node, but it is small, and is not repeated.
+\li Pushing and popping call-site objects has effectively no cost if tagging is not active.
+\li Pushing call-site objects requires locking a mutex and doing a single hash-lookup when tagging is active.  Popping call-site objects does not incur a mutex lock.
+\li Calls to malloc() and free() require an extra mutex lock when tagging is active.
 
 Obviously, a program that does nothing but allocate memory can be substantially impacted by turning tagging on.  For typical applications, however, (such as Renderman, or loading models in Menv30) the actual runtime hit has proven (so far) to be in the 2-3 percent range when tagging is active.  Programs with tags, but which have not called Initialize(), have no measurable increase in running times.
 

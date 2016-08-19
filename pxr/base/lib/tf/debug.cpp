@@ -512,7 +512,7 @@ TfDebug::TimedScopeHelper<B>::~TimedScopeHelper()
     }
 }
 
-template class TfDebug::TimedScopeHelper<true>;
+template struct TfDebug::TimedScopeHelper<true>;
     
 /*
  * Scan the environment variable TF_DEBUG for debug symbols.

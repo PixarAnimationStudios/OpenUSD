@@ -5,73 +5,73 @@
 
 // Comprehensive package documenation:
 
-//! \defgroup group_tf_Notification Notification System
-//  See \ref page_tf_Notification for a detailed description.
+/// \defgroup group_tf_Notification Notification System
+/// See \ref page_tf_Notification for a detailed description.
 
-//! \defgroup group_tf_TfError TfError Error-posting Facility
-//  See \ref page_tf_TfError for a detailed description.
+/// \defgroup group_tf_TfError TfError Error-posting Facility
+/// See \ref page_tf_TfError for a detailed description.
 
-//! \defgroup group_tf_Diagnostic Diagnostic Facilities
-//  See \ref page_tf_Diagnostic for a discussion of diagnostic techniques.
+/// \defgroup group_tf_Diagnostic Diagnostic Facilities
+/// See \ref page_tf_Diagnostic for a discussion of diagnostic techniques.
 
-//! \defgroup group_tf_Initialization Initialization Facilities
-//  See \ref page_tf_Initialization for a discussion of initialization techniques.
+/// \defgroup group_tf_Initialization Initialization Facilities
+/// Functions to control initialization of resources.
 
-//! \defgroup group_tf_MallocTag Memory Tagging System
-//  See \ref page_tf_MallocTag for a discussion of memory tagging.
+/// \defgroup group_tf_MallocTag Memory Tagging System
+/// See \ref page_tf_MallocTag for a discussion of memory tagging.
 
 // Classes/functions by groups:
 
-//! \defgroup group_tf_ObjectCreation Object Creation
-//  Classes for controlling creation of objects
+/// \defgroup group_tf_ObjectCreation Object Creation
+/// Classes for controlling creation of objects
 
-//! \defgroup group_tf_Memory Memory Management
-//  Classes for memory management.
+/// \defgroup group_tf_Memory Memory Management
+/// Classes for memory management.
 
-//! \defgroup group_tf_RuntimeTyping Runtime Typing
-//  Classes having to do with run-time typing.
+/// \defgroup group_tf_RuntimeTyping Runtime Typing
+/// Classes having to do with run-time typing.
 
-//! \defgroup group_tf_BasicMath Basic Mathematical Operations
-//  Functions for basic mathematical operations.
+/// \defgroup group_tf_BasicMath Basic Mathematical Operations
+/// Functions for basic mathematical operations.
 
-//! \defgroup group_tf_DebuggingOutput Output for Debugging Purposes
-//  Functions/classes that generate output solely as a debugging aid
+/// \defgroup group_tf_DebuggingOutput Output for Debugging Purposes
+/// Functions/classes that generate output solely as a debugging aid
 
-//! \defgroup group_tf_Path Path Utilities
-//  Functions/classes for pathname manipulation.
+/// \defgroup group_tf_Path Path Utilities
+/// Functions/classes for pathname manipulation.
 
-//! \defgroup group_tf_Stl C++ STL Utilities
-//  Helper functions/classes for STL
+/// \defgroup group_tf_Stl C++ STL Utilities
+/// Helper functions/classes for STL
 
-//! \defgroup group_tf_Preprocessor Preprocessor Utilities
-//  Preprocessor macros.
+/// \defgroup group_tf_Preprocessor Preprocessor Utilities
+/// Preprocessor macros.
 
-//! \defgroup group_tf_String String Utilities
-//  Functions/classes for string manipulation.
+/// \defgroup group_tf_String String Utilities
+/// Functions/classes for string manipulation.
 
-//! \defgroup group_tf_File File Utilities
-//  Functions/classes for file handling.
+/// \defgroup group_tf_File File Utilities
+/// Functions/classes for file handling.
 
-//! \defgroup group_tf_Performance Performance Measurements
-//  Functions/classes for measuring performance.
+/// \defgroup group_tf_Performance Performance Measurements
+/// Functions/classes for measuring performance.
 
-//! \defgroup group_tf_SystemsExt Systems Extensions and Enhancements
-//  Functions/classes for extending/enhancing standard OS functionality.
+/// \defgroup group_tf_SystemsExt Systems Extensions and Enhancements
+/// Functions/classes for extending/enhancing standard OS functionality.
 
-//! \defgroup group_tf_Containers Container classes
-//  Classes that hold objects
+/// \defgroup group_tf_Containers Container classes
+/// Classes that hold objects
 
-//! \defgroup group_tf_UiSupport UI Support
-//  Classes/functions for package-independent UI concepts
+/// \defgroup group_tf_UiSupport UI Support
+/// Classes/functions for package-independent UI concepts
 
-//! \defgroup group_tf_TfCompilerAids Compiler Aids
-//  Classes/functions that help getting code compiled cleanly
+/// \defgroup group_tf_TfCompilerAids Compiler Aids
+/// Classes/functions that help getting code compiled cleanly
 
-//! \defgroup group_tf_Internal Internals Non-exported Functionality
-//  Functions/classes for libtf internal use only
+/// \defgroup group_tf_Internal Internals Non-exported Functionality
+/// Functions/classes for libtf internal use only
 
 /*!
-\page tf_page_front Tools Foundations (Tf)
+\page tf_page_front Tf: Tools Foundations
 \if ( PIXAR_MFB_BUILD )
 \mainpage Tf : Tools Foundations
 \publicLib
@@ -119,8 +119,6 @@ For a detailed explanation of topics specific to C++, see these additional Relat
     <li> \subpage page_tf_Diagnostic   </li> 
     <li> \subpage page_tf_RegistryManager   </li> 
     <li> \subpage page_tf_MallocTag   </li> 
-    <li> \subpage page_tf_Initialization   </li> 
-    
 </ul> 
 
 */

@@ -40,7 +40,7 @@
 // XXX encoding to newer, permanent upAxis metadata.
 
 TF_DEFINE_ENV_SETTING(
-    USD_READ_ZUP_FOR_UP_AXIS, true, 
+    USD_READ_ZUP_FOR_UP_AXIS, false, 
     "Whether UsdGeomGetStageUpAxis() will consult old-style customData[\"zUp\"]"
     " if upAxis metadata is unauthored.  Will eventually be retired - provided"
     " for backwards compatibility while transitioning.");

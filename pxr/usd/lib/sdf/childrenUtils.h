@@ -21,17 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/childrenUtils.h
-
 #ifndef SDF_CHILDRENUTILS_H
 #define SDF_CHILDRENUTILS_H
+
+/// \file sdf/childrenUtils.h
 
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/types.h"
 
-// Helper functions for creating and manipulating the children
-// of a spec. A ChildPolicy must be provided that specifies which type
-// of children to edit. (See ChildrenPolicies.h for details).
+/// \class Sdf_ChildrenUtils
+///
+/// Helper functions for creating and manipulating the children
+/// of a spec. A ChildPolicy must be provided that specifies which type
+/// of children to edit. (See childrenPolicies.h for details).
+///
 template<class ChildPolicy>
 class Sdf_ChildrenUtils
 {

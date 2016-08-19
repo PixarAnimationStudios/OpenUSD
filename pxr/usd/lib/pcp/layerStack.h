@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file pcp/layerStack.h
-
 #ifndef PCP_LAYER_STACK_H
 #define PCP_LAYER_STACK_H
+
+/// \file pcp/layerStack.h
 
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
@@ -48,7 +48,8 @@ class PcpLayerStackChanges;
 class PcpLifeboat;
 
 /// \class PcpLayerStack
-/// \brief Represents a stack of layers that contribute opinions to composition.
+///
+/// Represents a stack of layers that contribute opinions to composition.
 ///
 /// Each PcpLayerStack is identified by a PcpLayerStackIdentifier. This
 /// identifier contains all of the parameters needed to construct a layer stack,

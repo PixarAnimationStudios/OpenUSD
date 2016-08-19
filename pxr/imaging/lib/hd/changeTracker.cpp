@@ -35,6 +35,7 @@
 
 HdChangeTracker::HdChangeTracker() 
     : _needsGarbageCollection(false)
+    , _instancerRprimMap()
     , _varyingStateVersion(1)
     , _indexVersion(0)
     , _changeCount(1)       // changeCount in DirtyList starts from 0.
@@ -174,6 +175,30 @@ HdChangeTracker::InstancerRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_INSTANCER_REMOVED).Msg("Instancer Removed: %s\n", id.GetText());
     _instancerState.erase(id);
+}
+
+void
+HdChangeTracker::InstancerRPrimInserted(SdfPath const& instancerId,
+                                        SdfPath const& rprimId)
+{
+    _instancerRprimMap[instancerId].insert(rprimId);
+}
+
+void
+HdChangeTracker::InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId)
+{
+    _InstancerRprimMap::iterator it = _instancerRprimMap.find(instancerId);
+    if (not TF_VERIFY(it != _instancerRprimMap.end()))
+        return;
+
+    SdfPathSet &rprimSet = it->second;
+
+    TF_VERIFY(rprimSet.erase(rprimId) != 0);
+
+    if (rprimSet.empty())
+    {
+        _instancerRprimMap.erase(it);
+    }
 }
 
 // -------------------------------------------------------------------------- //
@@ -338,6 +363,18 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, DirtyBits bits)
     // scale, translate, rotate primvars and there's no dependency between them
     // unlike points and normals on rprim.
     it->second = it->second | bits;
+
+    // Now mark any associated rprims dirty.
+    _InstancerRprimMap::iterator mapIt = _instancerRprimMap.find(id);
+    if (mapIt != _instancerRprimMap.end()) {
+        SdfPathSet &rprimSet = mapIt->second;
+
+        for (SdfPathSet::iterator rprimIt =  rprimSet.begin();
+                                  rprimIt != rprimSet.end();
+                                  ++rprimIt) {
+            MarkRprimDirty(*rprimIt, DirtyInstancer);
+        }
+    }
 }
 
 void

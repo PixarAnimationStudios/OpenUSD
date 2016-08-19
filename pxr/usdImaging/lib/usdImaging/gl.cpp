@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/usdImaging/usdImaging/gl.h"
 #include "pxr/usdImaging/usdImaging/hdEngine.h"
 #include "pxr/usdImaging/usdImaging/refEngine.h"
@@ -58,6 +60,8 @@ _IsEnabledHydra()
 bool
 UsdImagingGL::IsEnabledHydra()
 {
+    GlfGlewInit();
+
     static bool isEnabledHydra = _IsEnabledHydra();
     return isEnabledHydra;
 }

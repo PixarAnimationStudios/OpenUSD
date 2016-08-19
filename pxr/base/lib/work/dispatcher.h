@@ -24,8 +24,7 @@
 #ifndef WORK_DISPATCHER_H
 #define WORK_DISPATCHER_H
 
-///
-///\file work/dispatcher.h
+/// \file work/dispatcher.h
 
 #include "pxr/base/work/threadLimits.h"
 
@@ -41,14 +40,14 @@
 
 /// \class WorkDispatcher
 ///
-/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding new
-/// tasks from within running tasks.  This suits problems that exhibit
+/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
+/// new tasks from within running tasks.  This suits problems that exhibit
 /// hierarchical structured parallelism: tasks that discover additional tasks
 /// during their execution.
 ///
-/// Typical use is to create a dispatcher and invoke Run() to begin doing work,
-/// then Wait() for the work to complete.  Tasks may invoke Run() during their
-/// execution as they discover additional tasks to perform.
+/// Typical use is to create a dispatcher and invoke Run() to begin doing
+/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
+/// their execution as they discover additional tasks to perform.
 ///
 /// For example,
 ///

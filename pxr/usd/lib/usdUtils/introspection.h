@@ -24,6 +24,12 @@
 #ifndef _USDUTILS_PINTROSPECTION_H_
 #define _USDUTILS_PINTROSPECTION_H_
 
+/// \file usdUtils/introspection.h
+///
+/// Collection of module-scoped utilities for introspecting a given USD stage.
+/// Future additions might include full-on dependency extraction, queries like
+/// "Does this stage contain this asset?", "usd grep" functionality, etc.
+
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -33,12 +39,6 @@
 #include "pxr/base/vt/dictionary.h"
 
 SDF_DECLARE_HANDLES(SdfLayer);
-
-/// \file introspection.h
-/// Collection of module-scoped utilities for introspecting a given USD stage.
-/// Future additions might include full-on dependency extraction, queries like 
-/// "Does this stage contain this asset?", "usd grep" functionality, etc.
-/// 
 
 #define USDUTILS_USDSTAGE_STATS         \
     (approxMemoryInMb)                  \

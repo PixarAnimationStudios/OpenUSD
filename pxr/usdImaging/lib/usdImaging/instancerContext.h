@@ -31,8 +31,10 @@
 typedef boost::shared_ptr<class UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 
 /// \class UsdImagingInstancerContext
+///
 /// Object used by instancer prim adapters to pass along context
 /// about the instancer and instance prim to prototype prim adapters.
+///
 class UsdImagingInstancerContext
 {
 public:

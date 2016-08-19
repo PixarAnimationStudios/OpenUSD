@@ -29,6 +29,7 @@
 #include <boost/noncopyable.hpp>
 
 /// \class ArResolverScopedCache
+///
 /// Helper object for managing asset resolver cache scopes.
 ///
 /// \see ArResolverContext::_BeginCacheScope

@@ -52,6 +52,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_USD_FILE_FORMAT_TOKENS);
 ///
 /// If no UsdUsdFileFormatTokens->FormatArg is supplied, the default is
 /// UsdUsdcFileFormatTokens->Id.
+///
 class UsdUsdFileFormat : public SdfFileFormat
 {
 public:

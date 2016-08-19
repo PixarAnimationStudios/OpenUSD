@@ -157,7 +157,8 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
                     continue;
                 }
 
-                JsObject registeredVariantSets = registeredVariantSetsValue.GetObject();
+                const JsObject& registeredVariantSets =
+                    registeredVariantSetsValue.GetJsObject();
                 for (const auto& i: registeredVariantSets) {
                     const std::string& variantSetName = i.first;
                     const JsValue& v = i.second;
@@ -169,7 +170,7 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
                         continue;
                     }
 
-                    JsObject info = v.GetObject();
+                    JsObject info = v.GetJsObject();
                     std::string variantSetType = info[_tokens->selectionExportPolicy].GetString();
 
 

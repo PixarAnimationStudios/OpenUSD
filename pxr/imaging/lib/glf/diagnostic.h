@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file glf/diagnostic.h
-
 #ifndef GLF_DIAGNOSTIC_H
 #define GLF_DIAGNOSTIC_H
+
+/// \file glf/diagnostic.h
 
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -34,37 +33,32 @@
 #include <string>
 #include <cstdint>
 
-///
-/// \brief Posts diagnostic errors for all GL errors in the current context.
+/// Posts diagnostic errors for all GL errors in the current context.
 /// This macro tags the diagnostic errors with the name of the calling
 /// function.
 #define GLF_POST_PENDING_GL_ERRORS() \
         GlfPostPendingGLErrors(__ARCH_PRETTY_FUNCTION__)
 
-///
-/// \brief Posts diagnostic errors for all GL errors in the current context.
+/// Posts diagnostic errors for all GL errors in the current context.
 void GlfPostPendingGLErrors(std::string const & where = std::string());
 
-///
-/// \brief Registers GlfDefaultDebugOutputMessageCallback as the 
+/// Registers GlfDefaultDebugOutputMessageCallback as the 
 /// debug message callback for the current GL context.
 void GlfRegisterDefaultDebugOutputMessageCallback();
 
-///
-/// \brief A GL debug output message callback method which posts diagnostic
+/// A GL debug output message callback method which posts diagnostic
 /// errors for messages of type DEBUG_TYPE_ERROR and diagnostic warnings
 /// for other message types.
 void GlfDefaultDebugOutputMessageCallback(
         GLenum source, GLenum type, GLuint id, GLenum severity,
         GLsizei length, GLchar const * message, GLvoid * userParam);
 
-///
-/// \brief Returns a string representation of debug output enum values.
+/// Returns a string representation of debug output enum values.
 char const * GlfDebugEnumToString(GLenum debugEnum);
 
-///
 /// \class GlfGLQueryObject
-/// \brief Represents a GL query object in Glf
+///
+/// Represents a GL query object in Glf
 ///
 class GlfGLQueryObject : public boost::noncopyable {
 public:

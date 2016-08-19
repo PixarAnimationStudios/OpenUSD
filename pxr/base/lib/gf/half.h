@@ -24,17 +24,15 @@
 #ifndef GF_HALF_H
 #define GF_HALF_H
 
-/*!
- * \file half.h
- *
- * This header serves to simply bring in the half float datatype, plus provides
- * other supporting utilities.  For documentation, of the half type, please see
- * the half header.  At the time of this writing the latest version was
- * available at the following link, but note that this may not be the version
- * you are building against.
- * 
- * https://github.com/openexr/openexr/blob/master/IlmBase/Half/half.h
- */
+/// \file gf/half.h
+///
+/// This header serves to simply bring in the half float datatype, plus
+/// provides other supporting utilities.  For documentation, of the half type,
+/// please see the half header.  At the time of this writing the latest
+/// version was available at the following link, but note that this may not be
+/// the version you are building against.
+/// 
+/// https://github.com/openexr/openexr/blob/master/IlmBase/Half/half.h
 
 #include <half.h>
 

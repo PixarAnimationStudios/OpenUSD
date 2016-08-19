@@ -42,6 +42,8 @@
 
 TF_DECLARE_PUBLIC_TOKENS(Hd_UnitTestTokens, HD_UNIT_TEST_TOKENS);
 
+/// \class Hd_UnitTestDelegate
+///
 /// A simple delegate class for unit test driver.
 ///
 class Hd_UnitTestDelegate : public HdSceneDelegate {

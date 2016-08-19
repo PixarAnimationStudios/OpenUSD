@@ -36,9 +36,9 @@ typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 class GlfRankedTypeMap;
 
-///
 /// \class GlfImageRegistry
-/// \brief Manages plugin registration and loading for GlfImage subclasses
+///
+/// Manages plugin registration and loading for GlfImage subclasses.
 ///
 class GlfImageRegistry : public TfSingleton<GlfImageRegistry> {
 public:

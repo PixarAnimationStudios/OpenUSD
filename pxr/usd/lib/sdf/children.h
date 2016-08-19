@@ -33,15 +33,16 @@
 SDF_DECLARE_HANDLES(SdfLayer);
 class SdfSpec;
 
-// \class Sdf_Children
-//
-// Sdf_Children generically represents the children of an object. For
-// instance, it might be used for the name children of a prim or the
-// relationship targets of a relationship.
-//
-// The provided ChildPolicy class determines how this object behaves.
-// It primarily specifies how to map between keys (such as the name of
-// an object) and values (such as SpecHandles for those objects).
+/// \class Sdf_Children
+///
+/// Sdf_Children generically represents the children of an object. For
+/// instance, it might be used for the name children of a prim or the
+/// relationship targets of a relationship.
+///
+/// The provided ChildPolicy class determines how this object behaves.
+/// It primarily specifies how to map between keys (such as the name of
+/// an object) and values (such as SpecHandles for those objects).
+///
 template<class ChildPolicy>
 class Sdf_Children
 {
