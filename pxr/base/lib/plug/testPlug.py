@@ -252,24 +252,24 @@ class TestPlug(unittest.TestCase):
         # try to register a non-existent plugin path
         self.assertFalse(os.path.exists('/nowhere'))
         Plug.Registry().RegisterPlugins('/nowhere')
-        self.assertEqual(listener.numReceived, 0);
+        self.assertEqual(listener.numReceived, 0)
 
         # try to register an incomplete plugin
         badPluginPath = testPluginsDso + '/TestPlugDsoIncomplete.framework/Resources/'
         Plug.Registry().RegisterPlugins(badPluginPath)
-        self.assertEqual(listener.numReceived, 0);
+        self.assertEqual(listener.numReceived, 0)
 
         # try to register an incomplete python plugin path
         badPluginPath = testPluginsPython + '/TestPlugModuleIncomplete'
         Plug.Registry().RegisterPlugins(badPluginPath)
-        self.assertEqual(listener.numReceived, 0);
+        self.assertEqual(listener.numReceived, 0)
 
         # try to find a plugin for a Tf type which doesn't exist
         unknownPlug = None
         with self.assertRaises(RuntimeError):
             unknownPlug = Plug.Registry().GetPluginForType(Tf.Type.FindByName('Bad'))
         self.assertFalse(unknownPlug)
-        self.assertEqual(listener.numReceived, 0);
+        self.assertEqual(listener.numReceived, 0)
 
         # try to load an unloadable plugin
         badPlugin = Plug.Registry().GetPluginForType('TestPlugUnloadable')
@@ -318,4 +318,4 @@ class TestPlug(unittest.TestCase):
         Plug.Registry().RegisterPlugins(testPluginsDsoSearch)
         Plug.Registry().RegisterPlugins(testPluginsPythonSearch)
         self.assertEqual(allplugins, Plug.Registry().GetAllPlugins())
-        self.assertEqual(listener.numReceived, 0);
+        self.assertEqual(listener.numReceived, 0)

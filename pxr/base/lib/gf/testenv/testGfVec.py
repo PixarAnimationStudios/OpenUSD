@@ -297,18 +297,18 @@ class TestGfVec(unittest.TestCase):
 
             # Normalize...
             SetVec( v1, [3, 1, 4, 1] )
-            v2 = Vec(v1);
+            v2 = Vec(v1)
             v2.Normalize()
             nv = Gf.GetNormalized( v1 )
             nv2 = v1.GetNormalized()
-            nvcheck = v1 / Gf.GetLength(v1);
+            nvcheck = v1 / Gf.GetLength(v1)
             self.assertTrue(Gf.IsClose(nv, nvcheck, eps))
             self.assertTrue(Gf.IsClose(nv2, nvcheck, eps))
             self.assertTrue(Gf.IsClose(v2, nvcheck, eps))
 
             SetVec( v1, [3, 1, 4, 1] )
             nv = v1.GetNormalized()
-            nvcheck = v1 / Gf.GetLength(v1);
+            nvcheck = v1 / Gf.GetLength(v1)
             self.assertEqual(nv, nvcheck)
 
             SetVec(v1, [0,0,0,0])
@@ -357,7 +357,7 @@ class TestGfVec(unittest.TestCase):
             for i in range(Vec.dimension):
                 v1 = Vec.Axis(i)
                 v2 = Vec()
-                v2[i] = 1;
+                v2[i] = 1
                 self.assertEqual(v1, v2)
 
             v1 = Vec.XAxis()

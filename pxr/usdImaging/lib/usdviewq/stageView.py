@@ -1004,11 +1004,11 @@ class StageView(QtOpenGL.QGLWidget):
     # XXX Why aren't these @properties?
     def setDisplayGuides(self, enabled):
         self._displayGuides = enabled
-        self._updateBboxGuides();
+        self._updateBboxGuides()
 
     def setDisplayRenderingGuides(self, enabled):
         self._displayRenderingGuides = enabled
-        self._updateBboxGuides();
+        self._updateBboxGuides()
 
     def setDisplayCameraOracles(self, enabled):
         self._displayCameraOracles = enabled
@@ -1052,7 +1052,7 @@ class StageView(QtOpenGL.QGLWidget):
                     if self._bbox.GetRange().IsEmpty():
                         self._selectionBBox = self._getDefaultBBox()
                     else:
-                        self._selectionBBox = self._bbox;
+                        self._selectionBBox = self._bbox
                 else:
                     self._selectionBBox = self.getSelectionBBox()
 
@@ -1306,7 +1306,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glDepthFunc(GL.GL_LESS)
 
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glEnable(GL.GL_BLEND)
 
         frustum = self.computeGfCamera().frustum
@@ -1697,7 +1697,7 @@ class StageView(QtOpenGL.QGLWidget):
         FreeCamera.  Then reset the near/far clipping planes based on
         distance to closest geometry."""
         if not self._freeCamera:
-            self.switchToFreeCamera();
+            self.switchToFreeCamera()
         else:
             self.computeAndSetClosestDistance()
         
