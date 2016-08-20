@@ -63,8 +63,8 @@ class FreeCamera(QtCore.QObject):
     # is close to camera
     maxGoodZResolution = 5e4
 
-    """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
     def __init__(self, isZUp):
+        """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
         super(FreeCamera, self).__init__()
 
         self._camera = Gf.Camera()
@@ -1126,6 +1126,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._freeCamera = None
             self._cameraPrim = cameraPrim
         else:
+            from common import PrintWarning
             PrintWarning("Incorrect Prim Type",
                          "Attempted to view the scene using the prim '%s', but "
                          "the prim is not a UsdGeom.Camera." %(cameraPrim.GetName()))
