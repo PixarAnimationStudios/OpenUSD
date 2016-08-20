@@ -61,7 +61,7 @@ NormalFont.setWeight(35)
 AbstractPrimFont = NormalFont
 
 # Keys for destinguishing items in the attribute inspector
-class AttributeStatus:
+class AttributeStatus(object):
     DEFAULT, CLAMPED, KEYFRAME, FALLBACK, NOVALUE = range(5)
 
 def PrintWarning(title, description):
@@ -121,7 +121,7 @@ def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
 
 # Gathers information about a layer used as a subLayer, including its
 # position in the layerStack hierarchy.
-class SubLayerInfo:
+class SubLayerInfo(object):
     def __init__(self, sublayer, offset, containingLayer, prefix):
         self.layer = sublayer
         self.offset = offset
@@ -183,7 +183,7 @@ def PrettyFormatSize(sz):
         return "%db" % sz
 
 
-class Timer:
+class Timer(object):
     """Use as a context object with python's "with" statement, like so:
        with Timer() as t:
            doSomeStuff()
@@ -204,7 +204,7 @@ class Timer:
         print "Time to %s: %2.3fs" % (action, self.interval)
         
 
-class BusyContext:
+class BusyContext(object):
     """When used as a context object with python's "with" statement,
     will set Qt's busy cursor upon entry and pop it on exit.
     """
