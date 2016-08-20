@@ -637,6 +637,7 @@ class View(QtGui.QTextEdit):
     """
 
     def __init__(self, parent=None):
+        QtGui.QTextEdit.__init__(self, parent)
         self.Parent = QtGui.QTextEdit
         self.Parent.__init__(self, parent)
         self.promptLength = 0
