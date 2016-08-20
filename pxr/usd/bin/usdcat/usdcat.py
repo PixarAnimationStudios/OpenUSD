@@ -25,7 +25,7 @@
 import argparse, sys, signal, os
 
 def _Err(msg):
-    sys.stderr.write(msg + '\n');
+    sys.stderr.write(msg + '\n')
 
 def GetUsdData(filePath):
     from pxr import Sdf
