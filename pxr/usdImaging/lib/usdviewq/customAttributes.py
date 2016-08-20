@@ -21,10 +21,6 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
-from pxr import Tf
-from pxr import UsdGeom
-from datetime import datetime
 
 #
 # Edit the following to alter the set of custom attributes.

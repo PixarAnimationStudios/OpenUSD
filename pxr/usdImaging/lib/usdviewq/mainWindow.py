@@ -32,9 +32,7 @@ from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
 from pxr import Usd, UsdGeom, UsdUtils, UsdImaging
-from pxr import Gf
 from pxr import Glf
-from pxr import Pcp
 from pxr import Sdf
 from pxr import Tf
 from pxr import Plug
@@ -44,7 +42,7 @@ from ._usdviewq import Utils
 from collections import deque
 from collections import OrderedDict
 from time import time, sleep
-import re, sys, os, uuid, tempfile
+import re, sys, os
 
 import prettyPrint
 import watchWindow
@@ -52,9 +50,9 @@ import adjustClipping
 import referenceEditor
 from settings import Settings
 
-from common import FallbackTextColor, ClampedTextColor, KeyframeTextColor,\
-                   DefaultTextColor, HeaderColor, RedColor, BoldFont, \
-                   GetAttributeColor, Timer, BusyContext, DumpMallocTags
+from common import (FallbackTextColor, ClampedTextColor, KeyframeTextColor,
+                    DefaultTextColor, HeaderColor, RedColor, BoldFont,
+                    GetAttributeColor, Timer, BusyContext, DumpMallocTags)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -1087,11 +1085,6 @@ class MainWindow(QtGui.QMainWindow):
             return None
 
         if self._mallocTags != 'none':
-            if self._mallocTags == 'stageAndImaging':
-                # we want as little python overhead showing up as possible,
-                # so pre-import what we'll use in a bit before initializing
-                from pxr import UsdImaging
-            from pxr import Tf
             Tf.MallocTag.Initialize()
 
         with Timer() as t:

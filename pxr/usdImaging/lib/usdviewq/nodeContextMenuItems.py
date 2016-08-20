@@ -21,11 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
-from datetime import datetime
-from nodeViewItem import NodeViewItem
+from PySide import QtGui
 from usdviewContextMenuItem import UsdviewContextMenuItem
-from pxr import Tf
 import os
 import sys
 
