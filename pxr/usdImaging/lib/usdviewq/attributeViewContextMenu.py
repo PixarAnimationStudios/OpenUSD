@@ -21,9 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from PySide import QtGui
 from usdviewContextMenuItem import UsdviewContextMenuItem  
-import os
 
 #
 # Specialized context menu for running commands in the attribute viewer.
