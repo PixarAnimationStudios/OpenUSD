@@ -25,13 +25,9 @@
 Module that provides the StageView class.
 '''
 
-import logging
-import math
-from math import tan, sqrt, atan, degrees
-from math import radians as rad
+from math import tan, atan, radians as rad
 import os
 from time import time
-import traceback
 
 from PySide import QtGui, QtCore, QtOpenGL
 
@@ -304,7 +300,7 @@ class FreeCamera(QtCore.QObject):
         else:
             halfFov = self.fov*0.5 or 0.5 # don't divide by zero
             self.dist = ((self._selSize * frameFit * 0.5)
-                         / math.atan(math.radians(halfFov)))
+                         / atan(rad(halfFov)))
         
     def setClosestVisibleDistFromPoint(self, point):
         frustum = self._camera.frustum

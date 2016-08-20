@@ -21,8 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
-from nodeContextMenuItems import NodeContextMenuItem, _GetContextMenuItems
+from PySide import QtGui
+from nodeContextMenuItems import _GetContextMenuItems
 
 #
 # Specialized context menu for node selection.

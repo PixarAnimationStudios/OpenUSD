@@ -43,7 +43,6 @@ def ToString(v, typeName=None):
     This string is used in the watch window"""
 
     from pxr import Tf, Gf
-    import pprint
 
     if v is None:
         return 'None'
