@@ -46,18 +46,18 @@ def _GetCustomAttributes(currentNode, bboxCache, xformCache):
 #
 class CustomAttribute:
     def __init__(self, currentNode):
-    	self._currentNode = currentNode
+        self._currentNode = currentNode
 
     def IsVisible(self):
-	return True
+        return True
 
     # GetName function to match UsdAttribute API
     def GetName(self):
-    	return ""
+        return ""
 
     # Get function to match UsdAttribute API
     def Get(self, frame):
-	return ""
+        return ""
 
     # convenience function to make this look more like a UsdAttribute
     def GetTypeName(self):
@@ -74,16 +74,16 @@ class BoundingBoxAttribute(CustomAttribute):
         self._bboxCache = bboxCache
 
     def GetName(self):
-	return "World Bounding Box"
-	
+        return "World Bounding Box"
+
     def Get(self, frame):
-    	try:
+        try:
             bbox = self._bboxCache.ComputeWorldBound(self._currentNode)
             
         except RuntimeError, err:
-    	    bbox = "Invalid: " + str(err)
-	
-	return bbox
+            bbox = "Invalid: " + str(err)
+
+        return bbox
 
 #
 # Displays the Local to world xform of a node
@@ -96,15 +96,15 @@ class LocalToWorldXformAttribute(CustomAttribute):
         self._xformCache = xformCache
 
     def GetName(self):
-	return "Local to World Xform"
-	
+        return "Local to World Xform"
+
     def Get(self, frame):
-    	try:
-    	    pwt = self._xformCache.GetLocalToWorldTransform(self._currentNode)
-    	except RuntimeError, err:
-    	    pwt = "Invalid: " + str(err)
-	
-	return pwt
+        try:
+            pwt = self._xformCache.GetLocalToWorldTransform(self._currentNode)
+        except RuntimeError, err:
+            pwt = "Invalid: " + str(err)
+
+        return pwt
 
 # 
 # Displays a relationship on the node

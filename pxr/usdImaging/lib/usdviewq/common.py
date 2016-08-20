@@ -384,4 +384,3 @@ def DumpMallocTags(stage, contextStr):
         print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
 
         
-        
