@@ -2838,7 +2838,7 @@ class MainWindow(QtGui.QMainWindow):
         import re
         newPaths = self._ui.currentPathWidget.text()
         pathList = re.split(", ?", newPaths)
-	pathList = filter(lambda path: len(path) != 0, pathList)
+        pathList = filter(lambda path: len(path) != 0, pathList)
 
         itemList = []
         for primPath in pathList:

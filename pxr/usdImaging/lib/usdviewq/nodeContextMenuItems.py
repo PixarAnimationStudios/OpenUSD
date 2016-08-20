@@ -94,7 +94,7 @@ class JumpToEnclosingModelItem(NodeContextMenuItem):
 
     def IsEnabled(self):
         from common import GetEnclosingModelPrim
-	
+
         for p in self._currentNodes:
             if GetEnclosingModelPrim(p) is not None:
                 return True
@@ -102,7 +102,7 @@ class JumpToEnclosingModelItem(NodeContextMenuItem):
 
     def GetText(self):
         return "Jump to Enclosing Model"
-	
+
     def RunCommand(self):
         self._mainWindow.jumpToEnclosingModelSelectedPrims()
 
@@ -114,16 +114,16 @@ class JumpToBoundLookMenuItem(NodeContextMenuItem):
 
     def IsEnabled(self):
         from common import GetClosestBoundLook
-	
+
         for p in self._currentNodes:
             look, bound = GetClosestBoundLook(p)
             if look is not None:
                 return True
-	return False
+        return False
 
     def GetText(self):
         return "Jump to Bound Look"
-	
+
     def RunCommand(self):
         self._mainWindow.jumpToBoundLookSelectedPrims()
 
@@ -136,11 +136,11 @@ class JumpToMasterMenuItem(NodeContextMenuItem):
         for p in self._currentNodes:
             if p.IsInstance():
                 return True
-	return False
+        return False
 
     def GetText(self):
         return "Jump to Master"
-	
+
     def RunCommand(self):
         self._mainWindow.jumpToMasterSelectedPrims()
 
@@ -169,7 +169,7 @@ class ActiveMenuItem(NodeContextMenuItem):
 class ToggleVisibilityMenuItem(NodeContextMenuItem):
 
     def __init__(self, mainWindow, item):
-    	NodeContextMenuItem.__init__(self, mainWindow, item)
+        NodeContextMenuItem.__init__(self, mainWindow, item)
         from pxr import UsdGeom
         self._imageable = False
         self._isVisible = False
@@ -238,7 +238,7 @@ class RemoveVisMenuItem(NodeContextMenuItem):
 class LoadOrUnloadMenuItem(NodeContextMenuItem):
 
     def __init__(self, mainWindow, item):
-    	NodeContextMenuItem.__init__(self, mainWindow, item)
+        NodeContextMenuItem.__init__(self, mainWindow, item)
         from common import GetPrimsLoadability
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
@@ -267,14 +267,14 @@ class CopyPrimPathMenuItem(NodeContextMenuItem):
         if len(self._currentNodes) > 1:
             return "Copy Prim Paths"
         return "Copy Prim Path"
-	
+
     def RunCommand(self):
-	pathlist = [str(p.GetPath()) for p in self._currentNodes]
-	pathStrings = '\n'.join(pathlist)
+        pathlist = [str(p.GetPath()) for p in self._currentNodes]
+        pathStrings = '\n'.join(pathlist)
 
         cb = QtGui.QApplication.clipboard()
-	cb.setText(pathStrings, QtGui.QClipboard.Selection )
-	cb.setText(pathStrings, QtGui.QClipboard.Clipboard )
+        cb.setText(pathStrings, QtGui.QClipboard.Selection )
+        cb.setText(pathStrings, QtGui.QClipboard.Clipboard )
 
 #
 #  Copies the path of the first-selected prim's enclosing model
@@ -283,25 +283,25 @@ class CopyPrimPathMenuItem(NodeContextMenuItem):
 class CopyModelPathMenuItem(NodeContextMenuItem):
 
     def __init__(self, mainWindow, item):
-    	NodeContextMenuItem.__init__(self, mainWindow, item)
+        NodeContextMenuItem.__init__(self, mainWindow, item)
         from common import GetEnclosingModelPrim
-	
+
         self._modelPrim = GetEnclosingModelPrim(self._currentNodes[0]) if \
             len(self._currentNodes) == 1 else None
     
     def IsEnabled(self):
-	return self._modelPrim
+        return self._modelPrim
 
     def GetText(self):
         name = ( "(%s)" % self._modelPrim.GetName() ) if self._modelPrim else ""
         return "Copy Enclosing Model %s Path" % name
-	
+
     def RunCommand(self):
         modelPath = str(self._modelPrim.GetPath())
         cb = QtGui.QApplication.clipboard()
-	cb.setText(modelPath, QtGui.QClipboard.Selection )
-	cb.setText(modelPath, QtGui.QClipboard.Clipboard )
-    	
+        cb.setText(modelPath, QtGui.QClipboard.Selection )
+        cb.setText(modelPath, QtGui.QClipboard.Clipboard )
+
 
 
 #
@@ -315,32 +315,32 @@ class IsolateCopyNodeMenuItem(NodeContextMenuItem):
         return "Isolate Copy of Prim..."
 	
     def RunCommand(self):
-    	inFile = self._currentNodes[0].GetScene().GetUsdFile()
-	
-    	guessOutFile = os.getcwd() + "/" + self._currentNodes[0].GetName() + "_copy.usd"
+        inFile = self._currentNodes[0].GetScene().GetUsdFile()
+
+        guessOutFile = os.getcwd() + "/" + self._currentNodes[0].GetName() + "_copy.usd"
         (outFile, _) = QtGui.QFileDialog.getSaveFileName(None,
                                                          "Specify the Usd file to create",
                                                          guessOutFile,
                                                          'Usd files (*.usd)')
         if (outFile.rsplit('.')[-1] != 'usd'):
             outFile += '.usd'
-	
-	if inFile == outFile:
-	    sys.stderr.write( "Cannot isolate a copy to the source usd!\n" )
-    	    return
 
-    	sys.stdout.write( "Writing copy to new file '%s' ... " % outFile )
-	sys.stdout.flush()
-	
-    	os.system( 'usdcopy -inUsd ' + inFile +
-		   ' -outUsd ' + outFile + ' ' +
-		   ' -sourcePath ' + self._currentNodes[0].GetPath() + '; ' +
-		   'usdview ' + outFile + ' &')
-		   
-	sys.stdout.write( "Done!\n" )
-    	
+        if inFile == outFile:
+            sys.stderr.write( "Cannot isolate a copy to the source usd!\n" )
+            return
+
+        sys.stdout.write( "Writing copy to new file '%s' ... " % outFile )
+        sys.stdout.flush()
+
+        os.system( 'usdcopy -inUsd ' + inFile +
+                ' -outUsd ' + outFile + ' ' +
+                ' -sourcePath ' + self._currentNodes[0].GetPath() + '; ' +
+                'usdview ' + outFile + ' &')
+
+        sys.stdout.write( "Done!\n" )
+
     def IsEnabled(self):
-	return len(self._currentNodes) == 1 and self._currentNodes[0].GetActive()
+        return len(self._currentNodes) == 1 and self._currentNodes[0].GetActive()
 
 	
 #
@@ -350,8 +350,8 @@ class IsolateCopyNodeMenuItem(NodeContextMenuItem):
 class IsolateAssetMenuItem(NodeContextMenuItem):
 
     def __init__(self, mainWindow, item):
-    	NodeContextMenuItem.__init__(self, mainWindow, item)
-	
+        NodeContextMenuItem.__init__(self, mainWindow, item)
+
         self._assetName = None
         if len(self._currentNodes) == 1:
             from pxr import Usd
@@ -369,14 +369,13 @@ class IsolateAssetMenuItem(NodeContextMenuItem):
                     self._filePath = layer.realPath
     
     def IsEnabled(self):
-	return self._assetName
+        return self._assetName
 
     def GetText(self):
         name = ( " '%s'" % self._assetName ) if self._assetName else ""
         return "usdview asset%s" % name
-	
+
     def RunCommand(self):
         print "Spawning usdview %s" % self._filePath
         os.system("usdview %s &" % self._filePath)
 
-    	
