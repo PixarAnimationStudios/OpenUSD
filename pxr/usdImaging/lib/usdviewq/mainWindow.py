@@ -1270,7 +1270,7 @@ class MainWindow(QtGui.QMainWindow):
                 action = self._ui.menuRenderGraph.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType
-                self._ui.renderGraphActionGroup.addAction(action);
+                self._ui.renderGraphActionGroup.addAction(action)
 
                 QtCore.QObject.connect(
                     action,
@@ -3094,7 +3094,7 @@ class MainWindow(QtGui.QMainWindow):
                 tableWidget.item(attributeCount,0).setSelected(True)
                 tableWidget.setCurrentItem(tableWidget.item(attributeCount, 0))
 
-            attributeCount += 1;
+            attributeCount += 1
 
         tableWidget.resizeColumnToContents(0)
 
