@@ -472,7 +472,7 @@ class MainWindow(QtGui.QMainWindow):
                             [str(a.text()) for a in
                                     self._ui.pickModeActionGroup.actions()]:
             print "Warning: Unknown pick mode '%s', falling back to '%s'" % (
-                        pickMode,
+                        self._stageView.pickMode,
                         str(self._ui.pickModeActionGroup.actions()[0].text()))
 
             self._ui.pickModeActionGroup.actions()[0].setChecked(True)
