@@ -6,6 +6,10 @@ if(NOT ALEMBIC_FOUND)
     return()
 endif()
 
+if (PXR_ENABLE_MULTIVERSE_SUPPORT)
+    add_definitions(-DUSDABC_MULTIVERSE_SUPPORT)
+endif()
+
 pxr_plugin(usdAbc
     LIBRARIES
         tf
