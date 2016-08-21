@@ -12,6 +12,8 @@ pxr_plugin(usdAbc
         sdf
         usd
         usdGeom
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
         ${ALEMBIC_LIBRARIES}
         ${HDF5_LIBRARIES}
         ${HDF5_HL_LIBRARIES}
