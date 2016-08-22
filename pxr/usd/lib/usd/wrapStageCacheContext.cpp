@@ -35,10 +35,6 @@ using std::vector;
 
 using namespace boost::python;
 
-// XXX: NO!
-#include "pxr/base/tf/instantiateStacked.h"
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
-
 namespace {
 
 // Expose C++ RAII class as python context manager.

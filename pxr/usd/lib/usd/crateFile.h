@@ -293,8 +293,8 @@ class CrateFile
     };
 
 public:
-    friend struct ValueRep;
-    friend struct TimeSamples;
+    friend class ValueRep;
+    friend class TimeSamples;
 
     typedef std::pair<TfToken, VtValue> FieldValuePair;
 

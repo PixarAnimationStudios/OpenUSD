@@ -493,5 +493,3 @@ TfGlob(string const& path, unsigned int flags)
         ? vector<string>()
         : TfGlob(vector<string>(1, path), flags);
 }
-
-#endif
