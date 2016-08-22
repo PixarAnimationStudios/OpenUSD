@@ -529,14 +529,3 @@ operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
 }
-
-
-#include <Windows.h>
-int __stdcall DllMain(void* instance, unsigned long reason, void* reserved)
-{
-    if (DLL_PROCESS_ATTACH == reason)
-    {
-        printf("Sdf DLL_PROCESS_ATTACH\n");
-    }
-    return TRUE;
-}

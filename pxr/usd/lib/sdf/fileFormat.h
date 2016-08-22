@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-struct ArAssetInfo;
+class ArAssetInfo;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);

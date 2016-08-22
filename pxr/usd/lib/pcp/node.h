@@ -35,7 +35,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 
-struct PcpArc;
+class PcpArc;
 class PcpLayerStackSite;
 class PcpMapExpression;
 class PcpNodeRef;

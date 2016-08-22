@@ -40,7 +40,7 @@
 #include <utility>
 #include <vector>
 
-struct PcpArc;
+class PcpArc;
 class PcpLayerStackSite;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpPrimIndex_Graph);
