@@ -147,7 +147,7 @@ pxr_shared_library(gf
 # generate them. If not, a diff displaying the difference will be printed to
 # stdout and the build will fail.
 if (WIN32)
-    message(WARNING "Skipping validation of sdf generated code because of Windows")
+    message(WARNING "Skipping validation of gf generated code because of Windows")
 elseif (NOT ${PXR_VALIDATE_GENERATED_CODE})
     message(WARNING "Skipping validation of gf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
 elseif(NOT JINJA2_FOUND)

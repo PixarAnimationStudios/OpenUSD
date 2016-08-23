@@ -7,8 +7,10 @@ add_definitions(
     /DFNATTRIBUTEMODIFIER_STATIC
     /DFNCONFIG_STATIC
     /DFNDEFAULTATTRIBUTEPRODUCER_STATIC
-	/DFNGEOLIBSERVICES_STATIC
+    /DFNGEOLIB_STATIC
+    /DFNGEOLIBSERVICES_STATIC
     /DFNLOGGING_STATIC
+    /DFNPLUGINMANAGER_STATIC
     /DFNRENDEROUTPUTLOCATION_STATIC
     /DFNSCENEGRAPHGENERATOR_STATIC
     /DFNSCENEGRAPHITERATOR_STATIC
@@ -52,6 +54,7 @@ pxr_static_library(${PXR_PACKAGE}
         ${KATANA_API_SOURCE_DIR}/FnDefaultAttributeProducer/plugin/FnDefaultAttributeProducerUtil.cpp
         ${KATANA_API_SOURCE_DIR}/FnLogging/client/FnLogging.cpp
         ${KATANA_API_SOURCE_DIR}/FnPluginSystem/FnPlugin.cpp
+        ${KATANA_API_SOURCE_DIR}/FnPluginManager/client/FnPluginManager.cpp
         ${KATANA_API_SOURCE_DIR}/FnRenderOutputLocation/client/FnRenderOutputLocationPluginClient.cpp
         ${KATANA_API_SOURCE_DIR}/FnRenderOutputLocation/plugin/FnRenderOutputLocationPlugin.cpp
         ${KATANA_API_SOURCE_DIR}/FnScenegraphGenerator/plugin/FnScenegraphGenerator.cpp

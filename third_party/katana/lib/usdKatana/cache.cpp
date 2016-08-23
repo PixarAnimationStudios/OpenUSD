@@ -38,6 +38,7 @@
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include <set>
 
@@ -208,7 +209,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
                          std::string const& ignoreLayerRegex,
                          bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
+    bool givenAbsPath = !TfIsRelativePath(fileName);
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 

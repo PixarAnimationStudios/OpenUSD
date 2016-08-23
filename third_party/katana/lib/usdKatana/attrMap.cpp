@@ -23,6 +23,16 @@
 //
 #include "usdKatana/attrMap.h"
 
+PxrUsdKatanaAttrMap::PxrUsdKatanaAttrMap(FnPluginHost* host)
+{
+    if (host)
+    {
+        FnAttribute::GroupBuilder::setHost(host);
+
+        FnAttribute::Attribute::setHost(host);
+    }
+}
+
 void
 PxrUsdKatanaAttrMap::set(
         const std::string& path,

@@ -7,18 +7,23 @@ add_definitions("/wd4838")
 add_definitions(
     /DFNASSET_STATIC
     /DFNATTRIBUTE_STATIC
-	/DFNATTRIBUTEFUNCTION_STATIC
+    /DFNATTRIBUTEFUNCTION_STATIC
     /DFNATTRIBUTEMODIFIER_STATIC
     /DFNCONFIG_STATIC
     /DFNDEFAULTATTRIBUTEPRODUCER_STATIC
-	/DFNGEOLIB_STATIC
+    /DFNGEOLIB_STATIC
     /DFNGEOLIBSERVICES_STATIC
     /DFNLOGGING_STATIC
+    /DFNPLUGINMANAGER_STATIC
     /DFNRENDEROUTPUTLOCATION_STATIC
     /DFNSCENEGRAPHGENERATOR_STATIC
     /DFNSCENEGRAPHITERATOR_STATIC
     /DPYSTRING_STATIC
 )
+
+if(WIN32)
+    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
+endif()
 
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
@@ -38,13 +43,16 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUtils
         cameraUtil
         katanaAttrfncApi
-		katanaOpApi
-		katanaPluginApi
+        katanaOpApi
+        katanaPluginApi
         ${Boost_SYSTEM_LIBRARY} 
         ${Boost_THREAD_LIBRARY} 
 
     PUBLIC_HEADERS
         api.h
+        
+    CPPFILES
+        ${MODULE_ENTRYPOINT_CPP}
 
     PUBLIC_CLASSES
         attrMap
