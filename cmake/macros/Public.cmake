@@ -46,7 +46,7 @@ function(pxr_python_bins)
 		# we create a batch file wrapper that invokes the python
 		# files.
 		if(WIN32)
-			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython ${file} %*")
+			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython %~dp0${file} %*")
 			install(PROGRAMS
 				"${CMAKE_BINARY_DIR}/${pyFile}.cmd"
 				DESTINATION ${installDir}
@@ -562,6 +562,13 @@ function(pxr_plugin PLUGIN_NAME)
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
+    # MAYA plugins require .mll extension on Windows
+    if(WIN32)
+        if(${PLUGIN_NAME} STREQUAL "pxrUsd")
+            set_target_properties(${PLUGIN_NAME} PROPERTIES SUFFIX ".mll")
+        endif()
+    endif()
+
     if (PXR_INSTALL_SUBDIR)
         set(PLUGIN_INSTALL_PREFIX "${PXR_INSTALL_SUBDIR}/plugin")
         set(HEADER_INSTALL_PREFIX 
@@ -645,9 +652,9 @@ function(pxr_plugin PLUGIN_NAME)
 
     install(TARGETS ${PLUGIN_NAME}
         EXPORT pxrTargets
-		ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
         LIBRARY DESTINATION ${PLUGIN_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${PLUGIN_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 

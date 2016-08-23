@@ -37,6 +37,7 @@
 
 static PxrUsdMayaPluginStaticData& _data(PxrUsdMayaPluginStaticData::pxrUsd);
 
+PLUGIN_EXPORT
 MStatus initializePlugin(
     MObject obj) {
 
@@ -162,6 +163,7 @@ MStatus initializePlugin(
     return status;
 }
 
+PLUGIN_EXPORT
 MStatus uninitializePlugin(
     MObject obj) {
 
