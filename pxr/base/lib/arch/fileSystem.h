@@ -59,6 +59,8 @@
     #else
         #include <sys/param.h>                  /* for MAXPATHLEN */
     #endif
+#else
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #if !defined(ARCH_OS_WINDOWS)
