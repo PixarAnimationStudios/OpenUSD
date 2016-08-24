@@ -46,7 +46,7 @@ function(pxr_python_bins)
 		# we create a batch file wrapper that invokes the python
 		# files.
 		if(WIN32)
-			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython %~dp0${file} %*")
+			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\n@python \"%~dp0${file}\" %*")
 			install(PROGRAMS
 				"${CMAKE_BINARY_DIR}/${pyFile}.cmd"
 				DESTINATION ${installDir}

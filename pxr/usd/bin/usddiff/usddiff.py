@@ -40,17 +40,33 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, fmt=None):
 
     return ['cat', inPath, '--out', outPath]
 
+def _findExe(name):
+    from distutils.spawn import find_executable
+    cmd = find_executable(name)
+    if not cmd:
+        # find_executable under Windows only returns *.EXE files
+        # so we need to traverse PATH.
+        for path in os.environ['PATH'].split(os.pathsep):
+            base = os.path.join(path, name)
+            # We need to test for name.cmd first because on Windows, the USD
+            # executables are wrapped due to lack of N*IX style shebang support
+            # on Windows.
+            for ext in ['.cmd', '']:
+                cmd = base + ext
+                if os.access(cmd, os.X_OK):
+                    return cmd
+    return cmd
+
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
-    from distutils.spawn import find_executable
-    usdcatCmd = find_executable("usdcat")
+    usdcatCmd = _findExe("usdcat")
     if not usdcatCmd:
         sys.exit("Error: Could not find 'usdcat'. Expected it to be in PATH")
 
     # prefer USD_DIFF, then DIFF, else 'diff' 
     diffCmd = (os.environ.get('USD_DIFF') or 
                os.environ.get('DIFF') or 
-               find_executable('diff'))
+               _findExe('diff'))
     if not diffCmd:
         sys.exit("Error: Failed to find suitable diff tool. "
                  "Expected $USD_DIFF/$DIFF to be set, or 'diff' "

@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import argparse, sys, signal, os
+import argparse, sys, signal, os, platform
 
 def _Err(msg):
     sys.stderr.write(msg + '\n');
@@ -144,5 +144,9 @@ def main():
 
 if __name__ == "__main__":
     # Restore signal handling defaults to allow output redirection and the like.
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    try:
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    except AttributeError as ex:
+        if not any(platform.win32_ver()):
+            print ex.message
     sys.exit(main())

@@ -2013,9 +2013,10 @@ CrateFile::_BootStrap::_BootStrap()
 CrateFile::_Section::_Section(char const *inName, int64_t start, int64_t size)
     : start(start), size(size)
 {
+	size_t length = strlen(inName);
     memset(name, 0, sizeof(name));
-    if (TF_VERIFY(strlen(inName) <= _SectionNameMaxLength))
-        TfStringCopy(name, size, inName);
+    if (TF_VERIFY(length <= _SectionNameMaxLength))
+        TfStringCopy(name, length + 1, inName);
 }
 
 std::ostream &

@@ -105,7 +105,7 @@ TfAtomicOfstreamWrapper::Open(
     // exist and be writable so we can write the temporary file and rename the
     // temporary to the destination name.
     string dirPath = TfStringGetBeforeSuffix(realFilePath, '/');
-
+#endif
     if (ArchFileAccess(dirPath.c_str(), W_OK) != 0) {
         if (reason) {
             *reason = TfStringPrintf(
@@ -132,7 +132,7 @@ TfAtomicOfstreamWrapper::Open(
             }
         }
     }
-#endif
+
     string tmpFilePrefix = TfStringGetBeforeSuffix(TfGetBaseName(realFilePath));
     int tmpFd = ArchMakeTmpFile(dirPath, tmpFilePrefix, &_tmpFilePath);
     if (tmpFd == -1) {
@@ -154,8 +154,8 @@ TfAtomicOfstreamWrapper::Open(
     if (not _stream) {
         if (reason) {
             *reason = TfStringPrintf(
-                "Unable to open '%s' for writing",
-                _tmpFilePath.c_str());
+                "Unable to open '%s' for writing: %s",
+				_tmpFilePath.c_str(), ArchStrerror().c_str());
         }
         return false;
     }
@@ -186,9 +186,10 @@ TfAtomicOfstreamWrapper::Commit(
 
 	if (!success) {
 
-		TF_RUNTIME_ERROR("Failed to move temporary file %s to file %s.",
+		TF_RUNTIME_ERROR("Failed to move temporary file %s to file %s: %s.",
 			_tmpFilePath.c_str(),
-			_filePath.c_str());
+			_filePath.c_str(),
+			ArchStrSysError(::GetLastError()).c_str());
 		return false;
 	}
 

@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import argparse, sys, signal, os
+import argparse, sys, signal, os, platform
 from pxr import Sdf, Usd
 
 def Err(msg):
@@ -47,7 +47,11 @@ def PrintReport(fname, info, summaryOnly):
 def main():
     # restore nix signal handling defaults to allow output
     # redirection and the like.
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    try:
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    except AttributeError as ex:
+        if not any(platform.win32_ver()):
+            print ex.message
 
     parser = argparse.ArgumentParser(
         prog=os.path.basename(sys.argv[0]), 
