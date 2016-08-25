@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdAbc/alembicTest.h"
-
 #include <boost/python/def.hpp>
+
+#include "pxr/usd/usdAbc/alembicTest.h"
 
 using namespace boost::python;
 
