@@ -141,7 +141,7 @@ GarchGLPlatformDebugContextPrivate::MakeCurrent()
     glXMakeCurrent(glXGetCurrentDisplay(), glXGetCurrentDrawable(), _ctx);
 }
 
-void *GlfqSelectCoreProfileMacVisual()
+void *GarchSelectCoreProfileMacVisual()
 {
     return nullptr;
 }
@@ -163,7 +163,7 @@ public:
   void MakeCurrent() {}
 };
 
-void *GlfqSelectCoreProfileMacVisual();  // extern obj-c
+void *GarchSelectCoreProfileMacVisual();  // extern obj-c
 
 #endif
 
@@ -183,7 +183,7 @@ public:
   void MakeCurrent() {}
 };
 
-void *GlfqSelectCoreProfileMacVisual()
+void *GarchSelectCoreProfileMacVisual()
 {
     return nullptr;
 }
@@ -235,9 +235,7 @@ GarchGLPlatformDebugContext::chooseMacVisual()
 {
     if (_coreProfile or
         GarchGLPlatformDebugContext::IsEnabledCoreProfile()) {
-        // XXX: move selectVisual to garch
-        //return GlfqSelectCoreProfileMacVisual();
-        return nullptr;
+        return GarchSelectCoreProfileMacVisual();
     } else {
         return nullptr;
     }
