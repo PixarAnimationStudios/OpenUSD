@@ -93,7 +93,7 @@ make -j <NUM_CORES> install
 #### On OS X (experimental)
 
 The following will generate an Xcode project that can be used to build USD.
-See notes in the [Supported Platforms](#Supported-Platforms) section
+See notes in the [Supported Platforms](#supported-platforms) section
 for more information.
 
 ```bash
@@ -115,7 +115,7 @@ make -j <NUM_CORES> install
 
 The following will generate a Visual Studio 2015 (the minimum required version)
 sln file which can be used to build USD. See notes in the 
-[Supported Platforms](#Supported-Platforms) section for more information.
+[Supported Platforms](#supported-platforms) section for more information.
 
 ```powershell
 C:\Program Files\CMake\bin\cmake.exe             ^
