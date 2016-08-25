@@ -2932,6 +2932,90 @@ UsdImagingDelegate::GetSurfaceShaderTextures(SdfPath const &shaderId)
 HdTextureResource::ID
 UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
 {
+    if (textureId == SdfPath()) {
+        size_t hash = textureId.GetHash();
+        // salt with renderindex to prevent hash collision in non-shared imaging
+        boost::hash_combine(hash, &GetRenderIndex());
+        return HdTextureResource::ID(hash);
+    }
+
+    SdfPath usdPath = GetPathForUsd(textureId);
+
+    UsdObject object = _stage->GetPrimAtPath(usdPath.GetPrimPath());
+    if (not object) {
+        size_t hash = textureId.GetHash();
+        // salt with renderindex to prevent hash collision in non-shared imaging
+        boost::hash_combine(hash, &GetRenderIndex());
+        return HdTextureResource::ID(hash);
+    }
+
+    bool isPtex = false;
+    SdfAssetPath asset;
+
+    if (usdPath.IsPropertyPath()) {
+        // Attribute-based texture. 
+        UsdAttribute attr = object.As<UsdPrim>().GetAttribute(
+                                                        usdPath.GetNameToken());
+        if (not attr) {
+            size_t hash = textureId.GetHash();
+            // salt with renderindex to prevent hash collision in non-shared imaging
+            boost::hash_combine(hash, &GetRenderIndex());
+            return HdTextureResource::ID(hash);
+        }
+        if (not attr.Get(&asset, _time)) {
+            size_t hash = textureId.GetHash();
+            // salt with renderindex to prevent hash collision in non-shared imaging
+            boost::hash_combine(hash, &GetRenderIndex());
+            return HdTextureResource::ID(hash);
+        }
+    } else {
+        TfToken id;
+        UsdShadeShader shader(_stage->GetPrimAtPath(usdPath));
+
+        if (not shader){
+            size_t hash = textureId.GetHash();
+            // salt with renderindex to prevent hash collision in non-shared imaging
+            boost::hash_combine(hash, &GetRenderIndex());
+            return HdTextureResource::ID(hash);
+        }
+        if (not UsdHydraTexture(shader).GetFilenameAttr().Get(&asset)) {
+            size_t hash = textureId.GetHash();
+            // salt with renderindex to prevent hash collision in non-shared imaging
+            boost::hash_combine(hash, &GetRenderIndex());
+            return HdTextureResource::ID(hash);
+        }
+    }
+
+    TfToken filePath = TfToken(asset.GetResolvedPath());
+
+    // Fallback to the literal path if it couldn't be resolved.
+    if (filePath.IsEmpty())
+        filePath = TfToken(asset.GetAssetPath());
+
+    isPtex = GlfPtexTexture::IsPtexTexture(filePath);
+    
+    if (not TfPathExists(filePath)) {
+        if (isPtex) {
+            TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback" 
+                 "textures are not supported for ptex", 
+            filePath.GetText(), usdPath.GetText());
+
+            HdTextureResource::ID hash = 
+                HdTextureResource::ComputeFallbackPtexHash(); 
+            // Don't salt default values
+            return hash;
+        } else {
+            TF_WARN("Unable to find Texture '%s' with path '%s'. A black" 
+                 "texture will be substituted in its place.", 
+            filePath.GetText(), usdPath.GetText());
+
+            HdTextureResource::ID hash = 
+                HdTextureResource::ComputeFallbackUVHash();
+            // Don't salt default values
+            return hash; 
+        }
+    }
+
     size_t hash = textureId.GetHash();
     // salt with renderindex to prevent hash collision in non-shared imaging
     boost::hash_combine(hash, &GetRenderIndex());

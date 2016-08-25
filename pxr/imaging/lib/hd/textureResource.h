@@ -43,6 +43,8 @@ public:
 
     /// Returns the hash value of the texture for \a sourceFile
     static ID ComputeHash(TfToken const & sourceFile);
+    static ID ComputeFallbackPtexHash();
+    static ID ComputeFallbackUVHash();
 
     virtual ~HdTextureResource();
 
