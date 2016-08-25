@@ -130,6 +130,8 @@ PxrUsdKatanaReadCamera(
         const std::vector<double>& motionSampleTimes =
             data.GetMotionSampleTimes(camera.GetFocalLengthAttr());
 
+        const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+
         FnKat::DoubleBuilder fovBuilder(1);
         TF_FOR_ALL(iter, motionSampleTimes)
         {
@@ -139,7 +141,8 @@ PxrUsdKatanaReadCamera(
             double fov = camera.GetCamera(time, camerasAreZup
                 ).GetFieldOfView(GfCamera::FOVHorizontal);
 
-            fovBuilder.push_back(fov, fabs(relSampleTime));
+            fovBuilder.push_back(fov, isMotionBackward ?
+                PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
 
             if (not isVarying)
             {

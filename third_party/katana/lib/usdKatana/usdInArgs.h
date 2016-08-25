@@ -119,6 +119,15 @@ public:
         return _motionSampleTimes;
     }
 
+    /// \brief Return true if motion blur is backward.
+    ///
+    /// PxrUsdIn supports both forward and backward motion blur. Motion
+    /// blur is considered backward if multiple samples are requested
+    /// and the first specified sample is later than the last sample.
+    const bool IsMotionBackward() const {
+        return _isMotionBackward;
+    }
+
     const StringListMap& GetExtraAttributesOrNamespaces() const {
         return _extraAttributesOrNamespaces;
     }
@@ -164,6 +173,7 @@ private:
     double _shutterOpen;
     double _shutterClose;
     std::vector<double> _motionSampleTimes;
+    bool _isMotionBackward;
 
     // maps the root-level attribute name to the specified attributes or namespaces
     StringListMap _extraAttributesOrNamespaces;

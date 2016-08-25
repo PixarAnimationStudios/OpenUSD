@@ -66,8 +66,6 @@ public:
 
 private:
 
-    static const std::vector<double> _GetNoMotion();
-
     UsdPrim _prim;
     
     PxrUsdKatanaUsdInArgsRefPtr _usdInArgs;

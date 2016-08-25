@@ -738,9 +738,10 @@ private:
         }
         std::vector<GfBBox3d> bounds = usdInArgs->ComputeBounds(prim);
         const std::vector<double>& motionSampleTimes = usdInArgs->GetMotionSampleTimes();
+
         bool hasInfiniteBounds = false;
         FnKat::DoubleAttribute boundsAttr = PxrUsdKatanaUtils::ConvertBoundsToAttribute(
-                bounds, motionSampleTimes, &hasInfiniteBounds);
+                bounds, motionSampleTimes, usdInArgs->IsMotionBackward(), &hasInfiniteBounds);
 
         // Report infinite bounds as a warning.
         if (hasInfiniteBounds) {

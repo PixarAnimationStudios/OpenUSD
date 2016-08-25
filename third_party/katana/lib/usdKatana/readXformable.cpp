@@ -25,6 +25,7 @@
 #include "usdKatana/readPrim.h"
 #include "usdKatana/readXformable.h"
 #include "usdKatana/usdInPrivateData.h"
+#include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/xform.h"
 
@@ -58,6 +59,8 @@ PxrUsdKatanaReadXformable(
 
     FnKat::GroupBuilder gb;
 
+    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+
     // For each xform op, construct a matrix containing the 
     // transformation data for each time sample it has.
     //
@@ -80,7 +83,9 @@ PxrUsdKatanaReadXformable(
 
             // Convert to vector.
             const double *matArray = mat.GetArray();
-            std::vector<double> &matVec = matBuilder.get(fabs(relSampleTime));
+            std::vector<double> &matVec = matBuilder.get(isMotionBackward ?
+                PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
             matVec.resize(16);
             for (int i = 0; i < 16; ++i)
             {
