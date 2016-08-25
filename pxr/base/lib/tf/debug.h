@@ -204,7 +204,7 @@ public:
     /// been \c true.
     template <class T>
     static bool IsEnabled(T val) {
-        return true;//_Traits<T>::compileTimeEnabled && _GetNode(val).enabled;
+        return _Traits<T>::compileTimeEnabled && _GetNode(val).enabled;
     }
 
     /// True if debugging can be activated at run-time, whether or not it is
