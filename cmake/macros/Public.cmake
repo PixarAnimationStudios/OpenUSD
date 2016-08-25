@@ -34,7 +34,7 @@ function(pxr_python_bins)
         file(READ ${pyFile} contents)
         string(REGEX REPLACE "/pxrpythonsubst" ${PXR_PYTHON_SHEBANG} 
             contents "${contents}")
-        file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} ${contents})
+        file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} "${contents}")
 
         install(PROGRAMS
             ${CMAKE_BINARY_DIR}/${pyFile}
