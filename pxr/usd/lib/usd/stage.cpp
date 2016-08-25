@@ -346,7 +346,8 @@ _CreateAnonymousSessionLayer(const SdfLayerHandle &rootLayer)
 
 UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                    const SdfLayerRefPtr& sessionLayer,
-                   const ArResolverContext& pathResolverContext)
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load)
     : _pseudoRoot(0)
     , _rootLayer(rootLayer)
     , _sessionLayer(sessionLayer)
@@ -359,6 +360,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _instanceCache(new Usd_InstanceCache)
     , _interpolationType(UsdInterpolationTypeLinear)
     , _lastChangeSerialNumber(0)
+    , _initialLoadSet(load)
     , _isClosingStage(false)
 {
     if (not TF_VERIFY(_rootLayer))
@@ -514,26 +516,19 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
         return TfNullPtr;
 
     UsdStageRefPtr stage = TfCreateRefPtr(
-        new UsdStage(rootLayer, sessionLayer, pathResolverContext));
+        new UsdStage(rootLayer, sessionLayer, pathResolverContext, load));
 
     ArResolverScopedCache resolverCache;
 
-    // Minimally populate the stage, do not request payloads.
+    // Populate the stage, request payloads according to InitialLoadSet load.
     stage->_ComposePrimIndexesInParallel(
-        SdfPathVector(1, SdfPath::AbsoluteRootPath()), "Instantiating stage");
+        SdfPathVector(1, SdfPath::AbsoluteRootPath()),
+        load == LoadAll ?
+        _IncludeAllDiscoveredPayloads : _IncludeNoDiscoveredPayloads,
+        "Instantiating stage");
     stage->_pseudoRoot = stage->_InstantiatePrim(SdfPath::AbsoluteRootPath());
     stage->_ComposeSubtreeInParallel(stage->_pseudoRoot);
     stage->_RegisterPerLayerNotices();
-
-    // Include all payloads, if desired.
-    if (load == LoadAll) {
-        // we will ignore the aggregation of loads/unloads 
-        // because we won't be using them to send a notification
-        SdfPathSet include, exclude;
-
-        include.insert(SdfPath::AbsoluteRootPath());
-        stage->_LoadAndUnload(include, exclude, NULL, NULL);
-    }
 
     // Publish this stage into all current writable caches.
     BOOST_FOREACH(UsdStageCache *cache,
@@ -3054,7 +3049,8 @@ void UsdStage::_Recompose(const PcpChanges &changes,
 
         Usd_InstanceChanges changes;
         _ComposePrimIndexesInParallel(
-            primPathsToRecompose, "Recomposing stage", &changes);
+            primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
+            "Recomposing stage", &changes);
 
         // Determine what instance master prims on this stage need to
         // be recomposed due to instance prim index changes.
@@ -3239,9 +3235,68 @@ UsdStage::_ComputeSubtreesToRecompose(
     }
 }
 
+struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
+{
+    explicit _IncludeNewlyDiscoveredPayloadsPredicate(UsdStage const *stage)
+        : _stage(stage) {}
+
+    bool operator()(SdfPath const &path) const {
+        // We want to include newly discovered payloads on existing prims or on
+        // new prims if their nearest loadable ancestor was loaded, or if there
+        // is no nearest loadable ancestor and the stage was initially populated
+        // with LoadAll.
+
+        // First, check to see if this payload is new to us.  This is safe to do
+        // concurrently without a lock since these are only ever reads.
+
+        // The path we're given is a prim index path.  Due to instancing, the
+        // path to the corresponding prim on the stage may differ (it may be a
+        // generated master path).
+        SdfPath stagePath = _stage->_GetPrimPathUsingPrimIndexAtPath(path);
+        if (stagePath.IsEmpty())
+            stagePath = path;
+
+        UsdPrim prim = _stage->GetPrimAtPath(stagePath);
+        bool isNewPayload = !prim or !prim.HasPayload();
+
+        if (not isNewPayload)
+            return false;
+
+        // XXX: This does not quite work correctly with instancing.  What we
+        // need to do is once we hit a master, continue searching ancestors of
+        // all instances that use it.  If we find *any* nearest ancestor that's
+        // loadable, we should return true.
+
+        // This is a new payload -- find the nearest ancestor with a payload.
+        // First walk up by path until we find an existing prim.
+        if (prim) {
+            prim = prim.GetParent();
+        }
+        else {
+            for (SdfPath curPath = stagePath.GetParentPath(); !prim;
+                 curPath = curPath.GetParentPath()) {
+                prim = _stage->GetPrimAtPath(curPath);
+            }
+        }
+
+        UsdPrim root = _stage->GetPseudoRoot();
+        for (; !prim.HasPayload() && prim != root; prim = prim.GetParent()) {
+            // continue
+        }
+
+        // If we hit the root, then consult the initial population state.
+        // Otherwise load the payload if the ancestor is loaded.
+        return prim != root ? prim.IsLoaded() :
+            _stage->_initialLoadSet == LoadAll;
+    }
+
+    UsdStage const *_stage;
+};
+
 void 
 UsdStage::_ComposePrimIndexesInParallel(
     const std::vector<SdfPath>& primIndexPaths,
+    _IncludePayloadsRule includeRule,
     const std::string& context,
     Usd_InstanceChanges* instanceChanges)
 {
@@ -3251,10 +3306,26 @@ UsdStage::_ComposePrimIndexesInParallel(
     // Ask Pcp to compute all the prim indexes in parallel, stopping at
     // prim indexes that won't be used by the stage.
     PcpErrorVector errs;
-    _cache->ComputePrimIndexesInParallel(
-        primIndexPaths,
-        &errs, _NameChildrenPred(_instanceCache.get()),
-        "Usd", _mallocTagID);
+
+    if (includeRule == _IncludeAllDiscoveredPayloads) {
+        _cache->ComputePrimIndexesInParallel(
+            primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
+            [](const SdfPath &) { return true; },
+            "Usd", _mallocTagID);
+    }
+    else if (includeRule == _IncludeNoDiscoveredPayloads) {
+        _cache->ComputePrimIndexesInParallel(
+            primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
+            [](const SdfPath &) { return false; },
+            "Usd", _mallocTagID);
+    }
+    else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
+        _cache->ComputePrimIndexesInParallel(
+            primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
+            _IncludeNewlyDiscoveredPayloadsPredicate(this),
+            "Usd", _mallocTagID);
+    }
+
     if (not errs.empty()) {
         _ReportPcpErrors(errs, context);
     }
@@ -3274,7 +3345,8 @@ UsdStage::_ComposePrimIndexesInParallel(
     // instance. Compose the new source prim indexes.
     if (not changes.changedMasterPrims.empty()) {
         _ComposePrimIndexesInParallel(
-            changes.changedMasterPrimIndexes, context, instanceChanges);
+            changes.changedMasterPrimIndexes, includeRule,
+            context, instanceChanges);
     }
 }
 

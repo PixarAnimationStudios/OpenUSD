@@ -2468,13 +2468,15 @@ PcpCache::_GetPrimIndex(const SdfPath& path) const
     return NULL;
 }
 
-template <class Predicate>
+template <class ChildrenPredicate>
 struct Pcp_ParallelIndexer
 {
     typedef Pcp_ParallelIndexer This;
 
+    template <class PayloadPredicate>
     Pcp_ParallelIndexer(PcpCache *cache,
-                        Predicate pred,
+                        ChildrenPredicate childrenPred,
+                        PayloadPredicate payloadPred,
                         const PcpLayerStackPtr &layerStack,
                         PcpPrimIndexInputs baseInputs,
                         PcpErrorVector *allErrors,
@@ -2483,7 +2485,7 @@ struct Pcp_ParallelIndexer
                         const char *mallocTag2)
         : _cache(cache)
         , _allErrors(allErrors)
-        , _predicate(pred)
+        , _childrenPredicate(childrenPred)
         , _layerStack(layerStack)
         , _baseInputs(baseInputs)
         , _resolver(ArGetResolver())
@@ -2491,13 +2493,21 @@ struct Pcp_ParallelIndexer
         , _parentCache(parentCache)
         , _mallocTag1(mallocTag1)
         , _mallocTag2(mallocTag2)
-    {}
+    {
+        // Set the payload predicate in the base inputs, as well as the
+        // includedPayloadsMutex.
+        _baseInputs
+            .IncludedPayloadsMutex(&_includedPayloadsMutex)
+            .IncludePayloadPredicate(payloadPred)
+            ;
+    }
 
     ~Pcp_ParallelIndexer() {
         // Tear down async.
         WorkSwapDestroyAsync(_toCompute);
         WorkMoveDestroyAsync(_finishedOutputs);
         WorkSwapDestroyAsync(_consumerScratch);
+        WorkSwapDestroyAsync(_consumerScratchPayloads);
 
         // We need to tear down the _results synchronously because doing so may
         // drop layers, and that's something that clients rely on, but we can
@@ -2506,7 +2516,7 @@ struct Pcp_ParallelIndexer
                             [](PcpPrimIndexOutputs &out) {
                                 PcpPrimIndexOutputs().swap(out);
                             });
-    }        
+    }
 
     // Run the added work and wait for it to complete.
     void RunAndWait() {
@@ -2568,7 +2578,7 @@ struct Pcp_ParallelIndexer
 
         // Invoke the client's predicate to see if we should do children.
         bool didChildren = false;
-        if (_predicate(*index)) {
+        if (_childrenPredicate(*index)) {
             // Compute the children paths and add new tasks for them.
             TfTokenVector names;
             PcpTokenSet prohibitedNames;
@@ -2609,18 +2619,54 @@ struct Pcp_ParallelIndexer
             _allErrors->insert(_allErrors->end(),
                                outputs->allErrors.begin(),
                                outputs->allErrors.end());
-            
+
+            SdfPath const &primIndexPath = outputs->primIndex.GetPath();
+
             // Add dependencies.
-            _cache->_AddIndexDependencies(
-                outputs->primIndex.GetPath(), outputs);
+            _cache->_AddIndexDependencies(primIndexPath, outputs);
             
             // Store index off to the side so we can publish several at once,
             // ideally.  We have to make a copy to move into the _cache itself,
             // since sibling caches in other tasks will still require that their
             // parent be valid.
             _consumerScratch.push_back(outputs->primIndex);
+
+            // Store included payload path to the side to publish several at
+            // once, as well.
+            if (outputs->includedDiscoveredPayload)
+                _consumerScratchPayloads.push_back(primIndexPath);
         }
-        
+
+        // This size threshold is arbitrary but helps ensure that even with
+        // writer starvation we'll avoid growing our working spaces too large.
+        static const size_t PendingSizeThreshold = 20000;
+
+        if (not _consumerScratchPayloads.empty()) {
+            // Publish to _includedPayloads if possible.  If we're told to
+            // flush, or if we're over a threshold number of pending results,
+            // then take the write lock and publish.  Otherwise only attempt to
+            // take the write lock, and if we fail to do so then we do nothing,
+            // since we're guaranteed to run again.  This helps minimize
+            // contention and maximize throughput.
+            tbb::spin_rw_mutex::scoped_lock lock;
+
+            bool locked = flush ||
+                _consumerScratch.size() >= PendingSizeThreshold;
+            if (locked) {
+                lock.acquire(_includedPayloadsMutex, /*write=*/true);
+            } else {
+                locked = lock.try_acquire(
+                    _includedPayloadsMutex, /*write=*/true);
+            }
+            if (locked) {
+                for (auto const &path: _consumerScratchPayloads) {
+                    _cache->_includedPayloads.insert(path);
+                }
+                lock.release();
+                _consumerScratchPayloads.clear();
+            }
+        }
+            
         // Ok, publish the set of indexes.
         if (not _consumerScratch.empty()) {
             // If we're told to flush, or if we're over a threshold number of
@@ -2628,38 +2674,39 @@ struct Pcp_ParallelIndexer
             // only attempt to take the write lock, and if we fail to do so then
             // we do nothing, since we're guaranteed to run again.  This helps
             // minimize contention and maximize throughput.
-
-            // This size threshold is arbitrary but helps ensure that even with
-            // writer starvation we'll never grow our working space too huge.
-            static const size_t PendingSizeThreshold = 20000;
-
             tbb::spin_rw_mutex::scoped_lock lock;
-            if (flush or _consumerScratch.size() >= PendingSizeThreshold) {
+
+            bool locked = flush ||
+                _consumerScratch.size() >= PendingSizeThreshold;
+            if (locked) {
                 lock.acquire(_primIndexCacheMutex, /*write=*/true);
             } else {
-                if (not lock.try_acquire(_primIndexCacheMutex, /*write=*/true))
-                    return;
+                locked = lock.try_acquire(_primIndexCacheMutex, /*write=*/true);
             }
-            for (auto &index: _consumerScratch) {
-                // Save the prim index in the cache.
-                const SdfPath &path = index.GetPath();
-                _cache->_primIndexCache[path].Swap(index);
+            if (locked) {
+                for (auto &index: _consumerScratch) {
+                    // Save the prim index in the cache.
+                    const SdfPath &path = index.GetPath();
+                    _cache->_primIndexCache[path].Swap(index);
+                }
+                lock.release();
+                _consumerScratch.clear();
             }
-            lock.release();
-            _consumerScratch.clear();
         }
     }
 
     PcpCache *_cache;
     PcpErrorVector *_allErrors;
-    Predicate _predicate;
+    ChildrenPredicate _childrenPredicate;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
     const PcpLayerStackPtr &_layerStack;
     PcpPrimIndexInputs _baseInputs;
     tbb::concurrent_vector<PcpPrimIndexOutputs> _results;
     tbb::spin_rw_mutex _primIndexCacheMutex;
+    tbb::spin_rw_mutex _includedPayloadsMutex;
     tbb::concurrent_queue<PcpPrimIndexOutputs *> _finishedOutputs;
     vector<PcpPrimIndex> _consumerScratch;
+    vector<SdfPath> _consumerScratchPayloads;
     ArResolver& _resolver;
     WorkDispatcher _dispatcher;
     WorkSingularTask _consumer;
@@ -2672,7 +2719,8 @@ void
 PcpCache::_ComputePrimIndexesInParallel(
     const SdfPathVector &roots,
     PcpErrorVector *allErrors,
-    _UntypedPredicate pred,
+    _UntypedIndexingChildrenPredicate childrenPred,
+    _UntypedIndexingPayloadPredicate payloadPred,
     const char *mallocTag1,
     const char *mallocTag2)
 {
@@ -2685,22 +2733,22 @@ PcpCache::_ComputePrimIndexesInParallel(
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     ArResolverScopedCache parentCache;
-    TfAutoMallocTag2  tag(mallocTag1, mallocTag2);
+    TfAutoMallocTag2 tag(mallocTag1, mallocTag2);
     
-    typedef Pcp_ParallelIndexer<_UntypedPredicate> Indexer;
+    using Indexer = Pcp_ParallelIndexer<_UntypedIndexingChildrenPredicate>;
 
     if (not _layerStack)
         ComputeLayerStack(GetLayerStackIdentifier(), allErrors);
 
     // General strategy: Compute indexes recursively starting from roots, in
-    // parallel.  When we've computed an index, ask the predicate if we should
-    // continue to compute its children indexes.  If so, we add all the children
-    // as new tasks for threads to pick up.
+    // parallel.  When we've computed an index, ask the children predicate if we
+    // should continue to compute its children indexes.  If so, we add all the
+    // children as new tasks for threads to pick up.
     //
     // Once all the indexes are computed, add them to the cache and add their
     // dependencies to the dependencies structures.
 
-    Indexer indexer(this, pred, _layerStack,
+    Indexer indexer(this, childrenPred, payloadPred, _layerStack,
                     GetPrimIndexInputs().USD(_usd), allErrors, &parentCache,
                     mallocTag1, mallocTag2);
 

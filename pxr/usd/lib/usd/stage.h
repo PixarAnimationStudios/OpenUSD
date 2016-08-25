@@ -1097,13 +1097,22 @@ public:
     /// @}
 
 private:
+    struct _IncludeNewlyDiscoveredPayloadsPredicate;
+
+    enum _IncludePayloadsRule {
+        _IncludeAllDiscoveredPayloads,
+        _IncludeNoDiscoveredPayloads,
+        _IncludeNewPayloadsIfAncestorWasIncluded
+    };
+
     // --------------------------------------------------------------------- //
     // Stage Construction & Initialization
     // --------------------------------------------------------------------- //
 
     UsdStage(const SdfLayerRefPtr& rootLayer,
              const SdfLayerRefPtr& sessionLayer,
-             const ArResolverContext& pathResolverContext);
+             const ArResolverContext& pathResolverContext,
+             InitialLoadSet load);
 
     // Common ref ptr initialization, called by public, static constructors.
     //
@@ -1230,6 +1239,7 @@ private:
     // during composition.
     void _ComposePrimIndexesInParallel(
         const std::vector<SdfPath>& primIndexPaths,
+        _IncludePayloadsRule includeRule,
         const std::string& context,
         Usd_InstanceChanges* instanceChanges = NULL);
 
@@ -1644,6 +1654,9 @@ private:
     // for this stage - from all access points - to this tag.
     char const *_mallocTagID;
 
+    // The state used when instantiating the stage.
+    const InitialLoadSet _initialLoadSet;
+    
     bool _isClosingStage;
     
     friend class UsdAttribute;

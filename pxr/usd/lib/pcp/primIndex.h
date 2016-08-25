@@ -36,6 +36,8 @@
 #include "pxr/base/tf/hashset.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+#include <tbb/spin_rw_mutex.h>
+#include <functional>
 #include <map>
 
 SDF_DECLARE_HANDLES(SdfLayer);
@@ -303,6 +305,10 @@ public:
 
     /// List of all errors encountered during indexing.
     PcpErrorVector allErrors;
+
+    /// True if this prim index has a payload that we included during indexing
+    /// that wasn't previously in the cache's payload include set.
+    bool includedDiscoveredPayload = false;
     
     /// Swap content with \p r.
     inline void swap(PcpPrimIndexOutputs &r) {
@@ -314,6 +320,7 @@ public:
         spookyDependencySites.swap(r.spookyDependencySites);
         spookyDependencyNodes.swap(r.spookyDependencyNodes);
         allErrors.swap(r.allErrors);
+        std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
     }
 };
 
@@ -327,13 +334,14 @@ inline void swap(PcpPrimIndexOutputs &l, PcpPrimIndexOutputs &r) { l.swap(r); }
 class PcpPrimIndexInputs {
 public:
     PcpPrimIndexInputs() 
-        : cache(NULL)
-        , variantFallbacks(NULL)
-        , includedPayloads(NULL)
-        , parentIndex(NULL)
+        : cache(nullptr)
+        , variantFallbacks(nullptr)
+        , includedPayloads(nullptr)
+        , includedPayloadsMutex(nullptr)
+        , parentIndex(nullptr)
+        , payloadDecorator(nullptr)
         , cull(true)
         , usd(false) 
-        , payloadDecorator(NULL)
     { }
 
     /// Returns true if prim index computations using this parameters object
@@ -361,6 +369,18 @@ public:
     PcpPrimIndexInputs& IncludedPayloads(const PayloadSet* payloadSet)
     { includedPayloads = payloadSet; return *this; }
 
+    /// Optional mutex for accessing includedPayloads.
+    PcpPrimIndexInputs &IncludedPayloadsMutex(tbb::spin_rw_mutex *mutex)
+    { includedPayloadsMutex = mutex; return *this; }
+
+    /// Optional predicate evaluated when a not-yet-included payload is
+    /// discovered while indexing.  If the predicate returns true, indexing
+    /// includes the payload and sets the includedDiscoveredPayload bit in the
+    /// outputs.
+    PcpPrimIndexInputs &IncludePayloadPredicate(
+        std::function<bool (const SdfPath &)> predicate)
+    { includePayloadPredicate = predicate; return *this; }
+    
     /// Whether subtrees that contribute no opinions should be culled
     /// from the index.
     PcpPrimIndexInputs& Cull(bool doCulling = true)
@@ -381,11 +401,13 @@ public:
     PcpCache* cache;
     const PcpVariantFallbackMap* variantFallbacks;
     const PayloadSet* includedPayloads;
+    tbb::spin_rw_mutex *includedPayloadsMutex;
+    std::function<bool (const SdfPath &)> includePayloadPredicate;
     const PcpPrimIndex *parentIndex;
-    bool cull;
-    bool usd;
     std::string targetSchema;
     PcpPayloadDecorator* payloadDecorator;
+    bool cull;
+    bool usd;
 };
 
 /// Compute an index for the given path. \p errors will contain any errors
