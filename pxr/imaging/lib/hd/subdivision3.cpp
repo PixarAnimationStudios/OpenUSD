@@ -42,10 +42,8 @@
 #include <opensubdiv/far/stencilTable.h>
 #include <opensubdiv/far/stencilTableFactory.h>
 #include <opensubdiv/osd/cpuVertexBuffer.h>
-ARCH_PRAGMA_MACRO_REDEFINITION
 #include <opensubdiv/osd/cpuEvaluator.h>
 #include <opensubdiv/osd/glVertexBuffer.h>
-ARCH_PRAGMA_RESTORE
 #include <opensubdiv/osd/mesh.h>
 
 #include <boost/scoped_ptr.hpp>

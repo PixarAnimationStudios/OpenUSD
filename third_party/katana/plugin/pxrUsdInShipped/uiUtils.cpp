@@ -36,11 +36,12 @@ namespace
 // PxrUsdInVariantSelect to populate its pop-up menus with contextually
 // relevant values.
 
-ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInUtilExtraHintsDap :
         public FnDefaultAttributeProducer::DefaultAttributeProducer
 {
 public:
+    ~PxrUsdInUtilExtraHintsDap() = delete;
+
     static FnAttribute::GroupAttribute cook(
             const FnGeolibOp::GeolibCookInterface & interface,
             const std::string & attrRoot,
@@ -75,7 +76,6 @@ public:
         return gb.build();
     }
 };
-ARCH_PRAGMA_RESTORE
 
 DEFINE_DEFAULTATTRIBUTEPRODUCER_PLUGIN(PxrUsdInUtilExtraHintsDap)
 
