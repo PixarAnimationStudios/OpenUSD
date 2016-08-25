@@ -245,7 +245,7 @@ public:
         void SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport);
-        void SetLightingStateFromOpenGL();
+        void SetLightingStateFromOpenGL(const MMatrix& viewMatForLights);
 
         HdTaskSharedPtrVector GetSetupTasks();
 

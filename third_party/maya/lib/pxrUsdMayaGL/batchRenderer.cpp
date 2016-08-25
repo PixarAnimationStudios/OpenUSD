@@ -571,13 +571,25 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 }
 
 void
-UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL()
+UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& viewMatForLights)
 {
     // XXX: this is a dumb copy of UsdImaging::HdEngine
     // ideally we should directly suck the lightint parameter from
     // maya API and put them into HdLight.
 
-    _lightingContextForOpenGLState->SetStateFromOpenGL();
+    // We only transform the light positions into view space if the view matrix
+    // is non-identity (the VP1.0 case). If the view matrix is identity (the
+    // VP2.0 case), the light positions have already been transformed, so don't
+    // doubly transform them.
+    if (viewMatForLights != MMatrix::identity) {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadMatrixd(viewMatForLights.matrix[0]);
+        _lightingContextForOpenGLState->SetStateFromOpenGL();
+        glPopMatrix();
+    } else {
+        _lightingContextForOpenGLState->SetStateFromOpenGL();
+    }
 
     // cache the GlfSimpleLight vector
     GlfSimpleLightVector const &lights
@@ -1127,10 +1139,17 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     glDisable(GL_BLEND);
     glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-    if( vp2Context )
+    // With VP2.0, the utils method will take care of transforming the light
+    // positions from world space into view space when it loads them into GL.
+    // For VP1.0, we will need to transform the light positions ourselves.
+    MMatrix viewMatForLights;
+    if (vp2Context) {
         px_vp20Utils::setupLightingGL(*vp2Context);
+    } else {
+        viewMatForLights = viewMat;
+    }
 
-    _taskDelegate->SetLightingStateFromOpenGL();
+    _taskDelegate->SetLightingStateFromOpenGL(viewMatForLights);
     
     // The legacy viewport does not support color management,
     // so we roll our own gamma correction by GL means (only in
