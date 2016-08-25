@@ -327,6 +327,10 @@ static string stringStringCallback(boost::function<string (string)> const &f) {
     return f("c++ is calling...");
 }
 
+static string callUnboundInstance(boost::function<string (string)> const &f,
+                                  string const &str) {
+    return f(str);
+}
 
 static TfStaticData<boost::function<string ()> > _testCallback;
 
@@ -445,6 +449,7 @@ void wrapTf_TestTfPython()
     def("_stringStringCallback", stringStringCallback);
     def("_setTestCallback", setTestCallback);
     def("_invokeTestCallback", invokeTestCallback);
+    def("_callUnboundInstance", callUnboundInstance);
 
     TfPyWrapEnum<Tf_TestEnum>();
 
