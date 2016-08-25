@@ -58,6 +58,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -1361,6 +1362,8 @@ CrateFile::_WritePaths(_Writer &w)
     // Write the total # of paths.
     w.WriteAs<uint64_t>(_paths.size());
     _WritePathTree(w, pathToIndexTable.begin(), pathToIndexTable.end());
+
+    WorkSwapDestroyAsync(pathToIndexTable);
 }
 
 template <class Iter>
@@ -1583,6 +1586,8 @@ CrateFile::_ReadTokens(Reader reader)
         p += strlen(p) + 1;
     }
     wd.Wait();
+
+    WorkSwapDestroyAsync(chars);
 }
 
 template <class Reader>
