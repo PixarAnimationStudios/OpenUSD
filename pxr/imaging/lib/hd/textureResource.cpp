@@ -30,7 +30,13 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/ptexTexture.h"
-#include "pxr/imaging/glf/uvTexture.h"
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((fallbackPtexPath, "PtExNoNsEnSe"))
+    ((fallbackUVPath, "UvNoNsEnSe"))
+);
 
 HdTextureResource::~HdTextureResource()
 {
@@ -44,6 +50,32 @@ HdTextureResource::ComputeHash(TfToken const &sourceFile)
 
     uint32_t hash = 0;
     std::string const &filename = sourceFile.GetString();
+    hash = ArchHash(filename.c_str(), filename.size(), hash);
+
+    return hash;
+}
+
+/* static */
+HdTextureResource::ID
+HdTextureResource::ComputeFallbackPtexHash()
+{
+    HD_TRACE_FUNCTION();
+
+    uint32_t hash = 0;
+    std::string const &filename = _tokens->fallbackPtexPath.GetString();
+    hash = ArchHash(filename.c_str(), filename.size(), hash);
+
+    return hash;
+}
+
+/* static */
+HdTextureResource::ID
+HdTextureResource::ComputeFallbackUVHash()
+{
+    HD_TRACE_FUNCTION();
+
+    uint32_t hash = 0;
+    std::string const &filename = _tokens->fallbackUVPath.GetString();
     hash = ArchHash(filename.c_str(), filename.size(), hash);
 
     return hash;
@@ -125,7 +157,7 @@ GLuint HdSimpleTextureResource::GetTexelsTextureId()
         return TfDynamic_cast<GlfPtexTextureRefPtr>(_texture)->GetTexelsTextureName();
     }
 
-    return TfDynamic_cast<GlfUVTextureRefPtr>(_texture)->GetGlTextureName();
+    return TfDynamic_cast<GlfBaseTextureRefPtr>(_texture)->GetGlTextureName();
 }
 
 GLuint HdSimpleTextureResource::GetTexelsSamplerId() 
