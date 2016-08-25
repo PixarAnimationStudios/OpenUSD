@@ -50,6 +50,24 @@ _GetVelocityAttr(
 }
 
 static FnKat::Attribute
+_GetNormalsAttr(const UsdGeomPoints& points, double currentTime)
+{
+    VtVec3fArray normals;
+    if (not points.GetNormalsAttr().Get(&normals, currentTime))
+    {
+        return FnKat::Attribute();
+    }
+
+    // float attribute list with a width of 3
+    FnKat::FloatBuilder normalsBuilder(3);
+    std::vector<float> normalsVec;
+    PxrUsdKatanaUtils::ConvertArrayToVector(normals, &normalsVec);
+    normalsBuilder.set(normalsVec);
+
+    return normalsBuilder.build();
+}
+
+static FnKat::Attribute
 _GetWidthAttr(const UsdGeomPoints& points, double currentTime)
 {
     VtFloatArray widths;
@@ -102,7 +120,7 @@ PxrUsdKatanaReadPoints(
     }
 
     // normals
-    FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(points, data);
+    FnKat::Attribute normalsAttr = _GetNormalsAttr(points, currentTime);
     if (normalsAttr.isValid())
     {
         geometryBuilder.set("point.N", normalsAttr);
