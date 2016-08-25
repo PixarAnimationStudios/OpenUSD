@@ -216,10 +216,6 @@ TfMakeDir(string const& path, int mode)
 static bool
 Tf_MakeDirsRec(string const& path, int mode)
 {
-#if defined(ARCH_OS_WINDOWS)
-    printf("Tf_MakeDirsRec not yet implemented for Windows.\n");
-    return false;
-#else
     string head = TfStringTrimRight(TfGetPathName(path), "/");
 
     if (head.empty()) {
@@ -248,7 +244,6 @@ Tf_MakeDirsRec(string const& path, int mode)
     }
 
     return TfIsDir(path) ? true : TfMakeDir(path, mode);
-#endif
 }
 
 bool
@@ -424,10 +419,6 @@ Tf_WalkDirsRec(
     if (not TF_VERIFY(linkTargets))
         return false;
 
-#if defined(ARCH_OS_WINDOWS)
-    printf("Tf_WalkDirsRec not yet implemented on Windows.\n");
-    return false;
-#else
     vector<string> dirnames, filenames, symlinknames;
     Tf_ReadDir(dirpath, onError, &dirnames, &filenames, &symlinknames);
 
@@ -469,7 +460,6 @@ Tf_WalkDirsRec(
        return false;
 
     return true;
-#endif
 }
 
 void

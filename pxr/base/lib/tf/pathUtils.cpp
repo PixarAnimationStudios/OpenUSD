@@ -97,7 +97,6 @@ string::size_type
 TfFindLongestAccessiblePrefix(string const &path, string* error)
 {
 #if defined(ARCH_OS_WINDOWS)
-    printf("TfFindLongestAccessiblePrefix not yet implemented on Windows.\n");
     return path.size();
 #else
     typedef string::size_type size_type;
@@ -493,5 +492,3 @@ TfGlob(string const& path, unsigned int flags)
         ? vector<string>()
         : TfGlob(vector<string>(1, path), flags);
 }
-
-#endif

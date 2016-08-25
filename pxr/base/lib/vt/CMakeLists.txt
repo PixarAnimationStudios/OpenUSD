@@ -1,10 +1,6 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE vt)
 
-if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
-endif()
-
 pxr_shared_library(vt
     LIBRARIES
         arch
@@ -43,7 +39,6 @@ pxr_shared_library(vt
         typeHeaders.h
 
     CPPFILES
-        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

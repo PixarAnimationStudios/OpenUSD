@@ -1047,11 +1047,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
     }
 
     if (fd != -1) {
-#if defined(ARCH_OS_WINDOWS)
-		FILE* fout = _fdopen(fd, "w");
-#else
-		FILE* fout = fdopen(fd, "w");
-#endif
+		FILE* fout = ArchFdOpen(fd, "w");
         fprintf(stderr, "The stack can be found in %s:%s\n"
                 "--------------------------------------------------------------"
                 "\n", hostname, tmpFile.c_str());

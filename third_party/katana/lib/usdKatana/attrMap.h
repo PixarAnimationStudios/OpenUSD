@@ -30,6 +30,7 @@
 
 #include <FnAttribute/FnGroupBuilder.h>
 #include <FnGeolib/op/FnGeolibOp.h>
+#include <FnPluginManager/FnPluginManager.h>
 
 /// \brief An object to store attributes.  The current implementation uses
 /// a Foundry::Katana::GroupBuilder behind the scenes, but the dependence on
@@ -42,6 +43,9 @@ class PxrUsdKatanaAttrMap
 {
 
 public:
+    USDKATANA_API
+    PxrUsdKatanaAttrMap(FnPluginHost* host =
+                                    FnPluginManager::PluginManager::getHost());
 
     /// \brief set \p attr at \p path.
     USDKATANA_API

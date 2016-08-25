@@ -13,10 +13,6 @@ elseif(WIN32)
     set(GLPLATFORMCONTEXT_CPP glPlatformContextWindows.cpp)
 endif()
 
-if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
-endif()
-
 pxr_shared_library(garch
     LIBRARIES
         arch
@@ -43,5 +39,4 @@ pxr_shared_library(garch
 
     CPPFILES
         ${GLPLATFORMCONTEXT_CPP}
-        ${MODULE_ENTRYPOINT_CPP}
 )

@@ -42,17 +42,17 @@ function(pxr_python_bins)
             RENAME ${file}
         )
 
-		# Windows by default cannot execute Python files so here
-		# we create a batch file wrapper that invokes the python
-		# files.
-		if(WIN32)
-			file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\npython ${file} %*")
-			install(PROGRAMS
-				"${CMAKE_BINARY_DIR}/${pyFile}.cmd"
-				DESTINATION ${installDir}
-				RENAME "${file}.cmd"
-			)
-		endif()
+        # Windows by default cannot execute Python files so here
+        # we create a batch file wrapper that invokes the python
+        # files.
+        if(WIN32)
+            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\n@python \"%~dp0${file}\" %*")
+            install(PROGRAMS
+                "${CMAKE_BINARY_DIR}/${pyFile}.cmd"
+                DESTINATION ${installDir}
+                RENAME "${file}.cmd"
+            )
+        endif()
     endforeach()
 endfunction() # pxr_install_python_bins
 
@@ -185,6 +185,12 @@ function(pxr_shared_library LIBRARY_NAME)
     endif()
 
     if(WIN32)
+        # If we're building a DLL we want to add a module entry point to it.
+        # We don't do this for Python PYDs though.
+        if (NOT sl_PYTHON_LIBRARY)
+            target_sources(${LIBRARY_NAME} PRIVATE "DllMain.cpp")
+        endif()
+
         if(MSVC)
             set_target_properties(
                 ${LIBRARY_NAME}
@@ -562,6 +568,13 @@ function(pxr_plugin PLUGIN_NAME)
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
+    # MAYA plugins require .mll extension on Windows
+    if(WIN32)
+        if(${PLUGIN_NAME} STREQUAL "pxrUsd")
+            set_target_properties(${PLUGIN_NAME} PROPERTIES SUFFIX ".mll")
+        endif()
+    endif()
+
     if (PXR_INSTALL_SUBDIR)
         set(PLUGIN_INSTALL_PREFIX "${PXR_INSTALL_SUBDIR}/plugin")
         set(HEADER_INSTALL_PREFIX 
@@ -645,9 +658,9 @@ function(pxr_plugin PLUGIN_NAME)
 
     install(TARGETS ${PLUGIN_NAME}
         EXPORT pxrTargets
-		ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
         LIBRARY DESTINATION ${PLUGIN_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${PLUGIN_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 

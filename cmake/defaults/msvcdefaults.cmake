@@ -24,14 +24,11 @@
 
 # Make sure WinDef.h does not define min and max macros which
 # will conflict with std::min() and std::max().
-add_definitions("/DNOMINMAX") 
+add_definitions("/DNOMINMAX")
 
 # TBB conflict
 # This needs to be enabled only for debug builds
 # add_definitions("/DTBB_USE_DEBUG=1")
-
-# Allow "Unsecure" STL
-add_definitions("/D_SCL_SECURE_NO_WARNINGS")
 
 # Needed for consistency with Linux for the use of hashmap and hashset
 add_definitions("/DTF_NO_GNU_EXT")
@@ -49,12 +46,9 @@ add_definitions("/DBUILD_OPTLEVEL_OPT")
 add_definitions(/"DFLAVOR=\"win64\"")
 
 add_definitions(/"DOPENEXR_DLL")
-	
+
 # Set a decent warning level
 add_definitions("/W3")
-
-# Treat all warnings as errors
-add_definitions("/WX")
 
 # trunctation from 'double' to 'float' due to matrix and vector classes in `Gf`
 add_definitions("/wd4244")

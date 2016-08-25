@@ -75,6 +75,4 @@ public:
     SDF_API static bool IsCleanupEnabled();
 };
 
-SDF_API_TEMPLATE_CLASS(TfStacked<SdfCleanupEnabler>);
-
 #endif  // #ifndef SDF_CLEANUP_ENABLER_H

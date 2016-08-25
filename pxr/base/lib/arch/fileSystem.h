@@ -59,6 +59,13 @@
     #else
         #include <sys/param.h>                  /* for MAXPATHLEN */
     #endif
+#else
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+
+	// See https://msdn.microsoft.com/en-us/library/1w06ktdy.aspx
+	#define F_OK    0       // Test for existence.
+	#define W_OK    2       // Test for write permission.
+	#define R_OK    4       // Test for read permission.
 #endif
 
 #if !defined(ARCH_OS_WINDOWS)
@@ -84,9 +91,13 @@
 #endif
 
 #if defined(ARCH_OS_WINDOWS)
-    #define ARCH_PATH_SEP   ";"
+    #define ARCH_PATH_SEP		'\\'
+    #define ARCH_PATH_LIST_SEP  ";"
+    #define ARCH_REL_PATH_IDENT ".\\"
 #else
-    #define ARCH_PATH_SEP   ":"
+    #define ARCH_PATH_SEP       '/'
+    #define ARCH_PATH_LIST_SEP  ":"
+    #define ARCH_REL_PATH_IDENT "./"
 #endif
 
 /*!

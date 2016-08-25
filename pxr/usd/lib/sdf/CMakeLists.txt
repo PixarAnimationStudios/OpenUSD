@@ -1,10 +1,6 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE sdf)
 
-if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
-endif()
-
 pxr_shared_library(sdf
     LIBRARIES
         arch
@@ -121,7 +117,6 @@ pxr_shared_library(sdf
         valueTypePrivate.h
 
     CPPFILES
-        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         # Flex/Bison generated code
         layerIdentifier.lex.cpp

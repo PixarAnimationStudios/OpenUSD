@@ -40,7 +40,7 @@
 #include <utility>
 #include <vector>
 
-struct PcpArc;
+class PcpArc;
 class PcpLayerStackSite;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpPrimIndex_Graph);
@@ -233,7 +233,7 @@ private:
 
 private:
     // Allow Pcp_Statistics access to internal data for diagnostics.
-    friend struct Pcp_Statistics;
+    friend class Pcp_Statistics;
 
     struct _Node {
         static const size_t _nodeIndexSize = 15;

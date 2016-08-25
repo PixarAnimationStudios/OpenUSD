@@ -620,7 +620,7 @@ public:
 
 private:
     friend class PcpChanges;
-    friend struct Pcp_Statistics;
+    friend class Pcp_Statistics;
 
     template <class Predicate>
     friend struct Pcp_ParallelIndexer;
