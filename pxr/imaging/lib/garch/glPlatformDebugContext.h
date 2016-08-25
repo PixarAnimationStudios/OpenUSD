@@ -21,46 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLFQ_GLDEBUG_CONTEXT_H
-#define GLFQ_GLDEBUG_CONTEXT_H
+#ifndef GARCH_GLPLATFORM_DEBUG_CONTEXT_H
+#define GARCH_GLPLATFORM_DEBUG_CONTEXT_H
 
-#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include <QtOpenGL/QGLContext>
-
 #include <boost/scoped_ptr.hpp>
 
-class GarchGLPlatformDebugContext;
+class GarchGLPlatformDebugContextPrivate;
 
-TF_DECLARE_WEAK_PTRS(GlfQGLDebugContext);
+TF_DECLARE_WEAK_PTRS(GarchGLPlatformDebugContext);
 
-/// \class GlfQGLDebugContext
+/// \class GarchGLPlatformDebugContext
 ///
-/// Extends QGLContext to support OpenGL Debug Output.
+/// Platform specific context (e.g. X11/GLX) which supports debug output.
 ///
-/// Unextended Qt does not support the creation of a GL context that
-/// enables GL Debug Output. This class extends QGLContext by
-/// creating a context which does support GL Debug Output.
-///
-class GlfQGLDebugContext : public QGLContext, public TfWeakBase {
+class GarchGLPlatformDebugContext : public TfWeakBase {
 public:
-    typedef QGLContext Parent;
+    GarchGLPlatformDebugContext(int majorVersion,
+                               int minorVersion,
+                               bool coreProfile,
+                               bool directRenderering);
+    virtual ~GarchGLPlatformDebugContext();
 
-public:
-    GlfQGLDebugContext(const QGLFormat & format);
-    virtual ~GlfQGLDebugContext();
+    static bool IsEnabledDebugOutput();
+    static bool IsEnabledCoreProfile();
 
-    // QGLContext overrides
-    virtual bool create(const QGLContext * shareContext);
-    virtual void makeCurrent();
-#if defined(ARCH_OS_DARWIN)
-    virtual void* chooseMacVisual(GDHandle handle);
-#endif
+    void makeCurrent();
+    void *chooseMacVisual();
 
 public:
-    boost::scoped_ptr<GarchGLPlatformDebugContext> _platformContext;
+    boost::scoped_ptr<GarchGLPlatformDebugContextPrivate> _private;
+    bool _coreProfile;
 };
 
-#endif // GLFQ_GL_DEBUG_CONTEXT_H
+#endif // GARCH_GLPLATFORM_DEBUG_CONTEXT_H

@@ -22,37 +22,14 @@
 # language governing permissions and limitations under the Apache License.
 #
 """
-glfq
+garch
 
 """
 
-import _glfq
+import _garch
 from pxr import Tf
-Tf.PrepareModule(_glfq, locals())
-del _glfq, Tf
-
-def CreateGLDebugContext(glFormat):
-    from PySide import QtOpenGL
-    class GLDebugContext(QtOpenGL.QGLContext):
-        def __init__(self, glFormat):
-            QtOpenGL.QGLContext.__init__(self, glFormat)
-            self._platformContext = None
-
-        def create(self, shareContext):
-            self._platformContext = None
-            return QtOpenGL.QGLContext.create(self, shareContext)
-
-        def makeCurrent(self):
-            from pxr import Garch
-            QtOpenGL.QGLContext.makeCurrent(self)
-            if not self._platformContext:
-                self._platformContext = Garch.GLPlatformDebugContext(
-                    self.format().majorVersion(),
-                    self.format().minorVersion(),
-                    self.format().profile() == QtOpenGL.QGLFormat.CoreProfile,
-                    self.format().directRendering())
-            self._platformContext.makeCurrent()
-    return GLDebugContext(glFormat)
+Tf.PrepareModule(_garch, locals())
+del _garch, Tf
 
 try:
     from . import __DOC

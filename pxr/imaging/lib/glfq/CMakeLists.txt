@@ -23,16 +23,17 @@ pxr_shared_library(glfq
         Qt4::QtOpenGL
         Qt4::QtXml
         Qt4::QtNetwork
+        ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${GLEW_LIBRARY}
         ${COCOA_LIBRARY}
 
     INCLUDE_DIRS
+        ${Boost_INCLUDE_DIRS}
         ${GLEW_INCLUDE_DIR}
 
     PUBLIC_CLASSES
         glDebugContext
-        glPlatformDebugContext
 
     CPPFILES
         moduleDeps.cpp
@@ -40,8 +41,8 @@ pxr_shared_library(glfq
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapPlatformDebugContext.cpp
 
     PYTHON_FILES
         __init__.py
+
 )

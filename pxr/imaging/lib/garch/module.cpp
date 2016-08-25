@@ -21,31 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glfq/glPlatformDebugContext.h"
+#include "pxr/base/tf/pyModule.h"
 
-#include "pxr/base/tf/makePyConstructor.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
-
-#include <boost/python/class.hpp>
-
-using namespace boost::python;
-
-static GlfQGLPlatformDebugContextPtr
-_New(int majorVersion, int minorVersion,
-    bool coreProfile, bool directRendering)
+TF_WRAP_MODULE
 {
-    return TfCreateWeakPtr(new
-        GlfQGLPlatformDebugContext(majorVersion, minorVersion,
-                                    coreProfile, directRendering));
-}
-
-void wrapPlatformDebugContext()
-{    
-    typedef GlfQGLPlatformDebugContext This;
-
-    class_<This, TfWeakPtr<This>,
-           boost::noncopyable>("GLPlatformDebugContext", no_init)
-        .def(TfMakePyConstructor(_New))
-        .def("makeCurrent", &This::makeCurrent)
-    ;
+    TF_WRAP( PlatformDebugContext );
 }

@@ -21,39 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
-#define GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
+#include "pxr/imaging/garch/glPlatformDebugContext.h"
 
-#include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/weakBase.h"
+#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <boost/python/class.hpp>
 
-class GlfQGLPlatformDebugContextPrivate;
+using namespace boost::python;
 
-TF_DECLARE_WEAK_PTRS(GlfQGLPlatformDebugContext);
+static GarchGLPlatformDebugContextPtr
+_New(int majorVersion, int minorVersion,
+    bool coreProfile, bool directRendering)
+{
+    return TfCreateWeakPtr(new
+        GarchGLPlatformDebugContext(majorVersion, minorVersion,
+                                    coreProfile, directRendering));
+}
 
-/// \class GlfQGLPlatformDebugContext
-///
-/// Platform specific context (e.g. X11/GLX) which supports debug output.
-///
-class GlfQGLPlatformDebugContext : public TfWeakBase {
-public:
-    GlfQGLPlatformDebugContext(int majorVersion,
-                               int minorVersion,
-                               bool coreProfile,
-                               bool directRenderering);
-    virtual ~GlfQGLPlatformDebugContext();
+void wrapPlatformDebugContext()
+{    
+    typedef GarchGLPlatformDebugContext This;
 
-    static bool IsEnabledDebugOutput();
-    static bool IsEnabledCoreProfile();
-
-    void makeCurrent();
-    void *chooseMacVisual();
-
-public:
-    boost::scoped_ptr<GlfQGLPlatformDebugContextPrivate> _private;
-    bool _coreProfile;
-};
-
-#endif // GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
+    class_<This, TfWeakPtr<This>,
+           boost::noncopyable>("GLPlatformDebugContext", no_init)
+        .def(TfMakePyConstructor(_New))
+        .def("makeCurrent", &This::makeCurrent)
+    ;
+}
