@@ -119,6 +119,9 @@ public:
         return _flags[Usd_PrimHasDefiningSpecifierFlag]; 
     }
 
+    /// Return true if this prim has one or more payload composition arcs.
+    bool HasPayload() const { return _flags[Usd_PrimHasPayloadFlag]; }
+
     /// Return true if this prim is an instance of a shared master prim,
     /// false otherwise.
     bool IsInstance() const { return _flags[Usd_PrimInstanceFlag]; }

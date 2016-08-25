@@ -81,6 +81,7 @@
 
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
+    // Flags for use with predicates.
     Usd_PrimActiveFlag,
     Usd_PrimLoadedFlag,
     Usd_PrimModelFlag,
@@ -88,6 +89,9 @@ enum Usd_PrimFlags {
     Usd_PrimAbstractFlag,
     Usd_PrimDefinedFlag,
     Usd_PrimHasDefiningSpecifierFlag,
+
+    // Flags for internal use.
+    Usd_PrimHasPayloadFlag,
     Usd_PrimClipsFlag,
     Usd_PrimDeadFlag,
     Usd_PrimInstanceFlag,
