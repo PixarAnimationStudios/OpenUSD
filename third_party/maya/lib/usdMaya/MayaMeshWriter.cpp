@@ -44,8 +44,8 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 const GfVec3f MayaMeshWriter::_ShaderDefaultRGB = GfVec3f(0.5);
 const float MayaMeshWriter::_ShaderDefaultAlpha = 0.0;
 
-const GfVec3f MayaMeshWriter::_ColorSetDefaultRGB = GfVec3f(0.0);
-const float MayaMeshWriter::_ColorSetDefaultAlpha = 0.0;
+const GfVec3f MayaMeshWriter::_ColorSetDefaultRGB = GfVec3f(1.0);
+const float MayaMeshWriter::_ColorSetDefaultAlpha = 1.0;
 
 
 MayaMeshWriter::MayaMeshWriter(
