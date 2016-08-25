@@ -97,7 +97,7 @@ protected:
     public:
         _DrawingProgram() {}
 
-        void CompileShader(
+        bool CompileShader(
                 HdDrawItem const *drawItem,
                 Hd_GeometricShaderSharedPtr const &geometricShader,
                 HdShaderSharedPtrVector const &shaders,
