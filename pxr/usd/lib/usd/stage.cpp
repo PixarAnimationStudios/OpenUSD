@@ -506,7 +506,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
         TfDebug::IsEnabled(USD_STAGE_INSTANTIATION_TIME);
 
     if (usdInstantiationTimeDebugCodeActive) {
-        stopwatch = TfStopwatch(); 
+        stopwatch = TfStopwatch();
         stopwatch->Start();
     }
 
@@ -2915,13 +2915,11 @@ UsdStage::_HandleLayersDidChange(
         otherChangedPaths.clear();
     }
 
-    SdfPathVector otherChangedPathsVec(otherChangedPaths.begin(),
-                                       otherChangedPaths.end());
-
-    otherChangedPathsVec.erase(
-        remove_if(otherChangedPathsVec.begin(), otherChangedPathsVec.end(),
-                  bind(&UsdStage::_IsObjectElidedFromStage, this, _1)),
-        otherChangedPathsVec.end());
+    SdfPathVector otherChangedPathsVec;
+    otherChangedPathsVec.reserve(otherChangedPaths.size());
+    remove_copy_if(otherChangedPaths.begin(), otherChangedPaths.end(),
+                   back_inserter(otherChangedPathsVec),
+                   bind(&UsdStage::_IsObjectElidedFromStage, this, _1));
 
     // Now we want to remove all elements of otherChangedPathsVec that are
     // prefixed by elements in pathsToRecompose.
