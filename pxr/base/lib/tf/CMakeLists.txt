@@ -6,7 +6,6 @@ set(PXR_PREFIX pxr/base)
 
 if(WIN32)
     set(WINLIBS Shlwapi.lib)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
 endif()
 
 pxr_shared_library(tf
@@ -148,7 +147,6 @@ pxr_shared_library(tf
         pyErrorInternal
 
     CPPFILES
-        ${MODULE_ENTRYPOINT_CPP}
         initConfig.cpp
         moduleDeps.cpp
         preprocessorUtils.cpp

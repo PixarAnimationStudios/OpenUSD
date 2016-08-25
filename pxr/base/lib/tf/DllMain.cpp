@@ -21,30 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <Windows.h>
-#include <stdio.h>
-#include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/DllMain.h"
 
-BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID reserved)
-{
-    UNREFERENCED_PARAMETER(module);
-    UNREFERENCED_PARAMETER(reserved);
-    
-    switch (reason)
-    {
-    case DLL_PROCESS_ATTACH:
-        archRunConstructors();
-        break;
-
-    case DLL_THREAD_ATTACH:
-        break;
-        
-    case DLL_THREAD_DETACH:
-        break;
-
-    case DLL_PROCESS_DETACH:
-        archRunDestructors();
-        break;
-    }
-    return TRUE;
-}
+ARCH_DLL_MAIN

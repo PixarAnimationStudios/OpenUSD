@@ -4,10 +4,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE gf)
 
-if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
-endif()
-
 pxr_shared_library(gf
     LIBRARIES
         arch
@@ -82,7 +78,6 @@ pxr_shared_library(gf
         ostreamHelpers
 
     CPPFILES
-        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
 
     PYMODULE_CPPFILES

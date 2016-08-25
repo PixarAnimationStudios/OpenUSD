@@ -21,10 +21,6 @@ add_definitions(
     /DPYSTRING_STATIC
 )
 
-if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
-endif()
-
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         plug
@@ -51,9 +47,6 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_HEADERS
         api.h
         
-    CPPFILES
-        ${MODULE_ENTRYPOINT_CPP}
-
     PUBLIC_CLASSES
         attrMap
         blindDataObject

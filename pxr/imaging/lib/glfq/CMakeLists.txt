@@ -11,10 +11,6 @@ if(APPLE)
     set(COCOA_SRC selectVisual.mm)
 endif()
 
-if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
-endif()
-
 pxr_shared_library(glfq
     LIBRARIES
         garch
@@ -41,7 +37,6 @@ pxr_shared_library(glfq
         api.h
         
     CPPFILES
-        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         ${COCOA_SRC}
 

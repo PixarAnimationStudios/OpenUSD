@@ -7,7 +7,6 @@ if (X11_FOUND)
 endif()
 
 if(WIN32)
-    set(MODULE_ENTRYPOINT_CPP DllMain.cpp)
     # conversion from 'double' to 'const float' requires a narrowing conversion
     add_definitions("/wd4838")
     add_definitions("/DPTEX_STATIC")
@@ -86,7 +85,6 @@ pxr_shared_library(glf
 
     CPPFILES
         dictionary.cpp
-        ${MODULE_ENTRYPOINT_CPP}
         moduleDeps.cpp
         oiioImage.cpp
 
