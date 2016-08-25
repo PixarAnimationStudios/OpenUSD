@@ -91,9 +91,13 @@
 #endif
 
 #if defined(ARCH_OS_WINDOWS)
-    #define ARCH_PATH_SEP   ";"
+    #define ARCH_PATH_SEP		'\\'
+    #define ARCH_PATH_LIST_SEP  ";"
+    #define ARCH_REL_PATH_IDENT ".\\"
 #else
-    #define ARCH_PATH_SEP   ":"
+    #define ARCH_PATH_SEP       '/'
+    #define ARCH_PATH_LIST_SEP  ":"
+    #define ARCH_REL_PATH_IDENT "./"
 #endif
 
 /*!

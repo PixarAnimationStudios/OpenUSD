@@ -37,7 +37,7 @@ const char* installLocation = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION);
 void
 _AppendPathList(std::vector<std::string>* result, const std::string& paths)
 {
-    for (const auto& path: TfStringSplit(paths, ARCH_PATH_SEP)) {
+    for (const auto& path: TfStringSplit(paths, ARCH_PATH_LIST_SEP)) {
         if (not path.empty()) {
             result->push_back(path);
         }

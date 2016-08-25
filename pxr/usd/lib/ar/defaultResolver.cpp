@@ -26,6 +26,7 @@
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -42,7 +43,7 @@
 
 #include <boost/foreach.hpp>
 
-static const char* _FileRelativePathPrefix = "./";
+static const char* _FileRelativePathPrefix = ARCH_REL_PATH_IDENT;
 
 #if MAYA_TBB_HANG_WORKAROUND_HACK
 struct Ar_DefaultResolver::_Cache
@@ -112,7 +113,7 @@ Ar_DefaultResolver::AnchorRelativePath(
     // a file, strip off the last component, and anchor the path to that
     // directory.
     std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(anchorPath, '/'), path);
+        TfStringGetBeforeSuffix(anchorPath, ARCH_PATH_SEP), path);
     return TfNormPath(anchoredPath);
 }
 
