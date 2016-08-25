@@ -6,12 +6,6 @@ if (NOT QT4_FOUND)
     return()
 endif()
 
-if(APPLE)
-    FIND_LIBRARY(COCOA_LIBRARY Cocoa)
-    set(COCOA_SRC selectVisual.mm)
-endif()
-
-
 pxr_shared_library(glfq
     LIBRARIES
         garch
@@ -26,7 +20,6 @@ pxr_shared_library(glfq
         ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${GLEW_LIBRARY}
-        ${COCOA_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
@@ -37,7 +30,6 @@ pxr_shared_library(glfq
 
     CPPFILES
         moduleDeps.cpp
-        ${COCOA_SRC}
 
     PYMODULE_CPPFILES
         module.cpp
