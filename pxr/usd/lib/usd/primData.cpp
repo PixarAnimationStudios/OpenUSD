@@ -103,6 +103,10 @@ void
 Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent, 
                                     bool isMasterPrim)
 {
+    // We do not have to clear _flags here since in the pseudo root or instance
+    // master case the values never change, and in the ordinary prim case we set
+    // every flag.
+
     // Special-case the root (the only prim which has no parent) and
     // instancing masters.
     if (ARCH_UNLIKELY(not parent or isMasterPrim)) {
