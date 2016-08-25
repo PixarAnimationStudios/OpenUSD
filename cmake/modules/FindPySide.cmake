@@ -37,6 +37,7 @@ execute_process(
         pySideImportResult 
 )
 
-if (pySideImportResult EQUAL 0 AND EXISTS(${PYSIDEUICBINARY}))
+if (pySideImportResult EQUAL 0 AND EXISTS ${PYSIDEUICBINARY})
+    message(STATUS "Found PySide: ${PYSIDEUICBINARY}")
     set(PYSIDE_FOUND True)
 endif()
