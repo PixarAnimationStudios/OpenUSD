@@ -102,6 +102,14 @@ _ResolveAssetPath(const std::string &assetPath, bool asModel)
     return assetPath;
 }
 
+double
+PxrUsdKatanaUtils::ReverseTimeSample(double sample)
+{
+    // Only multiply when the sample is not 0 to avoid writing
+    // out a motion block containing -0.
+    return (sample == 0.0) ? sample : sample * -1;
+}
+
 void
 PxrUsdKatanaUtils::ConvertNumVertsToStartVerts( const std::vector<int> &numVertsVec,
                               std::vector<int> *startVertsVec )
@@ -1235,6 +1243,7 @@ FnKat::DoubleAttribute
 PxrUsdKatanaUtils::ConvertBoundsToAttribute(
         const std::vector<GfBBox3d>& bounds,
         const std::vector<double>& motionSampleTimes,
+        const bool isMotionBackward,
         bool* hasInfiniteBounds)
 {
     FnKat::DoubleBuilder boundBuilder(6);
@@ -1265,7 +1274,9 @@ PxrUsdKatanaUtils::ConvertBoundsToAttribute(
             *hasInfiniteBounds = true;
         }
 
-        std::vector<double> &boundData = boundBuilder.get(fabs(relSampleTime));
+        std::vector<double> &boundData = boundBuilder.get(
+            isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
         boundData.push_back( min[0] );
         boundData.push_back( max[0] );
         boundData.push_back( min[1] );

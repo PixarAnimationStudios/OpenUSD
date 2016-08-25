@@ -42,6 +42,10 @@ namespace FnKat = Foundry::Katana;
 
 struct PxrUsdKatanaUtils {
 
+    /// Reverse a motion time sample. This is used for building
+    /// multi-sampled attributes when motion blur is backward.
+    static double ReverseTimeSample(double sample);
+
     /// Convert Pixar-style numVerts to Katana-style startVerts.
     static void ConvertNumVertsToStartVerts( const std::vector<int> &numVertsVec,
                                   std::vector<int> *startVertsVec );
@@ -143,6 +147,7 @@ struct PxrUsdKatanaUtils {
     static FnKat::DoubleAttribute ConvertBoundsToAttribute(
             const std::vector<GfBBox3d>& bounds,
             const std::vector<double>& motionSampleTimes,
+            bool isMotionBackward,
             bool* hasInfiniteBounds);
     /// \}
     
