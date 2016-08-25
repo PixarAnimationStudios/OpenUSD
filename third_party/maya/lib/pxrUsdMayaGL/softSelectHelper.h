@@ -79,7 +79,7 @@ private:
     void _PopulateSoftSelectColorRamp();
 
     struct _MDagPathHash {
-        inline size_t operator()(const MDagPath& dagPath) {
+        inline size_t operator()(const MDagPath& dagPath) const {
             return TfHash()(std::string(dagPath.fullPathName().asChar()));
         }
     };

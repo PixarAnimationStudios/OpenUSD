@@ -87,7 +87,7 @@ _MergeEquivalentColorSetValues(
     for (size_t i = 0; i < colorSetAssignmentIndices->size(); ++i) {
         int index = (*colorSetAssignmentIndices)[i];
 
-        if (index < 0 or index >= numValues) {
+        if (index < 0 or static_cast<size_t>(index) >= numValues) {
             // This is an unassigned or otherwise unknown index, so just keep it.
             uniqueIndices.push_back(index);
             continue;
@@ -316,9 +316,12 @@ bool MayaMeshWriter::_GetMeshColorSetData(
                 if (shadersRGBData.size() == 1) {
                     valueIndex = 0;
                 }
-            } else if (faceIndex >= 0 and faceIndex < shadersAssignmentIndices.size()) {
+            } else if (faceIndex >= 0 and 
+                static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
+
                 int tmpIndex = shadersAssignmentIndices[faceIndex];
-                if (tmpIndex >= 0 and tmpIndex < shadersRGBData.size()) {
+                if (tmpIndex >= 0 and
+                    static_cast<size_t>(tmpIndex) < shadersRGBData.size()) {
                     valueIndex = tmpIndex;
                 }
             }
@@ -339,9 +342,11 @@ bool MayaMeshWriter::_GetMeshColorSetData(
                 if (shadersAlphaData.size() == 1) {
                     valueIndex = 0;
                 }
-            } else if (faceIndex >= 0 and faceIndex < shadersAssignmentIndices.size()) {
+            } else if (faceIndex >= 0 and 
+                static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
                 int tmpIndex = shadersAssignmentIndices[faceIndex];
-                if (tmpIndex >= 0 and tmpIndex < shadersAlphaData.size()) {
+                if (tmpIndex >= 0 and 
+                    static_cast<size_t>(tmpIndex) < shadersAlphaData.size()) {
                     valueIndex = tmpIndex;
                 }
             }
