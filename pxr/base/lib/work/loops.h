@@ -72,16 +72,19 @@ WorkParallelForN(size_t n, Fn &&callback)
         class Work_ParallelForN_TBB 
         {
         public:
-            // Private constructor because no one is allowed to create one of
-            // these objects from the outside.
-            Work_ParallelForN_TBB(Fn &&fn) : _fn(std::forward<Fn>(fn)) { }
+            Work_ParallelForN_TBB(Fn &fn) : _fn(fn) { }
 
             void operator()(const tbb::blocked_range<size_t> &r) const {
+                // Note that we std::forward _fn using Fn in order get the
+                // right operator().
+                // We maintain the right type in this way:
+                //  If Fn is T&, then reference collapsing gives us T& for _fn 
+                //  If Fn is T, then std::forward correctly gives us T&& for _fn
                 std::forward<Fn>(_fn)(r.begin(), r.end());
             }
 
         private:
-            Fn &&_fn;
+            Fn &_fn;
         };
 
         // Note that for the tbb version in the future, we will likely want to 
@@ -90,7 +93,7 @@ WorkParallelForN(size_t n, Fn &&callback)
         // parent context, so we create an isolated task group context.
         tbb::task_group_context ctx(tbb::task_group_context::isolated);
         tbb::parallel_for(tbb::blocked_range<size_t>(0,n),
-            Work_ParallelForN_TBB(std::forward<Fn>(callback)),
+            Work_ParallelForN_TBB(callback),
             ctx);
 
     } else {
