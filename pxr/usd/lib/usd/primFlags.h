@@ -89,12 +89,12 @@ enum Usd_PrimFlags {
     Usd_PrimAbstractFlag,
     Usd_PrimDefinedFlag,
     Usd_PrimHasDefiningSpecifierFlag,
+    Usd_PrimInstanceFlag,
 
     // Flags for internal use.
     Usd_PrimHasPayloadFlag,
     Usd_PrimClipsFlag,
     Usd_PrimDeadFlag,
-    Usd_PrimInstanceFlag,
     Usd_PrimMasterFlag,
     Usd_PrimNumFlags
 };
