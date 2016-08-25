@@ -39,7 +39,8 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
         double shutterClose,
         const std::vector<double>& motionSampleTimes,
         const StringListMap& extraAttributesOrNamespaces,
-        bool verbose) :
+        bool verbose,
+        const char * errorMessage) :
     _stage(stage),
     _rootLocation(rootLocation),
     _isolatePath(isolatePath),
@@ -52,6 +53,10 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
     _verbose(verbose)
 {
+    if (errorMessage)
+    {
+        _errorMessage = errorMessage;
+    }
 }
 
 PxrUsdKatanaUsdInArgs::~PxrUsdKatanaUsdInArgs() 

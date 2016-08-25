@@ -57,7 +57,8 @@ public:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
-            bool verbose) {
+            bool verbose,
+            const char * errorMessage = 0) {
         return TfCreateRefPtr(new PxrUsdKatanaUsdInArgs(
                     stage, 
                     rootLocation,
@@ -69,7 +70,8 @@ public:
                     shutterClose, 
                     motionSampleTimes,
                     extraAttributesOrNamespaces,
-                    verbose));
+                    verbose,
+                    errorMessage));
     }
 
     // bounds computation is kind of important, so we centralize it here.
@@ -129,6 +131,9 @@ public:
         return _bboxCaches.local();
     }
 
+    const std::string & GetErrorMessage() {
+        return _errorMessage;
+    }
 private:
 
     PxrUsdKatanaUsdInArgs(
@@ -142,7 +147,8 @@ private:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
-            bool verbose);
+            bool verbose,
+            const char * errorMessage = 0);
 
     ~PxrUsdKatanaUsdInArgs();
 
@@ -166,6 +172,8 @@ private:
 
     typedef tbb::enumerable_thread_specific< std::vector<UsdGeomBBoxCache> > _ThreadLocalBBoxCaches;
     _ThreadLocalBBoxCaches _bboxCaches;
+    
+    std::string _errorMessage;
 
 };
 
