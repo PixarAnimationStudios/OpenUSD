@@ -35,6 +35,7 @@ find_package(Boost
         regex
         system
         program_options
+        filesystem
     REQUIRED
 )
 # --Double Conversion

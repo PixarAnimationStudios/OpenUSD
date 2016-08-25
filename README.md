@@ -45,7 +45,7 @@ Dependencies
 | [CMake](https://cmake.org/documentation/)                         | 2.8.8              |
 | [Python](https://python.org)                                      | 2.7.5              |
 | [Boost](https://boost.org)                                        | 1.55               |
-| [OpenEXR](https://openexr.org)                                    | 2.2.0              |
+| [OpenEXR](http://www.openexr.com)                                    | 2.2.0              |
 | [DoubleConversion](https://github.com/google/double-conversion)   | 1.1.1              |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.3.1              |
 | [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5              |
@@ -93,7 +93,7 @@ make -j <NUM_CORES> install
 #### On OS X (experimental)
 
 The following will generate an Xcode project that can be used to build USD.
-See notes in the [Supported Platforms](#Supported-Platforms) section
+See notes in the [Supported Platforms](#supported-platforms) section
 for more information.
 
 ```bash
@@ -115,7 +115,7 @@ make -j <NUM_CORES> install
 
 The following will generate a Visual Studio 2015 (the minimum required version)
 sln file which can be used to build USD. See notes in the 
-[Supported Platforms](#Supported-Platforms) section for more information.
+[Supported Platforms](#supported-platforms) section for more information.
 
 ```powershell
 C:\Program Files\CMake\bin\cmake.exe             ^

@@ -43,6 +43,7 @@
 #include <Alembic/Abc/ITypedArrayProperty.h>
 #include <Alembic/Abc/ITypedScalarProperty.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
+#include <Alembic/AbcCoreGit/All.h>
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
@@ -740,6 +741,8 @@ private:
                    std::string* format, std::recursive_mutex** mutex) const;
     bool _OpenOgawa(const std::string& filePath, IArchive*,
                     std::string* format, std::recursive_mutex** mutex) const;
+    bool _OpenGit(const std::string& filePath, IArchive*,
+                    std::string* format, std::recursive_mutex** mutex) const;
 
     // Walk the object hierarchy looking for instances and instance sources.
     static void _FindInstances(const IObject& parent,
@@ -846,7 +849,8 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
     IArchive archive;
     std::string format;
     if (not (_OpenOgawa(filePath, &archive, &format, &_mutex) or
-             _OpenHDF5(filePath, &archive, &format, &_mutex))) {
+             _OpenHDF5(filePath, &archive, &format, &_mutex) or
+             _OpenGit(filePath, &archive, &format, &_mutex))) {
         *errorLog = "Unsupported format";
         return false;
     }
@@ -1315,6 +1319,19 @@ _ReaderContext::_OpenOgawa(
 {
     *format = "Ogawa";
     *result = IArchive(Alembic::AbcCoreOgawa::ReadArchive(),
+                       filePath, ErrorHandler::kQuietNoopPolicy);
+    return *result;
+}
+
+bool
+_ReaderContext::_OpenGit(
+    const std::string& filePath,
+    IArchive* result,
+    std::string* format,
+    std::recursive_mutex** mutex) const
+{
+    *format = "Git";
+    *result = IArchive(Alembic::AbcCoreGit::ReadArchive(),
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
 }
