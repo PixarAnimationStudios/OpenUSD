@@ -425,7 +425,7 @@ public:
     /// unload set were processed first followed by the load set.
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
-    /// loadSet followed by UsdStage::Load for each item in the unloadSet,
+    /// unloadSet followed by UsdStage::Load for each item in the loadSet,
     /// however this method is more efficient as all operations are committed
     /// in a single batch.
     ///
