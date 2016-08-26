@@ -42,9 +42,7 @@
 
 #include <set>
 
-#if !defined(ARCH_OS_WINDOWS)
-#include <regex.h>
-#endif
+#include <boost/regex.hpp>
 
 TF_INSTANTIATE_SINGLETON(UsdKatanaCache);
 
@@ -106,16 +104,13 @@ UsdKatanaCache::_SetMutedLayers(
     // Trace this function to track its performance
     TRACE_FUNCTION();
 
-#if !defined(ARCH_OS_WINDOWS)
     // Unmute layers that are currently muted, but not requested to be muted
     SdfLayerHandleVector stageLayers = stage->GetUsedLayers();
 
     bool regexIsEmpty = layerRegex == "" || layerRegex == "^$";
     
     // use a better regex library?
-    regex_t regex;
-    regcomp(&regex, layerRegex.c_str(), REG_EXTENDED);
-    regmatch_t* rmatch = 0;
+    boost::regex regex;
 
     TF_FOR_ALL(stageLayer, stageLayers)
     {
@@ -130,10 +125,10 @@ UsdKatanaCache::_SetMutedLayers(
         
         if (!regexIsEmpty)
         {
-            if (layer && !regexec(
-                &regex, 
+            if (layer && boost::regex_match(
                 layerIdentifier.c_str(), 
-                0, rmatch, 0))
+                layerRegex.c_str(),
+                regex))
             {
                 match = true;
             }
@@ -153,8 +148,6 @@ UsdKatanaCache::_SetMutedLayers(
             stage->MuteLayer(layerIdentifier);
         }
     }
-    regfree(&regex);
-#endif
 }
 
 UsdKatanaCache::UsdKatanaCache() 

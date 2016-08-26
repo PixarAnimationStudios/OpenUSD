@@ -60,7 +60,6 @@ pxr_shared_library(tf
         nullPtr
         ostreamMethods
         pathUtils
-        patternMatcher
         pointerAndBits
         poolAllocator
         pyArg
