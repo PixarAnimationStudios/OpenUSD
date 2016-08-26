@@ -128,11 +128,9 @@ public:
 
     /// Returns a const iterator being/end of dictionary. Mainly used for
     /// resource auditing.
-    ARCH_PRAGMA_SHIFT_TO_64_BITS
     typedef typename INSTANCE::Dictionary::const_iterator const_iterator;
     const_iterator begin() const { return _dictionary.begin(); }
     const_iterator end() const { return _dictionary.end(); }
-    ARCH_PRAGMA_RESTORE
 
 private:
     template <typename T>

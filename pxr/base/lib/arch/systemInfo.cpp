@@ -32,9 +32,7 @@
 #include <WinSock2.h> // for timeval
 #include <LmCons.h>
 #include <Direct.h>
-ARCH_PRAGMA_MACRO_REDEFINITION
 #include <Shlobj.h> 
-ARCH_PRAGMA_RESTORE
 #include <Time.h>
 #else
 #include <pwd.h>
