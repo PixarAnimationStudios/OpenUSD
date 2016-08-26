@@ -43,7 +43,7 @@
 
 #include <boost/foreach.hpp>
 
-static const char* _FileRelativePathPrefix = ARCH_REL_PATH_IDENT;
+static const char* _FileRelativePathPrefix = "./";
 
 #if MAYA_TBB_HANG_WORKAROUND_HACK
 struct Ar_DefaultResolver::_Cache
@@ -113,7 +113,7 @@ Ar_DefaultResolver::AnchorRelativePath(
     // a file, strip off the last component, and anchor the path to that
     // directory.
     std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(anchorPath, ARCH_PATH_SEP), path);
+        TfStringGetBeforeSuffix(anchorPath, '/'), path);
     return TfNormPath(anchoredPath);
 }
 

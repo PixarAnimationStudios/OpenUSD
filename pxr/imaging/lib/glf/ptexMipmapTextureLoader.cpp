@@ -980,7 +980,7 @@ GlfPtexMipmapTextureLoader::generateBuffers()
 
 #if 0
     // debug
-    FILE *fp = fopen("out.ppm", "w");
+    FILE *fp = ArchOpenFile("out.ppm", "w");
     fprintf(fp, "P3\n");
     fprintf(fp, "%d %d\n", _pageWidth, _pageHeight * numPages);
     fprintf(fp, "255\n");
