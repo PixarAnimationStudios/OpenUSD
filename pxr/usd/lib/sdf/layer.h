@@ -1454,6 +1454,13 @@ private:
     // Modification timestamp of the backing file asset when last read.
     mutable double _assetModificationTime;
 
+    // Mutable revision number for cache invalidation.
+    mutable size_t _mutedLayersRevisionCache;
+
+    // Cache of whether or not this layer is muted.  Only valid if
+    // _mutedLayersRevisionCache is up-to-date with the global revision number.
+    mutable bool _isMutedCache;
+
     // Layer permission bits.
     bool _permissionToEdit;
     bool _permissionToSave;
