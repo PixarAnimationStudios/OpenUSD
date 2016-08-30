@@ -721,31 +721,65 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // (layer,path).  If there aren't any and we want to fallback to our
         // parent then find all paths in the cache that use the parent.  In
         // either case mark the found paths as having a significant change.
-        if (not pathsWithSignificantChanges.empty()) {
-            BOOST_FOREACH(const SdfPath& path, pathsWithSignificantChanges) {
-                // Compute the closest ancestor that must have dependencies.
-                SdfPath fallbackPath = findAncestor(path);
+        BOOST_FOREACH(const SdfPath& path, pathsWithSignificantChanges) {
+            // Compute the closest ancestor that must have dependencies.
+            SdfPath fallbackPath = findAncestor(path);
 
-                BOOST_FOREACH(PcpCache* cache, caches) {
-                    _DidChangeDependents(
-                        _ChangeTypeSignificant, cache, layer,
-                        path, fallbackPath, debugSummary);
-                }
+            BOOST_FOREACH(PcpCache* cache, caches) {
+                _DidChangeDependents(
+                    _ChangeTypeSignificant, cache, layer,
+                    path, fallbackPath, debugSummary);
             }
         }
 
         // For every path we've found that has a significant change in
         // a specific cache, use the same logic as above to mark those paths
         // as having a significant change, but only in the associated cache.
-        if (not pathsWithSignificantChangesByCache.empty()) {
-            BOOST_FOREACH(const CacheAndLayerPathPair& p,
-                          pathsWithSignificantChangesByCache) {
-                // Compute the closest ancestor that must have dependencies.
-                SdfPath fallbackPath = findAncestor(p.second);
+        BOOST_FOREACH(const CacheAndLayerPathPair& p,
+                      pathsWithSignificantChangesByCache) {
+            // Compute the closest ancestor that must have dependencies.
+            SdfPath fallbackPath = findAncestor(p.second);
 
-                _DidChangeDependents(
-                    _ChangeTypeSignificant, p.first, layer,
-                    p.second, fallbackPath, debugSummary);
+            _DidChangeDependents(
+                _ChangeTypeSignificant, p.first, layer,
+                p.second, fallbackPath, debugSummary);
+        }
+
+        // For every path we've found that has a significant change,
+        // check layer stacks that have discovered relocations that
+        // could be affected by that change.
+        if (not pathsWithSignificantChanges.empty()) {
+            // If this scope turns out to be expensive, we should look
+            // at switching PcpLayerStack's _relocatesPrimPaths from
+            // a std::vector to a path set.  _AddRelocateEditsForLayerStack
+            // also does a traversal and might see a similar benefit.
+            TRACE_SCOPE("PcpChanges::DidChange -- Checking layer stack "
+                        "relocations against significant prim resyncs");
+
+            for(const CacheLayerStacks &i: cacheLayerStacks) {
+                if (i.first->_usd) {
+                    // No relocations in usd mode
+                    continue;
+                }
+                for(const PcpLayerStackPtr &layerStack: i.second) {
+                    const SdfPathVector& reloPaths =
+                        layerStack->GetPathsToPrimsWithRelocates();
+                    if (reloPaths.empty()) {
+                        continue;
+                    }
+                    for(const SdfPath &changedPath:
+                        pathsWithSignificantChanges) {
+                        for(const SdfPath &reloPath: reloPaths) {
+                            if (reloPath.HasPrefix(changedPath)) {
+                                layerStackChangesMap[layerStack]
+                                    |= LayerStackRelocatesChange;
+                                goto doneWithLayerStack;
+                            }
+                        }
+                    }
+                    doneWithLayerStack:
+                    ;
+                }
             }
         }
 
@@ -755,33 +789,31 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // there aren't any then find all paths in the cache that use the
         // parent.  In either case mark the found paths as needing their
         // property spec stacks blown.
-        if (not pathsWithSpecChanges.empty()) {
-            BOOST_FOREACH(const PathChangeValue& value, pathsWithSpecChanges) {
-                const SdfPath& path        = value.first;
-                PathChangeBitmask changes = value.second;
+        BOOST_FOREACH(const PathChangeValue& value, pathsWithSpecChanges) {
+            const SdfPath& path        = value.first;
+            PathChangeBitmask changes = value.second;
 
-                int changeType = 0;
-                if (changes & PathChangeTargets) {
-                    changeType |= _ChangeTypeTargets;
-                }
-                if (changes & PathChangeConnections) {
-                    changeType |= _ChangeTypeConnections;
-                }
+            int changeType = 0;
+            if (changes & PathChangeTargets) {
+                changeType |= _ChangeTypeTargets;
+            }
+            if (changes & PathChangeConnections) {
+                changeType |= _ChangeTypeConnections;
+            }
 
-                // If the changes for this path include something other than
-                // target changes, they must be spec changes.
-                if (changes & ~(PathChangeTargets | PathChangeConnections)) {
-                    changeType |= _ChangeTypeSpecs;
-                }
+            // If the changes for this path include something other than
+            // target changes, they must be spec changes.
+            if (changes & ~(PathChangeTargets | PathChangeConnections)) {
+                changeType |= _ChangeTypeSpecs;
+            }
 
-                // Compute the closest ancestor that must have dependencies.
-                SdfPath fallbackPath = findAncestor(path);
+            // Compute the closest ancestor that must have dependencies.
+            SdfPath fallbackPath = findAncestor(path);
 
-                BOOST_FOREACH(PcpCache* cache, caches) {
-                    _DidChangeDependents(
-                        changeType, cache, layer,
-                        path, fallbackPath, debugSummary);
-                }
+            BOOST_FOREACH(PcpCache* cache, caches) {
+                _DidChangeDependents(
+                    changeType, cache, layer,
+                    path, fallbackPath, debugSummary);
             }
         }
 

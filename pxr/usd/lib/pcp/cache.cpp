@@ -1319,10 +1319,8 @@ _AddRelocateEditsForLayerStack(
         layerStack->GetPathsToPrimsWithRelocates();
     TF_FOR_ALL(pathIt, relocatePrimPaths) {
         TF_FOR_ALL(layerIt, layerStack->GetLayers()) {
-            // XXX: The prim should always be valid, but might not be due to 
-            //      bug 101300
             const SdfPrimSpecHandle prim = (*layerIt)->GetPrimAtPath(*pathIt);
-            if (not prim or not prim->HasRelocates()) {
+            if (not TF_VERIFY(prim) or not prim->HasRelocates()) {
                 continue;
             }
 
