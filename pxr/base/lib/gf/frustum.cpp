@@ -653,6 +653,38 @@ GfFrustum::ComputeCorners() const
     return corners;
 }
 
+vector<GfVec3d>
+GfFrustum::ComputeCornersAtDistance(double d) const
+{
+    const GfVec2d &winMin = _window.GetMin();
+    const GfVec2d &winMax = _window.GetMax();
+
+    vector<GfVec3d> corners;
+    corners.reserve(4);
+
+    if (_projectionType == Perspective) {
+        // Similar to ComputeCorners
+        corners.push_back(GfVec3d(d * winMin[0], d * winMin[1], -d));
+        corners.push_back(GfVec3d(d * winMax[0], d * winMin[1], -d));
+        corners.push_back(GfVec3d(d * winMin[0], d * winMax[1], -d));
+        corners.push_back(GfVec3d(d * winMax[0], d * winMax[1], -d));
+    }
+    else {
+        corners.push_back(GfVec3d(winMin[0], winMin[1], -d));
+        corners.push_back(GfVec3d(winMax[0], winMin[1], -d));
+        corners.push_back(GfVec3d(winMin[0], winMax[1], -d));
+        corners.push_back(GfVec3d(winMax[0], winMax[1], -d));
+    }
+
+    // Each corner is then transformed into world space by the inverse
+    // of the view matrix.
+    const GfMatrix4d m = ComputeViewInverse();
+    for (int i = 0; i < 4; i++)
+        corners[i] = m.Transform(corners[i]);
+
+    return corners;
+}
+
 GfFrustum
 GfFrustum::ComputeNarrowedFrustum(const GfVec2d &point,
                                   const GfVec2d &halfSize) const
