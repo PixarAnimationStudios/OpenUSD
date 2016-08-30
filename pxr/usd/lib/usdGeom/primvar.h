@@ -113,6 +113,31 @@
 ///     ...
 /// \endcode
 ///
+/// \subsection Usd_Handling_Indexed_Primvars Proper Client Handling of "Indexed" Primvars
+///
+/// As discussed in greater detail in 
+/// \ref UsdGeomPrimvar_Indexed_primvars "Indexed Primvars", primvars can 
+/// optionally contain a (possibly time-varying) indexing attribute that 
+/// establishes a sharing topology for elements of the primvar.  Consumers
+/// can always chose to ignore the possibility of indexed data by exclusively 
+/// using the ComputeFlattened() API.  If a client wishes to preserve indexing
+/// in their processing of a primvar, we suggest a pattern like the following,
+/// which accounts for the fact that a stronger layer can 
+/// \ref UsdAttribute::Block() "block" a primvar's indexing from a weaker
+/// layer, via UsdGeomPrimvar::BlockIndices():
+/// \code
+/// VtValue values;
+/// VtIntArray indices;
+///
+/// if (primvar.Get(&values, timeCode)){
+///     if (primvar.GetIndices(&indices, timeCode)){
+///         // primvar is indexed: validate/process values and indices together
+///     }
+///     else {
+///         // primvar is not indexed: validate/process values as flat array
+///     }
+/// }
+/// \endcode
 ///
 /// \subsection Usd_Primvar_As_Attribute UsdGeomPrimvar and UsdAttribute API
 /// 
@@ -336,7 +361,10 @@ class UsdGeomPrimvar
     /// \sa UsdAttribute::GetTypeName()
     SdfValueTypeName GetTypeName() const { return _attr.GetTypeName(); }
 
-    /// Get the attribute value of the Primvar at \p time 
+    /// Get the attribute value of the Primvar at \p time .
+    ///
+    /// \sa Usd_Handling_Indexed_Primvars for proper handling of 
+    /// \ref Usd_Handling_Indexed_Primvars "indexed primvars"
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
         return _attr.Get(value, time);
@@ -371,6 +399,7 @@ class UsdGeomPrimvar
     /// the unique elements. The final value of the primvar is computed using 
     /// the indices array and the attribute value array.
     /// 
+    /// See also \ref Usd_Handling_Indexed_Primvars
 
     /// Sets the indices value of the indexed primvar at \p time.
     /// 
@@ -384,12 +413,20 @@ class UsdGeomPrimvar
     /// Returns the value of the indices array associated with the indexed 
     /// primvar at \p time.
     /// 
-    /// \sa SetIndices()
+    /// \sa SetIndices(), \ref Usd_Handling_Indexed_Primvars
     bool GetIndices(VtIntArray *indices,
                     UsdTimeCode time = UsdTimeCode::Default()) const;
 
+    /// Block the indices that were previously set.  This effectively makes an
+    /// indexed primvar no longer indexed.  This is useful when overriding an
+    /// existing primvar.
+    void BlockIndices() const;
+
     /// Returns true if the primvar is indexed, i.e., if it has an associated
     /// "indices" attribute.
+    ///
+    /// If you are going to query the indices anyways, prefer to simply 
+    /// consult the return-value of GetIndices(), which will be more efficient.
     bool IsIndexed() const;
 
 
