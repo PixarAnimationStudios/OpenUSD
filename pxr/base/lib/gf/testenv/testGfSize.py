@@ -46,12 +46,12 @@ class TestGfSize(unittest.TestCase):
             if Size.dimension == 2:
                 self.assertIsInstance(Size(Gf.Vec2i()), Size)
                 self.assertIsInstance(Size(3, 4), Size)
-                s = Size();
+                s = Size()
                 self.assertEqual(s.Set(3,4), Size(3,4))
             elif Size.dimension == 3:
                 self.assertIsInstance(Size(Gf.Vec3i()), Size)
                 self.assertIsInstance(Size(3, 4, 5), Size)
-                s = Size();
+                s = Size()
                 self.assertEqual(s.Set(3,4,5), Size(3,4,5))
 
             s = makeValue(Size, (1,2,3))

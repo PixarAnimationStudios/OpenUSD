@@ -22,10 +22,10 @@
 # language governing permissions and limitations under the Apache License.
 #
 def GetScalarTypeFromAttr(attr):
-    ''' 
+    '''
     returns the (scalar, isArray) where isArray is True if it was an array type
     '''
-    # Usd.Attribute and customAttributes.CustomAttribute have a 
+    # Usd.Attribute and customAttributes.CustomAttribute have a
     # GetTypeName function, while Sdf.AttributeSpec has a typeName attr.
     if hasattr(attr, 'GetTypeName'):
         typeName = attr.GetTypeName()
@@ -43,7 +43,6 @@ def ToString(v, typeName=None):
     This string is used in the watch window"""
 
     from pxr import Tf, Gf
-    import pprint
 
     if v is None:
         return 'None'
@@ -62,7 +61,7 @@ def ToString(v, typeName=None):
 
     # Pretty-print a bounding box
     if isinstance(v, Gf.BBox3d):
-        prettyMatrix = ("%s\n%s\n%s\n%s" % (v.matrix[0], v.matrix[1], 
+        prettyMatrix = ("%s\n%s\n%s\n%s" % (v.matrix[0], v.matrix[1],
             v.matrix[2], v.matrix[3])).replace("(","").replace(")","")
         result = "Endpts of box diagonal:\n%s\n%s\n\nTransform matrix:\n%s\n" \
                  % (v.box.GetCorner(0), v.box.GetCorner(7), prettyMatrix)
@@ -93,22 +92,23 @@ def ToString(v, typeName=None):
     # Pretty-print a TfTimeStamp
     elif isinstance(v, Tf.TimeStamp):
         from datetime import datetime
-	dt = datetime.fromtimestamp( v.Get() )
-	result = dt.isoformat(' ')
+        dt = datetime.fromtimestamp( v.Get() )
+        result = dt.isoformat(' ')
 
-    # pretty print an int 
+    # pretty print an int
     elif isinstance(v, int):
         result = "{:,d}".format(v)
 
-    # pretty print a float 
+    # pretty print a float
     elif isinstance(v, float):
         result =  "{:,.6f}".format(v)
 
     # print a string as-is
     elif isinstance(v, str):
-	result = v
+        result = v
 
     else:
+        import pprint
         result = pprint.pformat(v)
 
     return result

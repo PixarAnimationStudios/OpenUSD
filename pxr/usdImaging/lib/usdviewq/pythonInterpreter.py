@@ -637,6 +637,7 @@ class View(QtGui.QTextEdit):
     """
 
     def __init__(self, parent=None):
+        QtGui.QTextEdit.__init__(self, parent)
         self.Parent = QtGui.QTextEdit
         self.Parent.__init__(self, parent)
         self.promptLength = 0
@@ -726,7 +727,7 @@ class View(QtGui.QTextEdit):
     def mouseDoubleClickEvent(self, e):
         self.Parent.mouseDoubleClickEvent(self, e)
         app = QtGui.QApplication.instance()
-        self.tripleClickTimer.start(app.doubleClickInterval(), self);
+        self.tripleClickTimer.start(app.doubleClickInterval(), self)
         # make a copy here, otherwise tripleClickPoint will always = globalPos
         self.tripleClickPoint = QtCore.QPoint(e.globalPos())
 

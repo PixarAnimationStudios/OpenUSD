@@ -201,4 +201,4 @@ class AttributeValueEditor(QtGui.QWidget):
 
     def _revertAll(self):
         self._revert(True)
-        
+

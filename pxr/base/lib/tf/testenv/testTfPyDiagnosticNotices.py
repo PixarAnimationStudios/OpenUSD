@@ -96,24 +96,24 @@ class TestDiagnosticNotices(unittest.TestCase):
         self.log.info("Issuing a couple of different types of errors.")
 
         try:
-            Tf.RaiseRuntimeError("Runtime error!");
+            Tf.RaiseRuntimeError("Runtime error!")
             assert False, "expected exception"
         except Tf.ErrorException:
             pass
 
         try:
-            Tf.RaiseCodingError("Coding error!");
+            Tf.RaiseCodingError("Coding error!")
             assert False, "expected exception"
         except Tf.ErrorException:
             pass
 
         self.log.info("Issuing a few generic warnings.")
-        Tf.Warn("Warning 1");
-        Tf.Warn("Warning 2");
-        Tf.Warn("Warning 3");
+        Tf.Warn("Warning 1")
+        Tf.Warn("Warning 2")
+        Tf.Warn("Warning 3")
 
         self.log.info("Issuing a status message.")
-        Tf.Status("Status: Almost done testing.");
+        Tf.Status("Status: Almost done testing.")
 
         # Assert that two errors, three warnings and one status message were
         # issued.
