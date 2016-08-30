@@ -595,9 +595,6 @@ class GfFrustum {
     // Projection type.
     ProjectionType              _projectionType;
 
-    // For efficient intersection in local space
-    GfMatrix4d                  _localToFrustum;
-
     // Cached planes.
     // If empty, the planes have not been calculated.
     mutable std::vector<GfPlane> _planes;
