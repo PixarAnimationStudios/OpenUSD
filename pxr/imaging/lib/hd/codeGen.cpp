@@ -1818,22 +1818,25 @@ Hd_CodeGen::_GenerateShaderParameters()
                     << "  return sampler2d_" << it->second.name << ";"
                     << "}\n";
             }
+            // vec4 HdGet_name(vec2 coord) { return texture(sampler2d_name, coord).xyz; }
             accessors
                 << it->second.dataType
                 << " HdGet_" << it->second.name
-                << "(vec2 coord = ";
+                << "(vec2 coord) { return texture(sampler2d_"
+                << it->second.name << ", coord)" << swizzle << ";}\n";
+            // vec4 HdGet_name() { return HdGet_name(HdGet_st().xy); }
+            accessors
+                << it->second.dataType
+                << " HdGet_" << it->second.name
+                << "() { return HdGet_" << it->second.name << "(";
             if (not it->second.inPrimVars.empty()) {
                 accessors 
-                    << " HdGet_" << it->second.inPrimVars[0] << "().xy";
+                    << "HdGet_" << it->second.inPrimVars[0] << "().xy";
             } else {
                 accessors
-                    << " vec2(0.0, 0.0)";
+                    << "vec2(0.0, 0.0)";
             }
-            accessors
-                << ") {\n"
-                << "  return texture(sampler2d_" << it->second.name
-                << ", coord)" << swizzle << ";\n"   // XXX: should be inprimvars
-                << "}\n";
+            accessors << "); }\n";
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
             accessors
                 << it->second.dataType
