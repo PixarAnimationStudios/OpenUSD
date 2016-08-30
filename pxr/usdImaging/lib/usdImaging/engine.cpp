@@ -644,3 +644,11 @@ UsdImagingEngine::SetRenderGraphPlugin(TfType const &type)
 {
     return false;
 }
+
+/* virtual */
+VtDictionary
+UsdImagingEngine::GetResourceAllocation() const
+{
+    return VtDictionary();
+}
+
