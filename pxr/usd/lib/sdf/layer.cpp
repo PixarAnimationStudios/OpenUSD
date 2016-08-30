@@ -65,9 +65,10 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include <atomic>
+#include <fstream>
 #include <set>
 #include <vector>
-#include <fstream>
 
 using boost::bind;
 using std::map;
@@ -87,6 +88,11 @@ typedef set<string> _MutedLayers;
 static TfStaticData<_MutedLayers> _mutedLayers;
 // Global mutex protecting _mutedLayers.
 static TfStaticData<std::mutex> _mutedLayersMutex;
+// This is a global revision number that tracks changes to _mutedLayers.  Since
+// we seldom mute and unmute layers, this lets layers cache their muteness and
+// do quick validity checks without taking a lock and looking themselves up in
+// _mutedLayers.
+static std::atomic_size_t _mutedLayersRevision { 1 };
 
 // A registry for loaded layers.
 static TfStaticData<Sdf_LayerRegistry> _layerRegistry;
@@ -106,6 +112,8 @@ SdfLayer::SdfLayer(
     _lastDirtyState(false),
     _assetInfo(new Sdf_AssetInfo),
     _assetModificationTime(0),
+    _mutedLayersRevisionCache(0),
+    _isMutedCache(false),
     _permissionToEdit(true),
     _permissionToSave(true)
 {
@@ -1695,8 +1703,6 @@ SdfLayer::GetRelationshipAtPath(const SdfPath &path)
 bool
 SdfLayer::PermissionToEdit() const
 {
-    TRACE_FUNCTION();
-
     return _permissionToEdit and not IsMuted();
 }
 
@@ -2227,6 +2233,8 @@ SdfLayer::GetMutedLayers()
 void 
 SdfLayer::SetMuted(bool muted)
 {
+    // XXX Racy...
+    
     if (muted == IsMuted()) {
         return;
     }
@@ -2241,8 +2249,25 @@ SdfLayer::SetMuted(bool muted)
 
 bool 
 SdfLayer::IsMuted() const
-{ 
-    return IsMuted(_GetMutedPath()); 
+{
+    // Read the current muted revision number.  If it's up-to-date we return our
+    // cache.  It's possible that this is racy, but the whole thing is racy
+    // regardless.  Even with a pure locking implementation, say we found this
+    // layer in the muted set -- by the time we return to the caller with
+    // 'true', some other thread may have removed this layer from the muted set.
+
+    size_t curRev = _mutedLayersRevision;
+    if (ARCH_UNLIKELY(_mutedLayersRevisionCache != curRev)) {
+        string mutedPath = _GetMutedPath();
+        std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+        // Read again, since this is guaranteed to give us the current value
+        // because we have the lock.  _mutedLayersRevision only changes with the
+        // lock held.
+        _mutedLayersRevisionCache = _mutedLayersRevision;
+        _isMutedCache = _mutedLayers->count(mutedPath);
+    }
+
+    return _isMutedCache;
 }
 
 /*static*/
@@ -2259,7 +2284,9 @@ SdfLayer::AddToMutedLayers(const string &path)
 {
     bool didChange = false;
     {
+        // Racy...
         std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+        ++_mutedLayersRevision;
         didChange = _mutedLayers->insert(path).second;
     }
     if (didChange) {
@@ -2276,7 +2303,9 @@ SdfLayer::RemoveFromMutedLayers(const string &path)
 {
     bool didChange = false;
     {
+        // Racy...
         std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+        ++_mutedLayersRevision;
         didChange = _mutedLayers->erase(path);
     }
     if (didChange) {
@@ -2802,40 +2831,38 @@ void
 SdfLayer::SetField(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                    const VtValue& value)
 {
-    if (not PermissionToEdit()) {
+    if (value.IsEmpty())
+        return EraseField(id, fieldName);
+
+    if (ARCH_UNLIKELY(not PermissionToEdit())) {
         TF_CODING_ERROR("Cannot set %s on <%s>. Layer @%s@ is not editable.",
                         fieldName.GetText(), id.GetString().c_str(), 
                         GetIdentifier().c_str());
         return;
     }
 
-    if (value.IsEmpty()) {
-        EraseField(id, fieldName);
-    } else {
-        VtValue oldValue = GetField(id, fieldName);
-        if (value != oldValue)
-            _PrimSetField(id, fieldName, value, &oldValue);
-    }
+    VtValue oldValue = GetField(id, fieldName);
+    if (value != oldValue)
+        _PrimSetField(id, fieldName, value, &oldValue);
 }
 
 void
 SdfLayer::SetField(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                    const SdfAbstractDataConstValue& value)
 {
-    if (not PermissionToEdit()) {
+    if (value.IsEqual(VtValue()))
+        return EraseField(id, fieldName);
+
+    if (ARCH_UNLIKELY(not PermissionToEdit())) {
         TF_CODING_ERROR("Cannot set %s on <%s>. Layer @%s@ is not editable.",
                         fieldName.GetText(), id.GetString().c_str(), 
                         GetIdentifier().c_str());
         return;
     }
-
-    if (value.IsEqual(VtValue())) {
-        EraseField(id, fieldName);
-    } else {
-        VtValue oldValue = GetField(id, fieldName);
-        if (not value.IsEqual(oldValue))
-            _PrimSetField(id, fieldName, value, &oldValue);
-    }
+    
+    VtValue oldValue = GetField(id, fieldName);
+    if (not value.IsEqual(oldValue))
+        _PrimSetField(id, fieldName, value, &oldValue);
 }
 
 void
@@ -2883,7 +2910,7 @@ SdfLayer::SetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
 void
 SdfLayer::EraseField(const SdfAbstractDataSpecId& id, const TfToken& fieldName)
 {
-    if (not PermissionToEdit()) {
+    if (ARCH_UNLIKELY(not PermissionToEdit())) {
         TF_CODING_ERROR("Cannot erase %s on <%s>. Layer @%s@ is not editable.",
                         fieldName.GetText(), id.GetString().c_str(), 
                         GetIdentifier().c_str());
