@@ -36,6 +36,7 @@
 #include "pxr/usd/usd/treeIterator.h"
 #include "pxr/base/tracelite/trace.h"
 
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/token.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -772,6 +773,11 @@ UsdGeomBBoxCache::_Resolve(
 {
     TRACE_FUNCTION();
     // NOTE: Bounds are cached in local space, but computed in world space.
+
+    // Drop the GIL here if we have it before we spawn parallel tasks, since
+    // resolving properties on prims in worker threads may invoke plugin code
+    // that needs the GIL.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     // If the bound is in the cache, return it.
     std::vector<UsdPrim> masterPrims;
