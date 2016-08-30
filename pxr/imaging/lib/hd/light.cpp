@@ -94,10 +94,14 @@ HdLight::Sync()
 
         // Optional
         if (vtShadowCollection.IsHolding<HdRprimCollection>()) {
-            _shadowCollection =
-                           vtShadowCollection.UncheckedGet<HdRprimCollection>();
+            HdRprimCollection newCollection =
+                vtShadowCollection.UncheckedGet<HdRprimCollection>();
 
-            changeTracker.MarkCollectionDirty(_shadowCollection.GetName());
+            if (_shadowCollection != newCollection) {
+                _shadowCollection = newCollection;
+                changeTracker.MarkCollectionDirty(_shadowCollection.GetName());
+            }
+
         } else {
             _shadowCollection = HdRprimCollection();
         }
