@@ -379,6 +379,21 @@ class TestGfFrustum(unittest.TestCase):
         self.assertEqual(len(corners), len(results))
         for i in range(len(results)):
             self.assertTrue(Gf.IsClose(corners[i], results[i], 0.0001))
+            
+        corners = f.ComputeCornersAtDistance(20)
+        for i in range(len(corners)):
+            self.assertTrue(Gf.IsClose(corners[i], results[i], 0.0001))
+
+        corners = f.ComputeCornersAtDistance(90)
+        for i in range(len(corners)):
+            self.assertTrue(Gf.IsClose(corners[i], results[i+4], 0.0001))
+
+        corners = f.ComputeCornersAtDistance((20 + 90) / 2.0)
+        for i in range(len(corners)):
+            self.assertTrue(
+                Gf.IsClose(corners[i], (results[i] + results[i+4]) / 2.0,
+                           0.0001))
+        
 
 if __name__ == '__main__':
     unittest.main()
