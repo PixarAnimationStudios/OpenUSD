@@ -426,6 +426,17 @@ class GfFrustum {
     /// \li Right top far
     std::vector<GfVec3d> ComputeCorners() const;
 
+    /// Returns the world-space corners of the intersection of the frustum
+    /// with a plane parallel to the near/far plane at distance d from the
+    /// apex, ordered as:
+    /// \li Left bottom
+    /// \li Right bottom
+    /// \li Left top
+    /// \li Right top
+    /// In particular, it gives the partial result of ComputeCorners when given
+    /// near or far distance.
+    std::vector<GfVec3d> ComputeCornersAtDistance(double d) const;
+
     /// Returns a frustum that is a narrowed-down version of this frustum,
     /// such that the frustum rectangle on the near plane encloses \p point
     /// with at most \p halfSize[0] distance on the left and right and at most
