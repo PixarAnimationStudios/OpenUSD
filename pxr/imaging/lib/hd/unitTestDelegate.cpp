@@ -24,6 +24,8 @@
 #include "pxr/imaging/hd/unitTestDelegate.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
@@ -35,6 +37,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/rotation.h"
 
+#include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 
@@ -257,6 +260,28 @@ Hd_UnitTestDelegate::AddTexture(SdfPath const& id,
 }
 
 void
+Hd_UnitTestDelegate::AddCamera(SdfPath const &id)
+{
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertCamera<HdCamera>(this, id);
+    _cameras[id].params[HdShaderTokens->worldToViewMatrix]
+        = VtValue(GfMatrix4d(1));
+    _cameras[id].params[HdShaderTokens->projectionMatrix]
+        = VtValue(GfMatrix4d(1));
+}
+
+void
+Hd_UnitTestDelegate::AddLight(SdfPath const &id)
+{
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertLight<HdLight>(this, id);
+    _lights[id].params[HdTokens->lightParams]
+        = VtValue(GlfSimpleLight());
+    _lights[id].params[HdTokens->lightShadowCollection]
+        = VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
+}
+
+void
 Hd_UnitTestDelegate::HideRprim(SdfPath const& id) 
 {
     _hiddenRprims.insert(id);
@@ -381,6 +406,22 @@ Hd_UnitTestDelegate::UpdateInstancerPrototypes(float time)
                 *protoIt, HdChangeTracker::DirtyInstanceIndex);
         }
     }
+}
+
+void
+Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
+                                  TfToken const &key,
+                                  VtValue value)
+{
+    _cameras[id].params[key] = value;
+}
+
+void
+Hd_UnitTestDelegate::UpdateLight(SdfPath const &id,
+                                 TfToken const &key,
+                                 VtValue value)
+{
+    _lights[id].params[key] = value;
 }
 
 /*virtual*/
@@ -641,6 +682,13 @@ VtValue
 Hd_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     HD_TRACE_FUNCTION();
+
+    // camera and light
+    if (_cameras.find(id) != _cameras.end()) {
+        return _cameras[id].params[key];
+    } else if (_lights.find(id) != _lights.end()) {
+        return _lights[id].params[key];
+    }
 
     VtValue value;
     if (key == HdTokens->points) {

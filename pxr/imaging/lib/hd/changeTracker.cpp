@@ -794,6 +794,8 @@ HdChangeTracker::GetRprimDirtyBits(SdfPath const& id) const
 void 
 HdChangeTracker::AddCollection(TfToken const& collectionName)
 {
+    HD_TRACE_FUNCTION();
+
     _CollectionStateMap::iterator it = _collectionState.find(collectionName);
     // if it already exists, just return.
     if (it != _collectionState.end()) {
@@ -805,6 +807,8 @@ HdChangeTracker::AddCollection(TfToken const& collectionName)
 void 
 HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
 {
+    HD_TRACE_FUNCTION();
+
     _CollectionStateMap::iterator it = _collectionState.find(collectionName);
     if (not TF_VERIFY(it != _collectionState.end(),
                       "Collection %s not found\n", collectionName.GetText())) {
@@ -823,6 +827,8 @@ HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
 void 
 HdChangeTracker::MarkAllCollectionsDirty()
 {
+    HD_TRACE_FUNCTION();
+
     ++_indexVersion;
     ++_varyingStateVersion;
 
