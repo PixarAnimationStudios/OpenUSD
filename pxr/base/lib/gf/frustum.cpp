@@ -58,7 +58,6 @@ GfFrustum::GfFrustum() :
     _projectionType(GfFrustum::Perspective)
 {
     _rotation.SetIdentity();
-    _localToFrustum.SetIdentity();
 }
 
 GfFrustum::GfFrustum(const GfVec3d &position, const GfRotation &rotation,
@@ -70,8 +69,7 @@ GfFrustum::GfFrustum(const GfVec3d &position, const GfRotation &rotation,
     _window(window),
     _nearFar(nearFar),
     _viewDistance(viewDistance),
-    _projectionType(projectionType),
-    _localToFrustum(1.0)
+    _projectionType(projectionType)
 {
 }
 
@@ -82,8 +80,7 @@ GfFrustum::GfFrustum(const GfMatrix4d &camToWorldXf,
     _window(window),
     _nearFar(nearFar),
     _viewDistance(viewDistance),
-    _projectionType(projectionType),
-    _localToFrustum(1.0)
+    _projectionType(projectionType)
 {
     SetPositionAndRotationFromMatrix(camToWorldXf);
 }
@@ -1090,43 +1087,6 @@ GfFrustum::Intersects(const GfVec3d &p0,
 
     // Must be case 3.
     return false;
-}
-
-//----------------------------------------------------------------------
-// Local space intersection routines.
-//
-// These routines are the most efficient way to intersect geometry with
-// the frustum.
-//
-// For now, they consist simply of transforming the point into whatever
-// space the frustum is in (as set in GfFrustum::SetTransform). In the
-// future these routines can be made about twice as fast by replacing
-// _localToFrustum with a matrix that carries the point into the space
-// of the "normalized frustum". The normalized frustum has all its vertices
-// at with coordinates that are 0, 1, or -1.
-//
-bool
-GfFrustum::IntersectsInLocalSpace(const GfVec3d &p1) const
-{
-    GfVec3d frustumP1 = _localToFrustum.Transform(p1);
-    return Intersects( frustumP1);
-}
-
-bool
-GfFrustum::IntersectsInLocalSpace(const GfVec3d &p1, const GfVec3d &p2) const
-{
-    GfVec3d frustumP1 = _localToFrustum.Transform(p1);
-    GfVec3d frustumP2 = _localToFrustum.Transform(p2);
-    return Intersects( frustumP1, frustumP2);
-}
-
-bool
-GfFrustum::IntersectsInLocalSpace(const GfVec3d &p1, const GfVec3d &p2, const GfVec3d &p3) const
-{
-    GfVec3d frustumP1 = _localToFrustum.Transform(p1);
-    GfVec3d frustumP2 = _localToFrustum.Transform(p2);
-    GfVec3d frustumP3 = _localToFrustum.Transform(p3);
-    return Intersects( frustumP1, frustumP2, frustumP3);
 }
 
 void
