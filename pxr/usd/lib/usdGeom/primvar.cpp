@@ -219,6 +219,20 @@ UsdGeomPrimvar::SetIndices(const VtIntArray &indices,
 
 }
 
+void
+UsdGeomPrimvar::BlockIndices() const
+{
+    // Check if the typeName is array valued here and issue a warning 
+    // if it's not.
+    SdfValueTypeName typeName = GetTypeName();
+    if (not typeName.IsArray()) {
+        TF_CODING_ERROR("Setting indices on non-array valued primvar of type "
+            "'%s'.", typeName.GetAsToken().GetText());
+        return;
+    }
+    _GetIndicesAttr(/*create*/ true).Block();
+}
+
 bool 
 UsdGeomPrimvar::GetIndices(VtIntArray *indices,
                            UsdTimeCode time) const
@@ -233,7 +247,9 @@ UsdGeomPrimvar::GetIndices(VtIntArray *indices,
 bool 
 UsdGeomPrimvar::IsIndexed() const
 {
-    return _GetIndicesAttr(/*create*/ false);
+    // XXX update this to api that can directly see if an attribute is blocked.
+    VtIntArray dummy;
+    return _GetIndicesAttr(/*create*/ false).Get(&dummy);
 }
 
 bool 
