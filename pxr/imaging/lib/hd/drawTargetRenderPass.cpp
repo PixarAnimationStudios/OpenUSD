@@ -26,7 +26,6 @@
 
 #include "pxr/imaging/hd/drawTargetRenderPass.h"
 #include "pxr/imaging/hd/drawTargetRenderPassState.h"
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
 static
@@ -58,13 +57,9 @@ _ClearBuffer(GLenum buffer, GLint drawBuffer, const VtValue &value)
 
 HdDrawTargetRenderPass::HdDrawTargetRenderPass(HdRenderIndex *index)
  : _renderPass(index)
- , _renderPassState(new HdRenderPassState())
  , _drawTargetRenderPassState(nullptr)
  , _drawTarget()
  , _drawTargetContext()
- , _simpleLightingShader(new HdSimpleLightingShader())
- , _viewMatrix(1)
- , _projectionMatrix(1)
  , _collectionObjectVersion(0)
 {
 }
@@ -84,15 +79,12 @@ HdDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
 
 }
 
-
 void
 HdDrawTargetRenderPass::SetRenderPassState(
     HdDrawTargetRenderPassState *drawTargetRenderPassState)
 {
     _drawTargetRenderPassState = drawTargetRenderPassState;
 }
-
-
 
 void
 HdDrawTargetRenderPass::SetRprimCollection(HdRprimCollection const& col)
@@ -101,45 +93,12 @@ HdDrawTargetRenderPass::SetRprimCollection(HdRprimCollection const& col)
 }
 
 void
-HdDrawTargetRenderPass::_Sync(HdTaskContext* ctx)
+HdDrawTargetRenderPass::Sync()
 {
-    static const GfMatrix4d yflip = GfMatrix4d().SetScale(
-        GfVec3d(1.0, -1.0, 1.0));
-
-    const SdfPath &cameraId = _drawTargetRenderPassState->GetCamera();
-
-    // XXX: Need to detect when camera changes and only update if
-    // needed
-    HdCameraSharedPtr camera
-        = _renderPass.GetRenderIndex()->GetCamera(cameraId);
-
-    if (!camera) {
-        // Render pass should not have been added to task list.
-        TF_CODING_ERROR("Invalid camera for render pass: %s",
-                        cameraId.GetText());
-        return;
-    }
-
-    VtValue viewMatrixVt  = camera->Get(HdShaderTokens->worldToViewMatrix);
-    VtValue projMatrixVt  = camera->Get(HdShaderTokens->projectionMatrix);
-    _viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
-    const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
-    _projectionMatrix = projMatrix * yflip;
-
-    GfVec2i const &resolution = _drawTarget->GetSize();
-    GfVec4d viewport(0, 0, resolution[0], resolution[1]);
-
-    _renderPassState->SetCamera(_viewMatrix, _projectionMatrix, viewport);
-
-    // Update the internal lighting context so it knows about the new camera
-    // position.
-    GlfSimpleLightingContextRefPtr lightingContext;
-    _GetTaskContextData(ctx, HdTokens->lightingContext, &lightingContext);
-    _UpdateLightingContext(lightingContext);
-
     // Update the collection object if necessary.
     unsigned int newCollectionVersion =
-                                 _drawTargetRenderPassState->GetRprimCollectionVersion();
+        _drawTargetRenderPassState->GetRprimCollectionVersion();
+
     if (_collectionObjectVersion != newCollectionVersion) {
         SetRprimCollection(_drawTargetRenderPassState->GetRprimCollection());
 
@@ -152,11 +111,11 @@ HdDrawTargetRenderPass::_Sync(HdTaskContext* ctx)
     }
 
     _renderPass.Sync();
-    _renderPassState->Sync();
 }
 
 void
-HdDrawTargetRenderPass::_Execute(HdTaskContext* ctx)
+HdDrawTargetRenderPass::Execute(
+    HdRenderPassStateSharedPtr const &renderPassState)
 {
     if (!_drawTarget) {
         return;
@@ -173,7 +132,7 @@ HdDrawTargetRenderPass::_Execute(HdTaskContext* ctx)
     glViewport(0, 0, resolution[0], resolution[1]);
 
     // Perform actual draw
-    _renderPass.Execute(_renderPassState);
+    _renderPass.Execute(renderPassState);
 
     glPopAttrib();
 
@@ -196,26 +155,4 @@ HdDrawTargetRenderPass::_ClearBuffers()
 
         _ClearBuffer(GL_COLOR, attachmentNum, clearColor);
     }
-}
-
-void
-HdDrawTargetRenderPass::_UpdateLightingContext(GlfSimpleLightingContextRefPtr &lightingContext)
-{
-    GlfSimpleLightingContextRefPtr const& simpleLightingContext = 
-                            _simpleLightingShader->GetLightingContext();
-
-    if (lightingContext) {
-        simpleLightingContext->SetUseLighting(
-                                        lightingContext->GetUseLighting());
-        simpleLightingContext->SetLights(lightingContext->GetLights());
-        simpleLightingContext->SetMaterial(lightingContext->GetMaterial());
-        simpleLightingContext->SetSceneAmbient(
-                                        lightingContext->GetSceneAmbient());
-        simpleLightingContext->SetShadows(lightingContext->GetShadows());
-        simpleLightingContext->SetUseColorMaterialDiffuse(
-                            lightingContext->GetUseColorMaterialDiffuse());
-    }
-
-    simpleLightingContext->SetCamera(_viewMatrix, _projectionMatrix);
-    _renderPassState->SetLightingShader(_simpleLightingShader);
 }
