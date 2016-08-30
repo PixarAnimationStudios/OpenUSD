@@ -301,10 +301,10 @@ private:
     mutable std::atomic_int _refCount;
 
     friend void intrusive_ptr_add_ref(const Usd_PrimData *prim) {
-        ++prim->_refCount;
+        prim->_refCount.fetch_add(1, std::memory_order_relaxed);
     }
     friend void intrusive_ptr_release(const Usd_PrimData *prim) {
-        if (--prim->_refCount == 0)
+        if (prim->_refCount.fetch_sub(1, std::memory_order_release) == 1)
             delete prim;
     }
 
