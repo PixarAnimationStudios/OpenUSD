@@ -1320,7 +1320,11 @@ _AddRelocateEditsForLayerStack(
     TF_FOR_ALL(pathIt, relocatePrimPaths) {
         TF_FOR_ALL(layerIt, layerStack->GetLayers()) {
             const SdfPrimSpecHandle prim = (*layerIt)->GetPrimAtPath(*pathIt);
-            if (not TF_VERIFY(prim) or not prim->HasRelocates()) {
+            // The relocate we discovered in the layerStack at this path
+            // doesn't necessarily mean there is a spec with a relocate
+            // in every layer.  Skip layers that don't have a spec with
+            // a relocate.
+            if (not prim or not prim->HasRelocates()) {
                 continue;
             }
 
