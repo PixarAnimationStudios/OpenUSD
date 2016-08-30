@@ -39,6 +39,7 @@
 #include <boost/preprocessor.hpp>
 
 #include <boost/iterator/iterator_adaptor.hpp>
+#include <initializer_list>
 
 #include <iosfwd>
 #include <memory>
@@ -182,6 +183,9 @@ public:
 
     /// Creates a new VtDictionary by moving the supplied \p VtDictionary.
     VtDictionary(VtDictionary && other) = default;
+
+    /// Creates a new VtDictionary from a braced initializer list.
+    VtDictionary(std::initializer_list<value_type> init);
 
     /// Copy assignment operator
     VtDictionary& operator=(VtDictionary const& other);
