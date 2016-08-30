@@ -1,0 +1,157 @@
+#
+# Copyright 2016 Pixar
+#
+# Licensed under the Apache License, Version 2.0 (the "Apache License")
+# with the following modification; you may not use this file except in
+# compliance with the Apache License and the following modification to it:
+# Section 6. Trademarks. is deleted and replaced with:
+#
+# 6. Trademarks. This License does not grant permission to use the trade
+#    names, trademarks, service marks, or product names of the Licensor
+#    and its affiliates, except as required to comply with Section 4(c) of
+#    the License and to reproduce the content of the NOTICE file.
+#
+# You may obtain a copy of the Apache License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the Apache License with the above modification is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the Apache License for the specific
+# language governing permissions and limitations under the Apache License.
+#
+
+# USD requires several dependencies that are available via
+# apt-get if using the trusty build environment.
+sudo: required
+dist: trusty
+
+language: cpp
+
+branches:
+  only:
+    - master
+    - dev
+
+before_install:
+  - sudo apt-get -qq update
+
+install:
+  ######
+  ### DEPENDENCIES FOR USD CORE
+  #####
+
+  ### boost v1.55
+  ### We install only the packages we need for faster turnaround
+  - sudo apt-get install libboost-iostreams1.55.0 libboost-iostreams1.55-dev
+  - sudo apt-get install libboost-python1.55.0 libboost-python1.55-dev
+  - sudo apt-get install libboost-regex1.55.0 libboost-regex1.55-dev
+  - sudo apt-get install libboost-system1.55.0 libboost-system1.55-dev
+  - sudo apt-get install libboost-program-options1.55.0 libboost-program-options1.55-dev
+
+  ### double-conversion
+  ### USD docs currently claim we require 1.1.1, but apt-get gives us 2.0.1 on trusty.
+  ### Building 1.1.1 as a shared library is annoying, so we'll go with this for now.
+  - sudo apt-get install libdouble-conversion-dev
+
+  ### Intel TBB v4.3 update 1
+  - if [ ! -d "$HOME/tbb43_20141023oss/lib" ]; then
+      wget https://www.threadingbuildingblocks.org/sites/default/files/software_releases/linux/tbb43_20141023oss_lin.tgz -O /tmp/tbb.tgz;
+      tar -xvzf /tmp/tbb.tgz -C $HOME;
+    else
+      echo 'Using cached TBB';
+    fi
+
+  ### ilmbase and OpenEXR 2.2.0
+  - if [ ! -d "$HOME/openexr/lib" ]; then
+      wget http://download.savannah.nongnu.org/releases/openexr/ilmbase-2.2.0.tar.gz -O /tmp/ilmbase.tgz;
+      tar -xvzf /tmp/ilmbase.tgz -C $HOME;
+      pushd $HOME/ilmbase-2.2.0;
+      ./configure --prefix=$HOME/openexr;
+      make && make install;
+      popd;
+      wget http://download.savannah.nongnu.org/releases/openexr/openexr-2.2.0.tar.gz -O /tmp/openexr.tgz;
+      tar -xvzf /tmp/openexr.tgz -C $HOME;
+      pushd $HOME/openexr-2.2.0;
+      ./configure --prefix=$HOME/openexr --with-pkg-config=no LDFLAGS="-Wl,-rpath -Wl,$HOME/openexr/lib";
+      make && make install;
+      popd;
+    else
+      echo 'Using cached OpenEXR';
+    fi
+
+  ######
+  ### DEPENDENCIES FOR IMAGING
+  #####
+
+  ### GLEW 1.10.0
+  - sudo apt-get install libglew-dev
+
+  ### OpenSubdiv 3.0.0
+  - sudo apt-get install libxrandr-dev libxcursor-dev libxinerama-dev libglfw-dev
+  - if [ ! -d "$HOME/osd/lib" ]; then
+      wget https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_0_0.tar.gz -O /tmp/osd.tgz;
+      tar -xvzf /tmp/osd.tgz -C $HOME;
+      pushd $HOME/OpenSubdiv-3_0_0;
+      mkdir build && cd build;
+      cmake -DCMAKE_INSTALL_PREFIX=$HOME/osd -DNO_EXAMPLES=1 -DNO_TUTORIALS=1 -DNO_REGRESSION=1 -D NO_MAYA=1 -D NO_PTEX=1 -D NO_DOC=1 -D NO_OMP=1 -D NO_TBB=1 -D NO_CUDA=1 -D NO_OPENCL=1 -D NO_CLEW=1 ..;
+      make && make install;
+      popd;
+    else
+      echo 'Using cached OpenSubdiv';
+    fi
+  # XXX: To workaround issue #3, create a symlink at opensubdiv3/ pointing to opensubdiv/
+  - rm -f $HOME/osd/include/opensubdiv3 && ln -s $HOME/osd/include/opensubdiv $HOME/osd/include/opensubdiv3
+
+  ### OpenImageIO 1.5.11
+  - sudo apt-get install libboost-filesystem1.55.0 libboost-filesystem1.55-dev
+  - sudo apt-get install libboost-thread1.55.0 libboost-thread1.55-dev
+  - if [ ! -d "$HOME/oiio/lib" ]; then
+      wget https://github.com/OpenImageIO/oiio/archive/Release-1.5.11.tar.gz -O /tmp/oiio.tgz;
+      tar -xvzf /tmp/oiio.tgz -C $HOME;
+      pushd $HOME/oiio-Release-1.5.11;
+      mkdir build && cd build;
+      cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr ..;
+      make && make install;
+      popd;
+    else
+      echo 'Using cached OpenImageIO';
+    fi
+
+  ### Ptex 2.0.30
+  - if [ ! -d "$HOME/ptex/lib" ]; then
+      wget https://github.com/wdas/ptex/archive/v2.0.30.tar.gz -O /tmp/ptex.tgz;
+      tar -xvzf /tmp/ptex.tgz -C $HOME;
+      pushd $HOME/ptex-2.0.30/src;
+      make;
+      mv $HOME/ptex-2.0.30/install/* $HOME/ptex;
+      popd;
+    else
+      echo 'Using cached Ptex';
+    fi
+
+  ######
+  ### DEPENDENCIES FOR USDIMAGING
+  #####
+
+  ### PySide 1.2.2
+  - sudo apt-get install python-pyside pyside-tools
+
+cache:
+  directories:
+    - $HOME/openexr
+    - $HOME/osd
+    - $HOME/oiio
+    - $HOME/ptex
+    - $HOME/tbb43_20141023oss
+
+script:
+  - mkdir build && cd build
+  - cmake -DTBB_ROOT_DIR=$HOME/tbb43_20141023oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF ..
+  - echo 'Building with -j4'
+  # XXX: Need to explicitly build cameraUtil before hd due to missing dependency declaration.
+  # This is fixed in commit 880b04.
+  - make -j4 cameraUtil
+  - make -j4
+  - make install
