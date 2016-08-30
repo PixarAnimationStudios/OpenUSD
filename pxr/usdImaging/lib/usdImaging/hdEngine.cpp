@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
 #include "pxr/imaging/hdx/intersector.h"
@@ -764,4 +765,11 @@ UsdImagingHdEngine::SetRenderGraphPlugin(TfType const &type)
     _pluginTaskDelegates[type] = _currentPluginTaskDelegate;
 
     return true;
+}
+
+/* virtual */
+VtDictionary
+UsdImagingHdEngine::GetResourceAllocation() const
+{
+    return HdResourceRegistry::GetInstance().GetResourceAllocation();
 }

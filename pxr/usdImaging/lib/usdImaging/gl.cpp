@@ -33,6 +33,7 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/textureRegistry.h"
 
 #include <boost/foreach.hpp>
 
@@ -312,4 +313,27 @@ UsdImagingGL::TestIntersectionBatch(
     return _engine->TestIntersectionBatch(viewMatrix, projectionMatrix,
                 worldToLocalSpace, paths, params, pickResolution,
                 pathTranslator, outHit);
+}
+
+/* virtual */
+VtDictionary
+UsdImagingGL::GetResourceAllocation() const
+{
+    VtDictionary dict;
+    dict = _engine->GetResourceAllocation();
+
+    // append texture usage
+    size_t texMem = 0;
+    for (auto const &texInfo :
+             GlfTextureRegistry::GetInstance().GetTextureInfos()) {
+        VtDictionary::const_iterator it = texInfo.find("memoryUsed");
+        if (it != texInfo.end()) {
+            VtValue mem = it->second;
+            if (mem.IsHolding<size_t>()) {
+                texMem += mem.Get<size_t>();
+            }
+        }
+    }
+    dict["textureMemoryUsed"] = texMem;
+    return dict;
 }

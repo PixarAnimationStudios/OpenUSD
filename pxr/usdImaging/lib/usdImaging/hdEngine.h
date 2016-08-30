@@ -131,6 +131,8 @@ public:
         std::function< SdfPath(const SdfPath&) > pathTranslator,
         HitBatch *outHit);
 
+    virtual VtDictionary GetResourceAllocation() const;
+
 private:
     // Helper functions for preparing multiple engines for
     // batched drawing.

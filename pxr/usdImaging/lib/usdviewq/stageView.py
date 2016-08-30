@@ -1554,9 +1554,26 @@ class StageView(QtOpenGL.QGLWidget):
                                self.fpsHUDKeys)
             # GPU stats (TimeElapsed is in nano seconds)
             if self.showHUD_GPUstats:
-                toPrint = { "GL prims" : self._glPrimitiveGeneratedQuery.GetResult(),
-                            "GPU time" : "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0) }
-                self.printDict(-10, self.height()-60, col, toPrint)
+                allocInfo = self._renderer.GetResourceAllocation()
+                gpuMemTotal = 0
+                texMem = 0
+                if "gpuMemoryUsed" in allocInfo:
+                    gpuMemTotal = allocInfo["gpuMemoryUsed"]
+                if "textureMemoryUsed" in allocInfo:
+                    texMem = allocInfo["textureMemoryUsed"]
+                    gpuMemTotal += texMem
+
+                from collections import OrderedDict
+                toPrint = OrderedDict()
+                toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
+                toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
+                toPrint["GPU mem  "] = gpuMemTotal
+                toPrint[" primvar "] = allocInfo["primVar"] if "primVar" in allocInfo else "N/A"
+                toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
+                toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
+                toPrint[" texture "] = texMem
+
+                self.printDict(-10, self.height()-30-(15*len(toPrint)), col, toPrint, toPrint.keys())
 
             GL.glPopMatrix()
 
