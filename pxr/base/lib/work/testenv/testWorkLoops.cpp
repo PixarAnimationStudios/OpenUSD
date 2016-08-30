@@ -170,7 +170,7 @@ main(int argc, char **argv)
     WorkSetMaximumConcurrencyLimit();
 
     std::cout << "Initialized with " << 
-        WorkGetMaximumConcurrencyLimit() << " cores..." << std::endl;
+        WorkGetPhysicalConcurrencyLimit() << " cores..." << std::endl;
 
 
     double tbbSeconds = _DoTBBTest(not perfMode, arraySize, numIterations);

@@ -30,7 +30,7 @@ using namespace boost::python;
 void wrapThreadLimits()
 {
     def("GetConcurrencyLimit", &WorkGetConcurrencyLimit);
-    def("GetMaximumConcurrencyLimit", &WorkGetMaximumConcurrencyLimit);
+    def("GetPhysicalConcurrencyLimit", &WorkGetPhysicalConcurrencyLimit);
 
     def("SetConcurrencyLimit", &WorkSetConcurrencyLimit);
     def("SetConcurrencyLimitArgument", &WorkSetConcurrencyLimitArgument);

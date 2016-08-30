@@ -35,15 +35,22 @@
 
 // The environment variable used to limit the number of threads the application
 // may spawn:
-//           0 - maximum concurrency
+//           0 - no change, i.e. defaults to maximum physical concurrency
 //           1 - single-threaded mode
-//  positive n - limit to n threads (clamped to the number of machine cores)
+//  positive n - limit to n threads
 //  negative n - limit to all but n machine cores (minimum 1).
+//
+// Note that the environment variable value always wins over any value passed to
+// the API calls below. If PXR_WORK_THREAD_LIMIT is set to a non-zero value, the
+// concurrency limit cannot be changed at runtime.
 //
 TF_DEFINE_ENV_SETTING(
     PXR_WORK_THREAD_LIMIT, 0,
     "Limits the number of threads the application may spawn. 0 (default) "
-    "allows for maximum concurrency.");
+    "allows for maximum concurrency as determined by the number of physical "
+    "cores, or the process's affinity mask, whichever is smaller. Note that "
+    "the environment variable (if set to a non-zero value) will override any "
+    "value passed to Work thread-limiting API calls.");
 
 // This is Work's notion of the currently requested thread limit.  Due to TBB's
 // behavior, the first client to create a tbb::task_scheduler_init will
@@ -58,7 +65,7 @@ static tbb::atomic<unsigned> _threadLimit;
 static tbb::task_scheduler_init *_tbbTaskSchedInit;
 
 unsigned
-WorkGetMaximumConcurrencyLimit()
+WorkGetPhysicalConcurrencyLimit()
 {
     // Use TBB here, since it pays attention to the affinity mask on Linux and
     // Windows.
@@ -69,34 +76,53 @@ WorkGetMaximumConcurrencyLimit()
 static unsigned
 Work_NormalizeThreadCount(const int n)
 {
-    // Zero means use all physical cores available.
-    if (n == 0)
-        return WorkGetMaximumConcurrencyLimit();
-
-    // One means use exactly one.
-    if (n == 1)
-        return n;
-
-    // Clamp positive integers to the total number of available cores.
-    if (n > 1)
-        return std::min<int>(n, WorkGetMaximumConcurrencyLimit());
-
+    // Zero means "no change", and n >= 1 means exactly n threads, so simply
+    // pass those values through unchanged.
     // For negative integers, subtract the absolute value from the total number
     // of available cores (denoting all but n cores). If n == number of cores,
     // clamp to 1 to set single-threaded mode.
-    return std::max<int>(1, n + WorkGetMaximumConcurrencyLimit());
+    return n >= 0 ? n : std::max<int>(1, n + WorkGetPhysicalConcurrencyLimit());
+}
+
+// Returns the normalized thread limit value from the environment setting. Note
+// that 0 means "no change", i.e. the environment setting does not apply.
+static unsigned
+Work_GetConcurrencyLimitSetting()
+{
+    return Work_NormalizeThreadCount(TfGetEnvSetting(PXR_WORK_THREAD_LIMIT));
+}
+
+// Overrides weakValue with strongValue if strongValue is non-zero, and returns
+// the resulting thread limit.
+static unsigned
+Work_OverrideConcurrencyLimit(unsigned weakValue, unsigned strongValue)
+{
+    // If the new limit is 0, i.e. "no change", simply pass the weakValue
+    // through unchanged. Otherwise, the new value wins.
+    return strongValue ? strongValue : weakValue;
 }
 
 static void 
 Work_InitializeThreading()
 {
-    // Threading is initialized with the value from the environment
-    // setting. The setting defaults to 0, i.e. maximum concurrency.
-    int settingVal = TfGetEnvSetting(PXR_WORK_THREAD_LIMIT);
-    _threadLimit = Work_NormalizeThreadCount(settingVal);
-    
+    // Get the thread limit from the environment setting. Note that this value
+    // can be 0, i.e. the environment setting does not apply.
+    const unsigned settingVal = Work_GetConcurrencyLimitSetting();
+
+    // Threading is initialized with maximum physical concurrency.
+    const unsigned physicalLimit = WorkGetPhysicalConcurrencyLimit();
+
+    // To assign the thread limit, override the initial limit with the
+    // environment setting. The environment setting always wins over the initial
+    // limit, unless it has been set to 0 (default). Semantically, 0 means
+    // "no change".
+    _threadLimit = Work_OverrideConcurrencyLimit(physicalLimit, settingVal);
+
     // Only eagerly grab TBB if the PXR_WORK_THREAD_LIMIT setting was set to
-    // some non-zero value.
+    // some non-zero value. Otherwise, the scheduler will be default initialized
+    // with maximum physical concurrency, or will be left untouched if
+    // previously initialized by the hosting environment (e.g. if we are running
+    // as a plugin to another application.)
     if (settingVal)
         _tbbTaskSchedInit = new tbb::task_scheduler_init(_threadLimit);
 }
@@ -105,8 +131,22 @@ static int _forceInitialization = (Work_InitializeThreading(), 0);
 void
 WorkSetConcurrencyLimit(unsigned n)
 {
-    // sanity
-    _threadLimit = std::max<unsigned>(1, n);
+    // We only assign a new concurrency limit if n is non-zero, since 0 means
+    // "no change". Note that we need to re-initialize the TBB
+    // task_scheduler_init instance in either case, because if the client
+    // explicitly requests a concurrency limit through this library, we need to
+    // attempt to take control of the TBB scheduler if we can, i.e. if the host
+    // environment has not already done so.
+    if (n) {
+        // Get the thread limit from the environment setting. Note this value
+        // may be 0 (default).
+        const unsigned settingVal = Work_GetConcurrencyLimitSetting();
+
+        // Override n with the environment setting. This will make sure that the
+        // setting always wins over the specified value n, but only if the
+        // setting has been set to a non-zero value.
+        _threadLimit = Work_OverrideConcurrencyLimit(n, settingVal);
+    }
 
     // Note that we need to do some performance testing and decide if it's
     // better here to simply delete the task_scheduler_init object instead
@@ -128,7 +168,7 @@ WorkSetConcurrencyLimit(unsigned n)
 void 
 WorkSetMaximumConcurrencyLimit()
 {
-    WorkSetConcurrencyLimit(WorkGetMaximumConcurrencyLimit());
+    WorkSetConcurrencyLimit(WorkGetPhysicalConcurrencyLimit());
 }
 
 void
