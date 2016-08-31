@@ -28,7 +28,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/common.h"
 
-/// \file usd/metrics.h
+/// \file usdGeom/metrics.h
 ///
 /// Schema and utilities for encoding various spatial and geometric metrics of
 /// a UsdStage and its contents.

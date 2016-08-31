@@ -30,9 +30,11 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/drawTarget.h"
 #include "pxr/imaging/hd/drawTargetRenderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/simpleLightingShader.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -127,9 +129,14 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
 
+                    HdRenderPassStateSharedPtr renderPassState(new HdRenderPassState());
+                    HdSimpleLightingShaderSharedPtr simpleLightingShader(new HdSimpleLightingShader());
+
                     _renderPasses.emplace_back(
                             RenderPassInfo {
                                     std::move(pass),
+                                    renderPassState,
+                                    simpleLightingShader,
                                     drawTarget,
                                     drawTarget->GetVersion()
                              });
@@ -157,16 +164,48 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         }
     }
 
+    ///----------------------
+    static const GfMatrix4d yflip = GfMatrix4d().SetScale(
+        GfVec3d(1.0, -1.0, 1.0));
+
+    // lighting context
+    GlfSimpleLightingContextRefPtr lightingContext;
+    _GetTaskContextData(ctx, HdTokens->lightingContext, &lightingContext);
+
     size_t numRenderPasses = _renderPasses.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].pass.get();
-        HdRenderPassStateSharedPtr renderPassState = renderPass->GetRenderPassState();
+        RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
+        HdDrawTargetRenderPass *renderPass = renderPassInfo.pass.get();
+        HdRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
+        HdDrawTargetSharedPtr drawTarget = renderPassInfo.target.lock();
+
+        const SdfPath &cameraId = drawTarget->GetRenderPassState()->GetCamera();
+
+        // XXX: Need to detect when camera changes and only update if
+        // needed
+        HdCameraSharedPtr camera
+            = GetDelegate()->GetRenderIndex().GetCamera(cameraId);
+
+        if (!camera) {
+            // Render pass should not have been added to task list.
+            TF_CODING_ERROR("Invalid camera for render pass: %s",
+                            cameraId.GetText());
+            return;
+        }
+
+        VtValue viewMatrixVt  = camera->Get(HdShaderTokens->worldToViewMatrix);
+        VtValue projMatrixVt  = camera->Get(HdShaderTokens->projectionMatrix);
+        GfMatrix4d viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
+        const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
+        GfMatrix4d projectionMatrix = projMatrix * yflip;
+
+        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
+        GfVec4d viewport(0, 0, resolution[0], resolution[1]);
 
         // Update Raster States
-        // XXX: Share raster state between render passes?
         renderPassState->SetOverrideColor(_overrideColor);
         renderPassState->SetWireframeColor(_wireframeColor);
         renderPassState->SetLightingEnabled(_enableLighting);
@@ -175,7 +214,30 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetDrawingRange(_drawingRange);
         renderPassState->SetCullStyle(_cullStyle);
 
-        renderPass->Sync(ctx);
+        HdSimpleLightingShaderSharedPtr &simpleLightingShader
+            = _renderPasses[renderPassIdx].simpleLightingShader;
+        GlfSimpleLightingContextRefPtr const& simpleLightingContext =
+            simpleLightingShader->GetLightingContext();
+
+        renderPassState->SetLightingShader(simpleLightingShader);
+
+        renderPassState->SetCamera(viewMatrix, projectionMatrix, viewport);
+        simpleLightingContext->SetCamera(viewMatrix, projectionMatrix);
+
+        if (lightingContext) {
+            simpleLightingContext->SetUseLighting(
+                lightingContext->GetUseLighting());
+            simpleLightingContext->SetLights(lightingContext->GetLights());
+            simpleLightingContext->SetMaterial(lightingContext->GetMaterial());
+            simpleLightingContext->SetSceneAmbient(
+                lightingContext->GetSceneAmbient());
+            simpleLightingContext->SetShadows(lightingContext->GetShadows());
+            simpleLightingContext->SetUseColorMaterialDiffuse(
+                lightingContext->GetUseColorMaterialDiffuse());
+        }
+
+        renderPassState->Sync();
+        renderPass->Sync();
     }
 }
 
@@ -233,8 +295,11 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].pass.get();
-        renderPass->Execute(ctx);
+        HdDrawTargetRenderPass *renderPass =
+            _renderPasses[renderPassIdx].pass.get();
+        HdRenderPassStateSharedPtr renderPassState =
+            _renderPasses[renderPassIdx].renderPassState;
+        renderPass->Execute(renderPassState);
     }
 
     if (oldAlphaToCoverage) {

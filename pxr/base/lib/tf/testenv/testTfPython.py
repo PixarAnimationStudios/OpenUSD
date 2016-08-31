@@ -324,6 +324,8 @@ class TestPython(unittest.TestCase):
         del l
         self.assertEqual('python lambda', Tf._invokeTestCallback())
 
+        # Test unbound instance method.
+        self.assertEqual('test', Tf._callUnboundInstance(str.lower, "TEST"))
 
         # the callback is a function, it should not stay alive
         def func():

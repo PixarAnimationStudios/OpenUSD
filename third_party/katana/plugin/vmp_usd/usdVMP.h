@@ -100,6 +100,8 @@ private:
     UsdImagingGLSharedPtr _renderer;
     UsdImagingGL::RenderParams _params;
     UsdPrim _prim;
+
+    GfMatrix4d _viewMatrix;
 };
 
 #endif 

@@ -63,6 +63,9 @@ using std::unordered_map;
 using std::tuple;
 using std::vector;
 
+// Forward declaration required here for certain MSVC versions.
+struct _PathItemHeader;
+
 // Tag indicating trivially copyable types, hack since gcc doesn't yet implement
 // is_trivially_copyable correctly.
 struct _BitwiseReadWrite {};
@@ -504,7 +507,7 @@ private:
     static _BootStrap _ReadBootStrap(ByteStream src, int64_t fileSize);
 
     template <class Reader>
-    _TableOfContents _ReadTOC(Reader src, struct _BootStrap const &b) const;
+    _TableOfContents _ReadTOC(Reader src, _BootStrap const &b) const;
 
     template <class Reader> void _ReadFieldSets(Reader src);
     template <class Reader> void _ReadFields(Reader src);
@@ -515,7 +518,7 @@ private:
     template <class Reader>
     void _ReadPathsRecursively(
         Reader src, const SdfPath &parentPath,
-        const struct _PathItemHeader &h,
+        const _PathItemHeader &h,
         WorkArenaDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;

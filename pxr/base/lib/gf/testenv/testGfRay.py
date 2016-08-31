@@ -308,7 +308,7 @@ class TestGfRay(unittest.TestCase):
 
         # Ray behind cylinder, orthogonal to surface
         x = radius * (1 + random.uniform(epsilon, 1))
-        distance = x - radius;
+        distance = x - radius
         ray = Gf.Ray(Gf.Vec3d(-x, 0, 0), Gf.Vec3d().XAxis())
         (hit, enter, exit) = ray.Intersect(origin, axis, radius)
 
@@ -434,7 +434,7 @@ class TestGfRay(unittest.TestCase):
             self.assertAlmostEqual(exit, radius, delta=epsilon)
             
             # Ray behind cone, orthogonal to axis
-            distance = x - radius;
+            distance = x - radius
             ray = Gf.Ray(Gf.Vec3d(-x, 0, 0), Gf.Vec3d().XAxis())
             (hit, enter, exit) = ray.Intersect(origin, axis, radius, height)
 

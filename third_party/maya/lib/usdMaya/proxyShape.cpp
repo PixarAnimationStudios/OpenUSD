@@ -310,6 +310,18 @@ UsdMayaProxyShape::initialize(
     retValue = addAttribute(psData->displayRenderGuides);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    psData->softSelectable = numericAttrFn.create(
+        "softSelectable",
+        "softSelectable",
+        MFnNumericData::kBoolean,
+        0.0,
+        &retValue);
+    numericAttrFn.setKeyable(false);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setAffectsAppearance(true);
+    retValue = addAttribute(psData->softSelectable);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     //
     // add attribute dependencies
     //
@@ -907,3 +919,28 @@ UsdMayaProxyShape::~UsdMayaProxyShape()
     //
 }
 
+MSelectionMask  
+UsdMayaProxyShape::getShapeSelectionMask() const
+{
+    if (_CanBeSoftSelected()) {
+        // to support soft selection (mode=Object), we need to add kSelectMeshes
+        // to our selection mask.  
+        MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
+        return MSelectionMask(selType);
+    }
+    return MPxSurfaceShape::getShapeSelectionMask();
+}
+
+bool
+UsdMayaProxyShape::_CanBeSoftSelected() const
+{
+    UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
+    MDataBlock dataBlock = nonConstThis->forceCache();
+    MStatus status;
+    MDataHandle softSelHandle = dataBlock.inputValue(_psData.softSelectable, &status);
+    if (not status) {
+        return false;
+    }
+    return softSelHandle.asBool();
+
+}

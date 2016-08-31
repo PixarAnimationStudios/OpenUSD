@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
-#define GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
+#ifndef GARCH_GLPLATFORM_DEBUG_CONTEXT_H
+#define GARCH_GLPLATFORM_DEBUG_CONTEXT_H
 
 #include "pxr/imaging/glfq/api.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -31,25 +31,23 @@
 #include <boost/scoped_ptr.hpp>
 
 #if !defined(ARCH_OS_WINDOWS)
-class GlfQGLPlatformDebugContextPrivate;
+class GarchGLPlatformDebugContextPrivate;
 #endif
 
-TF_DECLARE_WEAK_PTRS(GlfQGLPlatformDebugContext);
+TF_DECLARE_WEAK_PTRS(GarchGLPlatformDebugContext);
 
-/// \class GlfQGLPlatformDebugContext
+/// \class GarchGLPlatformDebugContext
 ///
 /// Platform specific context (e.g. X11/GLX) which supports debug output.
 ///
-class GlfQGLPlatformDebugContext : public TfWeakBase {
+class GarchGLPlatformDebugContext : public TfWeakBase {
 public:
     GLFQ_API
-    GlfQGLPlatformDebugContext(int majorVersion,
+    GarchGLPlatformDebugContext(int majorVersion,
                                int minorVersion,
                                bool coreProfile,
                                bool directRenderering);
-
-    GLFQ_API
-    virtual ~GlfQGLPlatformDebugContext();
+    virtual ~GarchGLPlatformDebugContext();
 
     GLFQ_API
     static bool IsEnabledDebugOutput();
@@ -65,9 +63,9 @@ public:
 
 public:
 #if !defined(ARCH_OS_WINDOWS)
-    boost::scoped_ptr<GlfQGLPlatformDebugContextPrivate> _private;
+    boost::scoped_ptr<GarchGLPlatformDebugContextPrivate> _private;
     bool _coreProfile;
 #endif
 };
 
-#endif // GLFQ_GLPLATFORM_DEBUG_CONTEXT_H
+#endif // GARCH_GLPLATFORM_DEBUG_CONTEXT_H

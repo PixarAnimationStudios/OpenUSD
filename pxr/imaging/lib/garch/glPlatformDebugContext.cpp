@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glfq/glPlatformDebugContext.h"
+#include "pxr/imaging/garch/glPlatformDebugContext.h"
 
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -30,7 +30,7 @@
 
 /* static */
 bool
-GlfQGLPlatformDebugContext::IsEnabledDebugOutput()
+GarchGLPlatformDebugContext::IsEnabledDebugOutput()
 {
     static bool isEnabledDebugOutput =
         TfGetenvBool("GLF_ENABLE_DEBUG_OUTPUT", false);
@@ -39,7 +39,7 @@ GlfQGLPlatformDebugContext::IsEnabledDebugOutput()
 
 /* static */
 bool
-GlfQGLPlatformDebugContext::IsEnabledCoreProfile()
+GarchGLPlatformDebugContext::IsEnabledCoreProfile()
 {
     static bool isEnabledCoreProfile =
         TfGetenvBool("GLF_ENABLE_CORE_PROFILE", false);
@@ -54,12 +54,12 @@ GlfQGLPlatformDebugContext::IsEnabledCoreProfile()
 #include <GL/glxtokens.h>
 #include <X11/Xlib.h>
 
-class GlfQGLPlatformDebugContextPrivate {
+class GarchGLPlatformDebugContextPrivate {
 public:
-    GlfQGLPlatformDebugContextPrivate(
+    GarchGLPlatformDebugContextPrivate(
         int majorVersion, int minorVersion,
         bool coreProfile, bool directRendering);
-    ~GlfQGLPlatformDebugContextPrivate();
+    ~GarchGLPlatformDebugContextPrivate();
 
     void MakeCurrent();
 
@@ -67,7 +67,7 @@ public:
     GLXContext _ctx;
 };
 
-GlfQGLPlatformDebugContextPrivate::GlfQGLPlatformDebugContextPrivate(
+GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
         int majorVersion, int minorVersion,
         bool coreProfile, bool directRendering)
     : _dpy(NULL)
@@ -128,7 +128,7 @@ GlfQGLPlatformDebugContextPrivate::GlfQGLPlatformDebugContextPrivate(
     _dpy = shareDisplay;
 }
 
-GlfQGLPlatformDebugContextPrivate::~GlfQGLPlatformDebugContextPrivate()
+GarchGLPlatformDebugContextPrivate::~GarchGLPlatformDebugContextPrivate()
 {
     if (_dpy and _ctx) {
         glXDestroyContext(_dpy, _ctx);
@@ -136,12 +136,12 @@ GlfQGLPlatformDebugContextPrivate::~GlfQGLPlatformDebugContextPrivate()
 }
 
 void
-GlfQGLPlatformDebugContextPrivate::MakeCurrent()
+GarchGLPlatformDebugContextPrivate::MakeCurrent()
 {
     glXMakeCurrent(glXGetCurrentDisplay(), glXGetCurrentDrawable(), _ctx);
 }
 
-void *GlfqSelectCoreProfileMacVisual()
+void *GarchSelectCoreProfileMacVisual()
 {
     return nullptr;
 }
@@ -153,17 +153,17 @@ void *GlfqSelectCoreProfileMacVisual()
 #if defined(ARCH_OS_DARWIN)
 
 // XXX: implement debug context
-class GlfQGLPlatformDebugContextPrivate {
+class GarchGLPlatformDebugContextPrivate {
 public:
-    GlfQGLPlatformDebugContextPrivate(
+    GarchGLPlatformDebugContextPrivate(
         int majorVersion, int minorVersion,
         bool coreProfile, bool directRendering) {}
-    ~GlfQGLPlatformDebugContextPrivate() {}
+    ~GarchGLPlatformDebugContextPrivate() {}
 
   void MakeCurrent() {}
 };
 
-void *GlfqSelectCoreProfileMacVisual();  // extern obj-c
+void *GarchSelectCoreProfileMacVisual();  // extern obj-c
 
 #endif
 
@@ -173,17 +173,17 @@ void *GlfqSelectCoreProfileMacVisual();  // extern obj-c
 #if defined(ARCH_OS_WINDOWS)
 
 // XXX: implement debug context
-class GlfQGLPlatformDebugContextPrivate {
+class GarchGLPlatformDebugContextPrivate {
 public:
-    GlfQGLPlatformDebugContextPrivate(
+    GarchGLPlatformDebugContextPrivate(
         int majorVersion, int minorVersion,
         bool coreProfile, bool directRendering) {}
-    ~GlfQGLPlatformDebugContextPrivate() {}
+    ~GarchGLPlatformDebugContextPrivate() {}
 
   void MakeCurrent() {}
 };
 
-void *GlfqSelectCoreProfileMacVisual()
+void *GarchSelectCoreProfileMacVisual()
 {
     return nullptr;
 }
@@ -193,7 +193,7 @@ void *GlfqSelectCoreProfileMacVisual()
 
 ////////////////////////////////////////////////////////////
 
-GlfQGLPlatformDebugContext::GlfQGLPlatformDebugContext(int majorVersion,
+GarchGLPlatformDebugContext::GarchGLPlatformDebugContext(int majorVersion,
                                                        int minorVersion,
                                                        bool coreProfile,
                                                        bool directRendering)
@@ -203,28 +203,28 @@ GlfQGLPlatformDebugContext::GlfQGLPlatformDebugContext(int majorVersion,
 
 #endif
 {
-    if (not GlfQGLPlatformDebugContext::IsEnabledDebugOutput()) {
+    if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
 #if !defined(ARCH_OS_WINDOWS)
-    _private.reset(new GlfQGLPlatformDebugContextPrivate(majorVersion,
+    _private.reset(new GarchGLPlatformDebugContextPrivate(majorVersion,
                                                          minorVersion,
                                                          coreProfile,
                                                          directRendering));
 #endif
 }
 
-GlfQGLPlatformDebugContext::~GlfQGLPlatformDebugContext()
+GarchGLPlatformDebugContext::~GarchGLPlatformDebugContext()
 {
     // nothing
 }
 
 /* virtual */
 void
-GlfQGLPlatformDebugContext::makeCurrent()
+GarchGLPlatformDebugContext::makeCurrent()
 {
 #if !defined(ARCH_OS_WINDOWS)
-    if (not GlfQGLPlatformDebugContext::IsEnabledDebugOutput()) {
+    if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
 
@@ -238,11 +238,11 @@ GlfQGLPlatformDebugContext::makeCurrent()
 
 #if defined(ARCH_OS_DARWIN)
 void*
-GlfQGLPlatformDebugContext::chooseMacVisual()
+GarchGLPlatformDebugContext::chooseMacVisual()
 {
     if (_coreProfile or
-        GlfQGLPlatformDebugContext::IsEnabledCoreProfile()) {
-        return GlfqSelectCoreProfileMacVisual();
+        GarchGLPlatformDebugContext::IsEnabledCoreProfile()) {
+        return GarchSelectCoreProfileMacVisual();
     } else {
         return nullptr;
     }

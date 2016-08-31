@@ -430,6 +430,17 @@ class GfFrustum {
     GF_API
     std::vector<GfVec3d> ComputeCorners() const;
 
+    /// Returns the world-space corners of the intersection of the frustum
+    /// with a plane parallel to the near/far plane at distance d from the
+    /// apex, ordered as:
+    /// \li Left bottom
+    /// \li Right bottom
+    /// \li Left top
+    /// \li Right top
+    /// In particular, it gives the partial result of ComputeCorners when given
+    /// near or far distance.
+    std::vector<GfVec3d> ComputeCornersAtDistance(double d) const;
+
     /// Returns a frustum that is a narrowed-down version of this frustum,
     /// such that the frustum rectangle on the near plane encloses \p point
     /// with at most \p halfSize[0] distance on the left and right and at most
@@ -499,26 +510,6 @@ class GfFrustum {
     /// between this frustum and a given primitive.
     ///
     ///@{
-
-    /// Describes the space in which the geometry is represented. Used only in
-    /// conjuction with GfFrustum::IntersectsInLocalSpace. The matrix is
-    /// carries the space of the geometry into the space of the frustum.
-    ///
-    /// The IntersectsInLocalSpace routines are the most efficient way to
-    /// intersect geometry with an arbitrary frustum.
-    ///
-    /// Note: There currently isn't a local space intersection routine for
-    /// bboxes, but if the need arises there is no difficulty in principle to
-    /// adding it.
-    ///
-    void SetLocalSpaceForIntersection( const GfMatrix4d &localToFrustum) {
-        _localToFrustum = localToFrustum;
-    }
-
-    /// Returns the matrix set by \c SetLocalSpaceForIntersection().
-    GfMatrix4d const& GetLocalSpaceForIntersection() const {
-        return _localToFrustum;
-    }
 
     /// Returns true if the given axis-aligned bbox is inside or intersecting
     /// the frustum. Otherwise, it returns false. Useful when doing picking or
@@ -627,9 +618,6 @@ class GfFrustum {
 
     // Projection type.
     ProjectionType              _projectionType;
-
-    // For efficient intersection in local space
-    GfMatrix4d                  _localToFrustum;
 
     // Cached planes.
     // If empty, the planes have not been calculated.

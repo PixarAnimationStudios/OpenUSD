@@ -32,7 +32,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-class GlfQGLPlatformDebugContext;
+class GarchGLPlatformDebugContext;
 
 TF_DECLARE_WEAK_PTRS(GlfQGLDebugContext);
 
@@ -65,7 +65,7 @@ public:
 #endif
 
 public:
-    boost::scoped_ptr<GlfQGLPlatformDebugContext> _platformContext;
+    boost::scoped_ptr<GarchGLPlatformDebugContext> _platformContext;
 };
 
 #endif // GLFQ_GL_DEBUG_CONTEXT_H

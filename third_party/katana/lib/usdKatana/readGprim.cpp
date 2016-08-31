@@ -67,6 +67,8 @@ PxrUsdKatanaGeomGetPAttr(
     // Used to compare value sizes to identify varying topology.
     int arraySize = -1;
 
+    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+
     FnKat::FloatBuilder attrBuilder(/* tupleSize = */ 3);
     TF_FOR_ALL(iter, motionSampleTimes)
     {
@@ -85,7 +87,9 @@ PxrUsdKatanaGeomGetPAttr(
             break;
         }
 
-        std::vector<float> &ptVec = attrBuilder.get(fabs(relSampleTime));
+        std::vector<float> &ptVec = attrBuilder.get(isMotionBackward ?
+            PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
         PxrUsdKatanaUtils::ConvertArrayToVector(ptArray, &ptVec);
     }
 
@@ -257,6 +261,8 @@ PxrUsdKatanaGeomGetNormalAttr(
     const std::vector<double>& motionSampleTimes =
             data.GetMotionSampleTimes(normalsAttr);
 
+    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+
     FnKat::FloatBuilder attrBuilder(/* tupleSize = */ 3);
     TF_FOR_ALL(iter, motionSampleTimes)
     {
@@ -267,7 +273,9 @@ PxrUsdKatanaGeomGetNormalAttr(
         VtVec3fArray normalsArray;
         normalsAttr.Get(&normalsArray, time);
 
-        std::vector<float> &normalsVec = attrBuilder.get(fabs(relSampleTime));
+        std::vector<float> &normalsVec = attrBuilder.get(isMotionBackward ?
+            PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
         PxrUsdKatanaUtils::ConvertArrayToVector(normalsArray, &normalsVec);
     }
 

@@ -44,9 +44,9 @@ Dependencies
 | ---- | --------- |
 | C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |
-| [CMake](https://cmake.org/documentation/)                         | 2.8.8              |
+| [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows)    |
 | [Python](https://python.org)                                      | 2.7.5              |
-| [Boost](https://boost.org)                                        | 1.55               |
+| [Boost](https://boost.org)                                        | 1.55 (Linux/OS X), 1.61.0 (Windows)    |
 | [OpenEXR](https://openexr.org)                                    | 2.2.0              |
 | [DoubleConversion](https://github.com/google/double-conversion)   | 1.1.1              |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.3.1              |
@@ -95,7 +95,7 @@ make -j <NUM_CORES> install
 #### On OS X (experimental)
 
 The following will generate an Xcode project that can be used to build USD.
-See notes in the [Supported Platforms](#Supported-Platforms) section
+See notes in the [Supported Platforms](#supported-platforms) section
 for more information.
 
 ```bash
@@ -117,7 +117,7 @@ make -j <NUM_CORES> install
 
 The following will generate a Visual Studio 2015 (the minimum required version)
 sln file which can be used to build USD. See notes in the 
-[Supported Platforms](#Supported-Platforms) section for more information.
+[Supported Platforms](#supported-platforms) section for more information.
 
 ```powershell
 C:\Program Files\CMake\bin\cmake.exe             ^

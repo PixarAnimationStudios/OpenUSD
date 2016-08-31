@@ -25,5 +25,4 @@
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( PlatformDebugContext );
 }

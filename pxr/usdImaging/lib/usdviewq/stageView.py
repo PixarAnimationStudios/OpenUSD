@@ -25,13 +25,9 @@
 Module that provides the StageView class.
 '''
 
-import logging
-import math
-from math import tan, sqrt, atan, degrees
-from math import radians as rad
+from math import tan, atan, radians as rad
 import os
 from time import time
-import traceback
 
 from PySide import QtGui, QtCore, QtOpenGL
 
@@ -67,8 +63,8 @@ class FreeCamera(QtCore.QObject):
     # is close to camera
     maxGoodZResolution = 5e4
 
-    """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
     def __init__(self, isZUp):
+        """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
         super(FreeCamera, self).__init__()
 
         self._camera = Gf.Camera()
@@ -304,7 +300,7 @@ class FreeCamera(QtCore.QObject):
         else:
             halfFov = self.fov*0.5 or 0.5 # don't divide by zero
             self.dist = ((self._selSize * frameFit * 0.5)
-                         / math.atan(math.radians(halfFov)))
+                         / atan(rad(halfFov)))
         
     def setClosestVisibleDistFromPoint(self, point):
         frustum = self._camera.frustum
@@ -1004,11 +1000,11 @@ class StageView(QtOpenGL.QGLWidget):
     # XXX Why aren't these @properties?
     def setDisplayGuides(self, enabled):
         self._displayGuides = enabled
-        self._updateBboxGuides();
+        self._updateBboxGuides()
 
     def setDisplayRenderingGuides(self, enabled):
         self._displayRenderingGuides = enabled
-        self._updateBboxGuides();
+        self._updateBboxGuides()
 
     def setDisplayCameraOracles(self, enabled):
         self._displayCameraOracles = enabled
@@ -1052,7 +1048,7 @@ class StageView(QtOpenGL.QGLWidget):
                     if self._bbox.GetRange().IsEmpty():
                         self._selectionBBox = self._getDefaultBBox()
                     else:
-                        self._selectionBBox = self._bbox;
+                        self._selectionBBox = self._bbox
                 else:
                     self._selectionBBox = self.getSelectionBBox()
 
@@ -1130,6 +1126,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._freeCamera = None
             self._cameraPrim = cameraPrim
         else:
+            from common import PrintWarning
             PrintWarning("Incorrect Prim Type",
                          "Attempted to view the scene using the prim '%s', but "
                          "the prim is not a UsdGeom.Camera." %(cameraPrim.GetName()))
@@ -1306,7 +1303,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glDepthFunc(GL.GL_LESS)
 
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glEnable(GL.GL_BLEND)
 
         frustum = self.computeGfCamera().frustum
@@ -1557,9 +1554,26 @@ class StageView(QtOpenGL.QGLWidget):
                                self.fpsHUDKeys)
             # GPU stats (TimeElapsed is in nano seconds)
             if self.showHUD_GPUstats:
-                toPrint = { "GL prims" : self._glPrimitiveGeneratedQuery.GetResult(),
-                            "GPU time" : "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0) }
-                self.printDict(-10, self.height()-60, col, toPrint)
+                allocInfo = self._renderer.GetResourceAllocation()
+                gpuMemTotal = 0
+                texMem = 0
+                if "gpuMemoryUsed" in allocInfo:
+                    gpuMemTotal = allocInfo["gpuMemoryUsed"]
+                if "textureMemoryUsed" in allocInfo:
+                    texMem = allocInfo["textureMemoryUsed"]
+                    gpuMemTotal += texMem
+
+                from collections import OrderedDict
+                toPrint = OrderedDict()
+                toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
+                toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
+                toPrint["GPU mem  "] = gpuMemTotal
+                toPrint[" primvar "] = allocInfo["primVar"] if "primVar" in allocInfo else "N/A"
+                toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
+                toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
+                toPrint[" texture "] = texMem
+
+                self.printDict(-10, self.height()-30-(15*len(toPrint)), col, toPrint, toPrint.keys())
 
             GL.glPopMatrix()
 
@@ -1697,7 +1711,7 @@ class StageView(QtOpenGL.QGLWidget):
         FreeCamera.  Then reset the near/far clipping planes based on
         distance to closest geometry."""
         if not self._freeCamera:
-            self.switchToFreeCamera();
+            self.switchToFreeCamera()
         else:
             self.computeAndSetClosestDistance()
         

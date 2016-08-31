@@ -1587,6 +1587,8 @@ CrateFile::_ReadTokens(Reader reader)
         p += strlen(p) + 1;
     }
     wd.Wait();
+
+    WorkSwapDestroyAsync(chars);
 }
 
 template <class Reader>

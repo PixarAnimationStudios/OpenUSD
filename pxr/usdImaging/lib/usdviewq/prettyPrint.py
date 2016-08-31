@@ -26,7 +26,6 @@ Hopefully we can deprecate this since most of the array stuff is handled by the
 arrayAttributeView
 '''
 from PySide import QtGui
-from pxr import Gf
 
 # locale.setlocale(locale.LC_ALL, 'en_US')
 

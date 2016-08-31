@@ -35,6 +35,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/vt/dictionary.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
@@ -316,6 +317,9 @@ public:
     /// the plugin for the type will be loaded if not yet.
     USDIMAGING_API
     virtual bool SetRenderGraphPlugin(TfType const &type);
+
+    /// Returns GPU resource allocation info
+    virtual VtDictionary GetResourceAllocation() const;
 
 protected:
     // Intentionally putting these under protected so that subclasses can share the usage of draw targets.

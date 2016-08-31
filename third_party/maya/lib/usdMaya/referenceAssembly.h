@@ -257,8 +257,10 @@ class UsdMayaRepresentationBase : public MPxRepresentation
 class UsdMayaRepresentationProxyBase : public UsdMayaRepresentationBase 
 {
   public:
-    UsdMayaRepresentationProxyBase(MPxAssembly *assembly, const MString &name) : 
-        UsdMayaRepresentationBase(assembly, name) {};
+    UsdMayaRepresentationProxyBase(MPxAssembly *assembly, const MString &name, 
+            bool proxyIsSoftSelectable) : 
+        UsdMayaRepresentationBase(assembly, name),
+        _proxyIsSoftSelectable(proxyIsSoftSelectable) {};
 
     virtual bool activate();
     virtual bool inactivate();
@@ -272,6 +274,7 @@ class UsdMayaRepresentationProxyBase : public UsdMayaRepresentationBase
 
   private:
     SdfLayerRefPtr _sessionSublayer;
+    bool _proxyIsSoftSelectable;
 };
 
 // ===========================================================
@@ -287,7 +290,11 @@ class UsdMayaRepresentationCollapsed : public UsdMayaRepresentationProxyBase
 
     // == Overrides for MPxRepresentation ==
     UsdMayaRepresentationCollapsed(MPxAssembly *assembly, const MString &name) : 
-        UsdMayaRepresentationProxyBase(assembly, name) {};
+
+        // We only support soft selection on "collapsed" proxies.  While we may
+        // want to move proxies that are not root of the model, we suspect this
+        // is more likely to lead to undesired behavior.
+        UsdMayaRepresentationProxyBase(assembly, name, true) {};
 
     virtual MString getType () const { return UsdMayaRepresentationCollapsed::_assemblyType; };
 
@@ -309,7 +316,7 @@ class UsdMayaRepresentationPlayback : public UsdMayaRepresentationProxyBase
 
     // == Overrides for MPxRepresentation ==
     UsdMayaRepresentationPlayback(MPxAssembly *assembly, const MString &name) : 
-        UsdMayaRepresentationProxyBase(assembly, name) {};
+        UsdMayaRepresentationProxyBase(assembly, name, false) {};
 
     virtual MString getType () const { return UsdMayaRepresentationPlayback::_assemblyType; };
 

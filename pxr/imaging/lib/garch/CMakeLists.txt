@@ -16,6 +16,7 @@ endif()
 pxr_shared_library(garch
     LIBRARIES
         arch
+        tf
         ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${APPKIT_LIBRARY}
@@ -28,6 +29,7 @@ pxr_shared_library(garch
 
     PUBLIC_CLASSES
         glPlatformContext
+        glPlatformDebugContext
 
     PUBLIC_HEADERS
         api.h
@@ -38,5 +40,13 @@ pxr_shared_library(garch
         ${GLPLATFORMCONTEXT_H}
 
     CPPFILES
+        moduleDeps.cpp
         ${GLPLATFORMCONTEXT_CPP}
+
+    PYMODULE_CPPFILES
+        module.cpp
+        wrapPlatformDebugContext.cpp
+
+    PYTHON_FILES
+        __init__.py
 )

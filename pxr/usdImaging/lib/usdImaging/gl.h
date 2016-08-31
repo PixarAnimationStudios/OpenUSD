@@ -190,6 +190,8 @@ public:
         std::function< SdfPath(const SdfPath&) > pathTranslator,
         HitBatch *outHit);
 
+    virtual VtDictionary GetResourceAllocation() const;
+
 private:
     UsdImagingEngineSharedPtr _engine;
 };

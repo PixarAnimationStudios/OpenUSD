@@ -21,18 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/tf/pyModule.h"
 
-#include <QtOpenGL/QGLContext>
-
-void *GlfqSelectCoreProfileMacVisual()
+TF_WRAP_MODULE
 {
-    NSOpenGLPixelFormatAttribute attribs[10];
-    int c = 0;
-
-    attribs[c++] = NSOpenGLPFAOpenGLProfile;
-    attribs[c++] = NSOpenGLProfileVersion3_2Core;
-    attribs[c++] = NSOpenGLPFADoubleBuffer;
-    attribs[c++] = 0;
-
-    return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
+    TF_WRAP( PlatformDebugContext );
 }

@@ -3394,12 +3394,32 @@ _EvalNodePayload(
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
     index->GetGraph()->SetHasPayload(true);
+
     const PcpPrimIndexInputs::PayloadSet* includedPayloads = 
         indexer->inputs.includedPayloads;
-    if (not includedPayloads or 
-        includedPayloads->count(node.GetRootNode().GetPath()) == 0) {
+
+    // If includedPayloads is nullptr, we never include payloads.  Otherwise if
+    // it does not have this path, we invoke the predicate.  If the predicate
+    // returns true we set the output bit includedDiscoveredPayload and we
+    // compose it.
+    if (!includedPayloads) {
         PCP_GRAPH_MSG(node, "Payload was not included, skipping");
         return;
+    }
+    SdfPath const &path = node.GetRootNode().GetPath();
+    tbb::spin_rw_mutex::scoped_lock lock;
+    auto *mutex = indexer->inputs.includedPayloadsMutex;
+    if (mutex) { lock.acquire(*mutex, /*write=*/false); }
+    bool inIncludeSet = includedPayloads->count(path);
+    if (mutex) { lock.release(); }
+    if (!inIncludeSet) {
+        auto const &pred = indexer->inputs.includePayloadPredicate;
+        if (pred and pred(path)) {
+            indexer->outputs->includedDiscoveredPayload = true;
+        } else {
+            PCP_GRAPH_MSG(node, "Payload was not included, skipping");
+            return;
+        }
     }
 
     // Verify the payload prim path.

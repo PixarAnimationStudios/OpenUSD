@@ -106,7 +106,8 @@ static FnKat::FloatAttribute
 _GetPwAttr(
     const UsdGeomNurbsPatch &nurbsPatch,
     double currentTime,
-    const std::vector<double>& motionSampleTimes)
+    const std::vector<double>& motionSampleTimes,
+    const bool isMotionBackward)
 {
     UsdAttribute weightsAttr = nurbsPatch.GetPointWeightsAttr();
     UsdAttribute pointsAttr = nurbsPatch.GetPointsAttr();
@@ -143,7 +144,9 @@ _GetPwAttr(
         }
 
         // set the points data in katana at the give motion sample time
-        std::vector<float> &ptVec = pwBuilder.get(fabs(relSampleTime));
+        std::vector<float> &ptVec = pwBuilder.get(isMotionBackward ?
+            PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
         ptVec.resize(ptArray.size() * 4);
 
         size_t count = 0;
@@ -323,7 +326,8 @@ PxrUsdKatanaReadNurbsPatch(
 
     FnKat::GroupBuilder geometryBuilder;
 
-    geometryBuilder.set("point.Pw", _GetPwAttr(nurbsPatch, currentTime, motionSampleTimes));
+    geometryBuilder.set("point.Pw", _GetPwAttr(
+        nurbsPatch, currentTime, motionSampleTimes, data.GetUsdInArgs()->IsMotionBackward()));
     geometryBuilder.set("u", _GetUAttr(nurbsPatch, currentTime));
     geometryBuilder.set("v", _GetVAttr(nurbsPatch, currentTime));
     geometryBuilder.set("uSize", _GetUSizeAttr(nurbsPatch, currentTime));       

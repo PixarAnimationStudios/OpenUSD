@@ -106,3 +106,17 @@ GarchGetNullGLPlatformContextState()
 {
     return GarchNSGLContextState(GarchNSGLContextState::NullState::nullstate);
 }
+
+void *
+GarchSelectCoreProfileMacVisual()
+{
+    NSOpenGLPixelFormatAttribute attribs[10];
+    int c = 0;
+
+    attribs[c++] = NSOpenGLPFAOpenGLProfile;
+    attribs[c++] = NSOpenGLProfileVersion3_2Core;
+    attribs[c++] = NSOpenGLPFADoubleBuffer;
+    attribs[c++] = 0;
+
+    return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
+}

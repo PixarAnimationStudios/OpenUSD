@@ -89,24 +89,34 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // shader assignment possible.
     if (getArgs().exportDisplayColor) {
         VtArray<GfVec3f> RGBData;
-        TfToken RGBInterp;
         VtArray<float> AlphaData;
-        TfToken AlphaInterp;
-        if (PxrUsdMayaUtil::GetLinearShaderColor(nurbs, 0,
-                                                &RGBData, &RGBInterp,
-                                                &AlphaData, &AlphaInterp)) {
+        TfToken interpolation;
+        VtArray<int> assignmentIndices;
+        if (PxrUsdMayaUtil::GetLinearShaderColor(nurbs,
+                                                 &RGBData,
+                                                 &AlphaData,
+                                                 &interpolation,
+                                                 &assignmentIndices)) {
             if (RGBData.size()>0) {
                 UsdGeomPrimvar dispColor = primSchema.GetDisplayColorPrimvar();
-                if (RGBInterp != dispColor.GetInterpolation())
-                    dispColor.SetInterpolation(RGBInterp);
+                if (interpolation != dispColor.GetInterpolation()) {
+                    dispColor.SetInterpolation(interpolation);
+                }
                 dispColor.Set(RGBData);
+                if (not assignmentIndices.empty()) {
+                    dispColor.SetIndices(assignmentIndices);
+                }
             }
             if (AlphaData.size() > 0 && 
                 GfIsClose(AlphaData[0], 1.0, 1e-9)==false) {
                 UsdGeomPrimvar dispOpacity = primSchema.GetDisplayOpacityPrimvar();
-                if (AlphaInterp != dispOpacity.GetInterpolation())
-                    dispOpacity.SetInterpolation(AlphaInterp);
+                if (interpolation != dispOpacity.GetInterpolation()) {
+                    dispOpacity.SetInterpolation(interpolation);
+                }
                 dispOpacity.Set(AlphaData);
+                if (not assignmentIndices.empty()) {
+                    dispOpacity.SetIndices(assignmentIndices);
+                }
             }
         }
     }

@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glfq/glPlatformDebugContext.h"
+#include "pxr/imaging/garch/glPlatformDebugContext.h"
 
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -30,18 +30,18 @@
 
 using namespace boost::python;
 
-static GlfQGLPlatformDebugContextPtr
+static GarchGLPlatformDebugContextPtr
 _New(int majorVersion, int minorVersion,
     bool coreProfile, bool directRendering)
 {
     return TfCreateWeakPtr(new
-        GlfQGLPlatformDebugContext(majorVersion, minorVersion,
+        GarchGLPlatformDebugContext(majorVersion, minorVersion,
                                     coreProfile, directRendering));
 }
 
 void wrapPlatformDebugContext()
 {    
-    typedef GlfQGLPlatformDebugContext This;
+    typedef GarchGLPlatformDebugContext This;
 
     class_<This, TfWeakPtr<This>,
            boost::noncopyable>("GLPlatformDebugContext", no_init)

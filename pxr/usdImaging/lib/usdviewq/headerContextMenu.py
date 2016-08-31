@@ -33,7 +33,7 @@ class HeaderContextMenu(QtGui.QMenu):
     def __init__(self, parent):
         QtGui.QMenu.__init__(self, parent)
         self._menuItems = _GetContextMenuItems(parent)
-	
+
         for menuItem in self._menuItems:
             if menuItem.isValid():
                 # create menu actions

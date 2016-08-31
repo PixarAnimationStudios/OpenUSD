@@ -46,6 +46,8 @@ public:
     /// Returns the hash value of the texture for \a sourceFile
     HDLIB_API
     static ID ComputeHash(TfToken const & sourceFile);
+    static ID ComputeFallbackPtexHash();
+    static ID ComputeFallbackUVHash();
 
     HDLIB_API
     virtual ~HdTextureResource();

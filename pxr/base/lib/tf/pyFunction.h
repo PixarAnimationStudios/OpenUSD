@@ -146,22 +146,23 @@ struct TfPyFunctionFromPython<Ret (BOOST_PP_ENUM_PARAMS(N, A))>
         // for most usage patterns.
 
         object callable(handle<>(borrowed(src)));
-        
-        if (PyMethod_Check(callable.ptr())) {
+        PyObject *pyCallable = callable.ptr();
+        PyObject *self =
+            PyMethod_Check(pyCallable) ? PyMethod_GET_SELF(pyCallable) : NULL;
+
+        if (self) {
             // Deconstruct the method and attempt to get a weak reference to
             // the self instance.
-            PyObject *method = callable.ptr();
-            object cls(handle<>(borrowed(PyMethod_GET_CLASS(method))));
-            object func(handle<>(borrowed(PyMethod_GET_FUNCTION(method))));
-            object weakSelf
-                (handle<>(PyWeakref_NewRef(PyMethod_GET_SELF(method), NULL)));
+            object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
+            object func(handle<>(borrowed(PyMethod_GET_FUNCTION(pyCallable))));
+            object weakSelf(handle<>(PyWeakref_NewRef(self, NULL)));
             new (storage)
                 FuncType(bind(CallMethod,
                               TfPyObjWrapper(func),
                               TfPyObjWrapper(weakSelf),
                               TfPyObjWrapper(cls)
                               BOOST_PP_ENUM_TRAILING(N, PLACEHOLDER, ~)));
-        } else if (PyObject_HasAttrString(callable.ptr(), "__name__") and
+        } else if (PyObject_HasAttrString(pyCallable, "__name__") and
                    extract<string>(callable.attr("__name__"))() == "<lambda>") {
             // Explicitly hold on to strong references to lambdas.
             new (storage)
@@ -170,7 +171,7 @@ struct TfPyFunctionFromPython<Ret (BOOST_PP_ENUM_PARAMS(N, A))>
         } else {
             // Attempt to get a weak reference to the callable.
             if (PyObject *weakCallable =
-                PyWeakref_NewRef(callable.ptr(), NULL)) {
+                PyWeakref_NewRef(pyCallable, NULL)) {
                 new (storage)
                     FuncType(bind(CallWeak,
                                   TfPyObjWrapper(object(handle<>(weakCallable)))

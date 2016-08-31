@@ -76,20 +76,14 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
 }
 
 const std::vector<double>
-PxrUsdKatanaUsdInPrivateData::_GetNoMotion()
-{
-    static std::vector<double> noMotion = {0.0};
-    return noMotion;
-}
-
-const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) const
 {
     double currentTime = _usdInArgs->GetCurrentTimeD();
 
     if (attr and not PxrUsdKatanaUtils::IsAttributeVarying(attr, currentTime))
     {
-        return _GetNoMotion();
+        static std::vector<double> noMotion = {0.0};
+        return noMotion;
     }
 
     const std::vector<double> motionSampleTimes = _usdInArgs->GetMotionSampleTimes();
@@ -107,15 +101,11 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
     double shutterOpen = _usdInArgs->GetShutterOpen();
     double shutterClose = _usdInArgs->GetShutterClose();
 
-    double motionBegin = std::min(
-        motionSampleTimes.front(), motionSampleTimes.back());
-
     double shutterStartTime, shutterCloseTime;
 
-    // Calculate shutter start and close times based on whether
-    // we're to grab samples up to the current frame or from the
-    // current frame (typical motion specification is [0 -1])
-    if (motionBegin < 0)
+    // Calculate shutter start and close times based on
+    // the direction of motion blur.
+    if (_usdInArgs->IsMotionBackward())
     {
         shutterStartTime = currentTime - shutterClose;
         shutterCloseTime = currentTime - shutterOpen;
@@ -134,17 +124,24 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         return motionSampleTimes;
     }
 
-    if (result.empty())
+    bool foundSamplesInInterval = not result.empty();
+
+    double firstSample, lastSample;
+
+    if (foundSamplesInInterval)
     {
-        return motionSampleTimes;
+        firstSample = result.front();
+        lastSample = result.back();
+    }
+    else
+    {
+        firstSample = shutterStartTime;
+        lastSample = shutterCloseTime;
     }
 
-    double firstSample = result.front();
-    double lastSample = result.back();
-
-    // If the first sample is later than the shutter start time
-    // then attempt to get the previous sample in time.
-    if ((firstSample-shutterStartTime) > epsilon)
+    // If no samples were found or the first sample is later than the 
+    // shutter start time then attempt to get the previous sample in time.
+    if (not foundSamplesInInterval or (firstSample-shutterStartTime) > epsilon)
     {
         double lower, upper;
         bool hasTimeSamples;
@@ -161,9 +158,9 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         }
     }
 
-    // If the last sample is earlier than the shutter close time
-    // then attempt to get the next sample in time.
-    if ((shutterCloseTime-lastSample) > epsilon)
+    // If no samples were found or the last sample is earlier than the
+    // shutter close time then attempt to get the next sample in time.
+    if (not foundSamplesInInterval or (shutterCloseTime-lastSample) > epsilon)
     {
         double lower, upper;
         bool hasTimeSamples;

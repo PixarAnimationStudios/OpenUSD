@@ -984,6 +984,8 @@ bool UsdMayaRepresentationProxyBase::activate()
 
     _OverrideProxyPlugs(shapeFn, dgMod);
 
+    dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.softSelectable, true), _proxyIsSoftSelectable);
+
     dgMod.doIt();
 
     _PushEditsToProxy();

@@ -21,23 +21,20 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-if (NOT PYTHON_EXECUTABLE)
-    return()
-endif()
+"""
+garch
 
-find_program(PYSIDEUICBINARY
-    NAMES pyside-uic
-    HINTS ${PYSIDE_BIN_DIR}
-)
+"""
 
-execute_process(
-    COMMAND 
-        "${PYTHON_EXECUTABLE}" "-c" "import PySide"
-    RESULT_VARIABLE
-        pySideImportResult 
-)
+import _garch
+from pxr import Tf
+Tf.PrepareModule(_garch, locals())
+del _garch, Tf
 
-if (pySideImportResult EQUAL 0 AND EXISTS ${PYSIDEUICBINARY})
-    message(STATUS "Found PySide: ${PYSIDEUICBINARY}")
-    set(PYSIDE_FOUND True)
-endif()
+try:
+    from . import __DOC
+    __DOC.Execute(locals())
+    del __DOC
+except Exception:
+    pass
+

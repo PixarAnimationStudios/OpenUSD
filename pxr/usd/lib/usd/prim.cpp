@@ -481,7 +481,7 @@ UsdPrim::HasAuthoredReferences() const
 bool
 UsdPrim::HasPayload() const
 {
-    return GetPrimIndex().HasPayload();
+    return _Prim()->HasPayload();
 }
 
 bool

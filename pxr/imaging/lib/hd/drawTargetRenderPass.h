@@ -27,7 +27,6 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -45,7 +44,7 @@ class HdDrawTargetRenderPassState;
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdDrawTargetRenderPass : public HdTask {
+class HdDrawTargetRenderPass : boost::noncopyable {
 public:
 	HDLIB_API
     HdDrawTargetRenderPass(HdRenderIndex *index);
@@ -65,21 +64,15 @@ public:
 	HDLIB_API
     void SetRprimCollection(HdRprimCollection const& col);
 
-    HdRenderPassStateSharedPtr const &GetRenderPassState() const {
-        return _renderPassState;
-    }
-
-protected:
     /// Execute render pass task
-    virtual void _Sync(HdTaskContext* ctx)    override;
+    void Sync();
 
     /// Sync the render pass resources
-    virtual void _Execute(HdTaskContext* ctx) override;
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 
 private:
-    /// RenderPass and state
+    /// RenderPass
     HdRenderPass _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
 
     /// drawtarget renderPass state
     HdDrawTargetRenderPassState *_drawTargetRenderPassState;
@@ -90,14 +83,7 @@ private:
     /// The context which owns the draw target object.
     GlfGLContextSharedPtr  _drawTargetContext;
 
-    HdSimpleLightingShaderSharedPtr _simpleLightingShader;
-    GfMatrix4d           _viewMatrix;
-    GfMatrix4d           _projectionMatrix;
-    
     unsigned int         _collectionObjectVersion;
-
-    /// Prepares the lighting context for this specific draw target pass
-    void _UpdateLightingContext(GlfSimpleLightingContextRefPtr &lightingContext);
 
     /// Clear all color and depth buffers.
     void _ClearBuffers();

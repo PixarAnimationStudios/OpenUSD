@@ -104,6 +104,7 @@ void wrapGL()
             .def("GetRenderGraphPlugins", &UsdImagingGL::GetRenderGraphPlugins,
                  return_value_policy< TfPySequenceToTuple >())
             .def("SetRenderGraphPlugin", &UsdImagingGL::SetRenderGraphPlugin)
+            .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
         ;
 
         // Wrap the constants.

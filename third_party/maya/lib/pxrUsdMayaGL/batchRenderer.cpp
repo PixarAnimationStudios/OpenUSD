@@ -172,6 +172,52 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
     }
 }
 
+
+// Helper function that converts the M3dView::DisplayStatus (viewport 1.0)
+// into the MHWRender::DisplayStatus (viewport 2.0)
+static inline
+MHWRender::DisplayStatus
+_ToMHWRenderDisplayStatus(const M3dView::DisplayStatus& displayStatus)
+{
+    // these enums are equivalent, but statically checking just in case.
+    static_assert(((int)M3dView::kActive == (int)MHWRender::kActive) 
+            and ((int)M3dView::kLive == (int)MHWRender::kLive) 
+            and ((int)M3dView::kDormant == (int)MHWRender::kDormant)
+            and ((int)M3dView::kInvisible == (int)MHWRender::kInvisible)
+            and ((int)M3dView::kHilite == (int)MHWRender::kHilite)
+            and ((int)M3dView::kTemplate == (int)MHWRender::kTemplate)
+            and ((int)M3dView::kActiveTemplate == (int)MHWRender::kActiveTemplate)
+            and ((int)M3dView::kActiveComponent == (int)MHWRender::kActiveComponent)
+            and ((int)M3dView::kLead == (int)MHWRender::kLead)
+            and ((int)M3dView::kIntermediateObject == (int)MHWRender::kIntermediateObject)
+            and ((int)M3dView::kActiveAffected == (int)MHWRender::kActiveAffected)
+            and ((int)M3dView::kNoStatus == (int)MHWRender::kNoStatus),
+            "M3dView::DisplayStatus == MHWRender::DisplayStatus");
+    return MHWRender::DisplayStatus((int)displayStatus);
+}
+
+static
+bool
+_GetWireframeColor(
+        const UsdMayaGLSoftSelectHelper& softSelectHelper,
+        const MDagPath& objPath,
+        const MHWRender::DisplayStatus& displayStatus,
+        MColor* mayaWireColor)
+{
+    // dormant objects may be included in soft selection.
+    if (displayStatus == MHWRender::kDormant) {
+        return softSelectHelper.GetFalloffColor(objPath, mayaWireColor);
+    }
+    else if ((displayStatus == MHWRender::kActive) or 
+            (displayStatus == MHWRender::kLead) or 
+            (displayStatus == MHWRender::kHilite)) {
+        *mayaWireColor = MHWRender::MGeometryUtilities::wireframeColor(objPath);
+        return true;
+    }
+
+    return false;
+}
+
 UsdMayaGLBatchRenderer::RenderParams
 UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     const MDagPath& objPath,
@@ -194,16 +240,15 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     // QueueShapeForDraw(...) will later break this single param set into
     // two, to perform a two-pass render.
     //
-    bool selected =
-            (displayStatus == M3dView::kActive) ||
-            (displayStatus == M3dView::kLead)   ||
-            (displayStatus == M3dView::kHilite);
-    
-    if( selected )
+    MColor mayaWireframeColor;
+    bool needsWire = _GetWireframeColor(
+            _batchRenderer->GetSoftSelectHelper(),
+            objPath, 
+            _ToMHWRenderDisplayStatus(displayStatus), 
+            &mayaWireframeColor);
+
+    if( needsWire )
     {
-        const MColor mayaWireframeColor =
-            MHWRender::MGeometryUtilities::wireframeColor(objPath);
-        
         // The legacy viewport does not support color management,
         // so we roll our own gamma correction via framebuffer effect.
         // But that means we need to pre-linearize the wireframe color
@@ -227,7 +272,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
         }
         case M3dView::kGouraudShaded:
         {
-            if( selected )
+            if( needsWire )
                 params.drawRepr = HdTokens->refinedWireOnSurf;
             else
                 params.drawRepr = HdTokens->refined;
@@ -235,7 +280,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
         }
         case M3dView::kFlatShaded:
         {
-            if( selected )
+            if( needsWire )
                 params.drawRepr = HdTokens->wireOnSurf;
             else
                 params.drawRepr = HdTokens->hull;
@@ -274,15 +319,14 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     // QueueShapeForDraw(...) will later break this single param set into
     // two, to perform a two-pass render.
     //
-    bool selected =
-            (displayStatus == MHWRender::kActive) ||
-            (displayStatus == MHWRender::kLead)   ||
-            (displayStatus == MHWRender::kHilite);
+    MColor mayaWireframeColor;
+    bool needsWire = _GetWireframeColor(
+            _batchRenderer->GetSoftSelectHelper(),
+            objPath, displayStatus,
+            &mayaWireframeColor);
     
-    if( selected )
+    if( needsWire )
     {
-        const MColor mayaWireframeColor =
-            MHWRender::MGeometryUtilities::wireframeColor(objPath);
         params.wireframeColor =
                     GfVec4f(
                         mayaWireframeColor.r,
@@ -301,14 +345,14 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     
     if( flatShaded )
     {
-        if( selected )
+        if( needsWire )
             params.drawRepr = HdTokens->wireOnSurf;
         else
             params.drawRepr = HdTokens->hull;
     }
     else if( displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded )
     {
-        if( selected || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) )
+        if( needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) )
             params.drawRepr = HdTokens->refinedWireOnSurf;
         else
             params.drawRepr = HdTokens->refined;
@@ -527,13 +571,25 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 }
 
 void
-UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL()
+UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& viewMatForLights)
 {
     // XXX: this is a dumb copy of UsdImaging::HdEngine
     // ideally we should directly suck the lightint parameter from
     // maya API and put them into HdLight.
 
-    _lightingContextForOpenGLState->SetStateFromOpenGL();
+    // We only transform the light positions into view space if the view matrix
+    // is non-identity (the VP1.0 case). If the view matrix is identity (the
+    // VP2.0 case), the light positions have already been transformed, so don't
+    // doubly transform them.
+    if (viewMatForLights != MMatrix::identity) {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadMatrixd(viewMatForLights.matrix[0]);
+        _lightingContextForOpenGLState->SetStateFromOpenGL();
+        glPopMatrix();
+    } else {
+        _lightingContextForOpenGLState->SetStateFromOpenGL();
+    }
 
     // cache the GlfSimpleLight vector
     GlfSimpleLightVector const &lights
@@ -696,6 +752,13 @@ UsdMayaGLBatchRenderer::GetShapeRenderer(
     }
     
     return toReturn;
+}
+
+const UsdMayaGLSoftSelectHelper& 
+UsdMayaGLBatchRenderer::GetSoftSelectHelper() 
+{
+    _softSelectHelper.Populate();
+    return _softSelectHelper;
 }
 
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
@@ -1040,7 +1103,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
                                       invisedPrimPaths );
         
         _populateQueue.clear();
-                
+
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "^^^^^^^^^^^^ POPULATE STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",_populateQueue.size());
     }
@@ -1052,6 +1115,11 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // longer valid.
     _selectQueue.clear();
     _selectResults.clear();
+
+    // We've already populated with all the selection info we need.  We Reset
+    // and the first call to GetSoftSelectHelper in the next render pass will
+    // re-populate it.
+    _softSelectHelper.Reset();
     
     GfMatrix4d modelViewMatrix(viewMat.matrix);
     GfMatrix4d projectionMatrix(projectionMat.matrix);
@@ -1071,10 +1139,17 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     glDisable(GL_BLEND);
     glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-    if( vp2Context )
+    // With VP2.0, the utils method will take care of transforming the light
+    // positions from world space into view space when it loads them into GL.
+    // For VP1.0, we will need to transform the light positions ourselves.
+    MMatrix viewMatForLights;
+    if (vp2Context) {
         px_vp20Utils::setupLightingGL(*vp2Context);
+    } else {
+        viewMatForLights = viewMat;
+    }
 
-    _taskDelegate->SetLightingStateFromOpenGL();
+    _taskDelegate->SetLightingStateFromOpenGL(viewMatForLights);
     
     // The legacy viewport does not support color management,
     // so we roll our own gamma correction by GL means (only in

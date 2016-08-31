@@ -1,0 +1,22 @@
+/*!
+\page usdUI_page_front UsdUI: USD UI Schemas
+\if ( PIXAR_MFB_BUILD )
+\mainpage  UsdUI: USD UI Schemas
+\publicLib
+\endif
+
+\section usdUI_overview Overview
+
+This module provides schemas for encoding information on USD prims
+for client graphical user interface tools to use in deciding how to 
+organize and present the prims in GUI layouts.  This information does
+\em not guide the 3D rendering of a data contained in ascene, rather it's 
+about how to visualize the nodes in the graph that comprises a UsdStage.
+
+The primary classes are:
+
+\li UsdUINodeGraphNodeAPI - encodes layout information for prims that 
+participate in an interconnected (via relationships) graph, as would
+prims in a shading network.
+
+*/

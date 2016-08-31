@@ -198,7 +198,7 @@ class TestTfType(unittest.TestCase):
     def test_PythonSubclassOfCppClass(self):
         class TestPyDerived( Tf.TestCppBase ):
             def TestVirtual(self):
-                return 123;
+                return 123
 
         tTestCppBase = Tf.Type.Find( Tf.TestCppBase )
         tTestPyDerived = Tf.Type.Define( TestPyDerived )

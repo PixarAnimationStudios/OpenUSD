@@ -176,8 +176,7 @@ class NodeViewItem(QtGui.QTreeWidgetItem):
             elif self.isInstance:
                 toolTip = 'Instanced ' + toolTip
             if self.hasArcs:
-                toolTip = toolTip + \
-                    "<br>Has composition arcs"
+                toolTip = toolTip + "<br>Has composition arcs"
             return toolTip
         else:
             return None

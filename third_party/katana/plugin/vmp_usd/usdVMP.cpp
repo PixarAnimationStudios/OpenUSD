@@ -173,6 +173,20 @@ USDVMP::deepSetup(FnKat::ViewerModifierInput& input)
     
     // We are taking over all drawing for this location.
     input.overrideHostGeometry();
+
+    // store the view matrix
+    FnKat::DoubleAttribute mAttr = input.getDisplayMatrix(VIEW);
+    if (mAttr.isValid()) {
+        FnKat::DoubleConstVector vm = mAttr.getNearestSample(0.f);
+        _viewMatrix =
+              GfMatrix4d(GfRotation(GfVec3d(-1,0,0), 90), GfVec3d(0))
+            * GfMatrix4d(vm[0], vm[1], vm[2], vm[3],
+                         vm[4], vm[5], vm[6], vm[7],
+                         vm[8], vm[9], vm[10], vm[11],
+                         vm[12], vm[13], vm[14], vm[15]);
+    } else {
+        _viewMatrix = GfMatrix4d(1);
+    }
 }
 
 
@@ -261,7 +275,17 @@ USDVMP::draw(FnKat::ViewerModifierInput& input)
         glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
 
         if (TF_VERIFY(_renderer)) {
-            _renderer->SetCameraStateFromOpenGL();
+            // Copy camera from GL state, Katana does not provide it directly
+            GfMatrix4d modelViewMatrix, projectionMatrix;
+            GfVec4d viewport;
+            glGetDoublev(GL_MODELVIEW_MATRIX, modelViewMatrix.GetArray());
+            glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
+            glGetDoublev(GL_VIEWPORT, &viewport[0]);
+
+            _renderer->SetCameraState(_viewMatrix, projectionMatrix, viewport);
+
+            GfMatrix4d modelMatrix = modelViewMatrix * (_viewMatrix.GetInverse());
+            _renderer->SetRootTransform(modelMatrix);
 
             glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT);
 
@@ -272,7 +296,11 @@ USDVMP::draw(FnKat::ViewerModifierInput& input)
                 glLightfv(GL_LIGHT0, GL_AMBIENT, params);
             }
 
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glLoadMatrixd(_viewMatrix.GetArray());
             _renderer->SetLightingStateFromOpenGL();
+            glPopMatrix();
 
             glPopAttrib();
 

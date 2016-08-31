@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/drawTargetRenderPass.h"
+#include "pxr/imaging/hd/simpleLightingShader.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -55,6 +56,8 @@ private:
 
     struct RenderPassInfo {
         HdDrawTargetRenderPassUniquePtr pass;
+        HdRenderPassStateSharedPtr      renderPassState;
+        HdSimpleLightingShaderSharedPtr simpleLightingShader;
         HdDrawTargetWeakPtr             target;
         unsigned int                    version;
     };

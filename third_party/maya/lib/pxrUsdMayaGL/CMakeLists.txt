@@ -36,5 +36,6 @@ pxr_shared_library(${PXR_PACKAGE}
         batchRenderer
         proxyDrawOverride
         proxyShapeUI
+        softSelectHelper
 )
 

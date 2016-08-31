@@ -196,6 +196,12 @@ public:
     HDLIB_API
     void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
 
+    /// Camera
+    void AddCamera(SdfPath const &id);
+
+    /// Light
+    void AddLight(SdfPath const &id);
+
     /// Remove a prim
     HDLIB_API
     void Remove(SdfPath const &id);
@@ -233,6 +239,9 @@ public:
     void UpdateInstancerPrimVars(float time);
     HDLIB_API
     void UpdateInstancerPrototypes(float time);
+
+    void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
+    void UpdateLight(SdfPath const &id, TfToken const &key, VtValue value);
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {
@@ -422,12 +431,21 @@ private:
         }
         GlfTextureRefPtr texture;
     };
+    struct _Camera {
+        VtDictionary params;
+    };
+    struct _Light {
+        VtDictionary params;
+    };
+
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Curves> _curves;
     std::map<SdfPath, _Points> _points;
     std::map<SdfPath, _Instancer> _instancers;
     std::map<SdfPath, _SurfaceShader> _surfaceShaders;
     std::map<SdfPath, _Texture> _textures;
+    std::map<SdfPath, _Camera> _cameras;
+    std::map<SdfPath, _Light> _lights;
     TfHashSet<SdfPath, SdfPath::Hash> _hiddenRprims;
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
