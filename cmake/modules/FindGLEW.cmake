@@ -76,7 +76,8 @@ if (${CMAKE_HOST_UNIX})
             /usr/local/include
             /sw/include
             /opt/local/include
-            NO_DEFAULT_PATH
+            NO_SYSTEM_ENVIRONMENT_PATH
+            NO_CMAKE_SYSTEM_PATH
             DOC "The directory where GL/glew.h resides"
     )
     find_library( GLEW_LIBRARY
@@ -94,7 +95,8 @@ if (${CMAKE_HOST_UNIX})
             /usr/local/lib
             /sw/lib
             /opt/local/lib
-            NO_DEFAULT_PATH
+            NO_SYSTEM_ENVIRONMENT_PATH
+            NO_CMAKE_SYSTEM_PATH
             DOC "The GLEW library")
 endif ()
 

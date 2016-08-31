@@ -119,7 +119,6 @@ list(APPEND OPENEXR_INCLUDE_DIRS ${OPENEXR_INCLUDE_DIR}/OpenEXR)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenEXR
     REQUIRED_VARS
-        OPENEXR_ROOT_DIR
         OPENEXR_INCLUDE_DIRS
         OPENEXR_LIBRARY_DIR
     VERSION_VAR
