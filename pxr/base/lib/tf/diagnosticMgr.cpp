@@ -75,6 +75,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
         TF_ERROR_MARK_TRACKING,
         "capture stack traces at TfErrorMark ctor/dtor, enable "
         "TfReportActiveMarks debugging API.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR,
+        "print all posted errors immediately, meaning that even errors that "
+        "are expected and handled will be printed, producing possibly "
+        "confusing output");
 }
 
 
@@ -178,8 +182,13 @@ TfDiagnosticMgr::PostError(TfEnum errorCode, const char* errorCodeString,
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR))
         ArchDebuggerTrap();
 
-    if (TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR)) {
+    if (TfDebug::IsEnabled(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR) or
+        TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR)) {
+    
         _PrintDiagnostic(stderr, errorCode, context, commentary, info);
+    }
+
+    if (TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR)) {
         TfLogStackTrace("ERROR", /* logToDb */ false);
     }
 

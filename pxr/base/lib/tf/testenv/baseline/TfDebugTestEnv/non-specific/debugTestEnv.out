@@ -18,6 +18,8 @@ TF_DLOPEN                : show files opened by TfDlopen
 TF_ERROR_MARK_TRACKING   : capture stack traces at TfErrorMark ctor/dtor, enable TfReportActiveMarks debugging API.
 TF_LOG_STACK_TRACE_ON_ERROR:
                            issue stack traces for all errors
+TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR:
+                           print all posted errors immediately, meaning that even errors that are expected and handled will be printed, producing possibly confusing output
 TF_SCRIPT_MODULE_LOADER  : show script module loading activity
 TF_TYPE_REGISTRY         : show changes to the TfType registry
 
