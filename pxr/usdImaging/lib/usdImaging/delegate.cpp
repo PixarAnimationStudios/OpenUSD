@@ -95,7 +95,7 @@ UsdImagingDelegate::UsdImagingDelegate()
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime(), GetRootCompensation())
-    , _lookBindingCache(GetTime(), GetRootCompensation())
+    , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
 {
     // this constructor create a new render index.
@@ -128,7 +128,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime(), GetRootCompensation())
-    , _lookBindingCache(GetTime(), GetRootCompensation())
+    , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
 {
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
@@ -915,13 +915,13 @@ UsdImagingDelegate::_SetStateForPopulation(
 }
 
 namespace {
-    struct _PopulateLookBindingCache {
+    struct _PopulateMaterialBindingCache {
         UsdPrim primToBind;
-        UsdImaging_LookBindingCache const* lookBindingCache;
+        UsdImaging_MaterialBindingCache const* materialBindingCache;
         void operator()() const {
             // Just calling GetValue will populate the cache for this prim and
             // potentially all ancestors.
-            lookBindingCache->GetValue(primToBind);
+            materialBindingCache->GetValue(primToBind);
         }
     };
 };
@@ -990,7 +990,8 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 continue;
             }
             if (_AdapterSharedPtr adapter = _AdapterLookup(*treeIt)) {
-                _PopulateLookBindingCache wu = { *treeIt, &_lookBindingCache };
+                _PopulateMaterialBindingCache wu = 
+                    { *treeIt, &_materialBindingCache };
                 bindingDispatcher.Run(wu);
                 leafPaths.push_back(std::make_pair(*treeIt, adapter));
                 if (adapter->ShouldCullChildren(*treeIt)) {
@@ -1105,7 +1106,7 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         // Need to invalidate all caches if any stage objects have changed. This
         // invalidation is overly conservative, but correct.
         _xformCache.Clear();
-        _lookBindingCache.Clear();
+        _materialBindingCache.Clear();
         _visCache.Clear();
     }
 
@@ -1892,7 +1893,7 @@ UsdImagingDelegate::_ComputeRootCompensation(SdfPath const & usdPath)
 
     _compensationPath = usdPath;
     _xformCache.SetRootPath(usdPath);
-    _lookBindingCache.SetRootPath(usdPath);
+    _materialBindingCache.SetRootPath(usdPath);
     _visCache.SetRootPath(usdPath);
 
     return true;

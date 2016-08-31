@@ -32,7 +32,7 @@
 
 #include "pxr/usd/usdGeom/gprim.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/pShader.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -460,27 +460,27 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     static TfToken displayColorToken("displayColor");
     static TfToken displayOpacityToken("displayOpacity");
 
-    UsdRelationship look = UsdShadeLook::GetBindingRel(prim);
-    SdfPathVector lookTargets;
-    if (look.GetForwardedTargets(&lookTargets)) {
-        if (not lookTargets.empty()) {
-            if (lookTargets.size() > 1) {
-                TF_WARN("<%s> has more than one look target; "\
+    UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
+    SdfPathVector matTargets;
+    if (mat.GetForwardedTargets(&matTargets)) {
+        if (not matTargets.empty()) {
+            if (matTargets.size() > 1) {
+                TF_WARN("<%s> has more than one material target; "\
                         "using first one found: <%s>",
                         prim.GetPath().GetText(),
-                        lookTargets.front().GetText());
+                        matTargets.front().GetText());
             }
-            UsdPrim lookPrim(
-                prim.GetStage()->GetPrimAtPath(lookTargets.front()));
+            UsdPrim matPrim(
+                prim.GetStage()->GetPrimAtPath(matTargets.front()));
 
-            if (lookPrim and
-                lookPrim.GetAttribute(displayColorToken).Get(&color, time)) {
+            if (matPrim and
+                matPrim.GetAttribute(displayColorToken).Get(&color, time)) {
                 colorInterp = UsdGeomTokens->constant; 
                 result[0] = GfVec4f(color[0], color[1], color[2], opacity);
             }
 
-            if (lookPrim and
-                lookPrim.GetAttribute(displayOpacityToken).Get(&opacity, time)) {
+            if (matPrim and
+                matPrim.GetAttribute(displayOpacityToken).Get(&opacity, time)) {
                 opacityInterp = UsdGeomTokens->constant;
                 result[0][3] = opacity;
             }

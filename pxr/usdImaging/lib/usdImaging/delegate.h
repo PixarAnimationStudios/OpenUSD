@@ -564,7 +564,7 @@ private:
     SdfPathVector _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
-    UsdImaging_LookBindingCache _lookBindingCache;
+    UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
 
     // Collection
