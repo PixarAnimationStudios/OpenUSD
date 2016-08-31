@@ -182,13 +182,16 @@ TfDiagnosticMgr::PostError(TfEnum errorCode, const char* errorCodeString,
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR))
         ArchDebuggerTrap();
 
-    if (TfDebug::IsEnabled(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR) or
-        TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR)) {
+    const bool logStackTraceOnError =
+        TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR);
+
+    if (logStackTraceOnError or
+        TfDebug::IsEnabled(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR)) {
     
         _PrintDiagnostic(stderr, errorCode, context, commentary, info);
     }
 
-    if (TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR)) {
+    if (logStackTraceOnError) {
         TfLogStackTrace("ERROR", /* logToDb */ false);
     }
 
