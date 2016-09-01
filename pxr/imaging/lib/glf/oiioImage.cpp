@@ -438,6 +438,10 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
         image = &scaled;
     }
 
+//XXX:
+//'OpenImageIO::v1_7::ImageBuf::get_pixels': Use get_pixels(ROI, ...) instead. [1.6] 
+#pragma warning(disable:4996)
+
     // Read pixel data
     TypeDesc type = _GetOIIOBaseType(storage.type);
     if (not image->get_pixels(0, storage.width, 0, storage.height, 0, 1,
