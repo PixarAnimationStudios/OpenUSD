@@ -62,6 +62,14 @@ add_definitions("/wd4267")
 # this affects Glf only
 add_definitions("/wd4506")
 
+# 'typedef ': ignored on left of '' when no variable is declared
+# XXX:figure out why we need this
+add_definitions("/wd4091")
+
+# c:\python27\include\pymath.h(22): warning C4273: 'round': inconsistent dll linkage 
+# XXX:figure out real fix
+add_definitions("/wd4273")
+
 # Enable PDB generation
 add_definitions("/Zi")
 
