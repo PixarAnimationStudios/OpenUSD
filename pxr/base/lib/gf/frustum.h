@@ -439,6 +439,7 @@ class GfFrustum {
     /// \li Right top
     /// In particular, it gives the partial result of ComputeCorners when given
     /// near or far distance.
+    GF_API
     std::vector<GfVec3d> ComputeCornersAtDistance(double d) const;
 
     /// Returns a frustum that is a narrowed-down version of this frustum,
