@@ -178,7 +178,7 @@ private:
     std::string _path;
     std::string _resourcePath;
     JsObject _dict;
-    void *_handle;      // the handle returned by ArchOpenLibrary() is a void*
+    void *_handle;      // the handle returned by ArchLibraryOpen() is a void*
     std::atomic<bool> _isLoaded;
     _Type _type;
 
