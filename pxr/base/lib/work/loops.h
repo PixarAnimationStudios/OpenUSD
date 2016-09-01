@@ -76,7 +76,7 @@ WorkParallelForN(size_t n, Fn &&callback)
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkGetConcurrencyLimit() > 1) {
 
-        class Work_ParallelForN_TBB: boost::noncopyable
+        class Work_ParallelForN_TBB
         {
         public:
             Work_ParallelForN_TBB(Fn &fn) : _fn(fn) { }
