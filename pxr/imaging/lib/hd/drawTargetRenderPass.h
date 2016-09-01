@@ -65,9 +65,11 @@ public:
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Execute render pass task
+    HDLIB_API
     void Sync();
 
     /// Sync the render pass resources
+    HDLIB_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 
 private:
