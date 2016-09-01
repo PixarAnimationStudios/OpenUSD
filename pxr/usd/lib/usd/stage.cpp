@@ -3308,19 +3308,19 @@ UsdStage::_ComposePrimIndexesInParallel(
         _cache->ComputePrimIndexesInParallel(
             primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
             [](const SdfPath &) { return true; },
-            "Usd", _mallocTagID);
+            "Usd", _mallocTagID.c_str());
     }
     else if (includeRule == _IncludeNoDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
             primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
             [](const SdfPath &) { return false; },
-            "Usd", _mallocTagID);
+            "Usd", _mallocTagID.c_str());
     }
     else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
         _cache->ComputePrimIndexesInParallel(
             primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
             _IncludeNewlyDiscoveredPayloadsPredicate(this),
-            "Usd", _mallocTagID);
+            "Usd", _mallocTagID.c_str());
     }
 
     if (not errs.empty()) {
