@@ -42,7 +42,8 @@ void* ArchLibraryOpen(const std::string &filename, int flag)
 const char* ArchLibraryError()
 {
 #if defined(ARCH_OS_WINDOWS)
-    return ArchStrSysError(::GetLastError()).c_str();
+    DWORD error = ::GetLastError();
+    return error ?  ArchStrSysError(error).c_str() : nullptr;
 #else
     return dlerror();
 #endif

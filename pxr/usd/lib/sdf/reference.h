@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include <boost/operators.hpp>
 
@@ -91,7 +92,7 @@ public:
     /// This may be set to an empty string to specify an internal reference.
     ///
     void SetAssetPath(const std::string &assetPath) {
-        _assetPath = assetPath;
+        _assetPath = TfPathCanonicalize(assetPath);
     }
 
     /// Returns the path of the referenced prim.

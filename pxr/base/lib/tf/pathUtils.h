@@ -69,6 +69,11 @@ std::string TfRealPath(std::string const& path,
 TF_API
 std::string TfNormPath(std::string const& path);
 
+/// Simplifies a path by ensuring all slashes in a path are correct for the
+/// platform.
+TF_API
+std::string TfPathCanonicalize(std::string const& path);
+
 /// Return the index delimiting the longest accessible prefix of \a path.
 ///
 /// The returned value is safe to use to split the string via it's generalized

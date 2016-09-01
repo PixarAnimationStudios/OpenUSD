@@ -113,7 +113,7 @@ Ar_DefaultResolver::AnchorRelativePath(
     // a file, strip off the last component, and anchor the path to that
     // directory.
     std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(anchorPath, ARCH_PATH_SEP), path);
+        TfStringGetBeforeSuffix(anchorPath, '/'), path);
     return TfNormPath(anchoredPath);
 }
 
