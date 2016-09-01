@@ -55,6 +55,11 @@ template struct Arch_CtorA<void>;
 template struct Arch_CtorC<void>;
 template struct Arch_CtorE<void>;
 
+///
+/// Macro to stringify a symbol.
+///
+#define ARCH_STRINGIFY(x) #x
+
 #define ARCH_PRIORITY_CAT(section, priority) ARCH_STRINGIFY(section ## priority)
 
 #define ARCH_CONSTRUCTOR_DEFINE(priority, name, ...)                    \

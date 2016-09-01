@@ -64,7 +64,7 @@ bool ArchSetEnv(const std::string &name, const std::string &value, int overwrite
 bool ArchRemoveEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
-    if (_putenv_s(name.c_str(), nullptr) == 0)
+    if (_putenv_s(name.c_str(), "") == 0)
 #else
     if (unsetenv(name.c_str()) == 0)
 #endif

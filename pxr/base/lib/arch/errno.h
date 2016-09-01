@@ -47,12 +47,14 @@ ARCH_API std::string ArchStrerror();
 /// This function uses strerror_r, which is thread-safe.
 ARCH_API std::string ArchStrerror(int errorCode);
 
-/*!
-* \brief Return the error string for the current system error.
-* \ingroup group_arch_SystemFunctions
-*
-* This function uses strerror_r, which is thread-safe.
-*/
+#if defined(ARCH_OS_WINDOWS)
+///
+/// Return the error string for the current system error.
+/// \ingroup group_arch_SystemFunctions
+///
+/// This function uses strerror_r, which is thread-safe.
+///
 ARCH_API std::string ArchStrSysError(unsigned long errorCode);
+#endif
 
 #endif // ARCH_ERRNO_H

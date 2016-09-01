@@ -29,7 +29,6 @@
 #include <dlfcn.h>
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
-#include <Dbghelp.h>
 #endif
 
 bool

@@ -188,14 +188,3 @@ ArchGetExecutablePath()
 
 #endif
 }
-
-size_t ArchGetPageSize()
-{
-#if defined(ARCH_OS_WINDOWS)
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    return si.dwPageSize;
-#else
-    return sysconf(_SC_PAGESIZE);
-#endif
-}

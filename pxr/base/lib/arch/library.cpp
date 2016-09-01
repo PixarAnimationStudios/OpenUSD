@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/library.h"
+#include "pxr/base/arch/errno.h"
 
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
@@ -29,7 +30,7 @@
 #include <dlfcn.h>
 #endif
 
-void* ArchOpenLibrary(const std::string &filename, int flag)
+void* ArchLibraryOpen(const std::string &filename, int flag)
 {
 #if defined(ARCH_OS_WINDOWS)
     return LoadLibrary(filename.c_str());
@@ -41,7 +42,7 @@ void* ArchOpenLibrary(const std::string &filename, int flag)
 const char* ArchLibraryError()
 {
 #if defined(ARCH_OS_WINDOWS)
-    return 0;
+    return ArchStrSysError(::GetLastError()).c_str();
 #else
     return dlerror();
 #endif
