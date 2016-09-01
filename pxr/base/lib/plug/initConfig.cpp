@@ -32,8 +32,8 @@ namespace {
 
 const char* pathEnvVarName  = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation   = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
-const char* userLocation    = BOOST_PP_STRINGIZE(C:\\ProgramData\\usd\\plugins);
-const char* installLocation = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
+const char* userLocation    = "";//BOOST_PP_STRINGIZE(C:\\ProgramData\\usd\\plugins);
+const char* installLocation = "";//BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
 void
 _AppendPathList(std::vector<std::string>* result, const std::string& paths)
 {
