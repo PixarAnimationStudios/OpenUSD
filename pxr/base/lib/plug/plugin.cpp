@@ -59,8 +59,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#undef FindResource         // Defined on Windows.
-
 using std::pair;
 using std::string;
 using std::vector;
