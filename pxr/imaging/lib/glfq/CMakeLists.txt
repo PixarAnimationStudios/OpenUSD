@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glfq)
 
-if (NOT QT4_FOUND)
+if (NOT Qt5Core_FOUND)
     message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: Qt4")
     return()
 endif()
@@ -17,12 +17,11 @@ pxr_shared_library(glfq
         glf
         arch
         tf
-        Qt4::QtCore
-        Qt4::QtGui
-        Qt4::QtOpenGL
-        Qt4::QtXml
-        Qt4::QtNetwork
-        ${Boost_SYSTEM_LIBRARY}
+        Qt5::Core
+        Qt5::Gui
+        Qt5::OpenGL
+        Qt5::Xml
+        Qt5::Network
         ${OPENGL_gl_LIBRARY}
         ${GLEW_LIBRARY}
 
