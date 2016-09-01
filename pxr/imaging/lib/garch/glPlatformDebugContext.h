@@ -24,7 +24,7 @@
 #ifndef GARCH_GLPLATFORM_DEBUG_CONTEXT_H
 #define GARCH_GLPLATFORM_DEBUG_CONTEXT_H
 
-#include "pxr/imaging/glfq/api.h"
+#include "pxr/imaging/garch/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/weakBase.h"
 
@@ -42,23 +42,23 @@ TF_DECLARE_WEAK_PTRS(GarchGLPlatformDebugContext);
 ///
 class GarchGLPlatformDebugContext : public TfWeakBase {
 public:
-    GLFQ_API
+    GARCH_API
     GarchGLPlatformDebugContext(int majorVersion,
                                int minorVersion,
                                bool coreProfile,
                                bool directRenderering);
     virtual ~GarchGLPlatformDebugContext();
 
-    GLFQ_API
+    GARCH_API
     static bool IsEnabledDebugOutput();
 
-    GLFQ_API
+    GARCH_API
     static bool IsEnabledCoreProfile();
 
-    GLFQ_API
+    GARCH_API
     void makeCurrent();
 
-    GLFQ_API
+    GARCH_API
     void *chooseMacVisual();
 
 public:

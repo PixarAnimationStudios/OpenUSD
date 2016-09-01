@@ -50,4 +50,4 @@ void wrapPlatformDebugContext()
     ;
 }
 
-TF_REFPTR_CONST_VOLATILE_GET(GlfQGLPlatformDebugContext)
+TF_REFPTR_CONST_VOLATILE_GET(GarchGLPlatformDebugContext)
