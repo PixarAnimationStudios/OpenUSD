@@ -218,8 +218,9 @@ function(pxr_shared_library LIBRARY_NAME)
         # 'from pxr import X'. Additionally, python libraries always install
         # into the default lib install, not into the third_party subdirectory
         # or similar.
-        set(LIB_INSTALL_PREFIX "lib/python/pxr/${pyModuleName}")
-        
+        _get_install_dir(lib/python/pxr installPrefix)
+        set(LIB_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/${installPrefix}/${pyModuleName}")
+
         set_property(GLOBAL
             APPEND PROPERTY PXR_PYTHON_MODULES ${pyModuleName}
         )
