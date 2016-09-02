@@ -64,7 +64,7 @@ struct Ar_DefaultResolver::_Cache
 
 Ar_DefaultResolver::Ar_DefaultResolver()
 {
-    _searchPath.push_back(ArchGetCwd());
+    _searchPath.push_back(TfPathCanonicalize(ArchGetCwd()));
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (not envPath.empty()) {
@@ -172,7 +172,8 @@ Ar_DefaultResolver::_ResolveNoCache(const std::string& path)
     if (IsRelativePath(path)) {
         // First try to resolve relative paths against the current
         // working directory.
-        std::string resolvedPath = _Resolve(ArchGetCwd(), path);
+        std::string resolvedPath = _Resolve(TfPathCanonicalize(ArchGetCwd()),
+                                            path);
         if (not resolvedPath.empty()) {
             return resolvedPath;
         }
