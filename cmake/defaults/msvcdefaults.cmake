@@ -80,3 +80,9 @@ if (${PXR_STRICT_BUILD_MODE})
     # Treat all warnings as errors
     add_definitions("/WX")
 endif()
+
+if (${PXR_HYBRID_BUILD_MODE})
+    # Effectively release with symbols
+    add_definitions("/Od")
+    add_definitions("/Ob0")
+endif()
