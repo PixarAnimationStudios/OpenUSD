@@ -24,7 +24,7 @@
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 
-const char* ArchGetEnv(const std::string &name)
+std::string ArchGetEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
     size_t requiredSize;
@@ -32,13 +32,13 @@ const char* ArchGetEnv(const std::string &name)
     getenv_s(&requiredSize, NULL, 0, name.c_str());
     if (requiredSize)
     {
-        static std::string result;
+        std::string result;
 
         if (requiredSize < result.size())
             result.resize(requiredSize);
 
         getenv_s(&requiredSize, &result[0], requiredSize, name.c_str());
-        return result.c_str();
+        return result;
     }
     else
         return nullptr;

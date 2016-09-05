@@ -370,7 +370,7 @@ Arch_InitTmpDir()
 	tmpPath[sizeOfPath-1] = 0;
 	_TmpDir = _strdup(tmpPath);
 #else
-    if (const char* tmpdir = ArchGetEnv("TMPDIR")) {
+    if (const char* tmpdir = ArchGetEnv("TMPDIR").c_str()) {
         // This function is not exposed in the header; it is only used during
         // Arch_InitConfig. If this is called more than once when TMPDIR is
         // set, the following call will leak a string.

@@ -104,7 +104,7 @@ ArchGetHomeDirectory(const std::string &login)
 	}
 #else
     if (login.empty()) {
-        const char* home = ArchGetEnv("HOME");
+        const char* home = ArchGetEnv("HOME").c_str();
         if (home && home[0] != '\0')
             return home;
     }
@@ -132,7 +132,7 @@ ArchGetUserName()
 {
     const char* envVarNames[] = {"LOGNAME", "USER", "LNAME", "USERNAME"};
     for (size_t i = 0; i < sizeof(envVarNames) / sizeof(*envVarNames); ++i) {
-        if (const char* user = ArchGetEnv(envVarNames[i])) {
+        if (const char* user = ArchGetEnv(envVarNames[i]).c_str()) {
             if (user && user[0] != '\0')
                 return user;
         }

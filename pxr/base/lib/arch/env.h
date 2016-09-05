@@ -39,7 +39,7 @@
 /// \ingroup group_arch_SystemFunctions
 ///
 ARCH_API 
-const char* ArchGetEnv(const std::string &name);
+std::string ArchGetEnv(const std::string &name);
 
 ///
 /// Creates or modifies an environment variable.
