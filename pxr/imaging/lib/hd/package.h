@@ -31,8 +31,7 @@ TfToken HdPackageComputeShader();
 
 TfToken HdPackageRenderPassShader();
 
-TfToken HdPackageDefaultLightingShader();
-TfToken HdPackageSimpleLightingShader();
+TfToken HdPackageFallbackLightingShader();
 
 TfToken HdPackageFallbackSurfaceShader();
 

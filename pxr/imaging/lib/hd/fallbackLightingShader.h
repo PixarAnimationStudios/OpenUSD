@@ -21,18 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SIMPLE_LIGHTING_SHADER_H
-#define HD_SIMPLE_LIGHTING_SHADER_H
+#ifndef HD_FALLBACK_LIGHTING_SHADER_H
+#define HD_FALLBACK_LIGHTING_SHADER_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/lightingShader.h"
-#include "pxr/imaging/hd/resource.h"
-
-#include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/glslfx.h"
-#include "pxr/imaging/glf/simpleLightingContext.h"
 
-#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec4d.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
@@ -40,42 +36,30 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <string>
+#include <vector>
 
-typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSharedPtr;
-
-/// \class HdSimpleLightingShader
+/// \class Hd_FallbackLightingShader
 ///
-/// A shader that supports simple lighting functionality.
+/// A shader that provides fallback lighting behavior.
 ///
-class HdSimpleLightingShader : public HdLightingShader {
+class Hd_FallbackLightingShader : public HdLightingShader {
 public:
-    HdSimpleLightingShader();
-    virtual ~HdSimpleLightingShader();
+    Hd_FallbackLightingShader();
+    virtual ~Hd_FallbackLightingShader();
 
-    /// HdShader overrides
+    // HdShader overrides
     virtual ID ComputeHash() const;
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
-    /// HdLightingShader overrides
+    // HdLightingShader overrides
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
                            GfMatrix4d const &projectionMatrix);
 
-    void SetLightingStateFromOpenGL();
-    void SetLightingState(GlfSimpleLightingContextPtr const &lightingContext);
-
-    GlfSimpleLightingContextRefPtr GetLightingContext() {
-        return _lightingContext;
-    };
-
 private:
-    GlfSimpleLightingContextRefPtr _lightingContext; 
-    GlfBindingMapRefPtr _bindingMap;
-    bool _useLighting;
     boost::scoped_ptr<GlfGLSLFX> _glslfx;
 };
 
-#endif // HD_SIMPLE_LIGHTING_SHADER_H
+#endif // HD_FALLBACK_LIGHTING_SHADER_H

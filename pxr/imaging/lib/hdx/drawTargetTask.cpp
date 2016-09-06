@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdx/drawTargetTask.h"
+#include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
@@ -31,7 +32,6 @@
 #include "pxr/imaging/hd/drawTarget.h"
 #include "pxr/imaging/hd/drawTargetRenderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -126,8 +126,10 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
 
-                    HdRenderPassStateSharedPtr renderPassState(new HdRenderPassState());
-                    HdSimpleLightingShaderSharedPtr simpleLightingShader(new HdSimpleLightingShader());
+                    HdRenderPassStateSharedPtr renderPassState(
+                        new HdRenderPassState());
+                    HdxSimpleLightingShaderSharedPtr simpleLightingShader(
+                        new HdxSimpleLightingShader());
 
                     _renderPasses.emplace_back(
                             RenderPassInfo {
@@ -215,7 +217,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetDrawingRange(_drawingRange);
         renderPassState->SetCullStyle(_cullStyle);
 
-        HdSimpleLightingShaderSharedPtr &simpleLightingShader
+        HdxSimpleLightingShaderSharedPtr &simpleLightingShader
             = _renderPasses[renderPassIdx].simpleLightingShader;
         GlfSimpleLightingContextRefPtr const& simpleLightingContext =
             simpleLightingShader->GetLightingContext();

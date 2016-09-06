@@ -37,7 +37,8 @@
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/lightingShader.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
+
+#include "pxr/imaging/glf/simpleLightingContext.h"
 
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)

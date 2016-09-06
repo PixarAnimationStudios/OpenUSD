@@ -23,20 +23,20 @@
 //
 #include "pxr/imaging/hdx/simpleLightBypassTask.h"
 
+#include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
 
 // -------------------------------------------------------------------------- //
 
 HdxSimpleLightBypassTask::HdxSimpleLightBypassTask(HdSceneDelegate* delegate,
                                                    SdfPath const& id)
     : HdSceneTask(delegate, id)
-    , _lightingShader(new HdSimpleLightingShader())
+    , _lightingShader(new HdxSimpleLightingShader())
     , _simpleLightingContext()
 {
 }

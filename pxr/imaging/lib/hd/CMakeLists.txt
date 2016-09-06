@@ -99,7 +99,6 @@ pxr_shared_library(hd
         shader
         shaderKey
         shaderParam
-        simpleLightingShader
         surfaceShader
         strategyBase
         task
@@ -120,7 +119,7 @@ pxr_shared_library(hd
         basisCurvesComputations
         basisCurvesShaderKey
         cullingShaderKey
-        defaultLightingShader
+        fallbackLightingShader
         geometricShader
         meshShaderKey
         pointsShaderKey
@@ -139,7 +138,8 @@ pxr_shared_library(hd
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
-        shaders/defaultLightingShader.glslfx
+        shaders/fallbackLighting.glslfx
+        shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
         shaders/frustumCull.glslfx
         shaders/instancing.glslfx
@@ -150,8 +150,6 @@ pxr_shared_library(hd
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
-        shaders/simpleLighting.glslfx
-        shaders/simpleLightingShader.glslfx
 )
 
 if (QT4_FOUND)

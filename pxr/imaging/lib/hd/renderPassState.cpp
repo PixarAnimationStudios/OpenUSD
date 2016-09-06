@@ -26,7 +26,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/defaultLightingShader.h"
+#include "pxr/imaging/hd/fallbackLightingShader.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/renderPassShader.h"
@@ -49,7 +49,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 HdRenderPassState::HdRenderPassState()
     : _renderPassShader(new HdRenderPassShader())
-    , _defaultLightingShader(new Hd_DefaultLightingShader())
+    , _fallbackLightingShader(new Hd_FallbackLightingShader())
     , _worldToViewMatrix(1)
     , _projectionMatrix(1)
     , _viewport(0, 0, 1, 1)
@@ -68,13 +68,13 @@ HdRenderPassState::HdRenderPassState()
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
 {
-    _lightingShader = _defaultLightingShader;
+    _lightingShader = _fallbackLightingShader;
 }
 
 HdRenderPassState::HdRenderPassState(
     HdRenderPassShaderSharedPtr const &renderPassShader)
     : _renderPassShader(renderPassShader)
-    , _defaultLightingShader(new Hd_DefaultLightingShader())
+    , _fallbackLightingShader(new Hd_FallbackLightingShader())
     , _worldToViewMatrix(1)
     , _projectionMatrix(1)
     , _viewport(0, 0, 1, 1)
@@ -93,7 +93,7 @@ HdRenderPassState::HdRenderPassState(
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
 {
-    _lightingShader = _defaultLightingShader;
+    _lightingShader = _fallbackLightingShader;
 }
 
 HdRenderPassState::~HdRenderPassState()
@@ -280,7 +280,7 @@ HdRenderPassState::SetLightingShader(HdLightingShaderSharedPtr const &lightingSh
     if (lightingShader) {
         _lightingShader = lightingShader;
     } else {
-        _lightingShader = _defaultLightingShader;
+        _lightingShader = _fallbackLightingShader;
     }
 }
 

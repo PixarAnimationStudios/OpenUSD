@@ -55,19 +55,11 @@ HdPackageRenderPassShader()
 }
 
 TfToken
-HdPackageDefaultLightingShader()
+HdPackageFallbackLightingShader()
 {
-    static TfToken defaultLightingShader =
-        _GetShaderPath("defaultLightingShader.glslfx");
-    return defaultLightingShader;
-}
-
-TfToken
-HdPackageSimpleLightingShader()
-{
-    static TfToken simpleLightingShader =
-        _GetShaderPath("simpleLightingShader.glslfx");
-    return simpleLightingShader;
+    static TfToken fallbackLightingShader =
+        _GetShaderPath("fallbackLightingShader.glslfx");
+    return fallbackLightingShader;
 }
 
 TfToken

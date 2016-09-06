@@ -30,8 +30,22 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/staticTokens.h"
+
+#include <boost/functional/hash.hpp>
 
 #include <string>
+#include <sstream>
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (l0dir)
+    (l0color)
+    (l1dir)
+    (l1color)
+    (sceneAmbient)
+    (vec3)
+);
 
 template <typename T>
 static VtArray<T>
@@ -144,3 +158,120 @@ Hd_TestDriver::SetRepr(TfToken const &reprName)
             HdRprimCollection(HdTokens->geometry, _reprName));
     }
 }
+
+// --------------------------------------------------------------------------
+
+Hd_TestLightingShader::Hd_TestLightingShader()
+{
+    const char *lightingShader =
+        "-- glslfx version 0.1                                              \n"
+        "-- configuration                                                   \n"
+        "{\"techniques\": {\"default\": {\"fragmentShader\" : {             \n"
+        " \"source\": [\"TestLighting.Lighting\"]                           \n"
+        "}}}}                                                               \n"
+        "-- glsl TestLighting.Lighting                                      \n"
+        "vec3 FallbackLighting(vec3 Peye, vec3 Neye, vec3 color) {          \n"
+        "    vec3 n = normalize(Neye);                                      \n"
+        "    return HdGet_sceneAmbient()                                    \n"
+        "      + color * HdGet_l0color() * max(0.0, dot(n, HdGet_l0dir()))  \n"
+        "      + color * HdGet_l1color() * max(0.0, dot(n, HdGet_l1dir())); \n"
+        "}                                                                  \n";
+
+    _lights[0].dir   = GfVec3f(0, 0, 1);
+    _lights[0].color = GfVec3f(1, 1, 1);
+    _lights[1].dir   = GfVec3f(0, 0, 1);
+    _lights[1].color = GfVec3f(0, 0, 0);
+    _sceneAmbient    = GfVec3f(0.04, 0.04, 0.04);
+
+    std::stringstream ss(lightingShader);
+    _glslfx.reset(new GlfGLSLFX(ss));
+}
+
+Hd_TestLightingShader::~Hd_TestLightingShader()
+{
+}
+
+/* virtual */
+Hd_TestLightingShader::ID
+Hd_TestLightingShader::ComputeHash() const
+{
+    HD_TRACE_FUNCTION();
+
+    size_t hash = _glslfx->GetHash();
+    return (ID)hash;
+}
+
+/* virtual */
+std::string
+Hd_TestLightingShader::GetSource(TfToken const &shaderStageKey) const
+{
+    HD_TRACE_FUNCTION();
+    HD_MALLOC_TAG_FUNCTION();
+
+    std::string source = _glslfx->GetSource(shaderStageKey);
+    return source;
+}
+
+/* virtual */
+void
+Hd_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
+                                 GfMatrix4d const &projectionMatrix)
+{
+    for (int i = 0; i < 2; ++i) {
+        _lights[i].eyeDir
+            = worldToViewMatrix.TransformDir(_lights[i].dir).GetNormalized();
+    }
+}
+
+/* virtual */
+void
+Hd_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
+                                      int program)
+{
+    binder.BindUniformf(_tokens->l0dir,   3, _lights[0].eyeDir.GetArray());
+    binder.BindUniformf(_tokens->l0color, 3, _lights[0].color.GetArray());
+    binder.BindUniformf(_tokens->l1dir,   3, _lights[1].eyeDir.GetArray());
+    binder.BindUniformf(_tokens->l1color, 3, _lights[1].color.GetArray());
+    binder.BindUniformf(_tokens->sceneAmbient, 3, _sceneAmbient.GetArray());
+}
+
+/* virtual */
+void
+Hd_TestLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
+                                        int program)
+{
+}
+
+/*virtual*/
+void
+Hd_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+{
+    customBindings->push_back(
+        HdBindingRequest(HdBinding::UNIFORM, _tokens->l0dir, _tokens->vec3));
+    customBindings->push_back(
+        HdBindingRequest(HdBinding::UNIFORM, _tokens->l0color, _tokens->vec3));
+    customBindings->push_back(
+        HdBindingRequest(HdBinding::UNIFORM, _tokens->l1dir, _tokens->vec3));
+    customBindings->push_back(
+        HdBindingRequest(HdBinding::UNIFORM, _tokens->l1color, _tokens->vec3));
+    customBindings->push_back(
+        HdBindingRequest(HdBinding::UNIFORM, _tokens->sceneAmbient, _tokens->vec3));
+}
+
+void
+Hd_TestLightingShader::SetSceneAmbient(GfVec3f const &color)
+{
+    _sceneAmbient = color;
+}
+
+void
+Hd_TestLightingShader::SetLight(int light,
+                                GfVec3f const &dir, GfVec3f const &color)
+{
+    if (light < 2) {
+        _lights[light].dir = dir;
+        _lights[light].eyeDir = dir;
+        _lights[light].color = color;
+    }
+}
+

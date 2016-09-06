@@ -43,7 +43,7 @@
 class HdRenderIndex;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
 
 class HdxSimpleLightBypassTask : public HdSceneTask {
@@ -59,7 +59,7 @@ protected:
 
 private:
     HdCameraSharedPtr _camera;
-    HdSimpleLightingShaderSharedPtr _lightingShader;
+    HdxSimpleLightingShaderSharedPtr _lightingShader;
 
     GlfSimpleLightingContextRefPtr _simpleLightingContext;
 };

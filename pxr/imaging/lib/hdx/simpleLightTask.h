@@ -41,7 +41,7 @@ class HdRenderIndex;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixComputationSharedPtr;
 
 TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
@@ -62,7 +62,7 @@ private:
     // Should be weak ptrs
     HdCameraSharedPtr _camera;
     HdLightSharedPtrVector _lights;
-    HdSimpleLightingShaderSharedPtr _lightingShader;
+    HdxSimpleLightingShaderSharedPtr _lightingShader;
     int _collectionVersion;
     bool _enableShadows;
     GfVec4f _viewport;

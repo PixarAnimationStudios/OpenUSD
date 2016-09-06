@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdx/simpleLightTask.h"
 
 #include "pxr/imaging/hdx/tokens.h"
+#include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
 
 #include "pxr/imaging/hd/camera.h"
@@ -33,7 +34,6 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 
@@ -49,7 +49,7 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     : HdSceneTask(delegate, id) 
     , _camera()
     , _lights()
-    , _lightingShader(new HdSimpleLightingShader())
+    , _lightingShader(new HdxSimpleLightingShader())
     , _collectionVersion(0)
     , _enableShadows(false)
     , _viewport(0.0f, 0.0f, 0.0f, 0.0f)

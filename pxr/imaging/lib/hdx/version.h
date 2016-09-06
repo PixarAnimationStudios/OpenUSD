@@ -25,6 +25,7 @@
 #define HDX_VERSION_H
 
 // 1  -> 2 : split HdxRenderSetupTask out of HdxRenderTask
-#define HDX_API  2
+// 2  -> 3 : move simpleLightingShader to Hdx.
+#define HDX_API  3
 
 #endif // HDX_VERSION_H

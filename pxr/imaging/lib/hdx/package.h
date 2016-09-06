@@ -29,5 +29,6 @@
 
 TfToken HdxPackageRenderPassShader();
 TfToken HdxPackageRenderPassIdShader();
+TfToken HdxPackageSimpleLightingShader();
 
 #endif
