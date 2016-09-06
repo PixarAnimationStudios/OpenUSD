@@ -199,6 +199,10 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
         GfMatrix4d projectionMatrix = projMatrix * yflip;
 
+        const VtValue &vClipPlanes = camera->Get(HdTokens->clipPlanes);
+        const HdRenderPassState::ClipPlanesVector &clipPlanes =
+                        vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
+
         GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
         GfVec4d viewport(0, 0, resolution[0], resolution[1]);
 
@@ -219,6 +223,8 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetLightingShader(simpleLightingShader);
 
         renderPassState->SetCamera(viewMatrix, projectionMatrix, viewport);
+        renderPassState->SetClipPlanes(clipPlanes);
+
         simpleLightingContext->SetCamera(viewMatrix, projectionMatrix);
 
         if (lightingContext) {
@@ -296,7 +302,9 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
             _renderPasses[renderPassIdx].pass.get();
         HdRenderPassStateSharedPtr renderPassState =
             _renderPasses[renderPassIdx].renderPassState;
+        renderPassState->Bind();
         renderPass->Execute(renderPassState);
+        renderPassState->Unbind();
     }
 
     if (oldAlphaToCoverage) {
