@@ -68,3 +68,25 @@ void Tf_PyRestorePythonExceptionState(TfPyExceptionState state) {
     // *without* decrementing the reference count (since it has been stolen).
     state.Release();
 }
+
+TfPyExceptionStateScope::TfPyExceptionStateScope() :
+    _state(Tf_PyFetchPythonExceptionState())
+{
+    // Tf_PyFetchPythonExceptionState() clears the exception state
+    // but we want it back.
+    Restore();
+}
+
+TfPyExceptionStateScope::~TfPyExceptionStateScope()
+{
+    Restore();
+}
+
+void
+TfPyExceptionStateScope::Restore()
+{
+    // Note that Tf_PyRestorePythonExceptionState() leaves _state with
+    // a reference to the state, unlike PyErr_Restore, because it makes
+    // a copy of _state and that bumps the reference counts.
+    Tf_PyRestorePythonExceptionState(_state);
+}
