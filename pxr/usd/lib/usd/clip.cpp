@@ -434,8 +434,19 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         const double upper = std::max(map1.second, map2.second);
 
         if (lower <= lowerInClip and lowerInClip <= upper) {
-            translatedLower.reset(
-                _TranslateTimeToExternal(lowerInClip, map1, map2));
+            if (map1.second != map2.second) {
+                translatedLower.reset(
+                    _TranslateTimeToExternal(lowerInClip, map1, map2));
+            } else {
+                const bool lowerUpperMatch = (lowerInClip == upperInClip);
+                if (lowerUpperMatch && time == map1.first) {
+                    translatedLower.reset(map1.first);
+                } else if (lowerUpperMatch && time == map2.first) {
+                    translatedLower.reset(map2.first);
+                } else {
+                    translatedLower.reset(map1.first);
+                }
+            }
             break;
         }
     }
@@ -449,8 +460,19 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         const double upper = std::max(map1.second, map2.second);
 
         if (lower <= upperInClip and upperInClip <= upper) {
-            translatedUpper.reset(
-                _TranslateTimeToExternal(upperInClip, map1, map2));
+            if (map1.second != map2.second) {
+                translatedUpper.reset(
+                    _TranslateTimeToExternal(upperInClip, map1, map2));
+            } else {
+                const bool lowerUpperMatch = (lowerInClip == upperInClip);
+                if (lowerUpperMatch && time == map1.first) {
+                    translatedUpper.reset(map1.first);
+                } else if (lowerUpperMatch && time == map2.first) {
+                    translatedUpper.reset(map2.first);
+                } else {
+                    translatedUpper.reset(map2.first);
+                }
+            }
             break;
         }
     }
