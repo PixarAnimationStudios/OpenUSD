@@ -55,9 +55,9 @@ public:
         GLenum  wrapModeT;
     };
 
-    virtual int ResizedWidth() const = 0;
+    virtual int ResizedWidth(int mipLevel = 0) const = 0;
 
-    virtual int ResizedHeight() const = 0;
+    virtual int ResizedHeight(int mipLevel = 0) const = 0;
 
     virtual GLenum GLInternalFormat() const = 0;
 
@@ -69,13 +69,17 @@ public:
 
     virtual WrapInfo GetWrapInfo() const = 0;
 
-    virtual int ComputeBytesUsed() const = 0;
+    virtual size_t ComputeBytesUsed() const = 0;
 
-    virtual bool HasRawBuffer() const = 0;
-
-    virtual unsigned char * GetRawBuffer() const = 0;
+    virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const = 0;
 
     virtual bool Read(int degradeLevel, bool generateMipmap) = 0;
+
+    virtual bool HasRawBuffer(int mipLevel = 0) const = 0;
+
+    virtual unsigned char * GetRawBuffer(int mipLevel = 0) const = 0;   
+
+    virtual int GetNumMipLevels() const = 0;
 
     virtual bool IsCompressed() const {
         return GlfIsCompressedFormat(GLFormat());
@@ -88,4 +92,4 @@ protected:
 
 };
 
-#endif // GLF_UVTEXTURE_DATA
+#endif // GLF_BASETEXTURE_DATA
