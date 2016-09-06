@@ -1614,6 +1614,32 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& usdPath, int requestBits)
     }
 }
 
+// Given a a map from paths to purpose mask values, find the longest prefix
+// of usdPath in the map, and return the corresponding value, or PurposeNone
+// if no prefix is found.
+static int
+_GetPurposeMask(const UsdImagingDelegate::CollectionMembershipMap &map,
+                const SdfPath &path)
+{
+    // Use upper_bound to find the first item that's greater than path.
+    // Then search backwards to find the longest prefix of path, if there's
+    // a prefix in the map.
+    //
+    // In the worst case, this is log(N) + N in the number of paths in the map.
+    // If we expect these maps to get large, we can consider other approaches,
+    // such as using an unordered_map and calling find() repeatedly on parent
+    // paths.
+    auto it = map.upper_bound(path);
+    while (it != map.begin()) {
+        it = std::prev(it);
+        if (path.HasPrefix(it->first)) {
+            return it->second;
+        }
+    }
+
+    return UsdImagingDelegate::PurposeNone;
+}
+
 /*virtual*/
 bool 
 UsdImagingDelegate::IsInCollection(SdfPath const& id, 
@@ -1633,7 +1659,11 @@ UsdImagingDelegate::IsInCollection(SdfPath const& id,
 
     // lookup user-configured collections
     int purposeMask = PurposeNone;
-    TfMapLookup(_collectionMap, collectionName, &purposeMask);
+    auto it = _collectionMap.find(collectionName);
+    if (it != _collectionMap.end()) {
+        purposeMask = _GetPurposeMask(it->second, usdPath);
+    }
+    
     bool res = false;
 
     if (purpose == UsdGeomTokens->default_) {
@@ -2109,13 +2139,21 @@ void
 UsdImagingDelegate::SetInCollection(TfToken const &collectionName,
                                     int purposeMask)
 {
-    CollectionMap::iterator it = _collectionMap.find(collectionName);
-    if (it != _collectionMap.end()) {
-        if (it->second == purposeMask) return; // nothing changed
-        it->second = purposeMask;
-    } else {
-        _collectionMap.insert(std::make_pair(collectionName, purposeMask));
-    }
+    // Create a membership map containing just the absolute root.
+    CollectionMembershipMap membershipMap;
+    membershipMap.insert(
+        std::make_pair(SdfPath::AbsoluteRootPath(), purposeMask));
+    _collectionMap[collectionName] = std::move(membershipMap);
+
+    GetRenderIndex().GetChangeTracker().MarkCollectionDirty(collectionName);
+}
+
+void
+UsdImagingDelegate::TransferCollectionMembershipMap(
+    TfToken const &collectionName,
+    CollectionMembershipMap &&membershipMap)
+{
+    _collectionMap[collectionName] = membershipMap;
 
     GetRenderIndex().GetChangeTracker().MarkCollectionDirty(collectionName);
 }

@@ -51,8 +51,10 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
+#include <boost/container/flat_map.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <tbb/spin_rw_mutex.h>
+#include <map>
 #include <string>
 
 TF_DECLARE_WEAK_PTRS(UsdImagingDelegate);
@@ -74,7 +76,10 @@ class UsdImagingDelegate : public HdSceneDelegate, public TfWeakBase {
 public:
 
     typedef TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> RigidXformOverridesMap;
-    typedef TfHashMap<TfToken, int /*purposeMask*/, TfToken::HashFunctor> CollectionMap;
+    typedef boost::container::flat_map<SdfPath, int /*purposeMask*/>
+        CollectionMembershipMap;
+    typedef TfHashMap<TfToken, CollectionMembershipMap, TfToken::HashFunctor>
+        CollectionMap;
 
     UsdImagingDelegate();
 
@@ -217,6 +222,15 @@ public:
     /// Sets the membership flag of user-defined \p collectionName for the
     /// entire delegate. IsInCollection responds based on this setting.
     void SetInCollection(TfToken const &collectionName, int purposeMask);
+
+    /// Sets the membership of user-defined \p collectionName as determined
+    /// by \p membershipMap, a SdfPathMap to purposeMask (int) from rprim
+    /// memership (or not) can be determined.
+    ///
+    /// IsInCollection responds based on this setting.
+    void TransferCollectionMembershipMap(
+        TfToken const &collectionName,
+        CollectionMembershipMap &&membershipMap);
 
     /// Sets the collection map
     /// (discard previously set existing map by SetInCollection)
