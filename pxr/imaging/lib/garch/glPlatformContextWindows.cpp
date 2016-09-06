@@ -10,19 +10,11 @@
 // GarchGLWContextState
 //
 
-static HDC g_device;
-static HGLRC g_context;
-
 GarchGLWContextState::GarchGLWContextState() :
+	device(wglGetCurrentDC()),
+	context(wglGetCurrentContext()),
    _defaultCtor(true)
 {
-    if (!g_device)
-        g_device = wglGetCurrentDC();
-
-    if (!g_context)
-        g_context =  wglGetCurrentContext();
-    context = g_context;
-    device = g_device;
 }
 
 GarchGLWContextState::GarchGLWContextState(HDC device_, HGLRC context_):
