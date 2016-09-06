@@ -14,6 +14,20 @@ class "NodeGraphNodeAPI" (
         This hint defines what tint the node should have in the node graph.
         """
     )
+    uniform token ui:nodegraph:node:expansionState (
+        allowedTokens = ["open", "closed", "minimized"]
+        doc = """ 
+        The current expansionState of the node in the ui. 
+        'open' = fully expanded
+        'closed' = fully collapsed
+        'minimized' = should take the least space possible
+        """
+    )
+    uniform asset ui:nodegraph:node:icon (
+        doc = """
+        This points to an image that should be displayed on the node
+        """
+    )
     uniform float2 ui:nodegraph:node:pos (
         doc = """
         Declared relative position to the parent in a node graph.
