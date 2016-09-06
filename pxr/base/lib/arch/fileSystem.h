@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// Architecture dependent file system access
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
 #include <memory>
@@ -51,8 +52,8 @@
 /// Return the length of a file in bytes.
 ///
 /// Returns -1 if the file cannot be opened/read.
-int64_t ArchGetFileLength(const char *fileName);
-int64_t ArchGetFileLength(FILE *file);
+ARCH_API int64_t ArchGetFileLength(const char *fileName);
+ARCH_API int64_t ArchGetFileLength(FILE *file);
 
 /// Returns true if the data in \c stat struct \p st indicates that the target
 /// file or directory is writable.
@@ -60,25 +61,25 @@ int64_t ArchGetFileLength(FILE *file);
 /// This returns true if the struct pointer is valid, and the stat indicates
 /// the target is writable by the effective user, effective group, or all
 /// users.
-bool ArchStatIsWritable(const struct stat *st);
+ARCH_API bool ArchStatIsWritable(const struct stat *st);
 
 /// Returns the modification time (mtime) in seconds from the stat struct.
 ///
 /// This function returns the modification time with as much precision as is
 /// available in the stat structure for the current platform.
-double ArchGetModificationTime(const struct stat& st);
+ARCH_API double ArchGetModificationTime(const struct stat& st);
 
 /// Returns the access time (atime) in seconds from the stat struct.
 ///
 /// This function returns the access time with as much precision as is
 /// available in the stat structure for the current platform.
-double ArchGetAccessTime(const struct stat& st);
+ARCH_API double ArchGetAccessTime(const struct stat& st);
 
 /// Returns the status change time (ctime) in seconds from the stat struct.
 ///
 /// This function returns the status change time with as much precision as is
 /// available in the stat structure for the current platform.
-double ArchGetStatusChangeTime(const struct stat& st);
+ARCH_API double ArchGetStatusChangeTime(const struct stat& st);
 
 /// Return the path to a temporary directory for this platform.
 ///
@@ -89,7 +90,7 @@ double ArchGetStatusChangeTime(const struct stat& st);
 /// see "man hier"). The returned string will not have a trailing slash.
 ///
 /// This routine is threadsafe and will not perform any memory allocations.
-const char *ArchGetTmpDir();
+ARCH_API const char *ArchGetTmpDir();
 
 /// Make a temporary file name, in a system-determined temporary directory.
 ///
@@ -104,6 +105,7 @@ const char *ArchGetTmpDir();
 /// \warning This call opens a security hole because of the race between
 /// choosing the name and opening the file.  This call should be avoided in
 /// favor of \c ArchMakeTmpFile().
+ARCH_API
 std::string ArchMakeTmpFileName(const std::string& prefix,
     	    	    	    	const std::string& suffix = std::string());
 
@@ -116,6 +118,7 @@ std::string ArchMakeTmpFileName(const std::string& prefix,
 /// pathname.  Returns -1 on failure and errno is set.
 ///
 /// The call is threadsafe.
+ARCH_API
 int ArchMakeTmpFile(const std::string& prefix, std::string* pathname = 0);
 
 /// Create a temporary file, in a given temporary directory.
@@ -126,6 +129,7 @@ int ArchMakeTmpFile(const std::string& prefix, std::string* pathname = 0);
 /// path to the file in pathname.  Returns -1 on failure and errno is set.
 ///
 /// The call is threadsafe.
+ARCH_API
 int ArchMakeTmpFile(const std::string& tmpdir,
                     const std::string& prefix, std::string* pathname = 0);
 
@@ -137,26 +141,28 @@ int ArchMakeTmpFile(const std::string& tmpdir,
 /// errno is set.
 ///
 /// The call is threadsafe.
+ARCH_API
 std::string ArchMakeTmpSubdir(const std::string& tmpdir,
                               const std::string& prefix);
 
 /// Return all automounted directories.
 ///
 /// Returns a set of all directories that are automount points for the host.
+ARCH_API
 std::set<std::string> ArchGetAutomountDirectories();
 
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
 #if defined(ARCH_OS_WINDOWS)
 struct Arch_Unmapper {
-    void operator()(char *mapStart) const;
-    void operator()(char const *mapStart) const;
+    ARCH_API void operator()(char *mapStart) const;
+    ARCH_API void operator()(char const *mapStart) const;
 };
 #else // assume POSIX
 struct Arch_Unmapper {
     Arch_Unmapper() : _length(~0) {}
     explicit Arch_Unmapper(size_t length) : _length(length) {}
-    void operator()(char *mapStart) const;
-    void operator()(char const *mapStart) const;
+    ARCH_API void operator()(char *mapStart) const;
+    ARCH_API void operator()(char const *mapStart) const;
 private:
     size_t _length;
 };
@@ -171,24 +177,28 @@ using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// read-only mapped contents.  The contents may not be modified.
+ARCH_API
 ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// copy-on-write mapped contents.  If modified, the affected pages are
 /// dissociated from the underlying file and become backed by the system's swap
 /// or page-file storage.  Edits are not carried through to the underlying file.
+ARCH_API
 ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
 /// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
 /// file position indicator for \p file is not changed.  Return the number of
 /// bytes read, or zero if at end of file.  Return -1 in case of an error, with
 /// errno set appropriately.
+ARCH_API
 int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
 
 /// Write up to \p count bytes from \p buffer to \p file at \p offset.  The file
 /// position indicator for \p file is not changed.  Return the number of bytes
 /// written, possibly zero if none written.  Return -1 in case of an error, with
 /// errno set appropriately.
+ARCH_API
 int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
 
 ///@}

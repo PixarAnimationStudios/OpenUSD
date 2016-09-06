@@ -31,6 +31,7 @@
 /// This file needs to be public but shouldn't be included directly by
 /// anything outside of \c lib/tf.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/functionLite.h"
 #include <string>
 
@@ -41,6 +42,7 @@
 /// reconstruct a well formatted function name.
 ///
 /// \ingroup group_arch_Diagnostic
+ARCH_API
 std::string ArchGetPrettierFunctionName(const std::string &function,
                                         const std::string &prettyFunction);
 

@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// High-resolution, low-cost timing routines.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
 
@@ -89,18 +90,22 @@ ArchGetTickTime()
 ///     int64_t duration = ArchTicksToNanoseconds(t2 - t1);
 /// \endcode
 ///
+ARCH_API
 int64_t ArchTicksToNanoseconds(uint64_t nTicks);
 
 /// Convert a duration measured in "ticks", as returned by
 /// \c ArchGetTickTime(), to seconds.
+ARCH_API
 double ArchTicksToSeconds(uint64_t nTicks);
 
 /// Convert a duration in seconds to "ticks", as returned by
 /// \c ArchGetTickTime().
+ARCH_API
 uint64_t ArchSecondsToTicks(double seconds);
     
 /// Get nanoseconds per tick. Useful when converting ticks obtained from
 /// \c ArchTickTime()
+ARCH_API
 double ArchGetNanosecondsPerTick();
 
 ///@}

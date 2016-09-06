@@ -28,6 +28,7 @@
 /// \ingroup group_arch_Diagnostics
 /// Low-level fatal error reporting.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/functionLite.h"
 #include <stddef.h>
@@ -40,6 +41,7 @@
 /// \param fileName The name of the file that \c Arch_Error was called from.
 ///
 /// \private
+ARCH_API
 void Arch_Error(const char* msg, const char* funcName,
                 size_t lineNo, const char* fileName);
 
@@ -51,6 +53,7 @@ void Arch_Error(const char* msg, const char* funcName,
 /// \param fileName The name of the file that \c Arch_Warning was called from.
 ///
 /// \private
+ARCH_API
 void Arch_Warning(const char* msg, const char* funcName,
                   size_t lineNo, const char* fileName);
 

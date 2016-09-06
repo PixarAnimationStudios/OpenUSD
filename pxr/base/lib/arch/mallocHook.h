@@ -28,6 +28,8 @@
 /// \ingroup group_arch_Memory
 /// Routines for controlling malloc behavior.
 
+#include "pxr/base/arch/api.h"
+
 #include <stdlib.h>
 #include <string>
 
@@ -39,7 +41,7 @@
 /// determine if it is the active allocator.
 ///
 /// \ingroup group_arch_Memory
-bool ArchIsPtmallocActive();
+ARCH_API bool ArchIsPtmallocActive();
 
 /// Return true if the C++ STL allocator was requested to be turned off.
 ///
@@ -48,7 +50,7 @@ bool ArchIsPtmallocActive();
 /// platforms.
 ///
 /// \ingroup group_arch_Memory
-bool ArchIsStlAllocatorOff();
+ARCH_API bool ArchIsStlAllocatorOff();
 
 /// \class ArchMallocHook
 /// \ingroup group_arch_Memory
@@ -80,6 +82,7 @@ public:
     /// If initialization fails, \c false is returned and \p *errMsg is set
     /// accordingly. If \c *this has already been initialized, calling \c
     /// Initialize() a second time will fail.
+    ARCH_API
     bool Initialize(void* (*mallocWrapper)(size_t, const void*),
             void* (*reallocWrapper)(void*, size_t, const void*),
             void* (*memalignWrapper)(size_t, size_t, const void*),
@@ -91,6 +94,7 @@ public:
     /// In order for this function to work properly, \c this cannot be a local
     /// or dynamically initialized variable; rather, \c this must be a global
     /// variable, to ensure zero-initialization.
+    ARCH_API
     bool IsInitialized();
 
     /// Call the original system \c malloc() function.
@@ -99,6 +103,7 @@ public:
     /// system-supplied malloc() call.  For speed reasons, no safety checks
     /// are performed; in particular, calling this function without having
     /// successfully initialized \p *this will likely crash your program.
+    ARCH_API
     void* Malloc(size_t nBytes) {
         return (*_underlyingMallocFunc)(nBytes);
     }
@@ -109,6 +114,7 @@ public:
     /// system-supplied \c realloc() call.  For speed reasons, no safety checks
     /// are performed; in particular, calling this function without having
     /// successfully initialized \p *this will likely crash your program.
+    ARCH_API
     void* Realloc(void* ptr, size_t nBytes) {
         return (*_underlyingReallocFunc)(ptr, nBytes);
     }
@@ -119,6 +125,7 @@ public:
     /// system-supplied \c memalign() call.  For speed reasons, no safety checks
     /// are performed; in particular, calling this function without having
     /// successfully initialized \p *this will likely crash your program.
+    ARCH_API
     void* Memalign(size_t alignment, size_t nBytes) {
         return (*_underlyingMemalignFunc)(alignment, nBytes);
     }
@@ -129,6 +136,7 @@ public:
     /// system-supplied \c free() call.  For speed reasons, no safety checks
     /// are performed; in particular, calling this function without having
     /// successfully initialized \p *this will likely crash your program.
+    ARCH_API
     void Free(void* ptr) {
         (*_underlyingFreeFunc)(ptr);
     }

@@ -28,8 +28,10 @@
 /// \ingroup group_arch_Multithreading
 /// Architecture-specific thread function calls.
 
+#include "pxr/base/arch/api.h"
+
 /// Return true if the calling thread is the main thread, false otherwise.
 /// \ingroup group_arch_Multithreading
-bool ArchIsMainThread();
+ARCH_API bool ArchIsMainThread();
 
 #endif // ARCH_THREADS_H

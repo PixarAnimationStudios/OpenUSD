@@ -21,32 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef ARCH_ERRNO_H
-#define ARCH_ERRNO_H
+#ifndef ARCH_API_H
+#define ARCH_API_H
 
-/// \file arch/errno.h
-/// \ingroup group_arch_SystemFunctions
-/// Functions for dealing with system errors.
+#include "pxr/base/arch/export.h"
 
-#include "pxr/base/arch/api.h"
-#include <string>
+#if defined(ARCH_STATIC)
+#   define ARCH_API
+#   define ARCH_LOCAL
+#else
+#   if defined(ARCH_EXPORTS)
+#       define ARCH_API ARCH_EXPORT
+#       define ARCH_API_TEMPLATE_CLASS(...)
+#       define ARCH_API_TEMPLATE_STRUCT(...)
+#   else
+#       define ARCH_API ARCH_IMPORT
+#       define ARCH_API_TEMPLATE_CLASS(...) extern template class ARCH_API __VA_ARGS__
+#       define ARCH_API_TEMPLATE_STRUCT(...) extern template struct ARCH_API __VA_ARGS__
+#   endif
+#   define ARCH_LOCAL ARCH_HIDDEN
+#endif
 
-/// \addtogroup group_arch_SystemFunctions
-///@{
-
-/// Return the error string for the current value of errno.
-///
-/// This function provides a thread-safe method of fetching the error string
-/// from errno. POSIX.1c defines errno as a macro which provides access to a
-/// thread-local integer. This function uses strerror_r, which is thread-safe.
-/// \overload
-ARCH_API std::string ArchStrerror();
-
-/// Return the error string for the specified value of errno.
-///
-/// This function uses strerror_r, which is thread-safe.
-ARCH_API std::string ArchStrerror(int errorCode);
-
-///@}
-
-#endif // ARCH_ERRNO_H
+#endif
