@@ -38,7 +38,7 @@ using std::string;
 string
 TfGetenv(const string& envName, const string& defaultValue)
 {
-    const char* value = ArchGetEnv(envName.c_str()).c_str();
+    const char* value = ArchGetEnv(envName).c_str();
 
     if (!value || value[0] == '\0')
         return defaultValue;
@@ -49,7 +49,7 @@ TfGetenv(const string& envName, const string& defaultValue)
 int
 TfGetenvInt(const string& envName, int defaultValue)
 {
-	const char* value = ArchGetEnv(envName.c_str()).c_str();
+	const char* value = ArchGetEnv(envName).c_str();
 
     if (!value || value[0] == '\0')
         return defaultValue;
@@ -60,7 +60,7 @@ TfGetenvInt(const string& envName, int defaultValue)
 bool
 TfGetenvBool(const string& envName, bool defaultValue)
 {
-    const char* value = ArchGetEnv(envName.c_str()).c_str();
+    const char* value = ArchGetEnv(envName).c_str();
 
     if (!value || value[0] == '\0')
         return defaultValue;
@@ -79,7 +79,7 @@ TfGetenvBool(const string& envName, bool defaultValue)
 double
 TfGetenvDouble(const string& envName, double defaultValue)
 {
-	const char* value = ArchGetEnv(envName.c_str()).c_str();
+	const char* value = ArchGetEnv(envName).c_str();
 
     if (!value || value[0] == '\0')
         return defaultValue;

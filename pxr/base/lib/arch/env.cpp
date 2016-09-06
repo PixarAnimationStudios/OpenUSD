@@ -38,10 +38,10 @@ std::string ArchGetEnv(const std::string &name)
             result.resize(requiredSize);
 
         getenv_s(&requiredSize, &result[0], requiredSize, name.c_str());
-        return result;
+        return std::string(result);
     }
     else
-        return nullptr;
+        return std::string();
 
 #else
     return getenv(name.c_str());
