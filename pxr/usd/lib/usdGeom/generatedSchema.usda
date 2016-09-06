@@ -1871,8 +1871,12 @@ class NurbsPatch "NurbsPatch" (
 }
 
 class "Curves" (
-    doc = """Base class for BasisCurves (RiCurves) and NurbsCurves
-    (MayaCurves)."""
+    doc = """Base class for BasisCurves and NurbsCurves.  The BasisCurves
+             schema is designed to be analagous to RenderMan's RiCurves 
+\t     and RiBasis, while the NurbsCurve schema is designed to be 
+             analgous to  the NURBS curves found in packages like Maya 
+             and Houdini while retaining their consistency with the 
+             RenderMan specification for NURBS Patches."""
 )
 {
     int[] curveVertexCounts (
@@ -2020,55 +2024,93 @@ class "Curves" (
 }
 
 class BasisCurves "BasisCurves" (
-    doc = '''Basis curves are analagous to RiCurves.  A basis matrix and vstep 
-    are used to uniformly interpolate the curves.  These curves are often used 
-    to render dense aggregate geometry like hair.
+    doc = """Basis curves are analagous to RiCurves.  A 'basis' matrix and 
+    vstep are used to uniformly interpolate the curves.  These curves are 
+    often used to render dense aggregate geometry like hair.
     
-    A segment is the smoothly interpolated part between vertices.  A curves prim 
-    may have many curves, determined implicitly by the length of the 
-    curveVertexCount vector.  The number of segments an individual curve has is 
-    determined by the number of vertices it has, the wrap (periodicity), and the 
-    vstep of the basis.
+    A curves prim may have many curves, determined implicitly by the length of
+    the 'curveVertexCounts' vector.  An individual curve is composed of one 
+    or more curve segments, the smoothly interpolated part between vertices.
+
+    Curves may have a m'type' of either linear or cubic.  Linear curve 
+    segments are interpolated between two vertices, and cubic curve segments are 
+    interpolated between 4 vertices.  The segment count of a cubic curve  
+    is determined by the vertex count, the 'wrap' (periodicity), and 
+    the vstep of the basis.
     
-    Basis to vstep mapping:
-        [bezier - 3, catmullRom - 1, bspline - 1, hermite - 2, power - 4]
+    cubic basis   | vstep
+    ------------- | -------------
+    bezier        | 3
+    catmullRom    | 1
+    bspline       | 1
+    hermite       | 2
+    power         | 4
     
     The first segment of a cubic curve is always defined by its first 4 points. 
-     The vstep is the increment used to determine what cv determines the 
-    next segment.  For a two segment bspline basis curve (vstep=1), the first 
+    The vstep is the increment used to determine what cv determines the 
+    next segment.  For a two segment bspline basis curve (vstep = 1), the first 
     segment will be defined by interpolating vertices [0, 1, 2, 3] and the 
     second  segment will be defined by [1, 2, 3, 4].  For a two segment bezier 
     basis curve (vstep = 3), the first segment will be defined by interpolating 
     vertices [0, 1, 2, 3] and the second segment will be defined by 
     [3, 4, 5, 6].  If the vstep is not one, then you must take special care
-    to make sure that the number of cvs properly divides by your vstep.
+    to make sure that the number of cvs properly divides by your vstep.  If 
+    the type of a curve is linear, the basis matrix and vstep are unused.
     
-    For a given cubic curve, it holds that:
-        (curveVertexCount - 4) % vstep == 0 [nonperiodic]
-        (curveVertexCount) % vstep == 0 [periodic]
+    When validating curve topology, each entry in the curveVertexCounts vector
+    must pass this check.
+
+    wrap           | cubic vertex count validity
+    -------------- | ---------------------------------------
+    nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
+    periodic       | (curveVertexCounts[i]) % vstep == 0
+
         
-    For a given linear curve: 
-        segmentCount = curveVertexCount - 1 [nonperiodic]
-        segmentCount = curveVertexCount [periodic]
-    For a given cubic curve:
-        segmentCount = (curveVertexCount - 4) / vstep + 1 [nonperiodic]
-        segmentCount = curveVertexCount / vstep [periodic]
+    To convert an entry in the curveVertexCounts vector into a segment count 
+    for an individual curve, apply these rules.  Sum up all the results in
+    order to compute how many total segments all curves have.
+
+    wrap          | segment count [linear curves]
+    ------------- | ----------------------------------------
+    nonperiodic   | curveVertexCounts[i] - 1
+    periodic      | curveVertexCounts[i]
+    
+    wrap          | segment count [cubic curves]
+    ------------- | ----------------------------------------
+    nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1
+    periodic      | curveVertexCounts[i] / vstep 
+
         
-    For cubic curves, data can be either interpolated between vertices or 
-    across segments.  Per vertex data should be the same size as the number
+    For cubic curves, primvar data can be either interpolated cubically between 
+    vertices or linearly across segments.  The corresponding token
+    for cubic interpolation is 'vertex' and for linear interpolation is
+    'varying'.  Per vertex data should be the same size as the number
     of vertices in your curve.  Segment varying data is dependent on the 
     wrap (periodicity) and number of segments in your curve.
     
-    For a given curve:
-        segmentVaryingDataSize = segmentCount + 1 [nonperiodic]
-        segmentVaryingDataSize = segmentCount [periodic]    
+    wrap          | expected linear (varying) data size
+    ------------- | ----------------------------------------
+    nonperiodic   | segmentCount + 1
+    periodic      | segmentCount
     
     This prim represents two different entries in the RI spec:  RiBasis
-    and RiCurves, hence the name "BasisCurves."  If we are interested in
+    and RiCurves, hence the name \"BasisCurves.\"  If we are interested in
     specifying a custom basis as RenderMan allows you to do, the basis
-    enum could be extended with a new "custom" token and with additional 
+    enum could be extended with a new \"custom\" token and with additional 
     attributes vstep and matrix, but for compatability with AbcGeom and the
-    rarity of this use case, it is omitted for now.'''
+    rarity of this use case, it is omitted for now.
+
+    Example of deriving per curve segment and varying primvar data counts from
+    the wrap, type, basis, and curveVertexCount.
+
+    wrap          | type    | basis   |  curveVertexCount | curveSegmentCount  | varyingDataCount
+    ------------- | ---------------------------------------------------------------------------------------
+    nonperiodic   | linear  | N/A     | [2 3 2 5]         | [1 2 1 4]          | [2 3 2 5]
+    nonperiodic   | cubic   | bezier  | [4 7 10 4 7]      | [1 2 3 1 2]        | [2 3 4 2 3]
+    nonperiodic   | cubic   | bspline | [5 4 6 7]         | [2 1 3 4]          | [3 2 4 5]
+    periodic      | cubic   | bezier  | [6 9 6]           | [2 3 2]            | [2 3 2]
+    periodic      | linear  | N/A     | [3 7]             | [3 7]              | [3 7]
+"""
 )
 {
     uniform token basis = "bezier" (
@@ -2235,20 +2277,20 @@ class BasisCurves "BasisCurves" (
 }
 
 class NurbsCurves "NurbsCurves" (
-    doc = """Nurbs curves are analagous to Maya Nurbs Curves,  used for 
-    interchange of rigging and modeling curves.  Unlike Maya Curves, this 
-    curve spec supports batching of multiple curves into a single prim and 
-    widths in the schema.  Unlike maya, we require 
+    doc = """This schema is analagous to NURBS Curves in packages like Maya
+    and Houdini, often used for interchange of rigging and modeling curves.  
+    Unlike Maya, this curve spec supports batching of multiple curves into a 
+    single prim and widths in the schema.  Additionally, we require 
     'numSegments + 2 * degree + 1' knots (2 more than maya does).  This is to
-    be more consistent with renderman's NURBS specification.  
+    be more consistent with RenderMan's NURBS patch specification.  
     
     To express a periodic curve:
-    knot[0] = knot[1] - (knots[-2] - knots[-3]; 
-    knot[-1] = knot[-2] + (knot[2] - knots[1]);
+    - knot[0] = knot[1] - (knots[-2] - knots[-3]; 
+    - knot[-1] = knot[-2] + (knot[2] - knots[1]);
     
     To express a nonperiodic curve:
-    knot[0] = knot[1];
-    knot[-1] = knot[-2];
+    - knot[0] = knot[1];
+    - knot[-1] = knot[-2];
     
     In spite of these slight differences in the spec, curves generated in Maya
     should be preserved when roundtripping."""
