@@ -206,14 +206,55 @@ _fatalSignalHandler(int signo, siginfo_t*, void* uctx)
     // Simulate the exit status of being killed by signal signo
     _exit(128 + signo);
 }
+#else
+static void _fatalSignalHandler(int signo)
+{
+    const char* msg = "unknown signal";
+    switch (signo) {
+    case SIGSEGV:
+        msg = "received SIGSEGV";
+        break;
+
+    case SIGFPE:
+        msg = "received SIGFPE";
+        break;
+
+    case SIGABRT:
+        msg = "received SIGABRT";
+        break;
+
+#if defined(_GNU_SOURCE)
+    default:
+        msg = strsignal(signo);
+        break;
+#endif
+    }
+    ArchLogPostMortem(msg);
+
+    // Fatal signal handlers should not return. If they do and the
+    // signal is SIGSEGV, SIGBUS, and possibly others, the signal will
+    // be immediately re-raised when the instruction is re-executed.
+    // Avoid atexit handlers and destructors but flush stdout and
+    // stderr in case there might be any useful information lingering
+    // in their buffers.
+    //
+    fflush(stdout);
+    fflush(stderr);
+
+    // Simulate the exit status of being killed by signal signo
+    _exit(128 + signo);
+}
 #endif
 
 void
 TfInstallTerminateAndCrashHandlers()
 {
-#if !defined(ARCH_OS_WINDOWS)
     std::set_terminate(Tf_TerminateHandler);
-
+#if defined(ARCH_OS_WINDOWS)
+    signal(SIGSEGV, &_fatalSignalHandler);
+    signal(SIGFPE,  &_fatalSignalHandler);
+    signal(SIGABRT, &_fatalSignalHandler);
+#else
     // Catch segvs and bus violations
     struct sigaction act;
     act.sa_sigaction = _fatalSignalHandler;
