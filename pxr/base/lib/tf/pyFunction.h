@@ -38,14 +38,14 @@
 
 #include <boost/function.hpp>
 
+#include <functional>
+
 template <typename T>
 struct TfPyFunctionFromPython;
 
 template <typename Ret, typename... Args>
 struct TfPyFunctionFromPython<Ret (Args...)>
 {
-    typedef boost::function<Ret (Args...)> FuncType;
-
     struct Call
     {
         TfPyObjWrapper callable;
@@ -95,15 +95,23 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     };
 
     TfPyFunctionFromPython() {
+        RegisterFunctionType<boost::function<Ret (Args...)>>();
+        RegisterFunctionType<std::function<Ret (Args...)>>();
+    }
+
+    template <typename FuncType>
+    static void
+    RegisterFunctionType() {
         using namespace boost::python;
         converter::registry::
-            insert(&convertible, &construct, type_id<FuncType>());
+            insert(&convertible, &construct<FuncType>, type_id<FuncType>());
     }
 
     static void *convertible(PyObject *obj) {
         return PyCallable_Check(obj) ? obj : 0;
     }
 
+    template <typename FuncType>
     static void construct(PyObject *src, boost::python::converter::
                           rvalue_from_python_stage1_data *data) {
         using std::string;
