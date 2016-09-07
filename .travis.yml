@@ -154,4 +154,5 @@ script:
   # This is fixed in commit 880b04.
   - make -j4 cameraUtil
   - make -j4
-  - make install
+  # Default install location is /usr/local; we need sudo access to write there.
+  - sudo make install
