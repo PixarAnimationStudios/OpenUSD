@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -63,8 +64,11 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingPrimAdapter;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
+class UsdImagingDefaultShaderAdapter;
 
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+
+typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr ;
 
 /// \class UsdImagingDelegate
 ///
@@ -283,6 +287,7 @@ public:
                                              SdfPath const &prototypeId);
 
     // Shader Support
+    virtual bool GetSurfaceShaderIsTimeVarying(SdfPath const& id);
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &id);
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &id, 
@@ -388,6 +393,9 @@ private:
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
+    // UsdImagingDefaultShaderAdapter needs access to _GetPrim.  We should
+    // consider making it public.
+    friend class UsdImagingDefaultShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
         if (not (0 <= level and level <= 8)) {
@@ -509,6 +517,15 @@ private:
     typedef SdfPathTable<_AdapterSharedPtr> _PathAdapterMap;
     _PathAdapterMap _pathAdapterMap;
 
+    typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
+    typedef SdfPathTable<_ShaderAdapterSharedPtr> _ShaderAdapterMap;
+    _ShaderAdapterMap _shaderAdapterMap;
+
+    // This method looks up a shader adapter based on the \p shaderId.
+    // This will never return a nullptr.  If there is no registered shader
+    // adapter, it will return the "default".
+    _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
+
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
     tbb::spin_rw_mutex _indexToUsdPathMapMutex;
@@ -583,6 +600,9 @@ private:
 
     // Collection
     CollectionMap _collectionMap;
+
+    // default shader adapter
+    boost::shared_ptr<UsdImagingDefaultShaderAdapter> _defaultShaderAdapter;
 };
 
 /// \class UsdImagingIndexProxy
@@ -599,6 +619,10 @@ public:
     void AddDependency(SdfPath const& usdPath, 
                         UsdImagingPrimAdapterSharedPtr const& adapter =
                                     UsdImagingPrimAdapterSharedPtr());
+
+    /// \brief Register a \p shaderAdapter to handle the shader at \p shaderId.
+    void AddShaderAdapter(SdfPath const& shaderId,
+            UsdImagingShaderAdapterSharedPtr const& shaderAdapter);
 
     SdfPath InsertMesh(SdfPath const& usdPath,
                        SdfPath const& shaderBinding,
