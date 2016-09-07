@@ -679,6 +679,8 @@ _OpenLayer(
     const std::string &filePath,
     const ArResolverContext &resolverContext = ArResolverContext())
 {
+	std::string path = TfPathCanonicalize(filePath);
+
     boost::optional<ArResolverContextBinder> binder;
     if (not resolverContext.IsEmpty())
         binder = boost::in_place(resolverContext);
@@ -687,7 +689,7 @@ _OpenLayer(
     args[SdfFileFormatTokens->TargetArg] =
         UsdUsdFileFormatTokens->Target.GetString();
 
-    return SdfLayer::FindOrOpen(filePath, args);
+    return SdfLayer::FindOrOpen(path, args);
 }
 
 /* static */

@@ -141,7 +141,7 @@ ArchOpenFile(char const* fileName, char const* mode);
 #endif
 
 #if defined(ARCH_OS_WINDOWS)
-#   define ArchFileAccess(path, mode)   _access(path, mode)
+	ARCH_API int ArchFileAccess(const char* path, int mode);
 #else
 #   define ArchFileAccess(path, mode)   access(path, mode)
 #endif
