@@ -360,6 +360,9 @@ UsdImaging_DefaultTaskDelegate::_UpdateRenderParams(
     const float tinyThreshold = 0.9f;
     params.drawingRange = GfVec2f(tinyThreshold, -1.0f);
 
+    // Cache the clip planes.
+    _clipPlanes = renderParams.clipPlanes;
+
     // note that params.rprims and params.viewport are not updated
     // in this function, and needed to be preserved.
 
@@ -571,5 +574,5 @@ UsdImaging_DefaultTaskDelegate::IsConverged() const
 std::vector<GfVec4d>
 UsdImaging_DefaultTaskDelegate::GetClipPlanes(SdfPath const& cameraId)
 {
-    return _renderParams.clipPlanes;
+    return _clipPlanes;
 }

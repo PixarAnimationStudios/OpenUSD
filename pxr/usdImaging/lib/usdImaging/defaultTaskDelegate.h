@@ -129,4 +129,6 @@ private:
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
     _ValueCacheMap _valueCacheMap;
+
+    std::vector<GfVec4d> _clipPlanes;
 };
