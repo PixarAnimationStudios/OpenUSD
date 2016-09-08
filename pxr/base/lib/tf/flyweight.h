@@ -27,25 +27,21 @@
 /// \file tf/flyweight.h
 /// An implementation of the "flyweight pattern".
 
+#include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include "pxr/base/arch/demangle.h"
-
-#include <boost/call_traits.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/operators.hpp>
-#include "pxr/base/tf/hashmap.h"
-
-#include <tbb/spin_mutex.h>
+#include <tbb/concurrent_hash_map.h>
 
 #include <atomic>
-#include <cstdio>
+#include <memory>
 
 // Set this to 1 to enable stats.
 #define TF_FLYWEIGHT_STATS 0
 
 #if TF_FLYWEIGHT_STATS
+#include <cstdio>
 #define TF_FLYWEIGHT_INC_STAT(name) ++_GetData()-> name
 #else
 #define TF_FLYWEIGHT_INC_STAT(name)
@@ -93,9 +89,7 @@ struct Tf_FlyweightData : public Tf_FlyweightDataBase {
     HashMap pool;
 
     // A pointer to the default object.
-    std::atomic<typename HashMap::value_type*> defaultPtr;
-
-    tbb::spin_mutex poolMutex, createDefaultMutex;
+    std::atomic<typename HashMap::value_type const *> defaultPtr;
 
 #if TF_FLYWEIGHT_STATS
     size_t findOrCreateCalls;
@@ -153,34 +147,30 @@ Tf_TrySetFlyweightData(std::string const &poolName, Tf_FlyweightDataBase *data);
 /// contexts. Modifications of those member variables inside const methods
 /// must be made thread-safe by mutual exclusion or other means.  Modifying
 /// those variables in non-const methods need not be guarded.
-template <
-      class Type
-    , class HashFn
->
-class TfFlyweight :
-    boost::equality_comparable<TfFlyweight<Type, HashFn> >
+template <class T, class HashFn>
+class TfFlyweight
 {
-public:
-
-    typedef typename boost::call_traits<Type>::value_type Value;
-    typedef typename boost::call_traits<Type>::param_type ValueParam;
-    typedef typename boost::call_traits<Type>::const_reference ValueConstRef;
-
 private:
 
     // A rep just stores an object's reference count.
     struct _Rep {
-        _Rep() : refCount(1) {}
-
-        // std::atomic copy c'tor is deleted so implement.
-        _Rep(const _Rep& other) : refCount(other.refCount.load()) {}
-
-        std::atomic<size_t> refCount;
+        _Rep() : refCount(0) {}
+        _Rep(_Rep const &other) : refCount(other.refCount.load()) {}
+        mutable std::atomic_size_t refCount;
     };
 
-    typedef TfHashMap<Value, _Rep, HashFn> _PoolHash;
-    typedef typename _PoolHash::iterator _PoolHashIterator;
-    typedef typename _PoolHash::value_type *_ElementPairPtr;
+    struct _TbbHashEq {
+        inline bool equal(T const &l, T const &r) const {
+            return l == r;
+        }
+        inline size_t hash(T const &val) const {
+            return HashFn()(val);
+        }
+    };
+
+    typedef tbb::concurrent_hash_map<
+        T, _Rep, _TbbHashEq, std::allocator<std::pair<T, _Rep> > > _PoolHash;
+    typedef typename _PoolHash::value_type const *_ElementPairPtr;
 
     typedef Tf_FlyweightData<_PoolHash> _Data;
 
@@ -189,36 +179,24 @@ private:
     // there and never returns NULL.  Otherwise does not add \a value to the
     // pool, and will return NULL if that value isn't found.
     static _ElementPairPtr
-    _FindOrCreate(ValueParam value, bool create=true) {
+    _FindOrCreate(T const &value, bool create=true) {
         TfAutoMallocTag2 tag2("Tf", "TfFlyweight::_FindOrCreate");
         TfAutoMallocTag tag(__ARCH_PRETTY_FUNCTION__);
 
         _Data *data = _GetData();
 
-        tbb::spin_mutex::scoped_lock lock(data->poolMutex);
-
         TF_FLYWEIGHT_INC_STAT(findOrCreateCalls);
 
         _PoolHash &pool = data->pool;
-
-        _PoolHashIterator i = pool.find(value);
-        if (not create)
-            return i != pool.end() ? &(*i) : 0;
-
-        // If at end, insert a new entry.
-        if (ARCH_UNLIKELY(i == pool.end())) {
-            TF_FLYWEIGHT_INC_STAT(numCreated);
-            std::pair<_PoolHashIterator, bool> result =
-                pool.insert(std::make_pair(
-                                value, _Rep()));
-            TF_AXIOM(result.second);
-            i = result.first;
-        } else {
-            // Bump ref count.
-            TF_FLYWEIGHT_INC_STAT(numFound);
-            ++i->second.refCount;
+        
+        typename _PoolHash::const_accessor acc;
+        if (create) {
+            if (pool.insert(acc, std::make_pair(value, _Rep())))
+                TF_FLYWEIGHT_INC_STAT(numCreated);
+            ++acc->second.refCount;
+            return &(*acc);
         }
-        return &(*i); // guaranteed to have a valid entry here.
+        return pool.find(acc, value) ? &(*acc) : nullptr;
     }
 
     // Return an iterator with a pre-incremented reference count for the
@@ -228,11 +206,7 @@ private:
         // XXX this is (technically speaking) broken double-checked locking.
         _ElementPairPtr defaultPtr = data->defaultPtr;
         if (ARCH_UNLIKELY(not defaultPtr)) {
-            tbb::spin_mutex::scoped_lock lock(data->createDefaultMutex);
-            defaultPtr = data->defaultPtr;
-            if (not defaultPtr) {
-                data->defaultPtr = defaultPtr = _FindOrCreate(Value());
-            }
+            data->defaultPtr = defaultPtr = _FindOrCreate(T());
         }
         TF_FLYWEIGHT_INC_STAT(numGetDefault);
         ++defaultPtr->second.refCount;
@@ -241,20 +215,21 @@ private:
 
     static inline void _TryToErase(_ElementPairPtr ptr) {
         _Data *data = _GetData();
-        tbb::spin_mutex::scoped_lock lock(data->poolMutex);
         // Try to remove \p elem from the data table.  It's possible that
         // its refcount is greater than one, in which case we do nothing.
-        if (ARCH_LIKELY(--ptr->second.refCount == 0)) {
-            _PoolHashIterator iter = data->pool.find(ptr->first);
-            if (TF_VERIFY(iter != data->pool.end()))
-                data->pool.erase(iter);
+
+        typename _PoolHash::accessor acc;
+        if (TF_VERIFY(data->pool.find(acc, ptr->first))) {
+            // We hold a write lock here so we can't be racing a _FindOrCreate
+            // caller that's not yet incremented its refcount.
+            if (ARCH_LIKELY(--ptr->second.refCount == 0))
+                data->pool.erase(acc);
         }
     }
 
     static inline void _DumpStats() {
 #if TF_FLYWEIGHT_STATS
         _Data *data = _GetData();
-        tbb::spin_mutex::scoped_lock lock(data->poolMutex);
         printf("================================\n");
         printf("== Stats for %s\n",
                ArchGetDemangled(typeid(TfFlyweight)).c_str());
@@ -291,7 +266,6 @@ private:
     static inline void _ClearStats() {
 #if TF_FLYWEIGHT_STATS
         _Data *data = _GetData();
-        tbb::spin_mutex::scoped_lock lock(data->poolMutex);
         data->findOrCreateCalls
             = data->numFound
             = data->numCreated
@@ -318,7 +292,7 @@ public:
     }
 
     /// Construct a flyweight with \a val.
-    explicit TfFlyweight(ValueParam val) : _ptr(_FindOrCreate(val)) {
+    explicit TfFlyweight(T const &val) : _ptr(_FindOrCreate(val)) {
         TF_FLYWEIGHT_INC_STAT(numValueCtors);
     }
 
@@ -334,7 +308,7 @@ public:
     }
 
     /// Assign this flyweight to refer to \a val.
-    TfFlyweight &operator=(ValueParam val) {
+    TfFlyweight &operator=(T const &val) {
         // Saving the old rep and calling _RemoveRef after obtaining the new one
         // will avoid destruction in the case that the new and old reps are the
         // same.
@@ -366,13 +340,17 @@ public:
         return _ptr == other._ptr;
     }
 
+    bool operator!=(TfFlyweight const &other) const {
+        return !(*this == other);
+    }
+
     /// Return a const reference to the object this flyweight refers to.
-    ValueConstRef Get() const {
+    T const &Get() const {
         return _ptr->first;
     }
 
     /// Implicitly convert to a const reference of the underlying value.
-    operator ValueConstRef() const {
+    operator T const &() const {
         return Get();
     }
 
@@ -382,8 +360,7 @@ public:
     }
 
     /// Hash functor.
-    struct HashFunctor
-    {
+    struct HashFunctor {
         size_t operator()(const TfFlyweight &flyweight) const {
             return flyweight.Hash();
         }
@@ -395,7 +372,7 @@ public:
     }
 
     /// Return true if \a value is a member of the flyweight pool.
-    static bool Contains(ValueParam value) {
+    static bool Contains(T const &value) {
         // Passing 'false' to FindOrCreate keeps it from creating an entry.
         return _FindOrCreate(value, false);
     }
@@ -424,21 +401,14 @@ private:
         return _data;
     }
 
-
-    void _AddRef() {
-        _AddRef(_ptr);
-    }
-
-    void _RemoveRef() {
-        _RemoveRef(_ptr);
-    }
+    inline void _AddRef() { _AddRef(_ptr); }
+    inline void _RemoveRef() { _RemoveRef(_ptr); }
 
     static inline void _AddRef(_ElementPairPtr const &ptr) {
         ++ptr->second.refCount;
     }
 
     static inline void _RemoveRef(_ElementPairPtr const &ptr) {
-
         // This refcount check is fleeting and unreliable -- see comment in the
         // else clause below.
         if (ARCH_UNLIKELY(ptr->second.refCount == 1)) {
@@ -474,7 +444,7 @@ struct TfFlyweightTotalOrderLessThan {
     }
 };
 
-// Specialize hash_value for TfFlyweight.
+// Overload hash_value for TfFlyweight.
 template <class Type, class HashFn>
 inline
 size_t hash_value(const TfFlyweight<Type, HashFn>& x)
