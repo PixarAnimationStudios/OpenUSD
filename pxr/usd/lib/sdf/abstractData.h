@@ -43,6 +43,7 @@ class SdfAbstractDataSpecVisitor;
 class SdfAbstractDataConstValue;
 class SdfAbstractDataValue;
 
+
 #define SDF_DATA_TOKENS                  \
         ((TimeSamples, "timeSamples"))
 
@@ -381,8 +382,9 @@ class SdfAbstractDataValue
 {
 public:
     virtual bool StoreValue(const VtValue& value) = 0;
-
-    template <class T> bool StoreValue(const T& v) 
+    
+    template <class T> 
+    bool StoreValue(const T& v) 
     {
         if (TfSafeTypeCompare(typeid(T), valueType)) {
             *static_cast<T*>(value) = v;
@@ -391,13 +393,21 @@ public:
         return false;
     }
 
+    bool StoreValue(const SdfValueBlock& block)
+    {
+        isValueBlock = true;
+        return true;
+    }
+    
     void* value;
     const std::type_info& valueType;
+    bool isValueBlock;
 
 protected:
     SdfAbstractDataValue(void* value_, const std::type_info& valueType_)
         : value(value_)
         , valueType(valueType_)
+        , isValueBlock(false)
     { }
 };
 
@@ -424,6 +434,11 @@ public:
 
     virtual bool StoreValue(const VtValue& v)
     {
+        if (v.IsHolding<SdfValueBlock>()) {
+            isValueBlock = true;
+            return true;
+        }
+
         if (not v.IsHolding<T>()) {
             return false;
         }
@@ -459,10 +474,11 @@ public:
 
 protected:
     SdfAbstractDataConstValue(const void* value_, 
-                             const std::type_info& valueType_)
+                              const std::type_info& valueType_)
         : value(value_)
         , valueType(valueType_)
-    { }
+    { 
+    }
 };
 
 /// \class SdfAbstractDataConstTypedValue
@@ -485,7 +501,7 @@ public:
     SdfAbstractDataConstTypedValue(const T* value)
         : SdfAbstractDataConstValue(value, typeid(T))
     { }
-
+    
     virtual bool GetValue(VtValue* v) const
     {
         *v = _GetValue();
