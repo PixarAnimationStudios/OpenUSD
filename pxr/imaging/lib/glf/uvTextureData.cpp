@@ -327,7 +327,8 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         const double scale = generateMipmap ? 4.0 / 3 : 1.0;
         int sizeAprox = _resizedWidth * _resizedHeight * _bytesPerPixel * scale;
 
-        while (_targetMemory > 0 && (sizeAprox > _targetMemory)) {
+        while ((_targetMemory > 0) 
+               && (static_cast<size_t>(sizeAprox) > _targetMemory)) {
             _resizedWidth >>= 1;
             _resizedHeight >>= 1;
             sizeAprox = _resizedWidth * _resizedHeight * _bytesPerPixel * scale;
@@ -412,7 +413,7 @@ size_t
 GlfUVTextureData::ComputeBytesUsedByMip(int mipLevel) const
 {
     // Returns specific mip level sizes
-    if (mipLevel >= _rawBufferMips.size()) return 0;
+    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size()) return 0;
     return _rawBufferMips[mipLevel].size;
 }
 
@@ -425,28 +426,30 @@ GlfUVTextureData::ComputeBytesUsed() const
 bool 
 GlfUVTextureData::HasRawBuffer(int mipLevel) const
 {
-    if (mipLevel >= _rawBufferMips.size()) return false;
+    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size()) return false;
     return (_rawBufferMips[mipLevel].size > 0);
 }
 
 unsigned char * 
 GlfUVTextureData::GetRawBuffer(int mipLevel) const
 {
-    if (mipLevel >= _rawBufferMips.size() or not _rawBuffer) return 0;
+    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size() or not _rawBuffer) {
+        return 0;
+    }
     return _rawBuffer.get() + _rawBufferMips[mipLevel].offset;
 }
 
 int 
 GlfUVTextureData::ResizedWidth(int mipLevel) const 
 {
-    if (mipLevel >= _rawBufferMips.size()) return 0;
+    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size()) return 0;
     return _rawBufferMips[mipLevel].width;
 }
 
 int 
 GlfUVTextureData::ResizedHeight(int mipLevel) const 
 {
-    if (mipLevel >= _rawBufferMips.size()) return 0;
+    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size()) return 0;
     return _rawBufferMips[mipLevel].height;
 }
 
