@@ -200,6 +200,24 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 {
     _ValueCache &cache = _valueCacheMap[id];
     cache[key] = value;
+    if (key == HdxLightTokens->params) {
+        // update shadow matrix too
+        GlfSimpleLight light = value.Get<GlfSimpleLight>();
+        HdxShadowParams shadowParams
+            = cache[HdxLightTokens->shadowParams].Get<HdxShadowParams>();
+        shadowParams.shadowMatrix
+            = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
+
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
+            id, HdxLight::DirtyParams|HdxLight::DirtyShadowParams);
+        cache[HdxLightTokens->shadowParams] = shadowParams;
+    } else if (key == HdxLightTokens->transform) {
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
+            id, HdxLight::DirtyTransform);
+    } else if (key == HdxLightTokens->shadowCollection) {
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
+            id, HdxLight::DirtyCollection);
+    }
 }
 
 void

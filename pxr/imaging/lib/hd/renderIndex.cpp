@@ -1037,7 +1037,7 @@ void
 HdRenderIndex::SyncSprims()
 {
     TF_FOR_ALL(it, _sprimMap) {
-        if (HdChangeTracker::IsDirty(_tracker.GetSprimDirtyBits(it->first))) {
+        if (_tracker.GetSprimDirtyBits(it->first) != HdChangeTracker::Clean) {
             it->second->Sync();
 
             _tracker.MarkSprimClean(it->first);
@@ -1050,7 +1050,7 @@ void
 HdRenderIndex::SyncDrawTargets()
 {
     TF_FOR_ALL(it, _drawTargetMap) {
-        if (HdChangeTracker::IsDirty(_tracker.GetDrawTargetDirtyBits(it->first))) {
+        if (_tracker.GetDrawTargetDirtyBits(it->first) != HdChangeTracker::Clean) {
             it->second->Sync();
 
             _tracker.MarkDrawTargetClean(it->first);
