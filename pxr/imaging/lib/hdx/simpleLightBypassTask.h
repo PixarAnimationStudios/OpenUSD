@@ -58,7 +58,7 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
-    HdCameraSharedPtr _camera;
+    HdSprimSharedPtr _camera;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
 
     GlfSimpleLightingContextRefPtr _simpleLightingContext;

@@ -21,7 +21,6 @@ pxr_shared_library(hd
         vt
         work
         sdf
-        cameraUtil
         glf
         garch
         pxOsd
@@ -45,7 +44,6 @@ pxr_shared_library(hd
         bufferResource
         bufferSource
         bufferSpec
-        camera
         changeTracker
         codeGen
         commandBuffer
@@ -74,7 +72,6 @@ pxr_shared_library(hd
         instancer
         instanceRegistry
         interleavedMemoryManager
-        light
         lightingShader
         mesh
         meshTopology
@@ -99,6 +96,7 @@ pxr_shared_library(hd
         shader
         shaderKey
         shaderParam
+        sprim
         surfaceShader
         strategyBase
         task

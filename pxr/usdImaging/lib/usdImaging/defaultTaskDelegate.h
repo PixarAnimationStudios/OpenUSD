@@ -61,7 +61,7 @@ public:
     // bypasses the lighting context down to HdxRenderTask (transitional method)
     void SetBypassedLightingState(const GlfSimpleLightingContextPtr &src);
 
-    // set the camera matrices for the HdCamera injected in the render graph
+    // set the camera matrices for the HdxCamera injected in the render graph
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);

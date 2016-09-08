@@ -21,54 +21,55 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_CAMERA_H
-#define HD_CAMERA_H
+#ifndef HD_SPRIM_H
+#define HD_SPRIM_H
 
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/tf/hashmap.h"
-#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/shared_ptr.hpp>
 
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
+typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
+typedef std::vector<HdSprimSharedPtr> HdSprimSharedPtrVector;
 
-/// \class HdCamera
+/// \class HdSprim
 ///
-/// A camera model, used in conjunction with HdRenderPass.
+/// Sprim (state prim) is a base class of managing state for non-drawable
+/// scene entity (e.g. camera, light). Similar to Rprim, Sprim communicates
+/// scene delegate and tracks the changes through change tracker, then updates
+/// data cached in Hd (either on CPU or GPU).
 ///
-class HdCamera {
+/// Unlike Rprim, Sprim doesn't produce draw items. The data cached in HdSprim
+/// may be used by HdTask or by HdShader.
+///
+/// The lifetime of HdSprim is owned by HdRenderIndex.
+///
+class HdSprim {
 public:
-    typedef std::vector<GfVec4d> ClipPlanesVector;
+    HdSprim(HdSceneDelegate* delegate, SdfPath const & id);
+    virtual ~HdSprim();
 
-    HdCamera(HdSceneDelegate* delegate, SdfPath const & id);
-    ~HdCamera();  // note: not virtual (for now)
-
-    /// Returns the HdSceneDelegate which backs this texture.
+    /// Returns the HdSceneDelegate which backs this state
     HdSceneDelegate* GetDelegate() const { return _delegate; }
 
-    /// Returns the identifer by which this light is known. This
+    /// Returns the identifer by which this state is known. This
     /// identifier is a common associative key used by the SceneDelegate,
-    /// RenderIndex, and for binding to the light
+    /// RenderIndex, and for binding to the state (e.g. camera, light)
     SdfPath const& GetID() const { return _id; }
 
-    /// Synchronizes state from the delegate to Hydra, for example, allocating
-    /// parameters into GPU memory.
-    void Sync();
+    /// Synchronizes state from the delegate to this object.
+    virtual void Sync() = 0;
 
-    // ---------------------------------------------------------------------- //
-    /// \name Camera API
-    // ---------------------------------------------------------------------- //
-
-    VtValue Get(TfToken const &name);
+    /// Accessor for tasks to get the parameter cached in this sprim object.
+    /// Don't communicate back to scene delegate within this function.
+    virtual VtValue Get(TfToken const &token) const = 0;
 
 private:
     HdSceneDelegate* _delegate;
     SdfPath _id;
-
-    TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;
 };
 
-#endif //HD_CAMERA_H
+#endif  // HD_SPRIM_H

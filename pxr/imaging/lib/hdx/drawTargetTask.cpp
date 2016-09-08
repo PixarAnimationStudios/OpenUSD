@@ -23,15 +23,16 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/drawTarget.h"
 #include "pxr/imaging/hd/drawTargetRenderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/sprim.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -169,7 +170,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 
     // lighting context
     GlfSimpleLightingContextRefPtr lightingContext;
-    _GetTaskContextData(ctx, HdTokens->lightingContext, &lightingContext);
+    _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
 
     size_t numRenderPasses = _renderPasses.size();
     for (size_t renderPassIdx = 0;
@@ -185,8 +186,8 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 
         // XXX: Need to detect when camera changes and only update if
         // needed
-        HdCameraSharedPtr camera
-            = GetDelegate()->GetRenderIndex().GetCamera(cameraId);
+        HdSprimSharedPtr camera
+            = GetDelegate()->GetRenderIndex().GetSprim(cameraId);
 
         if (!camera) {
             // Render pass should not have been added to task list.
@@ -195,13 +196,13 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
-        VtValue viewMatrixVt  = camera->Get(HdShaderTokens->worldToViewMatrix);
-        VtValue projMatrixVt  = camera->Get(HdShaderTokens->projectionMatrix);
+        VtValue viewMatrixVt  = camera->Get(HdxCameraTokens->worldToViewMatrix);
+        VtValue projMatrixVt  = camera->Get(HdxCameraTokens->projectionMatrix);
         GfMatrix4d viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
         const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
         GfMatrix4d projectionMatrix = projMatrix * yflip;
 
-        const VtValue &vClipPlanes = camera->Get(HdTokens->clipPlanes);
+        const VtValue &vClipPlanes = camera->Get(HdxCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
                         vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 

@@ -179,9 +179,6 @@ public:
     /// Camera
     void AddCamera(SdfPath const &id);
 
-    /// Light
-    void AddLight(SdfPath const &id);
-
     /// Remove a prim
     void Remove(SdfPath const &id);
 
@@ -209,7 +206,6 @@ public:
     void UpdateInstancerPrototypes(float time);
 
     void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
-    void UpdateLight(SdfPath const &id, TfToken const &key, VtValue value);
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {

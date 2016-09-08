@@ -25,15 +25,17 @@
 #define HDX_SIMPLE_LIGHT_TASK_H
 
 #include "pxr/imaging/hdx/version.h"
+#include "pxr/imaging/hdx/light.h"
+
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
+#include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/glf/simpleMaterial.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/imaging/glf/simpleMaterial.h"
-#include "pxr/imaging/glf/simpleLight.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -51,6 +53,11 @@ class HdxSimpleLightTask : public HdSceneTask {
 public:
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
+    static SdfPathVector ComputeIncludedLights(
+        SdfPathVector const & allLightPaths,
+        SdfPathVector const & includedPaths,
+        SdfPathVector const & excludedPaths);
+
 protected:
     /// Execute render pass task
     virtual void _Execute(HdTaskContext* ctx);
@@ -60,8 +67,8 @@ protected:
 
 private:
     // Should be weak ptrs
-    HdCameraSharedPtr _camera;
-    HdLightSharedPtrVector _lights;
+    HdSprimSharedPtr _camera;
+    HdSprimSharedPtrVector _lights;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
     int _collectionVersion;
     bool _enableShadows;
@@ -77,13 +84,6 @@ private:
     GlfSimpleShadowArrayRefPtr _shadows;
     GlfSimpleLightVector _glfSimpleLights;
 };
-
-HdLightSharedPtrVector
-_ComputeIncludedLights(
-    HdLightSharedPtrVector const & allLights,
-    SdfPathVector const & includedPaths,
-    SdfPathVector const & excludedPaths);
-
 
 struct HdxSimpleLightTaskParams
 {

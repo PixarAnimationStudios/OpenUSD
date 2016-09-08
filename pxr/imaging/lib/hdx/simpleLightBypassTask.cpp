@@ -26,10 +26,10 @@
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sprim.h"
 
 // -------------------------------------------------------------------------- //
 
@@ -62,7 +62,7 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
         }
 
         _simpleLightingContext = params.simpleLightingContext;
-        _camera = GetDelegate()->GetRenderIndex().GetCamera(params.cameraPath);
+        _camera = GetDelegate()->GetRenderIndex().GetSprim(params.cameraPath);
     }
 
     if (_simpleLightingContext) {
@@ -92,8 +92,8 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
     // Done at end, because the lighting context can be changed above.
     // Also we want the context in the shader as it's only a partial copy
     // of the context we own.
-    (*ctx)[HdTokens->lightingShader]  = boost::dynamic_pointer_cast<HdLightingShader>(_lightingShader);
-    (*ctx)[HdTokens->lightingContext] = _lightingShader->GetLightingContext();
+    (*ctx)[HdxTokens->lightingShader]  = boost::dynamic_pointer_cast<HdLightingShader>(_lightingShader);
+    (*ctx)[HdxTokens->lightingContext] = _lightingShader->GetLightingContext();
 
 }
 

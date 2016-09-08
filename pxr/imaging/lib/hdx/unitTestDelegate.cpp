@@ -23,9 +23,11 @@
 //
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hdx/camera.h"
+#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -117,7 +119,7 @@ Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndexSharedPtr const &index)
 {
     // add camera
     _cameraId = SdfPath("/camera");
-    GetRenderIndex().InsertCamera<HdCamera>(this, _cameraId);
+    GetRenderIndex().InsertSprim<HdxCamera>(this, _cameraId);
     GfFrustum frustum;
     frustum.SetPosition(GfVec3d(0, 0, 3));
     SetCamera(frustum.ComputeViewMatrix(), frustum.ComputeProjectionMatrix());
@@ -140,20 +142,42 @@ void
 Hdx_UnitTestDelegate::SetCamera(GfMatrix4d const &viewMatrix,
                                 GfMatrix4d const &projMatrix)
 {
-    _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdTokens->cameraFrustum] = VtValue();
-    cache[HdTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdShaderTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdShaderTokens->projectionMatrix] = VtValue(projMatrix);
+    SetCamera(_cameraId, viewMatrix, projMatrix);
+}
 
-    GetRenderIndex().GetChangeTracker().MarkCameraDirty(_cameraId);
+void
+Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
+                                GfMatrix4d const &viewMatrix,
+                                GfMatrix4d const &projMatrix)
+{
+    _ValueCache &cache = _valueCacheMap[cameraId];
+    cache[HdxCameraTokens->cameraFrustum] = VtValue();
+    cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
+    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
+    cache[HdxCameraTokens->projectionMatrix] = VtValue(projMatrix);
+
+    GetRenderIndex().GetChangeTracker().MarkSprimDirty(cameraId,
+                                                       HdxCamera::AllDirty);
+}
+
+void
+Hdx_UnitTestDelegate::AddCamera(SdfPath const &id)
+{
+    // add a camera
+    GetRenderIndex().InsertSprim<HdxCamera>(this, id);
+    _ValueCache &cache = _valueCacheMap[id];
+
+    cache[HdxCameraTokens->cameraFrustum] = VtValue();
+    cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
+    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
+    cache[HdxCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1));
 }
 
 void
 Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
 {
     // add light
-    GetRenderIndex().InsertLight<HdLight>(this, id);
+    GetRenderIndex().InsertSprim<HdxLight>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
 
     HdxShadowParams shadowParams;
@@ -164,10 +188,18 @@ Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
     shadowParams.bias = -0.001;
     shadowParams.blur = 0.1;
 
-    cache[HdTokens->lightParams] = light;
-    cache[HdTokens->lightShadowParams] = shadowParams;
-    cache[HdTokens->lightShadowCollection]
+    cache[HdxLightTokens->params] = light;
+    cache[HdxLightTokens->shadowParams] = shadowParams;
+    cache[HdxLightTokens->shadowCollection]
         = HdRprimCollection(HdTokens->geometry, HdTokens->refined);
+}
+
+void
+Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
+                               VtValue value)
+{
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[key] = value;
 }
 
 void

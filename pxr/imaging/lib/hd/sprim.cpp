@@ -21,29 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_VERSION_H
-#define HD_VERSION_H
+#include "pxr/imaging/hd/sprim.h"
 
-// 18 -> 19: Add support for SceneDelegate surface shaders.
-// 19 -> 20: RenderPass constructor takes RenderIndex. RasterState class.
-// 20 -> 21: Add HdSceneDelegate::IsEnabled().
-// 21 -> 22: split HdRasterState out of HdRenderPass and renamed to HdRenderPassState.
-//           HdEngine::Draw API change.
-// 22 -> 23: remove ID render API
-// 23 -> 24: GetPathForInstanceIndex returns absolute instance index.
-// 24 -> 25: move simpleLightingShader to Hdx.
-// 25 -> 26: move camera and light to Hdx.
-#define HD_API  26
+#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 
-// 1  ->  2: SimpleLighting -> FallbackLighting
-#define HD_SHADER_API 2
+HdSprim::HdSprim(HdSceneDelegate *delegate, SdfPath const &id)
+    : _delegate(delegate)
+    , _id(id)
+{
+}
 
-// 1 -> 2: Changes "doubleShaded" API to "doubleSided".
-#define HD_CHANGETRACKER_API 2
-#define HD_ENGINE_API 1
-#define HD_RPRIMCOLLECTION_API 1
-
-// 2 -> 3: Changes "doubleShaded" API to "doubleSided".
-#define HD_TOKENS_API   3
-
-#endif // HD_VERSION_H
+HdSprim::~HdSprim()
+{
+}

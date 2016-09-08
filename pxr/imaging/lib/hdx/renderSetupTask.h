@@ -34,9 +34,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 struct HdxRenderTaskParams;
 
@@ -69,7 +69,7 @@ private:
     HdRenderPassShaderSharedPtr _colorRenderPassShader;
     HdRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
-    HdCameraSharedPtr _camera;
+    HdSprimSharedPtr _camera;
 };
 
 /// \class HdxRenderTaskParams

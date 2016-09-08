@@ -24,11 +24,10 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdx/shadowTask.h"
-#include "pxr/imaging/hdx/tokens.h"
+#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
+#include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/light.h"
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -36,6 +35,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/lightingShader.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -65,7 +65,7 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
 
     // Extract the lighting context information from the task context
     GlfSimpleLightingContextRefPtr lightingContext;
-    if (not _GetTaskContextData(ctx, HdTokens->lightingContext, &lightingContext)) {
+    if (not _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext)) {
         return;
     }
 
@@ -120,7 +120,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
 
     // Extract the lighting context information from the task context
     GlfSimpleLightingContextRefPtr lightingContext;
-    if (not _GetTaskContextData(ctx, HdTokens->lightingContext, &lightingContext)) {
+    if (not _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext)) {
         return;
     }
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
@@ -170,11 +170,25 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             // task context, we will use them to find out what
             // lights are dirty and if we need to update the
             // collection for shadows mapping
-            HdLightSharedPtrVector lights = 
-                _ComputeIncludedLights(
-                    delegate->GetRenderIndex().GetLights(),
+
+            // XXX: This is inefficient, need to be optimized
+            SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
+                SdfPath::AbsoluteRootPath());
+            SdfPathVector lightPaths =
+                HdxSimpleLightTask::ComputeIncludedLights(
+                    sprimPaths,
                     params.lightIncludePaths,
                     params.lightExcludePaths);
+
+            HdSprimSharedPtrVector lights;
+            TF_FOR_ALL (it, lightPaths) {
+                HdSprimSharedPtr const &sprim = delegate->GetRenderIndex().GetSprim(*it);
+                // XXX: or we could say instead of downcast,
+                //      sprim->Has(HdxLightInterface) ?
+                if (boost::dynamic_pointer_cast<HdxLight>(sprim)) {
+                    lights.push_back(sprim);
+                }
+            }
 
             GlfSimpleLightVector const glfLights = lightingContext->GetLights();
 
@@ -191,8 +205,11 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
                 }
             
                 // Extract the collection from the HD light
+                VtValue vtShadowCollection =
+                    lights[lightId]->Get(HdxLightTokens->shadowCollection);
                 const HdRprimCollection &col =
-                                         lights[lightId]->GetShadowCollection();
+                    vtShadowCollection.IsHolding<HdRprimCollection>() ?
+                    vtShadowCollection.Get<HdRprimCollection>() : HdRprimCollection();
 
                 // Creates a pass with the right geometry that will be
                 // use during Execute phase to draw the maps

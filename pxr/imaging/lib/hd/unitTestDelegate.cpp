@@ -24,8 +24,7 @@
 #include "pxr/imaging/hd/unitTestDelegate.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
@@ -260,28 +259,6 @@ Hd_UnitTestDelegate::AddTexture(SdfPath const& id,
 }
 
 void
-Hd_UnitTestDelegate::AddCamera(SdfPath const &id)
-{
-    HdRenderIndex& index = GetRenderIndex();
-    index.InsertCamera<HdCamera>(this, id);
-    _cameras[id].params[HdShaderTokens->worldToViewMatrix]
-        = VtValue(GfMatrix4d(1));
-    _cameras[id].params[HdShaderTokens->projectionMatrix]
-        = VtValue(GfMatrix4d(1));
-}
-
-void
-Hd_UnitTestDelegate::AddLight(SdfPath const &id)
-{
-    HdRenderIndex& index = GetRenderIndex();
-    index.InsertLight<HdLight>(this, id);
-    _lights[id].params[HdTokens->lightParams]
-        = VtValue(GlfSimpleLight());
-    _lights[id].params[HdTokens->lightShadowCollection]
-        = VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
-}
-
-void
 Hd_UnitTestDelegate::HideRprim(SdfPath const& id) 
 {
     _hiddenRprims.insert(id);
@@ -414,14 +391,6 @@ Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
                                   VtValue value)
 {
     _cameras[id].params[key] = value;
-}
-
-void
-Hd_UnitTestDelegate::UpdateLight(SdfPath const &id,
-                                 TfToken const &key,
-                                 VtValue value)
-{
-    _lights[id].params[key] = value;
 }
 
 /*virtual*/

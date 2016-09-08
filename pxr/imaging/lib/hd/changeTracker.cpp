@@ -389,95 +389,48 @@ HdChangeTracker::MarkInstancerClean(SdfPath const& id, DirtyBits newBits)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Camera Object Tracking
+/// \name Sprim Tracking (camera, light...)
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::CameraInserted(SdfPath const& id)
+HdChangeTracker::SprimInserted(SdfPath const& id, int initialDirtyState)
 {
-    TF_DEBUG(HD_CAMERA_ADDED).Msg("Camera Added: %s\n", id.GetText());
-    _cameraState[id] = AllDirty;
+    TF_DEBUG(HD_SPRIM_ADDED).Msg("Sprim Added: %s\n", id.GetText());
+    _sprimState[id] = initialDirtyState;
 }
 
 void
-HdChangeTracker::CameraRemoved(SdfPath const& id)
+HdChangeTracker::SprimRemoved(SdfPath const& id)
 {
-    TF_DEBUG(HD_CAMERA_REMOVED).Msg("Camera Removed: %s\n", id.GetText());
-    _cameraState.erase(id);
+    TF_DEBUG(HD_SPRIM_REMOVED).Msg("Sprim Removed: %s\n", id.GetText());
+    _sprimState.erase(id);
 }
 
 HdChangeTracker::DirtyBits
-HdChangeTracker::GetCameraDirtyBits(SdfPath const& id)
+HdChangeTracker::GetSprimDirtyBits(SdfPath const& id)
 {
-    _IDStateMap::iterator it = _cameraState.find(id);
-    if (not TF_VERIFY(it != _cameraState.end()))
+    _IDStateMap::iterator it = _sprimState.find(id);
+    if (not TF_VERIFY(it != _sprimState.end()))
         return Clean;
     return it->second;
 }
 
 void
-HdChangeTracker::MarkCameraDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkSprimDirty(SdfPath const& id, DirtyBits bits)
 {
-    _IDStateMap::iterator it = _cameraState.find(id);
-    if (not TF_VERIFY(it != _cameraState.end()))
+    _IDStateMap::iterator it = _sprimState.find(id);
+    if (not TF_VERIFY(it != _sprimState.end()))
         return;
     it->second = it->second | bits;
 }
 
 void
-HdChangeTracker::MarkCameraClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkSprimClean(SdfPath const& id, DirtyBits newBits)
 {
-    _IDStateMap::iterator it = _cameraState.find(id);
-    if (not TF_VERIFY(it != _cameraState.end()))
+    _IDStateMap::iterator it = _sprimState.find(id);
+    if (not TF_VERIFY(it != _sprimState.end()))
         return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
-}
-
-// -------------------------------------------------------------------------- //
-/// \name Light Object Tracking
-// -------------------------------------------------------------------------- //
-
-void
-HdChangeTracker::LightInserted(SdfPath const& id)
-{
-    TF_DEBUG(HD_LIGHT_ADDED).Msg("Light Added: %s\n", id.GetText());
-    _lightState[id] = AllDirty;
-}
-
-void
-HdChangeTracker::LightRemoved(SdfPath const& id)
-{
-    TF_DEBUG(HD_LIGHT_REMOVED).Msg("Light Removed: %s\n", id.GetText());
-    _lightState.erase(id);
-}
-
-HdChangeTracker::DirtyBits
-HdChangeTracker::GetLightDirtyBits(SdfPath const& id)
-{
-    _IDStateMap::iterator it = _lightState.find(id);
-    if (not TF_VERIFY(it != _lightState.end()))
-        return Clean;
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkLightDirty(SdfPath const& id, DirtyBits bits)
-{
-    _IDStateMap::iterator it = _lightState.find(id);
-    if (not TF_VERIFY(it != _lightState.end()))
-        return;
-    it->second = it->second | bits;
-}
-
-void
-HdChangeTracker::MarkLightClean(SdfPath const& id, DirtyBits newBits)
-{
-    _IDStateMap::iterator it = _lightState.find(id);
-    if (not TF_VERIFY(it != _lightState.end()))
-        return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
+    it->second = newBits;
 }
 
 // -------------------------------------------------------------------------- //

@@ -19,9 +19,11 @@ pxr_shared_library(hdx
         ${GLEW_INCLUDE_DIR}
 
     PUBLIC_CLASSES
+        camera
         debugCodes
         drawTargetTask
         intersector
+        light
         package
         renderTask
         renderSetupTask

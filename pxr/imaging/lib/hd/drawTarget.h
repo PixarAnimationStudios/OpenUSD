@@ -40,7 +40,7 @@ class HdSceneDelegate;
 class HdDrawTargetAttachmentDescArray;
 
 typedef boost::shared_ptr<class HdDrawTarget> HdDrawTargetSharedPtr;
-typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
+typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 typedef std::vector<HdDrawTargetSharedPtr> HdDrawTargetSharedPtrVector;
@@ -107,7 +107,7 @@ private:
     void _SetAttachments(const HdDrawTargetAttachmentDescArray &attachments);
     void _SetCamera(const SdfPath &cameraPath);
 
-    HdCameraSharedPtr _GetCamera() const;
+    HdSprimSharedPtr _GetCamera() const;
 
     void _ResizeDrawTarget();
 
