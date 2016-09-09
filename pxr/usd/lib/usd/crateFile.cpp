@@ -972,7 +972,7 @@ struct CrateFile::_ValueHandler : public _ArrayValueHandlerBase<T> {};
 /*static*/ bool
 CrateFile::CanRead(string const &fileName) {
     // Create a unique_ptr with a functor that fclose()s for a deleter.
-    _UniqueFILE in(fopen(fileName.c_str(), "rb"));
+    _UniqueFILE in(ArchOpenFile(fileName.c_str(), "rb"));
 
     if (not in)
         return false;
@@ -1012,7 +1012,7 @@ CrateFile::Open(string const &fileName)
     std::unique_ptr<CrateFile> result;
 
     // Create a unique_ptr with a functor that fclose()s for a deleter.
-    _UniqueFILE inputFile(fopen(fileName.c_str(), "rb"));
+    _UniqueFILE inputFile(ArchOpenFile(fileName.c_str(), "rb"));
 
     if (not inputFile) {
         TF_RUNTIME_ERROR("Failed to open file '%s'", fileName.c_str());
@@ -1105,7 +1105,7 @@ CrateFile::StartPacking(string const &fileName)
     TF_VERIFY(_fileName.empty() or _fileName == fileName);
     // We open the file for read/write (update) here in case we already have the
     // file, since we're not rewriting the whole thing.
-    _UniqueFILE out(fopen(fileName.c_str(), _fileName.empty() ? "w+b" : "r+b"));
+    _UniqueFILE out(ArchOpenFile(fileName.c_str(), _fileName.empty() ? "w+b" : "r+b"));
     if (not out) {
         TF_RUNTIME_ERROR("Failed to open '%s' for writing", fileName.c_str());
     } else {

@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/vt/dictionary.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include <boost/operators.hpp>
 
@@ -68,7 +69,7 @@ public:
 
     /// Sets a new asset path for the layer the payload uses.
     void SetAssetPath(const std::string &assetPath) {
-        _assetPath = assetPath;
+        _assetPath = TfPathCanonicalize(assetPath);
     }
 
     /// Returns the scene path of the prim for the payload.

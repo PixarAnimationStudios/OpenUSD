@@ -43,7 +43,7 @@
 
 #include <boost/foreach.hpp>
 
-static const char* _FileRelativePathPrefix = ARCH_REL_PATH_IDENT;
+static const char* _FileRelativePathPrefix = "./";
 
 #if MAYA_TBB_HANG_WORKAROUND_HACK
 struct Ar_DefaultResolver::_Cache
@@ -64,7 +64,7 @@ struct Ar_DefaultResolver::_Cache
 
 Ar_DefaultResolver::Ar_DefaultResolver()
 {
-    _searchPath.push_back(ArchGetCwd());
+    _searchPath.push_back(TfPathCanonicalize(ArchGetCwd()));
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (not envPath.empty()) {
@@ -113,7 +113,7 @@ Ar_DefaultResolver::AnchorRelativePath(
     // a file, strip off the last component, and anchor the path to that
     // directory.
     std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(anchorPath, ARCH_PATH_SEP), path);
+        TfStringGetBeforeSuffix(anchorPath, '/'), path);
     return TfNormPath(anchoredPath);
 }
 
@@ -172,7 +172,8 @@ Ar_DefaultResolver::_ResolveNoCache(const std::string& path)
     if (IsRelativePath(path)) {
         // First try to resolve relative paths against the current
         // working directory.
-        std::string resolvedPath = _Resolve(ArchGetCwd(), path);
+        std::string resolvedPath = _Resolve(TfPathCanonicalize(ArchGetCwd()),
+                                            path);
         if (not resolvedPath.empty()) {
             return resolvedPath;
         }

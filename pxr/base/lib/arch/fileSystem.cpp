@@ -24,6 +24,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/env.h"
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/hints.h"
@@ -259,7 +260,9 @@ ArchMakeTmpFile(const std::string& tmpdir,
 	UINT ret = ::GetTempFileName(tmpdir.c_str(), prefix.c_str(), 0, filename);
 	if (ret == 0)
 	{
-		ARCH_ERROR("Call to GetTempFileName failed.");
+		std::string errorMsg("Call to GetTempFileName failed because ");
+		errorMsg.append(ArchStrSysError(::GetLastError()));
+		ARCH_ERROR(errorMsg.c_str());
 		return -1;
 	}
 
@@ -273,7 +276,9 @@ ArchMakeTmpFile(const std::string& tmpdir,
 			NULL);                  // no template
 
 	if (fileHandle == INVALID_HANDLE_VALUE) {
-		ARCH_ERROR("Call to CreateFile failed.");
+		std::string errorMsg("Call to CreateFile failed because ");
+		errorMsg.append(ArchStrSysError(::GetLastError()));
+		ARCH_ERROR(errorMsg.c_str());
 		return -1;
 	}
 	
@@ -370,7 +375,7 @@ Arch_InitTmpDir()
 	tmpPath[sizeOfPath-1] = 0;
 	_TmpDir = _strdup(tmpPath);
 #else
-    if (const char* tmpdir = ArchGetEnv("TMPDIR")) {
+    if (const char* tmpdir = ArchGetEnv("TMPDIR").c_str()) {
         // This function is not exposed in the header; it is only used during
         // Arch_InitConfig. If this is called more than once when TMPDIR is
         // set, the following call will leak a string.
@@ -614,3 +619,79 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
     return -1;
 #endif
 }
+
+#if defined(ARCH_OS_WINDOWS)
+
+static inline DWORD ArchModeToAcess(int mode)
+{
+    switch (mode)
+    {
+    case F_OK:	return FILE_GENERIC_EXECUTE;
+    case W_OK:	return FILE_GENERIC_WRITE;
+    case R_OK:	return FILE_GENERIC_READ;
+    default:	return FILE_ALL_ACCESS;
+    }
+}
+
+int ArchFileAccess(const char* path, int mode)
+{
+    SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
+                                        GROUP_SECURITY_INFORMATION |
+                                        DACL_SECURITY_INFORMATION;
+    bool result = false;
+    DWORD length = 0;
+
+    if (!GetFileSecurity(path, securityInfo, NULL, NULL, &length))
+    {
+        std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
+        PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
+        if (GetFileSecurity(path, securityInfo, security, length, &length))
+        {
+            HANDLE token;
+            DWORD desiredAccess = TOKEN_IMPERSONATE | TOKEN_QUERY |
+                                  TOKEN_DUPLICATE | STANDARD_RIGHTS_READ;
+            if (!OpenThreadToken(GetCurrentThread(), desiredAccess, TRUE, &token))
+            {
+                if (!OpenProcessToken(GetCurrentProcess(), desiredAccess, &token))
+                {
+                    CloseHandle(token);
+                    return -1;
+                }
+            }
+
+            HANDLE duplicateToken;
+            if (DuplicateToken(token, SecurityImpersonation, &duplicateToken))
+            {
+                PRIVILEGE_SET privileges = {0};
+                DWORD grantedAccess = 0;
+                DWORD privilegesLength = sizeof(privileges);
+                BOOL accessStatus = FALSE;
+
+                GENERIC_MAPPING mapping;
+                mapping.GenericRead = FILE_GENERIC_READ;
+                mapping.GenericWrite = FILE_GENERIC_WRITE;
+                mapping.GenericExecute = FILE_GENERIC_EXECUTE;
+                mapping.GenericAll = FILE_ALL_ACCESS;
+
+                DWORD accessMask = ArchModeToAcess(mode);
+                MapGenericMask(&accessMask, &mapping);
+
+                if (AccessCheck(security,
+                                duplicateToken,
+                                accessMask,
+                                &mapping,
+                                &privileges,
+                                &privilegesLength,
+                                &grantedAccess,
+                                &accessStatus))
+                {
+                    result = (accessStatus == TRUE);
+                }
+                CloseHandle(duplicateToken);
+            }
+            CloseHandle(token);
+        }
+    }
+    return result ? 0 : -1;
+}
+#endif

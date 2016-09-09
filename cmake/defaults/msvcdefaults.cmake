@@ -65,9 +65,6 @@ add_definitions("/wd4506")
 # Enable PDB generation
 add_definitions("/Zi")
 
-# Enable minimum builds
-add_definitions("/Gm")
-
 # These files require /bigobj compiler flag
 #   Vt/arrayPyBuffer.cpp
 #   Usd/crateFile.cpp
@@ -79,4 +76,16 @@ add_definitions("/bigobj")
 if (${PXR_STRICT_BUILD_MODE})
     # Treat all warnings as errors
     add_definitions("/WX")
+endif()
+
+if (${PXR_HYBRID_BUILD_MODE})
+    # Effectively release with symbols
+    add_definitions("/Od")
+    add_definitions("/Ob0")
+
+    # Enable minimum builds
+    add_definitions("/Gm")
+else()
+    # Enable multi-processor compilation
+    add_definitions("/MP")
 endif()

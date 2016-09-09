@@ -48,11 +48,11 @@ SdfReference::SdfReference(
     const SdfPath &primPath,
     const SdfLayerOffset &layerOffset,
     const VtDictionary &customData) :
-    _assetPath(assetPath),
     _primPath(primPath),
     _layerOffset(layerOffset),
     _customData(customData)
 {
+    _assetPath = TfPathCanonicalize(assetPath);
 }
 
 void

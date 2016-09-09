@@ -115,7 +115,7 @@ _CheckMallocTagImpl(const char* impl, const char* libname)
 bool
 ArchIsPxmallocActive()
 {
-    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
+    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL").c_str();
     if (!_CheckMallocTagImpl(impl, "pxmalloc")) {
         return false;
     }
@@ -126,7 +126,7 @@ ArchIsPxmallocActive()
 bool
 ArchIsPtmallocActive()
 {
-    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
+    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL").c_str();
     if (!_CheckMallocTagImpl(impl, "ptmalloc")) {
         return false;
     }
@@ -137,7 +137,7 @@ ArchIsPtmallocActive()
 bool
 ArchIsJemallocActive()
 {
-    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
+    const char* impl = ArchGetEnv("TF_MALLOC_TAG_IMPL").c_str();
     if (!_CheckMallocTagImpl(impl, "jemalloc")) {
         return false;
     }
@@ -160,7 +160,7 @@ ArchIsStlAllocatorOff()
      * isn't, it's just a preference, not behavior that has to correct
      * to avoid a crash.
      */
-    static bool isOff = bool(ArchGetEnv("GLIBCXX_FORCE_NEW"));
+    static bool isOff = bool(ArchGetEnv("GLIBCXX_FORCE_NEW").c_str());
     return isOff;
 #else
     return false;

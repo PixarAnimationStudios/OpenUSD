@@ -79,6 +79,7 @@
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/scoped.h"
@@ -554,8 +555,9 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
 static SdfLayerRefPtr
 _CreateNewLayer(const std::string &identifier)
 {
+    std::string ident = TfPathCanonicalize(identifier);
     TfErrorMark mark;
-    SdfLayerRefPtr rootLayer = SdfLayer::CreateNew(identifier);
+    SdfLayerRefPtr rootLayer = SdfLayer::CreateNew(ident);
     if (not rootLayer) {
         // If Sdf did not report an error message, we must.
         if (mark.IsClean()) {
@@ -677,6 +679,8 @@ _OpenLayer(
     const std::string &filePath,
     const ArResolverContext &resolverContext = ArResolverContext())
 {
+	std::string path = TfPathCanonicalize(filePath);
+
     boost::optional<ArResolverContextBinder> binder;
     if (not resolverContext.IsEmpty())
         binder = boost::in_place(resolverContext);
@@ -685,7 +689,7 @@ _OpenLayer(
     args[SdfFileFormatTokens->TargetArg] =
         UsdUsdFileFormatTokens->Target.GetString();
 
-    return SdfLayer::FindOrOpen(filePath, args);
+    return SdfLayer::FindOrOpen(path, args);
 }
 
 /* static */

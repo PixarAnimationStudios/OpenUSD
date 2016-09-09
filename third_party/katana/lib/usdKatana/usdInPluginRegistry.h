@@ -149,6 +149,7 @@ private:
 class T : public FnKat::GeolibOp\
 {\
 public:\
+    ~T() = delete;\
     static void setup(FnKat::GeolibSetupInterface& interface);\
     static void cook(FnKat::GeolibCookInterface& interface);\
 };\

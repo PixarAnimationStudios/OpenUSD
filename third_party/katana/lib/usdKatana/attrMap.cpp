@@ -30,6 +30,8 @@ PxrUsdKatanaAttrMap::PxrUsdKatanaAttrMap(FnPluginHost* host)
         FnAttribute::GroupBuilder::setHost(host);
 
         FnAttribute::Attribute::setHost(host);
+
+        Foundry::Katana::PluginManager::setHost(host);
     }
 }
 

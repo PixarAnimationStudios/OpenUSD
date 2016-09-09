@@ -93,6 +93,7 @@ def _AddShadingToBall(stage):
         with shadingVariant.GetVariantEditContext():
             whichBall = variantName.split('_')[-1]
             texPath = os.path.join(texDir, 'ball%s.tex' % whichBall)
+            texPath = texPath.replace('\\', '/')
             # in the current variant, modify the color
             _SetParameters(ballTextureNode, [
                 ('filename', Sdf.ValueTypeNames.String, texPath),

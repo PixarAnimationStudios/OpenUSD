@@ -32,7 +32,11 @@ elseif(MSVC)
     include(msvcdefaults)
 endif()
 
-_add_define(BUILD_COMPONENT_SRC_PREFIX="pxr/")
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	_add_define(BUILD_COMPONENT_SRC_PREFIX="pxr/")
+else()
+	_add_define(BUILD_COMPONENT_SRC_PREFIX="")
+endif()
 
 _add_define(GL_GLEXT_PROTOTYPES)
 _add_define(GLX_GLXEXT_PROTOTYPES)
