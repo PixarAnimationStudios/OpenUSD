@@ -21,10 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-<<<<<<< HEAD
-
-=======
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
 #ifndef ARCH_API_H
 #define ARCH_API_H
 
