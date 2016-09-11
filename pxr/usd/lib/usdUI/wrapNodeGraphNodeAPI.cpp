@@ -66,6 +66,20 @@ _CreateDisplayColorAttr(UsdUINodeGraphNodeAPI &self,
     return self.CreateDisplayColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateIconAttr(UsdUINodeGraphNodeAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateIconAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateExpansionStateAttr(UsdUINodeGraphNodeAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateExpansionStateAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
 
 void wrapUsdUINodeGraphNodeAPI()
 {
@@ -114,6 +128,20 @@ void wrapUsdUINodeGraphNodeAPI()
              &This::GetDisplayColorAttr)
         .def("CreateDisplayColorAttr",
              &_CreateDisplayColorAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetIconAttr",
+             &This::GetIconAttr)
+        .def("CreateIconAttr",
+             &_CreateIconAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetExpansionStateAttr",
+             &This::GetExpansionStateAttr)
+        .def("CreateExpansionStateAttr",
+             &_CreateExpansionStateAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

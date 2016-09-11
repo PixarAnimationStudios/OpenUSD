@@ -41,6 +41,8 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 );
 
 
+const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(-1.0e30);
+
 const GfVec3f MayaMeshWriter::_ShaderDefaultRGB = GfVec3f(0.5);
 const float MayaMeshWriter::_ShaderDefaultAlpha = 0.0;
 
@@ -202,27 +204,42 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     if (getArgs().exportMeshUVs) {
         status = lMesh.getUVSetNames(uvSetNames);
     }
-    for (unsigned int i=0; i < uvSetNames.length(); i++) {
-        // Initialize the VtArray to the max possible size (facevarying)
-        VtArray<GfVec2f> uvValues(numFaceVertices);
-        TfToken interpolation=TfToken();
-        // Gather UV data and interpolation into a Vec2f VtArray and try to compress if possible
-        if (_GetMeshUVSetData(lMesh, uvSetNames[i], &uvValues, &interpolation) == MS::kSuccess) {
-        
-            // XXX:bug 118447
-            // We should be able to configure the UV map name that triggers this
-            // behavior, and the name to which it exports.
-            // The UV Set "map1" is renamed st. This is a Pixar/USD convention
-            TfToken setName(uvSetNames[i].asChar());
-            if (setName == "map1") setName=UsdUtilsGetPrimaryUVSetName();
-       
-            // Create the primvar and set the values
-            UsdGeomPrimvar uvSet = 
-                primSchema.CreatePrimvar(setName, SdfValueTypeNames->Float2Array, interpolation);
-            uvSet.Set( uvValues ); // not animatable
+    for (unsigned int i = 0; i < uvSetNames.length(); ++i) {
+        VtArray<GfVec2f> uvValues;
+        TfToken interpolation;
+        VtArray<int> assignmentIndices;
+
+        if (not _GetMeshUVSetData(lMesh,
+                                  uvSetNames[i],
+                                  &uvValues,
+                                  &interpolation,
+                                  &assignmentIndices)) {
+            continue;
         }
+
+        int unassignedValueIndex = -1;
+        PxrUsdMayaUtil::AddUnassignedUVIfNeeded(&uvValues,
+                                                &assignmentIndices,
+                                                &unassignedValueIndex,
+                                                _DefaultUV);
+
+        // XXX:bug 118447
+        // We should be able to configure the UV map name that triggers this
+        // behavior, and the name to which it exports.
+        // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
+        TfToken setName(uvSetNames[i].asChar());
+        if (setName == "map1") {
+            setName = UsdUtilsGetPrimaryUVSetName();
+        }
+
+        _createUVPrimVar(primSchema,
+                         setName,
+                         uvValues,
+                         interpolation,
+                         assignmentIndices,
+                         unassignedValueIndex);
     }
-    
+
     // == Gather ColorSets
     MStringArray colorSetNames;
     if (getArgs().exportColorSets) {

@@ -30,44 +30,6 @@
 #include "pxr/usd/usdGeom/points.h"
 
 static FnKat::Attribute
-_GetVelocityAttr(
-    const UsdGeomPointBased& points,
-    double currentTime)
-{
-    VtVec3fArray velocities;
-    if (not points.GetVelocitiesAttr().Get(&velocities, currentTime))
-    {
-        return FnKat::Attribute();
-    }
-
-    // float attribute list with a width of 3
-    FnKat::FloatBuilder velocitiesBuilder(3);
-    std::vector<float> velVec;
-    PxrUsdKatanaUtils::ConvertArrayToVector(velocities, &velVec);
-    velocitiesBuilder.set(velVec);
-
-    return velocitiesBuilder.build();
-}
-
-static FnKat::Attribute
-_GetNormalsAttr(const UsdGeomPoints& points, double currentTime)
-{
-    VtVec3fArray normals;
-    if (not points.GetNormalsAttr().Get(&normals, currentTime))
-    {
-        return FnKat::Attribute();
-    }
-
-    // float attribute list with a width of 3
-    FnKat::FloatBuilder normalsBuilder(3);
-    std::vector<float> normalsVec;
-    PxrUsdKatanaUtils::ConvertArrayToVector(normals, &normalsVec);
-    normalsBuilder.set(normalsVec);
-
-    return normalsBuilder.build();
-}
-
-static FnKat::Attribute
 _GetWidthAttr(const UsdGeomPoints& points, double currentTime)
 {
     VtFloatArray widths;
@@ -109,11 +71,12 @@ PxrUsdKatanaReadPoints(
 
     FnKat::GroupBuilder geometryBuilder;
 
-    // point
+    // position
     geometryBuilder.set("point.P", PxrUsdKatanaGeomGetPAttr(points, data));
 
     // velocity
-    FnKat::Attribute velocitiesAttr = _GetVelocityAttr(points, currentTime);
+    FnKat::Attribute velocitiesAttr =
+        PxrUsdKatanaGeomGetVelocityAttr(points, data);
     if (velocitiesAttr.isValid())
     {
         geometryBuilder.set("point.v", velocitiesAttr);
@@ -123,7 +86,13 @@ PxrUsdKatanaReadPoints(
     FnKat::Attribute normalsAttr = _GetNormalsAttr(points, currentTime);
     if (normalsAttr.isValid())
     {
-        geometryBuilder.set("point.N", normalsAttr);
+        // XXX RfK doesn't support uniform curve normals.
+        TfToken interp = points.GetNormalsInterpolation();
+        if (interp == UsdGeomTokens->faceVarying
+         || interp == UsdGeomTokens->varying
+         || interp == UsdGeomTokens->vertex) {
+            geometryBuilder.set("point.N", normalsAttr);
+        }
     }
 
     // width

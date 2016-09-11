@@ -24,8 +24,7 @@
 #include "pxr/imaging/hd/unitTestDelegate.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
@@ -414,14 +413,6 @@ Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
                                   VtValue value)
 {
     _cameras[id].params[key] = value;
-}
-
-void
-Hd_UnitTestDelegate::UpdateLight(SdfPath const &id,
-                                 TfToken const &key,
-                                 VtValue value)
-{
-    _lights[id].params[key] = value;
 }
 
 /*virtual*/

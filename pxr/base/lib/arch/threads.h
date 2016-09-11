@@ -26,6 +26,8 @@
 
 #include "pxr/base/arch/api.h"
 
+#include "pxr/base/arch/api.h"
+
 /// Return true if the calling thread is the main thread, false otherwise.
 /// \ingroup group_arch_Multithreading
 ARCH_API bool ArchIsMainThread();

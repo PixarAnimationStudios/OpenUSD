@@ -307,10 +307,10 @@ UsdImagingPrimAdapter::GetShaderBinding(UsdPrim const& prim)
     // samples.
     
     if (_IsEnabledBindingCache()) {
-        SdfPath binding = _delegate->_lookBindingCache.GetValue(prim);
+        SdfPath binding = _delegate->_materialBindingCache.GetValue(prim);
         return binding;
     } else {
-        return UsdImaging_LookStrategy::ComputeShaderPath(prim);
+        return UsdImaging_MaterialStrategy::ComputeShaderPath(prim);
     }
 }
 

@@ -88,12 +88,21 @@ install:
   ### GLEW 1.10.0
   - sudo apt-get install libglew-dev
 
+<<<<<<< HEAD
   ### OpenSubdiv 3.0.0
   - sudo apt-get install libxrandr-dev libxcursor-dev libxinerama-dev libglfw-dev
   - if [ ! -d "$HOME/osd/lib" ]; then
       wget https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_0_0.tar.gz -O /tmp/osd.tgz;
       tar -xvzf /tmp/osd.tgz -C $HOME;
       pushd $HOME/OpenSubdiv-3_0_0;
+=======
+  ### OpenSubdiv 3.0.5
+  - sudo apt-get install libxrandr-dev libxcursor-dev libxinerama-dev libglfw-dev
+  - if [ ! -d "$HOME/osd/lib" ]; then
+      wget https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_0_5.tar.gz -O /tmp/osd.tgz;
+      tar -xvzf /tmp/osd.tgz -C $HOME;
+      pushd $HOME/OpenSubdiv-3_0_5;
+>>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
       mkdir build && cd build;
       cmake -DCMAKE_INSTALL_PREFIX=$HOME/osd -DNO_EXAMPLES=1 -DNO_TUTORIALS=1 -DNO_REGRESSION=1 -D NO_MAYA=1 -D NO_PTEX=1 -D NO_DOC=1 -D NO_OMP=1 -D NO_TBB=1 -D NO_CUDA=1 -D NO_OPENCL=1 -D NO_CLEW=1 ..;
       make && make install;
@@ -149,9 +158,18 @@ cache:
 script:
   - mkdir build && cd build
   - cmake -DTBB_ROOT_DIR=$HOME/tbb43_20141023oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF ..
+<<<<<<< HEAD
   - echo 'Building with -j4'
   # XXX: Need to explicitly build cameraUtil before hd due to missing dependency declaration.
   # This is fixed in commit 880b04.
   - make -j4 cameraUtil
   - make -j4
   - make install
+=======
+  # XXX: Need to explicitly build cameraUtil before hd due to missing dependency declaration.
+  # This is fixed in commit 880b04.
+  - make -j cameraUtil
+  - make -j
+  # Default install location is /usr/local; we need sudo access to write there.
+  - sudo make install
+>>>>>>> cc6709e473450bb8271115fd82550da96ac5007f

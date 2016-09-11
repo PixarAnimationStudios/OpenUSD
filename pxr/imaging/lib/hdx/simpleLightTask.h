@@ -26,15 +26,17 @@
 
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
+#include "pxr/imaging/hdx/light.h"
+
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
+#include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/glf/simpleMaterial.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/imaging/glf/simpleMaterial.h"
-#include "pxr/imaging/glf/simpleLight.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -42,7 +44,7 @@ class HdRenderIndex;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixComputationSharedPtr;
 
 TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
@@ -53,6 +55,11 @@ public:
     HDXLIB_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
+    static SdfPathVector ComputeIncludedLights(
+        SdfPathVector const & allLightPaths,
+        SdfPathVector const & includedPaths,
+        SdfPathVector const & excludedPaths);
+
 protected:
     /// Execute render pass task
     virtual void _Execute(HdTaskContext* ctx);
@@ -62,9 +69,9 @@ protected:
 
 private:
     // Should be weak ptrs
-    HdCameraSharedPtr _camera;
-    HdLightSharedPtrVector _lights;
-    HdSimpleLightingShaderSharedPtr _lightingShader;
+    HdSprimSharedPtr _camera;
+    HdSprimSharedPtrVector _lights;
+    HdxSimpleLightingShaderSharedPtr _lightingShader;
     int _collectionVersion;
     bool _enableShadows;
     GfVec4f _viewport;
@@ -79,13 +86,6 @@ private:
     GlfSimpleShadowArrayRefPtr _shadows;
     GlfSimpleLightVector _glfSimpleLights;
 };
-
-HdLightSharedPtrVector
-_ComputeIncludedLights(
-    HdLightSharedPtrVector const & allLights,
-    SdfPathVector const & includedPaths,
-    SdfPathVector const & excludedPaths);
-
 
 struct HdxSimpleLightTaskParams
 {

@@ -425,7 +425,7 @@ class UsdGeomPrimvar
     /// Returns the value of the indices array associated with the indexed 
     /// primvar at \p time.
     /// 
-    /// \sa SetIndices()
+    /// \sa SetIndices(), \ref Usd_Handling_Indexed_Primvars
     USDGEOM_API
     bool GetIndices(VtIntArray *indices,
                     UsdTimeCode time = UsdTimeCode::Default()) const;
@@ -438,6 +438,9 @@ class UsdGeomPrimvar
 
     /// Returns true if the primvar is indexed, i.e., if it has an associated
     /// "indices" attribute.
+    ///
+    /// If you are going to query the indices anyways, prefer to simply 
+    /// consult the return-value of GetIndices(), which will be more efficient.
     USDGEOM_API
     bool IsIndexed() const;
 

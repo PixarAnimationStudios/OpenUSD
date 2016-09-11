@@ -53,6 +53,11 @@ class SdfAssetPath;
 /// This api helps storing information about nodes in node graphs.
 /// 
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdUITokens.
+/// So to set an attribute to the value "rightHanded", use UsdUITokens->rightHanded
+/// as the value.
+///
 class UsdUINodeGraphNodeAPI : public UsdSchemaBase
 {
 public:
@@ -198,6 +203,52 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDUI_API
     UsdAttribute CreateDisplayColorAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ICON 
+    // --------------------------------------------------------------------- //
+    /// 
+    /// This points to an image that should be displayed on the node
+    /// 
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    UsdAttribute GetIconAttr() const;
+
+    /// See GetIconAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    UsdAttribute CreateIconAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPANSIONSTATE 
+    // --------------------------------------------------------------------- //
+    /// 
+    /// The current expansionState of the node in the ui. 
+    /// 'open' = fully expanded
+    /// 'closed' = fully collapsed
+    /// 'minimized' = should take the least space possible
+    /// 
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    /// \n  \ref UsdUITokens "Allowed Values": [open, closed, minimized]
+    UsdAttribute GetExpansionStateAttr() const;
+
+    /// See GetExpansionStateAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    UsdAttribute CreateExpansionStateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

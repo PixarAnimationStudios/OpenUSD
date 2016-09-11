@@ -66,11 +66,11 @@ using std::vector;
 // Forward declaration required here for certain MSVC versions.
 struct _PathItemHeader;
 
-// Tag indicating trivially copyable types, hack since gcc doesn't yet implement
-// is_trivially_copyable correctly.
-struct _BitwiseReadWrite {};
+// Trait indicating trivially copyable types, a hack since gcc doesn't yet
+// implement is_trivially_copyable correctly.
+template <class T> struct _IsBitwiseReadWrite;
 
-enum class TypeEnum : int;
+enum class TypeEnum : int32_t;
 
 // Value in file representation.  Consists of a 2 bytes of type information
 // (type enum value, array bit, and inlined-value bit) and 6 bytes of data.
@@ -79,7 +79,7 @@ enum class TypeEnum : int;
 // (zero vectors, identity matrices, etc).  For values that aren't stored
 // inline, the 6 data bytes are the offset from the start of the file to the
 // value's location.
-class ValueRep : _BitwiseReadWrite {
+struct ValueRep {
 
 public:
     friend class CrateFile;
@@ -146,6 +146,7 @@ private:
 
     uint64_t data;
 };
+template <> struct _IsBitwiseReadWrite<ValueRep> : std::true_type {};
 
 class TimeSamples {
 public:
@@ -215,7 +216,7 @@ enum class TypeEnum {
 // Index base class.  Used to index various tables.  Deriving adds some
 // type-safety so we don't accidentally use one kind of index with the wrong
 // kind of table.
-struct Index : _BitwiseReadWrite {
+struct Index {
     Index() : value(~0) {}
     explicit Index(uint32_t value) : value(value) {}
     bool operator==(const Index &other) const { return value == other.value; }
@@ -265,6 +266,10 @@ struct _Hasher {
 
 class CrateFile
 {
+public:
+    class Version;
+
+private:
     struct _Fcloser {
         void operator()(FILE *f) const;
     };
@@ -274,15 +279,16 @@ class CrateFile
 
     // _BootStrap structure.  Appears at end of file, houses version, file
     // identifier string and offset to _TableOfContents.
-    struct _BootStrap : _BitwiseReadWrite {
+    struct _BootStrap {
         _BootStrap();
+        explicit _BootStrap(Version const &);
         uint8_t ident[8]; // "PXR-USDC"
         uint8_t version[8]; // 0: major, 1: minor, 2: patch, rest unused.
         int64_t tocOffset;
         int64_t _reserved[8];
     };
 
-    struct _Section : _BitwiseReadWrite {
+    struct _Section {
         _Section() { memset(this, 0, sizeof(*this)); }
         _Section(char const *name, int64_t start, int64_t size);
         char name[_SectionNameMaxLength+1];
@@ -301,7 +307,20 @@ public:
 
     typedef std::pair<TfToken, VtValue> FieldValuePair;
 
-    struct Field : _BitwiseReadWrite {
+    struct Field {
+        // This padding field accounts for a bug in an earlier implementation,
+        // where both this class and its first member derived an empty base
+        // class.  The standard requires that those not have the same address so
+        // GCC & clang inserted 4 bytes for this class's empty base, causing the
+        // first member to land at offset 4.  Porting to MSVC revealed this,
+        // since MSVC didn't implement this correctly and the first member
+        // landed at offset 0.  To fix this, we've removed the empty base and
+        // inserted our own 4 byte padding to ensure the layout comes out the
+        // same everywhere.  This doesn't actually change the overall structure
+        // size since the first member is 4 bytes and the second is 8.  It's
+        // still 16 bytes however you slice it.
+        uint32_t _unused_padding_;
+
         Field() {}
         Field(TokenIndex ti, ValueRep v) : tokenIndex(ti), valueRep(v) {}
         bool operator==(const Field &other) const {
@@ -318,10 +337,13 @@ public:
         ValueRep valueRep;
     };
 
-    struct Spec : _BitwiseReadWrite {
+    struct Spec_0_0_1;
+    
+    struct Spec {
         Spec() {}
         Spec(PathIndex pi, SdfSpecType type, FieldSetIndex fsi)
             : pathIndex(pi), fieldSetIndex(fsi), specType(type) {}
+        Spec(Spec_0_0_1 const &);
         bool operator==(const Spec &other) const {
             return pathIndex == other.pathIndex and
                 fieldSetIndex == other.fieldSetIndex and
@@ -331,6 +353,43 @@ public:
             return not (*this == other);
         }
         friend size_t hash_value(Spec const &s) {
+            _Hasher h;
+            size_t result = h(s.pathIndex);
+            boost::hash_combine(result, s.fieldSetIndex);
+            boost::hash_combine(result, s.specType);
+            return result;
+        }
+        PathIndex pathIndex;
+        FieldSetIndex fieldSetIndex;
+        SdfSpecType specType;
+    };
+
+    struct Spec_0_0_1 {
+        // This padding field accounts for a bug in this earlier implementation,
+        // where both this class and its first member derived an empty base
+        // class.  The standard requires that those not have the same address so
+        // GCC & clang inserted 4 bytes for this class's empty base, causing the
+        // first member to land at offset 4.  Porting to MSVC revealed this,
+        // since MSVC didn't implement this correctly and the first member
+        // landed at offset 0.  To fix this, we've removed the empty base and
+        // inserted our own 4 byte padding to ensure the layout comes out the
+        // same everywhere.  File version 0.1.0 revises this structure to the
+        // smaller size with no padding.
+        uint32_t _unused_padding_;
+
+        Spec_0_0_1() {}
+        Spec_0_0_1(PathIndex pi, SdfSpecType type, FieldSetIndex fsi)
+            : pathIndex(pi), fieldSetIndex(fsi), specType(type) {}
+        Spec_0_0_1(Spec const &);
+        bool operator==(const Spec_0_0_1 &other) const {
+            return pathIndex == other.pathIndex and
+                fieldSetIndex == other.fieldSetIndex and
+                specType == other.specType;
+        }
+        bool operator!=(const Spec_0_0_1 &other) const {
+            return not (*this == other);
+        }
+        friend size_t hash_value(Spec_0_0_1 const &s) {
             _Hasher h;
             size_t result = h(s.pathIndex);
             boost::hash_combine(result, s.fieldSetIndex);
@@ -474,7 +533,6 @@ private:
     static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
     class _Writer;
-    
     class _ReaderBase;
     template <class ByteStream> class _Reader;
 
@@ -515,10 +573,10 @@ private:
     template <class Reader> void _ReadStrings(Reader src);
     template <class Reader> void _ReadTokens(Reader src);
     template <class Reader> void _ReadPaths(Reader src);
-    template <class Reader>
+    template <class Reader, class Header>
     void _ReadPathsRecursively(
         Reader src, const SdfPath &parentPath,
-        const _PathItemHeader &h,
+        const Header &h,
         WorkArenaDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
@@ -632,6 +690,22 @@ private:
 
     const bool _useMmap; // If true, use mmap for reads, otherwise use pread.
 };
+
+template <>
+struct _IsBitwiseReadWrite<CrateFile::_BootStrap> : std::true_type {};
+
+template <>
+struct _IsBitwiseReadWrite<CrateFile::_Section> : std::true_type {};
+
+template <>
+struct _IsBitwiseReadWrite<CrateFile::Field> : std::true_type {};
+
+template <>
+struct _IsBitwiseReadWrite<CrateFile::Spec> : std::true_type {};
+
+template <>
+struct _IsBitwiseReadWrite<CrateFile::Spec_0_0_1> : std::true_type {};
+
 
 } // Usd_CrateFile
 

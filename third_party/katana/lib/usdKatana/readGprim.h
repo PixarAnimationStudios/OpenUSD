@@ -69,6 +69,11 @@ PxrUsdKatanaGeomGetNormalAttr(
     const UsdGeomPointBased& points,
     const PxrUsdKatanaUsdInPrivateData& data);
 
+Foundry::Katana::Attribute
+PxrUsdKatanaGeomGetVelocityAttr(
+    const UsdGeomPointBased& points,
+    const PxrUsdKatanaUsdInPrivateData& data);
+
 
 #endif // PXRUSDKATANA_READGPRIM_H
 

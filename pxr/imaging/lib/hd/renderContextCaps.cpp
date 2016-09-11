@@ -45,6 +45,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use GL mult draw indirect extention");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
+TF_DEFINE_ENV_SETTING(HD_ENABLE_COPY_BUFFER, true,
+                      "Use GL copy buffer data");
 
 TF_DEFINE_ENV_SETTING(HD_GLSL_VERSION, 0,
                       "GLSL version");
@@ -64,6 +66,7 @@ HdRenderContextCaps::HdRenderContextCaps()
     , glslVersion(400)
     , explicitUniformLocation(false)
     , shadingLanguage420pack(false)
+    , copyBufferEnabled(true)
 {
 }
 
@@ -209,6 +212,11 @@ HdRenderContextCaps::_LoadCaps()
         shadingLanguage420pack     &= (glslVersion >= 420);
     }
 
+    // For driver issues workaround
+    if (not TfGetEnvSetting(HD_ENABLE_COPY_BUFFER)) {
+        copyBufferEnabled = false;
+    }
+
     if (TfDebug::IsEnabled(HD_RENDER_CONTEXT_CAPS)) {
         std::cout
             << "HdRenderContextCaps: \n"
@@ -239,6 +247,10 @@ HdRenderContextCaps::_LoadCaps()
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
             ;
+
+        if (not copyBufferEnabled) {
+            std::cout << "  CopyBuffer : disabled\n";
+        }
     }
 }
 

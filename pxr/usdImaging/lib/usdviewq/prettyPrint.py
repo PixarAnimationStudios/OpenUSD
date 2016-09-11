@@ -27,8 +27,6 @@ arrayAttributeView
 '''
 from PySide import QtGui
 
-# locale.setlocale(locale.LC_ALL, 'en_US')
-
 def progressDialog(title, value):
     dialog = QtGui.QProgressDialog(title, "Cancel", 0, value)
     dialog.setModal(True)

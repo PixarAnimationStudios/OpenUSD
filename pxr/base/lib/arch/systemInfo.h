@@ -29,7 +29,6 @@
 /// Provide architecture-specific system information.
 
 #include "pxr/base/arch/api.h"
-#include <sys/types.h>
 #include <string>
 
 /// \addtogroup group_arch_SystemFunctions

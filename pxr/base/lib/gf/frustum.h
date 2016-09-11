@@ -521,36 +521,16 @@ class GfFrustum {
     /// Otherwise, it returns false. 
 	GF_API bool        Intersects(const GfVec3d &point) const;
 
-    /// Returns true if the given point is inside or intersecting the frustum.
-    /// Otherwise, it returns false.  The point is in its local space, as
-    /// described by a call to GfFrustum::SetLocalSpace.
-	GF_API bool        IntersectsInLocalSpace(const GfVec3d &point) const;
-
     /// Returns \c true if the line segment formed by the given points is
     /// inside or intersecting the frustum.  Otherwise, it returns false.
 	GF_API bool        Intersects(const GfVec3d &p0,
-                                   const GfVec3d &p1) const;
-
-    /// Returns \c true if the line segment formed by the given points is
-    /// inside or intersecting the frustum.  Otherwise, it returns false. The
-    /// endpoints of the line are in local space, as described by a call to
-    /// GfFrustum::SetLocalSpace.
-	GF_API bool        IntersectsInLocalSpace(const GfVec3d &p0,
-                                               const GfVec3d &p1) const;
+                                  const GfVec3d &p1) const;
 
     /// Returns \c true if the triangle formed by the given points is inside
     /// or intersecting the frustum.  Otherwise, it returns false.
 	GF_API bool         Intersects(const GfVec3d &p0,
                                    const GfVec3d &p1,
                                    const GfVec3d &p2) const;
-
-    /// Returns \c true if the triangle formed by the given points is inside
-    /// or intersecting the frustum.  Otherwise, it returns false. The
-    /// vertices of the triangle are in local space, as described by a call to
-    /// GfFrustum::SetLocalSpace.
-	GF_API bool         IntersectsInLocalSpace(const GfVec3d &p0,
-                                               const GfVec3d &p1,
-                                               const GfVec3d &p2) const;
 
     /// Returns \c true if the bbox volume intersects the view volume given by
     /// the view-projection matrix, erring on the side of false positives for

@@ -387,8 +387,6 @@ in VertexData
 in vec4 gsPatchCoord;
 in vec2 gsTessCoord;
 
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color);
-
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset
 int HdGet_ptexFaceOffset()

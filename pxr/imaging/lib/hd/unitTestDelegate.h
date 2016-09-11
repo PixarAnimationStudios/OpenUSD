@@ -197,10 +197,8 @@ public:
     void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
 
     /// Camera
+    HDLIB_API
     void AddCamera(SdfPath const &id);
-
-    /// Light
-    void AddLight(SdfPath const &id);
 
     /// Remove a prim
     HDLIB_API
@@ -241,7 +239,6 @@ public:
     void UpdateInstancerPrototypes(float time);
 
     void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
-    void UpdateLight(SdfPath const &id, TfToken const &key, VtValue value);
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {

@@ -46,6 +46,10 @@ WORK_API unsigned WorkGetConcurrencyLimit();
 /// This is either the number of physical cores on the machine or the number of
 /// cores specified by the process's affinity mask, whichever is smaller.
 ///
+/// Set the concurrency limit to \p n, if \p n is a non-zero value.
+///
+/// If \p n is zero, then do not change the current concurrency limit.
+///
 WORK_API unsigned WorkGetPhysicalConcurrencyLimit();
 
 /// Set the concurrency limit to \p n, if \p n is a non-zero value.

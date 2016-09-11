@@ -28,8 +28,8 @@
 /// \ingroup group_arch_Diagnostics
 /// Architecture-specific call-stack tracing routines.
 
-#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/api.h"
+#include "pxr/base/arch/defines.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -136,6 +136,7 @@ void ArchPrintStackTrace(FILE *fout, const std::string& reason);
 
 /// Print a stack trace to the given ostream.
 /// \overload
+ARCH_API
 void ArchPrintStackTrace(std::ostream& out,
                          const std::string& programName,
                          const std::string& reason);

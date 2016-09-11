@@ -25,6 +25,7 @@
 #define HDX_DRAW_TARGET_TASK_H
 
 #include "pxr/imaging/hdx/version.h"
+
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/drawTargetRenderPass.h"
 #include "pxr/imaging/hd/simpleLightingShader.h"
@@ -34,6 +35,7 @@
 
 typedef boost::weak_ptr<class HdDrawTarget> HdDrawTargetWeakPtr;
 typedef std::unique_ptr<HdDrawTargetRenderPass> HdDrawTargetRenderPassUniquePtr;
+typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
@@ -55,11 +57,11 @@ private:
     // use by std::vector::reserve().
 
     struct RenderPassInfo {
-        HdDrawTargetRenderPassUniquePtr pass;
-        HdRenderPassStateSharedPtr      renderPassState;
-        HdSimpleLightingShaderSharedPtr simpleLightingShader;
-        HdDrawTargetWeakPtr             target;
-        unsigned int                    version;
+        HdDrawTargetRenderPassUniquePtr  pass;
+        HdRenderPassStateSharedPtr       renderPassState;
+        HdxSimpleLightingShaderSharedPtr simpleLightingShader;
+        HdDrawTargetWeakPtr              target;
+        unsigned int                     version;
     };
 
     bool     _enableDrawTargets;

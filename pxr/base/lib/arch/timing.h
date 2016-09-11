@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// High-resolution, low-cost timing routines.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/api.h"

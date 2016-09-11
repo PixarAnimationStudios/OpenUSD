@@ -6,11 +6,6 @@ if (NOT Qt5Core_FOUND)
     return()
 endif()
 
-if(APPLE)
-    FIND_LIBRARY(COCOA_LIBRARY Cocoa)
-    set(COCOA_SRC selectVisual.mm)
-endif()
-
 pxr_shared_library(glfq
     LIBRARIES
         garch
@@ -22,6 +17,7 @@ pxr_shared_library(glfq
         Qt5::OpenGL
         Qt5::Xml
         Qt5::Network
+        ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${GLEW_LIBRARY}
 

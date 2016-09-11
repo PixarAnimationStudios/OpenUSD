@@ -1124,15 +1124,16 @@ _ValueContainsBlock(const VtValue* value) {
 }
 
 bool
-_ValueContainsBlock(const SdfAbstractDataValue* value) {
-    static const TfType valueBlockType = TfType::Find<SdfValueBlock>();
-    return value and value->valueType == valueBlockType.GetTypeid();
+_ValueContainsBlock(const SdfAbstractDataValue* value) 
+{
+    return value and value->isValueBlock;
 }
 
 bool
-_ValueContainsBlock(const SdfAbstractDataConstValue* value) {
-    static const TfType valueBlockType = TfType::Find<SdfValueBlock>();
-    return value and value->valueType == valueBlockType.GetTypeid();
+_ValueContainsBlock(const SdfAbstractDataConstValue* value)
+{
+    constexpr const std::type_info& valueBlockTypeId(typeid(SdfValueBlock));
+    return value and value->valueType == valueBlockTypeId;
 }
 
 bool 
@@ -1145,7 +1146,8 @@ _ClearValueIfBlocked(VtValue* value) {
     return false;
 }
 
-bool _ClearValueIfBlocked(SdfAbstractDataValue* value) {
+bool 
+_ClearValueIfBlocked(SdfAbstractDataValue* value) {
     return _ValueContainsBlock(value);
 }
 }
@@ -3308,19 +3310,19 @@ UsdStage::_ComposePrimIndexesInParallel(
         _cache->ComputePrimIndexesInParallel(
             primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
             [](const SdfPath &) { return true; },
-            "Usd", _mallocTagID.c_str());
+            "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNoDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
             primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
             [](const SdfPath &) { return false; },
-            "Usd", _mallocTagID.c_str());
+            "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
         _cache->ComputePrimIndexesInParallel(
             primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
             _IncludeNewlyDiscoveredPayloadsPredicate(this),
-            "Usd", _mallocTagID.c_str());
+            "Usd", _mallocTagID);
     }
 
     if (not errs.empty()) {
@@ -4431,6 +4433,7 @@ UsdStage::_GetMetadataImpl(
     // Handle special cases.
     if (_GetSpecialMetadataImpl(
             obj, fieldName, keyPath, useFallbacks, composer)) {
+
         return true;
     }
 
@@ -4509,17 +4512,20 @@ UsdStage::_ComposeGeneralMetadataImpl(const UsdObject &obj,
     bool gotOpinion = false;
 
     for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
-        if (isNewNode)
+        if (isNewNode) 
             specId = SdfAbstractDataSpecId(&res->GetLocalPath(), &propName);
 
         // Consume an authored opinion here, if one exists.
         gotOpinion |= composer->ConsumeAuthored(
             res->GetNode(), res->GetLayer(), specId, fieldName, keyPath);
-        if (composer->IsDone())
+        
+        if (composer->IsDone()) 
             return true;
     }
+
     if (useFallbacks)
         _GetFallbackMetadataImpl(obj, fieldName, keyPath, composer);
+
     return gotOpinion or composer->IsDone();
 }
 
@@ -4847,10 +4853,9 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
                         T *result) const
 {
     if (time.IsDefault()) {
-        bool metadataFetched = _GetMetadata(attr, SdfFieldKeys->Default,
-                                            TfToken(), /*useFallbacks=*/true, 
-                                            result);
-        return metadataFetched and (not _ClearValueIfBlocked(result));
+        bool valueFound = _GetMetadata(attr, SdfFieldKeys->Default,
+                                       TfToken(), /*useFallbacks=*/true, result);
+        return valueFound and (not _ClearValueIfBlocked(result));
     }
 
     Usd_ResolveInfo resolveInfo;
@@ -5234,9 +5239,11 @@ UsdStage::_GetValueFromResolveInfoImpl(const Usd_ResolveInfo &info,
                                        Usd_InterpolatorBase* interpolator,
                                        T* result) const
 {
-    if (time.IsDefault())
-        return _GetMetadata(attr, SdfFieldKeys->Default,
-                            TfToken(), /*useFallbacks=*/true, result);
+    if (time.IsDefault()) {
+        bool valueFound = _GetMetadata(attr, SdfFieldKeys->Default,
+                                       TfToken(), /*useFallbacks=*/true, result);
+        return valueFound and (not _ClearValueIfBlocked(result));
+    }
 
     if (info.source == Usd_ResolveInfoSourceTimeSamples) {
         return _GetTimeSampleValue(

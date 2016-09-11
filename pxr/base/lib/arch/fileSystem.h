@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// Architecture dependent file system access
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"

@@ -25,30 +25,12 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/simpleLightingShader.glslfx
+--- #import $TOOLS/hd/shaders/fallbackLighting.glslfx
 
-#import $TOOLS/glf/shaders/pcfShader.glslfx
-#import $TOOLS/glf/shaders/simpleLighting.glslfx
+--- --------------------------------------------------------------------------
+-- glsl Fallback.Lighting
 
--- configuration
+vec3 FallbackLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
 {
-    "techniques": {
-        "default": {
-            "fragmentShader" : {
-                "source": [
-                    "PCF.ShadowFilterFragmentOnly",
-                    "SimpleLighting.SimpleLighting",
-                    "LightingOverride.SimpleLighting"
-                ]
-            }
-        }
-    }
+    return (color * dot(normalize(Neye), vec3(0,0,1)));
 }
-
--- glsl LightingOverride.SimpleLighting
-
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
-{
-    return simpleLightingMaterial(vec4(color,1), vec4(Peye,1), Neye, vec4(1)).rgb;
-}
-

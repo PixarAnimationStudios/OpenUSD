@@ -38,7 +38,12 @@
 
 /// \hideinitializer
 #define USDUI_TOKENS \
+    (closed) \
+    (minimized) \
+    (open) \
     ((uiNodegraphNodeDisplayColor, "ui:nodegraph:node:displayColor")) \
+    ((uiNodegraphNodeExpansionState, "ui:nodegraph:node:expansionState")) \
+    ((uiNodegraphNodeIcon, "ui:nodegraph:node:icon")) \
     ((uiNodegraphNodePos, "ui:nodegraph:node:pos")) \
     ((uiNodegraphNodeStackingOrder, "ui:nodegraph:node:stackingOrder"))
 
@@ -62,7 +67,12 @@
 /// \endcode
 ///
 /// The tokens are:
+/// \li <b>closed</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+/// \li <b>minimized</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+/// \li <b>open</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
 /// \li <b>uiNodegraphNodeDisplayColor</b> - UsdUINodeGraphNodeAPI
+/// \li <b>uiNodegraphNodeExpansionState</b> - UsdUINodeGraphNodeAPI
+/// \li <b>uiNodegraphNodeIcon</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodePos</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeStackingOrder</b> - UsdUINodeGraphNodeAPI
 TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUI_API, USDUI_TOKENS);

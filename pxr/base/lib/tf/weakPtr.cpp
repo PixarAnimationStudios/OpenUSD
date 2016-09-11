@@ -22,33 +22,3 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/weakPtr.h"
-
-/* 
- * Compile-time testing of the Tf_SupportsWeakPtr mechanism.  Change the 0
- * to 1 to enable.
- */
-#if 0
-
-#include <boost/static_assert.hpp>
-
-struct _Tf_TestHasGetWeakBase {
-    TfWeakBase const &__GetTfWeakBase__() const;
-};
-
-struct _Tf_TestHasGetWeakBaseDerived : public _Tf_TestHasGetWeakBase
-{
-};
-
-struct _Tf_TestHasGetWeakBaseNot
-{
-};
-
-struct _Tf_TestIsWeakBase : public TfWeakBase
-{
-};
-
-BOOST_STATIC_ASSERT(TF_SUPPORTS_WEAKPTR(_Tf_TestHasGetWeakBase));
-BOOST_STATIC_ASSERT(TF_SUPPORTS_WEAKPTR(_Tf_TestHasGetWeakBaseDerived));
-BOOST_STATIC_ASSERT(not TF_SUPPORTS_WEAKPTR(_Tf_TestHasGetWeakBaseNot));
-BOOST_STATIC_ASSERT(not TF_SUPPORTS_WEAKPTR(TfWeakPtr<_Tf_TestIsWeakBase>));
-#endif // testing Tf_SupportsWeakPtr.

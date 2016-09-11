@@ -148,6 +148,7 @@ PxrUsdKatanaReadBasisCurves(
         geometryBuilder.update(curveAttr);
     }
     
+    // position
     geometryBuilder.set("point.P",
         PxrUsdKatanaGeomGetPAttr(basisCurves, data));
 
@@ -155,7 +156,23 @@ PxrUsdKatanaReadBasisCurves(
     FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(basisCurves, data);
     if (normalsAttr.isValid())
     {
-        geometryBuilder.set("point.N", normalsAttr);
+        // XXX RfK doesn't support uniform normals for curves.
+        // Additionally, varying and facevarying may not be correct for
+        // periodic cubic curves.
+        TfToken interp = basisCurves.GetNormalsInterpolation();
+        if (interp == UsdGeomTokens->faceVarying
+         || interp == UsdGeomTokens->varying
+         || interp == UsdGeomTokens->vertex) {
+            geometryBuilder.set("point.N", normalsAttr);
+        }
+    }
+
+    // velocity
+    FnKat::Attribute velocityAttr =
+        PxrUsdKatanaGeomGetVelocityAttr(basisCurves, data);
+    if (velocityAttr.isValid())
+    {
+        geometryBuilder.set("point.v", velocityAttr);
     }
 
     // Construct the 'geometry.arbitrary' attribute.

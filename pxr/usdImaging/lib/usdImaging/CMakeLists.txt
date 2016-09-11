@@ -44,6 +44,7 @@ pxr_shared_library(usdImaging
     PUBLIC_CLASSES
         adapterRegistry
         debugCodes
+        defaultShaderAdapter
         delegate
         engine
         gl
@@ -71,6 +72,7 @@ pxr_shared_library(usdImaging
     PUBLIC_HEADERS
         api.h
         version.h
+        shaderAdapter.h
 
     PRIVATE_CLASSES
         defaultTaskDelegate

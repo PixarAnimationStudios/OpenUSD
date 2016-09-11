@@ -64,11 +64,11 @@ public:
 	HDLIB_API
     void SetRprimCollection(HdRprimCollection const& col);
 
-    /// Execute render pass task
+    /// Sync the render pass resources
     HDLIB_API
     void Sync();
 
-    /// Sync the render pass resources
+    /// Execute render pass task
     HDLIB_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 

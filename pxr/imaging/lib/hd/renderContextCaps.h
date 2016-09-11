@@ -77,6 +77,9 @@ public:
     bool explicitUniformLocation;     // ARB_explicit_uniform_location    (4.3)
     bool shadingLanguage420pack;      // ARB_shading_language_420pack     (4.2)
 
+    // workarounds for driver issues
+    bool copyBufferEnabled;
+
 private:
     void _LoadCaps();
     HdRenderContextCaps();

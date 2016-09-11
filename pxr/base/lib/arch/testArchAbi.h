@@ -32,11 +32,13 @@
 #define ARCH_ABI_API __attribute__((visibility("default")))
 #endif
 
-struct ARCH_ABI_API ArchAbiBase1 {
+#include "pxr/base/arch/api.h"
+
+struct ArchAbiBase1 {
 	void* dummy;
 };
 
-struct ARCH_ABI_API ArchAbiBase2 {
+struct ArchAbiBase2 {
 	virtual ~ArchAbiBase2() { }
 	virtual const char* name() const = 0;
 };

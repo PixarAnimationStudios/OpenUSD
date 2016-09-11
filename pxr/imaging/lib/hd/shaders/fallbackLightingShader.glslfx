@@ -25,12 +25,17 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/simpleLighting.glslfx
+--- #import $TOOLS/hd/shaders/fallbackLightingShader.glslfx
 
---- --------------------------------------------------------------------------
--- glsl SimpleLighting.DefaultLighting
+#import $TOOLS/hd/shaders/fallbackLighting.glslfx
 
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
+-- configuration
 {
-    return (color * dot(normalize(Neye), vec3(0,0,1)));
+    "techniques": {
+        "default": {
+            "fragmentShader" : {
+                "source": [ "Fallback.Lighting" ]
+            }
+        }
+    }
 }

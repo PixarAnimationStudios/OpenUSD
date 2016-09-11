@@ -139,18 +139,6 @@ public:
     /// \see PcpInstanceKey
 	PCP_API bool IsInstanceable() const;
 
-    /// Get the set of asset paths used by direct arcs in this prim.
-    /// This set does not include asset paths used by ancestral arcs
-    /// (from namespace ancestors), which may also contribute opinions
-    /// to this prim.  It also includes any asset paths that were
-    /// requested by arcs, but could not be resolved.
-	PCP_API std::vector<std::string> GetUsedAssetPaths() const;
-
-    /// Record a used asset path.
-    /// Only meant for internal use while constructing a PcpPrimIndex.
-	PCP_API void AddUsedAssetPath(const std::string& assetPath);
-	PCP_API void AddUsedAssetPaths(const std::vector<std::string>& assetPaths);
-
     /// \name Iteration
     /// @{
 
@@ -268,13 +256,6 @@ private:
     // List of errors local to this prim, encountered during computation.
     // NULL if no errors were found (the expected common case).
     boost::scoped_ptr<PcpErrorVector> _localErrors;
-
-    // List of asset paths directly used by this prim.  
-    // This data cannot be derived purely from the
-    // graph since it includes asset paths that failed to resolve,
-    // and consequently did not contribute any nodes to the graph.
-    // NULL if this list is empty (the expected common case).
-    boost::scoped_ptr<std::vector<std::string> > _usedAssetPaths;
 };
 
 /// Free function version for generic code and ADL.

@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/defaultLightingShader.h"
+#include "pxr/imaging/hd/fallbackLightingShader.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/package.h"
@@ -34,21 +34,21 @@
 
 #include <string>
 
-Hd_DefaultLightingShader::Hd_DefaultLightingShader()
+Hd_FallbackLightingShader::Hd_FallbackLightingShader()
 {
-    _glslfx.reset(new GlfGLSLFX(HdPackageDefaultLightingShader()));
+    _glslfx.reset(new GlfGLSLFX(HdPackageFallbackLightingShader()));
 }
 
-Hd_DefaultLightingShader::~Hd_DefaultLightingShader()
+Hd_FallbackLightingShader::~Hd_FallbackLightingShader()
 {
     // nothing
 }
 
 /* virtual */
-Hd_DefaultLightingShader::ID
-Hd_DefaultLightingShader::ComputeHash() const
+Hd_FallbackLightingShader::ID
+Hd_FallbackLightingShader::ComputeHash() const
 {
-    TfToken glslfxFile = HdPackageDefaultLightingShader();
+    TfToken glslfxFile = HdPackageFallbackLightingShader();
 
     size_t hash = glslfxFile.Hash();
 
@@ -57,7 +57,7 @@ Hd_DefaultLightingShader::ComputeHash() const
 
 /* virtual */
 std::string
-Hd_DefaultLightingShader::GetSource(TfToken const &shaderStageKey) const
+Hd_FallbackLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
@@ -67,21 +67,21 @@ Hd_DefaultLightingShader::GetSource(TfToken const &shaderStageKey) const
 
 /* virtual */
 void
-Hd_DefaultLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
+Hd_FallbackLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
                                             GfMatrix4d const &projectionMatrix)
 {
     // nothing
 }
 
 void
-Hd_DefaultLightingShader::BindResources(Hd_ResourceBinder const &binder,
+Hd_FallbackLightingShader::BindResources(Hd_ResourceBinder const &binder,
                                         int program)
 {
     // nothing
 }
 
 void
-Hd_DefaultLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
+Hd_FallbackLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
                                           int program)
 {
     // nothing
@@ -89,7 +89,7 @@ Hd_DefaultLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
 
 /*virtual*/
 void
-Hd_DefaultLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+Hd_FallbackLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
 }

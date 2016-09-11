@@ -24,10 +24,10 @@
 #include "pxr/usdImaging/usdImaging/defaultTaskDelegate.h"
 
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdx/camera.h"
+#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -90,12 +90,12 @@ UsdImaging_DefaultTaskDelegate::UsdImaging_DefaultTaskDelegate(
 
     // camera
     {
-        renderIndex.InsertCamera<HdCamera>(this, _cameraId);
+        renderIndex.InsertSprim<HdxCamera>(this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdShaderTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-        cache[HdShaderTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
-        cache[HdTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-        cache[HdTokens->windowPolicy] = VtValue();  // we don't use window policy.
+        cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
+        cache[HdxCameraTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
+        cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
+        cache[HdxCameraTokens->windowPolicy] = VtValue();  // we don't use window policy.
     }
 
     // selection task
@@ -152,7 +152,7 @@ UsdImaging_DefaultTaskDelegate::~UsdImaging_DefaultTaskDelegate()
 {
     // remove the render graph entities from the renderIndex
     HdRenderIndex &renderIndex = GetRenderIndex();
-    renderIndex.RemoveCamera(_cameraId);
+    renderIndex.RemoveSprim(_cameraId);
     renderIndex.RemoveTask(_selectionTaskId);
     renderIndex.RemoveTask(_simpleLightTaskId);
     renderIndex.RemoveTask(_simpleLightBypassTaskId);
@@ -160,7 +160,7 @@ UsdImaging_DefaultTaskDelegate::~UsdImaging_DefaultTaskDelegate()
     renderIndex.RemoveTask(_idRenderTaskId);
 
     TF_FOR_ALL (id, _lightIds) {
-        renderIndex.RemoveLight(*id);
+        renderIndex.RemoveSprim(*id);
     }
 }
 
@@ -360,6 +360,9 @@ UsdImaging_DefaultTaskDelegate::_UpdateRenderParams(
     const float tinyThreshold = 0.9f;
     params.drawingRange = GfVec2f(tinyThreshold, -1.0f);
 
+    // Cache the clip planes.
+    _clipPlanes = renderParams.clipPlanes;
+
     // note that params.rprims and params.viewport are not updated
     // in this function, and needed to be preserved.
 
@@ -386,8 +389,8 @@ UsdImaging_DefaultTaskDelegate::_UpdateRenderParams(
     }
 
     if (renderParams.clipPlanes != oldRenderParams.clipPlanes) {
-        GetRenderIndex().GetChangeTracker().MarkCameraDirty(
-                            _cameraId, HdChangeTracker::DirtyClipPlanes);
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
+                            _cameraId, HdxCamera::DirtyClipPlanes);
     }
 
 
@@ -417,12 +420,12 @@ UsdImaging_DefaultTaskDelegate::SetLightingState(
                            (int)_lightIds.size()));
         _lightIds.push_back(lightId);
 
-        GetRenderIndex().InsertLight<HdLight>(this, lightId);
+        GetRenderIndex().InsertSprim<HdxLight>(this, lightId);
         hasNumLightsChanged = true;
     }
     // Remove unused light Ids from HdRenderIndex
     while (_lightIds.size() > lights.size()) {
-        GetRenderIndex().RemoveLight(_lightIds.back());
+        GetRenderIndex().RemoveSprim(_lightIds.back());
         _lightIds.pop_back();
         hasNumLightsChanged = true;
     }
@@ -431,17 +434,17 @@ UsdImaging_DefaultTaskDelegate::SetLightingState(
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache &cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
-        cache[HdTokens->lightParams] = VtValue(lights[i]);
-        cache[HdTokens->lightTransform] = VtValue();
-        cache[HdTokens->lightShadowParams] = VtValue(HdxShadowParams());
-        cache[HdTokens->lightShadowCollection] = VtValue();
+        cache[HdxLightTokens->params] = VtValue(lights[i]);
+        cache[HdxLightTokens->transform] = VtValue();
+        cache[HdxLightTokens->shadowParams] = VtValue(HdxShadowParams());
+        cache[HdxLightTokens->shadowCollection] = VtValue();
 
         // Only mark as dirty the parameters to avoid unnecessary invalidation
         // specially marking as dirty lightShadowCollection will trigger
         // a collection dirty on geometry and we don't want that to happen
         // always
-        GetRenderIndex().GetChangeTracker().MarkLightDirty(
-            _lightIds[i], HdChangeTracker::DirtyParams);
+        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
+            _lightIds[i], HdxLight::DirtyParams);
     }
 
     // sadly the material also comes from lighting context right now...
@@ -488,13 +491,14 @@ UsdImaging_DefaultTaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdShaderTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdShaderTokens->projectionMatrix]  = VtValue(projectionMatrix);
-    cache[HdTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-    cache[HdTokens->windowPolicy]  = VtValue(); // we don't use window policy.
+    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
+    cache[HdxCameraTokens->projectionMatrix]  = VtValue(projectionMatrix);
+    cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
+    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // we don't use window policy.
 
     // invalidate the camera to be synced
-    GetRenderIndex().GetChangeTracker().MarkCameraDirty(_cameraId);
+    GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
+                                                       HdxCamera::AllDirty);
 
     if (_viewport != viewport) {
         // viewport is also read by HdxRenderTaskParam. invalidate it.
@@ -570,5 +574,5 @@ UsdImaging_DefaultTaskDelegate::IsConverged() const
 std::vector<GfVec4d>
 UsdImaging_DefaultTaskDelegate::GetClipPlanes(SdfPath const& cameraId)
 {
-    return _renderParams.clipPlanes;
+    return _clipPlanes;
 }

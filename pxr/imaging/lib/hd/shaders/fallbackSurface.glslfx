@@ -55,6 +55,6 @@ vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     // lighting
-    color.rgb = SimpleLighting(Peye.xyz, Neye, color.rgb);
+    color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
     return color;
 }

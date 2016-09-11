@@ -336,6 +336,25 @@ PxrUsdKatanaReadNurbsPatch(
     geometryBuilder.set("vClosed", _GetVClosedAttr(nurbsPatch, currentTime));
     geometryBuilder.set("trimCurves", _GetTrimCurvesAttr(nurbsPatch, currentTime));
 
+    // normals
+    FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(nurbsPatch, data);
+    if (normalsAttr.isValid())
+    {
+        // XXX RfK currently doesn't support uniform, varying, or facevarying
+        // normals for nuPatches.
+        TfToken interp = nurbsPatch.GetNormalsInterpolation();
+        if (interp == UsdGeomTokens->vertex) {
+            geometryBuilder.set("point.N", normalsAttr);
+        }
+    }
+    
+    // velocity
+    FnKat::Attribute velocityAttr = PxrUsdKatanaGeomGetVelocityAttr(nurbsPatch, data);
+    if (velocityAttr.isValid())
+    {
+        geometryBuilder.set("point.v", velocityAttr);
+    }
+
     FnKat::GroupBuilder arbBuilder;
 
     FnKat::GroupAttribute primvarGroup = PxrUsdKatanaGeomGetPrimvarGroup(nurbsPatch, data);

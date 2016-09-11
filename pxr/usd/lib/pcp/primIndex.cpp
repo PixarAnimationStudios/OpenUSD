@@ -143,11 +143,6 @@ PcpPrimIndex::PcpPrimIndex(const PcpPrimIndex &rhs)
     if (rhs._localErrors) {
         _localErrors.reset(new PcpErrorVector(*rhs._localErrors.get()));
     }
-
-    if (rhs._usedAssetPaths) {
-        _usedAssetPaths.reset(
-            new std::vector<std::string>(*rhs._usedAssetPaths.get()));
-    }
 }
 
 void 
@@ -156,64 +151,6 @@ PcpPrimIndex::Swap(PcpPrimIndex& rhs)
     _graph.swap(rhs._graph);
     _primStack.swap(rhs._primStack);
     _localErrors.swap(rhs._localErrors);
-    _usedAssetPaths.swap(rhs._usedAssetPaths);
-}
-
-void
-PcpPrimIndex::AddUsedAssetPath(
-    const string& assetPath)
-{
-    if (assetPath.empty())
-        return;
-
-    if (not _usedAssetPaths) {
-        _usedAssetPaths.reset(new vector<string>(1, assetPath));
-        return;
-    }
-
-    vector<string>::iterator it = 
-        std::lower_bound(_usedAssetPaths->begin(), _usedAssetPaths->end(), 
-                         assetPath);
-    if (it == _usedAssetPaths->end() or *it != assetPath) {
-        _usedAssetPaths->insert(it, assetPath);
-    }
-}
-
-void
-PcpPrimIndex::AddUsedAssetPaths(
-    const vector<string>& assetPaths)
-{
-    if (assetPaths.empty())
-        return;
-
-    if (not _usedAssetPaths) {
-        _usedAssetPaths.reset(new vector<string>);
-    }
-
-    const size_t prevNumPaths = _usedAssetPaths->size();
-    _usedAssetPaths->insert(
-        _usedAssetPaths->end(), assetPaths.begin(), assetPaths.end());
-
-    // Since _usedAssetPaths is always maintained in sorted order, 
-    // we can just sort the newly-added elements and inplace_merge them
-    // with pre-existing entries.
-    std::sort(
-        _usedAssetPaths->begin() + prevNumPaths, _usedAssetPaths->end());
-    std::inplace_merge(
-        _usedAssetPaths->begin(), 
-        _usedAssetPaths->begin() + prevNumPaths,
-        _usedAssetPaths->end());
-    
-    // Ensure uniqueness.
-    _usedAssetPaths->erase(
-        std::unique(_usedAssetPaths->begin(), _usedAssetPaths->end()),
-        _usedAssetPaths->end());
-}
-
-vector<string>
-PcpPrimIndex::GetUsedAssetPaths() const
-{
-    return _usedAssetPaths ? *_usedAssetPaths : vector<string>();
 }
 
 void
@@ -1441,8 +1378,6 @@ _AddArc(
             TfStringify(site).c_str());
 
         // Pass along the other outputs from the nested computation. 
-        indexer->outputs->primIndex.AddUsedAssetPaths(
-            childOutputs.primIndex.GetUsedAssetPaths());
         indexer->outputs->dependencies.sites.insert(
             childOutputs.dependencies.sites.begin(), 
             childOutputs.dependencies.sites.end());
@@ -1673,19 +1608,12 @@ _EvalNodeReferences(
         const bool isInternalReference = ref.GetAssetPath().empty();
         if (isInternalReference) {
             refLayer = node.GetLayerStack()->GetIdentifier().rootLayer;
-            index->AddUsedAssetPath(refLayer->GetIdentifier());
-
             refLayerStack = node.GetLayerStack();
         }
         else {
             std::string canonicalMutedLayerId;
             if (indexer->inputs.cache->IsLayerMuted(
                     srcLayer, ref.GetAssetPath(), &canonicalMutedLayerId)) {
-                // Record the used asset path the same way we would have
-                // had this layer not been muted.
-                index->AddUsedAssetPath(SdfComputeAssetPathRelativeToLayer(
-                    srcLayer, ref.GetAssetPath()));
-
                 PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
                 err->rootSite = PcpSite(node.GetRootNode().GetSite());
                 err->site = PcpSite(node.GetSite());
@@ -1702,7 +1630,6 @@ _EvalNodeReferences(
             refLayer = SdfFindOrOpenRelativeToLayer(
                 srcLayer, &resolvedAssetPath, 
                 Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema));
-            index->AddUsedAssetPath(resolvedAssetPath);
 
             if (not refLayer) {
                 PcpErrorInvalidAssetPathPtr err = 
@@ -3439,11 +3366,6 @@ _EvalNodePayload(
     if (indexer->inputs.cache->IsLayerMuted(
             payloadSpecLayer, payload.GetAssetPath(), 
             &canonicalMutedLayerId)) {
-        // Record the used asset path the same way we would have
-        // had this layer not been muted.
-        index->AddUsedAssetPath(SdfComputeAssetPathRelativeToLayer(
-            payloadSpecLayer, payload.GetAssetPath()));
-
         PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
         err->rootSite = PcpSite(node.GetSite());
         err->site = PcpSite(node.GetSite());
@@ -3470,10 +3392,6 @@ _EvalNodePayload(
     std::string resolvedAssetPath(payload.GetAssetPath());
     SdfLayerRefPtr payloadLayer = SdfFindOrOpenRelativeToLayer(
         payloadSpecLayer, &resolvedAssetPath, args);
-
-    // Record used asset path (even if we were unable to open it,
-    // we need to acknowledge it as a requested dependency)
-    index->AddUsedAssetPath(resolvedAssetPath);
 
     if (not payloadLayer) {
         PcpErrorInvalidAssetPathPtr err = PcpErrorInvalidAssetPath::New();

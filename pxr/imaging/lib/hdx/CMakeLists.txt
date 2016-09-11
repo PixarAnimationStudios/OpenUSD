@@ -19,15 +19,18 @@ pxr_shared_library(hdx
         ${GLEW_INCLUDE_DIR}
 
     PUBLIC_CLASSES
+        camera
         debugCodes
         drawTargetTask
         intersector
+        light
         package
         renderTask
         renderSetupTask
         selectionTask
         selectionTracker
         shadowTask
+        simpleLightingShader
         simpleLightTask
         simpleLightBypassTask
         tokens
@@ -43,6 +46,7 @@ pxr_shared_library(hdx
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/simpleLightingShader.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx

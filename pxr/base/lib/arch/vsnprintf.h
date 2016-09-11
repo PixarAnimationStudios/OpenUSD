@@ -28,6 +28,7 @@
 /// \ingroup group_arch_Strings
 /// Architecture dependent memory-safe sprintf capability
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/api.h"
 #include <stdio.h>

@@ -311,7 +311,7 @@ Hd_CodeGen::Compile()
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Hydra shading. 
-    _genCommon << "#define HD_SHADER_API 1\n";
+    _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
 
     // XXX: this is a hacky workaround for experimental support of GL 3.3
     //      the double is used in hd_dvec3 akin, so we are likely able to

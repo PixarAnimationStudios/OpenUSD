@@ -31,12 +31,27 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/gf/vec2i.h"
 
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/arch/systemInfo.h"
+
 #include <QtGui/QApplication>
 #include <QtGui/QMouseEvent>
 #include <QtOpenGL/QGLWidget>
 
 #include <stdio.h>
 #include <stdarg.h>
+
+static void UsdImaging_UnitTestHelper_InitPlugins()
+{
+    // Unfortunately, in order to properly find plugins in our test setup, we
+    // need to know where the test is running.
+    std::string testDir = TfGetPathName(ArchGetExecutablePath());
+    std::string pluginDir = TfStringCatPaths(testDir, 
+            "UsdImagingPlugins/lib/UsdImagingTest.framework/Resources");
+    printf("registering plugins in: %s\n", pluginDir.c_str());
+
+    PlugRegistry::GetInstance().RegisterPlugins(pluginDir);
+}
 
 ////////////////////////////////////////////////////////////
 
@@ -455,6 +470,8 @@ void
 UsdImaging_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    UsdImaging_UnitTestHelper_InitPlugins();
 
     _Args args;
     _Parse(argc, argv, &args);

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DEFAULT_LIGHTING_SHADER_H
-#define HD_DEFAULT_LIGHTING_SHADER_H
+#ifndef HD_FALLBACK_LIGHTING_SHADER_H
+#define HD_FALLBACK_LIGHTING_SHADER_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/lightingShader.h"
@@ -38,14 +38,14 @@
 
 #include <vector>
 
-/// \class Hd_DefaultLightingShader
+/// \class Hd_FallbackLightingShader
 ///
 /// A shader that provides fallback lighting behavior.
 ///
-class Hd_DefaultLightingShader : public HdLightingShader {
+class Hd_FallbackLightingShader : public HdLightingShader {
 public:
-    Hd_DefaultLightingShader();
-    virtual ~Hd_DefaultLightingShader();
+    Hd_FallbackLightingShader();
+    virtual ~Hd_FallbackLightingShader();
 
     // HdShader overrides
     virtual ID ComputeHash() const;
@@ -62,4 +62,4 @@ private:
     boost::scoped_ptr<GlfGLSLFX> _glslfx;
 };
 
-#endif // HD_DEFAULT_LIGHTING_SHADER_H
+#endif // HD_FALLBACK_LIGHTING_SHADER_H
