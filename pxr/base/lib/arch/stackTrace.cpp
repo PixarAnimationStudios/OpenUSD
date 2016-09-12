@@ -27,6 +27,7 @@
 #include <ciso646>
 #include <process.h>
 #include <Winsock2.h>
+#include <DbgHelp.h>
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 64
 #endif
@@ -59,6 +60,7 @@
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <algorithm>
 
 /* Darwin/ppc did not do stack traces.  Darwin/i386 still 
    needs some work, this has been stubbed out for now.  */
@@ -1231,6 +1233,21 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
     _Unwind_Backtrace(Arch_unwindcb, (void*)&context);
 }
 
+#elif defined(ARCH_OS_WINDOWS)
+
+void
+ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+{
+	void* stack[MAX_STACK_DEPTH];
+	size_t frameCount = CaptureStackBackTrace(0, MAX_STACK_DEPTH, stack, NULL);
+	frameCount = std::min(frameCount, maxdepth);
+	for (size_t frame = skip; frame < frameCount; ++frame)
+	{
+		DWORD64 address = (DWORD64)(stack[frame]);
+		frames->push_back(address);
+	}
+}
+
 #else
 
 void
@@ -1312,13 +1329,7 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames)
 {
     vector<string>    rv;
 
-#if !defined(ARCH_OS_LINUX)
-
-    rv.push_back("No frames saved, stack traces not supported on this "
-                 "architecture.");
-    return rv;
-
-#else
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WINDOWS)
 
     if (frames.empty()) {
 	rv.push_back("No frames saved, stack traces probably not supported.");
@@ -1334,7 +1345,10 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames)
         rv.push_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
                                       (int)i, frames[i], symbolic.c_str()));
     }
+#else
 
+	rv.push_back("No frames saved, stack traces not supported on this "
+		"architecture.");
 #endif
 
     return rv;

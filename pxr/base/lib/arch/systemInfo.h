@@ -59,13 +59,4 @@ std::string ArchGetExecutablePath();
 
 ///@}
 
-/*!
-* \brief Get memory page size.
-* \ingroup group_arch_SystemFunctions
-*
-* Return the memory page size.
-*/
-ARCH_API
-size_t ArchGetPageSize();
-
 #endif // ARCH_SYSTEMINFO_H

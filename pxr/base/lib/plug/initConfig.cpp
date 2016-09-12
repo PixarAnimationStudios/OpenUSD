@@ -23,6 +23,7 @@
 //
 #include "pxr/base/plug/info.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -32,8 +33,9 @@ namespace {
 
 const char* pathEnvVarName  = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation   = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
-const char* userLocation    = "";//BOOST_PP_STRINGIZE(C:\\ProgramData\\usd\\plugins);
+const char* userLocation    = "";//BOOST_PP_STRINGIZE(PXR_USER_LOCATION);
 const char* installLocation = "";//BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
+
 void
 _AppendPathList(std::vector<std::string>* result, const std::string& paths)
 {
@@ -52,9 +54,9 @@ ARCH_CONSTRUCTOR_DEFINE(102, Plug_InitConfig)
     _AppendPathList(&result, TfGetenv(pathEnvVarName));
 
     // Fallback locations.
-    _AppendPathList(&result, userLocation);
-    _AppendPathList(&result, buildLocation);
-    _AppendPathList(&result, installLocation);
+    _AppendPathList(&result, TfPathCanonicalize(userLocation));
+    _AppendPathList(&result, TfPathCanonicalize(buildLocation));
+    _AppendPathList(&result, TfPathCanonicalize(installLocation));
 
     Plug_SetPaths(result);
 }

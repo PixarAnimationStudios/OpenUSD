@@ -29,7 +29,8 @@
 #include <dlfcn.h>
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
-#include <Dbghelp.h>
+#include <DbgHelp.h>
+#include <Psapi.h>
 #endif
 
 bool
@@ -69,12 +70,56 @@ ArchGetAddressInfo(
             if(GetModuleFileName(module, modName, ARCH_PATH_MAX))
             {
                 objectPath->assign(modName);
-                return true;
             }
         }
         else
             ArchStrSysError(::GetLastError());
     }
+
+    if (baseAddress || symbolName || symbolAddress)
+    {
+        DWORD displacement;
+        HANDLE process = GetCurrentProcess();
+        SymInitialize(process, NULL, TRUE);
+
+        // Symbol
+        ULONG64 symBuffer[(sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR) +
+                          sizeof(ULONG64) - 1) / sizeof(ULONG64)];
+        SYMBOL_INFO *symbol = (SYMBOL_INFO*)symBuffer;
+        symbol->MaxNameLen = MAX_SYM_NAME;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+        // Line
+        IMAGEHLP_LINE64 line = {0};
+        line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+
+        DWORD64 dwAddress = (DWORD64)address;
+        SymFromAddr(process, dwAddress, NULL, symbol);
+        if (SymGetLineFromAddr64(process, dwAddress, &displacement, &line))
+        {
+            if (baseAddress)
+            {
+                MODULEINFO moduleInfo = {0};
+                if (GetModuleInformation(process, module, &moduleInfo,
+                                                        sizeof(moduleInfo)))
+                {
+                    *baseAddress = moduleInfo.lpBaseOfDll;
+                }
+            }
+
+            if (symbolName)
+            {
+                *symbolName = symbol->Name ? symbol->Name : "";
+            }
+
+            if (symbolAddress)
+            {
+                *symbolAddress = (void*)symbol->Address;
+            }
+        }
+        else
+            return false;
+    }
 #endif
-    return false;
+    return true;
 }

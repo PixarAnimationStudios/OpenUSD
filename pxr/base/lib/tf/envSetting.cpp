@@ -71,7 +71,7 @@ public:
                     if (!key.empty()) {
                         ArchSetEnv(key.c_str(), value.c_str(), 0 /* overwrite */);
                         if (syncPython) {
-							if (TfSafeString(ArchGetEnv(key.c_str())) == value)
+							if (TfSafeString(ArchGetEnv(key.c_str()).c_str()) == value)
                                 TfPySetenv(key, value);
                         }
                     }

@@ -48,7 +48,6 @@
 #include <sys/mount.h>
 #include <glob.h>
 #elif defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
 #include <io.h>
 #endif
 
@@ -101,11 +100,10 @@
     #define ARCH_REL_PATH_IDENT "./"
 #endif
 
-/*!
- * \file fileSystem.h
- * \brief Architecture dependent file system access
- * \ingroup group_arch_SystemFunctions
- */
+/// \file fileSystem.h
+/// Architecture dependent file system access
+/// \ingroup group_arch_SystemFunctions
+///
 
 /// Return the length of a file in bytes.
 ///
@@ -113,27 +111,21 @@
 ARCH_API int64_t ArchGetFileLength(const char *fileName);
 ARCH_API int64_t ArchGetFileLength(FILE *file);
 
-/*!
- * \brief This enum is used to specify a comparison operator for
- * \c ArchStatCompare().
- * \ingroup group_arch_SystemFunctions
- */
-
+/// This enum is used to specify a comparison operator for
+/// \c ArchStatCompare().
+/// \ingroup group_arch_SystemFunctions
 enum ArchStatComparisonOp {
     ARCH_STAT_MTIME_EQUAL,	/*!< Modification times are equal */
     ARCH_STAT_MTIME_LESS,	/*!< Modification time for \c stat1 is less */
     ARCH_STAT_SAME_FILE		/*!< Both refer to same file */
 };
     
-
-/*!
-* \brief Opens a file.
-* \ingroup group_arch_SystemFunctions
-*
-* Opens the file that is specified by filename.
-* Returning true if the file was opened successfully; false otherwise.
-*/
-
+/// Opens a file.
+/// \ingroup group_arch_SystemFunctions
+///
+/// Opens the file that is specified by filename.
+/// Returning true if the file was opened successfully; false otherwise.
+///
 ARCH_API FILE*
 ArchOpenFile(char const* fileName, char const* mode);
 
@@ -150,7 +142,7 @@ ArchOpenFile(char const* fileName, char const* mode);
 #endif
 
 #if defined(ARCH_OS_WINDOWS)
-#   define ArchFileAccess(path, mode)   _access(path, mode)
+	ARCH_API int ArchFileAccess(const char* path, int mode);
 #else
 #   define ArchFileAccess(path, mode)   access(path, mode)
 #endif
@@ -173,25 +165,23 @@ ArchOpenFile(char const* fileName, char const* mode);
 #   define ArchFileIsaTTY(stream)       isatty(stream)
 #endif
 
-/*!
- * \brief Compares two \c stat structures.
- * \ingroup group_arch_SystemFunctions
- *
- * Compares two \c stat structures with a given comparison
- * operation, returning non-zero if the operation is true with respect
- * to \p stat1 and \p stat2.
- */
+/// Compares two \c stat structures.
+/// \ingroup group_arch_SystemFunctions
+///
+/// Compares two \c stat structures with a given comparison
+/// operation, returning non-zero if the operation is true with respect
+/// to \p stat1 and \p stat2.
+///
 ARCH_API
 int ArchStatCompare(enum ArchStatComparisonOp op,
 		    const struct stat *stat1,
 		    const struct stat *stat2);
 
-/*!
- * \brief Return the length of a file in bytes.
- * \ingroup group_arch_SystemFunctions
- *
- * Returns -1 if the file cannot be opened/read.
- */
+/// Return the length of a file in bytes.
+/// \ingroup group_arch_SystemFunctions
+///
+/// Returns -1 if the file cannot be opened/read.
+///
 ARCH_API int64_t ArchGetFileLength(const char* fileName);
 ARCH_API int64_t ArchGetFileLength(FILE *file);
 

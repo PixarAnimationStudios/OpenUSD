@@ -452,7 +452,7 @@ Arch_InitDebuggerAttach()
     // Parse the contents of the ARCH_DEBUGGER environment variable and
     // store the result.  This way we can avoid using the heap or tricky
     // stack allocations when launching the debugger.
-    const char* e = ArchGetEnv("ARCH_DEBUGGER");
+    const char* e = ArchGetEnv("ARCH_DEBUGGER").c_str();
     if (e and e[0]) {
         std::string link;
 

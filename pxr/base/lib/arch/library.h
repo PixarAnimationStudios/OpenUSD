@@ -40,33 +40,25 @@
 #   define ARCH_LIBRARY_GLOBAL  0
 #endif
 
-/*!
- * \file library.h
- * \brief Architecture dependent loading and unloading of dynamic libraries.
- * \ingroup group_arch_SystemFunctions
- */
+/// library.h
+/// Architecture dependent loading and unloading of dynamic libraries.
+/// \ingroup group_arch_SystemFunctions
 
-/*!
-* \brief Load an execuctable object file.
-* \ingroup group_arch_SystemFunctions
-*
-* Opens the dynamic library that is specified by filename.
-* Returning the handle to the module if successful; false otherwise.
-*/
+/// Load an execuctable object file.
+/// \ingroup group_arch_SystemFunctions
+///
+/// Opens the dynamic library that is specified by filename.
+/// Returning the handle to the module if successful; false otherwise.
 ARCH_API 
-void* ArchOpenLibrary(const std::string &filename, int flag);
+void* ArchLibraryOpen(const std::string &filename, int flag);
 
-/*!
-* \brief Obtain a description of the most recent error that occurred from \c ArchOpenLibrary.
-* \ingroup group_arch_SystemFunctions
-*/
+/// Obtain a description of the most recent error that occurred from \c ArchLibraryOpen.
+///\ingroup group_arch_SystemFunctions
 ARCH_API
 const char* ArchLibraryError();
 
-/*!
- * \brief Closes an object opened with \c ArchOpenLibrary.
- * \ingroup group_arch_SystemFunctions
- */
+/// Closes an object opened with \c ArchLibraryOpen.
+/// \ingroup group_arch_SystemFunctions
 ARCH_API
 int ArchLibraryClose(void* handle);
 

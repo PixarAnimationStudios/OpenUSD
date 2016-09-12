@@ -278,7 +278,7 @@ function(pxr_shared_library LIBRARY_NAME)
     endif()
 
 	if(WIN32)
-		set(_PxrUserLocation "$ENV{ProgramData}\\usd\\plugins")
+		set(_PxrUserLocation "C:/ProgramData/usd/plugins")
 	else()
 		set(_PxrUserLocation "/usr/local/share/usd/plugins")
 	endif()

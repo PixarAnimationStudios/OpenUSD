@@ -882,9 +882,7 @@ HdRenderIndex::SyncAll()
 
             // PERFORMANCE: this loop can be expensive.
             for (auto const& sdfPath : hdDirtyList->GetDirtyRprims()) {
-				ARCH_PRAGMA_SHIFT_TO_64_BITS
-                dirtyIds[sdfPath] |= (1 << reprIndex);
-				ARCH_PRAGMA_RESTORE
+                dirtyIds[sdfPath] |= (1ULL << reprIndex);
             }
         }
     }

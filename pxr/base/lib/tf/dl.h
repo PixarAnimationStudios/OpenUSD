@@ -37,12 +37,12 @@
 
 /// Call \c dlopen() and notify \c lib/tf that a new module has been loaded.
 ///
-/// This is a wrapper around ArchOpenLibrary(), in the sense that this function
+/// This is a wrapper around ArchLibraryOpen(), in the sense that this function
 /// simply calls \c dlopen(\p name, \p flag).  It will additionally load script
 /// bindings if scripting is initialized and loading is requested.
 /// 
 /// If \p error is not \c NULL, it will be set to the return value of a
-/// \c dlerror() call after the \c ArchOpenLibrary(), or cleared if that value
+/// \c dlerror() call after the \c ArchLibraryOpen(), or cleared if that value
 // is \c NULL. It is not reliable to get the error string by calling
 /// \c dlerror() after \c TfDlopen().
 ///

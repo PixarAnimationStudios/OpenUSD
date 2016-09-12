@@ -66,11 +66,11 @@ namespace FnKat = Foundry::Katana;
     interface.setAttr("errorMesssage", Foundry::Katana::StringAttribute(TfStringPrintf(__VA_ARGS__)));
 
 // see overview.dox for more documentation.
-ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInOp : public FnKat::GeolibOp
 {
-
 public:
+    ~PxrUsdInOp() = delete;
+
     static void setup(FnKat::GeolibSetupInterface &interface)
     {
         // Tell katana that it's safe to run this op in a runtime concurrently
@@ -757,7 +757,7 @@ private:
 
     static bool _hasSiteKinds;
 };
-ARCH_PRAGMA_RESTORE
+
 bool PxrUsdInOp::_hasSiteKinds = false;
 
 //-----------------------------------------------------------------------------
@@ -769,11 +769,11 @@ bool PxrUsdInOp::_hasSiteKinds = false;
  * and we must exec all of the registered plugins to process USD prims, we instead
  * pre-build the GeolibPrivateData for the root location to ensure it is available.
  */
-ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInBootstrapOp : public FnKat::GeolibOp
 {
 
 public:
+    ~PxrUsdInBootstrapOp() = delete;
 
     static void setup(FnKat::GeolibSetupInterface &interface)
     {
@@ -835,12 +835,12 @@ public:
     }
 
 };
-ARCH_PRAGMA_RESTORE
 
-ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 class PxrUsdInMasterIntermediateOp : public FnKat::GeolibOp
 {
 public:
+    ~PxrUsdInMasterIntermediateOp() = delete;
+
     static void setup(FnKat::GeolibSetupInterface &interface)
     {
         interface.setThreading(
@@ -937,7 +937,6 @@ public:
         
     }
 };
-ARCH_PRAGMA_RESTORE
 
 //-----------------------------------------------------------------------------
 

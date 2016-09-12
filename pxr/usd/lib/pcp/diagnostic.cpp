@@ -529,10 +529,11 @@ Pcp_GraphOutputManager::_OutputGraph() const
 
     // Figure out the next filename and open it for writing.
     const std::string filename =
+        TfStringCatPaths(ArchGetTmpDir(),
         TfStringPrintf(
             "pcp.%s.%06d.dot",
             TfStringReplace(_graphs.front().path.GetName(), "/", "_").c_str(),
-            _nextGraphFileIndex);
+            _nextGraphFileIndex));
 
     std::ofstream f(
         filename.c_str(), std::ofstream::out | std::ofstream::trunc);

@@ -34,7 +34,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-ARCH_PRAGMA_MACRO_REDEFINITION // due to WIN32_LEAN_AND_MEAN, VC_EXTRALEAN and Python copysign
+ARCH_PRAGMA_MACRO_REDEFINITION // due to Python copysign
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imageio.h>

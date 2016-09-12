@@ -63,9 +63,9 @@ ArchStrerror(int errorCode)
     return msg_buf;
 }
 
+#if defined(ARCH_OS_WINDOWS)
 std::string ArchStrSysError(unsigned long errorCode)
 {
-#if defined(ARCH_OS_WINDOWS)
     if(errorCode == 0)
         return std::string();
 
@@ -86,7 +86,6 @@ std::string ArchStrSysError(unsigned long errorCode)
     LocalFree(buffer);
 
     return message;
-#else
     return std::string();
-#endif
 }
+#endif

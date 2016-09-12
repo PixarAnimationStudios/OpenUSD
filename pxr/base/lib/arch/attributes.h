@@ -33,16 +33,6 @@
 #include "pxr/base/arch/export.h"
 
 /*!
-* \brief Macro to stringify a symbol.
-*/
-#define ARCH_STRINGIFY(x) #x
-
-/*!
-* \brief Macro to use for substitution.
-*/
-#define ARCH_PP_EXPAND(x) x
-
-/*!
  * \file attributes.h
  * \brief Define function attributes.
  *
@@ -155,92 +145,87 @@
 
 #include <SAL.h>
 
- /*!
- * \hideinitializer
- * \brief Macro used to indicate a function takes a printf-like specification.
- *
- * This attribute is used as follows:
- * \code
- *    void PrintFunc(T1 arg1, T2 arg2, const char* fmt, ...)
- *        ARCH_PRINTF_FUNCTION(3, 4)
- * \endcode
- * This indicates that the third argument is the format string, and that the
- * fourth argument is where the var-args corresponding to the format string begin.
- */
+///
+/// \hideinitializer
+/// Macro used to indicate a function takes a printf-like specification.
+///
+/// This attribute is used as follows:
+/// \code
+///    void PrintFunc(T1 arg1, T2 arg2, const char* fmt, ...)
+///        ARCH_PRINTF_FUNCTION(3, 4)
+/// \endcode
+/// This indicates that the third argument is the format string, and that the
+/// fourth argument is where the var-args corresponding to the format string begin.
+///
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg)	\
 		_Printf_format_string_
- /*!
- * \hideinitializer
- * \brief Macro used to indicate a function takes a scanf-like specification.
- *
- * This attribute is used as follows:
- * \code
- *    void ScanFunc(T1 arg1, T2 arg2, const char* fmt, ...)
- *        ARCH_PRINTF_FUNCTION(3, 4)
- * \endcode
- * This indicates that the third argument is the format string, and
- * that the fourth argument is where the var-args corresponding to the
- * format string begin.
- */
+///
+/// \hideinitializer
+/// Macro used to indicate a function takes a scanf-like specification.
+///
+/// This attribute is used as follows:
+/// \code
+///    void ScanFunc(T1 arg1, T2 arg2, const char* fmt, ...)
+///        ARCH_PRINTF_FUNCTION(3, 4)
+/// \endcode
+/// This indicates that the third argument is the format string, and
+/// that the fourth argument is where the var-args corresponding to the
+/// format string begin.
+///
 #   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)	\
 		_Printf_format_string_
 
- /*!
- * \hideinitializer
- * \brief Macro used to indicate that a function should never be inlined
- *
- * This attribute is used as follows:
- * \code
- *    void Func(T1 arg1, T2 arg2) ARCH_NOINLINE;
- * \endcode
- */
+///
+/// \hideinitializer
+/// Macro used to indicate that a function should never be inlined
+///
+/// This attribute is used as follows:
+/// \code
+///    void Func(T1 arg1, T2 arg2) ARCH_NOINLINE;
+/// \endcode
+///
 #   define ARCH_NOINLINE // __declspec(noinline)
 
- /*!
- * \hideinitializer
- * \brief Macro used to indicate a function parameter may be unused.
- *
- * In general, avoid this attribute if possible.  Mostly this attribute
- * should be used when the set of arguments to a function is described
- * as part of a macro.  The usage is:
- * \code
- *    void Func(T1 arg1, ARCH_UNUSED_ARG T2 arg2, ARCH_UNUSED_ARG T3 arg3, T4 arg4) {
- *        ...
- *    }
- * \endcode
- */
+///
+/// \hideinitializer
+/// Macro used to indicate a function parameter may be unused.
+///
+/// In general, avoid this attribute if possible.  Mostly this attribute
+/// should be used when the set of arguments to a function is described
+/// as part of a macro.  The usage is:
+/// \code
+///    void Func(T1 arg1, ARCH_UNUSED_ARG T2 arg2, ARCH_UNUSED_ARG T3 arg3, T4 arg4) {
+///        ...
+///    }
+/// \endcode
+///
 #   define ARCH_UNUSED_ARG
 
- /*!
- * \brief Macro used to indicate that a function's code must always be emitted
- *        even if not required.
- *
- * This attribute is especially useful with templated registration functions,
- * which might not be present in the linked binary if they are not used (or
- * the compiler optimizes away their use.)
- *
- * The usage is:
- * \code
- * template <typename T>
- * struct TraitsClass {
- *    static void RegistryFunction() ARCH_USED_FUNCTION {
- *        ...
- *    }
- * };
- * \endcode
- */
+///
+/// Macro used to indicate that a function's code must always be emitted
+///        even if not required.
+///
+/// This attribute is especially useful with templated registration functions,
+/// which might not be present in the linked binary if they are not used (or
+/// the compiler optimizes away their use.)
+///
+/// The usage is:
+/// \code
+/// template <typename T>
+/// struct TraitsClass {
+///    static void RegistryFunction() ARCH_USED_FUNCTION {
+///        ...
+///    }
+/// };
+/// \endcode
+///
 #   define ARCH_USED_FUNCTION
 
- /*!
- * \brief Macro to ensure the linker does not strip a symbol.
- */
-#	define ARCH_NO_STRIP_SYMBOL(x) __pragma(comment(linker,"/include:__" ## x))
-
- /*!
- * \brief ARCH_CONSTRUCTOR and ARCH_DESTRUCTOR are defined in a separate
- *        file for Windows due to the amount of platform specific code
- *        involved.
- */
+///
+/// ARCH_CONSTRUCTOR and ARCH_DESTRUCTOR are defined in a separate
+///        file for Windows due to the amount of platform specific code
+///        involved.
+///
 #include "pxr/base/arch/attributesWindows.h"
 
 #else

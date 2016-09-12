@@ -32,9 +32,7 @@
 #include <WinSock2.h> // for timeval
 #include <LmCons.h>
 #include <Direct.h>
-ARCH_PRAGMA_MACRO_REDEFINITION
 #include <Shlobj.h> 
-ARCH_PRAGMA_RESTORE
 #include <Time.h>
 #else
 #include <pwd.h>
@@ -106,7 +104,7 @@ ArchGetHomeDirectory(const std::string &login)
 	}
 #else
     if (login.empty()) {
-        const char* home = ArchGetEnv("HOME");
+        const char* home = ArchGetEnv("HOME").c_str();
         if (home && home[0] != '\0')
             return home;
     }
@@ -134,7 +132,7 @@ ArchGetUserName()
 {
     const char* envVarNames[] = {"LOGNAME", "USER", "LNAME", "USERNAME"};
     for (size_t i = 0; i < sizeof(envVarNames) / sizeof(*envVarNames); ++i) {
-        if (const char* user = ArchGetEnv(envVarNames[i])) {
+        if (const char* user = ArchGetEnv(envVarNames[i]).c_str()) {
             if (user && user[0] != '\0')
                 return user;
         }
@@ -188,16 +186,5 @@ ArchGetExecutablePath()
 
 #error Unknown architecture.    
 
-#endif
-}
-
-size_t ArchGetPageSize()
-{
-#if defined(ARCH_OS_WINDOWS)
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    return si.dwPageSize;
-#else
-    return sysconf(_SC_PAGESIZE);
 #endif
 }

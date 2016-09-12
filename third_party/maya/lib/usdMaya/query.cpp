@@ -83,7 +83,7 @@ PxrUsdMayaQuery::ResolvePath(const std::string &filePath)
     ArResolver& resolver = ArGetResolver();
 
     ArResolverContext ctx = 
-        resolver.CreateDefaultContextForDirectory(ArchGetCwd());
+        resolver.CreateDefaultContextForDirectory(TfPathCanonicalize(ArchGetCwd()));
     resolver.RefreshContext(ctx);
 
     ArResolverContextBinder boundCtx(ctx);
