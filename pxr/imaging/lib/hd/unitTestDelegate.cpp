@@ -259,28 +259,6 @@ Hd_UnitTestDelegate::AddTexture(SdfPath const& id,
 }
 
 void
-Hd_UnitTestDelegate::AddCamera(SdfPath const &id)
-{
-    HdRenderIndex& index = GetRenderIndex();
-    index.InsertCamera<HdCamera>(this, id);
-    _cameras[id].params[HdShaderTokens->worldToViewMatrix]
-        = VtValue(GfMatrix4d(1));
-    _cameras[id].params[HdShaderTokens->projectionMatrix]
-        = VtValue(GfMatrix4d(1));
-}
-
-void
-Hd_UnitTestDelegate::AddLight(SdfPath const &id)
-{
-    HdRenderIndex& index = GetRenderIndex();
-    index.InsertLight<HdLight>(this, id);
-    _lights[id].params[HdTokens->lightParams]
-        = VtValue(GlfSimpleLight());
-    _lights[id].params[HdTokens->lightShadowCollection]
-        = VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
-}
-
-void
 Hd_UnitTestDelegate::HideRprim(SdfPath const& id) 
 {
     _hiddenRprims.insert(id);
