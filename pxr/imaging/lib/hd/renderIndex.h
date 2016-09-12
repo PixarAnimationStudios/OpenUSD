@@ -91,12 +91,6 @@ public:
 	HDLIB_API
     HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
-<<<<<<< HEAD
-	HDLIB_API
-    HdLightView GetLights();
-
-=======
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
     /// Returns a list of all draw targets in the render index.
 	HDLIB_API
     HdDrawTargetView GetDrawTargets();
@@ -109,27 +103,14 @@ public:
 	HDLIB_API
     void SyncAll();
 
-<<<<<<< HEAD
-    /// Synchronize all cameras in the render index
-	HDLIB_API
-    void SyncCameras();
-
-    /// Synchronize all lights in the render index
-	HDLIB_API
-    void SyncLights();
-
-=======
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
     /// Synchronize all draw targets in the render index
 	HDLIB_API
     void SyncDrawTargets();
 
-<<<<<<< HEAD
-=======
     /// Synchronize all scene states in the render index
+    HDLIB_API
     void SyncSprims();
 
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
     /// Returns a vector of Rprim IDs that are bound to the given DelegateID.
 	HDLIB_API
     SdfPathVector const& GetDelegateRprimIDs(SdfPath const& delegateID) const;
@@ -277,49 +258,21 @@ public:
     HdTextureSharedPtr const& GetTexture(SdfPath const& id) const;
 
     // ---------------------------------------------------------------------- //
-<<<<<<< HEAD
-    /// \name Camera Support
-    // ---------------------------------------------------------------------- //
-
-    /// Inserts a new camera into the RenderIndex with an identifier of \p id.
-    template <typename T>
-    void 
-    InsertCamera(HdSceneDelegate* delegate, SdfPath const& id);
-
-    /// Removes the given camera from the RenderIndex.
-	HDLIB_API
-    void RemoveCamera(SdfPath const& id);
-
-    /// Returns the camera for the given \p id.
-	HDLIB_API
-    HdCameraSharedPtr const& GetCamera(SdfPath const& id) const;
-
-    // ---------------------------------------------------------------------- //
-    /// \name Light Support
-=======
     /// \name Scene state prims (e.g. camera, light)
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
     // ---------------------------------------------------------------------- //
     template <typename T>
     void
     InsertSprim(HdSceneDelegate* delegate, SdfPath const &id);
 
+    HDLIB_API
     void RemoveSprim(SdfPath const &id);
 
-<<<<<<< HEAD
-    /// Removes the given light from the RenderIndex.
-	HDLIB_API
-    void RemoveLight(SdfPath const& id);
-
-    /// Returns the light for the given \p id.
-	HDLIB_API
-    HdLightSharedPtr const& GetLight(SdfPath const& id) const;
-=======
+    HDLIB_API
     HdSprimSharedPtr const &GetSprim(SdfPath const &id) const;
 
     /// Returns the subtree rooted under the given path.
+    HDLIB_API
     SdfPathVector GetSprimSubtree(SdfPath const& root) const;
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
 
     // ---------------------------------------------------------------------- //
     /// \name Draw Target Support
@@ -374,21 +327,6 @@ private:
                               SdfPath const& textureId,
                               HdTextureSharedPtr const& texture);
 
-<<<<<<< HEAD
-    // Inserts the camera into the index and updates tracking state.
-	HDLIB_API
-    void _TrackDelegateCamera(HdSceneDelegate* delegate, 
-                              SdfPath const& cameraId,
-                              HdCameraSharedPtr const& camera);
-
-    // Inserts the light into the index and updates tracking state.
-	HDLIB_API
-    void _TrackDelegateLight(HdSceneDelegate* delegate, 
-                              SdfPath const& lightId,
-                              HdLightSharedPtr const& light);
-
-=======
->>>>>>> cc6709e473450bb8271115fd82550da96ac5007f
     // Inserts the draw target into the index and updates tracking state.
 	HDLIB_API
     void _TrackDelegateDrawTarget(HdSceneDelegate* delegate,

@@ -216,6 +216,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Asset
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
+    USDUI_API
     UsdAttribute GetIconAttr() const;
 
     /// See GetIconAttr(), and also 
@@ -223,6 +224,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDUI_API
     UsdAttribute CreateIconAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -241,6 +243,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
     /// \n  \ref UsdUITokens "Allowed Values": [open, closed, minimized]
+    USDUI_API
     UsdAttribute GetExpansionStateAttr() const;
 
     /// See GetExpansionStateAttr(), and also 
@@ -248,6 +251,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDUI_API
     UsdAttribute CreateExpansionStateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

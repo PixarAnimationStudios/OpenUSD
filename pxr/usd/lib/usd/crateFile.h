@@ -148,7 +148,7 @@ private:
 };
 template <> struct _IsBitwiseReadWrite<ValueRep> : std::true_type {};
 
-class TimeSamples {
+struct TimeSamples {
 public:
     typedef Usd_Shared<vector<double>> SharedTimes;
 
@@ -267,7 +267,7 @@ struct _Hasher {
 class CrateFile
 {
 public:
-    class Version;
+    struct Version;
 
 private:
     struct _Fcloser {
@@ -302,8 +302,8 @@ private:
     };
 
 public:
-    friend class ValueRep;
-    friend class TimeSamples;
+    friend struct ValueRep;
+    friend struct TimeSamples;
 
     typedef std::pair<TfToken, VtValue> FieldValuePair;
 
