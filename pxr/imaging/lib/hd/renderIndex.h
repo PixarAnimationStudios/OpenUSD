@@ -334,6 +334,7 @@ private:
                                   HdDrawTargetSharedPtr const& drawTarget);
 
     // Inserts the scene state prim into the index and updates tracking state.
+	HDLIB_API
     void _TrackDelegateSprim(HdSceneDelegate* delegate,
                              SdfPath const& id,
                              HdSprimSharedPtr const& state,

@@ -24,6 +24,7 @@
 #ifndef HD_SHADER_H
 #define HD_SHADER_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/resourceBinder.h"  // XXX: including a private class
@@ -67,6 +68,7 @@ public:
 
     // XXX: Should be pure-virtual
     /// Returns the shader parameters for this shader.
+    HDLIB_API
     virtual HdShaderParamVector const& GetParams() const;
 
     struct TextureDescriptor {
@@ -79,11 +81,13 @@ public:
     typedef std::vector<TextureDescriptor> TextureDescriptorVector;
 
     // XXX: DOC
+    HDLIB_API
     virtual TextureDescriptorVector GetTextures() const;
 
     // XXX: Should be pure-virtual
     /// Returns a buffer which stores parameter fallback values and texture
     /// handles.
+    HDLIB_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
 
     /// Binds shader-specific resources to \a program

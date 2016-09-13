@@ -438,18 +438,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking sprim with the given \p id.
+    HDLIB_API
     void SprimInserted(SdfPath const& id, int initialDirtyState);
 
     /// Stop tracking sprim with the given \p id.
+    HDLIB_API
     void SprimRemoved(SdfPath const& id);
 
     /// Get the dirty bits for sprim with the given \p id.
+    HDLIB_API
     DirtyBits GetSprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+    HDLIB_API
     void MarkSprimDirty(SdfPath const& id, DirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
+    HDLIB_API
     void MarkSprimClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
