@@ -24,6 +24,8 @@
 #ifndef HDX_CAMERA_H
 #define HDX_CAMERA_H
 
+#include "pxr/imaging/hdx/api.h"
+
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -42,7 +44,7 @@
     (projectionMatrix)                          \
     (windowPolicy)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxCameraTokens, HDX_CAMERA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxCameraTokens, HDXLIB_API, HDX_CAMERA_TOKENS);
 
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdxCamera> HdxCameraSharedPtr;
@@ -55,7 +57,10 @@ class HdxCamera : public HdSprim {
 public:
     typedef std::vector<GfVec4d> ClipPlanesVector;
 
+    HDXLIB_API
     HdxCamera(HdSceneDelegate* delegate, SdfPath const & id);
+
+    HDLIB_API
     ~HdxCamera();  // note: not virtual (for now)
 
     // change tracking for HdxLight

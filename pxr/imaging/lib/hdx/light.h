@@ -24,6 +24,8 @@
 #ifndef HDX_LIGHT_H
 #define HDX_LIGHT_H
 
+#include "pxr/imaging/hdx/api.h"
+
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -41,7 +43,7 @@
     (shadowParams)                              \
     (transform)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxLightTokens, HDX_LIGHT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxLightTokens, HDXLIB_API, HDX_LIGHT_TOKENS);
 
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdxLight> HdxLightSharedPtr;
@@ -53,7 +55,9 @@ typedef std::vector<HdxLightSharedPtr> HdxLightSharedPtrVector;
 ///
 class HdxLight : public HdSprim {
 public:
+    HDXLIB_API
     HdxLight(HdSceneDelegate* delegate, SdfPath const & id);
+    HDXLIB_API
     virtual ~HdxLight();
 
     // change tracking for HdxLight
