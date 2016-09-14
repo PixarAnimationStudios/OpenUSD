@@ -107,7 +107,7 @@ class GfRGBA {
 
     //! Returns whether or not the color is valid. By convention, a color
     //  is valid if the first color component is not NAN.
-    bool IsValid() const { return !isnan(_rgba[0]); }
+    bool IsValid() const { return !std::isnan(_rgba[0]); }
 
     //! Accesses indexed component of color as a modifiable l-value.
     float &operator [](int i) { return _rgba[i]; }

@@ -77,7 +77,7 @@ class GfRGB {
     
     //! Returns whether or not the color is valid. By convention, a color
     //  is valid if the first color component is not NAN.
-    bool IsValid() const { return !isnan(_rgb[0]); }
+    bool IsValid() const { return !std::isnan(_rgb[0]); }
 
     //! Returns the RGB color as a \c GfVec3f.
     const GfVec3f &GetVec() const { return _rgb; }
