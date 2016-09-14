@@ -330,6 +330,13 @@ int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
 ARCH_API
 int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
 
+#if defined(ARCH_OS_WINDOWS)
+/// Attempts to resolve a symbolic link. \p path can be a file or directory.
+/// Returns the resolved path if successful or the original path on error.
+ARCH_API
+std::string ArchResolveSymlink(const char* path);
+#endif
+
 ///@}
 
 #endif // ARCH_FILESYSTEM_H

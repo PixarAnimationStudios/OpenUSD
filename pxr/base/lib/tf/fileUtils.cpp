@@ -131,7 +131,12 @@ TfIsFile(string const& path, bool resolveSymlinks)
 bool
 TfIsLink(string const& path)
 {
-#if !defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_OS_WINDOWS)
+	DWORD attribs = GetFileAttributes(path.c_str());
+
+	return (attribs != INVALID_FILE_ATTRIBUTES &&
+		(attribs & FILE_ATTRIBUTE_REPARSE_POINT));
+#else
     struct stat st;
     if (Tf_Stat(path, /* resolveSymlinks */ false, &st)) {
         return S_ISLNK(st.st_mode);
