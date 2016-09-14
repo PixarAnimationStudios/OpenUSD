@@ -626,11 +626,15 @@ function(pxr_plugin PLUGIN_NAME)
         PREFIX ${PXR_PREFIX}
     )
 
+    string(TOUPPER ${PLUGIN_NAME} ucLibName)
+
     set_target_properties(${PLUGIN_NAME}
         PROPERTIES
             PUBLIC_HEADER
                 "${sl_PUBLIC_HEADERS};${${PLUGIN_NAME}_PUBLIC_HEADERS}"
             INTERFACE_INCLUDE_DIRECTORIES ""
+            DEFINE_SYMBOL
+                "${ucLibName}_EXPORTS"
     )
 
     # Install and include headers from the build directory.

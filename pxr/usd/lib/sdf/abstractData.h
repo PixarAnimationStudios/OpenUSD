@@ -86,10 +86,10 @@ public:
 
     /// Returns string representation of this key. Equivalent to
     /// GetFullSpecPath().GetString().
-	SDF_API std::string GetString() const;
+    SDF_API std::string GetString() const;
 
     /// Returns true if this object identifies a property spec, false otherwise.
-    bool IsProperty() const;
+    SDF_API bool IsProperty() const;
 
     /// Returns the full path to the spec identified by this object.
     const SdfPath& GetFullSpecPath() const
@@ -547,6 +547,7 @@ private:
 class SdfAbstractDataSpecVisitor
 {
 public:
+	SDF_API
     virtual ~SdfAbstractDataSpecVisitor();
 
     /// \c SdfAbstractData::VisitSpecs will call this function for every entry

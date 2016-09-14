@@ -106,7 +106,7 @@ UsdAbc_AlembicType::operator<(const UsdAbc_AlembicType& rhs) const
 
 /// Format an Alembic version number as a string.
 std::string
-UsdAbc_FormatAlembicVersion(int32_t n)
+UsdAbc_FormatAlembicVersion(abc::int32_t n)
 {
     return TfStringPrintf("%d.%d.%d", n / 10000, (n / 100) % 100, n % 100);
 }
@@ -306,24 +306,24 @@ UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
 {
     // Preferred conversions.
     data.AddConverter<bool,          bool_t>();
-    data.AddConverter<unsigned char, uint8_t>();
-    data.AddConverter<int,           int32_t>();
-    data.AddConverter<unsigned int,  uint32_t>();
-    data.AddConverter<long,          int64_t>();
-    data.AddConverter<unsigned long, uint64_t>();
+    data.AddConverter<unsigned char, abc::uint8_t>();
+    data.AddConverter<int,           abc::int32_t>();
+    data.AddConverter<unsigned int,  abc::uint32_t>();
+    data.AddConverter<long,          abc::int64_t>();
+    data.AddConverter<unsigned long, abc::uint64_t>();
     data.AddConverter<half,          half>();
     data.AddConverter<float,         float32_t>();
     data.AddConverter<double,        float64_t>();
     data.AddConverter<std::string,   std::string>();
-    data.AddConverter<GfVec2i,   int32_t, 2>();
+    data.AddConverter<GfVec2i,		abc::int32_t, 2>();
     data.AddConverter<GfVec2h,      half, 2>();
     data.AddConverter<GfVec2f, float32_t, 2>();
     data.AddConverter<GfVec2d, float64_t, 2>();
-    data.AddConverter<GfVec3i,   int32_t, 3>();
+    data.AddConverter<GfVec3i,   abc::int32_t, 3>();
     data.AddConverter<GfVec3h,      half, 3>();
     data.AddConverter<GfVec3f, float32_t, 3>();
     data.AddConverter<GfVec3d, float64_t, 3>();
-    data.AddConverter<GfVec4i,   int32_t, 4>();
+    data.AddConverter<GfVec4i,   abc::int32_t, 4>();
     data.AddConverter<GfVec4h,      half, 4>();
     data.AddConverter<GfVec4f, float32_t, 4>();
     data.AddConverter<GfVec4d, float64_t, 4>();
@@ -332,9 +332,9 @@ UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
     data.AddConverter<GfMatrix4d, float64_t, 16>();
 
     // Other conversions.
-    data.AddConverter<int,          int8_t>();
-    data.AddConverter<int,          int16_t>();
-    data.AddConverter<unsigned int, uint16_t>();
+    data.AddConverter<int,          abc::int8_t>();
+    data.AddConverter<int,          abc::int16_t>();
+    data.AddConverter<unsigned int, abc::uint16_t>();
     data.AddConverter<TfToken,      std::string>();
     data.AddConverter<GfMatrix4d,   float32_t, 16>();
 

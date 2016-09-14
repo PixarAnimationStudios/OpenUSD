@@ -16,6 +16,7 @@ pxr_plugin(usdAbc
         ${HDF5_LIBRARIES}
         ${HDF5_HL_LIBRARIES}
         ${OPENEXR_Iex_LIBRARY}
+		${ZLIB_LIBRARY_RELEASE}
 
     INCLUDE_DIRS
         ${ALEMBIC_INCLUDE_DIR}
@@ -31,6 +32,9 @@ pxr_plugin(usdAbc
         alembicUtil
         alembicWriter
 
+    PUBLIC_HEADERS
+        api.h
+        
     CPPFILES
         moduleDeps.cpp
 

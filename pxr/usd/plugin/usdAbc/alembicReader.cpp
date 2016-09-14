@@ -855,7 +855,7 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
     _Lock lock(_mutex);
 
     // Get info.
-    uint32_t apiVersion;
+	abc::uint32_t apiVersion;
     std::string writer, version, date, comment;
     GetArchiveInfo(archive, writer, version, apiVersion, date, comment);
 
@@ -2513,7 +2513,7 @@ struct _CopyCameraHorizontalAperture : _CopyCameraBase {
 
         const float horizontalAperture =
             sample.getHorizontalAperture() *
-            sample.getLensSqueezeRatio() * 10.0;
+            sample.getLensSqueezeRatio() * 10.0f;
 
         return dst.Set(horizontalAperture);
     }
@@ -2535,7 +2535,7 @@ struct _CopyCameraVerticalAperture : _CopyCameraBase {
 
         const float verticalAperture =
             sample.getVerticalAperture() *
-            sample.getLensSqueezeRatio() * 10.0;
+            sample.getLensSqueezeRatio() * 10.0f;
 
         return dst.Set(verticalAperture);
     }
@@ -2557,7 +2557,7 @@ struct _CopyCameraHorizontalApertureOffset : _CopyCameraBase {
 
         const float horizontalApertureOffset =
             sample.getHorizontalFilmOffset() *
-            sample.getLensSqueezeRatio() * 10.0;
+            sample.getLensSqueezeRatio() * 10.0f;
 
         return dst.Set(horizontalApertureOffset);
     }
@@ -2579,7 +2579,7 @@ struct _CopyCameraVerticalApertureOffset : _CopyCameraBase {
 
         const float verticalApertureOffset =
             sample.getVerticalFilmOffset() *
-            sample.getLensSqueezeRatio() * 10.0;
+            sample.getLensSqueezeRatio() * 10.0f;
         return dst.Set(verticalApertureOffset);
     }
 };
@@ -3189,7 +3189,7 @@ _ReadPoints(_PrimReaderContext* context)
     context->AddProperty(
         UsdGeomTokens->ids,
         SdfValueTypeNames->Int64Array,
-        _CopyGeneric<IUInt64ArrayProperty, int64_t>(
+        _CopyGeneric<IUInt64ArrayProperty, abc::int64_t>(
             context->ExtractSchema(".pointIds")));
 }
 

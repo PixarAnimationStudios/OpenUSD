@@ -672,7 +672,7 @@ public:
     bool IsFlagSet(const TfToken& flagName) const;
 
     /// Adds/returns a time sampling.
-    uint32_t AddTimeSampling(const UsdAbc_TimeSamples&);
+	abc::uint32_t AddTimeSampling(const UsdAbc_TimeSamples&);
 
 private:
     // Conversion options.
@@ -691,7 +691,7 @@ private:
     // duplicate time samplings.  This maps a set of samples to the index
     // of the time sampling in the archive.  Index 0 is reserved by
     // Alembic to mean uniform starting at 0, cycling at 1.
-    std::map<UsdAbc_TimeSamples, uint32_t> _timeSamplings;
+    std::map<UsdAbc_TimeSamples, abc::uint32_t> _timeSamplings;
 };
 
 _WriterContext::_WriterContext() :
@@ -726,7 +726,7 @@ _WriterContext::IsFlagSet(const TfToken& flagName) const
     return _flags.count(flagName);
 }
 
-uint32_t
+abc::uint32_t
 _WriterContext::AddTimeSampling(const UsdAbc_TimeSamples& inSamples)
 {
     // Handle empty case.
@@ -736,12 +736,12 @@ _WriterContext::AddTimeSampling(const UsdAbc_TimeSamples& inSamples)
     }
 
     // Get the cached index.  If not zero then we already have this one.
-    std::map<UsdAbc_TimeSamples, uint32_t>::const_iterator tsi =
+    std::map<UsdAbc_TimeSamples, abc::uint32_t>::const_iterator tsi =
         _timeSamplings.find(inSamples);
     if (tsi != _timeSamplings.end()) {
         return tsi->second;
     }
-    uint32_t& index = _timeSamplings[inSamples];
+	abc::uint32_t& index = _timeSamplings[inSamples];
 
     // Scale and offset samples.
     UsdAbc_TimeSamples samples;
@@ -854,7 +854,7 @@ public:
     bool IsFlagSet(const TfToken& flagName) const;
 
     /// Adds/returns a time sampling.
-    uint32_t AddTimeSampling(const UsdAbc_TimeSamples&);
+	abc::uint32_t AddTimeSampling(const UsdAbc_TimeSamples&);
 
     /// Returns the parent object.
     const Parent& GetParent() const;
@@ -1001,7 +1001,7 @@ _PrimWriterContext::IsFlagSet(const TfToken& flagName) const
     return _context.IsFlagSet(flagName);
 }
 
-uint32_t
+abc::uint32_t
 _PrimWriterContext::AddTimeSampling(const UsdAbc_TimeSamples& samples)
 {
     return _context.AddTimeSampling(samples);
@@ -1372,7 +1372,7 @@ _MakeIndexed(_SampleForAlembic* values)
 {
     // A map of values to an index.
     typedef _MakeIndexedValue<POD, extent> Value;
-    typedef std::map<Value, uint32_t> IndexMap;
+    typedef std::map<Value, abc::uint32_t> IndexMap;
     typedef std::pair<typename IndexMap::iterator, bool> IndexMapResult;
     typedef _SampleForAlembic::IndexArray IndexArray;
     typedef IndexArray::value_type Index;
@@ -1400,7 +1400,7 @@ _MakeIndexed(_SampleForAlembic* values)
 
     // If there are enough duplicates use indexing otherwise don't.
     if (n * sizeof(POD[extent]) <=
-            unique.size() * sizeof(POD[extent]) + n * sizeof(uint32_t)) {
+            unique.size() * sizeof(POD[extent]) + n * sizeof(abc::uint32_t)) {
         return;
     }
 
@@ -1710,10 +1710,10 @@ _CopyVisibility(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
     if (value.IsEmpty() or value == UsdGeomTokens->inherited) {
-        return _SampleForAlembic(int8_t(kVisibilityDeferred));
+        return _SampleForAlembic(abc::int8_t(kVisibilityDeferred));
     }
     if (value == UsdGeomTokens->invisible) {
-        return _SampleForAlembic(int8_t(kVisibilityHidden));
+        return _SampleForAlembic(abc::int8_t(kVisibilityHidden));
     }
     return _ErrorSampleForAlembic(TfStringPrintf(
                             "Unsupported invisibility '%s'",
@@ -1745,13 +1745,13 @@ _CopyInterpolateBoundary(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
     if (value.IsEmpty() or value == UsdGeomTokens->none) {
-        return _SampleForAlembic(int32_t(0));
+        return _SampleForAlembic(abc::int32_t(0));
     }
     if (value == UsdGeomTokens->edgeAndCorner) {
-        return _SampleForAlembic(int32_t(1));
+        return _SampleForAlembic(abc::int32_t(1));
     }
     if (value == UsdGeomTokens->edgeOnly) {
-        return _SampleForAlembic(int32_t(2));
+        return _SampleForAlembic(abc::int32_t(2));
     }
     return _ErrorSampleForAlembic(TfStringPrintf(
                             "Unsupported interpolateBoundary '%s'",
@@ -1764,16 +1764,16 @@ _CopyFaceVaryingInterpolateBoundary(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
     if (value.IsEmpty() or value == UsdGeomTokens->all) {
-        return _SampleForAlembic(int32_t(0));
+        return _SampleForAlembic(abc::int32_t(0));
     }
     if (value == UsdGeomTokens->cornersPlus1) {
-        return _SampleForAlembic(int32_t(1));
+        return _SampleForAlembic(abc::int32_t(1));
     }
     if (value == UsdGeomTokens->none) {
-        return _SampleForAlembic(int32_t(2));
+        return _SampleForAlembic(abc::int32_t(2));
     }
     if (value == UsdGeomTokens->boundaries) {
-        return _SampleForAlembic(int32_t(3));
+        return _SampleForAlembic(abc::int32_t(3));
     }
     return _ErrorSampleForAlembic(TfStringPrintf(
                             "Unsupported faceVaryingLinearInterpolation '%s'",
@@ -1869,7 +1869,7 @@ _SampleForAlembic
 _CopyOrder(const VtValue& src)
 {
     const VtIntArray& value = src.UncheckedGet<VtIntArray>();
-    return _SampleForAlembic(std::vector<uint8_t>(value.begin(), value.end()));
+    return _SampleForAlembic(std::vector<abc::uint8_t>(value.begin(), value.end()));
 }
 
 static
@@ -1877,7 +1877,7 @@ _SampleForAlembic
 _CopyPointIds(const VtValue& src)
 {
     const VtInt64Array& value = src.UncheckedGet<VtInt64Array>();
-    return _SampleForAlembic(std::vector<uint64_t>(value.begin(), value.end()));
+    return _SampleForAlembic(std::vector<abc::uint64_t>(value.begin(), value.end()));
 }
 
 
@@ -3171,7 +3171,7 @@ _WritePoints(_PrimWriterContext* context)
         // be reused for all the other samples.  We also use a valid
         // but empty array because we don't actually have any data.
         if (first and not sample.getIds()) {
-            static const uint64_t data = 0;
+            static const abc::uint64_t data = 0;
             first = false;
             sample.setIds(UInt64ArraySample(&data, 0));
         }
