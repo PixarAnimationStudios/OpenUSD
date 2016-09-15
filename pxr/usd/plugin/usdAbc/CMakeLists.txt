@@ -20,6 +20,8 @@ pxr_plugin(usdAbc
         ${HDF5_LIBRARIES}
         ${HDF5_HL_LIBRARIES}
         ${OPENEXR_Iex_LIBRARY}
+        ${OPENEXR_IexMath_LIBRARY}
+        ${OPENEXR_Imath_LIBRARY}
         ${ZLIB_LIBRARY_RELEASE}
 
     INCLUDE_DIRS
