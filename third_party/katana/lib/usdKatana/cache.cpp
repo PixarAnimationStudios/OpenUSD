@@ -110,7 +110,7 @@ UsdKatanaCache::_SetMutedLayers(
     bool regexIsEmpty = layerRegex == "" || layerRegex == "^$";
     
     // use a better regex library?
-    boost::regex regex;
+    boost::regex regex(layerRegex.c_str());
 
     TF_FOR_ALL(stageLayer, stageLayers)
     {
@@ -127,7 +127,6 @@ UsdKatanaCache::_SetMutedLayers(
         {
             if (layer && boost::regex_match(
                 layerIdentifier.c_str(), 
-                layerRegex.c_str(),
                 regex))
             {
                 match = true;
