@@ -396,6 +396,7 @@ PxrUsdKatanaReadMesh(
 
     FnKat::GroupBuilder geometryBuilder;
 
+    // position
     geometryBuilder.set("point.P", PxrUsdKatanaGeomGetPAttr(mesh, data));
 
     /// Only use custom normals if the object is a polymesh.
@@ -404,8 +405,23 @@ PxrUsdKatanaReadMesh(
         FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(mesh, data);
         if (normalsAttr.isValid())
         {
-            geometryBuilder.set("point.N", normalsAttr);
+            // XXX RfK currently doesn't support uniform normals for polymeshes.
+            TfToken interp = mesh.GetNormalsInterpolation();
+            if (interp == UsdGeomTokens->varying
+             || interp == UsdGeomTokens->vertex) {
+                geometryBuilder.set("point.N", normalsAttr);
+            }
+            else if (interp == UsdGeomTokens->faceVarying) {
+                geometryBuilder.set("vertex.N", normalsAttr);
+            }
         }
+    }
+
+    // velocity
+    FnKat::Attribute velocityAttr = PxrUsdKatanaGeomGetVelocityAttr(mesh, data);
+    if (velocityAttr.isValid())
+    {
+        geometryBuilder.set("point.v", velocityAttr);
     }
 
     FnKat::GroupAttribute polyAttr = _GetPolyAttr(mesh, currentTime);

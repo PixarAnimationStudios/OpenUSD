@@ -23,6 +23,8 @@
 //
 #include "usdMaya/MayaMeshWriter.h"
 
+#include "usdMaya/util.h"
+
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/transform.h"
@@ -34,24 +36,60 @@
 #include <maya/MFnMesh.h>
 #include <maya/MItMeshFaceVertex.h>
 
-#include <unordered_map>
 
-
-template <class T>
-struct ValueHash
+bool
+MayaMeshWriter::_GetMeshUVSetData(
+        const MFnMesh& mesh,
+        const MString& uvSetName,
+        VtArray<GfVec2f>* uvArray,
+        TfToken* interpolation,
+        VtArray<int>* assignmentIndices)
 {
-    std::size_t operator() (const T& value) const {
-        return hash_value(value);
-    }
-};
+    MStatus status;
 
-template <class T>
-struct ValuesEqual
-{
-    bool operator() (const T& a, const T& b) const {
-        return GfIsClose(a, b, 1e-9);
+    // Sanity check first to make sure this UV set even has assigned values
+    // before we attempt to do anything with the data.
+    MIntArray uvCounts, uvIds;
+    status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
+    if (status != MS::kSuccess) {
+        return false;
     }
-};
+    if (uvCounts.length() == 0 or uvIds.length() == 0) {
+        return false;
+    }
+
+    // We'll populate the assignment indices for every face vertex, but we'll
+    // only push values into the data if the face vertex has a value. All face
+    // vertices are initially unassigned/unauthored.
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    uvArray->clear();
+    assignmentIndices->assign((size_t)numFaceVertices, -1);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        if (not itFV.hasUVs(uvSetName)) {
+            // No UVs for this faceVertex, so leave it unassigned.
+            continue;
+        }
+
+        float2 uv;
+        itFV.getUV(uv, &uvSetName);
+
+        GfVec2f value(uv[0], uv[1]);
+        uvArray->push_back(value);
+        (*assignmentIndices)[fvi] = uvArray->size() - 1;
+    }
+
+    PxrUsdMayaUtil::MergeEquivalentIndexedValues(uvArray,
+                                                 assignmentIndices);
+    PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+                                                      interpolation,
+                                                      assignmentIndices);
+
+    return true;
+}
 
 // This function condenses distinct indices that point to the same color values
 // (the combination of RGB AND Alpha) to all point to the same index for that
@@ -77,132 +115,39 @@ _MergeEquivalentColorSetValues(
                         colorSetRGBData->size(), colorSetAlphaData->size());
     }
 
-    // We maintain a map of values (color AND alpha together) to those values'
-    // indices in our unique value arrays (color and alpha separate).
-    std::unordered_map<GfVec4f, size_t, ValueHash<GfVec4f>, ValuesEqual<GfVec4f> > valuesSet;
-    VtArray<GfVec3f> uniqueColors;
-    VtArray<float> uniqueAlphas;
-    VtArray<int> uniqueIndices;
+    // We first combine the separate color and alpha arrays into one GfVec4f
+    // array.
+    VtArray<GfVec4f> colorsWithAlphasData(numValues);
+    for (size_t i = 0; i < numValues; ++i) {
+        const GfVec3f color = (*colorSetRGBData)[i];
+        const float alpha = (*colorSetAlphaData)[i];
 
-    for (size_t i = 0; i < colorSetAssignmentIndices->size(); ++i) {
-        int index = (*colorSetAssignmentIndices)[i];
-
-        if (index < 0 or static_cast<size_t>(index) >= numValues) {
-            // This is an unassigned or otherwise unknown index, so just keep it.
-            uniqueIndices.push_back(index);
-            continue;
-        }
-
-        const GfVec3f color = (*colorSetRGBData)[index];
-        const float alpha = (*colorSetAlphaData)[index];
-        const GfVec4f value(color[0], color[1], color[2], alpha);
-
-        int uniqueIndex = -1;
-
-        auto inserted = valuesSet.insert(
-            std::pair<GfVec4f, size_t>(value,
-                                       uniqueColors.size()));
-        if (inserted.second) {
-            // This is a new value, so add it to the arrays.
-            uniqueColors.push_back(GfVec3f(value[0], value[1], value[2]));
-            uniqueAlphas.push_back(value[3]);
-            uniqueIndex = uniqueColors.size() - 1;
-        } else {
-            // This is an existing value, so re-use the original's index.
-            uniqueIndex = inserted.first->second;
-        }
-
-        uniqueIndices.push_back(uniqueIndex);
+        colorsWithAlphasData[i][0] = color[0];
+        colorsWithAlphasData[i][1] = color[1];
+        colorsWithAlphasData[i][2] = color[2];
+        colorsWithAlphasData[i][3] = alpha;
     }
 
-    // If we reduced the number of values by merging, copy the results back.
-    if (uniqueColors.size() < numValues) {
-        (*colorSetRGBData) = uniqueColors;
-        (*colorSetAlphaData) = uniqueAlphas;
-        (*colorSetAssignmentIndices) = uniqueIndices;
-    }
-}
+    VtArray<int> mergedIndices(*colorSetAssignmentIndices);
+    PxrUsdMayaUtil::MergeEquivalentIndexedValues(&colorsWithAlphasData,
+                                                 &mergedIndices);
 
-// This function tries to compress faceVarying primvar indices to uniform,
-// vertex, or constant interpolation if possible. This will potentially shrink
-// the indices array and will update the interpolation if any compression was
-// possible.
-static
-void
-_CompressFaceVaryingPrimvarIndices(
-        const MFnMesh& mesh,
-        TfToken *interpolation,
-        VtArray<int>* assignmentIndices)
-{
-    if (not interpolation or
-            not assignmentIndices or
-            assignmentIndices->size() == 0) {
-        return;
-    }
+    // If we reduced the number of values by merging, copy the results back,
+    // separating the values back out into colors and alphas.
+    const size_t newSize = colorsWithAlphasData.size();
+    if (newSize < numValues) {
+        colorSetRGBData->resize(newSize);
+        colorSetAlphaData->resize(newSize);
 
-    int numPolygons = mesh.numPolygons();
-    VtArray<int> uniformAssignments;
-    uniformAssignments.assign((size_t)numPolygons, -2);
+        for (size_t i = 0; i < newSize; ++i) {
+            const GfVec4f colorWithAlpha = colorsWithAlphasData[i];
 
-    int numVertices = mesh.numVertices();
-    VtArray<int> vertexAssignments;
-    vertexAssignments.assign((size_t)numVertices, -2);
-
-    // We assume that the data is constant/uniform/vertex until we can
-    // prove otherwise that two components have differing values.
-    bool isConstant = true;
-    bool isUniform = true;
-    bool isVertex = true;
-
-    MItMeshFaceVertex itFV(mesh.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
-        int faceIndex = itFV.faceId();
-        int vertexIndex = itFV.vertId();
-
-        int assignedIndex = (*assignmentIndices)[fvi];
-
-        if (isConstant) {
-            if (assignedIndex != (*assignmentIndices)[0]) {
-                isConstant = false;
-            }
+            (*colorSetRGBData)[i][0] = colorWithAlpha[0];
+            (*colorSetRGBData)[i][1] = colorWithAlpha[1];
+            (*colorSetRGBData)[i][2] = colorWithAlpha[2];
+            (*colorSetAlphaData)[i] = colorWithAlpha[3];
         }
-
-        if (isUniform) {
-            if (uniformAssignments[faceIndex] < -1) {
-                // No value for this face yet, so store one.
-                uniformAssignments[faceIndex] = assignedIndex;
-            } else if (assignedIndex != uniformAssignments[faceIndex]) {
-                isUniform = false;
-            }
-        }
-
-        if (isVertex) {
-            if (vertexAssignments[vertexIndex] < -1) {
-                // No value for this vertex yet, so store one.
-                vertexAssignments[vertexIndex] = assignedIndex;
-            } else if (assignedIndex != vertexAssignments[vertexIndex]) {
-                isVertex = false;
-            }
-        }
-
-        if (not isConstant and not isUniform and not isVertex) {
-            // No compression will be possible, so stop trying.
-            break;
-        }
-    }
-
-    if (isConstant) {
-        assignmentIndices->resize(1);
-        *interpolation = UsdGeomTokens->constant;
-    } else if (isUniform) {
-        *assignmentIndices = uniformAssignments;
-        *interpolation = UsdGeomTokens->uniform;
-    } else if(isVertex) {
-        *assignmentIndices = vertexAssignments;
-        *interpolation = UsdGeomTokens->vertex;
-    } else {
-        *interpolation = UsdGeomTokens->faceVarying;
+        (*colorSetAssignmentIndices) = mergedIndices;
     }
 }
 
@@ -231,7 +176,7 @@ _LinearColorFromColorSet(
 /// Unauthored/unpainted values will be given the index -1.
 bool MayaMeshWriter::_GetMeshColorSetData(
         MFnMesh& mesh,
-        MString colorSet,
+        const MString& colorSet,
         bool isDisplayColor,
         const VtArray<GfVec3f>& shadersRGBData,
         const VtArray<float>& shadersAlphaData,
@@ -384,9 +329,9 @@ bool MayaMeshWriter::_GetMeshColorSetData(
     _MergeEquivalentColorSetValues(colorSetRGBData,
                                    colorSetAlphaData,
                                    colorSetAssignmentIndices);
-    _CompressFaceVaryingPrimvarIndices(mesh,
-                                       interpolation,
-                                       colorSetAssignmentIndices);
+    PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+                                                      interpolation,
+                                                      colorSetAssignmentIndices);
 
     return true;
 }
@@ -522,6 +467,41 @@ bool MayaMeshWriter::_createRGBAPrimVar(
     return true;
 }
 
+bool MayaMeshWriter::_createUVPrimVar(
+        UsdGeomGprim &primSchema,
+        const TfToken& name,
+        const VtArray<GfVec2f>& data,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex)
+{
+    unsigned int numValues = data.size();
+    if (numValues == 0) {
+        return false;
+    }
+
+    TfToken interp = interpolation;
+    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->Float2Array,
+                                 interp);
+
+    primVar.Set(data);
+
+    if (not assignmentIndices.empty()) {
+        primVar.SetIndices(assignmentIndices);
+        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+           primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
+        }
+    }
+
+    return true;
+}
+
 bool MayaMeshWriter::_addDisplayPrimvars(
         UsdGeomGprim &primSchema,
         const MFnMesh::MColorRepresentation colorRep,
@@ -586,243 +566,4 @@ bool MayaMeshWriter::_addDisplayPrimvars(
     }
 
     return true;
-}
-
-inline bool _IsClose(double a, double b)
-{
-    // This matches the results produced by numpy.allclose
-    static const double aTol(1.0e-8);
-    static const double rTol(1.0e-5);
-    return fabs(a - b) < (aTol + rTol * fabs(b));
-}
-
-
-inline bool _HasZeros(const MIntArray& v)
-{
-    for (size_t i = 0; i < v.length(); i++) {
-        if (v[i] == 0)
-            return true;
-    }
-
-    return false;
-}
-
-inline void
-_CopyUVs(const MFloatArray& uArray, const MFloatArray& vArray,
-         VtArray<GfVec2f> *uvArray)
-{
-    uvArray->clear();
-    uvArray->resize(uArray.length());
-    for (size_t i = 0; i < uvArray->size(); i++) {
-        (*uvArray)[i] = GfVec2f(uArray[i], vArray[i]);
-    }
-}
-
-/* static */
-MStatus
-MayaMeshWriter::_FullUVsFromSparse(
-    const MFnMesh& m,
-    const MIntArray& uvCounts, const MIntArray& uvIds,
-    const MFloatArray& uArray, const MFloatArray& vArray,
-    VtArray<GfVec2f> *uvArray
-)
-{
-    MIntArray faceVertexCounts, faceVertexIndices;
-    MStatus status = m.getVertices(faceVertexCounts, faceVertexIndices);
-    if (!status)
-        return status;
-
-    // Construct a cumulative index array. Each element in this array
-    // is the starting index into the vertex index and uv index arrays.
-    // We use it later to map face indices to uv indices.
-    //
-    std::vector<size_t> cumIndices(faceVertexCounts.length());
-    size_t cumIndex = 0;
-    for (size_t i = 0; i < cumIndices.size(); i++) {
-        cumIndices[i] = cumIndex;
-        cumIndex += faceVertexCounts[i];
-    }
-
-    // Our "full" u and v arrays will each have the same number of elements as
-    // faceVertexIndices. Make new arrays, and fill them with a very large
-    // negative value (very large positive values are poisonous to Mari). The
-    // idea is that texture look-ups on faces with no uvs will trigger wrap
-    // behavior, which can be set to "black", if necessary.
-    //
-    const int numUVs = faceVertexIndices.length();
-    MFloatArray uArrayFull(numUVs, -1.0e30);
-    MFloatArray vArrayFull(numUVs, -1.0e30);
-
-    // Now poke in the u and v values that actually exist
-    // k assumes values in the range [0, uvIds.length())
-    //
-    int k = 0;
-    for (size_t i = 0; i < uvCounts.length(); i++) {
-        if (uvCounts[i] == 0)
-            continue;
-
-        const int cumIndex = cumIndices[i];
-        for (int j = cumIndex; j < cumIndex + uvCounts[i]; j++, k++) {
-            const int uvId = uvIds[k];
-            uArrayFull[j] = uArray[uvId];
-            vArrayFull[j] = vArray[uvId];
-        }
-    }
-
-    if (k == 0) {
-        // No uvs assigned at all ... clear the result
-        uvArray->clear();
-        return MS::kFailure;
-    } else {
-        _CopyUVs(uArrayFull, vArrayFull, uvArray);
-        return MS::kSuccess;
-    }
-}
-
-static inline bool _AllSame(const MFloatArray& v)
-{
-    const float& firstVal = v[0];
-    for (size_t i = 1; i < v.length(); i++) {
-        if (!_IsClose(v[i], firstVal))
-            return false;
-    }
-
-    return true;
-}
-
-/* static */
-MStatus
-MayaMeshWriter::_CompressUVs(const MFnMesh& m,
-                             const MIntArray& uvIds,
-                             const MFloatArray& uArray, const MFloatArray& vArray,
-                             VtArray<GfVec2f> *uvArray,
-                             TfToken *interpolation)
-{
-    MIntArray faceVertexCounts, faceVertexIndices;
-    MStatus status = m.getVertices(faceVertexCounts, faceVertexIndices);
-    if (!status)
-        return status;
-
-    // All uvs are natively stored and accessed as "faceVarying" in Maya.
-    // But we'd like to save space when possible, so we examine the u and
-    // values to see if they can't be represented as "vertex" or "constant" instead.
-    //
-    // Our strategy is to visit all vertices of all faces, some of which might
-    // be the same physical vertex. We look up the u and v values for each
-    // vertex, and check to see if they are the same as they were for the last
-    // visit to that vertex. If they are not, we know the uvs can't be "vertex",
-    // and thus not "constant" either.
-    //
-    // Even if the uv set turns out to be "faceVarying" after all, we have to
-    // fill in the face-varying arrays, because we can't assume that "uArray"
-    // and "vArray" have as many values as there are vertices (we may still
-    // have uv sharing).
-    //
-    // Note that the Maya API guarantees that vertex indices are always in the
-    // range [0, numVertices). This algorithm depends on that being the case.
-    //
-    MFloatArray uArrayFV(faceVertexIndices.length());
-    MFloatArray vArrayFV(faceVertexIndices.length());
-
-    MFloatArray uArrayVertex(m.numVertices(), 0);
-    MFloatArray vArrayVertex(m.numVertices(), 0);
-    std::vector<bool> visited(m.numVertices(), false);
-
-    // Start off with "vertex" -- we may decide it's
-    // "faceVarying" in the middle of the loop.
-    //
-    *interpolation = UsdGeomTokens->vertex;
-
-    int k = 0;
-    for (size_t i = 0; i < faceVertexCounts.length(); i++) {
-        for (int j = 0; j < faceVertexCounts[i]; j++, k++) {
-            const int vertexIndex = faceVertexIndices[k];
-            const float u = uArray[uvIds[k]];
-            const float v = vArray[uvIds[k]];
-            uArrayFV[k] = u;
-            vArrayFV[k] = v;
-            if (*interpolation == UsdGeomTokens->vertex) {
-                if (visited[vertexIndex]) {
-                    // We've been here before -- check to see if
-                    // the u and v are the same
-                    if (!_IsClose(uArrayVertex[vertexIndex], u) ||
-                        !_IsClose(vArrayVertex[vertexIndex], v)) {
-                        // Alas, it's not "vertex". Switch the detail
-                        // to "faceVarying" and clear the arrays. Henceforth,
-                        // only fill uArrayFV and vArrayFV.
-                        //
-                        *interpolation = UsdGeomTokens->faceVarying;
-                        uArrayVertex.clear();
-                        vArrayVertex.clear();
-                    }
-                } else {
-                    // Never been here .. mark visited, and
-                    // store u and v.
-                    visited[vertexIndex] = true;
-                    uArrayVertex[vertexIndex] = u;
-                    vArrayVertex[vertexIndex] = v;
-                }
-            }
-        }
-    }
-
-    if (*interpolation == UsdGeomTokens->vertex) {
-        // Check to see if all the (u, v) values are the same. If they are, we can
-        // declare the detail ""constant"", and fill in just one value.
-        //
-        if (_AllSame(uArrayVertex) && _AllSame(vArrayVertex)) {
-            *interpolation = UsdGeomTokens->constant;
-            uvArray->clear();
-            uvArray->push_back(GfVec2f(uArrayVertex[0], vArrayVertex[0]));
-        } else {
-            // Nope, still "vertex"
-            _CopyUVs(uArrayVertex, vArrayVertex, uvArray);
-        }
-    } else {
-        // "faceVarying"
-        _CopyUVs(uArrayFV, vArrayFV, uvArray);
-    }
-
-    return MS::kSuccess;
-}
-
-
-
-MStatus
-MayaMeshWriter::_GetMeshUVSetData(MFnMesh& m, MString uvSetName,
-                                  VtArray<GfVec2f> *uvArray,
-                                  TfToken *interpolation)
-{
-    MStatus status;
-
-    MIntArray uvCounts, uvIds;
-    status = m.getAssignedUVs(uvCounts, uvIds, &uvSetName);
-    if (!status)
-        return status;
-
-
-    MFloatArray uArray, vArray;
-    status = m.getUVs(uArray, vArray, &uvSetName);
-    if (!status)
-        return status;
-
-    // Sanity check the data before we attempt to do anything with it.
-    if (uvCounts.length() == 0 or uvIds.length() == 0 or
-        uArray.length() == 0 or vArray.length() == 0) {
-        return MS::kFailure;
-    }
-
-    // Check for zeros in "uvCounts" -- if there are any,
-    // the uvs are sparse.
-    const bool isSparse = _HasZeros(uvCounts);
-
-    if (!isSparse) {
-        return _CompressUVs(m, uvIds, uArray, vArray,
-                            uvArray, interpolation);
-    } else {
-        *interpolation = UsdGeomTokens->faceVarying;
-        return _FullUVsFromSparse(m, uvCounts, uvIds, uArray, vArray,
-                                  uvArray);
-    }
-
 }

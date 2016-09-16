@@ -36,10 +36,8 @@
     (bezier)                                    \
     (bSpline)                                   \
     (camera)                                    \
-    (cameraFrustum)                             \
     (catmullRom)                                \
     (children)                                  \
-    (clipPlanes)                                \
     (color)                                     \
     (collection)                                \
     (computeShader)                             \
@@ -77,12 +75,6 @@
     (isFlipped)                                 \
     (itemsDrawn)                                \
     (layout)                                    \
-    (lightingContext)                           \
-    (lightingShader)                            \
-    (lightParams)                               \
-    (lightShadowCollection)                     \
-    (lightShadowParams)                         \
-    (lightTransform)                            \
     (leftHanded)                                \
     (linear)                                    \
     (nonperiodic)                               \
@@ -119,9 +111,8 @@
     (visibility)                                \
     (widths)                                    \
     (wire)                                      \
-    (wireOnSurf)                                \
-    (windowPolicy)
-            
+    (wireOnSurf)
+
 #define HD_PERF_TOKENS                          \
     (basisCurvesTopology)                       \
     (bufferSourcesResolved)                     \

@@ -30,6 +30,8 @@
 #define HDX_TOKENS              \
     (hdxSelectionBuffer)        \
     (imagerVersion)             \
+    (lightingContext)           \
+    (lightingShader)            \
     (renderPassState)           \
     (renderIndexVersion)        \
     (selection)                 \

@@ -182,7 +182,29 @@ UsdImagingGprimAdapter::UpdateForTimePrep(UsdPrim const& prim,
 }
 
 void
-UsdImagingGprimAdapter::_DiscoverPrimvars(UsdGeomGprim const& gprim,
+UsdImagingGprimAdapter::_DiscoverPrimvars(
+        UsdGeomGprim const& gprim,
+        SdfPath const& cachePath,
+        SdfPath const& shaderPath,
+        UsdTimeCode time,
+        UsdImagingValueCache* valueCache)
+{
+    // Check if each parameter is bound to a texture or primvar, if so,
+    // collect that primvar from this gprim.
+    // XXX: Should move this into ShaderAdapter
+    if (UsdPrim const& shaderPrim =
+                        gprim.GetPrim().GetStage()->GetPrimAtPath(shaderPath)) {
+        if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
+            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, s, time, valueCache);
+        } else {
+            _DiscoverPrimvarsDeprecated(gprim, cachePath, 
+                                        shaderPrim, time, valueCache);
+        }
+    }
+}
+
+void
+UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& gprim,
                                           SdfPath const& cachePath, 
                                           UsdShadeShader const& shader,
                                           UsdTimeCode time,
@@ -233,7 +255,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(UsdGeomGprim const& gprim,
                 }
             } else {
                 // Recursively look for more primvars
-                _DiscoverPrimvars(gprim, cachePath, source, time, valueCache);
+                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, source, time, valueCache);
             }
         }
     }
@@ -358,18 +380,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 prim.GetPath().GetText(), usdShaderPath.GetText());
 
         if (not usdShaderPath.IsEmpty()) {
-            // Check if each parameter is bound to a texture or primvar, if so,
-            // collect that primvar from this gprim.
-            // XXX: Should move this into ShaderAdapter
-            UsdPrim const& shaderPrim =
-                                prim.GetStage()->GetPrimAtPath(usdShaderPath);
-
-            if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
-                _DiscoverPrimvars(gprim, cachePath, s, time, valueCache);
-            } else {
-                _DiscoverPrimvarsDeprecated(gprim, cachePath, 
-                                            shaderPrim, time, valueCache);
-            }
+            _DiscoverPrimvars(gprim, cachePath, usdShaderPath, time, valueCache);
         }
     }
 

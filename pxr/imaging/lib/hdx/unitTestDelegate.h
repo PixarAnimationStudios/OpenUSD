@@ -52,9 +52,12 @@ public:
 
     // camera
     void SetCamera(GfMatrix4d const &viewMatrix, GfMatrix4d const &projMatrix);
+    void SetCamera(SdfPath const &id, GfMatrix4d const &viewMatrix, GfMatrix4d const &projMatrix);
+    void AddCamera(SdfPath const &id);
 
     // light
     void AddLight(SdfPath const &id, GlfSimpleLight const &light);
+    void SetLight(SdfPath const &id, TfToken const &key, VtValue value);
 
     // tasks
     void AddRenderTask(SdfPath const &id);

@@ -1214,6 +1214,13 @@ struct TfTypeFunctions<TfRefPtr<const T> > {
 
 #if !defined(doxygen)
 
+template <class T>
+inline void
+swap(TfRefPtr<T>& lhs, TfRefPtr<T>& rhs)
+{
+    lhs.swap(rhs);
+}
+
 namespace boost {
 
 template<typename T>

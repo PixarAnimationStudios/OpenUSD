@@ -28,6 +28,8 @@
 /// \ingroup group_arch_Multithreading
 /// Create background or daemon processes.
 
+#include "pxr/base/arch/api.h"
+
 /// Close all file descriptors (with possible exceptions)
 ///
 /// \c ArchCloseAllFiles will close all file descriptors open in the
@@ -55,6 +57,7 @@
 /// value.  Returns 0 on success.
 ///
 /// \ingroup group_arch_Multithreading
+ARCH_API 
 int ArchCloseAllFiles(int nExcept, const int* exceptFds);
 
 #endif // ARCH_DAEMON_H 

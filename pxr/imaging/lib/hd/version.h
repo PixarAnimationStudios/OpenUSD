@@ -31,7 +31,12 @@
 //           HdEngine::Draw API change.
 // 22 -> 23: remove ID render API
 // 23 -> 24: GetPathForInstanceIndex returns absolute instance index.
-#define HD_API  24
+// 24 -> 25: move simpleLightingShader to Hdx.
+// 25 -> 26: move camera and light to Hdx.
+#define HD_API  26
+
+// 1  ->  2: SimpleLighting -> FallbackLighting
+#define HD_SHADER_API 2
 
 // 1 -> 2: Changes "doubleShaded" API to "doubleSided".
 #define HD_CHANGETRACKER_API 2

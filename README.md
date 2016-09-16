@@ -44,8 +44,8 @@ Dependencies
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |
 | [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows)    |
 | [Python](https://python.org)                                      | 2.7.5              |
-| [Boost](https://boost.org)                                        | 1.55 (Linux/OS X), 1.61.0 (Windows)    |
-| [OpenEXR](https://openexr.org)                                    | 2.2.0              |
+| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows)    |
+| [OpenEXR](http://www.openexr.com)                                 | 2.2.0              |
 | [DoubleConversion](https://github.com/google/double-conversion)   | 1.1.1              |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.3.1              |
 | [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5              |

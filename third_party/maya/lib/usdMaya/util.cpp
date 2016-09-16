@@ -37,9 +37,12 @@
 #include <maya/MFnLambertShader.h>
 #include <maya/MFnSet.h>
 #include <maya/MItDependencyGraph.h>
+#include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MPlugArray.h>
 #include <maya/MTime.h>
+
+#include <unordered_map>
 
 
 // return seconds per frame
@@ -699,6 +702,221 @@ PxrUsdMayaUtil::GetLinearShaderColor(
                                  AlphaData,
                                  interpolation,
                                  assignmentIndices);
+}
+
+template <typename T>
+struct ValueHash
+{
+    std::size_t operator() (const T& value) const {
+        return hash_value(value);
+    }
+};
+
+template <typename T>
+struct ValuesEqual
+{
+    bool operator() (const T& a, const T& b) const {
+        return GfIsClose(a, b, 1e-9);
+    }
+};
+
+template <typename T>
+static
+void
+_MergeEquivalentIndexedValues(
+        VtArray<T>* valueData,
+        VtArray<int>* assignmentIndices)
+{
+    if (not valueData or not assignmentIndices) {
+        return;
+    }
+
+    const size_t numValues = valueData->size();
+    if (numValues == 0) {
+        return;
+    }
+
+    // We maintain a map of values to that value's index in our uniqueValues
+    // array.
+    std::unordered_map<T, size_t, ValueHash<T>, ValuesEqual<T> > valuesMap;
+    VtArray<T> uniqueValues;
+    VtArray<int> uniqueIndices;
+
+    for (size_t i = 0; i < assignmentIndices->size(); ++i) {
+        int index = (*assignmentIndices)[i];
+
+        if (index < 0 or static_cast<size_t>(index) >= numValues) {
+            // This is an unassigned or otherwise unknown index, so just keep it.
+            uniqueIndices.push_back(index);
+            continue;
+        }
+
+        const T value = (*valueData)[index];
+
+        int uniqueIndex = -1;
+
+        auto inserted = valuesMap.insert(
+            std::pair<T, size_t>(value, uniqueValues.size()));
+        if (inserted.second) {
+            // This is a new value, so add it to the array.
+            uniqueValues.push_back(value);
+            uniqueIndex = uniqueValues.size() - 1;
+        } else {
+            // This is an existing value, so re-use the original's index.
+            uniqueIndex = inserted.first->second;
+        }
+
+        uniqueIndices.push_back(uniqueIndex);
+    }
+
+    // If we reduced the number of values by merging, copy the results back.
+    if (uniqueValues.size() < numValues) {
+        (*valueData) = uniqueValues;
+        (*assignmentIndices) = uniqueIndices;
+    }
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<float>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<float>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<GfVec2f>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<GfVec2f>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<GfVec3f>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<GfVec3f>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<GfVec4f>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<GfVec4f>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(
+        const MFnMesh& mesh,
+        TfToken *interpolation,
+        VtArray<int>* assignmentIndices)
+{
+    if (not interpolation or
+            not assignmentIndices or
+            assignmentIndices->size() == 0) {
+        return;
+    }
+
+    // Use -2 as the initial "un-stored" sentinel value, since -1 is the
+    // default unauthored value index for primvars.
+    int numPolygons = mesh.numPolygons();
+    VtArray<int> uniformAssignments;
+    uniformAssignments.assign((size_t)numPolygons, -2);
+
+    int numVertices = mesh.numVertices();
+    VtArray<int> vertexAssignments;
+    vertexAssignments.assign((size_t)numVertices, -2);
+
+    // We assume that the data is constant/uniform/vertex until we can
+    // prove otherwise that two components have differing values.
+    bool isConstant = true;
+    bool isUniform = true;
+    bool isVertex = true;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        int faceIndex = itFV.faceId();
+        int vertexIndex = itFV.vertId();
+
+        int assignedIndex = (*assignmentIndices)[fvi];
+
+        if (isConstant) {
+            if (assignedIndex != (*assignmentIndices)[0]) {
+                isConstant = false;
+            }
+        }
+
+        if (isUniform) {
+            if (uniformAssignments[faceIndex] < -1) {
+                // No value for this face yet, so store one.
+                uniformAssignments[faceIndex] = assignedIndex;
+            } else if (assignedIndex != uniformAssignments[faceIndex]) {
+                isUniform = false;
+            }
+        }
+
+        if (isVertex) {
+            if (vertexAssignments[vertexIndex] < -1) {
+                // No value for this vertex yet, so store one.
+                vertexAssignments[vertexIndex] = assignedIndex;
+            } else if (assignedIndex != vertexAssignments[vertexIndex]) {
+                isVertex = false;
+            }
+        }
+
+        if (not isConstant and not isUniform and not isVertex) {
+            // No compression will be possible, so stop trying.
+            break;
+        }
+    }
+
+    if (isConstant) {
+        assignmentIndices->resize(1);
+        *interpolation = UsdGeomTokens->constant;
+    } else if (isUniform) {
+        *assignmentIndices = uniformAssignments;
+        *interpolation = UsdGeomTokens->uniform;
+    } else if(isVertex) {
+        *assignmentIndices = vertexAssignments;
+        *interpolation = UsdGeomTokens->vertex;
+    } else {
+        *interpolation = UsdGeomTokens->faceVarying;
+    }
+}
+
+bool
+PxrUsdMayaUtil::AddUnassignedUVIfNeeded(
+        VtArray<GfVec2f>* uvData,
+        VtArray<int>* assignmentIndices,
+        int* unassignedValueIndex,
+        const GfVec2f& defaultUV)
+{
+    if (not assignmentIndices or assignmentIndices->empty()) {
+        return false;
+    }
+
+    *unassignedValueIndex = -1;
+
+    for (size_t i = 0; i < assignmentIndices->size(); ++i) {
+        if ((*assignmentIndices)[i] >= 0) {
+            // This component has an assignment, so skip it.
+            continue;
+        }
+
+        // We found an unassigned index. Add the unassigned value to uvData
+        // if we haven't already.
+        if (*unassignedValueIndex < 0) {
+            if (uvData) {
+                uvData->push_back(defaultUV);
+            }
+            *unassignedValueIndex = uvData->size() - 1;
+        }
+
+        // Assign the component the unassigned value index.
+        (*assignmentIndices)[i] = *unassignedValueIndex;
+    }
+
+    return true;
 }
 
 bool

@@ -27,6 +27,7 @@
 /// \file arch/debugger.h
 /// Routines for interacting with a debugger.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/attributes.h"
 
 /// Stop in a debugger.
@@ -51,6 +52,7 @@
 /// attached terminal by putting the process into the foreground or
 /// background.
 /// 
+ARCH_API
 void ArchDebuggerTrap() ARCH_NOINLINE;
 
 /// Cause debug traps to wait for the debugger or not.
@@ -60,6 +62,7 @@ void ArchDebuggerTrap() ARCH_NOINLINE;
 /// a debugger to continue the process.  The process will not wait
 /// again until another call to this function with \p wait \c true.
 /// 
+ARCH_API
 void ArchDebuggerWait(bool wait);
 
 /// Attach a debugger.
@@ -71,11 +74,13 @@ void ArchDebuggerWait(bool wait);
 ///
 /// Returns true if ARCH_DEBUGGER is set and the debugger was successfully
 /// launched, otherwise returns false.
+ARCH_API
 bool ArchDebuggerAttach() ARCH_NOINLINE;
 
 /// Test if a debugger is attached
 ///
 /// Attempts to detect if a debugger is currently attached to the process.
+ARCH_API
 bool ArchDebuggerIsAttached() ARCH_NOINLINE;
 
 /// Stop in the debugger.

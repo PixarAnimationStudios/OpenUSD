@@ -61,7 +61,7 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
 
     // Can't use GetTaskContextData because the lightingShader
     // is optional.
-    VtValue lightingShader = (*ctx)[HdTokens->lightingShader];
+    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
 
     // it's possible to not set lighting shader to HdRenderPassState.
     // Hd_DefaultLightingShader will be used in that case.

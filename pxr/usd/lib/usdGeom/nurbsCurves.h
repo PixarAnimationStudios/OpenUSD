@@ -48,20 +48,20 @@ class SdfAssetPath;
 
 /// \class UsdGeomNurbsCurves
 ///
-/// Nurbs curves are analagous to Maya Nurbs Curves,  used for 
-/// interchange of rigging and modeling curves.  Unlike Maya Curves, this 
-/// curve spec supports batching of multiple curves into a single prim and 
-/// widths in the schema.  Unlike maya, we require 
+/// This schema is analagous to NURBS Curves in packages like Maya
+/// and Houdini, often used for interchange of rigging and modeling curves.  
+/// Unlike Maya, this curve spec supports batching of multiple curves into a 
+/// single prim and widths in the schema.  Additionally, we require 
 /// 'numSegments + 2 * degree + 1' knots (2 more than maya does).  This is to
-/// be more consistent with renderman's NURBS specification.  
+/// be more consistent with RenderMan's NURBS patch specification.  
 /// 
 /// To express a periodic curve:
-/// knot[0] = knot[1] - (knots[-2] - knots[-3]; 
-/// knot[-1] = knot[-2] + (knot[2] - knots[1]);
+/// - knot[0] = knot[1] - (knots[-2] - knots[-3]; 
+/// - knot[-1] = knot[-2] + (knot[2] - knots[1]);
 /// 
 /// To express a nonperiodic curve:
-/// knot[0] = knot[1];
-/// knot[-1] = knot[-2];
+/// - knot[0] = knot[1];
+/// - knot[-1] = knot[-2];
 /// 
 /// In spite of these slight differences in the spec, curves generated in Maya
 /// should be preserved when roundtripping.

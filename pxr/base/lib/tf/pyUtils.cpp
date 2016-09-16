@@ -25,6 +25,7 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyErrorInternal.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -279,6 +280,9 @@ vector<string> TfPyGetTraceback()
         return result;
 
     TfPyLock lock;
+    // Save the exception state so we can restore it -- getting a traceback
+    // should not affect the exception state.
+    TfPyExceptionStateScope exceptionStateScope;
     try {
         object tbModule(handle<>(PyImport_ImportModule("traceback")));
         object stack = tbModule.attr("format_stack")();
@@ -290,9 +294,7 @@ vector<string> TfPyGetTraceback()
         }
     } catch (boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
-        PyErr_Clear();
     }
-
     return result;
 }
 

@@ -134,11 +134,8 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 
     _InitCaps();
 
-    // Sync the cameras
-    index.SyncCameras();
-
-    // Sync the lights
-    index.SyncLights();
+    // Sync the scene state prims
+    index.SyncSprims();
 
     // Sync the draw targets
     index.SyncDrawTargets();

@@ -77,9 +77,6 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-a" , "-append" , MSyntax::kBoolean);
     syntax.addFlag("-f" , "-file" , MSyntax::kString);
 
-    syntax.addFlag("-atp" , "-attrprefix", MSyntax::kString);
-    syntax.makeFlagMultiUse("-attrprefix");
-
     syntax.addFlag("-chr" , "-chaser", MSyntax::kString);
     syntax.makeFlagMultiUse("-chaser");
 

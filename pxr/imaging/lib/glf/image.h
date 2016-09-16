@@ -122,6 +122,9 @@ public:
     /// Returns the number of bytes per pixel.
     virtual int GetBytesPerPixel() const = 0;
 
+    /// Returns the number of mips available.
+    virtual int GetNumMipLevels() const = 0;
+
     /// Returns whether the iamge is in the sRGB color space.
     virtual bool IsColorSpaceSRGB() const = 0;
 

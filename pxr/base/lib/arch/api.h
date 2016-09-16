@@ -1,5 +1,3 @@
--- glslfx version 0.1
-
 //
 // Copyright 2016 Pixar
 //
@@ -23,32 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef ARCH_API_H
+#define ARCH_API_H
 
---- This is what an import might look like.
---- #import $TOOLS/hd/shaders/simpleLightingShader.glslfx
+#include "pxr/base/arch/export.h"
 
-#import $TOOLS/glf/shaders/pcfShader.glslfx
-#import $TOOLS/glf/shaders/simpleLighting.glslfx
+#if defined(ARCH_STATIC)
+#   define ARCH_API
+#   define ARCH_LOCAL
+#else
+#   if defined(ARCH_EXPORTS)
+#       define ARCH_API ARCH_EXPORT
+#       define ARCH_API_TEMPLATE_CLASS(...)
+#       define ARCH_API_TEMPLATE_STRUCT(...)
+#   else
+#       define ARCH_API ARCH_IMPORT
+#       define ARCH_API_TEMPLATE_CLASS(...) extern template class ARCH_API __VA_ARGS__
+#       define ARCH_API_TEMPLATE_STRUCT(...) extern template struct ARCH_API __VA_ARGS__
+#   endif
+#   define ARCH_LOCAL ARCH_HIDDEN
+#endif
 
--- configuration
-{
-    "techniques": {
-        "default": {
-            "fragmentShader" : {
-                "source": [
-                    "PCF.ShadowFilterFragmentOnly",
-                    "SimpleLighting.SimpleLighting",
-                    "LightingOverride.SimpleLighting"
-                ]
-            }
-        }
-    }
-}
-
--- glsl LightingOverride.SimpleLighting
-
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
-{
-    return simpleLightingMaterial(vec4(color,1), vec4(Peye,1), Neye, vec4(1)).rgb;
-}
-
+#endif

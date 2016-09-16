@@ -23,17 +23,15 @@
 //
 #include "pxr/imaging/hd/drawTarget.h"
 
+#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hd/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hd/camera.h"
-
-#include "pxr/imaging/hd/drawTargetAttachmentDescArray.h"
-
-#include "pxr/base/tf/stl.h"
-
+#include "pxr/imaging/hd/sprim.h"
 
 #include "pxr/imaging/glf/glContext.h"
+
+#include "pxr/base/tf/stl.h"
 
 static const std::string DEPTH_ATTACHMENT_NAME = "depth";
 
@@ -171,7 +169,7 @@ HdDrawTarget::WriteToFile(const std::string &attachment,
         return false;
     }
 
-    HdCameraSharedPtr camera = _GetCamera();
+    HdSprimSharedPtr camera = _GetCamera();
     if (!camera) {
         TF_WARN("Missing camera\n");
         return false;
@@ -259,10 +257,10 @@ HdDrawTarget::_SetAttachments(const HdDrawTargetAttachmentDescArray &attachments
 }
 
 
-HdCameraSharedPtr
+HdSprimSharedPtr
 HdDrawTarget::_GetCamera() const
 {
-    return _delegate->GetRenderIndex().GetCamera(_cameraId);
+    return _delegate->GetRenderIndex().GetSprim(_cameraId);
 }
 
 void

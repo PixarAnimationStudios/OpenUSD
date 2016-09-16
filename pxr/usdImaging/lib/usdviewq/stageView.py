@@ -1306,13 +1306,18 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glEnable(GL.GL_BLEND)
 
-        frustum = self.computeGfCamera().frustum
+        gfCamera = self.computeGfCamera()
+        frustum = gfCamera.frustum
 
         cam_pos = frustum.position
         cam_up = frustum.ComputeUpVector()
         cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
 
         self.setupOpenGLViewMatricesForFrustum(frustum)
+
+        # Set the clipping planes.
+        self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
+                                         gfCamera.clippingPlanes]
 
         if self._nodes:
             

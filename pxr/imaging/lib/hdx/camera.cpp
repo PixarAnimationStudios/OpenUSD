@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hdx/camera.h"
+
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
@@ -29,37 +30,40 @@
 
 #include "pxr/base/gf/frustum.h"
 
-HdCamera::HdCamera(HdSceneDelegate *delegate, SdfPath const &id)
-    : _delegate(delegate)
-    , _id(id)
+TF_DEFINE_PUBLIC_TOKENS(HdxCameraTokens, HDX_CAMERA_TOKENS);
+
+HdxCamera::HdxCamera(HdSceneDelegate *delegate, SdfPath const &id)
+    : HdSprim(delegate, id)
 {
 }
 
-HdCamera::~HdCamera()
+HdxCamera::~HdxCamera()
 {
 }
 
 void
-HdCamera::Sync()
+HdxCamera::Sync()
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_delegate)) {
+    SdfPath const &id = GetID();
+    HdSceneDelegate *delegate = GetDelegate();
+    if (not TF_VERIFY(delegate)) {
         return;
     }
 
-    // HdCamera communicates to the scene graph and caches all interesting
+    // HdxCamera communicates to the scene graph and caches all interesting
     // values within this class.
 
     // later on Get() is called from TaskState (RenderPass) to perform
     // aggregation/pre-computation, in order to make the shader execution
     // efficient.
     HdChangeTracker& changeTracker = 
-                                _delegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetCameraDirtyBits(_id);
+                                delegate->GetRenderIndex().GetChangeTracker();
+    HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
     
-    if (bits & HdChangeTracker::DirtyParams) {
+    if (bits & DirtyParams) {
         GfMatrix4d worldToViewMatrix;
         GfMatrix4d worldToViewInverseMatrix;
         GfMatrix4d projectionMatrix;
@@ -70,7 +74,7 @@ HdCamera::Sync()
         // XXX: we will soon remove the GfFrustum interface and
         // use view/projection matrices from Phd too.
 
-        VtValue vfrustum = _delegate->Get(_id, HdTokens->cameraFrustum);
+        VtValue vfrustum = delegate->Get(id, HdxCameraTokens->cameraFrustum);
         if (not vfrustum.IsEmpty()) {
             // XXX This branch can be removed once we only support 
             //     camera matrices
@@ -83,53 +87,54 @@ HdCamera::Sync()
 
             // Storing the camera frustum in the render index so we can
             // recalculate it later to fit specific windows
-            _cameraValues[HdTokens->cameraFrustum] = frustum;
+            _cameraValues[HdxCameraTokens->cameraFrustum] = frustum;
         } else {
             // XXX Line below to be removed when we only support matrices
-            _cameraValues[HdTokens->cameraFrustum] = VtValue();
+            _cameraValues[HdxCameraTokens->cameraFrustum] = VtValue();
 
             // view/projection matrices
             VtValue vViewMatrix
-                = _delegate->Get(_id, HdShaderTokens->worldToViewMatrix);
+                = delegate->Get(id, HdxCameraTokens->worldToViewMatrix);
             VtValue vProjMatrix
-                = _delegate->Get(_id, HdShaderTokens->projectionMatrix);
+                = delegate->Get(id, HdxCameraTokens->projectionMatrix);
 
             TF_VERIFY(vViewMatrix.IsHolding<GfMatrix4d>() and
                       vProjMatrix.IsHolding<GfMatrix4d>());
-            
+
             worldToViewMatrix        = vViewMatrix.Get<GfMatrix4d>();
             worldToViewInverseMatrix = worldToViewMatrix.GetInverse();
             projectionMatrix         = vProjMatrix.Get<GfMatrix4d>();
         }
 
-        _cameraValues[HdShaderTokens->worldToViewMatrix] =
+        _cameraValues[HdxCameraTokens->worldToViewMatrix] =
             VtValue(worldToViewMatrix);
-        _cameraValues[HdShaderTokens->worldToViewInverseMatrix] =
+        _cameraValues[HdxCameraTokens->worldToViewInverseMatrix] =
             VtValue(worldToViewInverseMatrix);
-        _cameraValues[HdShaderTokens->projectionMatrix] =
+        _cameraValues[HdxCameraTokens->projectionMatrix] =
             VtValue(projectionMatrix);
     }
 
-    if (bits & HdChangeTracker::DirtyWindowPolicy) {
-        VtValue vWindowPolicy = _delegate->Get(_id, HdTokens->windowPolicy);
+    if (bits & DirtyWindowPolicy) {
+        VtValue vWindowPolicy = delegate->Get(id, HdxCameraTokens->windowPolicy);
         if (vWindowPolicy.IsHolding<CameraUtilConformWindowPolicy>()) {
-            _cameraValues[HdTokens->windowPolicy] = 
+            _cameraValues[HdxCameraTokens->windowPolicy] = 
                 vWindowPolicy.UncheckedGet<CameraUtilConformWindowPolicy>();
         }
     }
 
-    if (bits & HdChangeTracker::DirtyClipPlanes) {
-        _cameraValues[HdTokens->clipPlanes] = _delegate->GetClipPlanes(_id);
+    if (bits & DirtyClipPlanes) {
+        _cameraValues[HdxCameraTokens->clipPlanes] = delegate->GetClipPlanes(id);
     }
 }
 
+/* virtual */
 VtValue
-HdCamera::Get(TfToken const &name)
+HdxCamera::Get(TfToken const &name) const
 {
     VtValue r;
 
     TF_VERIFY(TfMapLookup(_cameraValues, name, &r),
-            "HdCamera - Unknown %s\n",
+            "HdxCamera - Unknown %s\n",
             name.GetText());
 
     return r;

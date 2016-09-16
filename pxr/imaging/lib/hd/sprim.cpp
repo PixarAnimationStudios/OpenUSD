@@ -1,5 +1,3 @@
--- glslfx version 0.1
-
 //
 // Copyright 2016 Pixar
 //
@@ -23,19 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hd/sprim.h"
 
---- This is what an import might look like.
---- #import $TOOLS/hd/shaders/defaultLightingShader.glslfx
+#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 
-#import $TOOLS/hd/shaders/simpleLighting.glslfx
-
--- configuration
+HdSprim::HdSprim(HdSceneDelegate *delegate, SdfPath const &id)
+    : _delegate(delegate)
+    , _id(id)
 {
-    "techniques": {
-        "default": {
-            "fragmentShader" : {
-                "source": [ "SimpleLighting.DefaultLighting" ]
-            }
-        }
-    }
+}
+
+HdSprim::~HdSprim()
+{
 }

@@ -28,6 +28,7 @@
 /// \ingroup group_arch_Diagnostics
 /// Architecture-specific symbol lookup routines.
 
+#include "pxr/base/arch/api.h"
 #include <string>
 
 /// Returns information about the address \p address in the running program.
@@ -43,6 +44,7 @@
 /// This will return \c false if \c NULL is passed to \p address.
 ///
 /// \ingroup group_arch_Diagnostics
+ARCH_API
 bool ArchGetAddressInfo(void* address,
                         std::string* objectPath, void** baseAddress,
                         std::string* symbolName, void** symbolAddress);

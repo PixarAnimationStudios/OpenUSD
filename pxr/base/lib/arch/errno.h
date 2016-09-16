@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// Functions for dealing with system errors.
 
+#include "pxr/base/arch/api.h"
 #include <string>
 
 /// \addtogroup group_arch_SystemFunctions
@@ -39,12 +40,12 @@
 /// from errno. POSIX.1c defines errno as a macro which provides access to a
 /// thread-local integer. This function uses strerror_r, which is thread-safe.
 /// \overload
-std::string ArchStrerror();
+ARCH_API std::string ArchStrerror();
 
 /// Return the error string for the specified value of errno.
 ///
 /// This function uses strerror_r, which is thread-safe.
-std::string ArchStrerror(int errorCode);
+ARCH_API std::string ArchStrerror(int errorCode);
 
 ///@}
 
