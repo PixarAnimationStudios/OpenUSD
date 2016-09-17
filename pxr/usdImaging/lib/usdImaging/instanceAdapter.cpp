@@ -762,6 +762,8 @@ UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
             valueCache->GetInstanceIndices(cachePath);
         if (requestedBits & HdChangeTracker::DirtyTransform)
             valueCache->GetInstancerTransform(cachePath);
+        if (requestedBits & HdChangeTracker::DirtySurfaceShader)
+            valueCache->GetSurfaceShader(cachePath);
 
         rproto.adapter->UpdateForTimePrep(
             _GetPrim(rproto.path), cachePath, time, requestedBits,
@@ -851,6 +853,10 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             // when applying the instancer transform.
             GfMatrix4d& childXf = _GetValueCache()->GetTransform(cachePath);
             childXf = childXf * GetRootTransform().GetInverse();
+        }
+
+        if (requestedBits & HdChangeTracker::DirtySurfaceShader) {
+            valueCache->GetSurfaceShader(cachePath) = GetShaderBinding(prim);
         }
 
     } else {
