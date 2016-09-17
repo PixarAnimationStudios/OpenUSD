@@ -58,6 +58,10 @@ void wrapUsdTimeCode()
         .def("Default", &UsdTimeCode::Default)
         .staticmethod("Default")
         
+        .def("SafeStep", &UsdTimeCode::SafeStep,
+             (arg("maxValue")=1e6, arg("maxCompression")=10.0))
+        .staticmethod("SafeStep")
+
         .def("IsDefault", &UsdTimeCode::IsDefault)
         .def("IsNumeric", &UsdTimeCode::IsNumeric)
         .def("GetValue", &UsdTimeCode::GetValue)
