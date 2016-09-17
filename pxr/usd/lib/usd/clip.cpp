@@ -546,7 +546,13 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
             const TimeMapping& m2 = times[i+1];
 
             if (m1.second <= t and t <= m2.second) {
-                timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
+                if (m1.second == m2.second) {
+                    timeSamples.insert(m1.first);
+                    timeSamples.insert(m2.first);
+                }
+                else {
+                    timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
+                }
             }
         }
     }
