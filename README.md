@@ -150,6 +150,9 @@ $ export PYTHONPATH=$PYTHONPATH:USD_INSTALL_ROOT/lib/python
 $ usdview extras/usd/tutorials/convertingLayerFormats/sphere.usda
 ```
 
+> Note: Replace ```USD_INSTALL_ROOT``` with the location set in your build,
+> usually via ```CMAKE_INSTALL_PREFIX```.
+
 Contributing
 ------------
 
