@@ -38,13 +38,14 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/patchIndex.h"
 #include "pxr/base/vt/value.h"
 
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/mpl/vector/vector30.hpp>
+#include <boost/mpl/vector/vector40.hpp>
 
 #include <iosfwd>
 
@@ -75,7 +76,7 @@ public:
     };
 
     // The valid types a HdBufferSource can be constructed from.
-    typedef boost::mpl::vector30<
+    typedef boost::mpl::vector31<
             THolder<int>,
             THolder<float>,
             THolder<double>,
@@ -103,6 +104,7 @@ public:
             THolder<GfVec2i>,
             THolder<GfVec3i>,
             THolder<GfVec4i>,
+            THolder<VtArray<HdVec4f_2_10_10_10_REV> >,
             THolder<VtArray<GfMatrix4f> >,
             THolder<VtArray<GfMatrix4d> >,
             THolder<VtArray<Hd_BSplinePatchIndex> >

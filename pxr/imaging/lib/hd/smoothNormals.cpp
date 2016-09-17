@@ -42,9 +42,10 @@ Hd_SmoothNormalsComputation::Hd_SmoothNormalsComputation(
     Hd_VertexAdjacency const *adjacency,
     HdBufferSourceSharedPtr const &points,
     TfToken const &dstName,
-    HdBufferSourceSharedPtr const &adjacencyBuilder)
+    HdBufferSourceSharedPtr const &adjacencyBuilder,
+    bool packed)
     : _adjacency(adjacency), _points(points), _dstName(dstName),
-      _adjacencyBuilder(adjacencyBuilder)
+      _adjacencyBuilder(adjacencyBuilder), _packed(packed)
 {
 }
 
@@ -53,8 +54,8 @@ Hd_SmoothNormalsComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // the datatype of normals is same as points (float or double).
     specs->push_back(HdBufferSpec(_dstName,
-                                  _points->GetGLComponentDataType(),
-                                  3));
+                                  GetGLComponentDataType(),
+                                  (_packed ? 1 : 3)));
 }
 
 TfToken const &
@@ -66,7 +67,11 @@ Hd_SmoothNormalsComputation::GetName() const
 int
 Hd_SmoothNormalsComputation::GetGLComponentDataType() const
 {
-    return _points->GetGLComponentDataType();
+    if (_packed) {
+        return GL_INT_2_10_10_10_REV;
+    } else {
+        return _points->GetGLComponentDataType();
+    }
 }
 
 bool
@@ -89,22 +94,41 @@ Hd_SmoothNormalsComputation::Resolve()
     int numPoints = _points->GetNumElements();
 
     HdBufferSourceSharedPtr normals;
+
     switch (_points->GetGLElementDataType()) {
     case GL_FLOAT_VEC3:
-        normals = HdBufferSourceSharedPtr(
-            new HdVtBufferSource(
-                _dstName, VtValue(
-                    _adjacency->ComputeSmoothNormals(
-                        numPoints,
-                        static_cast<const GfVec3f*>(_points->GetData())))));
+        if (_packed) {
+            normals = HdBufferSourceSharedPtr(
+                new HdVtBufferSource(
+                    _dstName, VtValue(
+                        _adjacency->ComputeSmoothNormalsPacked(
+                            numPoints,
+                            static_cast<const GfVec3f*>(_points->GetData())))));
+        } else {
+            normals = HdBufferSourceSharedPtr(
+                new HdVtBufferSource(
+                    _dstName, VtValue(
+                        _adjacency->ComputeSmoothNormals(
+                            numPoints,
+                            static_cast<const GfVec3f*>(_points->GetData())))));
+        }
         break;
     case GL_DOUBLE_VEC3:
-        normals = HdBufferSourceSharedPtr(
-            new HdVtBufferSource(
-                _dstName, VtValue(
-                    _adjacency->ComputeSmoothNormals(
-                        numPoints,
-                        static_cast<const GfVec3d*>(_points->GetData())))));
+        if (_packed) {
+            normals = HdBufferSourceSharedPtr(
+                new HdVtBufferSource(
+                    _dstName, VtValue(
+                        _adjacency->ComputeSmoothNormalsPacked(
+                            numPoints,
+                            static_cast<const GfVec3d*>(_points->GetData())))));
+        } else {
+            normals = HdBufferSourceSharedPtr(
+                new HdVtBufferSource(
+                    _dstName, VtValue(
+                        _adjacency->ComputeSmoothNormals(
+                            numPoints,
+                            static_cast<const GfVec3d*>(_points->GetData())))));
+        }
         break;
     default:
         TF_CODING_ERROR("Unsupported points type for computing smooth normals");

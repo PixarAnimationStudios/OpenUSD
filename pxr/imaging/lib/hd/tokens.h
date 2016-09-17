@@ -79,6 +79,7 @@
     (linear)                                    \
     (nonperiodic)                               \
     (normals)                                   \
+    (packedNormals)                             \
     (params)                                    \
     (patchParam)                                \
     (periodic)                                  \

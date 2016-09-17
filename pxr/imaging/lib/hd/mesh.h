@@ -94,6 +94,9 @@ public:
     /// Returns whether GPU refinement is enabled or not.
     static bool IsEnabledRefineGPU();
 
+    /// Returns whether packed (10_10_10 bits) normals to be used
+    static bool IsEnabledPackedNormals();
+
     /// Configure geometric style of drawItems for \p reprName
     /// HdMesh can have up to 2 descriptors for some complex styling
     /// (FeyRay, Outline)
@@ -168,6 +171,7 @@ private:
     HdTopology::ID _topologyId;
     int _customDirtyBitsInUse;
     bool _doubleSided;
+    bool _packedNormals;
     HdCullStyle _cullStyle;
 
     typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;

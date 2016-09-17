@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hd/glUtils.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -68,6 +69,10 @@ public:
                                           GfVec3f const * pointsPtr) const;
     VtArray<GfVec3d> ComputeSmoothNormals(int numPoints,
                                           GfVec3d const * pointsPtr) const;
+    VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
+                                          GfVec3f const * pointsPtr) const;
+    VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
+                                          GfVec3d const * pointsPtr) const;
 
     /// Returns the adjacency builder computation.
     /// This computaions generates adjacency table on CPU.
@@ -88,7 +93,8 @@ public:
     /// produced by AdjacencyBuilderComputation.
     HdBufferSourceSharedPtr GetSmoothNormalsComputation(
         HdBufferSourceSharedPtr const &points,
-        TfToken const &dstName);
+        TfToken const &dstName,
+        bool packed=false);
 
     /// Returns the smooth normal computation on GPU.
     /// This computation requires adjacency table on GPU produced by
