@@ -393,8 +393,13 @@ namespace {
 
             // insert the sample pair into the cliptimes
             currentClipTimes.push_back(GfVec2d(startTimeCode, startTimeCode));
-            currentClipTimes.push_back(GfVec2d(startTimeCode + timeSpent,
-                                               endTimeCode));
+
+            // We need not author duplicate pairs
+            if (timeSpent != 0) {
+                currentClipTimes.push_back(GfVec2d(startTimeCode + timeSpent,
+                                           endTimeCode));
+            }
+
             resultLayer
                 ->GetPrimAtPath(stitchPath)
                 ->SetInfo(clipTimeKey, VtValue(currentClipTimes));
