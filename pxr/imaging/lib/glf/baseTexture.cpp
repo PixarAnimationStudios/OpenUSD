@@ -128,7 +128,7 @@ GlfBaseTexture::_UpdateTexture(GlfBaseTextureDataConstPtr texData)
 
 void 
 GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
-                bool const generateMipmap,
+                bool const useMipmaps,
                 int const unpackCropTop,
                 int const unpackCropBottom,
                 int const unpackCropLeft,
@@ -141,24 +141,48 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
 
         // Check if mip maps have been requested, if so, it will either
         // enable automatic generation or use the ones loaded in cpu memory
-        const int numMipLevels = texData->GetNumMipLevels();
-        if (generateMipmap) {
-            if( numMipLevels > 1 ) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, numMipLevels - 1);
+        int numMipLevels = 1;
+
+        if (useMipmaps) {
+            numMipLevels = texData->GetNumMipLevels();
+            
+            // When we are using uncompressed textures and late cropping
+            // we won't use cpu loaded mips.
+            if (not texData->IsCompressed() and 
+                (unpackCropRight or unpackCropLeft or 
+                unpackCropTop or unpackCropBottom)) {
+                    numMipLevels = 1;
+            }
+            if (numMipLevels > 1) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, numMipLevels-1);
             } else {
                 glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
             }
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
         }
 
-        // Uncompressed textures can have cropping and other special 
-        // behaviours.
-        if (not texData->IsCompressed()) {
+        if (texData->IsCompressed()) {
+            // Compressed textures don't have as many options, so 
+            // we just need to send the mips to the driver.
+            for (int i = 0 ; i < numMipLevels; i++) {
+                glCompressedTexImage2D( GL_TEXTURE_2D, i,
+                                texData->GLInternalFormat(),
+                                texData->ResizedWidth(i),
+                                texData->ResizedHeight(i),
+                                0,
+                                texData->ComputeBytesUsedByMip(i),
+                                texData->GetRawBuffer(i));
+            }
+        } else {
+            // Uncompressed textures can have cropping and other special 
+            // behaviours.
             if (GlfGetNumElements(texData->GLFormat()) == 1) {
-                        GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
-                        glTexParameteriv(
-                            GL_TEXTURE_2D,
-                            GL_TEXTURE_SWIZZLE_RGBA, 
-                            swizzleMask);
+                GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
+                glTexParameteriv(
+                    GL_TEXTURE_2D,
+                    GL_TEXTURE_SWIZZLE_RGBA, 
+                    swizzleMask);
             }
 
             // If we are not sending full mipchains to the gpu then we can 
@@ -198,34 +222,32 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glPixelStorei(GL_UNPACK_SKIP_PIXELS, unpackSkipPixels);
                 glPixelStorei(GL_UNPACK_SKIP_ROWS, unpackSkipRows);
-            }
-        }
 
-        // Send the mips to the driver now, either compressed or uncompressed.
-        for (int i = 0 ; i < numMipLevels; i++) {
-            if (texData->IsCompressed()) {
-                glCompressedTexImage2D( GL_TEXTURE_2D, i,
+                // Send the mip to the driver now
+                glTexImage2D( GL_TEXTURE_2D, 0,
                                 texData->GLInternalFormat(),
-                                texData->ResizedWidth(i),
-                                texData->ResizedHeight(i),
-                                0,
-                                texData->ComputeBytesUsedByMip(i),
-                                texData->GetRawBuffer(i));
-            } else {
-                glTexImage2D( GL_TEXTURE_2D, i,
-                                texData->GLInternalFormat(),
-                                texData->ResizedWidth(i),
-                                texData->ResizedHeight(i),
+                                texDataWidth,
+                                texDataHeight,
                                 0,
                                 texData->GLFormat(),
                                 texData->GLType(),
-                                texData->GetRawBuffer(i));
+                                texData->GetRawBuffer(0));
+
+                // Reset the OpenGL state if we have modify it previously
+                glPopClientAttrib();
+            } else {
+                // Send the mips to the driver now
+                for (int i = 0 ; i < numMipLevels; i++) {
+                    glTexImage2D( GL_TEXTURE_2D, i,
+                                    texData->GLInternalFormat(),
+                                    texData->ResizedWidth(i),
+                                    texData->ResizedHeight(i),
+                                    0,
+                                    texData->GLFormat(),
+                                    texData->GLType(),
+                                    texData->GetRawBuffer(i));
+                }
             }
-        }
-        
-        // Reset the OpenGL state if we have modify it previously
-        if (not texData->IsCompressed() and numMipLevels == 1) {
-            glPopClientAttrib();
         }
 
         glBindTexture(GL_TEXTURE_2D, 0);
