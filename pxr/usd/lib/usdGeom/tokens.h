@@ -111,6 +111,7 @@
     ((primvarsDisplayOpacity, "primvars:displayOpacity")) \
     (projection) \
     (proxy) \
+    (proxyPrim) \
     (purpose) \
     (radius) \
     (ranges) \
@@ -247,6 +248,7 @@
 /// \li <b>primvarsDisplayOpacity</b> - UsdGeomGprim
 /// \li <b>projection</b> - UsdGeomCamera
 /// \li <b>proxy</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
+/// \li <b>proxyPrim</b> - UsdGeomImageable
 /// \li <b>purpose</b> - UsdGeomImageable
 /// \li <b>radius</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere
 /// \li <b>ranges</b> - UsdGeomNurbsCurves

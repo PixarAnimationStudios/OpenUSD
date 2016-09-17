@@ -162,10 +162,33 @@ class "Imageable" (
         \\em proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management."""
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management."""
+    )
+    rel proxyPrim (
+        doc = """The \\em proxyPrim relationship allows us to link a
+        prim whose \\em purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        \\li In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        \\li DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        \\li With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render"."""
     )
 }
 
