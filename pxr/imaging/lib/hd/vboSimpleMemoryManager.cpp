@@ -386,6 +386,12 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name)
                                  _numElements);
 }
 
+size_t
+HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetMaxNumElements() const
+{
+    return _bufferArray->GetMaxNumElements();
+}
+
 HdBufferResourceSharedPtr
 HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource() const
 {

@@ -583,6 +583,12 @@ HdVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) cons
     return result;
 }
 
+size_t
+HdVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
+{
+    return _stripedBufferArray->GetMaxNumElements();
+}
+
 HdBufferResourceSharedPtr
 HdVBOMemoryManager::_StripedBufferArrayRange::GetResource() const
 {

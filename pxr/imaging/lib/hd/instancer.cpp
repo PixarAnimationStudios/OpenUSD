@@ -268,14 +268,24 @@ HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     //   output  : [<0>,0,3,7,  <1>,1,3,7,  <2>,0,4,7,  <3>,1,4,7,
     //              <4>,0,5,7,  <5>,1,5,7,  <6>,0,3,8, ...]
 
-    int nTotal = 1;
+    size_t nTotal = 1;
     for (int i = 0; i < instancerNumLevels; ++i) {
         nTotal *= instanceIndicesArray[i].size();
     }
     int instanceIndexWidth = 1 + instancerNumLevels;
+
+    // if it's going to be too big, issue a warning and just draw the first
+    // instance.
+    if ((nTotal*instanceIndexWidth) > indexRange->GetMaxNumElements()) {
+        TF_WARN("Can't draw prototype %s (too many instances) : "
+                "nest level=%d, # of instances=%ld",
+                prototypeId.GetText(), instancerNumLevels, nTotal);
+        nTotal = 1;
+    }
+
     VtIntArray instanceIndices(nTotal * instanceIndexWidth);
     std::vector<int> currents(instancerNumLevels);
-    for (int j = 0; j < nTotal; ++j) {
+    for (size_t j = 0; j < nTotal; ++j) {
         instanceIndices[j*instanceIndexWidth] = j; // global idx
         for (int i = 0; i < instancerNumLevels; ++i) {
             instanceIndices[j*instanceIndexWidth + i + 1] =
