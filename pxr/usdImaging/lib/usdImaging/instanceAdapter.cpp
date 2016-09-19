@@ -92,18 +92,27 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         return SdfPath();
     }
 
-    // Store away the path of the given instance prim to use as the
-    // instancer for Hydra if this is the first time we've seen this 
-    // (master, shader binding) pair.
-    const SdfPath& instanceShaderBinding = GetShaderBinding(prim);
-    const SdfPath& instancerPath = 
-        _masterToInstancerMap[masterPrim.GetPath()].insert(
-            std::make_pair(instanceShaderBinding, instancePath)).first->second;
+    // This is a shared_ptr to the prim adapter for the current instancePrim.
+    const UsdImagingPrimAdapterSharedPtr instancedPrimAdapter = 
+        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
 
     // This is a shared_ptr to ourself. The InstancerContext requires the
     // adapter shared_ptr.
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter = 
                         _GetSharedFromThis();
+
+    // If the current prim is drawable (instancedPrimAdapter is non-NULL), we
+    // ask it to give us the shader binding.  Otherwise, this
+    // (instancerAdapter) will provide the shader binding.
+    const SdfPath& instanceShaderBinding = (instancedPrimAdapter
+            ? instancedPrimAdapter : instancerAdapter)->GetShaderBinding(prim);
+
+    // Store away the path of the given instance prim to use as the
+    // instancer for Hydra if this is the first time we've seen this 
+    // (master, shader binding) pair.
+    const SdfPath& instancerPath = 
+        _masterToInstancerMap[masterPrim.GetPath()].insert(
+            std::make_pair(instanceShaderBinding, instancePath)).first->second;
 
     _InstancerData& instancerData = _instancerData[instancerPath];
     instancerData.dirtyBits = HdChangeTracker::AllDirty;
@@ -203,14 +212,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     //
     // In this case, we dispatch to the underlying PrimAdapter and disable
     // instancing.
-    if (const UsdImagingPrimAdapterSharedPtr instanceAdapter = 
-        _GetPrimAdapter(prim, /* ignoreInstancing = */ true)) {
-
+    if (instancedPrimAdapter) {
         UsdTreeIterator treeIt(prim);
         const SdfPath protoPath = 
             _InsertProtoRprim(&treeIt, TfToken(),
                               instanceShaderBinding,
-                              SdfPath(), instanceAdapter, index);
+                              SdfPath(), instancedPrimAdapter, index);
         instancePath = SdfPath();
     }
 
@@ -275,15 +282,20 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
     UsdPrim const& prim = **it;
     SdfPath protoPath;
 
-    // If this prim is an instance, we can use the given instanceShaderBinding.
+    // Talk to the prim's native adapter to do population and ShaderBinding
+    // queries on our behalf.
+    UsdImagingPrimAdapterSharedPtr const& adapter = 
+                        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
+
+    // If this prim is an instance, we can use the given instanceShaderBinding
     // Otherwise, this is a prim in a master; we need to see if there's any
     // applicable bindings authored and only fallback to the instance binding
     // if there isn't one.
-    auto getShaderForPrim = [this, instanceShaderBinding](UsdPrim const& prim) {
+    auto getShaderForPrim = [adapter, instanceShaderBinding](UsdPrim const& prim) {
         if (prim.IsInstance()) { 
             return instanceShaderBinding;
         }
-        SdfPath shaderId = this->GetShaderBinding(prim);
+        SdfPath shaderId = adapter->GetShaderBinding(prim);
         return shaderId.IsEmpty() ? instanceShaderBinding : shaderId;
     };
 
@@ -301,10 +313,6 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
                                        protoName,
                                        getShaderForPrim(prim),
                                        instancerAdapter };
-
-    // Talk to the prim's native adapter to do population on our behalf.
-    UsdImagingPrimAdapterSharedPtr const& adapter = 
-                        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
 
     // There is no need to call AddDependency, as it will be picked up via the
     // instancer context.
