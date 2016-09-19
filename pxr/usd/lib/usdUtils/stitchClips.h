@@ -102,4 +102,18 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                     const double startTimeCode 
                         = std::numeric_limits<double>::max());
 
+/// A function which aggregates the topology of a set of \p clipLayerFiles
+/// for use in USD's Value Clips system. This aggregated scene topology
+/// will only include non-time-varying data, as it is for use in conjunction
+/// with the value clip metadata in a manifest layer.
+///
+/// \p topologyLayer          The layer in which topology of the 
+///                           \p clipLayerFiles will be aggregated and inserted.
+///
+/// \p clipLayerFiles         The files containing the time varying data.
+/// 
+bool 
+UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer, 
+                            const std::vector<std::string>& clipLayerFiles);
+
 #endif // _USDUTILS_STITCH_CLIPS_H_
