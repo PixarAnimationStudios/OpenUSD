@@ -221,7 +221,7 @@ TfMakeDir(string const& path, int mode)
 static bool
 Tf_MakeDirsRec(string const& path, int mode)
 {
-    string head = TfStringTrimRight(TfGetPathName(path), "/");
+    string head = TfStringTrimRight(TfGetPathName(path), "\\/");
 
     if (head.empty()) {
         return TfIsDir(path) ? true : TfMakeDir(path, mode);
