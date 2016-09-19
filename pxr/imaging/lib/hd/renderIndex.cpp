@@ -46,6 +46,7 @@
 
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
@@ -897,7 +898,12 @@ HdRenderIndex::SyncAll()
                 ((float )numSkipped / (float)dirtyIds.size()) > 0.9f;
         }
 
-    } {
+    }
+
+    // Drop the GIL before we spawn parallel tasks.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    {
         TRACE_SCOPE("Delegate Sync");
         // Dispatch synchronization work to each delegate.
         _Worker worker(&syncMap);
