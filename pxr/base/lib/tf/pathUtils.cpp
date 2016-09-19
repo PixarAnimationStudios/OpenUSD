@@ -334,20 +334,12 @@ TfNormPath(string const &inPath)
 }
 
 string
-TfPathCanonicalize(std::string const& path)
-{
-    std::string str = path;
-    std::replace(str.begin(), str.end(), '\\', '/');
-	return string(str);
-}
-
-string
 TfAbsPath(string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
 	char buffer[ARCH_PATH_MAX];
 	if (GetFullPathName(path.c_str(), ARCH_PATH_MAX, buffer, nullptr)){
-		return TfPathCanonicalize(buffer);
+		return buffer;
 	} else {
 		printf("TfAbsPath failed on %s with error code %d\n", 
 			path.c_str(), GetLastError());

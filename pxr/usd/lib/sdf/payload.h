@@ -69,7 +69,7 @@ public:
 
     /// Sets a new asset path for the layer the payload uses.
     void SetAssetPath(const std::string &assetPath) {
-        _assetPath = TfPathCanonicalize(assetPath);
+        _assetPath = assetPath;
     }
 
     /// Returns the scene path of the prim for the payload.

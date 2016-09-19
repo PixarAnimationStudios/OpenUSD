@@ -53,8 +53,7 @@ int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
 
     return n;
 #elif defined(ARCH_OS_WINDOWS)
-    int n = _vscprintf(format, ap) // _vscprintf doesn't count
-                              + 1; // terminating '\0'
+    int n = _vscprintf(format, ap);
 	if (n < size)
 		return vsnprintf_s(str, size /*size of buffer */, n, format, ap);
 	else

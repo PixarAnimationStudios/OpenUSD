@@ -555,7 +555,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
 static SdfLayerRefPtr
 _CreateNewLayer(const std::string &identifier)
 {
-    std::string ident = TfPathCanonicalize(identifier);
+    std::string ident = identifier;
     TfErrorMark mark;
     SdfLayerRefPtr rootLayer = SdfLayer::CreateNew(ident);
     if (not rootLayer) {
@@ -679,7 +679,7 @@ _OpenLayer(
     const std::string &filePath,
     const ArResolverContext &resolverContext = ArResolverContext())
 {
-	std::string path = TfPathCanonicalize(filePath);
+	std::string path = filePath;
 
     boost::optional<ArResolverContextBinder> binder;
     if (not resolverContext.IsEmpty())

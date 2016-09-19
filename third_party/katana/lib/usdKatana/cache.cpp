@@ -204,7 +204,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
     bool givenAbsPath = !TfIsRelativePath(fileName);
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) :
-                                    TfPathCanonicalize(ArchGetCwd());
+                                    ArchGetCwd();
 
     std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
 
@@ -262,10 +262,10 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
+    bool givenAbsPath = !TfIsRelativePath(fileName);
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) :
-                                    TfPathCanonicalize(ArchGetCwd());
+                                    ArchGetCwd();
 
     std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
 
