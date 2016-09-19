@@ -51,9 +51,3 @@ vec3 FallbackLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
 {
     return simpleLightingMaterial(vec4(color,1), vec4(Peye,1), Neye, vec4(1)).rgb;
 }
-
-// XXX: for short-term compatibility.
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
-{
-    return FallbackLighting(Peye, Neye, color);
-}
