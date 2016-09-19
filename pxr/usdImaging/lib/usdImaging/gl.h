@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file gl.h
+
 #pragma once
 
 #include "pxr/usdImaging/usdImaging/engine.h"
@@ -159,7 +162,7 @@ public:
         const SdfPathVector& paths, 
         RenderParams params,
         unsigned int pickResolution,
-        std::function< SdfPath(const SdfPath&, const int) > pathTranslator,
+        PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
 
     virtual VtDictionary GetResourceAllocation() const;
