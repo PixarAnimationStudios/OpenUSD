@@ -600,8 +600,16 @@ Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
     TimeMapping m1, m2;
     _GetBracketingTimeSegment(times, extTime, &m1, &m2);
 
+    // Early out in some special cases to avoid unnecessary
+    // math operations that could introduce precision issues.
     if (m1.first == m2.first) {
         return m1.second;
+    }
+    else if (extTime == m1.first) {
+        return m1.second;
+    }
+    else if (extTime == m2.first) {
+        return m2.second;
     }
 
     return (m2.second - m1.second) / (m2.first - m1.first)
@@ -613,8 +621,16 @@ Usd_Clip::ExternalTime
 Usd_Clip::_TranslateTimeToExternal(
     InternalTime intTime, TimeMapping m1, TimeMapping m2) const
 {
+    // Early out in some special cases to avoid unnecessary
+    // math operations that could introduce precision issues.
     if (m1.second == m2.second) {
         return m1.first;
+    }
+    else if (intTime == m1.second) {
+        return m1.first;
+    }
+    else if (intTime == m2.second) {
+        return m2.first;
     }
 
     return (m2.first - m1.first) / (m2.second - m1.second)
