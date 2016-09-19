@@ -412,7 +412,7 @@ UsdImagingHdEngine::TestIntersectionBatch(
     const SdfPathVector& paths, 
     RenderParams params,
     unsigned int pickResolution,
-    std::function< SdfPath(const SdfPath&) > pathTranslator,
+    std::function< SdfPath(const SdfPath&, const int) > pathTranslator,
     HitBatch *outHit)
 {
     if (not HdRenderContextCaps::GetInstance().SupportsHydra()) {
@@ -467,7 +467,7 @@ UsdImagingHdEngine::TestIntersectionBatch(
             rprimPath = hit.instancerId;
         }
 
-        HitInfo& info = (*outHit)[pathTranslator(rprimPath)];
+        HitInfo& info = (*outHit)[pathTranslator(rprimPath, hit.instanceIndex)];
         info.worldSpaceHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
                                           hit.worldSpaceHitPoint[1],
                                           hit.worldSpaceHitPoint[2]);

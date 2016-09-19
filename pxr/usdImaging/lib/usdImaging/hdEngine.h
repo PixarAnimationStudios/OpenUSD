@@ -128,7 +128,7 @@ public:
         const SdfPathVector& paths, 
         RenderParams params,
         unsigned int pickResolution,
-        std::function< SdfPath(const SdfPath&) > pathTranslator,
+        std::function< SdfPath(const SdfPath&, const int) > pathTranslator,
         HitBatch *outHit);
 
     virtual VtDictionary GetResourceAllocation() const;

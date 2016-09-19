@@ -233,9 +233,10 @@ public:
     /// In batched selection scenarios, the path desired may not be as granular as
     /// the leaf-level prim. For example, one might want to find the closest hit
     /// for all prims underneath a certain path scope, or ignore others altogether.
-    /// The \p pathTranslator takes an \c SdfPath pointing to the hit prim, but
-    /// may return an empty path (signifying an ignored hit), or a different
-    /// simplified path altogether.
+    /// The \p pathTranslator takes an \c SdfPath pointing to the hit prim and
+    /// an integer instance index in the case where the hit is an instanced
+    /// object, but may return an empty path (signifying an ignored hit), or a
+    /// different simplified path altogether.
     ///
     /// Returned hits are collated by the translated \c SdfPath above, and placed
     /// in the structure pointed to by \p outHit. For each \c SdfPath in the
@@ -254,7 +255,7 @@ public:
         const SdfPathVector& paths, 
         RenderParams params,
         unsigned int pickResolution,
-        std::function< SdfPath(const SdfPath&) > pathTranslator,
+        std::function< SdfPath(const SdfPath&, const int) > pathTranslator,
         HitBatch *outHit);
 
     /// Using colors extracted from an Id render, returns the associated

@@ -366,7 +366,7 @@ UsdImagingEngine::TestIntersectionBatch(
     const SdfPathVector& paths, 
     RenderParams params,
     unsigned int pickResolution,
-    std::function< SdfPath(const SdfPath&) > pathTranslator,
+    std::function< SdfPath(const SdfPath&, const int) > pathTranslator,
     HitBatch *outHit)
 {
     // outHit is not optional
@@ -571,7 +571,7 @@ UsdImagingEngine::TestIntersectionBatch(
             // Translate the path. Allows client-side collating of hit prims into
             // useful bins as needed. The simplest translator returns primPath.
             //
-            SdfPath hitPath( pathTranslator(primPath) );
+            SdfPath hitPath( pathTranslator(primPath, hitInstanceIndex) );
             
             if( !hitPath.IsEmpty() ) {
                 
