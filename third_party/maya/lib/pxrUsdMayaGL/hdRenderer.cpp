@@ -30,6 +30,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxrUsdMayaGL/hdRenderer.h"
 #include "px_vp20/utils.h"
+#include "px_vp20/utils_legacy.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
@@ -372,32 +373,20 @@ UsdMayaGLHdRenderer::TestIntersection(
         return false;
     }
 
-    // We need to get the view and projection matrices for the
-    // area of the view that the user has clicked or dragged.
-    // Unfortunately the view does not give us that in an easy way..
-    // If we extract the view and projection matrices from the view object,
-    // it is just for the regular camera. The selectInfo also gives us the
-    // selection box, so we could use that to construct the correct view
-    // and projection matrixes, but if we call beginSelect on the view as
-    // if we were going to use the selection buffer, maya will do all the
-    // work for us and we can just extract the matrices from opengl.
     GfMatrix4d viewMatrix;
     GfMatrix4d projectionMatrix;
-    GLuint glHitRecord;
-    // Hit record can just be one because we are not going to draw
-    // anything anyway. We only want the matrices :)
-    view.beginSelect(&glHitRecord, 1);
-    glGetDoublev(GL_MODELVIEW_MATRIX, viewMatrix.GetArray());
-    glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
-    view.endSelect();
+    px_LegacyViewportUtils::GetViewSelectionMatrices(view,
+                                                     &viewMatrix,
+                                                     &projectionMatrix);
 
     params.drawMode = UsdImagingGL::DRAW_GEOM_ONLY;
 
-    return _renderer->TestIntersection(
-        viewMatrix, projectionMatrix,
-        GfMatrix4d().SetIdentity(), 
-        _renderedPrim, params,
-        hitPoint);
+    return _renderer->TestIntersection(viewMatrix,
+                                       projectionMatrix,
+                                       GfMatrix4d().SetIdentity(), 
+                                       _renderedPrim,
+                                       params,
+                                       hitPoint);
 }
 
 /* static */
