@@ -75,6 +75,9 @@ public:
     // returns true if the image is converged.
     virtual bool IsConverged() const;
 
+    /// Returns true if the named option is enabled by the delegate.
+    virtual bool IsEnabled(TfToken const& option) const;
+
     // returns the root namespace scope which tasks, camera and lights
     // belong to.
     SdfPath const &GetRootID() const { return _rootId; }

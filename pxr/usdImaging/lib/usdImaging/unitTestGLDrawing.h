@@ -49,6 +49,7 @@ public:
 
     bool IsEnabledTestLighting() const { return _testLighting; }
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
+    bool IsEnabledIdRender() const { return _testIdRender; }
 
     UsdImagingEngine::DrawMode GetDrawMode() const { return _drawMode; }
 
@@ -82,6 +83,7 @@ private:
 private:
     UsdImaging_UnitTestDrawingQGLWidget *_widget;
     bool _testLighting;
+    bool _testIdRender;
 
     std::string _stageFilePath;
     std::string _outputFilePath;

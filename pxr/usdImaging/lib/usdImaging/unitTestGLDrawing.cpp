@@ -249,6 +249,7 @@ UsdImaging_UnitTestDrawingQGLWidget::mouseMoveEvent(QMouseEvent * event)
 UsdImaging_UnitTestGLDrawing::UsdImaging_UnitTestGLDrawing()
     : _widget(NULL)
     , _testLighting(false)
+    , _testIdRender(false)
     , _complexity(1.0f)
     , _drawMode(UsdImagingEngine::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
@@ -325,7 +326,7 @@ static void Usage(int argc, char *argv[])
 {
     static const char usage[] =
 "%s [-stage filePath] [-write filePath]\n"
-"                           [-offscreen] [-lighting]\n"
+"                           [-offscreen] [-lighting] [-idRender]\n"
 "                           [-complexity complexity]\n"
 "                           [-shading [flat|smooth|wire|wireOnSurface]]\n"
 "                           [-frameAll]\n"
@@ -340,6 +341,7 @@ static void Usage(int argc, char *argv[])
 "  -write filePath     name of image file to write (suffix determines type) []\n"
 "  -offscreen          execute without mapping a window\n"
 "  -lighting           use simple lighting override shader\n"
+"  -idRender           ID rendering\n"
 "  -complexity complexity\n"
 "                      Set the fallback complexity [1]\n"
 "  -shading [flat|smooth|wire|wireOnSurface]\n"
@@ -430,6 +432,9 @@ UsdImaging_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-lighting") == 0) {
             _testLighting = true;
+        }
+        else if (strcmp(argv[i], "-idRender") == 0) {
+            _testIdRender = true;
         }
         else if (strcmp(argv[i], "-stage") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
