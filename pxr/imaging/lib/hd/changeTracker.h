@@ -89,17 +89,6 @@ public:
         DirtyTexture          = 1 << 5,
     };
 
-
-    /// Dirty bits for the HdDrawTarget object
-    enum DrawTargetDirtyBits {
-        DirtyDTEnable           = 1 <<  0,
-        DirtyDTCamera           = 1 <<  1,
-        DirtyDTResolution       = 1 <<  2,
-        DirtyDTAttachment       = 1 <<  3,
-        DirtyDTDepthClearValue  = 1 <<  4,
-        DirtyDTCollection       = 1 <<  5,
-    };
-
     typedef int DirtyBits;
 
     HdChangeTracker();
@@ -346,31 +335,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name Draw Target Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Draw Target with the given \p id.
-    void DrawTargetInserted(SdfPath const& id);
-
-    /// Stop tracking Draw Target with the given \p id.
-    void DrawTargetRemoved(SdfPath const& id);
-
-    /// Get the dirty bits for Draw Target with the given \p id.
-    DirtyBits GetDrawTargetDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkDrawTargetDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkDrawTargetClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    /// Return an version number indicating if the set of
-    /// draw targets has changed.
-    unsigned GetDrawTargetSetVersion();
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name Sprim (scene state prim: camera, light, ...) state Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -454,6 +418,22 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
+    /// \name General state tracking
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Adds a named state for tracking.
+    void AddState(TfToken const& name);
+
+    /// Marks a named state as being dirty., this bumps the version of the
+    /// state.
+    void MarkStateDirty(TfToken const& name);
+
+    /// Returns the current version of the named state.
+    unsigned GetStateVersion(TfToken const &name) const;
+
+    // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Debug
     /// @{
     // ---------------------------------------------------------------------- //
@@ -473,6 +453,7 @@ private:
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
     typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
+    typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;
@@ -480,8 +461,8 @@ private:
     _IDStateMap _shaderState;
     _IDStateMap _taskState;
     _IDStateMap _textureState;
-    _IDStateMap _drawTargetState;
     _IDStateMap _sprimState;
+    _GeneralStateMap _generalState;
 
     // Collection versions / state.
     _CollectionStateMap _collectionState;
@@ -508,9 +489,6 @@ private:
 
     // Used to validate shader bindings (to validate draw batches)
     std::atomic_uint _shaderBindingsVersion;
-
-    // Used to detect changes in which set of draw targets are enabled.
-    unsigned _drawTargetSetVersion;
 };
 
 #endif //HD_CHANGE_TRACKER_H

@@ -24,8 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/glContext.h"
 
-#include "pxr/imaging/hd/drawTargetRenderPass.h"
-#include "pxr/imaging/hd/drawTargetRenderPassState.h"
+#include "pxr/imaging/hdx/drawTargetRenderPass.h"
+#include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
 static
@@ -55,7 +55,7 @@ _ClearBuffer(GLenum buffer, GLint drawBuffer, const VtValue &value)
     }
 }
 
-HdDrawTargetRenderPass::HdDrawTargetRenderPass(HdRenderIndex *index)
+HdxDrawTargetRenderPass::HdxDrawTargetRenderPass(HdRenderIndex *index)
  : _renderPass(index)
  , _drawTargetRenderPassState(nullptr)
  , _drawTarget()
@@ -65,12 +65,12 @@ HdDrawTargetRenderPass::HdDrawTargetRenderPass(HdRenderIndex *index)
 }
 
 
-HdDrawTargetRenderPass::~HdDrawTargetRenderPass()
+HdxDrawTargetRenderPass::~HdxDrawTargetRenderPass()
 {
 }
 
 void
-HdDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
+HdxDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
 {
     // XXX: The Draw Target may have been created on a different GL
     // context, so create a local copy here to use on this context.
@@ -80,20 +80,20 @@ HdDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
 }
 
 void
-HdDrawTargetRenderPass::SetRenderPassState(
-    HdDrawTargetRenderPassState *drawTargetRenderPassState)
+HdxDrawTargetRenderPass::SetRenderPassState(
+    HdxDrawTargetRenderPassState *drawTargetRenderPassState)
 {
     _drawTargetRenderPassState = drawTargetRenderPassState;
 }
 
 void
-HdDrawTargetRenderPass::SetRprimCollection(HdRprimCollection const& col)
+HdxDrawTargetRenderPass::SetRprimCollection(HdRprimCollection const& col)
 {
     _renderPass.SetRprimCollection(col);
 }
 
 void
-HdDrawTargetRenderPass::Sync()
+HdxDrawTargetRenderPass::Sync()
 {
     // Update the collection object if necessary.
     unsigned int newCollectionVersion =
@@ -114,7 +114,7 @@ HdDrawTargetRenderPass::Sync()
 }
 
 void
-HdDrawTargetRenderPass::Execute(
+HdxDrawTargetRenderPass::Execute(
     HdRenderPassStateSharedPtr const &renderPassState)
 {
     if (!_drawTarget) {
@@ -140,7 +140,7 @@ HdDrawTargetRenderPass::Execute(
 }
 
 void 
-HdDrawTargetRenderPass::_ClearBuffers()
+HdxDrawTargetRenderPass::_ClearBuffers()
 {
     float depthValue = _drawTargetRenderPassState->GetDepthClearValue();
     glClearBufferfv(GL_DEPTH, 0, &depthValue);

@@ -33,7 +33,8 @@
 // 23 -> 24: GetPathForInstanceIndex returns absolute instance index.
 // 24 -> 25: move simpleLightingShader to Hdx.
 // 25 -> 26: move camera and light to Hdx.
-#define HD_API  26
+// 26 -> 27: move drawTarget to Hdx.
+#define HD_API  27
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

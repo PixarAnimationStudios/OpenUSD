@@ -29,7 +29,6 @@
             
 #define HD_TOKENS                               \
     (adjacency)                                 \
-    (attachments)                               \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
     (bbox)                                      \
@@ -45,7 +44,6 @@
     (cubic)                                     \
     (culledInstanceIndices)                     \
     (cullStyle)                                 \
-    (depthClearValue)                           \
     (doubleSided)                               \
     (dispatchBuffer)                            \
     (drawDispatch)                              \
@@ -57,7 +55,6 @@
     (drawingCoord0)                             \
     (drawingCoord1)                             \
     (drawingCoordI)                             \
-    (enable)                                    \
     (extent)                                    \
     (faceColors)                                \
     (geometry)                                  \
@@ -97,7 +94,6 @@
     (ulocResetPass)                             \
     (ulocCullMatrix)                            \
     (ulocDrawRangeNDC)                          \
-    (resolution)                                \
     (rightHanded)                               \
     (segmented)                                 \
     (smoothHull)                                \

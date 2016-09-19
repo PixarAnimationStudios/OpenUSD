@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DRAW_TARGET_RENDER_PASS_STATE_H
-#define HD_DRAW_TARGET_RENDER_PASS_STATE_H
+#ifndef HDX_DRAW_TARGET_RENDER_PASS_STATE_H
+#define HDX_DRAW_TARGET_RENDER_PASS_STATE_H
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
 class VtValue;
 
-/// \class HdDrawTargetRenderPassState
+/// \class HdxDrawTargetRenderPassState
 ///
 /// Represents common non-gl context specific render pass state for a draw
 /// target.
@@ -38,10 +38,10 @@ class VtValue;
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdDrawTargetRenderPassState final {
+class HdxDrawTargetRenderPassState final {
 public:
-    HdDrawTargetRenderPassState();
-    ~HdDrawTargetRenderPassState();  // final no need to be virtual
+    HdxDrawTargetRenderPassState();
+    ~HdxDrawTargetRenderPassState();  // final no need to be virtual
 
     /// Set the number of color buffer's to use.
     void SetNumColorAttachments(size_t numAttachments);
@@ -105,8 +105,8 @@ private:
     HdRprimCollection    _rprimCollection;
     unsigned int         _rprimCollectionVersion;
 
-    HdDrawTargetRenderPassState(const HdDrawTargetRenderPassState &) = delete;
-    HdDrawTargetRenderPassState &operator =(const HdDrawTargetRenderPassState &) = delete;
+    HdxDrawTargetRenderPassState(const HdxDrawTargetRenderPassState &) = delete;
+    HdxDrawTargetRenderPassState &operator =(const HdxDrawTargetRenderPassState &) = delete;
 };
 
-#endif // HD_DRAW_TARGET_RENDER_PASS_STATE_H
+#endif // HDX_DRAW_TARGET_RENDER_PASS_STATE_H

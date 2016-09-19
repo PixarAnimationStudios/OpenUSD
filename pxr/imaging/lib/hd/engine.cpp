@@ -137,9 +137,6 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // Sync the scene state prims
     index.SyncSprims();
 
-    // Sync the draw targets
-    index.SyncDrawTargets();
-
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE
     // --------------------------------------------------------------------- //

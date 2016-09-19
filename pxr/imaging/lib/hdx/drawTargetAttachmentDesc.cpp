@@ -21,11 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/drawTargetAttachmentDesc.h"
+#include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
 
-
-
-HdDrawTargetAttachmentDesc::HdDrawTargetAttachmentDesc()
+HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc()
  : _name()
  , _format(HdFormatUnknown)
  , _clearColor()
@@ -34,7 +32,7 @@ HdDrawTargetAttachmentDesc::HdDrawTargetAttachmentDesc()
 }
 
 
-HdDrawTargetAttachmentDesc::HdDrawTargetAttachmentDesc(const std::string &name,
+HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(const std::string &name,
                                                        HdFormat           format,
                                                        const VtValue     &clearColor)
   : _name(name)
@@ -45,8 +43,8 @@ HdDrawTargetAttachmentDesc::HdDrawTargetAttachmentDesc(const std::string &name,
 }
 
 
-HdDrawTargetAttachmentDesc::HdDrawTargetAttachmentDesc(
-                                         const HdDrawTargetAttachmentDesc &copy)
+HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(
+                                         const HdxDrawTargetAttachmentDesc &copy)
   : _name(copy._name)
   , _format(copy._format)
   , _clearColor(copy._clearColor)
@@ -55,8 +53,8 @@ HdDrawTargetAttachmentDesc::HdDrawTargetAttachmentDesc(
 }
 
 
-HdDrawTargetAttachmentDesc &
-HdDrawTargetAttachmentDesc::operator =(const HdDrawTargetAttachmentDesc &copy)
+HdxDrawTargetAttachmentDesc &
+HdxDrawTargetAttachmentDesc::operator =(const HdxDrawTargetAttachmentDesc &copy)
 {
     _name       = copy._name;
     _format     = copy._format;
@@ -67,7 +65,7 @@ HdDrawTargetAttachmentDesc::operator =(const HdDrawTargetAttachmentDesc &copy)
 
 
 size_t
-HdDrawTargetAttachmentDesc::GetHash() const
+HdxDrawTargetAttachmentDesc::GetHash() const
 {
     size_t hash = boost::hash_value(_name);
     boost::hash_combine(hash, _format);
@@ -78,7 +76,7 @@ HdDrawTargetAttachmentDesc::GetHash() const
 
 
 void
-HdDrawTargetAttachmentDesc::Dump(std::ostream &out) const
+HdxDrawTargetAttachmentDesc::Dump(std::ostream &out) const
 {
     out << _name        << " "
         << _format      << " "
@@ -87,8 +85,8 @@ HdDrawTargetAttachmentDesc::Dump(std::ostream &out) const
 
 
 bool
-HdDrawTargetAttachmentDesc::operator==(
-                                  const HdDrawTargetAttachmentDesc &other) const
+HdxDrawTargetAttachmentDesc::operator==(
+                                  const HdxDrawTargetAttachmentDesc &other) const
 {
     return ((_name       == other._name)   &&
             (_format     == other._format) &&
@@ -97,8 +95,8 @@ HdDrawTargetAttachmentDesc::operator==(
 
 
 bool
-HdDrawTargetAttachmentDesc::operator!=(
-                                  const HdDrawTargetAttachmentDesc &other) const
+HdxDrawTargetAttachmentDesc::operator!=(
+                                  const HdxDrawTargetAttachmentDesc &other) const
 {
     return ((_name       != other._name)   ||
             (_format     != other._format) ||
@@ -106,13 +104,13 @@ HdDrawTargetAttachmentDesc::operator!=(
 }
 
 
-size_t hash_value(HdDrawTargetAttachmentDesc const &attachment)
+size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment)
 {
     return attachment.GetHash();
 }
 
 std::ostream &operator <<(std::ostream &out,
-                          const HdDrawTargetAttachmentDesc &pv)
+                          const HdxDrawTargetAttachmentDesc &pv)
 {
     pv.Dump(out);
 

@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
-#define HD_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
+#ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
+#define HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 
-#include "pxr/imaging/hd/drawTargetAttachmentDesc.h"
+#include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
 
 #include <vector>
 
-/// \class HdDrawTargetAttachmentDescArray
+/// \class HdxDrawTargetAttachmentDescArray
 ///
 /// Describes all the color buffer attachments for a draw target.
 /// The array should not contain a depth buffer - that is managed
@@ -39,17 +39,17 @@
 ///
 /// class is derivable for TfAny support.
 ///
-class HdDrawTargetAttachmentDescArray
+class HdxDrawTargetAttachmentDescArray
 {
 public:
     /// Default constructor for container purposes.
-    HdDrawTargetAttachmentDescArray();
+    HdxDrawTargetAttachmentDescArray();
 
-    HdDrawTargetAttachmentDescArray(size_t attachmentCount);
-    virtual ~HdDrawTargetAttachmentDescArray() = default;
+    HdxDrawTargetAttachmentDescArray(size_t attachmentCount);
+    virtual ~HdxDrawTargetAttachmentDescArray() = default;
 
-    HdDrawTargetAttachmentDescArray(const HdDrawTargetAttachmentDescArray &copy);
-    HdDrawTargetAttachmentDescArray &operator =(const HdDrawTargetAttachmentDescArray &copy);
+    HdxDrawTargetAttachmentDescArray(const HdxDrawTargetAttachmentDescArray &copy);
+    HdxDrawTargetAttachmentDescArray &operator =(const HdxDrawTargetAttachmentDescArray &copy);
 
     /// Pushes a new attachment onto the end of the list of attachments.
     void AddAttachment(const std::string &name,
@@ -57,22 +57,22 @@ public:
                        const VtValue      &clearColor);
 
     size_t GetNumAttachments() const;
-    const HdDrawTargetAttachmentDesc &GetAttachment(size_t idx) const;
+    const HdxDrawTargetAttachmentDesc &GetAttachment(size_t idx) const;
 
 
     // VtValue requirements
     size_t GetHash() const;
     void   Dump(std::ostream &out) const;
-    bool operator==(const HdDrawTargetAttachmentDescArray &other) const;
-    bool operator!=(const HdDrawTargetAttachmentDescArray &other) const;
+    bool operator==(const HdxDrawTargetAttachmentDescArray &other) const;
+    bool operator!=(const HdxDrawTargetAttachmentDescArray &other) const;
 
 private:
-    typedef std::vector<HdDrawTargetAttachmentDesc> _AttachmentDescArray;
+    typedef std::vector<HdxDrawTargetAttachmentDesc> _AttachmentDescArray;
 
     _AttachmentDescArray _attachments;
 };
 
-size_t hash_value(const HdDrawTargetAttachmentDescArray &attachments);
-std::ostream &operator <<(std::ostream &out, const HdDrawTargetAttachmentDescArray &pv);
+size_t hash_value(const HdxDrawTargetAttachmentDescArray &attachments);
+std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDescArray &pv);
 
-#endif  // HD_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
+#endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H

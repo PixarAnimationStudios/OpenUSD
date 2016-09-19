@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "drawTargetRenderPassState.h"
+#include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/base/vt/value.h"
 
-HdDrawTargetRenderPassState::HdDrawTargetRenderPassState()
+HdxDrawTargetRenderPassState::HdxDrawTargetRenderPassState()
  : _colorClearValues()
  , _depthClearValue(1.0f)
  , _cameraId()
@@ -34,19 +34,19 @@ HdDrawTargetRenderPassState::HdDrawTargetRenderPassState()
 
 }
 
-HdDrawTargetRenderPassState::~HdDrawTargetRenderPassState()
+HdxDrawTargetRenderPassState::~HdxDrawTargetRenderPassState()
 {
 }
 
 
 void
-HdDrawTargetRenderPassState::SetNumColorAttachments(size_t numAttachments)
+HdxDrawTargetRenderPassState::SetNumColorAttachments(size_t numAttachments)
 {
     _colorClearValues.resize(numAttachments);
 }
 
 void
-HdDrawTargetRenderPassState::SetColorClearValue(size_t attachmentIdx,
+HdxDrawTargetRenderPassState::SetColorClearValue(size_t attachmentIdx,
                                            const VtValue &clearValue)
 {
     TF_DEV_AXIOM(attachmentIdx < _colorClearValues.size());
@@ -54,19 +54,19 @@ HdDrawTargetRenderPassState::SetColorClearValue(size_t attachmentIdx,
 }
 
 void
-HdDrawTargetRenderPassState::SetDepthClearValue(float clearValue)
+HdxDrawTargetRenderPassState::SetDepthClearValue(float clearValue)
 {
     _depthClearValue = clearValue;
 }
 
 void
-HdDrawTargetRenderPassState::SetCamera(const SdfPath &cameraId)
+HdxDrawTargetRenderPassState::SetCamera(const SdfPath &cameraId)
 {
     _cameraId = cameraId;
 }
 
 
-void HdDrawTargetRenderPassState::SetRprimCollection(
+void HdxDrawTargetRenderPassState::SetRprimCollection(
                                                    HdRprimCollection const& col)
 {
     _rprimCollection = col;

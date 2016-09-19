@@ -24,13 +24,13 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdx/camera.h"
+#include "pxr/imaging/hdx/drawTarget.h"
+#include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
-#include "pxr/imaging/hd/drawTarget.h"
-#include "pxr/imaging/hd/drawTargetRenderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -104,25 +104,27 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
-    unsigned drawTargetVersion = changeTracker.GetDrawTargetSetVersion();
+    unsigned drawTargetVersion
+        = changeTracker.GetStateVersion(HdxDrawTargetTokens->drawTargetSet);
+
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
-        const HdRenderIndex::HdDrawTargetView &drawTargets =
-                                                   renderIndex.GetDrawTargets();
+        HdxDrawTargetSharedPtrVector drawTargets;
+        HdxDrawTarget::GetDrawTargets(delegate, &drawTargets);
 
         _renderPasses.clear();
 
-        size_t numDrawTargets =  drawTargets.size();
+        size_t numDrawTargets = drawTargets.size();
         _renderPasses.reserve(numDrawTargets);
 
         for (size_t drawTargetNum = 0;
              drawTargetNum < numDrawTargets;
              ++drawTargetNum) {
 
-            HdDrawTargetSharedPtr drawTarget = drawTargets[drawTargetNum];
+            HdxDrawTargetSharedPtr drawTarget = drawTargets[drawTargetNum];
             if (drawTarget) {
                 if (drawTarget->IsEnabled()) {
-                    HdDrawTargetRenderPassUniquePtr pass(
-                                      new HdDrawTargetRenderPass(&renderIndex));
+                    HdxDrawTargetRenderPassUniquePtr pass(
+                                      new HdxDrawTargetRenderPass(&renderIndex));
 
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
@@ -152,7 +154,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
              renderPassIdx < numRenderPasses;
              ++renderPassIdx) {
             RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
-            HdDrawTargetSharedPtr target = renderPassInfo.target.lock();
+            HdxDrawTargetSharedPtr target = renderPassInfo.target.lock();
             unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
@@ -178,9 +180,9 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
          ++renderPassIdx) {
 
         RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
-        HdDrawTargetRenderPass *renderPass = renderPassInfo.pass.get();
+        HdxDrawTargetRenderPass *renderPass = renderPassInfo.pass.get();
         HdRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
-        HdDrawTargetSharedPtr drawTarget = renderPassInfo.target.lock();
+        HdxDrawTargetSharedPtr drawTarget = renderPassInfo.target.lock();
 
         const SdfPath &cameraId = drawTarget->GetRenderPassState()->GetCamera();
 
@@ -301,7 +303,7 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdDrawTargetRenderPass *renderPass =
+        HdxDrawTargetRenderPass *renderPass =
             _renderPasses[renderPassIdx].pass.get();
         HdRenderPassStateSharedPtr renderPassState =
             _renderPasses[renderPassIdx].renderPassState;
