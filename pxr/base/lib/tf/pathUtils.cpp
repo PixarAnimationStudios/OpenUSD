@@ -338,11 +338,14 @@ TfAbsPath(string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
 	char buffer[ARCH_PATH_MAX];
-	if (GetFullPathName(path.c_str(), ARCH_PATH_MAX, buffer, nullptr)){
+	if (GetFullPathName(path.c_str(), ARCH_PATH_MAX, buffer, nullptr))
+    {
 		return buffer;
-	} else {
-		printf("TfAbsPath failed on %s with error code %d\n", 
-			path.c_str(), GetLastError());
+	}
+    else
+    {
+		printf("TfAbsPath failed on %s because %s\n",
+			path.c_str(), ArchStrSysError(GetLastError()).c_str());
 		return path;
 	}
 #else
@@ -391,7 +394,7 @@ string
 TfReadLink(string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
-	return path;
+	return ArchResolveSymlink(path.c_str());
 #else
     if (path.empty()) {
         return path;
