@@ -23,10 +23,10 @@
 //
 #include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/defines.h"
+#include <time.h>
 #if defined(ARCH_OS_WINDOWS)
 #include <windows.h>
 #elif defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-#include <time.h>
 #include <unistd.h>
 #include <sched.h>
 #else
@@ -58,6 +58,38 @@ ArchNap(size_t hundredths)
     nanosleep(&rec, 0);
 #else
 #error Unknown architecture.
+#endif
+}
+
+void ArchSleep(uint64_t seconds)
+{
+#if defined(ARCH_OS_WINDOWS)
+    Sleep(seconds / 1000);
+#else
+    sleep(seconds);
+#endif
+}
+
+int ArchNanoSleep(const struct timespec *req, struct timespec *rem)
+{
+#if defined(ARCH_OS_WINDOWS)
+    HANDLE timer;
+    if(!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+        return 0;
+
+    LARGE_INTEGER sleepTime;
+    sleepTime.QuadPart = req->tv_sec * 1000000000 + req->tv_nsec / 100;
+    if(!SetWaitableTimer(timer, &sleepTime, 0, NULL, NULL, FALSE))
+    {
+        CloseHandle(timer);
+        return 0;
+    }
+
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+    return 0;
+#else
+    return nanosleep(usec);
 #endif
 }
 
