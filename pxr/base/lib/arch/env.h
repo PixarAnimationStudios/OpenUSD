@@ -55,4 +55,11 @@ bool ArchSetEnv(const std::string &name, const std::string &value, int overwrite
 ARCH_API
 bool ArchRemoveEnv(const std::string &name);
 
+///
+/// Expands environment variables in \c str.
+/// \ingroup group_arch_SystemFunctions
+///
+ARCH_API
+std::string ArchExpandEnvironmentVariables(const std::string& str);
+
 #endif // ARCH_ENV_H
