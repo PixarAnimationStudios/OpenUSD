@@ -113,8 +113,6 @@ Ar_DefaultResolver::AnchorRelativePath(
     std::string forwardPath = anchorPath;
     std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
 
-    // DebugBreak();
-
     // If anchorPath does not end with a '/', we assume it is specifying
     // a file, strip off the last component, and anchor the path to that
     // directory.

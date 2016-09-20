@@ -82,12 +82,16 @@ pxr_build_test_shared_lib(TestPlugDsoIncomplete
 	CPPFILES
 		testenv/TestPlugDsoIncomplete.cpp
 )
-pxr_build_test_shared_lib(TestPlugDsoUnloadable
-	LIBRARIES
-		tf
-	CPPFILES
-		testenv/TestPlugDsoUnloadable.cpp
-)
+
+if (UNIX)
+	pxr_build_test_shared_lib(TestPlugDsoUnloadable
+		LIBRARIES
+			tf
+		CPPFILES
+			testenv/TestPlugDsoUnloadable.cpp
+	)
+endif()
+
 # This library helps test behavior when a plugin is unloadable,
 # but clang by default will error out when building this due to
 # the references to undefined symbols. So we need to specify a
