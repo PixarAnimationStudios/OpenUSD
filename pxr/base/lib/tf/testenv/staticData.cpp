@@ -28,6 +28,8 @@
 #include <map>
 #include <string>
 
+#if !defined(ARCH_OS_WINDOWS)
+
 using std::map;
 using std::string;
 
@@ -40,7 +42,7 @@ TF_MAKE_STATIC_DATA(string, _initStr) {
     *_initStr = "initialized";
 }
 
-TF_MAKE_STATIC_DATA((map<int, int>), _initMap) {
+TF_MAKE_STATIC_DATA(map<int, int>, _initMap) {
     (*_initMap)[1] = 11;
     (*_initMap)[2] = 22;
 }
@@ -113,3 +115,5 @@ Test_TfStaticData()
 }
 
 TF_ADD_REGTEST(TfStaticData);
+
+#endif // #if !defined(ARCH_OS_WINDOWS)

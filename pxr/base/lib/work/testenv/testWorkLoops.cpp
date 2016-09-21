@@ -29,6 +29,7 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/arch/fileSystem.h"
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -193,7 +194,7 @@ main(int argc, char **argv)
     if (perfMode) {
 
         // XXX:perfgen only accepts metric names ending in _time.  See bug 97317
-        FILE *outputFile = fopen("perfstats.raw", "w");
+        FILE *outputFile = ArchOpenFile("perfstats.raw", "w");
         fprintf(outputFile,
             "{'profile':'TBB Loops_time','metric':'time','value':%f,'samples':1}\n",
             tbbSeconds);

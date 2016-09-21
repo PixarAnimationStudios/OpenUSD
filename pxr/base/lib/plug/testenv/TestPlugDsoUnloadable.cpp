@@ -23,6 +23,8 @@
 //
 #include "pxr/base/plug/testPlugBase.h"
 
+#if !defined(ARCH_OS_WINDOWS)
+
 // This plugin depends on an undefined external function
 // and so will be unloadable.
 extern int TestPlugDoSomethingUndefined();
@@ -57,3 +59,5 @@ TF_REGISTRY_FUNCTION(TfType)
         .SetFactory<_TestPlugFactory<TestPlugUnloadable> >()
         ;
 }
+
+#endif // #if !defined(ARCH_OS_WINDOWS)

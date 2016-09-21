@@ -48,52 +48,18 @@ crash(int sig) {
         exit(sig);
 }
 
-#if defined(ARCH_OS_WINDOWS)
-bool rmdir(const std::string& strDir)
-{
-    WIN32_FIND_DATA fdFile = {0};
-    std::string strSearch = strDir + "\\*.*" ;
-
-    HANDLE hFind = ::FindFirstFile (strSearch.data (), &fdFile);
-    if(hFind == INVALID_HANDLE_VALUE)
-    {
-        return false;
-    }
-
-    do {    
-        std::string strDelete = strDir + "\\" + fdFile.cFileName;
-        if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-        {
-            if (fdFile.cFileName == "." || fdFile.cFileName == "..")
-            {
-                continue;
-            }
-            rmdir (strDelete);
-        }
-        else
-        {
-            ::DeleteFile (strDelete.data ());
-        }
-    } while (::FindNextFile (hFind, &fdFile));
-
-    ::FindClose (hFind);
-    ::RemoveDirectory (strDir.data ());
-    return true;
-}
-#endif 
-
 int main()
 {
     (void) signal(SIGABRT,crash);
 
     std::string firstName = ArchMakeTmpFileName("archFS");
-    FILE *firstFile;
+    FILE *firstFile = NULL;
 
     char const * const testContent = "text in a file";
 
     // Open a file, check that its length is 0, write to it, close it, and then
     // check that its length is now the number of characters written.
-    assert((firstFile = fopen(firstName.c_str(), "wb")) != NULL);
+    assert((firstFile = ArchOpenFile(firstName.c_str(), "wb")) != NULL);
     fflush(firstFile);
     assert(ArchGetFileLength(firstName.c_str()) == 0);
     fputs(testContent, firstFile);
@@ -101,7 +67,7 @@ int main()
     assert(ArchGetFileLength(firstName.c_str()) == strlen(testContent));
 
     // Map the file and assert the bytes are what we expect they are.
-    assert((firstFile = fopen(firstName.c_str(), "rb")) != NULL);
+    assert((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     ArchConstFileMapping cfm = ArchMapFileReadOnly(firstFile);
     fclose(firstFile);
     assert(cfm);
@@ -109,7 +75,7 @@ int main()
     cfm.reset();
 
     // Try again with a mutable mapping.
-    assert((firstFile = fopen(firstName.c_str(), "rb")) != NULL);
+    assert((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     ArchMutableFileMapping mfm = ArchMapFileReadWrite(firstFile);
     fclose(firstFile);
     assert(mfm);
@@ -118,11 +84,11 @@ int main()
     mfm.get()[0] = 'T'; mfm.get()[2] = 's';
     assert(memcmp("Test", mfm.get(), strlen("Test")) == 0);
     mfm.reset();
-    unlink(firstName.c_str());
+    ArchUnlinkFile(firstName.c_str());
 
     // Test ArchPWrite and ArchPRead.
     int64_t len = strlen(testContent);
-    assert((firstFile = fopen(firstName.c_str(), "w+b")) != NULL);
+    assert((firstFile = ArchOpenFile(firstName.c_str(), "w+b")) != NULL);
     assert(ArchPWrite(firstFile, testContent, len, 0) == len);
     std::unique_ptr<char[]> buf(new char[len]);
     assert(ArchPRead(firstFile, buf.get(), len, 0) == len);
@@ -139,6 +105,6 @@ int main()
     std::string retpath;
     retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");
     assert (retpath != "");
-    rmdir(retpath.c_str());
+    ArchRmDir(retpath.c_str());
     return 0;
 }

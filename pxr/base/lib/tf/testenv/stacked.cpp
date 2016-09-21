@@ -33,6 +33,7 @@
 #include <thread>
 #include <cstdio>
 
+#if !defined(ARCH_OS_WINDOWS)
 
 
 class Tf_SafeStacked : public TfStacked<Tf_SafeStacked> {
@@ -205,3 +206,6 @@ Test_TfStacked() {
 
 
 TF_ADD_REGTEST(TfStacked);
+
+
+#endif // #if !defined(ARCH_OS_WINDOWS)

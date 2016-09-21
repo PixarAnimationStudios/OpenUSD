@@ -422,7 +422,7 @@ struct Vt_DefaultGenerator {
 
 // This is a global stateless variable used to get the VtDefault = X syntax in
 // VtDictionaryGet.
-extern Vt_DefaultGenerator VtDefault;
+extern VT_API Vt_DefaultGenerator VtDefault;
 
 /// Return a value held in a VtDictionary, or a default value either if the
 /// supplied key is missing or if the types do not match.

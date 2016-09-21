@@ -27,8 +27,12 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/dl.h"
 #include "pxr/base/arch/symbols.h"
+#include "pxr/base/arch/library.h"
+#include "pxr/base/arch/fileSystem.h"
 
+#if !defined(ARCH_OS_WINDOWS)
 #include <unistd.h>
+#endif
 
 using std::string;
 
@@ -44,11 +48,11 @@ Test_TfDl()
     TfDebug::Enable(TF_DLCLOSE);
 
     // Check that opening a non-existing shared library fails
-    TF_AXIOM(!TfDlopen("nonexisting.so", RTLD_NOW));
+    TF_AXIOM(!TfDlopen("nonexisting.so", ARCH_LIBRARY_NOW));
 
     // check that TfDlopen fills in our error string with something
     string dlerror;
-    TfDlopen("nonexisting.so", RTLD_NOW, &dlerror);
+    TfDlopen("nonexisting.so", ARCH_LIBRARY_NOW, &dlerror);
     TF_AXIOM(!dlerror.empty());
 
     // Compute path to test library.
@@ -58,10 +62,10 @@ Test_TfDl()
 
     // make sure that this .so does indeed exist first
     printf("Checking test shared lib: %s\n", dlname.c_str());
-    TF_AXIOM(!access(dlname.c_str(), R_OK));
+    TF_AXIOM(!ArchFileAccess(dlname.c_str(), R_OK));
 
     // check that we can open the existing .so
-    void *handle = TfDlopen(dlname, RTLD_LAZY|RTLD_LOCAL, &dlerror);
+    void *handle = TfDlopen(dlname, ARCH_LIBRARY_LAZY|ARCH_LIBRARY_LOCAL, &dlerror);
     TF_AXIOM(handle);
     TF_AXIOM(dlerror.empty());
     TF_AXIOM(!TfDlclose(handle));
