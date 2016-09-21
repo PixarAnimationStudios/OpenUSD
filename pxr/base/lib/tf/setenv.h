@@ -28,6 +28,7 @@
 /// \ingroup group_tf_SystemsExt
 /// Functions for setting and unsetting environment variables
 
+#include "pxr/base/tf/api.h"
 #include <string>
 
 /// Set an environment variable.
@@ -42,6 +43,7 @@
 /// Otherwise, the return value is true.
 ///
 /// \ingroup group_tf_SystemsExt
+TF_API
 bool TfSetenv(const std::string& envName, const std::string& value);
 
 /// Unset an environment variable.
@@ -56,6 +58,7 @@ bool TfSetenv(const std::string& envName, const std::string& value);
 /// Otherwise, the return value is true.
 ///
 /// \ingroup group_tf_SystemsExt
+TF_API
 bool TfUnsetenv(const std::string& envName);
 
 #endif // TF_SETENV_H

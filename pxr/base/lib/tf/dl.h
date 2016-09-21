@@ -62,8 +62,10 @@ TF_API
 int TfDlclose(void* handle);
 
 /// \private
+TF_API
 bool Tf_DlOpenIsActive();
 /// \private
+TF_API
 bool Tf_DlCloseIsActive();
 
 ///@}

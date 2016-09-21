@@ -167,6 +167,7 @@ public:
     /// content is successfully written, this method returns true. Otherwise,
     /// false is returned and errors are posted. The default implementation
     /// returns false.
+    SDF_API
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const std::string& filePath,
@@ -176,11 +177,13 @@ public:
     /// Reads data in the string \p str into the layer \p layerBase. If
     /// the file is successfully read, this method returns true. Otherwise,
     /// false is returned and errors are posted.
+    SDF_API
     virtual bool ReadFromString(
         const SdfLayerBasePtr& layerBase,
         const std::string& str) const;
 
     /// Write the provided \p spec to \p out indented \p indent levels.
+    SDF_API
     virtual bool WriteToStream(
         const SdfSpecHandle &spec,
         std::ostream& out,
@@ -189,6 +192,7 @@ public:
     /// Writes the content in \p layerBase to the string \p str. This function
     /// should write a textual representation of \p layerBase to the stream
     /// that can be read back in via ReadFromString.
+    SDF_API
     virtual bool WriteToString(
         const SdfLayerBase* layerBase,
         std::string* str,

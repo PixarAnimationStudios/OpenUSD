@@ -50,6 +50,7 @@ std::string TfGetenv(const std::string& envName,
 /// returned.  Otherwise, the function uses atoi() to convert the string to an
 /// integer: the implication being that if the string is not a valid integer,
 /// you get back whatever value atoi() comes up with.
+TF_API
 int TfGetenvInt(const std::string& envName, int defaultValue);
 
 /// Return an environment variable as a boolean.
@@ -69,6 +70,7 @@ TF_API bool TfGetenvBool(const std::string&, bool defaultValue);
 /// string to a double: the implication being that if the string is not a
 /// valid double, you get back whatever value TfStringToDouble() comes up
 /// with.
+TF_API
 double TfGetenvDouble(const std::string& envName, double defaultValue);
 
 ///@}

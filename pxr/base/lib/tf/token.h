@@ -390,7 +390,7 @@ TF_API std::vector<TfToken>
 TfToTokenVector(const std::vector<std::string> &sv);
 
 /// Convert the vector of \c TfToken \p tv into a vector of strings
-std::vector<std::string>
+TF_API std::vector<std::string>
 TfToStringVector(const std::vector<TfToken> &tv);
 
 /// Overload hash_value for TfToken.

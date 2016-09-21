@@ -153,6 +153,7 @@ std::string TfPyRepr(const std::vector<T> &v) {
 /// Evaluate python expression \a expr with all the known script modules
 /// imported under their standard names. Additional globals may be provided in
 /// the \p extraGlobals dictionary.
+TF_API
 boost::python::object
 TfPyEvaluate(
     std::string const &expr,
@@ -213,6 +214,7 @@ TfPyWrapOnce(boost::function<void()> const &wrapFunc)
 /// infrastructure code to load python wrapper modules corresponding to C++
 /// shared libraries when they are needed.  It should generally not need to be
 /// called from normal user code.
+TF_API
 void Tf_PyLoadScriptModule(std::string const &name);
 
 /// Creates a python dictionary from a std::map.
@@ -244,15 +246,18 @@ boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
 ///
 /// The vector contains the same strings that python's traceback.format_stack()
 /// returns.
+TF_API
 std::vector<std::string> TfPyGetTraceback();
 
 /// Populates the vector passed in with pointers to strings containing the
 /// python interpreter stack frames. 
 /// Note that TfPyGetStackFrames allocates these strings on the heap and its
 /// the caller's responsibility to free them.
+TF_API
 void TfPyGetStackFrames(std::vector<uintptr_t> *frames);
 
 /// Print the current python traceback to stdout.
+TF_API
 void TfPyDumpTraceback();
 
 /// Set an environment variable in \c os.environ.
@@ -276,6 +281,7 @@ void TfPyDumpTraceback();
 /// os.environ to be poputated.  All modifications to the environment after \c
 /// os has been imported must be made with this function or \c TfSetenv if it
 /// important that they appear in \c os.environ.
+TF_API
 bool TfPySetenv(const std::string & name, const std::string & value);
 
 /// Remove an environment variable from \c os.environ.
@@ -300,6 +306,7 @@ bool TfPySetenv(const std::string & name, const std::string & value);
 /// os.environ to be poputated.  All modifications to the environment after \c
 /// os has been imported must be made with this function or \c TfUnsetenv if
 /// it important that they appear in \c os.environ.
+TF_API
 bool TfPyUnsetenv(const std::string & name);
 
 // Private helper method to TfPyEvaluateAndExtract.
@@ -340,6 +347,7 @@ bool TfPyEvaluateAndExtract(const std::string & expr, T * t)
 /// Print a standard traceback to sys.stderr and clear the error indicator.
 /// If the error is a KeyboardInterrupt then this does nothing.  Call this
 /// function only when the error indicator is set.
+TF_API
 void TfPyPrintError();
 
 #endif // TF_PYUTILS_H

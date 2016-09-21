@@ -28,6 +28,7 @@
 /// \ingroup group_tf_Internal
 /// Support for simple regression tests.
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
@@ -102,6 +103,7 @@ public:
         return GetInstance()._Main(argc, argv);
     }
 
+    TF_API
     static TfRegTest& GetInstance();
 
     /// Type of a function with no arguments.
@@ -114,11 +116,14 @@ public:
     /// and \c argv+1.
     typedef bool (*RegFuncWithArgs)(int argc, char *argv[]);
 
+    TF_API
     bool Register(const char* name, RegFunc);
+    TF_API
     bool Register(const char* name, RegFuncWithArgs);
 
 private:
     friend class TfSingleton<TfRegTest>;
+    TF_API
     int _Main(int argc, char *argv[]);
 
     void _PrintTestNames();

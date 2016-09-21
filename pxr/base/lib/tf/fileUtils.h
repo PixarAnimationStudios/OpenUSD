@@ -75,6 +75,7 @@ TF_API
 bool TfIsDirEmpty(std::string const& path);
 
 /// Creates a symbolic link from \p src to \p dst.
+TF_API
 bool TfSymlink(std::string const& src, std::string const& dst);
 
 /// Deletes a file at path.
@@ -127,6 +128,7 @@ typedef boost::function<void (std::string const&,
 /// When calling TfWalkDirs/ChmodTree/RmTree and you want to ignore errors,
 /// you can pass in this public error handler which will ignore all the
 /// errors.
+TF_API
 void TfWalkIgnoreErrorHandler(std::string const& path, std::string const& msg);
 
 /// Directory tree walker.
@@ -167,6 +169,7 @@ void TfWalkIgnoreErrorHandler(std::string const& path, std::string const& msg);
 /// If \p top is a symbolic link to a directory, it is followed regardless of
 /// the value of \p followLinks. Calling TfWalkDirs with a file argument
 /// returns immediately without calling \p fn.
+TF_API
 void TfWalkDirs(std::string const& top,
                 TfWalkFunction fn,
                 bool topDown=true,
@@ -180,6 +183,7 @@ void TfWalkDirs(std::string const& top,
 /// Alternately, sending in a custom TfWalkErrorHandler will
 /// call this handler when errors occur.  This handler receives the path which
 /// caused the error, and a message indicating why the error occurred.
+TF_API
 void TfRmTree(std::string const& path,
               TfWalkErrorHandler onError = 0);
 
