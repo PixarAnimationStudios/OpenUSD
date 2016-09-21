@@ -28,6 +28,8 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/symbols.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/library.h"
 
 // Registry function tag type
 class Tf_TestRegistryFunctionPlugin {};
@@ -36,7 +38,7 @@ static void
 _LoadAndUnloadSharedLibrary(const std::string & libraryPath)
 {
     std::string dlErrorMsg;
-    void * handle = TfDlopen(libraryPath.c_str(), RTLD_NOW, &dlErrorMsg);
+    void * handle = TfDlopen(libraryPath.c_str(), ARCH_LIBRARY_NOW, &dlErrorMsg);
     TF_AXIOM(handle);
     TF_AXIOM(dlErrorMsg.empty());
     TF_AXIOM(not TfDlclose(handle));

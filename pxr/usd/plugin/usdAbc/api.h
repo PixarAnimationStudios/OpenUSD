@@ -21,45 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef ARCH_ENV_H
-#define ARCH_ENV_H
+#ifndef USDABC_API_H
+#define USDABC_API_H
 
-#include "pxr/base/arch/api.h"
+#include "pxr/base/arch/export.h"
 
-#include <string>
+#if defined(USDABC_STATIC)
+#   define USDABC_API
+#   define USDABC_LOCAL
+#else
+#   if defined(USDABC_EXPORTS)
+#       define USDABC_API ARCH_EXPORT
+#       define USDABC_API_TEMPLATE_CLASS(...)
+#       define USDABC_API_TEMPLATE_STRUCT(...)
+#   else
+#       define USDABC_API ARCH_IMPORT
+#       define USDABC_API_TEMPLATE_CLASS(...) extern template class USDABC_API __VA_ARGS__
+#       define USDABC_API_TEMPLATE_STRUCT(...) extern template struct USDABC_API __VA_ARGS__
+#   endif
+#   define USDABC_LOCAL ARCH_HIDDEN
+#endif
 
-///
-/// Architecture dependent access to environment variables.
-/// \ingroup group_arch_SystemFunctions
-/// 
-
-
-///
-/// Gets a value from the current environment identified by \c name.
-/// \ingroup group_arch_SystemFunctions
-///
-ARCH_API 
-std::string ArchGetEnv(const std::string &name);
-
-///
-/// Creates or modifies an environment variable.
-/// \ingroup group_arch_SystemFunctions
-///
-ARCH_API
-bool ArchSetEnv(const std::string &name, const std::string &value, int overwrite);
-
-///
-/// Removes an environment variable.
-/// \ingroup group_arch_SystemFunctions
-///
-ARCH_API
-bool ArchRemoveEnv(const std::string &name);
-
-///
-/// Expands environment variables in \c str.
-/// \ingroup group_arch_SystemFunctions
-///
-ARCH_API
-std::string ArchExpandEnvironmentVariables(const std::string& str);
-
-#endif // ARCH_ENV_H
+#endif

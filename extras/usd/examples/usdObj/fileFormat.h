@@ -24,7 +24,8 @@
 #ifndef USDOBJ_FILE_FORMAT_H
 #define USDOBJ_FILE_FORMAT_H
 
-#include "Python.h" 
+#include "Python.h"
+#include "pxr/base/arch/api.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
@@ -35,7 +36,8 @@
     ((Version, "1.0"))                  \
     ((Target,  "usd"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdObjFileFormatTokens, USDOBJ_FILE_FORMAT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdObjFileFormatTokens, ARCH_EXPORT,
+                         USDOBJ_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdObjFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);

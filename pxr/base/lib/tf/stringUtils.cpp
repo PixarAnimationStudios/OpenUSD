@@ -325,7 +325,7 @@ TfGetBaseName(const string& fileName)
 string
 TfGetPathName(const string& fileName)
 {
-    size_t i = fileName.rfind("/");
+    size_t i = fileName.find_last_of("\\/");
     if (i == string::npos)                          // no / in name
         return "";
     else

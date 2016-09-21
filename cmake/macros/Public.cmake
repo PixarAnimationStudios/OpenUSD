@@ -565,6 +565,16 @@ function(pxr_plugin PLUGIN_NAME)
         )
     endif()
 
+    if(sl_CPPFILES)
+        pxr_add_filename_property(${PLUGIN_NAME} "${sl_CPPFILES}")
+    endif()
+    if(sl_PRIVATE_CLASSES)
+        pxr_add_filename_property(${PLUGIN_NAME} "${sl_PRIVATE_CLASSES}")
+    endif()
+    if(sl_PUBLIC_CLASSES)
+        pxr_add_filename_property(${PLUGIN_NAME} "${sl_PUBLIC_CLASSES}")
+    endif()
+
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
@@ -626,11 +636,15 @@ function(pxr_plugin PLUGIN_NAME)
         PREFIX ${PXR_PREFIX}
     )
 
+    string(TOUPPER ${PLUGIN_NAME} ucLibName)
+
     set_target_properties(${PLUGIN_NAME}
         PROPERTIES
             PUBLIC_HEADER
                 "${sl_PUBLIC_HEADERS};${${PLUGIN_NAME}_PUBLIC_HEADERS}"
             INTERFACE_INCLUDE_DIRECTORIES ""
+            DEFINE_SYMBOL
+                "${ucLibName}_EXPORTS"
     )
 
     # Install and include headers from the build directory.

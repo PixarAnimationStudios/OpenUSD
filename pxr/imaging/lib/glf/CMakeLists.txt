@@ -38,6 +38,7 @@ pxr_shared_library(glf
         ${OIIO_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${GLEW_INCLUDE_DIR}
+        ${OPENGL_INCLUDE_DIR}
         ${PTEX_INCLUDE_DIR}
 
     PUBLIC_CLASSES

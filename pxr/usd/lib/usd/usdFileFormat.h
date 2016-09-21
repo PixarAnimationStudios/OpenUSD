@@ -59,31 +59,38 @@ class UsdUsdFileFormat : public SdfFileFormat
 public:
     using SdfFileFormat::FileFormatArguments;
 
+    USD_API
     virtual SdfAbstractDataRefPtr
     InitData(const FileFormatArguments& args) const;
 
+    USD_API
     virtual bool CanRead(const std::string &file) const;
 
+    USD_API
     virtual bool ReadFromFile(
         const SdfLayerBasePtr& layerBase,
         const std::string& filePath,
         bool metadataOnly) const;
 
+    USD_API
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const;
 
+    USD_API
     virtual bool ReadFromString(
         const SdfLayerBasePtr& layerBase,
         const std::string& str) const;
 
+    USD_API
     virtual bool WriteToString(
         const SdfLayerBase* layerBase,
         std::string* str,
         const std::string& comment = std::string()) const;
 
+    USD_API
     virtual bool WriteToStream(
         const SdfSpecHandle &spec,
         std::ostream& out,

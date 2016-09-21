@@ -45,6 +45,16 @@
 /// sginap()). Call \c ArchThreadYield() instead.
 ARCH_API void ArchNap(size_t nhundredths);
 
+/// Suspends the execution of the current thread until the time-out interval
+/// elapses.
+ARCH_API
+void ArchSleep(uint64_t seconds);
+
+/// Suspends the execution of the current thread until the time-out interval
+/// elapses.
+ARCH_API
+int ArchNanoSleep(const struct timespec *req, struct timespec *rem);
+
 /// Yield to the operating system thread scheduler.
 ///
 /// Returns control to the operating system thread scheduler as a means of

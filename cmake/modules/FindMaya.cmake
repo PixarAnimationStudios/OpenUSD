@@ -223,11 +223,21 @@ endif()
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(Maya
-    REQUIRED_VARS
-        MAYA_EXECUTABLE
-        MAYA_INCLUDE_DIRS
-        MAYA_LIBRARIES
-    VERSION_VAR
-        MAYA_API_VERSION
-)
+if (${PXR_MAYA_API_ONLY} AND NOT ${PXR_MAYA_API_ONLY})
+    find_package_handle_standard_args(Maya
+        REQUIRED_VARS
+            MAYA_EXECUTABLE
+            MAYA_INCLUDE_DIRS
+            MAYA_LIBRARIES
+        VERSION_VAR
+            MAYA_API_VERSION
+    )
+else()
+    find_package_handle_standard_args(Maya
+        REQUIRED_VARS
+            MAYA_INCLUDE_DIRS
+            MAYA_LIBRARIES
+        VERSION_VAR
+            MAYA_API_VERSION
+    )
+endif()

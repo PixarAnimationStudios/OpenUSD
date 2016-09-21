@@ -214,6 +214,7 @@ public:
     /// delivered.
     class Probe : public TfWeakBase {
       public:
+        TF_API
         virtual ~Probe() = 0;
 
         /// This method is called just before \p notice is sent to any
@@ -443,7 +444,9 @@ public:
     /// Notices that are sent when blocking is active will *not* be resent.
     class Block {
     public:
+        TF_API
         Block();
+        TF_API
         ~Block();
     };
 

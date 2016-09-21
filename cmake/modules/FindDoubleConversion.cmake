@@ -26,10 +26,12 @@ set(LIBRARY_PATHS
     /usr/local/lib
     /lib
     /lib64
+    ${DOUBLE_CONVERSION_DIR}/lib
 )
 
 find_path(DOUBLE_CONVERSION_INCLUDE_DIR
     double-conversion/double-conversion.h
+    PATHS ${DOUBLE_CONVERSION_DIR}/include
 )
 
 find_library(DOUBLE_CONVERSION_LIBRARY

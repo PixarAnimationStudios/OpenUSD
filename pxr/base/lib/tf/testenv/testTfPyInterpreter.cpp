@@ -73,7 +73,7 @@ testInterpreter(bool verbose)
     }
 
     modPath = TfPyGetModulePath("badmodule");
-    if (not modPath.empty()) {
+    if (!modPath.empty()) {
         printf("ERROR: TfPyGetModulePath, bad module name returned result '%s'.\n", modPath.c_str());
         numErrors++;
     } else if (verbose) {

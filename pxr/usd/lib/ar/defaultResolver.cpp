@@ -64,7 +64,7 @@ struct Ar_DefaultResolver::_Cache
 
 Ar_DefaultResolver::Ar_DefaultResolver()
 {
-    _searchPath.push_back(TfPathCanonicalize(ArchGetCwd()));
+    _searchPath.push_back(ArchGetCwd());
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (not envPath.empty()) {
@@ -109,12 +109,18 @@ Ar_DefaultResolver::AnchorRelativePath(
         return path;
     }
 
+    // Ensure we are using forward slashes and not back slashes.
+    std::string forwardPath = anchorPath;
+    std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
+
     // If anchorPath does not end with a '/', we assume it is specifying
     // a file, strip off the last component, and anchor the path to that
     // directory.
     std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(anchorPath, '/'), path);
-    return TfNormPath(anchoredPath);
+        TfStringGetBeforeSuffix(forwardPath, '/'), path);
+    anchoredPath = TfNormPath(anchoredPath);
+    anchoredPath = TfAbsPath(anchoredPath);
+    return anchoredPath;
 }
 
 bool
@@ -172,8 +178,7 @@ Ar_DefaultResolver::_ResolveNoCache(const std::string& path)
     if (IsRelativePath(path)) {
         // First try to resolve relative paths against the current
         // working directory.
-        std::string resolvedPath = _Resolve(TfPathCanonicalize(ArchGetCwd()),
-                                            path);
+        std::string resolvedPath = _Resolve(ArchGetCwd(), path);
         if (not resolvedPath.empty()) {
             return resolvedPath;
         }

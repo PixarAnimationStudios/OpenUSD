@@ -110,7 +110,7 @@ UsdKatanaCache::_SetMutedLayers(
     bool regexIsEmpty = layerRegex == "" || layerRegex == "^$";
     
     // use a better regex library?
-    boost::regex regex;
+    boost::regex regex(layerRegex.c_str());
 
     TF_FOR_ALL(stageLayer, stageLayers)
     {
@@ -127,7 +127,6 @@ UsdKatanaCache::_SetMutedLayers(
         {
             if (layer && boost::regex_match(
                 layerIdentifier.c_str(), 
-                layerRegex.c_str(),
                 regex))
             {
                 match = true;
@@ -205,7 +204,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
     bool givenAbsPath = !TfIsRelativePath(fileName);
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) :
-                                    TfPathCanonicalize(ArchGetCwd());
+                                    ArchGetCwd();
 
     std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
 
@@ -263,10 +262,10 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
                              std::string const& ignoreLayerRegex,
                              bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
+    bool givenAbsPath = !TfIsRelativePath(fileName);
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) :
-                                    TfPathCanonicalize(ArchGetCwd());
+                                    ArchGetCwd();
 
     std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
 

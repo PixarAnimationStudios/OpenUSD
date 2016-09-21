@@ -596,13 +596,13 @@ VT_API std::ostream& VtDictionaryPrettyPrint(
 
 /// Reads a text file at the specified \p fpath, evaluates its content string
 /// as a python dictionary and returns it as a VtDictionary.
-VtDictionary VtDictionaryFromFile(
+VT_API VtDictionary VtDictionaryFromFile(
     const std::string& fpath);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and saves the formatted string in a file at the specified \p fpath.
 /// The pprint module is used to format the dictionary.
-bool VtDictionaryPrettyPrintToFile(
+VT_API bool VtDictionaryPrettyPrintToFile(
     const VtDictionary& vtdict,
     const std::string& fpath);
 

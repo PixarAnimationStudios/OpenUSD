@@ -23,7 +23,8 @@
 //
 #ifndef USDABC_ALEMBIC_FILE_FORMAT_H
 #define USDABC_ALEMBIC_FILE_FORMAT_H
- 
+
+#include "pxr/usd/usdAbc/api.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
@@ -34,7 +35,8 @@
     ((Version, "1.0"))                  \
     ((Target,  "usd"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdAbcAlembicFileFormatTokens, USDABC_ALEMBIC_FILE_FORMAT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdAbcAlembicFileFormatTokens, USDABC_API,
+						 USDABC_ALEMBIC_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdAbcAlembicFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
@@ -52,7 +54,7 @@ public:
     virtual bool WriteToFile(const SdfLayerBase* layerBase,
                              const std::string& filePath,
                              const std::string& comment = std::string(),
-                             const FileFormatArguments& args = 
+                             const FileFormatArguments& args =
                                  FileFormatArguments()) const;
     virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
                                 const std::string& str) const;

@@ -46,7 +46,7 @@ main(int argc, char** argv)
     // Load the plugin and get the factory function.
     std::string error;
 #ifdef ARCH_OS_WINDOWS
-    HMODULE plugin = (HMODULE)ArchOpenLibrary(".\\libtestArchAbiPlugin.dll", ARCH_LIBRARY_LAZY);
+    HMODULE plugin = (HMODULE)ArchLibraryOpen(".\\libtestArchAbiPlugin.dll", ARCH_LIBRARY_LAZY);
     if (not plugin) {
         error = ArchStringPrintf("%ld", (long)GetLastError());
     }

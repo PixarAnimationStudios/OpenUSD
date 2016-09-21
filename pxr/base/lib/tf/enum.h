@@ -391,6 +391,7 @@ private:
     {
     }
 
+    TF_API
     void _FatalGetValueError(std::type_info const& typeInfo) const;
 
     const std::type_info* _typeInfo;
