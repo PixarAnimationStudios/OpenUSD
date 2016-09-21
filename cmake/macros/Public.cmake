@@ -565,6 +565,16 @@ function(pxr_plugin PLUGIN_NAME)
         )
     endif()
 
+    if(sl_CPPFILES)
+        pxr_add_filename_property(${PLUGIN_NAME} "${sl_CPPFILES}")
+    endif()
+    if(sl_PRIVATE_CLASSES)
+        pxr_add_filename_property(${PLUGIN_NAME} "${sl_PRIVATE_CLASSES}")
+    endif()
+    if(sl_PUBLIC_CLASSES)
+        pxr_add_filename_property(${PLUGIN_NAME} "${sl_PUBLIC_CLASSES}")
+    endif()
+
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
