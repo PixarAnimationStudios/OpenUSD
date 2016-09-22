@@ -147,7 +147,7 @@ Launch usdview with a sample asset.
 
 ```bash
 $ export PYTHONPATH=$PYTHONPATH:USD_INSTALL_ROOT/lib/python
-$ usdview extras/usd/tutorials/convertingLayerFormats/sphere.usda
+$ usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
 
 > Note: Replace ```USD_INSTALL_ROOT``` with the location set in your build,
