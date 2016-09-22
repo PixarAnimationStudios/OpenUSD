@@ -7,13 +7,19 @@ interchange between graphics applications.
 
 For more details, please visit the web site [here](http://openusd.org).
 
+Build Status
+------------
+
+|       | master | dev |
+| ----- | ------ | --- |
+| Linux | [![Build Status](https://travis-ci.org/PixarAnimationStudios/USD.svg?branch=master)](https://travis-ci.org/PixarAnimationStudios/USD) | [![Build Status](https://travis-ci.org/PixarAnimationStudios/USD.svg?branch=dev)](https://travis-ci.org/PixarAnimationStudios/USD) |
+
 Additional Documentation
 ------------------------
 
 * [User Documentation and Tutorials](http://openusd.org/docs/index.html)
 * [API Documentation](http://openusd.org/docs/api/index.html)
 * [Advanced Build Configuration](BUILDING.md)
-
 
 Getting Help
 ------------
