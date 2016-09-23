@@ -85,14 +85,17 @@ TF_REGISTRY_FUNCTION(TfType)
 // paths should be asset paths, when applicable, or identifiers if no asset
 // path exists for the desired layers.
 typedef set<string> _MutedLayers;
+typedef std::map<std::string, SdfAbstractDataRefPtr> _MutedLayerDataMap;
 static TfStaticData<_MutedLayers> _mutedLayers;
-// Global mutex protecting _mutedLayers.
+static TfStaticData<_MutedLayerDataMap> _mutedLayerData;
+// Global mutex protecting _mutedLayers and _mutedLayerData
 static TfStaticData<std::mutex> _mutedLayersMutex;
 // This is a global revision number that tracks changes to _mutedLayers.  Since
 // we seldom mute and unmute layers, this lets layers cache their muteness and
 // do quick validity checks without taking a lock and looking themselves up in
 // _mutedLayers.
 static std::atomic_size_t _mutedLayersRevision { 1 };
+
 
 // A registry for loaded layers.
 static TfStaticData<Sdf_LayerRegistry> _layerRegistry;
@@ -145,6 +148,23 @@ SdfLayer::~SdfLayer()
 {
     TF_DEBUG(SDF_LAYER).Msg(
         "SdfLayer::~SdfLayer('%s')\n", GetIdentifier().c_str());
+
+    if (IsMuted()) {
+        std::string mutedPath = _GetMutedPath();
+        SdfAbstractDataRefPtr mutedData;
+        {
+            std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+            // Drop any in-memory edits we may have been holding for this layer.
+            // To minimize time holding the lock, swap the data out and
+            // erase the entry, then release the lock before proceeding
+            // to drop the refcount.
+            _MutedLayerDataMap::iterator i = _mutedLayerData->find(mutedPath);
+            if (i != _mutedLayerData->end()) {
+                std::swap(mutedData, i->second);
+                _mutedLayerData->erase(i);
+            }
+        }
+    }
 
     std::lock_guard<std::mutex> lock(*_layerRegistryMutex);
 
@@ -2291,7 +2311,46 @@ SdfLayer::AddToMutedLayers(const string &path)
     }
     if (didChange) {
         if (SdfLayerHandle layer = Find(path)) {
-            layer->_Reload(/* force */ true);
+            if (layer->IsDirty()) {
+                SdfFileFormatConstPtr format = layer->GetFileFormat();
+                SdfAbstractDataRefPtr initializedData = 
+                    format->InitData(layer->GetFileFormatArguments());
+                if (format->IsStreamingLayer(*layer.operator->())) {
+                    // See the discussion in TransferContent()
+                    // about streaming layers; the same concerns
+                    // apply here.  We must swap out the actual data
+                    // ownership and tell clients the entire data
+                    // store has changed.
+                    {
+                        std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+                        TF_VERIFY((*_mutedLayerData).find(path) ==
+                                  (*_mutedLayerData).end());
+                        (*_mutedLayerData)[path] = layer->_data;
+                    }
+                    // _SetData() takes ownership of initializedData and sends
+                    // change notification.
+                    layer->_SetData(initializedData);
+                } else {
+                    // Copy the dirty layer data to an in-memory store
+                    // that will be owned by _mutedLayerData.
+                    SdfAbstractDataRefPtr mutedData = 
+                        format->InitData(layer->GetFileFormatArguments());
+                    mutedData->CopyFrom(layer->_data);
+                    {
+                        std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+                        TF_VERIFY((*_mutedLayerData).find(path) ==
+                                  (*_mutedLayerData).end());
+                        std::swap( (*_mutedLayerData)[path], mutedData );
+                    }
+                    // Mutate the layer's data to the initialized state.
+                    // This enables efficient change processing downstream.
+                    layer->_SetData(initializedData);
+                }
+                TF_VERIFY(layer->IsDirty());
+            } else {
+                // Reload as muted.
+                layer->_Reload(/* force */ true);
+            }
         }
         SdfNotice::LayerMutenessChanged(path, /* wasMuted = */ true).Send();
     }
@@ -2310,7 +2369,28 @@ SdfLayer::RemoveFromMutedLayers(const string &path)
     }
     if (didChange) {
         if (SdfLayerHandle layer = Find(path)) {
-            layer->_Reload(/* force */ true);
+            if (layer->IsDirty()) {
+                SdfAbstractDataRefPtr mutedData;
+                {
+                    std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+                    _MutedLayerDataMap::iterator i =
+                        _mutedLayerData->find(path);
+                    if (TF_VERIFY(i != _mutedLayerData->end())) {
+                        std::swap(mutedData, i->second);
+                        _mutedLayerData->erase(i);
+                    }
+                }
+                if (TF_VERIFY(mutedData)) {
+                    // If IsStreamingLayer() is true, this re-takes ownership
+                    // of the mutedData object.  Otherwise, this mutates
+                    // the existing data container to match its contents.
+                    layer->_SetData(mutedData);
+                }
+                TF_VERIFY(layer->IsDirty());
+            } else {
+                // Reload as unmuted.
+                layer->_Reload(/* force */ true);
+            }
         }
         SdfNotice::LayerMutenessChanged(path, /* wasMuted = */ false).Send();
     }
