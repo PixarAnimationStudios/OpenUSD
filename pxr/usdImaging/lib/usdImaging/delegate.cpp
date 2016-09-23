@@ -259,11 +259,6 @@ UsdImagingDelegate::_ShaderAdapterSharedPtr
 UsdImagingDelegate::_ShaderAdapterLookup(
         SdfPath const& shaderId) const
 {
-    auto it = _shaderAdapterMap.find(shaderId);
-    if (it != _shaderAdapterMap.end()) {
-        return it->second;
-    }
-
     return _defaultShaderAdapter;
 }
 
@@ -489,17 +484,6 @@ UsdImagingIndexProxy::AddDependency(SdfPath const& usdPath,
         }
     }
     _delegate->_pathAdapterMap[usdPath] = adapterToInsert;
-}
-
-void
-UsdImagingIndexProxy::AddShaderAdapter(
-        SdfPath const& shaderId,
-        UsdImagingShaderAdapterSharedPtr const& shaderAdapter)
-{
-    TF_DEBUG(USDIMAGING_SHADERS).Msg(
-            "Registering shader adapter for %s\n", shaderId.GetText());
-
-    _delegate->_shaderAdapterMap[shaderId] = shaderAdapter;
 }
 
 void

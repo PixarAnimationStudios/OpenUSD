@@ -620,10 +620,6 @@ public:
                         UsdImagingPrimAdapterSharedPtr const& adapter =
                                     UsdImagingPrimAdapterSharedPtr());
 
-    /// \brief Register a \p shaderAdapter to handle the shader at \p shaderId.
-    void AddShaderAdapter(SdfPath const& shaderId,
-            UsdImagingShaderAdapterSharedPtr const& shaderAdapter);
-
     SdfPath InsertMesh(SdfPath const& usdPath,
                        SdfPath const& shaderBinding,
                        UsdImagingInstancerContext const* instancerContext);
