@@ -31,7 +31,9 @@
 #include "pxr/base/tf/notice.h"
 
 /// \class UsdNotice
+///
 /// Container class for Usd notices
+///
 class UsdNotice {
 public:
 
@@ -49,6 +51,7 @@ public:
     };
 
     /// \class StageContentsChanged
+    ///
     /// Ultra-conservative notice sent when the given UsdStage's contents
     /// have changed in any way.  This notice is sent when \em any authoring
     /// is performed in any of the stage's participatory layers, in the
@@ -58,6 +61,7 @@ public:
     /// Receipt of this notice should cause clients to disregard any cached
     /// values for properties or metadata.  It does not \em necessarily imply
     /// invalidation of UsdPrim s.
+    ///
     class StageContentsChanged : public StageNotice {
     public:
         explicit StageContentsChanged(const UsdStageWeakPtr& stage)
@@ -66,6 +70,7 @@ public:
     };
 
     /// \class ObjectsChanged
+    ///
     /// Notice sent in response to authored changes that affect UsdObjects.
     ///
     /// The kinds of object changes are divided into two categories: "resync"
@@ -90,6 +95,7 @@ public:
     /// ChangedInfoOnly() methods).  Clients that wish to reason about all
     /// changes as a whole should use the GetResyncedPaths() and
     /// GetChangedInfoOnlyPaths() methods.
+    ///
     class ObjectsChanged : public StageNotice {
         friend class UsdStage;
         ObjectsChanged(const UsdStageWeakPtr &stage,
@@ -155,8 +161,10 @@ public:
     };
 
     /// \class StageEditTargetChanged
+    ///
     /// Notice sent when a stage's EditTarget has changed.  Sent in the
     /// thread that changed the target.
+    ///
     class StageEditTargetChanged : public StageNotice {
     public:
         explicit StageEditTargetChanged(const UsdStageWeakPtr &stage)
@@ -167,4 +175,3 @@ public:
 };
 
 #endif // USD_NOTICE_H
-

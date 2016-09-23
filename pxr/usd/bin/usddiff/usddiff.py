@@ -22,25 +22,32 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-
-# PLEASE NOTE: This utility may be open sourced, please hesitate to add new
-# dependencies.
-
-import os, sys
+import os, sys 
+from tempfile import NamedTemporaryFile
+from subprocess import call
 
 # generates a command list representing a call which will generate
 # a temporary ascii file used during diffing. 
-def _generateCatCommand(usdcatCmd, filePath, outPath):
-    if os.stat(filePath).st_size > 0:
-        return [usdcatCmd, filePath, '--out', outPath]
-    return ['cat', filePath, '--out', outPath]
+def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
+    if os.stat(inPath).st_size > 0:
+        command = [usdcatCmd, inPath, '--out', outPath]
+        if flatten:
+            command.append('--flatten')
+
+        if fmt and os.path.splitext(outPath)[1] == '.usd':
+            command.append('--usdFormat')
+            command.append(fmt)
+        
+        return command
+
+    return ['cat', inPath, '--out', outPath]
 
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
     from distutils.spawn import find_executable
     usdcatCmd = find_executable("usdcat")
     if not usdcatCmd:
-        sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH ")
+        sys.exit("Error: Could not find 'usdcat'. Expected it to be in PATH")
 
     # prefer USD_DIFF, then DIFF, else 'diff' 
     diffCmd = (os.environ.get('USD_DIFF') or 
@@ -52,6 +59,23 @@ def _findDiffTools():
                  "to be installed.")
 
     return (usdcatCmd, diffCmd)
+
+def _getFileFormat(path):
+    from pxr import Sdf
+
+    # Note that python's os.path.splitext retains the '.' portion
+    # when obtaining an extension, but Sdf's Fileformat API doesn't 
+    # expect one.
+    _, ext = os.path.splitext(path)
+    fileFormat = Sdf.FileFormat.FindByExtension(ext[1:])
+
+    if fileFormat and fileFormat.CanRead(path):
+        return fileFormat.formatId
+
+    return None
+
+def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
+    call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)) 
 
 def main():
     import argparse
@@ -68,21 +92,71 @@ def main():
                         help='The baseline usd file to diff against.')
     parser.add_argument('comparison',
                         help='The usd file to compare against the baseline')
+    parser.add_argument('-n', '--noeffect', action='store_true',
+                        help='Do not edit either file.') 
+    parser.add_argument('-c', '--compose', action='store_true',
+                        help='Fully compose both layers as Usd Stages.')
     results = parser.parse_args()
 
-    import tempfile
-    with tempfile.NamedTemporaryFile(suffix='.usda') as usda1, \
-         tempfile.NamedTemporaryFile(suffix='.usda') as usda2:
+    # Generate recognizable suffixes for our files in the temp dir
+    # location of the form /temp/string__originalFileName.usda 
+    # where originalFileName is the basename(no extension) of the original file.
+    # This allows users to tell which file is which when diffing.
+    tempBaselineFileName = ("__" + 
+        os.path.splitext(os.path.basename(results.baseline))[0] + '.usda') 
+    tempComparisonFileName = ("__" +     
+        os.path.splitext(os.path.basename(results.comparison))[0] + '.usda')
+
+    with NamedTemporaryFile(suffix=tempBaselineFileName) as tempBaseline, \
+         NamedTemporaryFile(suffix=tempComparisonFileName) as tempComparison:
 
         usdcatCmd, diffCmd = _findDiffTools()
+        baselineFileType = _getFileFormat(results.baseline)
+        comparisonFileType = _getFileFormat(results.comparison)
 
-        # create the temporary ascii usda files to diff
-        from subprocess import call
-        call(_generateCatCommand(usdcatCmd, results.baseline, usda1.name)) 
-        call(_generateCatCommand(usdcatCmd, results.comparison, usda2.name)) 
+        pluginError = 'Error: Cannot find supported file format plugin for %s'
+        if baselineFileType is None:
+            sys.exit(pluginError % results.baseline)
 
-        # use sys exit to relay result of diff command 
-        sys.exit(call([diffCmd, usda1.name, usda2.name]))
+        if comparisonFileType is None:
+            sys.exit(pluginError % results.comparison)
+
+        # Dump the contents of our files into the temporaries
+        _convertTo(results.baseline, tempBaseline.name, usdcatCmd, 
+                   flatten=results.compose, fmt=None)
+        _convertTo(results.comparison, tempComparison.name, usdcatCmd,
+                   flatten=results.compose, fmt=None)
+
+        tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
+        tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
+
+        diffResult = call([diffCmd, tempBaseline.name, tempComparison.name])
+
+        tempBaselineChanged = ( 
+            os.path.getmtime(tempBaseline.name) != tempBaselineTimestamp)
+        tempComparisonChanged = (
+            os.path.getmtime(tempComparison.name) != tempComparisonTimestamp)
+
+        # If we intend to edit either of the files
+        if not results.noeffect:
+            accessError = 'Error: Cannot write to %s, insufficient permissions' 
+            if tempBaselineChanged:
+                if not os.access(results.baseline, os.W_OK):
+                    sys.exit(accessError % results.baseline)
+
+                _convertTo(tempBaseline.name, results.baseline,
+                           usdcatCmd, flatten=results.compose,
+                           fmt=baselineFileType)
+
+            if tempComparisonChanged:
+                if not os.access(results.comparison, os.W_OK):
+                    sys.exit(accessError % results.comparison)
+
+                _convertTo(tempComparison.name, results.comparison,
+                           usdcatCmd, flatten=results.compose,
+                           fmt=comparisonFileType)
+
+        sys.exit(diffResult)
 
 if __name__ == "__main__":
     main()

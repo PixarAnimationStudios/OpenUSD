@@ -8,6 +8,7 @@ set(DIRS
     usdShade
     usdHydra
     usdRi
+    usdUI
     usdUtils
 )
 

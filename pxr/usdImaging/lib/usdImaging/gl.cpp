@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/usdImaging/usdImaging/gl.h"
 #include "pxr/usdImaging/usdImaging/hdEngine.h"
 #include "pxr/usdImaging/usdImaging/refEngine.h"
@@ -31,6 +33,7 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/textureRegistry.h"
 
 #include <boost/foreach.hpp>
 
@@ -58,6 +61,8 @@ _IsEnabledHydra()
 bool
 UsdImagingGL::IsEnabledHydra()
 {
+    GlfGlewInit();
+
     static bool isEnabledHydra = _IsEnabledHydra();
     return isEnabledHydra;
 }
@@ -302,10 +307,33 @@ UsdImagingGL::TestIntersectionBatch(
     const SdfPathVector& paths, 
     RenderParams params,
     unsigned int pickResolution,
-    std::function< SdfPath(const SdfPath&) > pathTranslator,
+    PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
     return _engine->TestIntersectionBatch(viewMatrix, projectionMatrix,
                 worldToLocalSpace, paths, params, pickResolution,
                 pathTranslator, outHit);
+}
+
+/* virtual */
+VtDictionary
+UsdImagingGL::GetResourceAllocation() const
+{
+    VtDictionary dict;
+    dict = _engine->GetResourceAllocation();
+
+    // append texture usage
+    size_t texMem = 0;
+    for (auto const &texInfo :
+             GlfTextureRegistry::GetInstance().GetTextureInfos()) {
+        VtDictionary::const_iterator it = texInfo.find("memoryUsed");
+        if (it != texInfo.end()) {
+            VtValue mem = it->second;
+            if (mem.IsHolding<size_t>()) {
+                texMem += mem.Get<size_t>();
+            }
+        }
+    }
+    dict["textureMemoryUsed"] = texMem;
+    return dict;
 }

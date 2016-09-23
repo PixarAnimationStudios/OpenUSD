@@ -32,6 +32,8 @@
 
 class Hd_UnitTestDrawingQGLWidget;
 
+/// \class Hd_UnitTestGLDrawing
+///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
 class Hd_UnitTestGLDrawing {

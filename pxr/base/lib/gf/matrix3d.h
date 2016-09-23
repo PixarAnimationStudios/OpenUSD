@@ -28,6 +28,9 @@
 #ifndef GF_MATRIX3D_H
 #define GF_MATRIX3D_H
 
+/// \file gf/matrix3d.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/traits.h"
@@ -37,10 +40,6 @@
 #include <iosfwd>
 #include <vector>
 
-/// \file matrix3d.h
-/// \ingroup group_gf_LinearAlgebra
-///
-
 template <>
 struct GfIsGfMatrix<class GfMatrix3d> { static const bool value = true; };
 
@@ -49,11 +48,12 @@ class GfMatrix3f;
 class GfRotation;
 class GfQuaternion;
 
-/// \class GfMatrix3d matrix3d.h "pxr/base/gf/matrix3d.h"
+/// \class GfMatrix3d
 /// \ingroup group_gf_LinearAlgebra
-/// \brief Stores a 3x3 matrix of \c double elements. A basic type.
 ///
-/// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c> 
+/// Stores a 3x3 matrix of \c double elements. A basic type.
+///
+/// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c>
 /// indexes the element in the \e i th row and the \e j th column.
 ///
 /// <h3>3D Transformations</h3>
@@ -81,8 +81,7 @@ public:
     static const size_t numRows = 3;
     static const size_t numColumns = 3;
 
-    /// Default constructor. Leaves the matrix component values
-    /// undefined.
+    /// Default constructor. Leaves the matrix component values undefined.
     GfMatrix3d() {}
 
     /// Constructor. Initializes the matrix from 9 independent
@@ -96,14 +95,14 @@ public:
             m20, m21, m22);
     }
 
-    /// Constructor. Initializes the matrix from a 3x3 array of
-    /// \c double values, specified in row-major order.
+    /// Constructor. Initializes the matrix from a 3x3 array
+    /// of \c double values, specified in row-major order.
     GfMatrix3d(const double m[3][3]) {
         Set(m);
     }
 
-    /// Constructor. Explicitly initializes the matrix to \e s times
-    /// the identity matrix.
+    /// Constructor. Explicitly initializes the matrix to \e s times the
+    /// identity matrix.
     explicit GfMatrix3d(double s) {
         SetDiagonal(s);
     }
@@ -111,7 +110,7 @@ public:
     /// This explicit constructor initializes the matrix to \p s times
     /// the identity matrix.
     explicit GfMatrix3d(int s) {
-	SetDiagonal(s);
+        SetDiagonal(s);
     }
 
     /// Constructor. Explicitly initializes the matrix to diagonal form,
@@ -120,27 +119,26 @@ public:
         SetDiagonal(v);
     }
 
-    /// Constructor.  Initialize the matrix from a vector of vectors of double.
-    /// The vector is expected to be 3x3.  If it is too big, only the first
-    /// 3 rows and/or columns will be used.  If it is too small, uninitialized
-    /// elements will be filled in with the corresponding elements from an
-    /// identity matrix.
+    /// Constructor.  Initialize the matrix from a vector of vectors of
+    /// double. The vector is expected to be 3x3. If it is
+    /// too big, only the first 3 rows and/or columns will be used.
+    /// If it is too small, uninitialized elements will be filled in with
+    /// the corresponding elements from an identity matrix.
     ///
     explicit GfMatrix3d(const std::vector< std::vector<double> >& v);
 
-    /// Constructor.  Initialize the matrix from a vector of vectors of float.
-    /// The vector is expected to be 3x3.  If it is too big, only the first
-    /// 3 rows and/or columns will be used.  If it is too small, uninitialized
-    /// elements will be filled in with the corresponding elements from an
-    /// identity matrix.
+    /// Constructor.  Initialize the matrix from a vector of vectors of
+    /// float. The vector is expected to be 3x3. If it is
+    /// too big, only the first 3 rows and/or columns will be used.
+    /// If it is too small, uninitialized elements will be filled in with
+    /// the corresponding elements from an identity matrix.
     ///
     explicit GfMatrix3d(const std::vector< std::vector<float> >& v);
 
     /// Constructor. Initialize matrix from rotation.
     GfMatrix3d(const GfRotation& rot);
 
-    //!
-    // This explicit constructor converts a "float" matrix to a "double" matrix.
+    /// This explicit constructor converts a "float" matrix to a "double" matrix.
     explicit GfMatrix3d(const class GfMatrix3f& m);
 
     /// Sets a row of the matrix from a Vec3.
@@ -167,9 +165,9 @@ public:
         return GfVec3d(_mtx[0][i], _mtx[1][i], _mtx[2][i]);
     }
 
-    /// \brief Sets the matrix from 9 independent \c double values, specified
-    /// in row-major order. For example, parameter \e m10 specifies the
-    /// value in row 1 and column 0.
+    /// Sets the matrix from 9 independent \c double values,
+    /// specified in row-major order. For example, parameter \e m10 specifies
+    /// the value in row 1 and column 0.
     GfMatrix3d& Set(double m00, double m01, double m02, 
                     double m10, double m11, double m12, 
                     double m20, double m21, double m22) {
@@ -179,8 +177,8 @@ public:
         return *this;
     }
 
-    /// \brief Sets the matrix from a 3x3 array of \c double values, specified
-    /// in row-major order.
+    /// Sets the matrix from a 3x3 array of \c double
+    /// values, specified in row-major order.
     GfMatrix3d& Set(const double m[3][3]) {
         _mtx[0][0] = m[0][0];
         _mtx[0][1] = m[0][1];
@@ -223,15 +221,15 @@ public:
     const double* GetArray() const {
         return _mtx.GetData();
     }
-    
-    /// Accesses an indexed row \e i of the matrix as an array of 3 \c double
-    /// values so that standard indexing (such as <c>m[0][1]</c>) works
-    /// correctly.
+
+    /// Accesses an indexed row \e i of the matrix as an array of 3 \c
+    /// double values so that standard indexing (such as <c>m[0][1]</c>)
+    /// works correctly.
     double* operator [](int i) { return _mtx[i]; }
 
-    /// Accesses an indexed row \e i of the matrix as an array of 3 \c double
-    /// values so that standard indexing (such as <c>m[0][1]</c>) works
-    /// correctly.
+    /// Accesses an indexed row \e i of the matrix as an array of 3 \c
+    /// double values so that standard indexing (such as <c>m[0][1]</c>)
+    /// works correctly.
     const double* operator [](int i) const { return _mtx[i]; }
 
     /// Hash.
@@ -242,7 +240,7 @@ public:
         while (nElems--)
             boost::hash_combine(h, *p++);
         return h;
-    }        
+    }
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
@@ -268,10 +266,10 @@ public:
     GfMatrix3d GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
-    /// matrix is singular. (FLT_MAX is the largest value a \c float can have, 
-    /// as defined by the system.) The matrix is considered singular if the 
-    /// determinant is less than or equal to the optional parameter \e eps.
-    /// If \e det is non-null, <c>*det</c> is set to the determinant.
+    /// matrix is singular. (FLT_MAX is the largest value a \c float can have,
+    /// as defined by the system.) The matrix is considered singular if the
+    /// determinant is less than or equal to the optional parameter \e eps. If
+    /// \e det is non-null, <c>*det</c> is set to the determinant.
     GfMatrix3d GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
@@ -313,12 +311,11 @@ public:
     /// Multiplies the matrix by a double.
     GfMatrix3d& operator *=(double);
 
-    ///
-    // Returns the product of a matrix and a double.
+    /// Returns the product of a matrix and a double.
     friend GfMatrix3d operator *(const GfMatrix3d& m1, double d)
     {
-	GfMatrix3d m = m1;
-	return m *= d;
+        GfMatrix3d m = m1;
+        return m *= d;
     }
 
     ///
@@ -345,15 +342,15 @@ public:
         return tmp;
     }
 
-    /// Subtracts matrix \e m2 from \e m1
+    /// Subtracts matrix \e m2 from \e m1.
     friend GfMatrix3d operator -(const GfMatrix3d& m1, const GfMatrix3d& m2)
     {
         GfMatrix3d tmp(m1);
         tmp -= m2;
         return tmp;
     }
-    
-    /// Multiplies matrix \e m1 by \e m2
+
+    /// Multiplies matrix \e m1 by \e m2.
     friend GfMatrix3d operator *(const GfMatrix3d& m1, const GfMatrix3d& m2)
     {
         GfMatrix3d tmp(m1);

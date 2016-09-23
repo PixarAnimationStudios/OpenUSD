@@ -28,25 +28,27 @@
 
 #include <string>
 
-
 /// \class VtKeyValue
-/// \brief Provides a container for a key-value pair where the key is a
-/// std::sting and the value is a \a VtValue.  Used for creating a key-value
-/// pair to be stored in a \a VtDictionary.
+///
+/// Provides a container for a key-value pair where the key is a std::sting
+/// and the value is a \a VtValue.
+/// 
+/// Used for creating a key-value pair to be stored in a \a VtDictionary.
+///
 class VtKeyValue {
 
   public:
 
-    /// \brief Constructor taking a key and a value.
+    /// Constructor taking a key and a value.
     template <typename T>
     VtKeyValue(std::string const &key, T const &value) :
         _key(key), _value(value) {}
 
-    /// \brief Key accessor.
+    /// Key accessor.
     std::string const &GetKey() const {
         return _key;
     }
-    /// \brief Value accessor.
+    /// Value accessor.
     VtValue const &GetValue() const {
         return _value;
     }

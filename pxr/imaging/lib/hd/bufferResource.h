@@ -41,6 +41,8 @@ typedef boost::shared_ptr<HdBufferResource> HdBufferResourceSharedPtr;
 typedef std::vector<
     std::pair<TfToken, HdBufferResourceSharedPtr> > HdBufferResourceNamedList;
 
+/// \class HdBufferResource
+///
 /// A specific type of HdResource (GPU resource) representing an OpenGL buffer
 /// object.
 ///

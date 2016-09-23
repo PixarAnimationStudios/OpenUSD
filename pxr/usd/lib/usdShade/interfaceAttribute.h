@@ -24,23 +24,23 @@
 #ifndef USDSHADE_INTERFACEATTRIBUTE_H
 #define USDSHADE_INTERFACEATTRIBUTE_H
 
-
-
-
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/parameter.h"
 
-/// \brief Schema wrapper for UsdAttribute for authoring and introspecting
+/// \class UsdShadeInterfaceAttribute
+///
+/// Schema wrapper for UsdAttribute for authoring and introspecting
 /// interface attributes, which are attributes on a UsdShadeSubgraph that provide
 /// values that can be instanced onto UsdShadeParameter's in shading networks .
 ///
 /// See \ref UsdShadeSubgraph_Interfaces "Look Interface Attributes" for more 
 /// detail on Look Interfaces and the API for using them.
+///
 class UsdShadeInterfaceAttribute
 {
 public:
-    // Default constructor returns an invalid InterfaceAttribute.  Exists for 
-    // container classes
+    /// Default constructor returns an invalid InterfaceAttribute.  Exists for
+    /// container classes
     UsdShadeInterfaceAttribute()
     {
         // nothing
@@ -63,10 +63,11 @@ public:
 
     /// \name Authoring Values and Driving them to Recipient Parameters
     /// @{
-    /// \brief Set the value for the look attribute.
+
+    /// Set the value for the look attribute.
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// \brief Make this InterfaceAttribute drive the value of UsdShadeParameter
+    /// Make this InterfaceAttribute drive the value of UsdShadeParameter
     /// \p recipient
     /// 
     /// \p recipient should be a UsdShadeParameter on a shader for a
@@ -78,7 +79,7 @@ public:
             const TfToken& renderTarget,
             const UsdShadeParameter& recipient) const;
 
-    /// \brief Make this InterfaceAttribute drive the value of UsdShadeParameter
+    /// Make this InterfaceAttribute drive the value of UsdShadeParameter
     /// \p recipient
     /// 
     /// \overload
@@ -90,30 +91,31 @@ public:
             const TfToken& renderTarget,
             const SdfPath& recipientPath) const;
 
-    /// \brief Set documentation string for this attribute.
+    /// Set documentation string for this attribute.
     /// \sa UsdObject::SetDocumentation()
     bool SetDocumentation(
             const std::string& docs) const;
 
-    /// \brief Get documentation string for this attribute.
+    /// Get documentation string for this attribute.
     /// \sa UsdObject::GetDocumentation()
     std::string GetDocumentation() const;
 
-    /// \brief Set the displayGroup metadata for this interface attribute,
+    /// Set the displayGroup metadata for this interface attribute,
     /// i.e. hinting for the location and nesting of the attribute.
     /// \sa UsdProperty::SetDisplayGroup(), UsdProperty::SetNestedDisplayGroup()
     bool SetDisplayGroup(
             const std::string& displayGroup) const;
 
-    /// \brief Get the displayGroup metadata for this interface attribute,
+    /// Get the displayGroup metadata for this interface attribute,
     /// i.e. hinting for the location and nesting of the attribute.
     /// \sa UsdProperty::GetDisplayGroup(), UsdProperty::GetNestedDisplayGroup()
     std::string GetDisplayGroup() const;
-    /// @}
 
+    /// @}
     // ---------------------------------------------------------------
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
+    /// @{
 
     typedef const UsdAttribute UsdShadeInterfaceAttribute::*_UnspecifiedBoolType;
 
@@ -140,12 +142,14 @@ public:
     UsdAttribute const &GetAttr() const { return _attr; }
 
     // TODO
-    /// \brief Return true if the wrapped UsdAttribute::IsDefined(), and in
+    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
     /// addition the attribute is identified as a Primvar.
     bool IsDefined() const { return 
         _attr;
         //IsShaderInterfaceAttribute(_attr); 
     }
+
+    /// @}
 
     /// \anchor UsdShadeInterfaceAttribute
     /// Return true if this Primvar is valid for querying and authoring

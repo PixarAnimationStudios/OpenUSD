@@ -61,7 +61,7 @@ public:
     // bypasses the lighting context down to HdxRenderTask (transitional method)
     void SetBypassedLightingState(const GlfSimpleLightingContextPtr &src);
 
-    // set the camera matrices for the HdCamera injected in the render graph
+    // set the camera matrices for the HdxCamera injected in the render graph
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
@@ -74,6 +74,9 @@ public:
 
     // returns true if the image is converged.
     virtual bool IsConverged() const;
+
+    /// Returns true if the named option is enabled by the delegate.
+    virtual bool IsEnabled(TfToken const& option) const;
 
     // returns the root namespace scope which tasks, camera and lights
     // belong to.
@@ -129,4 +132,6 @@ private:
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
     _ValueCacheMap _valueCacheMap;
+
+    std::vector<GfVec4d> _clipPlanes;
 };

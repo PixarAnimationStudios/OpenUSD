@@ -52,9 +52,9 @@ class TestGfRange(unittest.TestCase):
 
             v = makeValue(Value, [1, 2, 3, 4])
             r = Range()
-            r.min = v;
+            r.min = v
             self.assertEqual(r.min, v)
-            r.max = v;
+            r.max = v
             self.assertEqual(r.max, v)
 
             r = Range()

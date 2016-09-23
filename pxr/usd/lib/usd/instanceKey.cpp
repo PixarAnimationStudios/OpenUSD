@@ -63,7 +63,7 @@ Usd_InstanceKey::operator!=(const Usd_InstanceKey& rhs) const
 size_t hash_value(const Usd_InstanceKey& key)
 {
     size_t hash = hash_value(key._pcpInstanceKey);
-    BOOST_FOREACH(const Usd_ResolvedClipInfo& clipInfo, key._clipInfo) {
+    for (const Usd_ResolvedClipInfo& clipInfo: key._clipInfo) {
         boost::hash_combine(hash, clipInfo.GetHash());
     }
 

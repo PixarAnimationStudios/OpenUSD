@@ -42,7 +42,7 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdRi/statements.h"
 #include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 #include "usdKatana/lookAPI.h"
 
@@ -100,6 +100,14 @@ _ResolveAssetPath(const std::string &assetPath, bool asModel)
     // If we could not resolve the path, return the given input-- i.e., this
     // may be a new asset path to which a DSO is writing.
     return assetPath;
+}
+
+double
+PxrUsdKatanaUtils::ReverseTimeSample(double sample)
+{
+    // Only multiply when the sample is not 0 to avoid writing
+    // out a motion block containing -0.
+    return (sample == 0.0) ? sample : sample * -1;
 }
 
 void
@@ -953,7 +961,7 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
 }
 
 std::string
-PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
+PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         const SdfPath& path,
         const PxrUsdKatanaUsdInPrivateData& data)
 {
@@ -967,12 +975,12 @@ PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
         return basePath;
     }
 
-    UsdShadeLook look = UsdShadeLook(prim);
-    if (not look.HasBaseLook()) {
+    UsdShadeMaterial materialSchema = UsdShadeMaterial(prim);
+    if (not materialSchema.HasBaseMaterial()) {
         return basePath;
     }
 
-    SdfPath parentPath = look.GetBaseLookPath();
+    SdfPath parentPath = materialSchema.GetBaseMaterialPath();
     UsdPrim parentPrim = data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
 
     // Asset sanity check. It is possible the derivesFrom relationship
@@ -1001,7 +1009,7 @@ PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
             parentPath = instancePath.AppendPath(parentPath.ReplacePrefix(
                 masterPath, SdfPath::ReflexiveRelativePath()));
         } else {
-            FnLogWarn("Error converting UsdLook path <" << path.GetString() <<
+            FnLogWarn("Error converting UsdMaterial path <" << path.GetString() <<
                 "> to katana location: could not map parent path <" <<
                 parentPath.GetString() << "> to uninstanced location.");
             return basePath;
@@ -1009,7 +1017,7 @@ PxrUsdKatanaUtils::ConvertUsdLookPathToKatLocation(
     }
 
     std::string parentKatLoc = 
-        ConvertUsdLookPathToKatLocation(parentPath, data);
+        ConvertUsdMaterialPathToKatLocation(parentPath, data);
 
     std::string primName = prim.GetName();
     UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
@@ -1235,6 +1243,7 @@ FnKat::DoubleAttribute
 PxrUsdKatanaUtils::ConvertBoundsToAttribute(
         const std::vector<GfBBox3d>& bounds,
         const std::vector<double>& motionSampleTimes,
+        const bool isMotionBackward,
         bool* hasInfiniteBounds)
 {
     FnKat::DoubleBuilder boundBuilder(6);
@@ -1265,7 +1274,9 @@ PxrUsdKatanaUtils::ConvertBoundsToAttribute(
             *hasInfiniteBounds = true;
         }
 
-        std::vector<double> &boundData = boundBuilder.get(fabs(relSampleTime));
+        std::vector<double> &boundData = boundBuilder.get(
+            isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
         boundData.push_back( min[0] );
         boundData.push_back( max[0] );
         boundData.push_back( min[1] );

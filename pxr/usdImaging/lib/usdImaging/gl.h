@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file gl.h
+
 #pragma once
 
 #include "pxr/usdImaging/usdImaging/engine.h"
@@ -37,7 +40,8 @@ typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
 typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 
 /// \class UsdImagingGL
-/// \brief Convenience class that abstracts whether we are rendering via
+///
+/// Convenience class that abstracts whether we are rendering via
 /// a high-performance Hd render engine, or a simple vbo renderer that can
 /// run on old openGl versions.
 ///
@@ -47,6 +51,7 @@ typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 /// \li the environment variable HD_ENABLED is unset, or set to "1"
 /// 
 /// So, to disable Hd rendering for testing purposes, set HD_ENABLED to "0"
+///
 class UsdImagingGL : public UsdImagingEngine {
 public:
 
@@ -157,8 +162,10 @@ public:
         const SdfPathVector& paths, 
         RenderParams params,
         unsigned int pickResolution,
-        std::function< SdfPath(const SdfPath&) > pathTranslator,
+        PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
+
+    virtual VtDictionary GetResourceAllocation() const;
 
 private:
     UsdImagingEngineSharedPtr _engine;

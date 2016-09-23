@@ -1,7 +1,7 @@
 /*!
-\page usdHydra_page_front UsdHydra : USD Shading Schema for Hydra
+\page usdHydra_page_front UsdHydra : USD Hydra Schemas
 \if ( PIXAR_MFB_BUILD )
-\mainpage UsdHydra : USD Shading Schema for Hydra
+\mainpage UsdHydra : USD Hydra Schemas
 \publicLib
 \endif
 
@@ -10,5 +10,6 @@
 UsdHydra provides schemas and behaviors for creating and connecting shading
 networks based on UsdShade.
 
+\note These schemas are still a work in progress.
 
 */

@@ -90,8 +90,7 @@ private:
 
 class ProbeListener : public TfWeakBase {
 public:
-    explicit ProbeListener(int identity)
-        : _identity(identity)
+    explicit ProbeListener()
     {
     }
 
@@ -99,9 +98,6 @@ public:
     void ProcessNotice(const TfNotice&) {
         processedNoticeCount++;
     }
-
-private:
-    int _identity;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -115,7 +111,7 @@ static bool
 Test_TfProbe()
 {
     _NoticeProbe _probe;
-    ProbeListener *l1 = new ProbeListener(1);
+    ProbeListener *l1 = new ProbeListener();
     TfWeakPtr<ProbeListener> wl1(l1);
 
     TfNotice::Register(wl1, &ProbeListener::ProcessNotice);

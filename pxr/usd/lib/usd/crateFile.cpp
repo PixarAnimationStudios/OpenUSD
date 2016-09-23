@@ -25,6 +25,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -45,6 +46,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/iterator.h"
@@ -56,6 +58,8 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -72,41 +76,47 @@
 #include <tuple>
 #include <type_traits>
 
-#include <sys/mman.h>
-
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
 
+#define DEFAULT_NEW_VERSION "0.0.1"
+TF_DEFINE_ENV_SETTING(
+    USD_WRITE_NEW_USDC_FILES_AS_VERSION, DEFAULT_NEW_VERSION,
+    "When writing new Usd Crate files, write them as this version.  "
+    "This must have the same major version as the software and have less or "
+    "equal minor and patch versions.  This is only for new files; saving "
+    "edits to an existing file preserves its version.");
+
 // Write nbytes bytes to fd at pos.
 static inline ssize_t
-WriteToFd(int fd, void const *bytes, ssize_t nbytes, int64_t pos) {
-    // It's claimed that correct, modern POSIX will never return 0 for (p)write
-    // unless nbytes is zero.  It will either be the case that some bytes were
-    // written, or we get an error return.
-
-    // Write and check if all got written (most common case).
-    ssize_t nwritten = pwrite(fd, bytes, nbytes, pos);
-    if (ARCH_LIKELY(nwritten == nbytes))
-        return nwritten;
-
-    // Track a total and retry until we write everything or hit an error.
-    ssize_t total = std::max<ssize_t>(nwritten, 0);
-    while (nwritten != -1) {
-        // Update bookkeeping and retry.
-        total += nwritten;
-        nbytes -= nwritten;
-        pos += nwritten;
-        bytes = static_cast<char const *>(bytes) + nwritten;
-        nwritten = pwrite(fd, bytes, nbytes, pos);
-        if (ARCH_LIKELY(nwritten == nbytes))
-            return total + nwritten;
+WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
+    int64_t nwritten = ArchPWrite(file, bytes, nbytes, pos);
+    if (ARCH_UNLIKELY(nwritten < 0)) {
+        TF_RUNTIME_ERROR("Failed writing usdc data: %s",
+                         ArchStrerror().c_str());
+        nwritten = 0;
     }
+    return nwritten;
+}
 
-    // Error case.
-    TF_RUNTIME_ERROR("Failed writing usdc data: %s", ArchStrerror().c_str());
-    return total;
-}    
+namespace Usd_CrateFile
+{
+// Metafunction that determines if a T instance can be read/written by simple
+// bitwise copy.
+template <class T>
+struct _IsBitwiseReadWrite {
+    static const bool value =
+        std::is_enum<T>::value ||
+        std::is_arithmetic<T>::value ||
+        std::is_same<T, half>::value ||
+        std::is_trivial<T>::value ||
+        GfIsGfVec<T>::value ||
+        GfIsGfMatrix<T>::value ||
+        GfIsGfQuat<T>::value ||
+        std::is_base_of<Index, T>::value;
+};
+} // Usd_CrateFile
 
 namespace {
 
@@ -124,21 +134,6 @@ constexpr _SectionName _SpecsSectionName = "SPECS";
 constexpr _SectionName _KnownSections[] = {
     _TokensSectionName, _StringsSectionName, _FieldsSectionName,
     _FieldSetsSectionName, _PathsSectionName, _SpecsSectionName
-};
-
-// Metafunction that determines if a T instance can be read/written by simple
-// bitwise copy.
-template <class T>
-struct _IsBitwiseReadWrite {
-    static const bool value =
-        std::is_enum<T>::value or
-        std::is_arithmetic<T>::value or
-        std::is_same<T, half>::value or
-        std::is_trivial<T>::value or
-        GfIsGfVec<T>::value or
-        GfIsGfMatrix<T>::value or
-        GfIsGfQuat<T>::value or
-        std::is_base_of<_BitwiseReadWrite, T>::value;
 };
 
 template <class T>
@@ -184,23 +179,6 @@ static constexpr ValueRep ValueRepForArray(uint64_t payload = 0) {
                     /*isInlined=*/false, /*isArray=*/true, payload);
 }
 
-int64_t
-_GetFileSize(FILE *f)
-{
-    const int fd = fileno(f);
-    struct stat fileInfo;
-    if (fstat(fd, &fileInfo) != 0) {
-        TF_RUNTIME_ERROR("Error retrieving file size");
-        return -1;
-    }
-    return fileInfo.st_size;
-}
-
-string
-_GetVersionString(uint8_t major, uint8_t minor, uint8_t patch) {
-    return TfStringPrintf("%d.%d.%d", major, minor, patch);
-}
-
 } // anon
 
 
@@ -223,18 +201,118 @@ using std::unordered_map;
 using std::vector;
 
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 0;
-constexpr uint8_t USDC_PATCH = 1;
+constexpr uint8_t USDC_MINOR = 1;
+constexpr uint8_t USDC_PATCH = 0;
+
+struct CrateFile::Version
+{
+    // Not named 'major' since that's a macro name conflict on POSIXes.
+    uint8_t majver, minver, patchver;
+
+    constexpr Version() : Version(0,0,0) {}
+    constexpr Version(uint8_t majver, uint8_t minver, uint8_t patchver)
+        : majver(majver), minver(minver), patchver(patchver) {}
+
+    explicit Version(CrateFile::_BootStrap const &boot)
+        : Version(boot.version[0], boot.version[1], boot.version[2]) {}
+    
+    static Version FromString(char const *str) {
+        uint32_t maj, min, pat;
+        if (sscanf(str, "%u.%u.%u", &maj, &min, &pat) != 3 ||
+            maj > 255 || min > 255 || pat > 255) {
+            return Version();
+        }
+        return Version(maj, min, pat);
+    }
+
+    constexpr uint32_t AsInt() const {
+        return static_cast<uint32_t>(majver) << 16 |
+            static_cast<uint32_t>(minver) << 8 |
+            static_cast<uint32_t>(patchver);
+    }
+
+    std::string AsString() const {
+        return TfStringPrintf("%d.%d.%d", majver, minver, patchver);
+    }
+
+    bool IsValid() const { return AsInt() != 0; }
+
+    // Return true if fileVer has the same major version as this, and has a
+    // lesser or same minor version.  Patch version irrelevant, since the
+    // versioning scheme specifies that patch level changes are
+    // forward-compatible.
+    bool CanRead(Version const &fileVer) const {
+        return fileVer.majver == majver && fileVer.minver <= minver;
+    }
+
+    // Return true if fileVer has the same major version as this, and has a
+    // lesser minor version, or has the same minor version and a lesser or equal
+    // patch version.
+    bool CanWrite(Version const &fileVer) const {
+        return fileVer.majver == majver &&
+            (fileVer.minver < minver ||
+             (fileVer.minver == minver && fileVer.patchver <= patchver));
+    }        
+    
+#define LOGIC_OP(op)                                                    \
+    constexpr bool operator op(Version const &other) const {            \
+        return AsInt() op other.AsInt();                                \
+    }
+    LOGIC_OP(==); LOGIC_OP(!=);
+    LOGIC_OP(<);  LOGIC_OP(>);
+    LOGIC_OP(<=); LOGIC_OP(>=);
+#undef LOGIC_OP
+};
+
+constexpr CrateFile::Version
+_SoftwareVersion { USDC_MAJOR, USDC_MINOR, USDC_PATCH };
+
+static CrateFile::Version
+_GetVersionForNewlyCreatedFiles() {
+    // Read the env setting and try to parse a version.  If that fails to
+    // give a version this software is capable of writing, fall back to the
+    // _SoftwareVersion.
+    string setting = TfGetEnvSetting(USD_WRITE_NEW_USDC_FILES_AS_VERSION);
+    auto ver = CrateFile::Version::FromString(setting.c_str());
+    if (!ver.IsValid() || !_SoftwareVersion.CanWrite(ver)) {
+        TF_WARN("Invalid value '%s' for USD_WRITE_NEW_USDC_FILES_AS_VERSION - "
+                "falling back to default '%s'",
+                setting.c_str(), DEFAULT_NEW_VERSION);
+        ver = CrateFile::Version::FromString(DEFAULT_NEW_VERSION);
+    }
+    return ver;
+}
+
+static CrateFile::Version
+GetVersionForNewlyCreatedFiles() {
+    static CrateFile::Version ver = _GetVersionForNewlyCreatedFiles();
+    return ver;
+}
 
 constexpr char const *USDC_IDENT = "PXR-USDC"; // 8 chars.
 
-struct _Token : _BitwiseReadWrite {
-    _Token() {}
-    explicit _Token(StringIndex si) : stringIndex(si) {}
-    StringIndex stringIndex;
-};
+struct _PathItemHeader_0_0_1 {
+    _PathItemHeader_0_0_1() {}
+    _PathItemHeader_0_0_1(PathIndex pi, TokenIndex ti, uint8_t bs)
+        : index(pi), elementTokenIndex(ti), bits(bs) {}
 
-struct _PathItemHeader : _BitwiseReadWrite {
+    // Deriving _BitwiseReadWrite and having members PathIndex and TokenIndex
+    // that derive _BitwiseReadWrite caused gcc on linux and mac to leave 4
+    // bytes at the head of this structure, making the whole thing 16 bytes,
+    // with the members starting at offset 4.  This was revealed in the Windows
+    // port since MSVC made this struct 12 bytes, as intended.  To fix this we
+    // have two versions of the struct.  Version 0.0.1 files read/write this
+    // structure.  Version 0.1.0 and newer read/write the new one.
+    uint32_t _unused_padding_;
+
+    PathIndex index;
+    TokenIndex elementTokenIndex;
+    uint8_t bits;
+};
+template <>
+struct _IsBitwiseReadWrite<_PathItemHeader_0_0_1> : std::true_type {};
+
+struct _PathItemHeader {
     _PathItemHeader() {}
     _PathItemHeader(PathIndex pi, TokenIndex ti, uint8_t bs)
         : index(pi), elementTokenIndex(ti), bits(bs) {}
@@ -245,8 +323,10 @@ struct _PathItemHeader : _BitwiseReadWrite {
     TokenIndex elementTokenIndex;
     uint8_t bits;
 };
+template <>
+struct _IsBitwiseReadWrite<_PathItemHeader> : std::true_type {};
 
-struct _ListOpHeader : _BitwiseReadWrite {
+struct _ListOpHeader {
     enum _Bits { IsExplicitBit = 1 << 0,
                  HasExplicitItemsBit = 1 << 1,
                  HasAddedItemsBit = 1 << 2,
@@ -273,6 +353,7 @@ struct _ListOpHeader : _BitwiseReadWrite {
 
     uint8_t bits;
 };
+template <> struct _IsBitwiseReadWrite<_ListOpHeader> : std::true_type {};
 
 struct _MmapStream {
     explicit _MmapStream(char const *mapStart)
@@ -290,15 +371,15 @@ private:
 };
 
 struct _PreadStream {
-    explicit _PreadStream(FILE *file) : _cur(0), _fd(fileno(file)) {}
+    explicit _PreadStream(FILE *file) : _cur(0), _file(file) {}
     inline void Read(void *dest, size_t nBytes) {
-        _cur += pread(_fd, dest, nBytes, _cur);
+        _cur += ArchPRead(_file, dest, nBytes, _cur);
     }
-    inline off_t Tell() const { return _cur; }
-    inline void Seek(off_t offset) { _cur = offset; }
+    inline int64_t Tell() const { return _cur; }
+    inline void Seek(int64_t offset) { _cur = offset; }
 private:
-    off_t _cur;
-    int _fd;
+    int64_t _cur;
+    FILE *_file;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -328,9 +409,12 @@ CrateFile::_TableOfContents::GetMinimumSectionStart() const
 // PackingContext
 struct CrateFile::_PackingContext
 {
-    _PackingContext(CrateFile *crate, FILE *file) 
+    _PackingContext(CrateFile *crate, FILE *file, std::string const &fileName) 
         : file(file)
-        , filefd(fileno(file)) {
+        , fileName(fileName)
+        , writeVersion(crate->_fileName.empty() ?
+                       GetVersionForNewlyCreatedFiles() :
+                       Version(crate->_boot)) {
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
         WorkArenaDispatcher wd;
@@ -413,9 +497,11 @@ struct CrateFile::_PackingContext
     // Unknown sections we're moving to the new structural area.
     vector<tuple<string, unique_ptr<char[]>, size_t>> unknownSections;
 
-    // File we're writing to, and corresponding file descriptor.
+    // File and filename we're writing to.
     FILE *file;
-    int filefd;
+    std::string fileName;
+    // Version we're writing.
+    Version writeVersion;
     // Current position in output file.
     int64_t outFilePos;
 };
@@ -665,7 +751,7 @@ class CrateFile::_Writer
 {
 public:
     explicit _Writer(CrateFile *crate)
-        : crate(crate), sinkfd(crate->_packCtx->filefd) {}
+        : crate(crate), sink(crate->_packCtx->file) {}
 
     // Recursive write helper.  We use these when writing values if we may
     // invoke _PackValue() recursively.  Since _PackValue() may or may not write
@@ -723,7 +809,7 @@ public:
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     Write(T const &bits) {
         crate->_packCtx->outFilePos += WriteToFd(
-            sinkfd, &bits, sizeof(bits), crate->_packCtx->outFilePos);
+            sink, &bits, sizeof(bits), crate->_packCtx->outFilePos);
     }
 
     template <class U, class T>
@@ -810,7 +896,7 @@ public:
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     WriteContiguous(T const *values, size_t sz) {
         crate->_packCtx->outFilePos += WriteToFd(
-            sinkfd, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
+            sink, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
     }
 
     template <class T>
@@ -820,7 +906,7 @@ public:
     }
 
     CrateFile *crate;
-    int sinkfd;
+    FILE *sink;
 };
 
 
@@ -997,7 +1083,7 @@ CrateFile::CanRead(string const &fileName) {
         return false;
 
     TfErrorMark m;
-    _ReadBootStrap(_PreadStream(in.get()), _GetFileSize(in.get()));
+    _ReadBootStrap(_PreadStream(in.get()), ArchGetFileLength(in.get()));
 
     // Clear any issued errors again to avoid propagation, and return true if
     // there were no errors issued.
@@ -1013,19 +1099,12 @@ CrateFile::CreateNew()
 }
 
 /* static */
-CrateFile::_UniqueMap
+ArchConstFileMapping
 CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
-    _UniqueMap map;
-    auto fileSize = _GetFileSize(file);
-    if (fileSize > 0) {
-        map = _UniqueMap(
-            static_cast<char *>(
-                mmap(NULL, fileSize, PROT_READ, MAP_PRIVATE, fileno(file), 0)),
-            _Munmapper(fileSize));
-        if (not map)
-            TF_RUNTIME_ERROR("Couldn't mmap file '%s'", fileName);
-    }
+    ArchConstFileMapping map = ArchMapFileReadOnly(file);
+    if (not map)
+        TF_RUNTIME_ERROR("Couldn't map file '%s'", fileName);
     return map;
 }
 
@@ -1045,10 +1124,10 @@ CrateFile::Open(string const &fileName)
         return result;
     }
 
-    auto fileSize = _GetFileSize(inputFile.get());
+    auto fileSize = ArchGetFileLength(inputFile.get());
     if (not TfGetenvBool("USDC_USE_PREAD", false)) {
         // Map the file.
-        _UniqueMap mapStart = _MmapFile(fileName.c_str(), inputFile.get());
+        auto mapStart = _MmapFile(fileName.c_str(), inputFile.get());
         result.reset(new CrateFile(fileName, std::move(mapStart), fileSize));
     } else {
         result.reset(new CrateFile(fileName, std::move(inputFile), fileSize));
@@ -1068,16 +1147,14 @@ CrateFile::Open(string const &fileName)
 TfToken const &
 CrateFile::GetSoftwareVersionToken()
 {
-    static TfToken tok(_GetVersionString(USDC_MAJOR, USDC_MINOR, USDC_PATCH));
+    static TfToken tok(_SoftwareVersion.AsString());
     return tok;
 }
 
 TfToken
 CrateFile::GetFileVersionToken() const
 {
-    return TfToken(
-        _GetVersionString(
-            _boot.version[0], _boot.version[1], _boot.version[2]));
+    return TfToken(Version(_boot).AsString());
 }
 
 CrateFile::CrateFile(bool useMmap)
@@ -1087,7 +1164,7 @@ CrateFile::CrateFile(bool useMmap)
 }
 
 CrateFile::CrateFile(
-    string const &fileName, _UniqueMap mapStart, int64_t fileSize)
+    string const &fileName, ArchConstFileMapping mapStart, int64_t fileSize)
     : _mapStart(std::move(mapStart))
     , _fileName(fileName)
     , _useMmap(true)
@@ -1136,11 +1213,10 @@ CrateFile::StartPacking(string const &fileName)
         TF_RUNTIME_ERROR("Failed to open '%s' for writing", fileName.c_str());
     } else {
         // Create a packing context so we can start writing.
-        _packCtx.reset(new _PackingContext(this, out.release()));
+        _packCtx.reset(new _PackingContext(this, out.release(), fileName));
         // Get rid of our local list of specs, if we have one -- the client is
         // required to repopulate it.
         vector<Spec>().swap(_specs);
-        _fileName = fileName;
     }
     return Packer(this);
 }
@@ -1159,6 +1235,10 @@ CrateFile::Packer::Close()
 
         // Write contents.
         bool writeResult = _crate->_Write();
+
+        // If we wrote successfully, store the fileName.
+        if (writeResult)
+            _crate->_fileName = _crate->_packCtx->fileName;
 
         // Pull out the file handle and kill the packing context.
         _UniqueFILE file(fp);
@@ -1318,9 +1398,20 @@ CrateFile::_Write()
     _WriteSection(
         w, _FieldSetsSectionName, toc, [this, &w]() {w.Write(_fieldSets);});
     _WriteSection(w, _PathsSectionName, toc, [this, &w]() {_WritePaths(w);});
-    _WriteSection(w, _SpecsSectionName, toc, [this, &w]() {w.Write(_specs);});
 
-    _BootStrap boot;
+    // VERSIONING: If we're writing version 0.0.1, we need to convert to the old
+    // form.
+    if (_packCtx->writeVersion == Version(0,0,1)) {
+        // Copy and write old-structure specs.
+        vector<Spec_0_0_1> old(_specs.begin(), _specs.end());
+        _WriteSection(
+            w, _SpecsSectionName, toc, [this, &w, &old]() {w.Write(old);});
+    } else {
+        _WriteSection(
+            w, _SpecsSectionName, toc, [this, &w]() {w.Write(_specs);});
+    }
+
+    _BootStrap boot(_packCtx->writeVersion);
 
     // Record TOC location, and write it.
     boot.tocOffset = w.Tell();
@@ -1389,6 +1480,8 @@ CrateFile::_WritePaths(_Writer &w)
     // Write the total # of paths.
     w.WriteAs<uint64_t>(_paths.size());
     _WritePathTree(w, pathToIndexTable.begin(), pathToIndexTable.end());
+
+    WorkSwapDestroyAsync(pathToIndexTable);
 }
 
 template <class Iter>
@@ -1422,15 +1515,27 @@ CrateFile::_WritePathTree(_Writer &w, Iter cur, Iter end)
         auto elementToken = isPrimPropertyPath ?
             cur->first.GetNameToken() : cur->first.GetElementToken();
 
-        _PathItemHeader header(
-            cur->second, _GetIndexForToken(elementToken),
-            static_cast<uint8_t>(
-                (hasChild ? _PathItemHeader::HasChildBit : 0) |
-                (hasSibling ? _PathItemHeader::HasSiblingBit : 0) |
-                (isPrimPropertyPath ?
-                 _PathItemHeader::IsPrimPropertyPathBit : 0)));
-
-        w.Write(header);
+        // VERSIONING: If we're writing version 0.0.1, make sure we use the
+        // right header type.
+        if (_packCtx->writeVersion == Version(0,0,1)) {
+            _PathItemHeader_0_0_1 header(
+                cur->second, _GetIndexForToken(elementToken),
+                static_cast<uint8_t>(
+                    (hasChild ? _PathItemHeader::HasChildBit : 0) |
+                    (hasSibling ? _PathItemHeader::HasSiblingBit : 0) |
+                    (isPrimPropertyPath ?
+                     _PathItemHeader::IsPrimPropertyPathBit : 0)));
+            w.Write(header);
+        } else {
+            _PathItemHeader header(
+                cur->second, _GetIndexForToken(elementToken),
+                static_cast<uint8_t>(
+                    (hasChild ? _PathItemHeader::HasChildBit : 0) |
+                    (hasSibling ? _PathItemHeader::HasSiblingBit : 0) |
+                    (isPrimPropertyPath ?
+                     _PathItemHeader::IsPrimPropertyPathBit : 0)));
+            w.Write(header);
+        }
 
         // If there's both a child and a sibling, make space for the sibling
         // offset.
@@ -1507,13 +1612,11 @@ CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
         TF_RUNTIME_ERROR("Usd crate bootstrap section corrupt");
     }
     // Check version.
-    else if (b.version[0] != USDC_MAJOR or b.version[1] > USDC_MINOR) {
-        char const *type = b.version[0] != USDC_MAJOR ? "major" : "minor";
+    else if (!_SoftwareVersion.CanRead(Version(b))) {
         TF_RUNTIME_ERROR(
-            "Usd crate file %s version mismatch -- file is %s, "
-            "software supports %s", type,
-            _GetVersionString(b.version[0], b.version[1], b.version[2]).c_str(),
-            GetSoftwareVersionToken().GetText());
+            "Usd crate file version mismatch -- file is %s, "
+            "software supports %s", Version(b).AsString().c_str(),
+            _SoftwareVersion.AsString().c_str());
     }
     return b;
 }
@@ -1555,7 +1658,14 @@ CrateFile::_ReadSpecs(Reader reader)
     TfAutoMallocTag tag("_ReadSpecs");
     if (auto specsSection = _toc.GetSection(_SpecsSectionName)) {
         reader.Seek(specsSection->start);
-        _specs = reader.template Read<decltype(_specs)>();
+        // VERSIONING: Have to read either old or new style specs.
+        if (Version(_boot) == Version(0,0,1)) {
+            vector<Spec_0_0_1> old = reader.template Read<decltype(old)>();
+            _specs.resize(old.size());
+            copy(old.begin(), old.end(), _specs.begin());
+        } else {
+            _specs = reader.template Read<decltype(_specs)>();
+        }
     }
 }
 
@@ -1596,11 +1706,23 @@ CrateFile::_ReadTokens(Reader reader)
     // Now we read that many null-terminated strings into _tokens.
     char const *p = chars.get();
     _tokens.clear();
-    _tokens.reserve(numTokens);
-    while (numTokens--) {
-        _tokens.emplace_back(p);
+    _tokens.resize(numTokens);
+
+    WorkArenaDispatcher wd;
+    struct MakeToken {
+        void operator()() const { (*tokens)[index] = TfToken(str); }
+        vector<TfToken> *tokens;
+        size_t index;
+        char const *str;
+    };
+    for (size_t i = 0; i != numTokens; ++i) {
+        MakeToken mt { &_tokens, i, p };
+        wd.Run(mt);
         p += strlen(p) + 1;
     }
+    wd.Wait();
+
+    WorkSwapDestroyAsync(chars);
 }
 
 template <class Reader>
@@ -1618,7 +1740,18 @@ CrateFile::_ReadPaths(Reader reader)
     // Read # of paths.
     _paths.resize(reader.template Read<uint64_t>());
 
-    auto root = reader.template Read<_PathItemHeader>();
+    // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
+    Version fileVer(_boot);
+    _PathItemHeader root;
+    if (fileVer == Version(0,0,1)) {
+        auto old = reader.template Read<_PathItemHeader_0_0_1>();
+        root.index = old.index;
+        root.elementTokenIndex = old.elementTokenIndex;
+        root.bits = old.bits;
+    } else {
+        root = reader.template Read<_PathItemHeader>();
+    }
+
     _paths[root.index.value] = SdfPath::AbsoluteRootPath();
 
     bool hasChild = root.bits & _PathItemHeader::HasChildBit;
@@ -1632,33 +1765,51 @@ CrateFile::_ReadPaths(Reader reader)
     WorkArenaDispatcher dispatcher;
 
     if (root.bits & _PathItemHeader::HasChildBit) {
-        auto firstChild = reader.template Read<_PathItemHeader>();
-        dispatcher.Run(
-            [this, reader, firstChild, &dispatcher]() {
-                _ReadPathsRecursively(reader, SdfPath::AbsoluteRootPath(),
-                                      firstChild, dispatcher);
-            });
+        if (fileVer == Version(0,0,1)) {
+            auto firstChild = reader.template Read<_PathItemHeader_0_0_1>();
+            dispatcher.Run(
+                [this, reader, firstChild, &dispatcher]() {
+                    _ReadPathsRecursively(reader, SdfPath::AbsoluteRootPath(),
+                                          firstChild, dispatcher);
+                });
+        } else {
+            auto firstChild = reader.template Read<_PathItemHeader>();
+            dispatcher.Run(
+                [this, reader, firstChild, &dispatcher]() {
+                    _ReadPathsRecursively(reader, SdfPath::AbsoluteRootPath(),
+                                          firstChild, dispatcher);
+                });
+        }
     }
 
     if (root.bits & _PathItemHeader::HasSiblingBit) {
         if (hasChild and hasSibling)
             reader.Seek(siblingOffset);
-        auto siblingHeader = reader.template Read<_PathItemHeader>();
-        dispatcher.Run(
-            [this, reader, siblingHeader, &dispatcher]() {
-                _ReadPathsRecursively(
-                    reader, SdfPath(), siblingHeader, dispatcher);
-            });
+        if (fileVer == Version(0,0,1)) {
+            auto siblingHeader = reader.template Read<_PathItemHeader_0_0_1>();
+            dispatcher.Run(
+                [this, reader, siblingHeader, &dispatcher]() {
+                    _ReadPathsRecursively(
+                        reader, SdfPath(), siblingHeader, dispatcher);
+                });
+        } else {
+            auto siblingHeader = reader.template Read<_PathItemHeader>();
+            dispatcher.Run(
+                [this, reader, siblingHeader, &dispatcher]() {
+                    _ReadPathsRecursively(
+                        reader, SdfPath(), siblingHeader, dispatcher);
+                });
+        }
     }
 
     dispatcher.Wait();
 }
 
-template <class Reader>
+template <class Reader, class Header>
 void
 CrateFile::_ReadPathsRecursively(Reader reader,
                                 const SdfPath &parentPath,
-                                const _PathItemHeader &h,
+                                const Header &h,
                                 WorkArenaDispatcher &dispatcher)
 {
     // XXX Won't need ANY of these tags when bug #132031 is addressed
@@ -1688,15 +1839,14 @@ CrateFile::_ReadPathsRecursively(Reader reader,
     // than deep.
 
     // If this header item has a child, recurse to it.
-    auto childHeader =
-        hasChild ? reader.template Read<_PathItemHeader>() : _PathItemHeader();
+    auto childHeader = hasChild ? reader.template Read<Header>() : Header();
     auto childReader = reader;
-    auto siblingHeader = _PathItemHeader();
+    auto siblingHeader = Header();
 
     if (hasSibling) {
         if (hasChild)
             reader.Seek(siblingOffset);
-        siblingHeader = reader.template Read<_PathItemHeader>();
+        siblingHeader = reader.template Read<Header>();
     }
 
     if (hasSibling) {
@@ -2007,14 +2157,6 @@ CrateFile::_IsKnownSection(char const *name) {
 }
 
 void
-CrateFile::_Munmapper::operator()(char *mapStart) const
-{
-    if (mapStart) {
-        munmap(mapStart, fileSize);
-    }
-}
-
-void
 CrateFile::_Fcloser::operator()(FILE *f) const
 {
     if (f) {
@@ -2022,14 +2164,22 @@ CrateFile::_Fcloser::operator()(FILE *f) const
     }
 }
 
-CrateFile::_BootStrap::_BootStrap()
+CrateFile::Spec::Spec(Spec_0_0_1 const &s) 
+    : Spec(s.pathIndex, s.specType, s.fieldSetIndex) {}
+
+CrateFile::Spec_0_0_1::Spec_0_0_1(Spec const &s) 
+    : Spec_0_0_1(s.pathIndex, s.specType, s.fieldSetIndex) {}
+
+CrateFile::_BootStrap::_BootStrap() : _BootStrap(_SoftwareVersion) {}
+
+CrateFile::_BootStrap::_BootStrap(Version const &ver)
 {
     memset(this, 0, sizeof(*this));
     tocOffset = 0;
     memcpy(ident, USDC_IDENT, sizeof(ident));
-    version[0] = USDC_MAJOR;
-    version[1] = USDC_MINOR;
-    version[2] = USDC_PATCH;
+    version[0] = ver.majver;
+    version[1] = ver.minver;
+    version[2] = ver.patchver;
 }
 
 CrateFile::_Section::_Section(char const *inName, int64_t start, int64_t size)
@@ -2059,6 +2209,14 @@ operator<<(std::ostream &os, Index const &i) {
     return os << i.value;
 }
 
+// Size checks for structures written to/read from disk.
+static_assert(sizeof(CrateFile::Field) == 16, "");
+static_assert(sizeof(CrateFile::Spec) == 12, "");
+static_assert(sizeof(CrateFile::Spec_0_0_1) == 16, "");
+static_assert(sizeof(_PathItemHeader) == 12, "");
+static_assert(sizeof(_PathItemHeader_0_0_1) == 16, "");
+
 } // Usd_CrateFile
+
 
 

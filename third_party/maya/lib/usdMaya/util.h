@@ -24,21 +24,22 @@
 #ifndef PXRUSDMAYA_UTIL_H
 #define PXRUSDMAYA_UTIL_H
 
+/// \file util.h
+
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnMesh.h>
 #include <maya/MGlobal.h>
 #include <maya/MPlug.h>
-#include <maya/MColor.h>
-#include <maya/MColorArray.h>
-#include <maya/MFloatArray.h>
-#include <maya/MFnMesh.h>
 
-class MFnDependencyNode;
 
 namespace PxrUsdMayaUtil
 {
@@ -154,14 +155,96 @@ std::string SanitizeName(const std::string& name);
 // This to allow various pipeline to sanitize the colorset name for output
 std::string SanitizeColorSetName(const std::string& name);
 
-// Get the basecolor from the bound shader.  Returned colors will be in linear
-// color space.
+/// Get the base colors and opacities from the shader(s) bound to \p node.
+/// Returned colors will be in linear color space.
+///
+/// A single value for each of color and alpha will be returned,
+/// interpolation will be constant, and assignmentIndices will be empty.
+///
 bool GetLinearShaderColor(
         const MFnDagNode& node,
-        const int numFaces, 
-        VtArray<GfVec3f> *RGBData, TfToken *RGBInterp, 
-        VtArray<float> *AlphaData, TfToken *AlphaInterp);
+        VtArray<GfVec3f> *RGBData,
+        VtArray<float> *AlphaData,
+        TfToken *interpolation,
+        VtArray<int> *assignmentIndices);
 
+/// Get the base colors and opacities from the shader(s) bound to \p mesh.
+/// Returned colors will be in linear color space.
+///
+/// If the entire mesh has a single shader assignment, a single value for each
+/// of color and alpha will be returned, interpolation will be constant, and
+/// assignmentIndices will be empty.
+///
+/// Otherwise, a color and alpha value will be returned for each shader
+/// assigned to any face of the mesh. \p assignmentIndices will be the length
+/// of the number of faces with values indexing into the color and alpha arrays
+/// representing per-face assignments. Faces with no assigned shader will have
+/// a value of -1 in \p assignmentIndices. \p interpolation will be uniform.
+///
+bool GetLinearShaderColor(
+        const MFnMesh& mesh,
+        VtArray<GfVec3f> *RGBData,
+        VtArray<float> *AlphaData,
+        TfToken *interpolation,
+        VtArray<int> *assignmentIndices);
+
+/// Combine distinct indices that point to the same values to all point to the
+/// same index for that value. This will potentially shrink the data array.
+void MergeEquivalentIndexedValues(
+        VtArray<float>* valueData,
+        VtArray<int>* assignmentIndices);
+
+/// Combine distinct indices that point to the same values to all point to the
+/// same index for that value. This will potentially shrink the data array.
+void MergeEquivalentIndexedValues(
+        VtArray<GfVec2f>* valueData,
+        VtArray<int>* assignmentIndices);
+
+/// Combine distinct indices that point to the same values to all point to the
+/// same index for that value. This will potentially shrink the data array.
+void MergeEquivalentIndexedValues(
+        VtArray<GfVec3f>* valueData,
+        VtArray<int>* assignmentIndices);
+
+/// Combine distinct indices that point to the same values to all point to the
+/// same index for that value. This will potentially shrink the data array.
+void MergeEquivalentIndexedValues(
+        VtArray<GfVec4f>* valueData,
+        VtArray<int>* assignmentIndices);
+
+/// Attempt to compress faceVarying primvar indices to uniform, vertex, or
+/// constant interpolation if possible. This will potentially shrink the
+/// indices array and will update the interpolation if any compression was
+/// possible.
+void CompressFaceVaryingPrimvarIndices(
+        const MFnMesh& mesh,
+        TfToken *interpolation,
+        VtArray<int>* assignmentIndices);
+
+/// If any components in \p assignmentIndices are unassigned (-1), the given
+/// default value will be added to uvData and all of those components will be
+/// assigned that index, which is returned in \p unassignedValueIndex.
+/// Returns true if unassigned values were added and indices were updated, or
+/// false otherwise.
+bool AddUnassignedUVIfNeeded(
+        VtArray<GfVec2f>* uvData,
+        VtArray<int>* assignmentIndices,
+        int* unassignedValueIndex,
+        const GfVec2f& defaultUV);
+
+/// If any components in \p assignmentIndices are unassigned (-1), the given
+/// default values will be added to RGBData and AlphaData and all of those
+/// components will be assigned that index, which is returned in
+/// \p unassignedValueIndex.
+/// Returns true if unassigned values were added and indices were updated, or
+/// false otherwise.
+bool AddUnassignedColorAndAlphaIfNeeded(
+        VtArray<GfVec3f>* RGBData,
+        VtArray<float>* AlphaData,
+        VtArray<int>* assignmentIndices,
+        int* unassignedValueIndex,
+        const GfVec3f& defaultRGB,
+        const float defaultAlpha);
 
 MPlug GetConnected(const MPlug& plug);
 

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/payload.h
-
 #ifndef SDF_PAYLOAD_H
 #define SDF_PAYLOAD_H
+
+/// \file sdf/payload.h
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/dictionary.h"
@@ -39,8 +39,8 @@ class SdfPayload;
 
 typedef std::vector<SdfPayload> SdfPayloadVector;
 
-
 /// \class SdfPayload
+///
 /// Represents a payload and all its meta data.
 ///
 /// A payload represents a prim reference to an external layer.  A payload
@@ -104,9 +104,7 @@ private:
     SdfPath _primPath;
 };
 
-///
 /// Writes the string representation of \a SdfPayload to \a out.
-std::ostream & operator<<( std::ostream &out,
-                           const SdfPayload &payload );
+std::ostream & operator<<(std::ostream &out, const SdfPayload &payload);
 
 #endif

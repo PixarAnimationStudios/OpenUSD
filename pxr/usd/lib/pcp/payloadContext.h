@@ -38,8 +38,10 @@ class TfToken;
 /// \class PcpPayloadContext
 ///
 /// Context object that allows PcpPayloadDecorator subclasses to
-/// examine the prim index being constructed. See PcpPayloadDecorator
-/// for more details.
+/// examine the prim index being constructed.
+/// 
+/// \see PcpPayloadDecorator
+///
 class PcpPayloadContext 
 {
 public:

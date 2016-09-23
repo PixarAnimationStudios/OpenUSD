@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/systemInfo.h"
@@ -36,6 +37,9 @@ using std::string;
 // namespace so that it can be called in archext/datetime.cpp. We
 // do not include its declaration in any header in arch because
 // we don't want to expose this in the open source distribution.
+// We need to tag this function with ARCH_API to ensure it's visible
+// from outside this library.
+ARCH_API 
 string
 Arch_GetTimezone()
 {

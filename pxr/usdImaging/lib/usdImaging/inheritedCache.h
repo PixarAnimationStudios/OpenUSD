@@ -31,6 +31,8 @@
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
+/// \class UsdImaging_InheritedCache
+///
 /// A general caching mechanism for attributes inherited up or down the ancestor
 /// chain.
 ///
@@ -510,37 +512,37 @@ struct UsdImaging_VisStrategy {
 };
 
 // -------------------------------------------------------------------------- //
-// LookBinding Cache
+// MaterialBinding Cache
 // -------------------------------------------------------------------------- //
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
-struct UsdImaging_LookStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_LookStrategy> 
-                                                UsdImaging_LookBindingCache;
+struct UsdImaging_MaterialStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_MaterialStrategy> 
+                                                UsdImaging_MaterialBindingCache;
 
-struct UsdImaging_LookStrategy {
+struct UsdImaging_MaterialStrategy {
     typedef SdfPath value_type;         // inherited path to bound shader
-    typedef UsdShadeLook query_type;
+    typedef UsdShadeMaterial query_type;
 
     static
     value_type MakeDefault() { return SdfPath(); }
 
     static
     query_type MakeQuery(UsdPrim prim) {
-        return UsdShadeLook::GetBoundLook(prim);
+        return UsdShadeMaterial::GetBoundMaterial(prim);
     }
 
     static
-    SdfPath GetBinding(UsdShadeLook const& look);
+    SdfPath GetBinding(UsdShadeMaterial const& material);
 
     static
-    UsdPrim GetTargetedShader(UsdPrim const& prim,
-                              UsdRelationship const& lookRel);
+    UsdPrim GetTargetedShader(UsdPrim const& materialPrim,
+                              UsdRelationship const& materialRel);
  
     static 
     value_type
-    Inherit(UsdImaging_LookBindingCache const* owner,
+    Inherit(UsdImaging_MaterialBindingCache const* owner,
             UsdPrim prim,
             query_type const* query)
     { 
@@ -563,8 +565,10 @@ struct UsdImaging_LookStrategy {
         for (UsdPrim parent=prim;parent.GetParent();parent=parent.GetParent()) {
             TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for shader binding %s\n", 
                       parent.GetPath().GetText());
-            if (UsdShadeLook look = UsdShadeLook::GetBoundLook(parent)) {
-                binding = GetBinding(look);
+
+            UsdShadeMaterial mat = UsdShadeMaterial::GetBoundMaterial(parent);
+            if (mat) {
+                binding = GetBinding(mat);
                 if (not binding.IsEmpty()) {
                     break;
                 }

@@ -24,7 +24,6 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/unitTestGLDrawing.h"
 #include "pxr/imaging/hd/unitTestHelper.h"
@@ -58,7 +57,7 @@ protected:
 
 private:
     Hd_TestDriver* _driver;
-    HdSimpleLightingShaderSharedPtr _lightingShader;
+    Hd_TestLightingShaderSharedPtr _lightingShader;
     std::vector<GfVec4d> _clipPlanes;
 
     TfToken _reprName;
@@ -95,14 +94,9 @@ My_TestGLDrawing::InitTest()
     glBindVertexArray(0);
 
     if (_testLighting) {
-        _lightingShader.reset(new HdSimpleLightingShader());
+        _lightingShader.reset(new Hd_TestLightingShader());
         _driver->GetRenderPassState()->SetLightingShader(
             _lightingShader);
-
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-
-        _lightingShader->SetLightingStateFromOpenGL();
     }
 
     _driver->GetRenderPassState()->SetClipPlanes(_clipPlanes);

@@ -99,6 +99,8 @@ _BuildMatrixAttr(
     const std::vector<double>& motionSampleTimes = 
         data.GetMotionSampleTimes(constraintAttr);
 
+    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+
     FnKat::DoubleBuilder matBuilder(16);
     TF_FOR_ALL(iter, motionSampleTimes) {
         double relSampleTime = *iter;
@@ -110,7 +112,10 @@ _BuildMatrixAttr(
 
         // Convert to vector.
         const double *matArray = mat.GetArray();
-        std::vector<double> &matVec = matBuilder.get(fabs(relSampleTime));
+
+        std::vector<double> &matVec = matBuilder.get(isMotionBackward ?
+            PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+
         matVec.resize(16);
         for (int i = 0; i < 16; ++i) {
             matVec[i] = matArray[i];

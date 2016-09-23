@@ -95,6 +95,24 @@ namespace {
         int attribLocation;
         int textureUnit;
     };
+
+    static inline GLboolean _ShouldBeNormalized(int GLdataType)
+    {
+        if (GLdataType == GL_INT_2_10_10_10_REV or
+            GLdataType == GL_UNSIGNED_INT_2_10_10_10_REV) {
+            return GL_TRUE;
+        }
+        return GL_FALSE;
+    }
+    static inline int _GetNumComponents(int numComponents, int GLdataType)
+    {
+        if (GLdataType == GL_INT_2_10_10_10_REV or
+            GLdataType == GL_UNSIGNED_INT_2_10_10_10_REV) {
+            return 4;
+        } else {
+            return numComponents;
+        }
+    }
 }
 
 Hd_ResourceBinder::Hd_ResourceBinder()
@@ -507,9 +525,10 @@ Hd_ResourceBinder::BindBuffer(TfToken const &name,
     case HdBinding::VERTEX_ATTR:
         glBindBuffer(GL_ARRAY_BUFFER, buffer->GetId());
         glVertexAttribPointer(loc,
-                              buffer->GetNumComponents(),
+                              _GetNumComponents(buffer->GetNumComponents(),
+                                                buffer->GetGLDataType()),
                               buffer->GetGLDataType(),
-                              GL_FALSE,
+                              _ShouldBeNormalized(buffer->GetGLDataType()),
                               buffer->GetStride(),
                               offsetPtr);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -566,7 +585,7 @@ Hd_ResourceBinder::BindBuffer(TfToken const &name,
         // at least in nvidia driver 346.59, this query call doesn't show
         // any pipeline stall.
         if (not glIsNamedBufferResidentNV(buffer->GetId())) {
-            glMakeNamedBufferResidentNV(buffer->GetId(), GL_READ_ONLY);
+            glMakeNamedBufferResidentNV(buffer->GetId(), GL_READ_WRITE);
         }
         glUniformui64NV(loc, buffer->GetGPUAddress());
         break;

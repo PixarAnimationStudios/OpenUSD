@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    "This file describes the USD Shader schemata for code generation."
+    subLayers = [
+        @../usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdUI"
+        string libraryPath      = "pxr/usd/usdUI"
+        # dictionary libraryTokens = {}
+    }
+)
+{
+}
+
+class "NodeGraphNodeAPI"(
+    doc = """
+    This api helps storing information about nodes in node graphs.
+    """
+) {
+    uniform float2 ui:nodegraph:node:pos (
+        doc = """
+        Declared relative position to the parent in a node graph.
+        X is the horizontal position.
+        Y is the vertical position. Higher numbers correspond to lower positions 
+        (coordinates are Qt style, not cartesian).
+
+        These positions are not explicitly meant in pixel space, but rather
+        assume that the size of a node is approximately 100x100. Depending on 
+        graph UI implementation, the size of a node may vary in each direction.
+        """
+        customData = {
+            string apiName = "pos"
+        }
+    )
+
+    uniform int ui:nodegraph:node:stackingOrder (
+        doc = """
+        This optional value is a useful hint when an application cares about 
+        the visibility of a node and whether each node overlaps another.
+        
+        Nodes with lower stacking order values are meant to be drawn below 
+        higher ones. Negative values are meant as background. Positive values
+        are meant as foreground.
+        Undefined values should be treated as 0. 
+
+        There are no set limits in these values.
+        """
+        customData = {
+            string apiName = "stackingOrder"
+        }
+    )
+
+    uniform color3f ui:nodegraph:node:displayColor (
+        doc = """
+        This hint defines what tint the node should have in the node graph.
+        """
+        customData = {
+            string apiName = "displayColor"
+        }
+    )
+
+    uniform asset ui:nodegraph:node:icon (
+        doc = """
+        This points to an image that should be displayed on the node
+        """
+        customData = {
+            string apiName = "icon"
+        }
+    )
+
+    uniform token ui:nodegraph:node:expansionState (
+        allowedTokens = ["open", "closed", "minimized"]
+        doc = """ 
+        The current expansionState of the node in the ui. 
+        'open' = fully expanded
+        'closed' = fully collapsed
+        'minimized' = should take the least space possible
+        """
+        customData = {
+            string apiName = "expansionState"
+        }
+    )
+}

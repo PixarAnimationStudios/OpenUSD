@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/uvTexture.h
-
 #ifndef GLF_BASETEXTURE_H
 #define GLF_BASETEXTURE_H
+
+/// \file glf/uvTexture.h
 
 #include "pxr/imaging/glf/texture.h"
 
@@ -39,11 +39,10 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTexture);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 
-/// 
-/// \class GlfBaseTexture Texture.h "pxr/imaging/glf/baseTexture.h"
-/// \brief Represents a texture object in Glf
+/// \class GlfBaseTexture
 ///
-
+/// Represents a texture object in Glf
+///
 class GlfBaseTexture : public GlfTexture {
 public:
     virtual ~GlfBaseTexture();
@@ -76,11 +75,11 @@ protected:
 
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
     void _CreateTexture(GlfBaseTextureDataConstPtr texData,
-                        bool const generateMipmap,
-			int const unpackCropTop = 0,
-			int const unpackCropBottom = 0,
-			int const unpackCropLeft = 0,
-			int const unpackCropRight = 0);
+                        bool const useMipmaps,
+                        int const unpackCropTop = 0,
+                        int const unpackCropBottom = 0,
+                        int const unpackCropLeft = 0,
+                        int const unpackCropRight = 0);
 
 private:
 

@@ -90,7 +90,7 @@ if (PXR_BUILD_IMAGING)
     # --Qt
     find_package(Qt4)
     if (QT4_FOUND)
-        find_package(PySideTools REQUIRED)
+        find_package(PySide REQUIRED)
     endif()
 endif()
 

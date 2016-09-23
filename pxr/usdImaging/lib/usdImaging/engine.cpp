@@ -366,7 +366,7 @@ UsdImagingEngine::TestIntersectionBatch(
     const SdfPathVector& paths, 
     RenderParams params,
     unsigned int pickResolution,
-    std::function< SdfPath(const SdfPath&) > pathTranslator,
+    PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
     // outHit is not optional
@@ -571,7 +571,9 @@ UsdImagingEngine::TestIntersectionBatch(
             // Translate the path. Allows client-side collating of hit prims into
             // useful bins as needed. The simplest translator returns primPath.
             //
-            SdfPath hitPath( pathTranslator(primPath) );
+            // Note that this non-Hydra implementation has no concept of an
+            // instancer path.
+            SdfPath hitPath( pathTranslator(primPath, SdfPath(), hitInstanceIndex) );
             
             if( !hitPath.IsEmpty() ) {
                 
@@ -616,7 +618,7 @@ UsdImagingEngine::GetPrimPathFromPrimIdColor(GfVec4i const &/*primIdColor*/,
 
 /* virtual */
 SdfPath 
-UsdImagingEngine::GetPrimPathFromInstanceIndex(SdfPath const& instancerPath,
+UsdImagingEngine::GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
                                                int instanceIndex,
                                                int *absoluteInstanceIndex)
 {
@@ -644,3 +646,11 @@ UsdImagingEngine::SetRenderGraphPlugin(TfType const &type)
 {
     return false;
 }
+
+/* virtual */
+VtDictionary
+UsdImagingEngine::GetResourceAllocation() const
+{
+    return VtDictionary();
+}
+

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/mapperSpec.h
-
 #ifndef SDF_MAPPERSPEC_H
 #define SDF_MAPPERSPEC_H
+
+/// \file sdf/mapperSpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
@@ -32,13 +32,14 @@
 #include "pxr/usd/sdf/types.h"
 #include <string>
 
-///
 /// \class SdfMapperSpec 
-/// \brief Represents the mapper to be used for values coming from 
-/// a particular connection path of an attribute.
+///
+/// Represents the mapper to be used for values coming from a particular
+/// connection path of an attribute.
 ///
 /// When instantiated on a stage, the appropriate subclass of MfMapper
 /// will be chosen based on the mapper spec's type name.
+///
 class SdfMapperSpec : public SdfSpec 
 {
     SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeMapper, SdfMapperSpec, SdfSpec);
@@ -51,7 +52,7 @@ public:
     /// \name Spec creation
     /// @{
 
-    /// \brief Create a mapper spec.
+    /// Create a mapper spec.
     ///
     /// Creates and returns a new mapper owned by the attribute \p owner
     /// with the type name \p typeName.
@@ -87,7 +88,7 @@ public:
     /// \name Args
     /// @{
 
-    /// \brief Returns the mapper's args.
+    /// Returns the mapper's args.
     ///
     /// The returned object is a proxy through which the args can be accessed
     /// or deleted.  It is not allowed to create new arguments using the list;
@@ -98,10 +99,10 @@ public:
     /// \name Symmetry args
     /// @{
 
-    /// \brief Returns the mapper's symmetry args.
+    /// Returns the mapper's symmetry args.
     SdfDictionaryProxy GetSymmetryArgs() const;
     
-    /// \brief Sets the mapper's symmetry args
+    /// Sets the mapper's symmetry args
     void SetSymmetryArgs(const VtDictionary& args);
 
     /// @}

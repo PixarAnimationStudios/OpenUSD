@@ -39,7 +39,8 @@ class TfToken;
 class HdRprimCollection;
 class HdRenderIndex;
 
-
+/// \class HdChangeTracker
+///
 /// Tracks changes from the HdSceneDelegate, providing invalidation cues to the
 /// render engine.
 ///
@@ -78,27 +79,14 @@ public:
         CustomBitsEnd         = 1 << 30,
     };
 
+    // Dirty bits for Tasks, Textures
     enum NonRprimDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
         DirtyChildren         = 1 << 2,
         DirtyParams           = 1 << 3,
-        DirtyShadowParams     = 1 << 4,
-        DirtyCollection       = 1 << 5,
-        DirtyWindowPolicy     = 1 << 6,
-        DirtyTexture          = 1 << 7,
-        DirtyClipPlanes       = 1 << 8,
-    };
-
-
-    /// Dirty bits for the HdDrawTarget object
-    enum DrawTargetDirtyBits {
-        DirtyDTEnable           = 1 <<  0,
-        DirtyDTCamera           = 1 <<  1,
-        DirtyDTResolution       = 1 <<  2,
-        DirtyDTAttachment       = 1 <<  3,
-        DirtyDTDepthClearValue  = 1 <<  4,
-        DirtyDTCollection       = 1 <<  5,
+        DirtyCollection       = 1 << 4,
+        DirtyTexture          = 1 << 5,
     };
 
     typedef int DirtyBits;
@@ -108,6 +96,7 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Rprim with the given \p id.
@@ -117,7 +106,9 @@ public:
     void RprimRemoved(SdfPath const& id);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Rprim State Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the rprim with \p id.
@@ -243,7 +234,9 @@ public:
     static void MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Instancer Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Instancer with the given \p id.
@@ -252,8 +245,19 @@ public:
     /// Stop tracking Instancer with the given \p id.
     void InstancerRemoved(SdfPath const& id);
 
+    /// Add the gived \p rprimId to the list of rprims associated with the
+    /// instancer \p instancerId
+    void InstancerRPrimInserted(SdfPath const& instancerId, SdfPath const& rprimId);
+
+    /// Remove the gived \p rprimId to the list of rprims associated with the
+    /// instancer \p instancerId
+    void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
+
+
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Shader Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Shader with the given \p id.
@@ -272,7 +276,9 @@ public:
     void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Task Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Task with the given \p id.
@@ -291,7 +297,9 @@ public:
     void MarkTaskClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Texture Object Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Texture with the given \p id.
@@ -310,7 +318,9 @@ public:
     void MarkTextureClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Instancer State Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the instancer with \p id.
@@ -320,72 +330,34 @@ public:
     /// with different dirty bits accumulate.
     void MarkInstancerDirty(SdfPath const& id, DirtyBits bits=AllDirty);
 
-    /// Mark the primvar for the rprim with \p id as being dirty.
+    /// Clean the specified dirty bits for the instancer with \p id.
     void MarkInstancerClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
-    /// \name Camera Object Tracking
+    /// @}
+    /// \name Sprim (scene state prim: camera, light, ...) state Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
-    /// Start tracking Camera with the given \p id.
-    void CameraInserted(SdfPath const& id);
+    /// Start tracking sprim with the given \p id.
+    void SprimInserted(SdfPath const& id, int initialDirtyState);
 
-    /// Stop tracking Camera with the given \p id.
-    void CameraRemoved(SdfPath const& id);
+    /// Stop tracking sprim with the given \p id.
+    void SprimRemoved(SdfPath const& id);
 
-    /// Get the dirty bits for Camera with the given \p id.
-    DirtyBits GetCameraDirtyBits(SdfPath const& id);
+    /// Get the dirty bits for sprim with the given \p id.
+    DirtyBits GetSprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
-    void MarkCameraDirty(SdfPath const& id, DirtyBits bits=AllDirty);
+    void MarkSprimDirty(SdfPath const& id, DirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
-    void MarkCameraClean(SdfPath const& id, DirtyBits newBits=Clean);
+    void MarkSprimClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
-    /// \name Light Object Tracking
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Light with the given \p id.
-    void LightInserted(SdfPath const& id);
-
-    /// Stop tracking Light with the given \p id.
-    void LightRemoved(SdfPath const& id);
-
-    /// Get the dirty bits for Light with the given \p id.
-    DirtyBits GetLightDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkLightDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkLightClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    // ---------------------------------------------------------------------- //
-    /// \name Draw Target Object Tracking
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Draw Target with the given \p id.
-    void DrawTargetInserted(SdfPath const& id);
-
-    /// Stop tracking Draw Target with the given \p id.
-    void DrawTargetRemoved(SdfPath const& id);
-
-    /// Get the dirty bits for Draw Target with the given \p id.
-    DirtyBits GetDrawTargetDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkDrawTargetDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkDrawTargetClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    /// Return an version number indicating if the set of
-    /// draw targets has changed.
-    unsigned GetDrawTargetSetVersion();
-
-    // ---------------------------------------------------------------------- //
+    /// @}
     /// \name GarbageCollection Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Clears the garbageCollectionNeeded flag.
@@ -405,7 +377,9 @@ public:
     }
 
     // ---------------------------------------------------------------------- //
+    /// @}
     /// \name RprimCollection Tracking
+    /// @{
     // ---------------------------------------------------------------------- //
 
     /// Adds a named collection for tracking.
@@ -443,11 +417,31 @@ public:
     unsigned GetShaderBindingsVersion() const;
 
     // ---------------------------------------------------------------------- //
+    /// @}
+    /// \name General state tracking
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Adds a named state for tracking.
+    void AddState(TfToken const& name);
+
+    /// Marks a named state as being dirty., this bumps the version of the
+    /// state.
+    void MarkStateDirty(TfToken const& name);
+
+    /// Returns the current version of the named state.
+    unsigned GetStateVersion(TfToken const &name) const;
+
+    // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Debug
+    /// @{
     // ---------------------------------------------------------------------- //
     static std::string StringifyDirtyBits(int dirtyBits);
 
     static void DumpDirtyBits(int dirtyBits);
+
+    /// @}
 
 private:
 
@@ -458,6 +452,8 @@ private:
 
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
+    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
+    typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;
@@ -465,13 +461,16 @@ private:
     _IDStateMap _shaderState;
     _IDStateMap _taskState;
     _IDStateMap _textureState;
-    _IDStateMap _cameraState;
-    _IDStateMap _lightState;
-    _IDStateMap _drawTargetState;
+    _IDStateMap _sprimState;
+    _GeneralStateMap _generalState;
 
     // Collection versions / state.
     _CollectionStateMap _collectionState;
     bool _needsGarbageCollection;
+
+    // Provides reverse-assosiation between instancers and the rprims that use
+    // them.
+    _InstancerRprimMap _instancerRprimMap;
 
     // Typically the Rprims that get marked dirty per update iteration end up
     // being a stable set of objects; to leverage this fact, we require the
@@ -490,9 +489,6 @@ private:
 
     // Used to validate shader bindings (to validate draw batches)
     std::atomic_uint _shaderBindingsVersion;
-
-    // Used to detect changes in which set of draw targets are enabled.
-    unsigned _drawTargetSetVersion;
 };
 
 #endif //HD_CHANGE_TRACKER_H

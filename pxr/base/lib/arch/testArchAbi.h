@@ -21,19 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#if defined(_WIN32)
-#ifndef ARCH_ABI_API
-#define ARCH_ABI_API __declspec(dllimport)
-#endif
-#else
-#define ARCH_ABI_API __attribute__((visibility("default")))
-#endif
+#include "pxr/base/arch/api.h"
 
-struct ARCH_ABI_API ArchAbiBase1 {
+struct ArchAbiBase1 {
 	void* dummy;
 };
 
-struct ARCH_ABI_API ArchAbiBase2 {
+struct ArchAbiBase2 {
 	virtual ~ArchAbiBase2() { }
 	virtual const char* name() const = 0;
 };

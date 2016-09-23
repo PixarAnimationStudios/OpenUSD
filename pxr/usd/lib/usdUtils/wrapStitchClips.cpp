@@ -70,13 +70,25 @@ _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                         _ConvertStartFrame(pyStartFrame));
 }
 
+void _ConvertStitchClipsToplogy(const SdfLayerHandle& topologyLayer,
+                                const std::vector<std::string>& clipLayerFiles)
+{
+    UsdUtilsStitchClipsTopology(topologyLayer, clipLayerFiles);
+}
+
 void 
 wrapStitchClips()
 {
     def("StitchClips",
         _ConvertStitchClips, 
         (arg("resultLayer"), 
-         arg("clipLayerFiles"), arg("clipPath"), 
+         arg("clipLayerFiles"), 
+         arg("clipPath"), 
          arg("reuseExistingTopology")=boost::python::object(),
          arg("startFrame")=boost::python::object()));
+
+    def("StitchClipsTopology",
+        _ConvertStitchClipsToplogy,
+        (arg("topologyLayer"),
+         arg("clipLayerFiles")));
 }

@@ -39,9 +39,10 @@
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/tokens.h"
 
-/// Interleaved memory manager (base class)
+/// \class HdInterleavedMemoryManager
 ///
-
+/// Interleaved memory manager (base class).
+///
 class HdInterleavedMemoryManager : public HdAggregationStrategy {
 protected:
     friend class TfSingleton<HdInterleavedMemoryManager>;
@@ -103,6 +104,9 @@ protected:
         virtual void IncrementVersion() {
             _stripedBuffer->IncrementVersion();
         }
+
+        /// Returns the max number of elements
+        virtual size_t GetMaxNumElements() const;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.

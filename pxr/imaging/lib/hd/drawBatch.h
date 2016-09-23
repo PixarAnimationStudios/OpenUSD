@@ -47,6 +47,8 @@ typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef std::vector<Hd_DrawBatchSharedPtr> Hd_DrawBatchSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
+/// \class Hd_DrawBatch
+///
 /// A drawing batch.
 ///
 /// This is the finest grained element of drawing, representing potentially
@@ -86,13 +88,16 @@ public:
 protected:
     virtual void _Init(HdDrawItemInstance * drawItemInstance);
 
+    /// \class _DrawingProgram
+    ///
     /// This wraps glsl code generation and keeps track of
     /// binding assigments for bindable resources.
+    ///
     class _DrawingProgram {
     public:
         _DrawingProgram() {}
 
-        void CompileShader(
+        bool CompileShader(
                 HdDrawItem const *drawItem,
                 Hd_GeometricShaderSharedPtr const &geometricShader,
                 HdShaderSharedPtrVector const &shaders,

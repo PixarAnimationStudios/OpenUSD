@@ -28,20 +28,20 @@
 
 #include <string>
 
-//! \class TfPyModuleWasLoaded
-//
-// A \a TfNotice that is sent when a script module is loaded.  Since many
-// modules may be loaded at once, listeners are encouraged to defer work
-// triggered by this notice to the end of an application iteration.  This, of
-// course, is good practice in general.
-//
+/// \class TfPyModuleWasLoaded
+///
+/// A \a TfNotice that is sent when a script module is loaded.  Since many
+/// modules may be loaded at once, listeners are encouraged to defer work
+/// triggered by this notice to the end of an application iteration.  This, of
+/// course, is good practice in general.
+///
 class TfPyModuleWasLoaded : public TfNotice {
 public:
     explicit TfPyModuleWasLoaded(std::string const &name) : _name(name) {}
 
     virtual ~TfPyModuleWasLoaded();
     
-    //! \brief Return the name of the module that was loaded.
+    /// Return the name of the module that was loaded.
     std::string const &GetName() { return _name; }
 private:
     std::string _name;

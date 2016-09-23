@@ -27,6 +27,7 @@
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/singleton.h"
 
+/// \class HdRenderContextCaps
 ///
 /// This class is intended to be a cache of the capabilites
 /// (resource limits and features) of the underlying
@@ -73,6 +74,9 @@ public:
     int glslVersion;
     bool explicitUniformLocation;     // ARB_explicit_uniform_location    (4.3)
     bool shadingLanguage420pack;      // ARB_shading_language_420pack     (4.2)
+
+    // workarounds for driver issues
+    bool copyBufferEnabled;
 
 private:
     void _LoadCaps();

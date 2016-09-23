@@ -593,8 +593,8 @@ PcpPrimIndex_Graph::_InsertChildInStrengthOrder(
 void 
 PcpPrimIndex_Graph::_DetachSharedNodePool()
 {
-    TRACE_FUNCTION();
     if (not _data.unique()) {
+        TRACE_FUNCTION();
         _data.reset(new _SharedData(*_data));
 
         // XXX: This probably causes more finalization than necessary. Only

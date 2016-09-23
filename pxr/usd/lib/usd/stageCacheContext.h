@@ -70,7 +70,7 @@ enum UsdStageCacheContextBlockType
 
 /// \class UsdStageCacheContext
 ///
-/// \brief A context object that lets the UsdStage::Open() API read from or read
+/// A context object that lets the UsdStage::Open() API read from or read
 /// from and write to a UsdStageCache instance during a scope of execution.
 ///
 /// Code examples illustrate typical use:
@@ -118,21 +118,20 @@ enum UsdStageCacheContextBlockType
 ///
 struct UsdStageCacheContext : public TfStacked<UsdStageCacheContext>
 {
-    /// \brief Bind a cache for calls to UsdStage::Open() to read from and write
-    /// to.
+    /// Bind a cache for calls to UsdStage::Open() to read from and write to.
     explicit UsdStageCacheContext(UsdStageCache &cache)
         : _rwCache(&cache)
         , _isReadOnlyCache(false)
         , _blockType(Usd_NoBlock) {}
 
-    /// \brief Bind a cache for calls to UsdStage::Open() to read from.  See
-    /// UsdUseButDoNotPopulateCache().
+    /// Bind a cache for calls to UsdStage::Open() to read from.
+    /// \see UsdUseButDoNotPopulateCache()
     explicit UsdStageCacheContext(Usd_NonPopulatingStageCacheWrapper holder)
         : _roCache(&holder.cache)
         , _isReadOnlyCache(true)
         , _blockType(Usd_NoBlock) {}
 
-    /// \brief Disable cache use completely (with UsdBlockStageCaches) or only
+    /// Disable cache use completely (with UsdBlockStageCaches) or only
     /// for writing (with UsdBlockStageCacheWrites).
     explicit UsdStageCacheContext(UsdStageCacheContextBlockType blockType)
         : _blockType(blockType) {}

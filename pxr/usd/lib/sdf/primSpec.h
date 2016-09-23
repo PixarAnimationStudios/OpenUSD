@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/primSpec.h
-
 #ifndef SDF_PRIMSPEC_H
 #define SDF_PRIMSPEC_H
+
+/// \file sdf/primSpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
@@ -42,7 +42,8 @@
 template <class TypePolicy> class Sdf_ListEditor;
 
 /// \class SdfPrimSpec
-/// \brief Represents a prim description in an SdfLayer object.
+///
+/// Represents a prim description in an SdfLayer object.
 ///
 /// Every SdfPrimSpec object is defined in a layer.  It is identified by its
 /// path (SdfPath class) in the namespace hierarchy of its layer.
@@ -79,7 +80,7 @@ public:
     /// \name Spec creation
     /// @{
 
-    /// \brief Create a root prim spec.
+    /// Create a root prim spec.
     ///
     /// Creates a prim spec with a \p name, \p specifier and \p typeName as a
     /// root prim in the given layer.
@@ -88,7 +89,7 @@ public:
         const std::string& name, SdfSpecifier spec,
         const std::string& typeName = std::string());
 
-    /// \brief Create a prim spec.
+    /// Create a prim spec.
     ///
     /// Creates a prim spec with a \p name, \p specifier and \p typeName as
     /// a namespace child of the given prim.
@@ -106,14 +107,14 @@ public:
     /// Returns the prim's name, as a token.
     TfToken GetNameToken() const;
 
-    /// \brief Returns true if setting the prim spec's name to \p newName will
+    /// Returns true if setting the prim spec's name to \p newName will
     /// succeed.
     ///
     /// Returns false if it won't, and sets \p whyNot with a string
     /// describing why not.
     bool CanSetName(const std::string& newName, std::string* whyNot) const;
 
-    /// \brief Sets the prim's name.
+    /// Sets the prim's name.
     ///
     /// Children prims must be unique by name. It is an error to
     /// set the name to the same name as an existing child of this
@@ -125,14 +126,14 @@ public:
     /// Returns true if successful, false otherwise.
     bool SetName(const std::string& newName, bool validate = true);
 
-    /// \brief Returns true if the given string is a valid prim name.
+    /// Returns true if the given string is a valid prim name.
     static bool IsValidName(const std::string& name);
 
     /// @}
     /// \name Namespace hierarchy
     /// @{
 
-    /// \brief Returns the prim's namespace pseudo-root prim.
+    /// Returns the prim's namespace pseudo-root prim.
     SdfPrimSpecHandle GetNameRoot() const;
 
     /// Returns the prim's namespace parent.
@@ -152,7 +153,7 @@ public:
     /// Updates nameChildren to match the given vector of prims.
     void SetNameChildren(const SdfPrimSpecHandleVector&);
 
-    /// \brief Inserts a child.
+    /// Inserts a child.
     ///
     /// \p index is ignored except for range checking;  -1 is permitted.
     ///
@@ -162,7 +163,7 @@ public:
     /// Removes the child.  Returns true if succesful, false if failed.
     bool RemoveNameChild(const SdfPrimSpecHandle& child);
 
-    /// \brief Returns the list of child names for this prim's reorder
+    /// Returns the list of child names for this prim's reorder.
     /// nameChildren statement.
     ///
     /// See SetNameChildrenOrder() for more info.
@@ -179,7 +180,7 @@ public:
     /// InsertNameChild(), SetNameChildren(), et al.
     void SetNameChildrenOrder(const std::vector<TfToken>& names);
 
-    /// \brief Adds a new name child \p name in the name children order.
+    /// Adds a new name child \p name in the name children order.
     /// If \p index is -1, the name is inserted at the end.
     void InsertInNameChildrenOrder(const TfToken& name, int index = -1);
 
@@ -189,7 +190,7 @@ public:
     /// Removes a name child name from the name children order by index.
     void RemoveFromNameChildrenOrderByIndex(int index);
 
-    /// \brief Reorders the given list of child names according to the reorder
+    /// Reorders the given list of child names according to the reorder
     /// nameChildren statement for this prim.
     ///
     /// This routine employs the standard list editing operation for ordered
@@ -206,7 +207,7 @@ public:
     /// Updates properties to match the given vector of properties.
     void SetProperties(const SdfPropertySpecHandleVector&);
 
-    /// \brief Inserts a property
+    /// Inserts a property.
     ///
     /// \p index is ignored except for range checking;  -1 is permitted.
     ///
@@ -222,7 +223,7 @@ public:
     /// Returns a view of the relationships of this prim.
     RelationshipSpecView GetRelationships() const;
 
-    /// \brief Returns the list of property names for this prim's reorder
+    /// Returns the list of property names for this prim's reorder
     /// properties statement.
     ///
     /// See SetPropertyOrder() for more info.
@@ -239,7 +240,7 @@ public:
     /// InsertProperty(), SetProperties(), et al.
     void SetPropertyOrder(const std::vector<TfToken>& names);
 
-    /// \brief Add a new property \p name in the property order.
+    /// Add a new property \p name in the property order.
     /// If \p index is -1, the name is inserted at the end.
     void InsertInPropertyOrder(const TfToken& name, int index = -1);
 
@@ -249,7 +250,7 @@ public:
     /// Remove a property name from the property order by index.
     void RemoveFromPropertyOrderByIndex(int index);
 
-    /// \brief Reorders the given list of property names according to the
+    /// Reorders the given list of property names according to the
     /// reorder properties statement for this prim.
     ///
     /// This routine employs the standard list editing operation for ordered
@@ -260,7 +261,7 @@ public:
     /// \name Lookup
     /// @{
 
-    /// \brief Returns the object for the given \p path.
+    /// Returns the object for the given \p path.
     ///
     /// If \p path is relative then it will be interpreted as
     /// relative to this prim.  If it is absolute then it will be
@@ -269,25 +270,25 @@ public:
     /// Returns invalid handle if there is no object at \p path.
     SdfSpecHandle GetObjectAtPath(const SdfPath& path) const;
 
-    /// \brief Returns a prim given its \p path.
+    /// Returns a prim given its \p path.
     ///
     /// Returns invalid handle if there is no prim at \p path.
     /// This is simply a more specifically typed version of GetObjectAtPath.
     SdfPrimSpecHandle GetPrimAtPath(const SdfPath& path) const;
 
-    /// \brief Returns a property given its \p path.
+    /// Returns a property given its \p path.
     ///
     /// Returns invalid handle if there is no property at \p path.
     /// This is simply a more specifically typed version of GetObjectAtPath.
     SdfPropertySpecHandle GetPropertyAtPath(const SdfPath& path) const;
 
-    /// \brief Returns an attribute given its \p path.
+    /// Returns an attribute given its \p path.
     ///
     /// Returns invalid handle if there is no attribute at \p path.
     /// This is simply a more specifically typed version of GetObjectAtPath.
     SdfAttributeSpecHandle GetAttributeAtPath(const SdfPath& path) const;
 
-    /// \brief Returns a relationship given its \p path.
+    /// Returns a relationship given its \p path.
     ///
     /// Returns invalid handle if there is no relationship at \p path.
     /// This is simply a more specifically typed version of GetObjectAtPath.
@@ -297,7 +298,7 @@ public:
     /// \name Metadata
     /// @{
 
-    /// \brief Returns the typeName of the model prim.
+    /// Returns the typeName of the model prim.
     ///
     /// For prims this specifies the sub-class of MfPrim that
     /// this prim describes.
@@ -308,7 +309,7 @@ public:
     /// Sets the typeName of the model prim.
     void SetTypeName(const std::string& value);
 
-    /// \brief Returns the comment string for this prim spec.
+    /// Returns the comment string for this prim spec.
     ///
     /// The default value for comment is @"".
     std::string GetComment() const;
@@ -316,7 +317,7 @@ public:
     /// Sets the comment string for this prim spec.
     void SetComment(const std::string& value);
 
-    /// \brief Returns the documentation string for this prim spec.
+    /// Returns the documentation string for this prim spec.
     ///
     /// The default value for documentation is @"".
     std::string GetDocumentation() const;
@@ -324,7 +325,7 @@ public:
     /// Sets the documentation string for this prim spec.
     void SetDocumentation(const std::string& value);
 
-    /// \brief Returns whether this prim spec is active.
+    /// Returns whether this prim spec is active.
     ///
     /// The default value for active is true.
     bool GetActive() const;
@@ -338,8 +339,7 @@ public:
     /// Removes the active opinion in this prim spec if there is one.
     void ClearActive();
 
-    /// \brief Returns whether this prim spec will be hidden
-    /// in browsers.
+    /// Returns whether this prim spec will be hidden in browsers.
     ///
     /// The default value for hidden is false.
     bool GetHidden() const;
@@ -347,7 +347,7 @@ public:
     /// Sets whether this prim spec will be hidden in browsers.
     void SetHidden( bool value );
 
-    /// \brief Returns this prim spec's kind.
+    /// Returns this prim spec's kind.
     ///
     /// The default value for kind is an empty \c TfToken.
     TfToken GetKind() const;
@@ -361,40 +361,40 @@ public:
     /// Remove the kind opinion from this prim spec if there is one.
     void ClearKind();
 
-    /// \brief Returns the symmetry function for this prim.
+    /// Returns the symmetry function for this prim.
     ///
     /// The default value for symmetry function is an empty token.
     TfToken GetSymmetryFunction() const;
 
-    /// \brief Sets the symmetry function for this prim.
+    /// Sets the symmetry function for this prim.
     ///
     /// If \p functionName is an empty token, then this removes any symmetry
     /// function for the given prim.
     void SetSymmetryFunction(const TfToken& functionName);
 
-    /// \brief Returns the symmetry arguments for this prim.
+    /// Returns the symmetry arguments for this prim.
     ///
     /// The default value for symmetry arguments is an empty dictionary.
     SdfDictionaryProxy GetSymmetryArguments() const;
 
-    /// \brief Sets a symmetry argument for this prim.
+    /// Sets a symmetry argument for this prim.
     ///
     /// If \p value is empty, then this removes the setting
     /// for the given symmetry argument \p name.
     void SetSymmetryArgument(const std::string& name, const VtValue& value);
 
-    /// \brief Returns the symmetric peer for this prim.
+    /// Returns the symmetric peer for this prim.
     ///
     /// The default value for symmetric peer is an empty string.
     std::string GetSymmetricPeer() const;
 
-    /// \brief Sets a symmetric peer for this prim.
+    /// Sets a symmetric peer for this prim.
     ///
     /// If \p peerName is empty, then this removes the symmetric peer
     /// for this prim.
     void SetSymmetricPeer(const std::string& peerName);
 
-    /// \brief Returns the prefix string for this prim spec.
+    /// Returns the prefix string for this prim spec.
     ///
     /// The default value for prefix is "".
     std::string GetPrefix() const;
@@ -402,7 +402,7 @@ public:
     /// Sets the prefix string for this prim spec.
     void SetPrefix(const std::string& value);
 
-    /// \brief Returns the custom data for this prim.
+    /// Returns the custom data for this prim.
     ///
     /// The default value for custom data is an empty dictionary.
     ///
@@ -415,7 +415,7 @@ public:
     /// is an appropriate choice.
     SdfDictionaryProxy GetCustomData() const;
 
-    /// \brief Returns the asset info dictionary for this prim.
+    /// Returns the asset info dictionary for this prim.
     /// 
     /// The default value is an empty dictionary. 
     /// 
@@ -426,12 +426,12 @@ public:
     /// 
     SdfDictionaryProxy GetAssetInfo() const;
 
-    /// \brief Sets a custom data entry for this prim.
+    /// Sets a custom data entry for this prim.
     ///
     /// If \p value is empty, then this removes the given custom data entry.
     void SetCustomData(const std::string& name, const VtValue& value);
 
-    /// \brief Sets a asset info entry for this prim.
+    /// Sets a asset info entry for this prim.
     ///
     /// If \p value is empty, then this removes the given asset info entry.
     /// 
@@ -439,13 +439,13 @@ public:
     ///
     void SetAssetInfo(const std::string& name, const VtValue& value);
 
-    /// \brief Returns the spec specifier (def, over or class).
+    /// Returns the spec specifier (def, over or class).
     SdfSpecifier GetSpecifier() const;
 
     /// Sets the spec specifier (def or over).
     void SetSpecifier(SdfSpecifier value);
 
-    /// \brief Returns the prim's permission restriction.
+    /// Returns the prim's permission restriction.
     ///
     /// The default value for permission is SdfPermissionPublic.
     SdfPermission GetPermission() const;
@@ -453,7 +453,7 @@ public:
     /// Sets the prim's permission restriction.
     void SetPermission(SdfPermission value);
 
-    /// \brief Returns the prefixSubstitutions dictionary for this prim spec.
+    /// Returns the prefixSubstitutions dictionary for this prim spec.
     ///
     /// The default value for prefixSubstitutions is an empty VtDictionary.
     VtDictionary GetPrefixSubstitutions() const;
@@ -478,7 +478,7 @@ public:
     /// \name Payload
     /// @{
 
-    /// \brief Returns this prim spec's payload.
+    /// Returns this prim spec's payload.
     ///
     /// The default value for payload is an empty \c SdfPayload.
     SdfPayload GetPayload() const;
@@ -496,7 +496,7 @@ public:
     /// \name Inherits
     /// @{
 
-    /// \brief Returns a proxy for the prim's inherit paths.
+    /// Returns a proxy for the prim's inherit paths.
     ///
     /// Inherit paths for this prim may be modified through the proxy.
     SdfInheritsProxy GetInheritPathList() const;
@@ -511,7 +511,7 @@ public:
     /// \name Specializes
     /// @{
 
-    /// \brief Returns a proxy for the prim's specializes paths.
+    /// Returns a proxy for the prim's specializes paths.
     ///
     /// Specializes for this prim may be modified through the proxy.
     SdfSpecializesProxy GetSpecializesList() const;
@@ -526,7 +526,7 @@ public:
     /// \name References
     /// @{
 
-    /// \brief Returns a proxy for the prim's references.
+    /// Returns a proxy for the prim's references.
     ///
     /// References for this prim may be modified through the proxy.
     SdfReferencesProxy GetReferenceList() const;
@@ -541,7 +541,7 @@ public:
     /// \name Variants
     /// @{
 
-    /// \brief Returns a proxy for the prim's variant sets.
+    /// Returns a proxy for the prim's variant sets.
     ///
     /// Variant sets for this prim may be modified through the proxy.
     SdfVariantSetNamesProxy GetVariantSetNameList() const;
@@ -549,16 +549,16 @@ public:
     /// Returns true if this prim has variant sets set.
     bool HasVariantSetNames() const;
 
-    /// \brief Returns list of variant names for the given varient set.
+    /// Returns list of variant names for the given varient set.
     std::vector<std::string> GetVariantNames(const std::string& name) const;
 
-    /// \brief Returns the variant sets.
+    /// Returns the variant sets.
     ///
     /// The result maps variant set names to variant sets.  Variant sets
     /// may be removed through the proxy.
     SdfVariantSetsProxy GetVariantSets() const;
 
-    /// \brief Removes the variant set with the given \a name.
+    /// Removes the variant set with the given \a name.
     ///
     /// Note that the set's name should probably also be removed from
     /// the variant set names list.
@@ -568,7 +568,7 @@ public:
     /// whose values are the variants selected for each set.
     SdfVariantSelectionProxy GetVariantSelections() const;
 
-    /// \brief Sets the variant selected for the given variant set.
+    /// Sets the variant selected for the given variant set.
     /// If \p variantName is empty, then this removes the variant
     /// selected for the variant set \p variantSetName.
     void SetVariantSelection(const std::string& variantSetName,
@@ -578,7 +578,7 @@ public:
     /// \name Relocates
     /// @{
 
-    /// \brief Get an editing proxy for the map of namespace relocations
+    /// Get an editing proxy for the map of namespace relocations
     /// specified on this prim.
     ///
     /// The map of namespace relocation paths is editable in-place via

@@ -43,6 +43,7 @@ class SdfAbstractDataSpecVisitor;
 class SdfAbstractDataConstValue;
 class SdfAbstractDataValue;
 
+
 #define SDF_DATA_TOKENS                  \
         ((TimeSamples, "timeSamples"))
 
@@ -60,6 +61,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdfDataTokens, SDF_DATA_TOKENS);
 /// holds on to pointers to them. The constructors take their parameters
 /// by pointer to ensure that consumers do not pass in temporary values,
 /// which could lead to undefined behavior.
+///
 class SdfAbstractDataSpecId
 {
 public:
@@ -126,7 +128,8 @@ private:
 };
 
 /// \class SdfAbstractData
-/// \brief Interface for scene description data storage.
+///
+/// Interface for scene description data storage.
 ///
 /// This is not a layer.  SdfAbstractData is an anonymous container holding
 /// scene description values.  It is like an STL container, but specialized
@@ -371,16 +374,17 @@ inline T SdfAbstractData::GetAs(
 }
 
 /// \class SdfAbstractDataValue
+///
 /// A type-erased container for a field value in an SdfAbstractData.
-/// See SdfAbstractDataTypedValue for more details.
 ///
 /// \sa SdfAbstractDataTypedValue
 class SdfAbstractDataValue
 {
 public:
     virtual bool StoreValue(const VtValue& value) = 0;
-
-    template <class T> bool StoreValue(const T& v) 
+    
+    template <class T> 
+    bool StoreValue(const T& v) 
     {
         if (TfSafeTypeCompare(typeid(T), valueType)) {
             *static_cast<T*>(value) = v;
@@ -389,13 +393,21 @@ public:
         return false;
     }
 
+    bool StoreValue(const SdfValueBlock& block)
+    {
+        isValueBlock = true;
+        return true;
+    }
+    
     void* value;
     const std::type_info& valueType;
+    bool isValueBlock;
 
 protected:
     SdfAbstractDataValue(void* value_, const std::type_info& valueType_)
         : value(value_)
         , valueType(valueType_)
+        , isValueBlock(false)
     { }
 };
 
@@ -411,6 +423,7 @@ protected:
 /// SdfAbstractDataTypedValue objects are intended to be transient; they
 /// are solely used to get pointer information into and out of an 
 /// SdfAbstractData container.
+///
 template <class T>
 class SdfAbstractDataTypedValue : public SdfAbstractDataValue
 {
@@ -421,6 +434,11 @@ public:
 
     virtual bool StoreValue(const VtValue& v)
     {
+        if (v.IsHolding<SdfValueBlock>()) {
+            isValueBlock = true;
+            return true;
+        }
+
         if (not v.IsHolding<T>()) {
             return false;
         }
@@ -431,8 +449,8 @@ public:
 };
 
 /// \class SdfAbstractDataConstValue
+///
 /// A type-erased container for a const field value in an SdfAbstractData.
-/// See SdfAbstractDataConstTypedValue for more details.
 ///
 /// \sa SdfAbstractDataConstTypedValue
 class SdfAbstractDataConstValue
@@ -456,10 +474,11 @@ public:
 
 protected:
     SdfAbstractDataConstValue(const void* value_, 
-                             const std::type_info& valueType_)
+                              const std::type_info& valueType_)
         : value(value_)
         , valueType(valueType_)
-    { }
+    { 
+    }
 };
 
 /// \class SdfAbstractDataConstTypedValue
@@ -474,6 +493,7 @@ protected:
 /// SdfAbstractDataConstTypedValue objects are intended to be transient; they
 /// are solely used to get pointer information into an SdfAbstractData 
 /// container.
+///
 template <class T>
 class SdfAbstractDataConstTypedValue : public SdfAbstractDataConstValue
 {
@@ -481,7 +501,7 @@ public:
     SdfAbstractDataConstTypedValue(const T* value)
         : SdfAbstractDataConstValue(value, typeid(T))
     { }
-
+    
     virtual bool GetValue(VtValue* v) const
     {
         *v = _GetValue();
@@ -518,7 +538,9 @@ private:
 };
 
 /// \class SdfAbstractDataSpecVisitor
+///
 /// Base class for objects used to visit specs in an SdfAbstractData object.
+///
 /// \sa SdfAbstractData::VisitSpecs.
 class SdfAbstractDataSpecVisitor
 {

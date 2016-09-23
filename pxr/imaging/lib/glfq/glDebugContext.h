@@ -32,10 +32,12 @@
 
 #include <boost/scoped_ptr.hpp>
 
-class GlfQGLPlatformDebugContext;
+class GarchGLPlatformDebugContext;
 
 TF_DECLARE_WEAK_PTRS(GlfQGLDebugContext);
 
+/// \class GlfQGLDebugContext
+///
 /// Extends QGLContext to support OpenGL Debug Output.
 ///
 /// Unextended Qt does not support the creation of a GL context that
@@ -58,7 +60,7 @@ public:
 #endif
 
 public:
-    boost::scoped_ptr<GlfQGLPlatformDebugContext> _platformContext;
+    boost::scoped_ptr<GarchGLPlatformDebugContext> _platformContext;
 };
 
 #endif // GLFQ_GL_DEBUG_CONTEXT_H

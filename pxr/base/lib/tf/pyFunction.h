@@ -21,14 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef BOOST_PP_IS_ITERATING
-
 #ifndef TF_PYFUNCTION_H
 #define TF_PYFUNCTION_H
-
-#ifndef TF_MAX_ARITY
-#  define TF_MAX_ARITY 7
-#endif // TF_MAX_ARITY
 
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyLock.h"
@@ -42,150 +36,141 @@
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/preprocessor.hpp>
 
+#include <functional>
 
 template <typename T>
 struct TfPyFunctionFromPython;
 
-
-#define BOOST_PP_ITERATION_LIMITS (0, TF_MAX_ARITY)
-#define BOOST_PP_FILENAME_1 "pxr/base/tf/pyFunction.h"
-#include BOOST_PP_ITERATE()
-/* comment needed for scons dependency scanner
-#include "pxr/base/tf/pyFunction.h"
-*/
-
-
-#endif // TF_PYFUNCTION_H
-
-
-#else // BOOST_PP_IS_ITERATING
-
-
-#define N BOOST_PP_ITERATION()
-
-// PLACEHOLDER is used to produce the _1 _2 _3 placeholders for
-// boost::bind.
-#define PLACEHOLDER(unused, n, unused2) BOOST_PP_CAT(_,BOOST_PP_INC(n))
-
-template <typename Ret BOOST_PP_ENUM_TRAILING_PARAMS(N, typename A)>
-struct TfPyFunctionFromPython<Ret (BOOST_PP_ENUM_PARAMS(N, A))>
+template <typename Ret, typename... Args>
+struct TfPyFunctionFromPython<Ret (Args...)>
 {
-    typedef boost::function<Ret (BOOST_PP_ENUM_PARAMS(N, A))> FuncType;
+    struct Call
+    {
+        TfPyObjWrapper callable;
 
-    static Ret Call(TfPyObjWrapper const &callable
-                    BOOST_PP_ENUM_TRAILING_BINARY_PARAMS(N, A, a)) {
-        TfPyLock lock;
-        return TfPyCall<Ret>(callable)(BOOST_PP_ENUM_PARAMS(N, a));
-    }
-
-    static Ret CallWeak(TfPyObjWrapper const &weak
-                        BOOST_PP_ENUM_TRAILING_BINARY_PARAMS(N, A, a)) {
-        using namespace boost::python;
-        // Attempt to get the referenced callable object.
-        TfPyLock lock;
-        object callable(handle<>(borrowed(PyWeakref_GetObject(weak.ptr()))));
-        if (TfPyIsNone(callable)) {
-            TF_WARN("Tried to call an expired python callback");
-            return Ret();
-        }            
-        return TfPyCall<Ret>(callable)(BOOST_PP_ENUM_PARAMS(N, a));
-    }
-
-    static Ret CallMethod(TfPyObjWrapper const &func,
-                          TfPyObjWrapper const &weakSelf,
-                          TfPyObjWrapper const &cls
-                          BOOST_PP_ENUM_TRAILING_BINARY_PARAMS(N, A, a)) {
-        using namespace boost::python;
-        // Attempt to get the referenced self parameter, then build a new
-        // instance method and call it.
-        TfPyLock lock;
-        PyObject *self = PyWeakref_GetObject(weakSelf.ptr());
-        if (self == Py_None) {
-            TF_WARN("Tried to call a method on an expired python instance");
-            return Ret();
+        Ret operator()(Args... args) {
+            TfPyLock lock;
+            return TfPyCall<Ret>(callable)(args...);
         }
-        object method(handle<>(PyMethod_New(func.ptr(), self, cls.ptr())));
-        return TfPyCall<Ret>(method)(BOOST_PP_ENUM_PARAMS(N, a));
-    }
+    };
+
+    struct CallWeak
+    {
+        TfPyObjWrapper weak;
+
+        Ret operator()(Args... args) {
+            using namespace boost::python;
+            // Attempt to get the referenced callable object.
+            TfPyLock lock;
+            object callable(handle<>(borrowed(PyWeakref_GetObject(weak.ptr()))));
+            if (TfPyIsNone(callable)) {
+                TF_WARN("Tried to call an expired python callback");
+                return Ret();
+            }
+            return TfPyCall<Ret>(callable)(args...);
+        }
+    };
+
+    struct CallMethod
+    {
+        TfPyObjWrapper func;
+        TfPyObjWrapper weakSelf;
+        TfPyObjWrapper cls;
+
+        Ret operator()(Args... args) {
+            using namespace boost::python;
+            // Attempt to get the referenced self parameter, then build a new
+            // instance method and call it.
+            TfPyLock lock;
+            PyObject *self = PyWeakref_GetObject(weakSelf.ptr());
+            if (self == Py_None) {
+                TF_WARN("Tried to call a method on an expired python instance");
+                return Ret();
+            }
+            object method(handle<>(PyMethod_New(func.ptr(), self, cls.ptr())));
+            return TfPyCall<Ret>(method)(args...);
+        }
+    };
 
     TfPyFunctionFromPython() {
+        RegisterFunctionType<boost::function<Ret (Args...)>>();
+        RegisterFunctionType<std::function<Ret (Args...)>>();
+    }
+
+    template <typename FuncType>
+    static void
+    RegisterFunctionType() {
         using namespace boost::python;
         converter::registry::
-            insert(&convertible, &construct, type_id<FuncType>());
+            insert(&convertible, &construct<FuncType>, type_id<FuncType>());
     }
 
     static void *convertible(PyObject *obj) {
         return PyCallable_Check(obj) ? obj : 0;
     }
 
+    template <typename FuncType>
     static void construct(PyObject *src, boost::python::converter::
                           rvalue_from_python_stage1_data *data) {
         using std::string;
-        using boost::bind;
         using namespace boost::python;
         
         void *storage = ((converter::rvalue_from_python_storage<FuncType> *)
                          data)->storage.bytes;
 
-        // In the case of instance methods, holding a strong reference will keep
-        // the bound 'self' argument alive indefinitely, which is undesirable.
-        // Unfortunately, we can't just keep a weak reference to the instance
-        // method, because python synthesizes these on-the-fly.  Instead we do
-        // something like what PyQt's SIP does, and break the method into three
-        // parts: the class, the function, and the self parameter.  We keep
-        // strong references to the class and the function, but a weak reference
-        // to 'self'.  Then at call-time, if self has not expired, we build a
-        // new instancemethod and call it.
+        // In the case of instance methods, holding a strong reference will
+        // keep the bound 'self' argument alive indefinitely, which is
+        // undesirable. Unfortunately, we can't just keep a weak reference to
+        // the instance method, because python synthesizes these on-the-fly.
+        // Instead we do something like what PyQt's SIP does, and break the
+        // method into three parts: the class, the function, and the self
+        // parameter.  We keep strong references to the class and the
+        // function, but a weak reference to 'self'.  Then at call-time, if
+        // self has not expired, we build a new instancemethod and call it.
         //
         // Otherwise if the callable is a lambda (checked in a hacky way, but
         // mirroring SIP), we take a strong reference.
         // 
-        // For all other callables, we attempt to take weak references to them.
-        // If that fails, we take a strong reference.
+        // For all other callables, we attempt to take weak references to
+        // them. If that fails, we take a strong reference.
         //
         // This is all sort of contrived, but seems to have the right behavior
         // for most usage patterns.
 
         object callable(handle<>(borrowed(src)));
-        
-        if (PyMethod_Check(callable.ptr())) {
-            // Deconstruct the method and attempt to get a weak reference to the
-            // self instance.
-            PyObject *method = callable.ptr();
-            object cls(handle<>(borrowed(PyMethod_GET_CLASS(method))));
-            object func(handle<>(borrowed(PyMethod_GET_FUNCTION(method))));
-            object weakSelf
-                (handle<>(PyWeakref_NewRef(PyMethod_GET_SELF(method), NULL)));
+        PyObject *pyCallable = callable.ptr();
+        PyObject *self =
+            PyMethod_Check(pyCallable) ? PyMethod_GET_SELF(pyCallable) : NULL;
+
+        if (self) {
+            // Deconstruct the method and attempt to get a weak reference to
+            // the self instance.
+            object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
+            object func(handle<>(borrowed(PyMethod_GET_FUNCTION(pyCallable))));
+            object weakSelf(handle<>(PyWeakref_NewRef(self, NULL)));
             new (storage)
-                FuncType(bind(CallMethod,
-                              TfPyObjWrapper(func),
-                              TfPyObjWrapper(weakSelf),
-                              TfPyObjWrapper(cls)
-                              BOOST_PP_ENUM_TRAILING(N, PLACEHOLDER, ~)));
-        } else if (PyObject_HasAttrString(callable.ptr(), "__name__") and
+                FuncType(CallMethod{
+                    TfPyObjWrapper(func),
+                    TfPyObjWrapper(weakSelf),
+                    TfPyObjWrapper(cls)});
+
+        } else if (PyObject_HasAttrString(pyCallable, "__name__") and
                    extract<string>(callable.attr("__name__"))() == "<lambda>") {
             // Explicitly hold on to strong references to lambdas.
-            new (storage)
-                FuncType(bind(Call, TfPyObjWrapper(callable)
-                              BOOST_PP_ENUM_TRAILING(N, PLACEHOLDER, ~)));
+            new (storage) FuncType(Call{TfPyObjWrapper(callable)});
         } else {
             // Attempt to get a weak reference to the callable.
             if (PyObject *weakCallable =
-                PyWeakref_NewRef(callable.ptr(), NULL)) {
+                PyWeakref_NewRef(pyCallable, NULL)) {
                 new (storage)
-                    FuncType(bind(CallWeak,
-                                  TfPyObjWrapper(object(handle<>(weakCallable)))
-                                  BOOST_PP_ENUM_TRAILING(N, PLACEHOLDER, ~)));
+                    FuncType(CallWeak{
+                        TfPyObjWrapper(object(handle<>(weakCallable)))});
             } else {
                 // Fall back to taking a strong reference.
                 PyErr_Clear();
-                new (storage)
-                    FuncType(bind(Call, TfPyObjWrapper(callable)
-                                  BOOST_PP_ENUM_TRAILING(N, PLACEHOLDER, ~)));
+                new (storage) FuncType(Call{TfPyObjWrapper(callable)});
             }
         }
 
@@ -193,7 +178,4 @@ struct TfPyFunctionFromPython<Ret (BOOST_PP_ENUM_PARAMS(N, A))>
     }
 };
 
-#undef N
-#undef PLACEHOLDER
-
-#endif // BOOST_PP_IS_ITERATING
+#endif // TF_PYFUNCTION_H

@@ -55,6 +55,7 @@ public:
     virtual GLenum GetFormat() const;
     virtual GLenum GetType() const;
     virtual int GetBytesPerPixel() const;
+    virtual int GetNumMipLevels() const;
 
     virtual bool IsColorSpaceSRGB() const;
 
@@ -369,6 +370,14 @@ Glf_OIIOImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
         default:
             return false;
     }
+}
+
+/* virtual */
+int
+Glf_OIIOImage::GetNumMipLevels() const
+{
+    // XXX Add support for mip counting
+    return 1;
 }
 
 /* virtual */

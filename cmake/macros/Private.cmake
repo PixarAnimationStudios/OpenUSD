@@ -76,20 +76,12 @@ function(_get_python_module_name LIBRARY_FILENAME MODULE_NAME)
     )
 endfunction() # _get_python_module_name
 
-function(_plugInfo_subst libName plugInfoPath)
-    # Generate plugInfo.json files from a template. Note that we can't use
-    # the $<TARGET_FILE_NAME:tgt> generator expression here because 
-    # configure_file will run at configure time while the generators will only
-    # run after.
-    set(libFile ${CMAKE_SHARED_LIBRARY_PREFIX}${libName}${CMAKE_SHARED_LIBRARY_SUFFIX})
-
-    # The root resource directory is in $PREFIX/share/usd/$LIB/resource but the 
-    # libs are actually in $PREFIX/lib. The lib path can then be specified
-    # relatively as below.
-    set(PLUG_INFO_LIBRARY_PATH "../../../../lib/${libFile}")
-    set(PLUG_INFO_RESOURCE_PATH "resources")
-    set(PLUG_INFO_PLUGIN_NAME "pxr.${libName}")
+function(_plugInfo_subst libTarget plugInfoPath)
+    # PLUG_INFO_LIBRARY_PATH should be set by the caller (see pxr_plugin and
+    # pxr_shared_library).
+    _get_resources_dir_name(PLUG_INFO_RESOURCE_PATH)
     set(PLUG_INFO_ROOT "..")
+    set(PLUG_INFO_PLUGIN_NAME "pxr.${libTarget}")
 
     configure_file(
         ${plugInfoPath}
@@ -111,11 +103,7 @@ function(_install_python LIBRARY_NAME)
     )
 
     set(libPythonPrefix lib/python)
-
-    string(SUBSTRING ${LIBRARY_NAME} 0 1 LIBNAME_FL)
-    string(TOUPPER ${LIBNAME_FL} LIBNAME_FL)
-    string(SUBSTRING ${LIBRARY_NAME} 1 -1 LIBNAME_SUFFIX)
-    set(LIBRARY_INSTALLNAME "${LIBNAME_FL}${LIBNAME_SUFFIX}")
+    _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
     foreach(file ${ip_FILES})
         set(filesToInstall "")
@@ -205,6 +193,7 @@ function(_install_resource_files)
     #                     resourceFileC
     #                 ...
     #
+    _get_resources_dir(${PLUGINS_PREFIX} ${LIBRARY_NAME} resourcesPath)
     foreach(f ${resourceFiles})
         # Don't install subdirs for absolute paths, there's no way to tell
         # what the intended subdir structure is. In practice, any absolute paths
@@ -216,10 +205,40 @@ function(_install_resource_files)
 
         install(
             FILES ${f}
-            DESTINATION ${PLUGINS_PREFIX}/${LIBRARY_NAME}/resources/${dirPath}
+            DESTINATION ${resourcesPath}/${dirPath}
         )
     endforeach()
 endfunction() # _install_resource_files
+
+function(_install_pyside_ui_files)
+    set(uiFiles "")
+    foreach(uiFile ${ARGN})
+        get_filename_component(outFileName ${uiFile} NAME_WE)
+        get_filename_component(uiFilePath ${uiFile} ABSOLUTE)
+        set(outFilePath "${CMAKE_CURRENT_BINARY_DIR}/${outFileName}.py")
+        add_custom_command(
+            OUTPUT ${outFilePath}
+            COMMAND "${PYSIDEUICBINARY}"
+            ARGS -o ${outFilePath} ${uiFilePath}
+            MAIN_DEPENDENCY "${uiFilePath}"
+            COMMENT "Generating Python for ${uiFilePath} ..."
+            VERBATIM
+        )
+        list(APPEND uiFiles ${outFilePath})
+    endforeach()
+
+    add_custom_target(${LIBRARY_NAME}_pysideuifiles ALL
+        DEPENDS ${uiFiles}
+    )
+
+    set(libPythonPrefix lib/python)
+    _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
+
+    install(
+        FILES ${uiFiles}
+        DESTINATION "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}"
+    )
+endfunction() # _install_pyside_ui_files
 
 function(_classes LIBRARY_NAME)
     # Install headers to build or install prefix
@@ -253,7 +272,6 @@ function(_classes LIBRARY_NAME)
     set(${LIBRARY_NAME}_CPPFILES ${${LIBRARY_NAME}_CPPFILES} PARENT_SCOPE)
 endfunction() # _classes
 
-
 function(_get_install_dir path out)
     if (PXR_INSTALL_SUBDIR)
         set(${out} ${PXR_INSTALL_SUBDIR}/${path} PARENT_SCOPE)
@@ -261,6 +279,42 @@ function(_get_install_dir path out)
         set(${out} ${path} PARENT_SCOPE)
     endif()
 endfunction() # get_install_dir
+
+function(_get_resources_dir_name output)
+    set(${output} 
+        resources 
+        PARENT_SCOPE)
+endfunction() # _get_resources_dir_name
+
+function(_get_plugin_root pluginsPrefix pluginName output)
+    set(${output} 
+        ${pluginsPrefix}/${pluginName}
+        PARENT_SCOPE)
+endfunction() # _get_plugin_root
+
+function(_get_resources_dir pluginsPrefix pluginName output)
+    _get_resources_dir_name(resourcesDir)
+    _get_plugin_root(${pluginsPrefix} ${pluginName} pluginRoot)
+    set(${output} 
+        ${pluginRoot}/${resourcesDir} 
+        PARENT_SCOPE)
+endfunction() # _get_resources_dir
+
+function(_get_library_file target output)
+    get_target_property(prefix ${target} PREFIX)
+    if (NOT prefix AND NOT "" STREQUAL "${prefix}")
+        set(prefix ${CMAKE_SHARED_LIBRARY_PREFIX})
+    endif()
+
+    get_target_property(suffix ${target} SUFFIX)
+    if (NOT suffix AND NOT "" STREQUAL "${suffix}")
+        set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
+    endif()
+
+    set(${output} 
+        ${prefix}${target}${suffix}
+        PARENT_SCOPE)
+endfunction() # _get_library_file
 
 macro(_get_share_install_dir RESULT)
     _get_install_dir(share/usd ${RESULT})

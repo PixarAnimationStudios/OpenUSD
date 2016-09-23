@@ -30,6 +30,8 @@
 #define HDX_TOKENS              \
     (hdxSelectionBuffer)        \
     (imagerVersion)             \
+    (lightingContext)           \
+    (lightingShader)            \
     (renderPassState)           \
     (renderIndexVersion)        \
     (selection)                 \
@@ -44,7 +46,6 @@
     (selValue)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
-
 
 #define HDX_PRIMITIVE_TOKENS    \
     (lightTypePositional)       \

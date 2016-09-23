@@ -32,8 +32,12 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
-/// VBO simple memory manager
+/// \class HdVBOSimpleMemoryManager
+///
+/// VBO simple memory manager.
+///
 /// This class doesn't perform any aggregation.
+///
 class HdVBOSimpleMemoryManager : public HdAggregationStrategy {
 public:
     /// Factory for creating HdBufferArray managed by
@@ -58,7 +62,10 @@ protected:
     friend class TfSingleton<HdVBOSimpleMemoryManager>;
     class _SimpleBufferArray;
 
-    /// specialized buffer array range for SimpleBufferArray
+    /// \class _SimpleBufferArrayRange
+    ///
+    /// Specialized buffer array range for SimpleBufferArray.
+    ///
     class _SimpleBufferArrayRange : public HdBufferArrayRange
     {
     public:
@@ -118,6 +125,9 @@ protected:
             _bufferArray->IncrementVersion();
         }
 
+        /// Returns the max number of elements
+        virtual size_t GetMaxNumElements() const;
+
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
         virtual HdBufferResourceSharedPtr GetResource() const;
@@ -153,7 +163,10 @@ protected:
     typedef boost::weak_ptr<_SimpleBufferArrayRange>
         _SimpleBufferArrayRangePtr;
 
-    /// Simple buffer array (non-aggregated)
+    /// \class _SimpleBufferArray
+    ///
+    /// Simple buffer array (non-aggregated).
+    ///
     class _SimpleBufferArray : public HdBufferArray
     {
     public:
@@ -200,6 +213,5 @@ protected:
         }
     };
 };
-
 
 #endif  // HD_VBO_SIMPLE_MEMORY_MANAGER_H

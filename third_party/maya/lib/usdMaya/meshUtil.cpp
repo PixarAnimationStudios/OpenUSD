@@ -52,22 +52,17 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // This can be customized for specific pipeline
 // We read the USD bool attribute, if not present we look for the mojito bool attribute
-// If not we return the default value
-TfToken PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh, TfToken defaultValue)
+bool PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (plug.isNull()) {
         plug = mesh.findPlug(MString("mjtoMeshVtxNormals"));
     }
-    if (!plug.isNull()) {
-        if (plug.asBool()) {
-            return UsdGeomTokens->faceVarying;
-        } else {
-            return UsdGeomTokens->none;
-        }
-    } else {
-        return defaultValue;
+    if (not plug.isNull() and plug.asBool()) {
+        return true;
     }
+
+    return false;
 }
 
 TfToken PxrUsdMayaMeshUtil::setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue)

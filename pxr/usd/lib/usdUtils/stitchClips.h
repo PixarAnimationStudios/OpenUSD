@@ -24,16 +24,22 @@
 #ifndef _USDUTILS_STITCH_CLIPS_H_
 #define _USDUTILS_STITCH_CLIPS_H_
 
+/// \file usdUtils/stitchClips.h
+///
+/// Collection of utilities for sequencing multiple layers each holding
+/// sequential time-varying data into
+/// \ref Usd_ClipsOverview "USD Value Clips".
+
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 SDF_DECLARE_HANDLES(SdfLayer);
 
 #include <limits>
 
-/// A function that creates layers that use USD's value
-/// clip functionality to effectively merge the time samples
-/// in the given \p clipLayers under \p clipPath without 
-/// copying the samples into a separate layer.
+/// A function that creates layers that use
+/// \ref Usd_ClipsOverview "USD Value Clips"
+/// to effectively merge the time samples in the given \p clipLayers under \p
+/// clipPath without copying the samples into a separate layer.
 ///
 /// \p resultLayer            The layer to which clip meta data and frame data 
 ///                           will be written
@@ -96,5 +102,18 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                     const double startTimeCode 
                         = std::numeric_limits<double>::max());
 
+/// A function which aggregates the topology of a set of \p clipLayerFiles
+/// for use in USD's Value Clips system. This aggregated scene topology
+/// will only include non-time-varying data, as it is for use in conjunction
+/// with the value clip metadata in a manifest layer.
+///
+/// \p topologyLayer          The layer in which topology of the 
+///                           \p clipLayerFiles will be aggregated and inserted.
+///
+/// \p clipLayerFiles         The files containing the time varying data.
+/// 
+bool 
+UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer, 
+                            const std::vector<std::string>& clipLayerFiles);
 
 #endif // _USDUTILS_STITCH_CLIPS_H_

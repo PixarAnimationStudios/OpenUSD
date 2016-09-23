@@ -54,7 +54,7 @@ TfWeakPtr<T> GetWeakPtr(T &t) {
 
 template <class T>
 TfWeakPtr<T> GetWeakPtr(T const &t) {
-    // XXX cast away constness for python...
+    // cast away constness for python...
     return TfConst_cast<TfWeakPtr<T> >(TfCreateWeakPtr(&t));
 }
 

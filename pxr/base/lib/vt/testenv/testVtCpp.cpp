@@ -619,6 +619,28 @@ testDictionaryIterators()
     }
 }
 
+static void
+testDictionaryInitializerList()
+{
+    const VtDictionary dict{};
+    TF_AXIOM(dict.empty());
+
+    const VtDictionary dict2 = {
+        { "key_a", VtValue(1) },
+        { "key_b", VtValue(2) }
+    };
+    TF_AXIOM(not dict2.empty());
+
+    int i = 0;
+    for (const string& k : {"key_a", "key_b"}) {
+        auto it = dict2.find(k);
+        TF_AXIOM(it != dict2.end());
+        TF_AXIOM(it->first == k);
+        TF_AXIOM(it->second.IsHolding<int>());
+        TF_AXIOM(it->second.UncheckedGet<int>() == ++i);
+    }
+}
+
 // dest and source types are flipped so we can allow compiler to infer
 // source type
 template <class VB, class VA>
@@ -1109,6 +1131,7 @@ int main(int argc, char *argv[])
     testDictionaryKeyPathAPI();
     testDictionaryOverRecursive();
     testDictionaryIterators();
+    testDictionaryInitializerList();
 
     testDictionaryPyFormatting();
     testValue();

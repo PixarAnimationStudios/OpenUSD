@@ -24,6 +24,8 @@
 #ifndef USDHYDRA_TOKENS_H
 #define USDHYDRA_TOKENS_H
 
+/// \file usdHydra/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -32,8 +34,6 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file pxr/usd/usdHydra/tokens.h
 
 /// \hideinitializer
 #define USDHYDRA_TOKENS \
@@ -64,7 +64,8 @@
     (wrapT)
 
 /// \anchor UsdHydraTokens
-/// \brief <b>UsdHydraTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdHydraTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

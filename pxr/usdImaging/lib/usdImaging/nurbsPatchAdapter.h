@@ -27,6 +27,8 @@
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
+/// \class UsdImagingNurbsPatchAdapter
+///
 /// Delegate support for UsdGeomNurbsPatch.
 ///
 class UsdImagingNurbsPatchAdapter : public UsdImagingGprimAdapter {

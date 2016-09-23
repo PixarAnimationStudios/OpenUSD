@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file vt/traits.h
-///
 #ifndef VT_TRAITS_H
 #define VT_TRAITS_H
+
+/// \file vt/traits.h
 
 #include "pxr/base/tf/preprocessorUtils.h"
 
@@ -32,8 +32,8 @@
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/mpl/bool.hpp>
 
-/// \brief Integral constant base trait type.  TrueType and FalseType are built
-/// from this template.
+/// Integral constant base trait type.  TrueType and FalseType are built from
+/// this template.
 template <typename T, T val>
 struct VtIntegralConstant {
     typedef VtIntegralConstant<T, val> Type;
@@ -42,19 +42,15 @@ struct VtIntegralConstant {
 };
 
 
-//! \brief Trait templates may inherit from VtFalseType.
+/// Trait templates may inherit from VtFalseType.
 typedef VtIntegralConstant<bool, false> VtFalseType;
 
-//! \brief Trait templates may inherit from VtTrueType.
+/// Trait templates may inherit from VtTrueType.
 typedef VtIntegralConstant<bool, true> VtTrueType;
 
-
-
-
-/// \brief Array concept.  By default, types are not arrays.
+/// Array concept. By default, types are not arrays.
 template <typename T>
 struct VtIsArray : public VtFalseType {};
-
 
 // We attempt to use local storage if a given type will fit and if it has a
 // cheap copy operation.  By default we only treat types with trivial
@@ -82,7 +78,5 @@ struct VtIsValueProxy : boost::is_base_of<VtValueProxyBase, T> {};
 #define VT_TYPE_IS_VALUE_PROXY(T)                               \
     template <> struct VtIsValueProxy<TF_PP_EAT_PARENS(T)>      \
     : boost::mpl::true_ {}
-
-
 
 #endif // VT_TRAITS_H

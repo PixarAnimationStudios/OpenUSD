@@ -176,7 +176,7 @@ _CheckType(
 }
 
 const JsObject&
-JsValue::GetObject() const
+JsValue::GetJsObject() const
 {
     static TfStaticData<JsObject> _emptyObject;
 
@@ -190,7 +190,7 @@ JsValue::GetObject() const
 }
 
 const JsArray&
-JsValue::GetArray() const
+JsValue::GetJsArray() const
 {
     static TfStaticData<JsArray> _emptyArray;
 

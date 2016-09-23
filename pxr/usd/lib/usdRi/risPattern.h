@@ -24,6 +24,8 @@
 #ifndef USDRI_GENERATED_RISPATTERN_H
 #define USDRI_GENERATED_RISPATTERN_H
 
+/// \file usdRi/risPattern.h
+
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -43,6 +45,8 @@ class SdfAssetPath;
 // RISPATTERN                                                                 //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdRiRisPattern
+///
 /// Represents a ris pattern object. Multiple of these can be assigned.
 ///
 class UsdRiRisPattern : public UsdRiRisObject
@@ -80,7 +84,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdRiRisPattern holding the prim adhering to this
+    /// Return a UsdRiRisPattern holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -92,7 +96,7 @@ public:
     static UsdRiRisPattern
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

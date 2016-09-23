@@ -498,14 +498,18 @@ HdVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     HdBufferResourceSharedPtr VBO =
         _stripedBufferArray->GetResource(bufferSource->GetName());
 
-    if (not VBO or VBO->GetId() == 0) {
-        TF_CODING_ERROR("VBO doesn't exist for %s",
-                        bufferSource->GetName().GetText());
+    if (not TF_VERIFY((VBO and VBO->GetId()),
+                      "VBO doesn't exist for %s",
+                      bufferSource->GetName().GetText())) {
         return;
     }
 
     // datatype of bufferSource has to match with bufferResource
-    if (not TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType()) or
+    if (not TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType(),
+                      "%s: 0x%x != 0x%x\n",
+                      bufferSource->GetName().GetText(),
+                      bufferSource->GetGLComponentDataType(),
+                      VBO->GetGLDataType()) or
         not TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents(),
                       "%s: %d != %d\n",
                       bufferSource->GetName().GetText(),
@@ -577,6 +581,12 @@ HdVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) cons
                                    _numElements);
 
     return result;
+}
+
+size_t
+HdVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
+{
+    return _stripedBufferArray->GetMaxNumElements();
 }
 
 HdBufferResourceSharedPtr

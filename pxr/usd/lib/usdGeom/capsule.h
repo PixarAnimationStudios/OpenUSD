@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_CAPSULE_H
 #define USDGEOM_GENERATED_CAPSULE_H
 
+/// \file usdGeom/capsule.h
+
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,7 +46,9 @@ class SdfAssetPath;
 // CAPSULE                                                                    //
 // -------------------------------------------------------------------------- //
 
-/// \brief Defines a primitive capsule, i.e. a cylinder capped by two half
+/// \class UsdGeomCapsule
+///
+/// Defines a primitive capsule, i.e. a cylinder capped by two half
 /// spheres, centered at the origin, whose spine is along the specified
 /// \em axis.
 ///
@@ -88,7 +92,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomCapsule holding the prim adhering to this
+    /// Return a UsdGeomCapsule holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -100,7 +104,7 @@ public:
     static UsdGeomCapsule
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

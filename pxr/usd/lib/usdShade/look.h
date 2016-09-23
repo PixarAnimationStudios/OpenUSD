@@ -24,7 +24,9 @@
 #ifndef USDSHADE_GENERATED_LOOK_H
 #define USDSHADE_GENERATED_LOOK_H
 
-#include "pxr/usd/usdShade/subgraph.h"
+/// \file usdShade/look.h
+
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -47,6 +49,10 @@ class SdfAssetPath;
 // LOOK                                                                       //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeLook
+///
+/// \deprecated Deprecated in favor of Material.
+/// 
 /// A Look provides a container into which multiple "render targets"
 /// can add data that defines a "shading look" for a renderer.  Typically
 /// this consists of one or more UsdRelationship properties that target
@@ -91,7 +97,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdShadeLook : public UsdShadeSubgraph
+class UsdShadeLook : public UsdShadeMaterial
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -105,7 +111,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdShadeLook(const UsdPrim& prim=UsdPrim())
-        : UsdShadeSubgraph(prim)
+        : UsdShadeMaterial(prim)
     {
     }
 
@@ -113,7 +119,7 @@ public:
     /// Should be preferred over UsdShadeLook(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdShadeLook(const UsdSchemaBase& schemaObj)
-        : UsdShadeSubgraph(schemaObj)
+        : UsdShadeMaterial(schemaObj)
     {
     }
 
@@ -126,7 +132,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeLook holding the prim adhering to this
+    /// Return a UsdShadeLook holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -138,7 +144,7 @@ public:
     static UsdShadeLook
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -423,32 +429,7 @@ public:
 
     /// @}
 
-    // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeLook_Terminals
-    /// 
-    /// API to create and query the existence of standard terminals
-    //
-    /// @{
-    // --------------------------------------------------------------------- //
 
-    /// Get the main terminal of a look: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    UsdRelationship GetSurfaceTerminal() const;
-
-    /// Create and set the main terminal of a look: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    UsdRelationship CreateSurfaceTerminal(const SdfPath& targetPath) const;
-
-    /// Get the displacement terminal of a look
-    /// 
-    UsdRelationship GetDisplacementTerminal() const;
-
-    /// Create and set the displacement terminal of a look
-    /// 
-    UsdRelationship CreateDisplacementTerminal(const SdfPath& targetPath) const;
-    /// @}
 };
 
 #endif

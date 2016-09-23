@@ -6,6 +6,11 @@ if (NOT QT4_FOUND)
     return()
 endif()
 
+if (NOT PYSIDE_FOUND)
+    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
+    return()
+endif()
+
 pxr_shared_library(usdviewq
     LIBRARIES
         tf
@@ -55,15 +60,14 @@ pxr_shared_library(usdviewq
         icons/branch-open.png
         icons/branch-open-selected.png
         usdviewstyle.qss
-)
 
-PYSIDE_WRAP_UI(Usdviewq
-    mainWindowUI.ui
-    watchWindowUI.ui
-    adjustClippingUI.ui
-    attributeValueEditorUI.ui
-    pythonExpressionPromptUI.ui
-    referenceEditorUI.ui
+    PYSIDE_UI_FILES
+        mainWindowUI.ui
+        watchWindowUI.ui
+        adjustClippingUI.ui
+        attributeValueEditorUI.ui
+        pythonExpressionPromptUI.ui
+        referenceEditorUI.ui
 )
 
 install(DIRECTORY

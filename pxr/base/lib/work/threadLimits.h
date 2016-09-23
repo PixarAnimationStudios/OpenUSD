@@ -24,17 +24,18 @@
 #ifndef WORK_THREAD_LIMITS_H
 #define WORK_THREAD_LIMITS_H
 
-///
-///\file work/threadLimits.h
+/// \file work/threadLimits.h
 
 /// Return the current concurrency limit, always >= 1.
 ///
 /// The initial value is determined by the PXR_WORK_THREAD_LIMIT env setting,
-/// which defaults to WorkGetMaximumConcurrencyLimit().
+/// which defaults to WorkGetPhysicalConcurrencyLimit(). If the env setting
+/// has been explicitly set to a non-zero value, it will always override any
+/// concurrency limit set via the API calls below.
 ///
 /// Note that this can return a value larger than
-/// WorkGetMaximumConcurrencyLimit() if WorkSetConcurrencyLimit() was called
-/// with such a value.
+/// WorkGetPhysicalConcurrencyLimit() if WorkSetConcurrencyLimit() was called
+/// with such a value, or if PXR_WORK_THREAD_LIMIT was set with such a value.
 ///
 unsigned WorkGetConcurrencyLimit();
 
@@ -42,11 +43,13 @@ unsigned WorkGetConcurrencyLimit();
 /// This is either the number of physical cores on the machine or the number of
 /// cores specified by the process's affinity mask, whichever is smaller.
 ///
-unsigned WorkGetMaximumConcurrencyLimit();
+unsigned WorkGetPhysicalConcurrencyLimit();
 
-/// Set the concurrencty limit to max(1, \p n).  
+/// Set the concurrency limit to \p n, if \p n is a non-zero value.
 ///
-/// Note, calling ths function with n > WorkGetMaximumConcurrencyLimit() may
+/// If \p n is zero, then do not change the current concurrency limit.
+///
+/// Note, calling this function with n > WorkGetPhysicalConcurrencyLimit() may
 /// overtax the machine.
 ///
 /// In general, very few places should call this function.  Call it in places
@@ -58,15 +61,17 @@ void WorkSetConcurrencyLimit(unsigned n);
 /// Sanitize \p n as described below and set the concurrency limit accordingly.
 /// This function is useful for interpreting command line arguments.
 ///
-/// If \p n is between 1 and WorkGetMaximumConcurrencyLimit() 
-/// (inclusive) then call WorkSetConcurrencyLimit(n).
+/// If \p n is zero, then do not change the current concurrency limit.
 ///
-/// If \p n is 0 or larger than the number of physical cores, call
-/// WorkSetMaximumConcurrencyLimit().
+/// If \p n is a positive, non-zero value then call WorkSetConcurrencyLimit(n).
+/// Note that calling this method with \p n greater than the value returned by
+/// WorkGetPhysicalConcurrencyLimit() may overtax the machine.
 ///
 /// If \p n is negative, then set the concurrency limit to all but abs(\p n)
-/// cores are used.  For examlpe, if \p n is -2, then use all but two cores.  If
-/// abs(\p n) is greater than the number of physical cores, then call
+/// cores. The number of cores is determined by the value returned by
+/// WorkGetPhysicalConcurrencyLimit().
+/// For example, if \p n is -2, then use all but two cores.  If abs(\p n) is
+/// greater than the number of physical cores, then call
 /// WorkSetConcurrencyLimit(1), effectively disabling concurrency.
 ///
 void WorkSetConcurrencyLimitArgument(int n);
@@ -74,7 +79,7 @@ void WorkSetConcurrencyLimitArgument(int n);
 /// Set the concurrency limit to be the maximum recommended for the hardware
 /// on which it's running.  Equivalent to:
 /// \code
-/// WorkSetConcurrencyLimit(WorkGetMaximumConcurrencyLimit()).
+/// WorkSetConcurrencyLimit(WorkGetPhysicalConcurrencyLimit()).
 /// \endcode
 ///
 void WorkSetMaximumConcurrencyLimit();

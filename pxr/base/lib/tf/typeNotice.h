@@ -27,8 +27,9 @@
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/type.h"
 
-/// TfNotice sent after a TfType is declared.
+/// \class TfTypeWasDeclaredNotice
 ///
+/// TfNotice sent after a TfType is declared.
 class TfTypeWasDeclaredNotice : public TfNotice
 {
 public:

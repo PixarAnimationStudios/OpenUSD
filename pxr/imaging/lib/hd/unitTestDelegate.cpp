@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/unitTestDelegate.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
@@ -35,6 +36,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/rotation.h"
 
+#include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 
@@ -383,6 +385,14 @@ Hd_UnitTestDelegate::UpdateInstancerPrototypes(float time)
     }
 }
 
+void
+Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
+                                  TfToken const &key,
+                                  VtValue value)
+{
+    _cameras[id].params[key] = value;
+}
+
 /*virtual*/
 bool 
 Hd_UnitTestDelegate::IsInCollection(SdfPath const& id,
@@ -641,6 +651,13 @@ VtValue
 Hd_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     HD_TRACE_FUNCTION();
+
+    // camera and light
+    if (_cameras.find(id) != _cameras.end()) {
+        return _cameras[id].params[key];
+    } else if (_lights.find(id) != _lights.end()) {
+        return _lights[id].params[key];
+    }
 
     VtValue value;
     if (key == HdTokens->points) {

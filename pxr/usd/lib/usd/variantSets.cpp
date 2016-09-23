@@ -89,9 +89,19 @@ UsdVariantSet::HasAuthoredVariant(const std::string& variantName) const
 string
 UsdVariantSet::GetVariantSelection() const
 {
-    string result;
-    (void)HasAuthoredVariantSelection(&result);
-    return result;
+    // Scan the composed prim for variant arcs for this variant set and
+    // return the first selection found.  This ensures that we reflect
+    // whatever composition process selected the variant, such as fallbacks.
+    TF_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
+        if (i->GetArcType() == PcpArcTypeVariant) {
+            std::pair<std::string, std::string> vsel =
+                i->GetSite().path.GetVariantSelection();
+            if (vsel.first == _variantSetName) {
+                return vsel.second;
+            }
+        }
+    }
+    return std::string();
 }
 
 bool

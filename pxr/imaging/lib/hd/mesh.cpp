@@ -52,6 +52,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SMOOTH_NORMALS, "CPU",
 TF_DEFINE_ENV_SETTING(HD_ENABLE_QUADRANGULATE, "0",
                       "Enable quadrangulation (0/CPU/GPU)");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINE_GPU, 0, "GPU refinement");
+TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
+                      "Use packed normals");
 
 // static repr configuration
 HdMesh::_MeshReprConfig HdMesh::_reprDescConfig;
@@ -62,6 +64,7 @@ HdMesh::HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)
+    , _packedNormals(IsEnabledPackedNormals())
     , _cullStyle(HdCullStyleDontCare)
 {
     /*NOTHING*/
@@ -71,25 +74,40 @@ HdMesh::HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
 bool
 HdMesh::IsEnabledSmoothNormalsGPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_SMOOTH_NORMALS) == "GPU";
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_SMOOTH_NORMALS) == "GPU");
+    return enabled;
 }
 
+/* static */
 bool
 HdMesh::IsEnabledQuadrangulationCPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "CPU";
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "CPU");
+    return enabled;
 }
 
+/* static */
 bool
 HdMesh::IsEnabledQuadrangulationGPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "GPU";
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "GPU");
+    return enabled;
 }
 
+/* static */
 bool
 HdMesh::IsEnabledRefineGPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_REFINE_GPU) == 1;
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_REFINE_GPU) == 1);
+    return enabled;
+}
+
+/* static */
+bool
+HdMesh::IsEnabledPackedNormals()
+{
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_PACKED_NORMALS) == 1);
+    return enabled;
 }
 
 int
@@ -554,16 +572,37 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
         if (cpuSmoothNormals) {
             if (points) {
                 // CPU smooth normals depends on CPU adjacency.
-                HdBufferSourceSharedPtr normal =
-                    _vertexAdjacency->GetSmoothNormalsComputation(
-                        points, HdTokens->normals);
+                //
+                HdBufferSourceSharedPtr normal;
+                bool doRefine = (refineLevel > 0);
+                bool doQuadrangulate = _UsePtexIndices();
 
-                if (refineLevel > 0) {
-                    normal = _RefinePrimVar(normal, /*varying=*/false,
-                                            &computations, _topology);
-                } else if (_UsePtexIndices()) {
-                    normal = _QuadrangulatePrimVar(
-                        normal, &computations, _topology, GetId());
+                if (doRefine or doQuadrangulate) {
+                    if (_packedNormals) {
+                        // we can't use packed normals for refined/quad,
+                        // let's migrate the buffer to full precision
+                        isNew = true;
+                        _packedNormals = false;
+                    }
+                    normal = _vertexAdjacency->GetSmoothNormalsComputation(
+                            points, HdTokens->normals);
+                    if (doRefine) {
+                        normal = _RefinePrimVar(normal, /*varying=*/false,
+                                                &computations, _topology);
+                    } else if (doQuadrangulate) {
+                        normal = _QuadrangulatePrimVar(
+                            normal, &computations, _topology, GetId());
+                    }
+                } else {
+                    // if we haven't refined or quadrangulated normals,
+                    // may use packed format if enabled.
+                    if (_packedNormals) {
+                        normal = _vertexAdjacency->GetSmoothNormalsComputation(
+                            points, HdTokens->packedNormals, true);
+                    } else {
+                        normal = _vertexAdjacency->GetSmoothNormalsComputation(
+                            points, HdTokens->normals, false);
+                    }
                 }
                 sources.push_back(normal);
             }

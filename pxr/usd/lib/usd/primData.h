@@ -24,7 +24,7 @@
 #ifndef USD_PRIMDATA_H
 #define USD_PRIMDATA_H
 
-/// \file primData.h
+/// \file usd/primData.h
 
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -45,7 +45,6 @@
 
 TF_DECLARE_WEAK_PTRS(UsdStage);
 
-//
 // Private class that stores cached prim information and defines the prim tree
 // on a UsdStage.
 //
@@ -73,7 +72,7 @@ public:
     /// \name Prim Data & Behavior
     // --------------------------------------------------------------------- //
 
-    /// \brief Returns the composed path for the prim.
+    /// Returns the composed path for the prim.
     ///
     /// This path is absolute with respect to the current stage and may require
     /// translation when used in the context of individual layers of which the 
@@ -85,7 +84,7 @@ public:
 
     UsdStage *GetStage() const { return _stage; }
 
-    /// \brief Returns the composed type name for the prim.
+    /// Returns the composed type name for the prim.
     /// Note that this value is cached and is efficient to query.
     const TfToken &GetTypeName() const { return _typeName; };
 
@@ -119,6 +118,9 @@ public:
     bool HasDefiningSpecifier() const {
         return _flags[Usd_PrimHasDefiningSpecifierFlag]; 
     }
+
+    /// Return true if this prim has one or more payload composition arcs.
+    bool HasPayload() const { return _flags[Usd_PrimHasPayloadFlag]; }
 
     /// Return true if this prim is an instance of a shared master prim,
     /// false otherwise.
@@ -299,10 +301,10 @@ private:
     mutable std::atomic_int _refCount;
 
     friend void intrusive_ptr_add_ref(const Usd_PrimData *prim) {
-        ++prim->_refCount;
+        prim->_refCount.fetch_add(1, std::memory_order_relaxed);
     }
     friend void intrusive_ptr_release(const Usd_PrimData *prim) {
-        if (--prim->_refCount == 0)
+        if (prim->_refCount.fetch_sub(1, std::memory_order_release) == 1)
             delete prim;
     }
 

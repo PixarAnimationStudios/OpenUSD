@@ -46,8 +46,8 @@ void TfPrintStackTrace(std::ostream &out, std::string const &reason);
 /// stack_trace database table.
 void TfLogStackTrace(const std::string &reason, bool logtodb=false);
 
-/// \brief Creates a nicely formatted message describing a crash and writes
-/// it to a temporary file.
+/// Creates a nicely formatted message describing a crash and writes it to a
+/// temporary file.
 ///
 /// \p reason is a very short descriptive title for the error (ie, FATAL_ERROR)
 /// \p message further describes the crash (ie, Dereferenced an invalid MfHandle)

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glfq/glDebugContext.h"
-#include "pxr/imaging/glfq/glPlatformDebugContext.h"
+#include "pxr/imaging/garch/glPlatformDebugContext.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -52,7 +52,7 @@ GlfQGLDebugContext::makeCurrent()
     Parent::makeCurrent();
     if (not _platformContext) {
         _platformContext.reset(new
-            GlfQGLPlatformDebugContext(
+            GarchGLPlatformDebugContext(
                 format().majorVersion(),
                 format().minorVersion(),
                 format().profile() == QGLFormat::CoreProfile,
@@ -70,7 +70,7 @@ GlfQGLDebugContext::chooseMacVisual(GDHandle handle)
 {
     if (not _platformContext) {
         _platformContext.reset(new
-            GlfQGLPlatformDebugContext(
+            GarchGLPlatformDebugContext(
                 format().majorVersion(),
                 format().minorVersion(),
                 format().profile() == QGLFormat::CoreProfile,

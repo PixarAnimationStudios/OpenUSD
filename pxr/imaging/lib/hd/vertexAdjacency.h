@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hd/glUtils.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -41,6 +42,8 @@ typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilde
 
 class HdMeshTopology;
 
+/// \class Hd_VertexAdjacency
+///
 /// Hd_VertexAdjacency encapsulates mesh adjacency information,
 /// which is used for smooth normal computation.
 ///
@@ -54,9 +57,7 @@ class HdMeshTopology;
 ///                                ---> AdjacencyBuilderForGPU (for GPU smooth)
 ///                                ---> SmoothNormals (CPU smooth normals)
 ///                                ---> SmoothNormalsGPU (GPU smooth normals)
-
-// adjacency info
-//
+///
 class Hd_VertexAdjacency {
 public:
     Hd_VertexAdjacency();
@@ -67,6 +68,10 @@ public:
     VtArray<GfVec3f> ComputeSmoothNormals(int numPoints,
                                           GfVec3f const * pointsPtr) const;
     VtArray<GfVec3d> ComputeSmoothNormals(int numPoints,
+                                          GfVec3d const * pointsPtr) const;
+    VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
+                                          GfVec3f const * pointsPtr) const;
+    VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
                                           GfVec3d const * pointsPtr) const;
 
     /// Returns the adjacency builder computation.
@@ -88,7 +93,8 @@ public:
     /// produced by AdjacencyBuilderComputation.
     HdBufferSourceSharedPtr GetSmoothNormalsComputation(
         HdBufferSourceSharedPtr const &points,
-        TfToken const &dstName);
+        TfToken const &dstName,
+        bool packed=false);
 
     /// Returns the smooth normal computation on GPU.
     /// This computation requires adjacency table on GPU produced by
@@ -132,8 +138,9 @@ private:
     Hd_AdjacencyBuilderComputationPtr _adjacencyBuilder;
 };
 
-/// adjacency table computation CPU
+/// \class Hd_AdjacencyBuilderComputation
 ///
+/// Adjacency table computation CPU.
 ///
 class Hd_AdjacencyBuilderComputation : public HdNullBufferSource {
 public:
@@ -149,8 +156,9 @@ private:
     HdMeshTopology const *_topology;
 };
 
-/// adjacency table computation GPU
+/// \class Hd_AdjacencyBuilderForGPUComputation
 ///
+/// Adjacency table computation GPU.
 ///
 class Hd_AdjacencyBuilderForGPUComputation : public HdComputedBufferSource {
 public:
@@ -161,7 +169,7 @@ public:
         Hd_VertexAdjacency const *adjacency,
         Hd_AdjacencyBuilderComputationSharedPtr const &adjacencyBuilder);
 
-    /// overrides
+    // overrides
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
 
@@ -172,6 +180,5 @@ private:
     Hd_VertexAdjacency const *_adjacency;
     Hd_AdjacencyBuilderComputationSharedPtr const _adjacencyBuilder;
 };
-
 
 #endif  // HD_VERTEX_ADJACENCY_H

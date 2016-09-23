@@ -24,7 +24,6 @@
 #ifndef TF_NULLPTR_H
 #define TF_NULLPTR_H
 
-
 // A type used to create the \a TfNullPtr token.
 struct TfNullPtrType
 {
@@ -33,6 +32,5 @@ struct TfNullPtrType
 // A token to represent null for smart pointers like \a TfWeakPtr and \a
 // TfRefPtr.
 extern const TfNullPtrType TfNullPtr;
-
 
 #endif // TF_NULLPTR_H

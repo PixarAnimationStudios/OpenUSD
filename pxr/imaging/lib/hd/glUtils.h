@@ -27,7 +27,45 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/vt/value.h"
 
-// XXX: could be moved into GlopUtils
+#include <algorithm>
+#include <cmath>
+
+struct HdVec4f_2_10_10_10_REV {
+    // we treat packed type as single-component values
+    static const size_t dimension = 1;
+
+    HdVec4f_2_10_10_10_REV() { }
+
+    template <typename Vec3Type>
+    HdVec4f_2_10_10_10_REV(Vec3Type const &value) {
+        x = to10bits(value[0]);
+        y = to10bits(value[1]);
+        z = to10bits(value[2]);
+        w = 0;
+    }
+
+    // ref. GL spec 2.3.5.2
+    //   Conversion from floating point to normalized fixed point
+    template <typename R>
+    int to10bits(R v) {
+        return int(
+            std::round(
+                std::min(std::max(v, static_cast<R>(-1)), static_cast<R>(1))
+                *static_cast<R>(511)));
+    }
+
+    bool operator==(const HdVec4f_2_10_10_10_REV &other) const {
+        return (other.w == w and
+                other.z == z and
+                other.y == y and
+                other.x == x);
+    }
+
+    int x : 10;
+    int y : 10;
+    int z : 10;
+    int w : 2;
+};
 
 class HdGLUtils {
 public:
@@ -53,7 +91,9 @@ public:
 
 };
 
-/// a utility class to perform batched buffer copy
+/// \class HdGLBufferRelocator
+///
+/// A utility class to perform batched buffer copy.
 ///
 class HdGLBufferRelocator {
 public:

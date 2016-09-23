@@ -665,7 +665,7 @@ UsdImagingRefEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     // Get DoubleSided Attribute
     gprimSchema->GetDoubleSidedAttr().Get(doubleSided);
 
-    // Get interpolation and color using new UsdShadeLook
+    // Get interpolation and color using UsdShadeMaterial
     UsdImagingValueCache::PrimvarInfo primvar;
     VtValue colorAsVt = UsdImagingGprimAdapter::GetColorAndOpacity(prim, 
                                                 &primvar, _params.frame);

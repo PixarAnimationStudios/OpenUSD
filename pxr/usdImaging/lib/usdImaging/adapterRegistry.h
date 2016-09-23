@@ -41,7 +41,10 @@ typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens, 
                          USD_IMAGING_ADAPTER_KEY_TOKENS);
 
+/// \class UsdImagingAdapterRegistry
+///
 /// Registry of PrimAdapter plug-ins.
+///
 class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry> 
 {
     friend class TfSingleton<UsdImagingAdapterRegistry>;

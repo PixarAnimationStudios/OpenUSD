@@ -30,6 +30,8 @@ class HdDrawItemInstance;
 
 #include <vector>
 
+/// \class Hd_ImmediateDrawBatch
+///
 /// Drawing batch that is executed immediately.
 ///
 class Hd_ImmediateDrawBatch : public Hd_DrawBatch {

@@ -37,7 +37,8 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfData);
 
 /// \class SdfData
-/// \brief SdfData provides concrete scene description data storage.
+///
+/// SdfData provides concrete scene description data storage.
 ///
 /// An SdfData is an implementation of SdfAbstractData that simply
 /// stores specs and fields in a map keyed by path.

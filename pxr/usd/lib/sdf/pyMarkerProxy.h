@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 /// \file sdf/pyMarkerProxy.h
 
 #include "pxr/usd/sdf/changeBlock.h"
@@ -470,5 +471,5 @@ private:
 
 private:
     OwnerSpecHandle _spec;
-
 };
+

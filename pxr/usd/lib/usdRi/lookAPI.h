@@ -24,6 +24,8 @@
 #ifndef USDRI_GENERATED_LOOKAPI_H
 #define USDRI_GENERATED_LOOKAPI_H
 
+/// \file usdRi/lookAPI.h
+
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -54,6 +56,8 @@ class SdfAssetPath;
 // RILOOKAPI                                                                  //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdRiLookAPI
+///
 /// This API provides the relationships to prman shaders and RIS objects.
 ///
 class UsdRiLookAPI : public UsdSchemaBase
@@ -91,7 +95,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdRiLookAPI holding the prim adhering to this
+    /// Return a UsdRiLookAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -232,7 +236,7 @@ public:
     /// patterns relationship.
     std::vector<UsdRiRisPattern> GetPatterns();
 
-    /// \brief Set the ri shadeParameter recipient of the named
+    /// Set the ri shadeParameter recipient of the named
     ///  \p interfaceAttr, which may also drive parameters in other shading
     /// API's with which we are not concerned.
     /// \sa UsdShadeInterfaceAttribute::SetRecipient()
@@ -245,13 +249,13 @@ public:
             UsdShadeInterfaceAttribute& interfaceAttr,
             const UsdShadeParameter& recipient);
 
-    /// \brief Retrieve all ri shadeParameters driven by the named 
+    /// Retrieve all ri shadeParameters driven by the named 
     /// \p interfaceAttr
     /// \sa UsdShadeInterfaceAttribute::GetRecipientParameters()
     std::vector<UsdShadeParameter> GetInterfaceRecipientParameters(
             const UsdShadeInterfaceAttribute& interfaceAttr) const;
 
-    /// \brief Retrieve all interfaceAttributes on this Look that drive
+    /// Retrieve all interfaceAttributes on this Look that drive
     /// any ri shadeParameter
     std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes() const;
 };

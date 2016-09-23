@@ -28,9 +28,11 @@
 #include "pxr/imaging/hd/codeGen.h"
 #include "pxr/imaging/hd/commandBuffer.h"
 #include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
@@ -198,9 +200,38 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
         shaders[2] = overrideShader ? overrideShader
                                     : firstDrawItem->GetSurfaceShader();
 
-        _program.CompileShader(firstDrawItem,
+        if (not _program.CompileShader(firstDrawItem,
+                               firstDrawItem->GetGeometricShader(),
+                               shaders, indirect)) {
+
+            // If we failed to compile the surface shader, replace it with the
+            // fallback surface shader and try again.
+            // XXX: Note that we only say "surface shader" here because it is
+            // currently the only one that we allow customization for.  We
+            // expect all the other shaders to compile or else the shipping
+            // code is broken and needs to be fixed.  When we open up more
+            // shaders for customization, we will need to check them as well.
+            
+            typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+            typedef boost::shared_ptr<class HdSurfaceShader> 
+                HdSurfaceShaderSharedPtr;
+
+            GlfGLSLFXSharedPtr glslSurfaceFallback = 
+                GlfGLSLFXSharedPtr(
+                        new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+
+            HdSurfaceShaderSharedPtr fallbackSurface = 
+                HdSurfaceShaderSharedPtr(
+                    new HdGLSLFXShader(glslSurfaceFallback));
+
+            shaders[2] = fallbackSurface;
+
+            bool res = _program.CompileShader(firstDrawItem,
                                firstDrawItem->GetGeometricShader(),
                                shaders, indirect);
+            // We expect the fallback shader to always compile.
+            TF_VERIFY(res);
+        }
 
         _shaderHash = shaderHash;
     }
@@ -208,7 +239,7 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
     return _program;
 }
 
-void
+bool
 Hd_DrawBatch::_DrawingProgram::CompileShader(
         HdDrawItem const *drawItem,
         Hd_GeometricShaderPtr const &geometricShader,
@@ -220,7 +251,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
 
     // glew has to be intialized
     if (not glLinkProgram)
-        return;
+        return false;
 
     // determine binding points and populate metaData
     HdBindingRequestVector customBindings;
@@ -266,8 +297,12 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
 
         if (_glslProgram) {
             _resourceBinder.IntrospectBindings(_glslProgram->GetProgram().GetId());
+        } else {
+            // Failed to compile and link a valid glsl program.
+            return false;
         }
     }
+    return true;
 }
 
 /* virtual */

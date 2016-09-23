@@ -30,11 +30,11 @@
 
 /*static*/
 UsdPrim
-UsdImaging_LookStrategy::GetTargetedShader(UsdPrim const& lookPrim,
-                                        UsdRelationship const& lookRel)
+UsdImaging_MaterialStrategy::GetTargetedShader(UsdPrim const& materialPrim,
+                                        UsdRelationship const& materialRel)
 {
     SdfPathVector targets;
-    if (not lookRel.GetForwardedTargets(&targets))
+    if (not materialRel.GetForwardedTargets(&targets))
         return UsdPrim();
 
     if (targets.size() != 1) {
@@ -42,8 +42,8 @@ UsdImaging_LookStrategy::GetTargetedShader(UsdPrim const& lookPrim,
         // feature.
         TF_WARN("We expect only one target on relationship %s of prim <%s>, "
                 "but got %zu.",
-                lookRel.GetName().GetText(),
-                lookPrim.GetPath().GetText(),
+                materialRel.GetName().GetText(),
+                materialPrim.GetPath().GetText(),
                 targets.size());
         return UsdPrim();
     }
@@ -53,25 +53,26 @@ UsdImaging_LookStrategy::GetTargetedShader(UsdPrim const& lookPrim,
         // feature.
         TF_WARN("We expect the target of the relationship %s of prim <%s> "
                 "to be a prim, instead it is <%s>.",
-                lookRel.GetName().GetText(),
-                lookPrim.GetPath().GetText(),
+                materialRel.GetName().GetText(),
+                materialPrim.GetPath().GetText(),
                 targets[0].GetText());
         return UsdPrim();
     }
 
-    return lookPrim.GetStage()->GetPrimAtPath(targets[0]);
+    return materialPrim.GetStage()->GetPrimAtPath(targets[0]);
 }
 
 
 /*static*/
 SdfPath
-UsdImaging_LookStrategy::GetBinding(UsdShadeLook const& look)
+UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
 {
-    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Look: %s\n", look.GetPath().GetText());
-    if (UsdRelationship lookRel = UsdHydraLookAPI(look).GetBxdfRel()) {
+    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Look: %s\n", 
+        material.GetPath().GetText());
+    if (UsdRelationship matRel = UsdHydraLookAPI(material).GetBxdfRel()) {
          TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                       lookRel.GetPath().GetText());
-        UsdShadeShader shader(GetTargetedShader(look.GetPrim(), lookRel));
+                       matRel.GetPath().GetText());
+        UsdShadeShader shader(GetTargetedShader(material.GetPrim(), matRel));
         if (shader) {
             TF_DEBUG(USDIMAGING_SHADERS).Msg("\t UsdShade binding found: %s\n", 
                     shader.GetPath().GetText());
@@ -85,10 +86,10 @@ UsdImaging_LookStrategy::GetBinding(UsdShadeLook const& look)
     TfToken hdSurf("hydraLook:surface"),
             surfType("HydraPbsSurface");
 
-    if (UsdRelationship lookRel = look.GetPrim().GetRelationship(hdSurf)) {
+    if (UsdRelationship matRel = material.GetPrim().GetRelationship(hdSurf)) {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                       lookRel.GetPath().GetText());
-        if (UsdPrim shader = GetTargetedShader(look.GetPrim(), lookRel)) {
+                       matRel.GetPath().GetText());
+        if (UsdPrim shader = GetTargetedShader(material.GetPrim(), matRel)) {
             if (TF_VERIFY(shader.GetTypeName() == surfType)) {
                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
                         "\t Deprecated binding found: %s\n", 

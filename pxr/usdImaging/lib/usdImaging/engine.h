@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file engine.h
+
 #pragma once
 
 #include "pxr/usdImaging/usdImaging/version.h"
@@ -34,6 +37,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/vt/dictionary.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
@@ -44,7 +48,10 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
 
+/// \class UsdImagingEngine
+///
 /// Interface class for render engines.
+///
 class UsdImagingEngine : private boost::noncopyable {
 public:
     virtual ~UsdImagingEngine();
@@ -211,13 +218,17 @@ public:
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
-        const UsdPrim& root, 
+        const UsdPrim& root,
         RenderParams params,
         GfVec3d *outHitPoint,
-	SdfPath *outHitPrimPath = NULL,
+        SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
-	int *outHitInstanceIndex = NULL);
-    
+        int *outHitInstanceIndex = NULL);
+
+    /// A callback function to control collating intersection test hits.
+    /// See the documentation for TestIntersectionBatch() below for more detail.
+    typedef std::function< SdfPath(const SdfPath&, const SdfPath&, const int) > PathTranslatorCallback;
+
     /// Finds closest point of interesection with a frustum by rendering a batch.
     ///
     /// This method uses a PickRender and a customized depth buffer to find an
@@ -229,8 +240,10 @@ public:
     /// In batched selection scenarios, the path desired may not be as granular as
     /// the leaf-level prim. For example, one might want to find the closest hit
     /// for all prims underneath a certain path scope, or ignore others altogether.
-    /// The \p pathTranslator takes an \c SdfPath pointing to the hit prim, but
-    /// may return an empty path (signifying an ignored hit), or a different
+    /// The \p pathTranslator receives an \c SdfPath pointing to the hit prim
+    /// as well as an \c SdfPath pointing to the instancer prim and an integer
+    /// instance index in the case where the hit is an instanced object. It may
+    /// return an empty path (signifying an ignored hit), or a different
     /// simplified path altogether.
     ///
     /// Returned hits are collated by the translated \c SdfPath above, and placed
@@ -250,7 +263,7 @@ public:
         const SdfPathVector& paths, 
         RenderParams params,
         unsigned int pickResolution,
-        std::function< SdfPath(const SdfPath&) > pathTranslator,
+        PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
 
     /// Using colors extracted from an Id render, returns the associated
@@ -292,6 +305,9 @@ public:
     /// Set the current render-graph delegate to \p type.
     /// the plugin for the type will be loaded if not yet.
     virtual bool SetRenderGraphPlugin(TfType const &type);
+
+    /// Returns GPU resource allocation info
+    virtual VtDictionary GetResourceAllocation() const;
 
 protected:
     // Intentionally putting these under protected so that subclasses can share the usage of draw targets.

@@ -32,9 +32,7 @@ from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
 from pxr import Usd, UsdGeom, UsdUtils, UsdImaging
-from pxr import Gf
 from pxr import Glf
-from pxr import Pcp
 from pxr import Sdf
 from pxr import Tf
 from pxr import Plug
@@ -44,7 +42,7 @@ from ._usdviewq import Utils
 from collections import deque
 from collections import OrderedDict
 from time import time, sleep
-import re, sys, os, uuid, tempfile
+import re, sys, os
 
 import prettyPrint
 import watchWindow
@@ -52,9 +50,9 @@ import adjustClipping
 import referenceEditor
 from settings import Settings
 
-from common import FallbackTextColor, ClampedTextColor, KeyframeTextColor,\
-                   DefaultTextColor, HeaderColor, RedColor, BoldFont, \
-                   GetAttributeColor, Timer, BusyContext, DumpMallocTags
+from common import (FallbackTextColor, ClampedTextColor, KeyframeTextColor,
+                    DefaultTextColor, HeaderColor, RedColor, BoldFont,
+                    GetAttributeColor, Timer, BusyContext, DumpMallocTags)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -474,7 +472,7 @@ class MainWindow(QtGui.QMainWindow):
                             [str(a.text()) for a in
                                     self._ui.pickModeActionGroup.actions()]:
             print "Warning: Unknown pick mode '%s', falling back to '%s'" % (
-                        pickMode,
+                        self._stageView.pickMode,
                         str(self._ui.pickModeActionGroup.actions()[0].text()))
 
             self._ui.pickModeActionGroup.actions()[0].setChecked(True)
@@ -1087,11 +1085,6 @@ class MainWindow(QtGui.QMainWindow):
             return None
 
         if self._mallocTags != 'none':
-            if self._mallocTags == 'stageAndImaging':
-                # we want as little python overhead showing up as possible,
-                # so pre-import what we'll use in a bit before initializing
-                from pxr import UsdImaging
-            from pxr import Tf
             Tf.MallocTag.Initialize()
 
         with Timer() as t:
@@ -1270,7 +1263,7 @@ class MainWindow(QtGui.QMainWindow):
                 action = self._ui.menuRenderGraph.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType
-                self._ui.renderGraphActionGroup.addAction(action);
+                self._ui.renderGraphActionGroup.addAction(action)
 
                 QtCore.QObject.connect(
                     action,
@@ -1280,7 +1273,6 @@ class MainWindow(QtGui.QMainWindow):
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
-        import sip
 
         # We must call ReloadStage() before _clearCaches() to avoid a crash in
         # the case when we have reopened the stage. The problem is when the
@@ -2839,7 +2831,7 @@ class MainWindow(QtGui.QMainWindow):
         import re
         newPaths = self._ui.currentPathWidget.text()
         pathList = re.split(", ?", newPaths)
-	pathList = filter(lambda path: len(path) != 0, pathList)
+        pathList = filter(lambda path: len(path) != 0, pathList)
 
         itemList = []
         for primPath in pathList:
@@ -3094,7 +3086,7 @@ class MainWindow(QtGui.QMainWindow):
                 tableWidget.item(attributeCount,0).setSelected(True)
                 tableWidget.setCurrentItem(tableWidget.item(attributeCount, 0))
 
-            attributeCount += 1;
+            attributeCount += 1
 
         tableWidget.resizeColumnToContents(0)
 

@@ -33,7 +33,7 @@ _GetShaderPath(char const * shader)
 {
     static PlugThisPlugin plugin;
     const std::string path =
-        PlugFindResource(plugin, TfStringCatPaths("shaders", shader));
+        PlugFindPluginResource(plugin, TfStringCatPaths("shaders", shader));
     TF_VERIFY(not path.empty(), "Could not find shader: %s\n", shader);
 
     return TfToken(path);
@@ -55,19 +55,11 @@ HdPackageRenderPassShader()
 }
 
 TfToken
-HdPackageDefaultLightingShader()
+HdPackageFallbackLightingShader()
 {
-    static TfToken defaultLightingShader =
-        _GetShaderPath("defaultLightingShader.glslfx");
-    return defaultLightingShader;
-}
-
-TfToken
-HdPackageSimpleLightingShader()
-{
-    static TfToken simpleLightingShader =
-        _GetShaderPath("simpleLightingShader.glslfx");
-    return simpleLightingShader;
+    static TfToken fallbackLightingShader =
+        _GetShaderPath("fallbackLightingShader.glslfx");
+    return fallbackLightingShader;
 }
 
 TfToken

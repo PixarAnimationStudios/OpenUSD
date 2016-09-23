@@ -128,7 +128,7 @@ _ApplyOrdering(const TfTokenVector &order, TfTokenVector *names)
     typedef TfTokenVector::iterator Iter;
 
     Iter namesRest = names->begin(), namesEnd = names->end();
-    BOOST_FOREACH(const TfToken &oName, order) {
+    for (const TfToken &oName: order) {
         // Look for this name from 'order' in the rest of 'names'.
         Iter i = std::find(namesRest, namesEnd, oName);
         if (i != namesEnd) {
@@ -481,7 +481,7 @@ UsdPrim::HasAuthoredReferences() const
 bool
 UsdPrim::HasPayload() const
 {
-    return GetPrimIndex().HasPayload();
+    return _Prim()->HasPayload();
 }
 
 bool

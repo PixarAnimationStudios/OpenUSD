@@ -41,6 +41,8 @@ typedef boost::shared_ptr<HdBufferSource const> HdBufferSourceConstSharedPtr;
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
 typedef boost::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
 
+/// \class HdBufferSource
+///
 /// A transient buffer of data that has not yet been committed to the GPU.
 ///
 /// HdBufferSource is an abstract interface class, to be registered to the

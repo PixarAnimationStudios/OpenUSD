@@ -35,15 +35,17 @@
 
 class Hd_VertexAdjacency;
 
-/// smooth normal computation CPU
+/// \class Hd_SmoothNormalsComputation
 ///
+/// Smooth normal computation CPU.
 ///
 class Hd_SmoothNormalsComputation : public HdComputedBufferSource {
 public:
     Hd_SmoothNormalsComputation(Hd_VertexAdjacency const *adjacency,
                                 HdBufferSourceSharedPtr const &points,
                                 TfToken const &dstName,
-                                HdBufferSourceSharedPtr const &adjacencyBuilder);
+                                HdBufferSourceSharedPtr const &adjacencyBuilder,
+                                bool packed);
 
     /// overrides
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
@@ -59,6 +61,7 @@ private:
     HdBufferSourceSharedPtr _points;
     TfToken _dstName;
     HdBufferSourceSharedPtr _adjacencyBuilder;
+    bool _packed;
 };
 
 /// smooth normal computation GPU

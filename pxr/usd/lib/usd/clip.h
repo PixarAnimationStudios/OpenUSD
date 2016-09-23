@@ -50,7 +50,9 @@ bool
 UsdIsClipRelatedField(const TfToken& fieldName);
 
 /// \class Usd_ResolvedClipInfo
+///
 /// Object containing resolved clip metadata for a prim in a LayerStack.
+///
 struct Usd_ResolvedClipInfo
 {
     Usd_ResolvedClipInfo() : indexOfLayerWhereAssetPathsFound(0) { }
@@ -116,8 +118,10 @@ Usd_ResolveClipInfo(
     Usd_ResolvedClipInfo* clipInfo);
 
 /// \class Usd_Clip
+///
 /// Represents a clip from which time samples may be read during
 /// value resolution.
+///
 struct Usd_Clip : public boost::noncopyable
 {
 public:

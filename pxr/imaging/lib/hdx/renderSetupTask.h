@@ -34,14 +34,16 @@
 
 #include <boost/shared_ptr.hpp>
 
-typedef boost::shared_ptr<class HdCamera> HdCameraSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 struct HdxRenderTaskParams;
 
-/// A task for setting up render pass state
-///  (camera, renderpass shader, GL states)
+/// \class HdxRenderSetupTask
+///
+/// A task for setting up render pass state (camera, renderpass shader, GL
+/// states).
 ///
 class HdxRenderSetupTask : public HdSceneTask
 {
@@ -67,10 +69,12 @@ private:
     HdRenderPassShaderSharedPtr _colorRenderPassShader;
     HdRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
-    HdCameraSharedPtr _camera;
+    HdSprimSharedPtr _camera;
 };
 
-/// RenderTask parameters (renderpass state)
+/// \class HdxRenderTaskParams
+///
+/// RenderTask parameters (renderpass state).
 ///
 struct HdxRenderTaskParams : public HdTaskParams
 {
@@ -131,7 +135,6 @@ struct HdxRenderTaskParams : public HdTaskParams
     SdfPath camera;
     GfVec4d viewport;
 };
-
 
 // VtValue requirements
 std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv);

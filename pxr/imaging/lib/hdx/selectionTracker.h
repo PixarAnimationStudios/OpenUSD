@@ -38,6 +38,8 @@ typedef boost::shared_ptr<class HdxSelection> HdxSelectionSharedPtr;
 typedef boost::shared_ptr<class HdxSelectionTracker> HdxSelectionTrackerSharedPtr;
 typedef boost::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
 
+/// \class HdxSelection
+///
 /// HdxSelection holds a collection of items which are rprims, instances of
 /// rprim, sub elements of rprim (such as faces, verts). HdxSelectionTracker
 /// takes HdxSelection and generates GPU buffer to be used for highlighting.
@@ -90,8 +92,11 @@ private:
     HdRenderIndex * _renderIndex;
 };
 
+/// \class HdxSelectionTracker
+///
 /// HdxSelectionTracker is a base class for observing selection state and
 /// providing selection highlighting details to interested clients.
+///
 class HdxSelectionTracker
 {
 public:
@@ -131,6 +136,5 @@ private:
     int _version;
     HdxSelectionSharedPtr _selection;
 };
-
 
 #endif //HDX_SELECTION_TRACKER_H

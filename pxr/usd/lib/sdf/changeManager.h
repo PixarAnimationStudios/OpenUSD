@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/changeManager.h
-
 #ifndef SDF_CHANGEMANAGER_H
 #define SDF_CHANGEMANAGER_H
+
+/// \file sdf/changeManager.h
 
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -40,7 +40,8 @@ SDF_DECLARE_HANDLES(SdfLayer);
 class SdfSpec;
 
 /// \class Sdf_ChangeManager
-/// \brief Pathway for invalidation and change notification emitted by Sdf.
+///
+/// Pathway for invalidation and change notification emitted by Sdf.
 ///
 /// Since Sdf is the base represntation in our system, and doesn't have
 /// many derived computations, this primarily just queues up invalidation

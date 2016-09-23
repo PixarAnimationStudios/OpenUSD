@@ -21,16 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/subdivTags.h
-///
-
 #ifndef PXOSD_SUBDIV_TAGS_H
 #define PXOSD_SUBDIV_TAGS_H
+
+/// \file pxOsd/subdivTags.h
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/token.h"
 
+/// \class PxOsdSubdivTags
 ///
 /// Tags for non-hierarchial subdiv surfaces.
 ///
@@ -188,5 +187,3 @@ bool operator==(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs);
 bool operator!=(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs);
 
 #endif // PXOSD_SUBDIV_TAGS_H
-
-

@@ -30,6 +30,7 @@ pxr_shared_library(arch
 
     PUBLIC_HEADERS
         align.h
+        api.h
         attributes.h
         buildMode.h
         defines.h

@@ -143,11 +143,6 @@ PcpPrimIndex::PcpPrimIndex(const PcpPrimIndex &rhs)
     if (rhs._localErrors) {
         _localErrors.reset(new PcpErrorVector(*rhs._localErrors.get()));
     }
-
-    if (rhs._usedAssetPaths) {
-        _usedAssetPaths.reset(
-            new std::vector<std::string>(*rhs._usedAssetPaths.get()));
-    }
 }
 
 void 
@@ -156,64 +151,6 @@ PcpPrimIndex::Swap(PcpPrimIndex& rhs)
     _graph.swap(rhs._graph);
     _primStack.swap(rhs._primStack);
     _localErrors.swap(rhs._localErrors);
-    _usedAssetPaths.swap(rhs._usedAssetPaths);
-}
-
-void
-PcpPrimIndex::AddUsedAssetPath(
-    const string& assetPath)
-{
-    if (assetPath.empty())
-        return;
-
-    if (not _usedAssetPaths) {
-        _usedAssetPaths.reset(new vector<string>(1, assetPath));
-        return;
-    }
-
-    vector<string>::iterator it = 
-        std::lower_bound(_usedAssetPaths->begin(), _usedAssetPaths->end(), 
-                         assetPath);
-    if (it == _usedAssetPaths->end() or *it != assetPath) {
-        _usedAssetPaths->insert(it, assetPath);
-    }
-}
-
-void
-PcpPrimIndex::AddUsedAssetPaths(
-    const vector<string>& assetPaths)
-{
-    if (assetPaths.empty())
-        return;
-
-    if (not _usedAssetPaths) {
-        _usedAssetPaths.reset(new vector<string>);
-    }
-
-    const size_t prevNumPaths = _usedAssetPaths->size();
-    _usedAssetPaths->insert(
-        _usedAssetPaths->end(), assetPaths.begin(), assetPaths.end());
-
-    // Since _usedAssetPaths is always maintained in sorted order, 
-    // we can just sort the newly-added elements and inplace_merge them
-    // with pre-existing entries.
-    std::sort(
-        _usedAssetPaths->begin() + prevNumPaths, _usedAssetPaths->end());
-    std::inplace_merge(
-        _usedAssetPaths->begin(), 
-        _usedAssetPaths->begin() + prevNumPaths,
-        _usedAssetPaths->end());
-    
-    // Ensure uniqueness.
-    _usedAssetPaths->erase(
-        std::unique(_usedAssetPaths->begin(), _usedAssetPaths->end()),
-        _usedAssetPaths->end());
-}
-
-vector<string>
-PcpPrimIndex::GetUsedAssetPaths() const
-{
-    return _usedAssetPaths ? *_usedAssetPaths : vector<string>();
 }
 
 void
@@ -698,21 +635,30 @@ _FindStartingNodeForImpliedClasses(const PcpNodeRef& n)
     return startNode;
 }
 
-/// This is a convenience function that creates a constant
-/// with a single mapping.
-///
-/// \param sourcePath The single source path.
-/// \param targetPath The single target path.
-/// \param offset The time offset to apply from source to target.
+// This is a convenience function to create a map expression
+// that maps a given source path to a target node, composing in
+// relocations and layer offsets if any exist.
 static PcpMapExpression
 _CreateMapExpressionForArc(const SdfPath &sourcePath, 
-                           const SdfPath &targetPath, 
+                           const PcpNodeRef &targetNode,
+                           const PcpPrimIndexInputs &inputs,
                            const SdfLayerOffset &offset = SdfLayerOffset())
 {
+    const SdfPath targetPath = targetNode.GetPath().StripAllVariantSelections();
+
     PcpMapFunction::PathMap sourceToTargetMap;
     sourceToTargetMap[sourcePath] = targetPath;
-    return PcpMapExpression::Constant(
+    PcpMapExpression arcExpr = PcpMapExpression::Constant(
         PcpMapFunction::Create( sourceToTargetMap, offset ) );
+
+    // Apply relocations that affect namespace at and below this site.
+    if (not inputs.usd) {
+        arcExpr = targetNode.GetLayerStack()
+            ->GetExpressionForRelocatesAtPath(targetNode.GetPath())
+            .Compose(arcExpr);
+    }
+
+    return arcExpr;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1242,17 +1188,6 @@ _AddArc(
         skipDuplicateNodes ? "true" : "false",
         skipImpliedSpecializes ? "true" : "false");
 
-    // Apply relocations that affect namespace at and below this site.
-    // Do not do this for arcs that originated elsewhere -- we will
-    // have already folded relocations into their map function;
-    // see _EvalImpliedClasses().
-    if (not indexer->inputs.usd and origin == parent) {
-        PcpLayerStackSite parentSite(parent.GetSite());
-        mapExpr = parentSite.layerStack
-            ->GetExpressionForRelocatesAtPath(parentSite.path)
-            .Compose(mapExpr);
-    }
-
     if (not TF_VERIFY(not mapExpr.IsNull())) {
         return PcpNodeRef();
     }
@@ -1443,8 +1378,6 @@ _AddArc(
             TfStringify(site).c_str());
 
         // Pass along the other outputs from the nested computation. 
-        indexer->outputs->primIndex.AddUsedAssetPaths(
-            childOutputs.primIndex.GetUsedAssetPaths());
         indexer->outputs->dependencies.sites.insert(
             childOutputs.dependencies.sites.begin(), 
             childOutputs.dependencies.sites.end());
@@ -1675,19 +1608,12 @@ _EvalNodeReferences(
         const bool isInternalReference = ref.GetAssetPath().empty();
         if (isInternalReference) {
             refLayer = node.GetLayerStack()->GetIdentifier().rootLayer;
-            index->AddUsedAssetPath(refLayer->GetIdentifier());
-
             refLayerStack = node.GetLayerStack();
         }
         else {
             std::string canonicalMutedLayerId;
             if (indexer->inputs.cache->IsLayerMuted(
                     srcLayer, ref.GetAssetPath(), &canonicalMutedLayerId)) {
-                // Record the used asset path the same way we would have
-                // had this layer not been muted.
-                index->AddUsedAssetPath(SdfComputeAssetPathRelativeToLayer(
-                    srcLayer, ref.GetAssetPath()));
-
                 PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
                 err->rootSite = PcpSite(node.GetRootNode().GetSite());
                 err->site = PcpSite(node.GetSite());
@@ -1704,7 +1630,6 @@ _EvalNodeReferences(
             refLayer = SdfFindOrOpenRelativeToLayer(
                 srcLayer, &resolvedAssetPath, 
                 Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema));
-            index->AddUsedAssetPath(resolvedAssetPath);
 
             if (not refLayer) {
                 PcpErrorInvalidAssetPathPtr err = 
@@ -1768,9 +1693,8 @@ _EvalNodeReferences(
         // not map across.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ refPath,
-                /* target */ node.GetPath().StripAllVariantSelections(),
-                layerOffset);
+                /* source */ refPath, /* targetNode */ node, 
+                indexer->inputs, layerOffset);
 
         _AddArc( PcpArcTypeReference,
                  /* parent = */ node,
@@ -2268,8 +2192,8 @@ _AddClassBasedArcs(
         // Every other path maps to itself.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ classArcs[arcNum],
-                /* target */ node.GetPath().StripAllVariantSelections())
+                /* source */ classArcs[arcNum], /* targetNode */ node,
+                indexer->inputs)
             .AddRootIdentity();
 
         _AddClassBasedArc(arcType,
@@ -3397,12 +3321,32 @@ _EvalNodePayload(
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
     index->GetGraph()->SetHasPayload(true);
+
     const PcpPrimIndexInputs::PayloadSet* includedPayloads = 
         indexer->inputs.includedPayloads;
-    if (not includedPayloads or 
-        includedPayloads->count(node.GetRootNode().GetPath()) == 0) {
+
+    // If includedPayloads is nullptr, we never include payloads.  Otherwise if
+    // it does not have this path, we invoke the predicate.  If the predicate
+    // returns true we set the output bit includedDiscoveredPayload and we
+    // compose it.
+    if (!includedPayloads) {
         PCP_GRAPH_MSG(node, "Payload was not included, skipping");
         return;
+    }
+    SdfPath const &path = node.GetRootNode().GetPath();
+    tbb::spin_rw_mutex::scoped_lock lock;
+    auto *mutex = indexer->inputs.includedPayloadsMutex;
+    if (mutex) { lock.acquire(*mutex, /*write=*/false); }
+    bool inIncludeSet = includedPayloads->count(path);
+    if (mutex) { lock.release(); }
+    if (!inIncludeSet) {
+        auto const &pred = indexer->inputs.includePayloadPredicate;
+        if (pred and pred(path)) {
+            indexer->outputs->includedDiscoveredPayload = true;
+        } else {
+            PCP_GRAPH_MSG(node, "Payload was not included, skipping");
+            return;
+        }
     }
 
     // Verify the payload prim path.
@@ -3422,11 +3366,6 @@ _EvalNodePayload(
     if (indexer->inputs.cache->IsLayerMuted(
             payloadSpecLayer, payload.GetAssetPath(), 
             &canonicalMutedLayerId)) {
-        // Record the used asset path the same way we would have
-        // had this layer not been muted.
-        index->AddUsedAssetPath(SdfComputeAssetPathRelativeToLayer(
-            payloadSpecLayer, payload.GetAssetPath()));
-
         PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
         err->rootSite = PcpSite(node.GetSite());
         err->site = PcpSite(node.GetSite());
@@ -3453,10 +3392,6 @@ _EvalNodePayload(
     std::string resolvedAssetPath(payload.GetAssetPath());
     SdfLayerRefPtr payloadLayer = SdfFindOrOpenRelativeToLayer(
         payloadSpecLayer, &resolvedAssetPath, args);
-
-    // Record used asset path (even if we were unable to open it,
-    // we need to acknowledge it as a requested dependency)
-    index->AddUsedAssetPath(resolvedAssetPath);
 
     if (not payloadLayer) {
         PcpErrorInvalidAssetPathPtr err = PcpErrorInvalidAssetPath::New();
@@ -3544,9 +3479,8 @@ _EvalNodePayload(
 
     PcpMapExpression mapExpr = 
         _CreateMapExpressionForArc(
-            /* source */ payloadPath,
-            /* target */ node.GetPath().StripAllVariantSelections(),
-            offset );
+            /* source */ payloadPath, /* target */ node, 
+            indexer->inputs, offset);
 
     _AddArc( PcpArcTypePayload,
              /* parent = */ node,

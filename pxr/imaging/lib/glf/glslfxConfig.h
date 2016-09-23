@@ -21,20 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file glf/glslfxConfig.h
-
 #ifndef GLF_GLSLFX_CONFIG_H
 #define GLF_GLSLFX_CONFIG_H
+
+/// \file glf/glslfxConfig.h
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include <string>
 
-/// 
 /// \class GlfGLSLFXConfig 
-/// \brief A class representing the configuration of a glslfx file
+///
+/// A class representing the configuration of a glslfx file.
 ///
 /// GlfGLSLFXConfig provides an API for querying the configuration of a
 /// glslfx file
@@ -42,7 +41,7 @@
 class GlfGLSLFXConfig
 {
 public:
-    /// \brief Enumerates Roles that parameters can have
+    /// Enumerates Roles that parameters can have.
     ///
     /// <b>enum Role:</b>
     /// <ul>       
@@ -55,9 +54,9 @@ public:
         RoleColor = 1,
     };
 
-    /// 
     /// \class GlfGLSLFXConfig::Parameter
-    /// \brief A class representing a parameter
+    ///
+    /// A class representing a parameter.
     ///
     class Parameter {
     public:
@@ -78,9 +77,9 @@ public:
 
     typedef std::vector<Parameter> Parameters;
 
-    /// 
     /// \class GlfGLSLFXConfig::Texture
-    /// \brief A class representing a texture
+    ///
+    /// A class representing a texture.
     ///
     class Texture {
     public:
@@ -98,9 +97,9 @@ public:
 
     typedef std::vector<Texture> Textures;
 
-    ///_
     /// \class GlfGLSLFXConfig::Attribute
-    /// \brief A class representing an attribute
+    ///
+    /// A class representing an attribute.
     ///
     class Attribute {
     public:

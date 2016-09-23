@@ -167,6 +167,8 @@ HdBufferResource::GetGLTypeName() const
         return _tokens->uvec2;
     } else if (_glDataType == GL_INT_SAMPLER_BUFFER) {
         return _tokens->uvec2;
+    } else if (_glDataType == GL_INT_2_10_10_10_REV) {
+        return _tokens->vec4;
     }
 
     TF_CODING_ERROR("unsupported type: 0x%x numComponents = %d\n",

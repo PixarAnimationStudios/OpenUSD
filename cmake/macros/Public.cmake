@@ -34,7 +34,7 @@ function(pxr_python_bins)
         file(READ ${pyFile} contents)
         string(REGEX REPLACE "/pxrpythonsubst" ${PXR_PYTHON_SHEBANG} 
             contents "${contents}")
-        file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} ${contents})
+        file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} "${contents}")
 
         install(PROGRAMS
             ${CMAKE_BINARY_DIR}/${pyFile}
@@ -106,6 +106,7 @@ function(pxr_shared_library LIBRARY_NAME)
         CPPFILES
         PYMODULE_CPPFILES
         PYTHON_FILES
+        PYSIDE_UI_FILES
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
@@ -203,7 +204,7 @@ function(pxr_shared_library LIBRARY_NAME)
 
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
+            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_PLUGIN_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/plugin/usd;PXR_INSTALL_LOCATION=${installLocation}"
     )
 
     # Always bake the rpath.
@@ -298,9 +299,25 @@ function(pxr_shared_library LIBRARY_NAME)
         )
     endif()
 
+    _get_library_file(${LIBRARY_NAME} LIBRARY_FILE)
+
+    # Figure out the relative path from this targets plugin location to its
+    # corresponding install location. This is embedded in the plugInfo.json to
+    # record where to find the plugin.
+    _get_plugin_root(${PLUGINS_PREFIX} ${LIBRARY_NAME} PLUGIN_ROOT_PATH)
+    file(RELATIVE_PATH 
+        PLUG_INFO_LIBRARY_PATH 
+        ${CMAKE_INSTALL_PREFIX}/${PLUGIN_ROOT_PATH} 
+        ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}/${LIBRARY_FILE})
+
     if (sl_RESOURCE_FILES)
         _install_resource_files(${sl_RESOURCE_FILES})
     endif()
+
+    if (sl_PYSIDE_UI_FILES)
+        _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
+    endif()        
+
 endfunction() # pxr_shared_library
 
 function(pxr_static_library LIBRARY_NAME)
@@ -449,6 +466,7 @@ function(pxr_plugin PLUGIN_NAME)
         CPPFILES
         PYMODULE_CPPFILES
         PYTHON_FILES
+        PYSIDE_UI_FILES
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
@@ -485,7 +503,7 @@ function(pxr_plugin PLUGIN_NAME)
         set(HEADER_INSTALL_PREFIX 
             "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     else()
-        set(PLUGIN_INSTALL_PREFIX "plugin")
+        set(PLUGIN_INSTALL_PREFIX "plugin/usd")
         set(HEADER_INSTALL_PREFIX 
             "${CMAKE_INSTALL_PREFIX}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     endif()
@@ -507,9 +525,15 @@ function(pxr_plugin PLUGIN_NAME)
     else()
         # Ensure this plugin can find the libs for its matching component, e.g.
         # maya/plugin/px_usdIO.so can find maya/lib/*.so
-        set_target_properties(${PLUGIN_NAME}
-            PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../lib"
-        )
+        if (PXR_INSTALL_SUBDIR)
+            set_target_properties(${PLUGIN_NAME}
+                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../lib"
+            )
+        else()
+            set_target_properties(${PLUGIN_NAME}
+                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../../lib"
+            )
+        endif()
     endif()
 
     set_target_properties(${PLUGIN_NAME}
@@ -594,12 +618,26 @@ function(pxr_plugin PLUGIN_NAME)
         )
     endif()
 
-    if (sl_RESOURCE_FILES)
-        _get_install_dir(plugin PLUGINS_PREFIX)
-        set(LIBRARY_NAME ${PLUGIN_NAME})
+    set(PLUGINS_PREFIX ${PLUGIN_INSTALL_PREFIX})
+    set(LIBRARY_NAME ${PLUGIN_NAME})
+    _get_library_file(${LIBRARY_NAME} LIBRARY_FILE)
 
+    # Figure out the relative path from this targets plugin location to its
+    # corresponding install location. This is embedded in the plugInfo.json to
+    # record where to find the plugin.
+    _get_plugin_root(${PLUGINS_PREFIX} ${LIBRARY_NAME} PLUGIN_ROOT_PATH)
+    file(RELATIVE_PATH 
+        PLUG_INFO_LIBRARY_PATH 
+        ${CMAKE_INSTALL_PREFIX}/${PLUGIN_ROOT_PATH} 
+        ${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}/${LIBRARY_FILE})
+
+    if (sl_RESOURCE_FILES)
         _install_resource_files(${sl_RESOURCE_FILES})
     endif()
+
+    if (sl_PYSIDE_UI_FILES)
+        _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
+    endif()        
 
     # Build python module.
     if(DEFINED sl_PYMODULE_CPPFILES)
@@ -829,9 +867,15 @@ endfunction() # pxr_register_test
 function(pxr_setup_plugins)
     _get_share_install_dir(SHARE_INSTALL_PREFIX)
 
-    # Install a top-level plugInfo.json in the shared area
+    # Install a top-level plugInfo.json in the shared area and into the 
+    # top-level plugin area
+    _get_resources_dir_name(resourcesDir)
+    set(plugInfoContents "{\\n    \\\"Includes\\\": [ \\\"*/${resourcesDir}/\\\" ]\\n}\\n")
     install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_PREFIX}/plugins/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_PREFIX}/plugins/plugInfo.json\" ${plugInfoContents})"
+    )
+    install(CODE
+        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/usd/plugInfo.json\" ${plugInfoContents})"
     )
 endfunction() # pxr_setup_plugins
 

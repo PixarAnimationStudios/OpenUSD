@@ -27,7 +27,9 @@
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
-/// Delegate support for UsdGeomBasisCurves
+/// \class UsdImagingBasisCurvesAdapter
+///
+/// Delegate support for UsdGeomBasisCurves.
 ///
 class UsdImagingBasisCurvesAdapter : public UsdImagingGprimAdapter {
 public:
@@ -82,6 +84,5 @@ private:
                                  VtValue* topoHolder, 
                                  UsdTimeCode time);
 };
-
 
 #endif // USDIMAGING_BASIS_CURVES_ADAPTER_H

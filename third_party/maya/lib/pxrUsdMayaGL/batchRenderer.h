@@ -28,6 +28,8 @@
 #ifndef PXRUSDMAYAGL_BATCHRENDERER_H
 #define PXRUSDMAYAGL_BATCHRENDERER_H
 
+#include "pxrUsdMayaGL/softSelectHelper.h"
+
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/usd/usd/stage.h"
@@ -243,7 +245,7 @@ public:
         void SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport);
-        void SetLightingStateFromOpenGL();
+        void SetLightingStateFromOpenGL(const MMatrix& viewMatForLights);
 
         HdTaskSharedPtrVector GetSetupTasks();
 
@@ -296,6 +298,10 @@ public:
                     const SdfPathVector& excludePrimPaths,
                     const MDagPath& objPath );
     
+    /// \brief Gets UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
+    /// This should only be used by ShapeRenderer::GetRenderParams
+    const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
+
     /// \brief Construct a new, unique BatchRenderer. In almost all cases,
     /// this should not be used -- use \c GlobalBatchRenderer() instead.
     UsdMayaGLBatchRenderer();
@@ -394,6 +400,7 @@ private:
     HdRenderIndexSharedPtr _renderIndex;
     TaskDelegateSharedPtr _taskDelegate;
     HdxIntersectorSharedPtr _intersector;
+    UsdMayaGLSoftSelectHelper _softSelectHelper;
     
     /// \brief Sole global batch renderer used by default.
     static UsdMayaGLBatchRenderer _sGlobalRenderer;

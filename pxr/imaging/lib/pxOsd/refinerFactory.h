@@ -21,17 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file pxOsd/refinerFactory.h
-///
-
 #ifndef PXOSD_REFINER_FACTORY_H
 #define PXOSD_REFINER_FACTORY_H
+
+/// \file pxOsd/refinerFactory.h
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/base/vt/array.h"
 
-#include <opensubdiv3/far/topologyRefiner.h>
+#include <opensubdiv/far/topologyRefiner.h>
 #include <vector>
 
 typedef boost::shared_ptr<class OpenSubdiv::Far::TopologyRefiner> PxOsdTopologyRefinerSharedPtr;
@@ -53,4 +51,3 @@ public:
 };
 
 #endif // PXOSD_REFINER_FACTORY_H
-

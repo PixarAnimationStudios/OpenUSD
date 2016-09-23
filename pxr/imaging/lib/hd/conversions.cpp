@@ -84,6 +84,8 @@ HdConversions::GetComponentSize(int glDataType)
             return sizeof(GLuint64EXT);
         case GL_DOUBLE:
             return sizeof(GLdouble);
+        case GL_INT_2_10_10_10_REV:
+            return sizeof(GLint);
         // following enums are for bindless texture pointers.
         case GL_SAMPLER_2D:
             return sizeof(GLuint64EXT);
@@ -93,7 +95,7 @@ HdConversions::GetComponentSize(int glDataType)
             return sizeof(GLuint64EXT);
     };
 
-    TF_CODING_ERROR("Unexpected GL datatype %d", glDataType);
+    TF_CODING_ERROR("Unexpected GL datatype 0x%x", glDataType);
     return 1;
 }
 

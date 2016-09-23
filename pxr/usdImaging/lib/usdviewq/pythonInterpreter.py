@@ -220,7 +220,7 @@ class Controller(QtCore.QObject):
 
         """
 
-        QtCore.QObject.__init__(self)
+        super(Controller, self).__init__()
 
         self.interpreter = Interpreter(textEdit, locals)
         self.interpreter.locals['help'] = _Helper(self, self)
@@ -637,8 +637,7 @@ class View(QtGui.QTextEdit):
     """
 
     def __init__(self, parent=None):
-        self.Parent = QtGui.QTextEdit
-        self.Parent.__init__(self, parent)
+        super(View, self).__init__(parent)
         self.promptLength = 0
         self.__startOfInput = 0
         self.setUndoRedoEnabled(False)
@@ -708,7 +707,7 @@ class View(QtGui.QTextEdit):
             # instead of duplicating the triple click code completely, we just
             # pass it along. but we modify the selection that comes out of it
             # to exclude the prompt, if appropriate
-            self.Parent.mousePressEvent(self, e)
+            super(View, self).mousePressEvent(e)
 
             if (self._CursorIsInInputArea()):
                 selStart = self.textCursor().selectionStart()
@@ -721,12 +720,12 @@ class View(QtGui.QTextEdit):
                      cursor.setPosition(selEnd, QtGui.QTextCursor.KeepAnchor)
                      self.setTextCursor(cursor)
         else:
-            self.Parent.mousePressEvent(self, e)
+            super(View, self).mousePressEvent(e)
         
     def mouseDoubleClickEvent(self, e):
-        self.Parent.mouseDoubleClickEvent(self, e)
+        super(View, self).mouseDoubleClickEvent(e)
         app = QtGui.QApplication.instance()
-        self.tripleClickTimer.start(app.doubleClickInterval(), self);
+        self.tripleClickTimer.start(app.doubleClickInterval(), self)
         # make a copy here, otherwise tripleClickPoint will always = globalPos
         self.tripleClickPoint = QtCore.QPoint(e.globalPos())
 
@@ -734,7 +733,7 @@ class View(QtGui.QTextEdit):
         if (e.timerId() == self.tripleClickTimer.timerId()):
             self.tripleClickTimer.stop()
         else:
-            self.Parent.timerEvent(self, e)
+            super(View, self).timerEvent(e)
 
     def enterEvent(self, e):
         self._ignoreKeyPresses = False
@@ -744,11 +743,11 @@ class View(QtGui.QTextEdit):
 
     def dragEnterEvent(self, e):
         self._ignoreKeyPresses = False
-        self.Parent.dragEnterEvent(self, e)
+        super(View, self).dragEnterEvent(e)
         
     def dragLeaveEvent(self, e):
         self._ignoreKeyPresses = True
-        self.Parent.dragLeaveEvent(self, e)
+        super(View, self).dragLeaveEvent(e)
         
     def keyPressEvent(self, e):
         """
@@ -773,18 +772,18 @@ class View(QtGui.QTextEdit):
         canEraseSelection = selectionInInput and cursorInInput
         if key == QtCore.Qt.Key_Backspace:
             if (canBackspace and not hasSelection) or canEraseSelection:
-                self.Parent.keyPressEvent(self, e)
+                super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Delete:
             if (cursorInInput and not hasSelection) or canEraseSelection:
-                self.Parent.keyPressEvent(self, e)
+                super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Left:
             pos = self._PositionInInputArea(self.textCursor().position())
             if pos == 0:
                 e.ignore()
             else:
-                self.Parent.keyPressEvent(self, e)
+                super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Right:
-            self.Parent.keyPressEvent(self, e)
+            super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Return or key == QtCore.Qt.Key_Enter:
             # move cursor to end of line.
             # emit signal to tell controller enter was pressed.
@@ -817,7 +816,7 @@ class View(QtGui.QTextEdit):
                     self._MoveCursorToEndOfInput(False)
                 e.ignore()
             else:
-                self.Parent.keyPressEvent(self, e)
+                super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Tab:
             self.AutoComplete()
             e.accept()
@@ -832,12 +831,12 @@ class View(QtGui.QTextEdit):
             # just deselect and append keypresses
             cursor = self.textCursor()
             self._MoveCursorToEndOfInput()
-            self.Parent.keyPressEvent(self, e)
+            super(View, self).keyPressEvent(e)
         elif not cursorInInput:
             # Ignore keypresses if we're not in the input area.
             e.ignore()
         else:
-            self.Parent.keyPressEvent(self, e)
+            super(View, self).keyPressEvent(e)
 
     def AutoComplete(self):
         if self._CursorIsInInputArea():

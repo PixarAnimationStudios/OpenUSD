@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_GPRIM_H
 #define USDGEOM_GENERATED_GPRIM_H
 
+/// \file usdGeom/gprim.h
+
 #include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,7 +46,9 @@ class SdfAssetPath;
 // GPRIM                                                                      //
 // -------------------------------------------------------------------------- //
 
-/// \brief Base class for all geometric primitives.  
+/// \class UsdGeomGprim
+///
+/// Base class for all geometric primitives.  
 /// 
 /// Gprim encodes basic graphical properties such as \em doubleSided and
 /// \em orientation, and provides primvars for "display color" and "display
@@ -90,7 +94,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomGprim holding the prim adhering to this
+    /// Return a UsdGeomGprim holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

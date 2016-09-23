@@ -24,7 +24,6 @@
 #ifndef HD_COMMAND_BUFFER_H
 #define HD_COMMAND_BUFFER_H
 
-
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/drawItemInstance.h"
@@ -36,6 +35,8 @@
 class HdDrawItem;
 class HdDrawItemInstance;
 
+/// \class HdCommandBuffer
+///
 /// A buffer of commands (HdDrawItem or HdComputeItem objects) to be executed.
 ///
 /// The HdCommandBuffer is responsible for accumulating draw items and sorting

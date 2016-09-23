@@ -24,8 +24,7 @@
 #ifndef WORK_ARENA_DISPATCHER_H
 #define WORK_ARENA_DISPATCHER_H
 
-///
-///\file work/arenaDispatcher.h
+/// \file work/arenaDispatcher.h
 
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/threadLimits.h"
@@ -36,16 +35,15 @@
 #include <type_traits>
 #include <utility>
 
-
 /// \class WorkArenaDispatcher
 ///
-/// This is a specialization of the WorkDispatcher. It uses an isolated arena
+/// This is a specialization of the WorkDispatcher that uses an isolated arena
 /// to Run() all its tasks in. The WorkArenaDispatcher is useful where it must
-/// be guaranteed that a specific set of tasks shall not be stolen by any other
-/// dispatcher, or where stealing from other dispatchers could cause lock
-/// dependencies that may lead to deadlocks.
-/// Note that a regular WorkDispatcher can provide better throughput, and should
-/// thus be the preferred over the WorkArenaDispatcher.
+/// be guaranteed that a specific set of tasks shall not be stolen by any
+/// other dispatcher, or where stealing from other dispatchers could cause
+/// lock dependencies that may lead to deadlocks. Note that a regular
+/// WorkDispatcher can provide better throughput, and should thus be the
+/// preferred over the WorkArenaDispatcher.
 ///
 /// The interface of the WorkArenaDispatcher, and thread-safety notes about its
 /// API are identical to those of the WorkDispatcher.

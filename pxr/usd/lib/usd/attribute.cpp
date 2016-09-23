@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/attributeQuery.h"
 
 #include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/stage.h"
@@ -121,12 +122,7 @@ UsdAttribute::HasAuthoredValueOpinion() const
 {
     Usd_ResolveInfo resolveInfo;
     _GetStage()->_GetResolveInfo(*this, &resolveInfo);
-    bool authoredValueFound = 
-        resolveInfo.source == Usd_ResolveInfoSourceDefault
-        or resolveInfo.source == Usd_ResolveInfoSourceTimeSamples
-        or resolveInfo.source == Usd_ResolveInfoSourceValueClips;
-
-    return authoredValueFound or resolveInfo.valueIsBlocked;
+    return resolveInfo.HasAuthoredValueOpinion();
 }
 
 bool 

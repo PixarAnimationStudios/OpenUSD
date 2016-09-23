@@ -32,7 +32,9 @@
 #include <boost/operators.hpp>
 
 /// \enum PcpArcType
+///
 /// Describes the type of arc connecting two nodes in the prim index.
+///
 enum PcpArcType {
     // The root arc is a special value used for the direct/root node of 
     // the prim index. Unlike the following arcs, it has no parent node.
@@ -119,8 +121,10 @@ PcpIsLocalClassBasedArc(PcpArcType arcType)
 }
 
 /// \struct PcpSiteTrackerSegment
+///
 /// Used to keep track of which sites have been visited and through
 /// what type of arcs. 
+///
 struct PcpSiteTrackerSegment {
     PcpLayerStackSite site;
     PcpArcType arcType;
@@ -132,7 +136,9 @@ struct PcpSiteTrackerSegment {
 typedef std::vector<PcpSiteTrackerSegment> PcpSiteTracker;
 
 /// \enum PcpDependencyType
+///
 /// Defines the types of dependencies.
+///
 enum PcpDependencyType {
     PcpDirect    = (1 << 0),
     PcpAncestral = (1 << 1)

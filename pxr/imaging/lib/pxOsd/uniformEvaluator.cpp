@@ -23,11 +23,11 @@
 //
 #include "uniformEvaluator.h"
 
-#include <opensubdiv3/far/stencilTable.h>
-#include <opensubdiv3/far/stencilTableFactory.h>
-#include <opensubdiv3/far/patchParam.h>
-#include <opensubdiv3/far/patchTable.h>
-#include <opensubdiv3/far/patchTableFactory.h>
+#include <opensubdiv/far/stencilTable.h>
+#include <opensubdiv/far/stencilTableFactory.h>
+#include <opensubdiv/far/patchParam.h>
+#include <opensubdiv/far/patchTable.h>
+#include <opensubdiv/far/patchTableFactory.h>
 
 #include <fstream>
 #include <iostream>

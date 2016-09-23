@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/uvTexture.h
-
 #ifndef GLF_UVTEXTURE_H
 #define GLF_UVTEXTURE_H
+
+/// \file glf/uvTexture.h
 
 #include "pxr/imaging/glf/baseTexture.h"
 
@@ -35,14 +35,13 @@
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTexture);
 
-/// 
-/// \class GlfUVTexture Texture.h "pxr/imaging/glf/texture.h"
-/// \brief Represents a texture object in Glf
+/// \class GlfUVTexture
+///
+/// Represents a texture object in Glf.
 ///
 /// An GlfUVTexture is currently defined by an image file path.
 /// Currently accepted image formats are png, jpg and bmp.
 ///
-
 class GlfUVTexture : public GlfBaseTexture {
 public:
     /// Creates a new texture instance for the image file at \p imageFilePath.

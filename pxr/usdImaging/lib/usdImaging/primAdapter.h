@@ -49,6 +49,8 @@ class UsdImagingInstancerContext;
 typedef boost::shared_ptr<class UsdImagingPrimAdapter> 
                                                 UsdImagingPrimAdapterSharedPtr;
 
+/// \class UsdImagingPrimAdapter
+///
 /// Base class for all PrimAdapters.
 ///
 class UsdImagingPrimAdapter 
@@ -186,8 +188,12 @@ public:
                             bool ignoreRootTransform = false);
 
     /// Gets the shader binding for the given prim, walking up namespace if
-    /// necessary.
-    SdfPath GetShaderBinding(UsdPrim const& prim);
+    /// necessary.  
+    ///
+    /// This returns a usdPath to a shaderPrim.  If you want to override the
+    /// default shaderAdapter, use UsdImagingIndexProxy::AddShaderAdapter to
+    /// register a new adapter for the path returned here.
+    virtual SdfPath GetShaderBinding(UsdPrim const& prim);
 
     /// Gets the instancer ID for the given prim and instancerContext.
     SdfPath GetInstancerBinding(UsdPrim const& prim,
@@ -259,5 +265,4 @@ public:
     }
 };
 
-#endif //USDIMAGING_PRIM_ADAPTER_H
-
+#endif // USDIMAGING_PRIM_ADAPTER_H

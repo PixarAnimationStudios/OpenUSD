@@ -33,33 +33,18 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-#include <unordered_map>
-#include <tbb/spin_mutex.h>
-#else
 #include <tbb/concurrent_hash_map.h>
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
 #include <boost/foreach.hpp>
 
 static const char* _FileRelativePathPrefix = "./";
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-struct Ar_DefaultResolver::_Cache
-{
-    using _PathToResolvedPathMap = 
-        std::unordered_map<std::string, std::string>;
-    _PathToResolvedPathMap _pathToResolvedPathMap;
-    tbb::spin_mutex _mutex;
-};
-#else
 struct Ar_DefaultResolver::_Cache
 {
     using _PathToResolvedPathMap = 
         tbb::concurrent_hash_map<std::string, std::string>;
     _PathToResolvedPathMap _pathToResolvedPathMap;
 };
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
 Ar_DefaultResolver::Ar_DefaultResolver()
 {
@@ -126,19 +111,7 @@ Ar_DefaultResolver::IsSearchPath(const std::string& path)
 std::string
 Ar_DefaultResolver::GetExtension(const std::string& path)
 {
-    if (path.empty()) {
-        return path;
-    }
-
-    const std::string fileName = TfGetBaseName(path);
-
-    // If this is a dot file with no extension (e.g. /some/path/.folder), then
-    // we return an empty string.
-    if (TfStringGetBeforeSuffix(fileName).empty()) {
-        return std::string();
-    }
-
-    return TfStringGetSuffix(fileName);
+    return TfGetExtension(path);
 }
 
 std::string
@@ -220,18 +193,6 @@ Ar_DefaultResolver::ResolveWithAssetInfo(
         return path;
     }
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    if (_CachePtr currentCache = _GetCurrentCache()) {
-        tbb::spin_mutex::scoped_lock lock(currentCache->_mutex);
-        std::pair<_Cache::_PathToResolvedPathMap::iterator, bool> accessor =
-            currentCache->_pathToResolvedPathMap.insert(
-                std::make_pair(path, std::string()));
-        if (accessor.second) {
-            accessor.first->second = _ResolveNoCache(path);
-        }
-        return accessor.first->second;
-    }
-#else
     if (_CachePtr currentCache = _GetCurrentCache()) {
         _Cache::_PathToResolvedPathMap::accessor accessor;
         if (currentCache->_pathToResolvedPathMap.insert(
@@ -240,7 +201,6 @@ Ar_DefaultResolver::ResolveWithAssetInfo(
         }
         return accessor->second;
     }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK    
 
     return _ResolveNoCache(path);
 }

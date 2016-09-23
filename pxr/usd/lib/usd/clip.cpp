@@ -434,8 +434,19 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         const double upper = std::max(map1.second, map2.second);
 
         if (lower <= lowerInClip and lowerInClip <= upper) {
-            translatedLower.reset(
-                _TranslateTimeToExternal(lowerInClip, map1, map2));
+            if (map1.second != map2.second) {
+                translatedLower.reset(
+                    _TranslateTimeToExternal(lowerInClip, map1, map2));
+            } else {
+                const bool lowerUpperMatch = (lowerInClip == upperInClip);
+                if (lowerUpperMatch && time == map1.first) {
+                    translatedLower.reset(map1.first);
+                } else if (lowerUpperMatch && time == map2.first) {
+                    translatedLower.reset(map2.first);
+                } else {
+                    translatedLower.reset(map1.first);
+                }
+            }
             break;
         }
     }
@@ -449,8 +460,19 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         const double upper = std::max(map1.second, map2.second);
 
         if (lower <= upperInClip and upperInClip <= upper) {
-            translatedUpper.reset(
-                _TranslateTimeToExternal(upperInClip, map1, map2));
+            if (map1.second != map2.second) {
+                translatedUpper.reset(
+                    _TranslateTimeToExternal(upperInClip, map1, map2));
+            } else {
+                const bool lowerUpperMatch = (lowerInClip == upperInClip);
+                if (lowerUpperMatch && time == map1.first) {
+                    translatedUpper.reset(map1.first);
+                } else if (lowerUpperMatch && time == map2.first) {
+                    translatedUpper.reset(map2.first);
+                } else {
+                    translatedUpper.reset(map2.first);
+                }
+            }
             break;
         }
     }
@@ -518,13 +540,19 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
     //
     // To deal with this, every internal time sample has to be checked 
     // against the entire mapping function.
-    BOOST_FOREACH(InternalTime t, timeSamplesInClip) {
+    for (InternalTime t: timeSamplesInClip) {
         for (size_t i = 0; i < times.size() - 1; ++i) {
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
 
             if (m1.second <= t and t <= m2.second) {
-                timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
+                if (m1.second == m2.second) {
+                    timeSamples.insert(m1.first);
+                    timeSamples.insert(m2.first);
+                }
+                else {
+                    timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
+                }
             }
         }
     }
@@ -534,7 +562,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
     // apply the same clamping behavior as GetBracketingTimeSamples to
     // maintain consistency.
     if (timeSamples.empty()) {
-        BOOST_FOREACH(InternalTime t, timeSamplesInClip) {
+        for (InternalTime t: timeSamplesInClip) {
             if (t < times.front().second) {
                 timeSamples.insert(times.front().first);
             }
@@ -572,8 +600,16 @@ Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
     TimeMapping m1, m2;
     _GetBracketingTimeSegment(times, extTime, &m1, &m2);
 
+    // Early out in some special cases to avoid unnecessary
+    // math operations that could introduce precision issues.
     if (m1.first == m2.first) {
         return m1.second;
+    }
+    else if (extTime == m1.first) {
+        return m1.second;
+    }
+    else if (extTime == m2.first) {
+        return m2.second;
     }
 
     return (m2.second - m1.second) / (m2.first - m1.first)
@@ -585,8 +621,16 @@ Usd_Clip::ExternalTime
 Usd_Clip::_TranslateTimeToExternal(
     InternalTime intTime, TimeMapping m1, TimeMapping m2) const
 {
+    // Early out in some special cases to avoid unnecessary
+    // math operations that could introduce precision issues.
     if (m1.second == m2.second) {
         return m1.first;
+    }
+    else if (intTime == m1.second) {
+        return m1.first;
+    }
+    else if (intTime == m2.second) {
+        return m2.first;
     }
 
     return (m2.first - m1.first) / (m2.second - m1.second)

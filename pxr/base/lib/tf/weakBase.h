@@ -24,55 +24,22 @@
 #ifndef TF_WEAKBASE_H
 #define TF_WEAKBASE_H
 
+/// \file tf/weakBase.h
+/// \ingroup group_tf_Memory
 
 #include "pxr/base/tf/expiryNotifier.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/traits.h"
+#include <atomic>
 
-/*!
- * \file weakBase.h
- * \ingroup group_tf_Memory
- */
-
-/*!
- * \class TfWeakBase WeakBase.h pxr/base/tf/weakBase.h
- * \ingroup group_tf_Memory
- * \brief Enable a concrete base class for use with \c TfWeakPtr.
- *
- * You should be familiar with the \c TfWeakPtr type
- * before reading further.
- *
- * A class is enabled for use with the \c TfWeakPtr type by publicly
- * deriving from \c TfWeakBase.  (Note that deriving from \c
- * TfWeakBase adds data to a structure, so the result is no longer a
- * "pure" interface class.)
- *
- * For example,
- * \code
- *     #include "pxr/base/tf/weakBase.h"
- *
- *     class Simple : public TfWeakBase {
- *           ...
- *     };
- * \endcode
- *
- * Given the above inheritance, a \c Simple* can now be used to
- * initialize an object of type \c TfWeakPtr<Simple>.
- */
-
-
-/*
- * The _Remnant structure is simply a persisent memory of an object's address.
- * When the object dies, the pointer is set to NULL.  A _Remnant object is
- * destroyed when both the original whose address it was initialized with, and
- * there are no weak pointers left pointing to that remnant.
- */
-
+// The _Remnant structure is simply a persisent memory of an object's
+// address. When the object dies, the pointer is set to NULL.  A _Remnant
+// object is destroyed when both the original whose address it was
+// initialized with, and there are no weak pointers left pointing to that
+// remnant.
 class Tf_Remnant : public TfRefBase
 {
 public:
-
-    //TF_ENABLE_CLASS_ALLOCATOR(Tf_Remnant);
 
     virtual ~Tf_Remnant();
 
@@ -95,35 +62,33 @@ public:
     // Note: this initializes a class member -- the parameter is a non-const
     // reference.
     static TfRefPtr<Tf_Remnant>
-    Register(TfRefPtr<Tf_Remnant> &remnantPtr) {
-        if (!remnantPtr) {
-            Tf_Remnant *tmp = new Tf_Remnant;
-            return Register(remnantPtr, tmp);
+    Register(std::atomic<Tf_Remnant*> &remnantPtr) {
+        if (Tf_Remnant *remnant = remnantPtr.load()) {
+            // Remnant exists.  Return additional reference.
+            return TfRefPtr<Tf_Remnant>(remnant);
+        } else {
+            // Allocate a remnant and attempt to register it.
+            return Register(remnantPtr, new Tf_Remnant);
         }
-        return remnantPtr;
     }
 
     // Note: this initializes a class member -- the parameter is a non-const
     // reference.
     template <class T>
     static TfRefPtr<Tf_Remnant>
-    Register(TfRefPtr<Tf_Remnant> &remnantPtr, T *tempRmnt) {
-        if (!remnantPtr) {
-            /*
-             * Note: This takes the place of TfCreateRefPtr: the reference
-             * count starts at one, so this is correct.  Note that if we
-             * don't delete tmp, we know that _remnantPtr._data is left
-             * as nullptr.
-             */
-            TfRefBase *expectedNullPtr = nullptr;
-            if (not remnantPtr._refBase.compare_exchange_strong(
-                    expectedNullPtr,
-                    static_cast<TfRefBase *>(tempRmnt),
-                    std::memory_order_relaxed)) {
-                delete tempRmnt;
-            }
+    Register(std::atomic<Tf_Remnant*> &remnantPtr, T *candidate) {
+        Tf_Remnant *existing = nullptr;
+        if (remnantPtr.compare_exchange_strong(
+                existing,
+                static_cast<Tf_Remnant*>(candidate))) {
+            // Candidate registered.  Return additional reference.
+            return TfRefPtr<Tf_Remnant>(candidate);
+        } else {
+            // Somebody beat us to it.
+            // Discard candidate and return additional reference.
+            delete candidate;
+            return TfRefPtr<Tf_Remnant>(existing);
         }
-        return remnantPtr;
     }
 
     // Mark this remnant to call the expiry notification callback function when
@@ -146,13 +111,34 @@ private:
     bool _alive;
 };
 
-
-
+/// \class TfWeakBase
+/// \ingroup group_tf_Memory
+///
+/// Enable a concrete base class for use with \c TfWeakPtr.
+///
+/// You should be familiar with the \c TfWeakPtr type before reading further.
+///
+/// A class is enabled for use with the \c TfWeakPtr type by publicly deriving
+/// from \c TfWeakBase.  (Note that deriving from \c TfWeakBase adds data to a
+/// structure, so the result is no longer a "pure" interface class.)
+///
+/// For example,
+/// \code
+///     #include "pxr/base/tf/weakBase.h"
+///
+///     class Simple : public TfWeakBase {
+///           ...
+///     };
+/// \endcode
+///
+/// Given the above inheritance, a \c Simple* can now be used to initialize an
+/// object of type \c TfWeakPtr<Simple>.
+///
 class TfWeakBase {
 public:
-    TfWeakBase() {}
+    TfWeakBase() : _remnantPtr(nullptr) {}
 
-    TfWeakBase(const TfWeakBase&) {
+    TfWeakBase(const TfWeakBase&) : _remnantPtr(nullptr) {
         // A newly created copy of a weak base doesn't start with a remnant
     }
 
@@ -182,8 +168,12 @@ protected:
      */
 
     ~TfWeakBase() {
-        if (_remnantPtr)
-            _remnantPtr->_Forget();
+        if (Tf_Remnant *remnant = _remnantPtr.load(std::memory_order_relaxed)) {
+            remnant->_Forget();
+            // Briefly forge a TfRefPtr to handle dropping our implied
+            // reference to the remnant.
+            TfRefPtr<Tf_Remnant> lastRef = TfCreateRefPtr(remnant);
+        }
     }
 
     /*
@@ -199,12 +189,17 @@ protected:
     }
 
     bool _HasRemnant() const {
-        return bool(_remnantPtr);
+        return _remnantPtr.load(std::memory_order_relaxed);
     }
 
 private:
 
-    mutable TfRefPtr<Tf_Remnant> _remnantPtr;
+    // XXX Conceptually this plays the same role as a TfRefPtr to the
+    // Tf_Remnant, in the sense that we want TfWeakBase to participate
+    // in the ref-counted lifetime tracking of its remnant.
+    // However, we require atomic initialization of this pointer.
+    mutable std::atomic<Tf_Remnant*> _remnantPtr;
+
     friend class Tf_WeakBaseAccess;
 };
 
@@ -217,8 +212,4 @@ private:
     Tf_WeakBaseAccess();
 };
 
-
-
-
-
-#endif
+#endif // TF_WEAKBASE_H

@@ -103,4 +103,3 @@ private:
 };
 
 #endif // USD_SHARED_H
-

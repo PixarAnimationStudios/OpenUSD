@@ -28,6 +28,9 @@
 #ifndef GF_VEC2I_H
 #define GF_VEC2I_H
 
+/// \file gf/vec2i.h
+/// \ingroup group_gf_LinearAlgebra
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -41,21 +44,14 @@
 template <>
 struct GfIsGfVec<class GfVec2i> { static const bool value = true; };
 
-/*!
- * \file vec2i.h
- * \ingroup group_gf_LinearAlgebra
- */
-
-/*!
- * \class GfVec2i vec2i.h "pxr/base/gf/vec2i.h"
- * \ingroup group_gf_LinearAlgebra
- * \brief Basic type for a vector of 2 int components.
- *
- * Represents a vector of 2 components of type \c int.
- * It is intended to be fast and simple.
- *
- */
-
+/// \class GfVec2i
+/// \ingroup group_gf_LinearAlgebra
+///
+/// Basic type for a vector of 2 int components.
+///
+/// Represents a vector of 2 components of type \c int.
+/// It is intended to be fast and simple.
+///
 class GfVec2i
 {
 public:
@@ -66,8 +62,8 @@ public:
     /// Default constructor does no initialization.
     GfVec2i() {}
 
-
-    // Copy constructor.  XXX: Remove this, use compiler-generated.
+    // Copy constructor.
+    // TODO Remove this, use compiler-generated.
     GfVec2i(const GfVec2i &other) {
         *this = other;
     }
@@ -82,7 +78,7 @@ public:
     GfVec2i(int s0, int s1) {
         Set(s0, s1);
     }
-    
+
     /// Construct with pointer to values.
     template <class Scl>
     explicit GfVec2i(Scl const *p) { Set(p); }
@@ -99,7 +95,7 @@ public:
         result[1] = 1;
         return result;
     }
-    
+
     /// Create a unit vector along the i-th axis, zero-based.  Return the zero
     /// vector if \p i is greater than or equal to 2.
     static GfVec2i Axis(size_t i) {
@@ -108,7 +104,7 @@ public:
             result[i] = 1;
         return result;
     }
-    
+
     /// Set all elements with passed arguments.
     GfVec2i &Set(int s0, int s1) {
         _data[0] = s0;
@@ -147,7 +143,7 @@ public:
         return !(*this == other);
     }
 
-    // XXX: Add inequality for other vec types...
+    // TODO Add inequality for other vec types...
     /// Equality comparison.
     bool operator==(class GfVec2d const &other) const;
     /// Equality comparison.
@@ -184,10 +180,10 @@ public:
     GfVec2i &operator*=(double s) {
         _data[0] *= s;
         _data[1] *= s;
-	return *this;
+        return *this;
     }
     GfVec2i operator*(double s) const {
-	return GfVec2i(*this) *= s;
+        return GfVec2i(*this) *= s;
     }
     friend GfVec2i operator*(double s, GfVec2i const &v) {
         return v * s;
@@ -200,7 +196,7 @@ public:
         return *this;
     }
     GfVec2i operator/(int s) const {
-	return GfVec2i(*this) /= s;
+        return GfVec2i(*this) /= s;
     }
     
     /// See GfDot().
@@ -208,7 +204,7 @@ public:
         return _data[0] * v[0] + _data[1] * v[1];
     }
 
-    /// Returns the projection of \p this onto \p v. That is: 
+    /// Returns the projection of \p this onto \p v. That is:
     /// \code
     /// v * (*this * v)
     /// \endcode
@@ -216,12 +212,13 @@ public:
         return v * (*this * v);
     }
 
-    /// Returns the orthogonal complement of \p this->GetProjection(b). That is:
+    /// Returns the orthogonal complement of \p this->GetProjection(b).
+    /// That is:
     /// \code
     ///  *this - this->GetProjection(b)
     /// \endcode
     GfVec2i GetComplement(GfVec2i const &b) const {
-	return *this - this->GetProjection(b);
+        return *this - this->GetProjection(b);
     }
 
     /// Squared length.
@@ -234,7 +231,7 @@ private:
     int _data[2];
 };
 
-/// Output a GfVec2i
+/// Output a GfVec2i.
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfVec2i const &);
 
@@ -262,7 +259,6 @@ inline int
 GfDot(GfVec2i const &v1, GfVec2i const &v2) {
     return v1 * v2;
 }
-
 
  
 #endif // GF_VEC2I_H

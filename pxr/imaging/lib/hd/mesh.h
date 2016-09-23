@@ -42,6 +42,8 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 
+/// \class HdMeshReprDesc
+///
 /// descriptor to configure a drawItem for a repr
 ///
 struct HdMeshReprDesc {
@@ -91,6 +93,9 @@ public:
 
     /// Returns whether GPU refinement is enabled or not.
     static bool IsEnabledRefineGPU();
+
+    /// Returns whether packed (10_10_10 bits) normals to be used
+    static bool IsEnabledPackedNormals();
 
     /// Configure geometric style of drawItems for \p reprName
     /// HdMesh can have up to 2 descriptors for some complex styling
@@ -166,6 +171,7 @@ private:
     HdTopology::ID _topologyId;
     int _customDirtyBitsInUse;
     bool _doubleSided;
+    bool _packedNormals;
     HdCullStyle _cullStyle;
 
     typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;

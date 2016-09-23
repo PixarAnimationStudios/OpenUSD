@@ -23,12 +23,9 @@
 //
 #include "pxr/imaging/hd/renderIndex.h"
 
-#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/drawTarget.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/glslfxShader.h"
@@ -40,6 +37,7 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -48,6 +46,7 @@
 
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
@@ -161,10 +160,14 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     if (rit == _rprimMap.end())
         return;
 
+    _RprimInfo &rprimInfo = rit->second;
+
+    SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
+
     _DelegateRprimMap::iterator dit = _delegateRprimMap.find(
                                                     rit->second.delegateID);
     SdfPathVector* vec = &dit->second;
-    size_t rem = rit->second.childIndex;
+    size_t rem = rprimInfo.childIndex;
 
     TF_VERIFY(rem < vec->size());
     TF_VERIFY(vec->size() > 0);
@@ -189,6 +192,10 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
         _delegateRprimMap.erase(dit);
     }
 
+    if (not instancerId.IsEmpty()) {
+        _tracker.InstancerRPrimRemoved(instancerId, id);
+    }
+
     _tracker.RprimRemoved(id);
     _rprimIDSet.erase(id);
     _rprimMap.erase(rit);
@@ -205,6 +212,10 @@ HdRenderIndex::Clear()
     _rprimIDSet.clear();
     _rprimMap.clear();
     _delegateRprimMap.clear();
+
+    // Clear Sprims
+    _sprimIDSet.clear();
+    _sprimMap.clear();
 
     // Clear instancers.
     TF_FOR_ALL(it, _instancerMap) {
@@ -283,6 +294,12 @@ HdRenderIndex::_TrackDelegateRprim(HdSceneDelegate* delegate,
 
     _RprimInfo info = { delegate->GetDelegateID(), vec->size()-1, rprim };
     _rprimMap[rprimID] = info;
+
+    SdfPath instanceId = rprim->GetInstancerId();
+
+    if (not instanceId.IsEmpty()) {
+        _tracker.InstancerRPrimInserted(instanceId, rprimID);
+    }
 }
 
 // -------------------------------------------------------------------------- //
@@ -404,126 +421,66 @@ HdRenderIndex::RemoveTexture(SdfPath const& id)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Camera Support
+/// \name Sprim Support (scene state prim: light, camera...)
 // -------------------------------------------------------------------------- //
 
-void 
-HdRenderIndex::_TrackDelegateCamera(HdSceneDelegate* delegate, 
-                                    SdfPath const& cameraId,
-                                    HdCameraSharedPtr const& camera)
+void
+HdRenderIndex::_TrackDelegateSprim(HdSceneDelegate* delegate,
+                                   SdfPath const& id,
+                                   HdSprimSharedPtr const& sprim,
+                                   int initialDirtyState)
 {
-    if (cameraId == SdfPath())
+    if (id == SdfPath()) {
         return;
-    _tracker.CameraInserted(cameraId);
-    _cameraMap.insert(std::make_pair(cameraId, camera));
+    }
+    _tracker.SprimInserted(id, initialDirtyState);
+    _sprimIDSet.insert(id);
+    _sprimMap.insert(std::make_pair(id, sprim));
 }
 
-HdCameraSharedPtr const& 
-HdRenderIndex::GetCamera(SdfPath const& id) const {
-    _CameraMap::const_iterator it = _cameraMap.find(id);
-    if (it != _cameraMap.end())
+HdSprimSharedPtr const& 
+HdRenderIndex::GetSprim(SdfPath const& id) const
+{
+    _SprimMap::const_iterator it = _sprimMap.find(id);
+    if (it != _sprimMap.end()) {
         return it->second;
+    }
 
-    static HdCameraSharedPtr EMPTY;
+    static HdSprimSharedPtr EMPTY;
     return EMPTY;
 }
 
 void
-HdRenderIndex::RemoveCamera(SdfPath const& id)
+HdRenderIndex::RemoveSprim(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    _CameraMap::iterator it = _cameraMap.find(id);
-    if (it == _cameraMap.end())
+    _SprimMap::iterator it = _sprimMap.find(id);
+    if (it == _sprimMap.end()) {
         return;
+    }
 
-    _tracker.CameraRemoved(id);
-    _cameraMap.erase(it);
+    _tracker.SprimRemoved(id);
+    _sprimMap.erase(it);
+    _sprimIDSet.erase(id);
 }
 
-// -------------------------------------------------------------------------- //
-/// \name Light Support
-// -------------------------------------------------------------------------- //
-
-void 
-HdRenderIndex::_TrackDelegateLight(HdSceneDelegate* delegate, 
-                                    SdfPath const& lightId,
-                                    HdLightSharedPtr const& light)
-{
-    if (lightId == SdfPath())
-        return;
-    _tracker.LightInserted(lightId);
-    _lightMap.insert(std::make_pair(lightId, light));
-}
-
-HdLightSharedPtr const& 
-HdRenderIndex::GetLight(SdfPath const& id) const {
-    _LightMap::const_iterator it = _lightMap.find(id);
-    if (it != _lightMap.end())
-        return it->second;
-
-    static HdLightSharedPtr EMPTY;
-    return EMPTY;
-}
-
-void
-HdRenderIndex::RemoveLight(SdfPath const& id)
+SdfPathVector
+HdRenderIndex::GetSprimSubtree(SdfPath const& rootPath) const
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    _LightMap::iterator it = _lightMap.find(id);
-    if (it == _lightMap.end())
-        return;
-
-    _tracker.LightRemoved(id);
-    _lightMap.erase(it);
-}
-
-// -------------------------------------------------------------------------- //
-/// \name Draw Target Support
-// -------------------------------------------------------------------------- //
-
-void
-HdRenderIndex::_TrackDelegateDrawTarget(HdSceneDelegate* delegate,
-                                    SdfPath const& drawTargetId,
-                                    HdDrawTargetSharedPtr const& drawTarget)
-{
-
-    if (drawTargetId == SdfPath()) {
-        return;
+    SdfPathVector paths;
+    paths.reserve(1024);
+    for (auto p = _sprimIDSet.lower_bound(rootPath);
+            p != _sprimIDSet.end() and p->HasPrefix(rootPath); ++p)
+    {
+        paths.push_back(*p);
     }
-    _tracker.DrawTargetInserted(drawTargetId);
-    _drawTargetMap.insert(std::make_pair(drawTargetId, drawTarget));
+    return paths;
 }
-
-void
-HdRenderIndex::RemoveDrawTarget(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    _DrawTargetMap::iterator it = _drawTargetMap.find(id);
-    if (it == _drawTargetMap.end()) {
-        return;
-    }
-    _tracker.DrawTargetRemoved(id);
-    _drawTargetMap.erase(it);
-}
-
-HdDrawTargetSharedPtr const&
-HdRenderIndex::GetDrawTarget(SdfPath const& id) const
-{
-    _DrawTargetMap::const_iterator it = _drawTargetMap.find(id);
-    if (it != _drawTargetMap.end()) {
-        return it->second;
-    }
-
-    static HdDrawTargetSharedPtr EMPTY;
-    return EMPTY;
-}
-
 
 // -------------------------------------------------------------------------- //
 /// \name Draw Item Handling 
@@ -680,37 +637,6 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     finalResult.reserve(result.size());
     finalResult.insert(finalResult.begin(), result.begin(), result.end());
     return finalResult;
-}
-
-HdRenderIndex::HdLightView
-HdRenderIndex::GetLights()
-{
-    HD_TRACE_FUNCTION();
-
-    HdLightView result;
-    result.reserve(_lightMap.size());
-
-    TF_FOR_ALL (it, _lightMap) {
-        // XXX We could support collections here -> IsInCollection
-        result.push_back(it->second);
-    }
-
-    return result;
-}
-
-HdRenderIndex::HdDrawTargetView
-HdRenderIndex::GetDrawTargets()
-{
-    HD_TRACE_FUNCTION();
-
-    HdDrawTargetView result;
-    result.reserve(_drawTargetMap.size());
-
-    TF_FOR_ALL (it, _drawTargetMap) {
-        result.push_back(it->second);
-    }
-
-    return result;
 }
 
 bool 
@@ -972,7 +898,12 @@ HdRenderIndex::SyncAll()
                 ((float )numSkipped / (float)dirtyIds.size()) > 0.9f;
         }
 
-    } {
+    }
+
+    // Drop the GIL before we spawn parallel tasks.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    {
         TRACE_SCOPE("Delegate Sync");
         // Dispatch synchronization work to each delegate.
         _Worker worker(&syncMap);
@@ -1050,39 +981,13 @@ HdRenderIndex::SyncAll()
 }
 
 void
-HdRenderIndex::SyncCameras()
+HdRenderIndex::SyncSprims()
 {
-    TF_FOR_ALL(it, _cameraMap) {
-        if (HdChangeTracker::IsDirty(_tracker.GetCameraDirtyBits(it->first))) {
+    TF_FOR_ALL(it, _sprimMap) {
+        if (_tracker.GetSprimDirtyBits(it->first) != HdChangeTracker::Clean) {
             it->second->Sync();
 
-            _tracker.MarkCameraClean(it->first);
-        }
-
-    }
-}
-
-void
-HdRenderIndex::SyncLights()
-{
-    TF_FOR_ALL(it, _lightMap) {
-        if (HdChangeTracker::IsDirty(_tracker.GetLightDirtyBits(it->first))) {
-            it->second->Sync();
-
-            _tracker.MarkLightClean(it->first);
-        }
-
-    }
-}
-
-void
-HdRenderIndex::SyncDrawTargets()
-{
-    TF_FOR_ALL(it, _drawTargetMap) {
-        if (HdChangeTracker::IsDirty(_tracker.GetDrawTargetDirtyBits(it->first))) {
-            it->second->Sync();
-
-            _tracker.MarkDrawTargetClean(it->first);
+            _tracker.MarkSprimClean(it->first);
         }
 
     }

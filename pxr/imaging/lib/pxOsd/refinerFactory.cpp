@@ -29,7 +29,7 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <opensubdiv3/far/topologyRefinerFactory.h>
+#include <opensubdiv/far/topologyRefinerFactory.h>
 
 #include <boost/bind.hpp>
 

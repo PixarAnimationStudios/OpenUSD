@@ -24,50 +24,41 @@
 #ifndef ARCH_NAP_H
 #define ARCH_NAP_H
 
+/// \file arch/nap.h
+/// \ingroup group_arch_Multithreading
+/// Routines for very brief pauses in execution.
+
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
+
 #if defined(ARCH_OS_WINDOWS)
 #include <windows.h>
 #endif
 
-/*!
- * \file nap.h
- * \brief Routines for very brief pauses in execution.
- * \ingroup group_arch_Multithreading
- */
+/// \addtogroup group_arch_Multithreading
+///@{
 
-/*!
- * \brief Sleep for some number of centiseconds.
- * \ingroup group_arch_Multithreading
- *
- * Sleep for \c n/100 seconds.  Note: if your intent is to simply
- * yield the processors, DO NOT call this with a value of zero (as one
- * can do with sginap()).  Call \c ArchThreadYield() instead.
- */
-
+/// Sleep for some number of centiseconds.
+///
+/// Sleep for \c n/100 seconds.  Note: if your intent is to simply yield the
+/// processors, DO NOT call this with a value of zero (as one can do with
+/// sginap()). Call \c ArchThreadYield() instead.
+ARCH_API
 void ArchNap(size_t nhundredths);
 
-
-/*!
- * \brief Yield to the operating system thread scheduler.
- * \ingroup group_arch_Multithreading
- *
- * Returns control to the operating system thread scheduler as a means of
- * temporarily suspending the calling thread.
- */
-
+/// Yield to the operating system thread scheduler.
+///
+/// Returns control to the operating system thread scheduler as a means of
+/// temporarily suspending the calling thread.
+ARCH_API
 void ArchThreadYield();
 
-
-/*!
- * \brief Pause execution of the current thread.
- * \ingroup group_arch_Multithreading
- *
- * Pause execution of the current thread without returning control to the
- * operating system scheduler. This function can be used as a means of
- * gracefully spin waiting while potentially yielding CPU resouces to
- * hyper-threads.
- */
-
+/// Pause execution of the current thread.
+///
+/// Pause execution of the current thread without returning control to the
+/// operating system scheduler. This function can be used as a means of
+/// gracefully spin waiting while potentially yielding CPU resouces to
+/// hyper-threads.
 inline void ArchThreadPause() {
 #if defined (ARCH_CPU_INTEL) && defined(ARCH_COMPILER_GCC)
     __asm__ __volatile__ ("pause");
@@ -77,5 +68,7 @@ inline void ArchThreadPause() {
 #warning Unknown architecture. Pause instruction skipped.
 #endif
 }
+
+///@}
 
 #endif // ARCH_NAP_H

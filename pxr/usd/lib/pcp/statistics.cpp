@@ -24,6 +24,7 @@
 #include "pxr/usd/pcp/statistics.h"
 
 #include "pxr/usd/pcp/cache.h"
+#include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 
@@ -65,10 +66,12 @@ public:
     Pcp_GraphStats sharedAllGraphStats;
     Pcp_GraphStats sharedCulledGraphStats;
     std::map<size_t, size_t> mapFunctionSizeDistribution;
+    std::map<size_t, size_t> layerStackRelocationsSizeDistribution;
 };
 
-struct Pcp_Statistics
+class Pcp_Statistics
 {
+public:
     static void AccumulateGraphStats(
         const PcpPrimIndex& primIndex, 
         Pcp_GraphStats* stats,
@@ -152,6 +155,13 @@ struct Pcp_Statistics
         TF_FOR_ALL(i, allMapFuncs) {
             size_t size = i->GetSourceToTargetMap().size();
             stats->mapFunctionSizeDistribution[size] += 1;
+        }
+
+        // PcpLayerStack _relocatesPrimPaths size distribution
+        for(const PcpLayerStackPtr &layerStack:
+            cache->_layerStackCache->GetAllLayerStacks()) {
+            size_t size = layerStack->GetPathsToPrimsWithRelocates().size();
+            stats->layerStackRelocationsSizeDistribution[size] += 1;
         }
     }
 
@@ -305,6 +315,12 @@ struct Pcp_Statistics
         out << "PcpMapFunction size histogram: " << endl;
         out << "SIZE    COUNT" << endl;
         TF_FOR_ALL(i, stats.mapFunctionSizeDistribution) {
+            printf("%zu   %zu\n", i->first, i->second);
+        }
+
+        out << "PcpLayerStack pathsWithRelocates size histogram: " << endl;
+        out << "SIZE    COUNT" << endl;
+        TF_FOR_ALL(i, stats.layerStackRelocationsSizeDistribution) {
             printf("%zu   %zu\n", i->first, i->second);
         }
 

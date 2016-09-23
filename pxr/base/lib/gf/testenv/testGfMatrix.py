@@ -126,7 +126,7 @@ class TestGfMatrix(unittest.TestCase):
             v = Vec()
             for i in range(v.dimension):
                 v[i] = i
-            m1 = Matrix().SetDiagonal(v);
+            m1 = Matrix().SetDiagonal(v)
             m2 = Matrix(0)
             for i in range(m2.dimension[0]):
                 m2[i,i] = i

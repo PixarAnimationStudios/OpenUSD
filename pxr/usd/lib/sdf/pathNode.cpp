@@ -41,11 +41,6 @@
 #include <utility>
 #include <vector>
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-#include <unordered_map>
-#include <tbb/spin_mutex.h>
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
-
 using std::string;
 using std::vector;
 
@@ -82,16 +77,6 @@ struct _ParentAnd { const Sdf_PathNode *parent; T value; };
 // Allow void for 'expression' path case, which has no additional data.
 template <> struct _ParentAnd<void> { const Sdf_PathNode *parent; };
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-template <class T>
-bool operator==(_ParentAnd<T> const &l, _ParentAnd<T> const &r) {
-    return l.parent == r.parent && l.value == r.value;
-}
-bool operator==(_ParentAnd<void> const &l, _ParentAnd<void> const &r) {
-    return l.parent == r.parent;
-}
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
-
 template <class T>
 inline _ParentAnd<T>
 _MakeParentAnd(const Sdf_PathNode *parent, const T &value) {
@@ -126,13 +111,7 @@ struct _HashParentAnd
         boost::hash_combine(h, t.value);
         return h;
     }
- 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    inline size_t operator()(const T &t) const {
-        return hash(t);
-    }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
-};
+ };
 
 template <>
 struct _HashParentAnd<_ParentAnd<void> >
@@ -145,23 +124,13 @@ struct _HashParentAnd<_ParentAnd<void> >
     inline size_t hash(const _ParentAnd<void> &t) const {
         return hash_value(t.parent);
     }
-
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    inline size_t operator()(const _ParentAnd<void> &t) const {
-        return hash(t);
-    }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 };
 
 template <class T>
 struct _Table {
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    typedef std::unordered_map<_ParentAnd<T>, const Sdf_PathNode *,
-                               _HashParentAnd<_ParentAnd<T> > > Type;
-#else
-    typedef tbb::concurrent_hash_map<_ParentAnd<T>, const Sdf_PathNode *,
-                                     _HashParentAnd<_ParentAnd<T> > > Type;
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
+    typedef tbb::concurrent_hash_map<
+        _ParentAnd<T>, const Sdf_PathNode *,
+        _HashParentAnd<_ParentAnd<T> > > Type;
 };
 
 typedef _Table<TfToken>::Type _TokenTable;
@@ -169,30 +138,12 @@ typedef _Table<Sdf_PathNode::VariantSelectionType>::Type _VarSelTable;
 typedef _Table<SdfPath>::Type _PathTable;
 typedef _Table<void>::Type _VoidTable;
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-static tbb::spin_mutex &_GetTableLock() {
-    static tbb::spin_mutex mutex;
-    return mutex;
-}
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
-
 template <class PathNode, class Table, class Arg>
 inline Sdf_PathNodeConstRefPtr
 _FindOrCreate(Table &table,
               const Sdf_PathNodeConstRefPtr &parent,
               const Arg &arg)
 {
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    tbb::spin_mutex::scoped_lock lock(_GetTableLock());
-    auto iresult = table.emplace(_MakeParentAnd(parent.get(), arg), nullptr);
-    if (iresult.second or
-        Access::GetRefCount(iresult.first->second).fetch_and_increment() == 0) {
-        Sdf_PathNodeConstRefPtr newNode = Access::New<PathNode>(parent, arg);
-        iresult.first->second = newNode.get();
-        return newNode;
-    }
-    return Sdf_PathNodeConstRefPtr(iresult.first->second, /* add_ref = */ false);
-#else // MAYA_TBB_HANG_WORKAROUND_HACK
     typename Table::accessor accessor;
     if (table.insert(accessor, _MakeParentAnd(parent.get(), arg)) or
         Access::GetRefCount(accessor->second).fetch_and_increment() == 0) {
@@ -206,24 +157,12 @@ _FindOrCreate(Table &table,
         return newNode;
     }
     return Sdf_PathNodeConstRefPtr(accessor->second, /* add_ref = */ false);
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 }
 
 template <class PathNode, class Table>
 inline Sdf_PathNodeConstRefPtr
 _FindOrCreate(Table &table, const Sdf_PathNodeConstRefPtr &parent)
 {
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    tbb::spin_mutex::scoped_lock lock(_GetTableLock());
-    auto iresult = table.emplace(_MakeParentAnd(parent.get()), nullptr);
-    if (iresult.second or
-        Access::GetRefCount(iresult.first->second).fetch_and_increment() == 0) {
-        Sdf_PathNodeConstRefPtr newNode = Access::New<PathNode>(parent);
-        iresult.first->second = newNode.get();
-        return newNode;
-    }
-    return Sdf_PathNodeConstRefPtr(iresult.first->second, /* add_ref = */ false);
-#else // MAYA_TBB_HANG_WORKAROUND_HACK
     typename Table::accessor accessor;
     if (table.insert(accessor, _MakeParentAnd(parent.get())) or
         Access::GetRefCount(accessor->second).fetch_and_increment() == 0) {
@@ -237,7 +176,6 @@ _FindOrCreate(Table &table, const Sdf_PathNodeConstRefPtr &parent)
         return newNode;
     }
     return Sdf_PathNodeConstRefPtr(accessor->second, /* add_ref = */ false);
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 }
 
 template <class Table, class Arg>
@@ -245,12 +183,6 @@ inline void
 _Remove(const Sdf_PathNode *pathNode,
         Table &table, const Sdf_PathNodeConstRefPtr &parent, const Arg &arg)
 {
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    tbb::spin_mutex::scoped_lock lock(_GetTableLock());
-    auto iter = table.find(_MakeParentAnd(parent.get(), arg));
-    if (iter != table.end() and iter->second == pathNode)
-        table.erase(iter);
-#else // MAYA_TBB_HANG_WORKAROUND_HACK
     // If there's an entry for this key that has pathNode, erase it.  Even if
     // there's an entry present it may not be pathNode, since another node may
     // have been created since we decremented our refcount and started being
@@ -260,7 +192,6 @@ _Remove(const Sdf_PathNode *pathNode,
         accessor->second == pathNode) {
         table.erase(accessor);
     }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 }
 
 template <class Table>
@@ -268,12 +199,6 @@ inline void
 _Remove(const Sdf_PathNode *pathNode,
         Table &table, const Sdf_PathNodeConstRefPtr &parent)
 {
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    tbb::spin_mutex::scoped_lock lock(_GetTableLock());
-    auto iter = table.find(_MakeParentAnd(parent.get()));
-    if (iter != table.end() and iter->second == pathNode)
-        table.erase(iter);
-#else // MAYA_TBB_HANG_WORKAROUND_HACK
     // If there's an entry for this key that has pathNode, erase it.  Even if
     // there's an entry present it may not be pathNode, since another node may
     // have been created since we decremented our refcount and started being
@@ -283,7 +208,6 @@ _Remove(const Sdf_PathNode *pathNode,
         accessor->second == pathNode) {
         table.erase(accessor);
     }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 }
 
 } // anon

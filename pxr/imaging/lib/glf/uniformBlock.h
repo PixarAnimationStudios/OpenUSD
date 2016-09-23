@@ -21,11 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file uniformBlock.h
-
 #ifndef GLF_UNIFORM_BLOCK_H
 #define GLF_UNIFORM_BLOCK_H
+
+/// \file glf/uniformBlock.h
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
@@ -35,23 +34,23 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUniformBlock);
 TF_DECLARE_WEAK_PTRS(GlfBindingMap);
 
+/// \class GlfUniformBlock
 ///
-/// \class GlfUniformBlock uniformBlock.h "pxr/imaging/glf/uniformBlock_H
-/// \brief Manages a GL uniform buffer object
+/// Manages a GL uniform buffer object.
 ///
 class GlfUniformBlock : public TfRefBase, public TfWeakBase {
 public:
 
-    /// \brief Returns a new instance.
+    /// Returns a new instance.
     static GlfUniformBlockRefPtr New();
 
     virtual ~GlfUniformBlock();
 
-    /// \brief Binds the uniform buffer using a bindingMap and identifier.
+    /// Binds the uniform buffer using a bindingMap and identifier.
     void Bind(GlfBindingMapPtr const & bindingMap,
               std::string const & identifier);
 
-    /// \brief Updates the content of the uniform buffer. If the size
+    /// Updates the content of the uniform buffer. If the size
     /// is different, the buffer will be reallocated.
     void Update(const void *data, int size);
 

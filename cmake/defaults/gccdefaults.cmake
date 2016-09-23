@@ -21,15 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-# By default, Release flavor builds in cmake set NDEBUG, which
-# breaks things internally.  Turn it off.
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-# Initialize to c++11, pxr won't build without it.
-# Turn on all warnings and convert them to errors.
-set(_PXR_CXX_FLAGS "-std=c++11 -Wall -Wno-unused-local-typedefs")
+include(gccclangshareddefaults)
 
-# We use hash_map, suppress deprecation warning.
-_add_warning_flag("no-deprecated")
-_add_warning_flag("no-deprecated-declarations")
-
+set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")

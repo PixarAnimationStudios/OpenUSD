@@ -35,7 +35,9 @@ class HdDrawItemInstance;
 typedef boost::shared_ptr<Hd_DrawBatch> HdDrawBatchSharedPtr;
 typedef boost::shared_ptr<HdDrawItem> HdDrawItemSharedPtr;
 
-/// A container to store instance state for a drawitem
+/// \class HdDrawItemInstance
+///
+/// A container to store instance state for a drawitem.
 ///
 /// During culling, the visiblity state will be set. If the instance
 /// has a batch, the batch will get a DrawItemInstanceChanged
@@ -44,6 +46,7 @@ typedef boost::shared_ptr<HdDrawItem> HdDrawItemSharedPtr;
 /// The Batch is responsible for calling SetBatch and SetBatchIndex
 /// when adding / appending the instance. If the batch does not require
 /// the DrawItemInstanceChanged callback, then this step can be skipped
+///
 class HdDrawItemInstance
 {
 public:

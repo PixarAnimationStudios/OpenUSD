@@ -24,44 +24,38 @@
 #ifndef TF_SETENV_H
 #define TF_SETENV_H
 
-/*!
- * \file setenv.h
- * \brief Functions for setting and unsetting environment variables
- * \ingroup group_tf_SystemsExt
- */
+/// \file tf/setenv.h
+/// \ingroup group_tf_SystemsExt
+/// Functions for setting and unsetting environment variables
 
 #include <string>
 
-/*!
- * \brief Set an environment variable.
- * \ingroup group_tf_SystemsExt
- *
- * Sets an environment variable and ensures that it appears in the Python
- * environment if Python is initialized. If Python has not yet been
- * initialized, the variable \p envName is set to \p value in the environment
- * using \c setenv. Otherwise, it is set both in the environment and in Python
- * using \c TfPySetenv. The new value overwrites any existing value.
- *
- * If the value cannot be set, false is returned and a warning is posted.
- * Otherwise, the return value is true.
- */
-
+/// Set an environment variable.
+///
+/// Sets an environment variable and ensures that it appears in the Python
+/// environment if Python is initialized. If Python has not yet been
+/// initialized, the variable \p envName is set to \p value in the environment
+/// using \c setenv. Otherwise, it is set both in the environment and in
+/// Python using \c TfPySetenv. The new value overwrites any existing value.
+///
+/// If the value cannot be set, false is returned and a warning is posted.
+/// Otherwise, the return value is true.
+///
+/// \ingroup group_tf_SystemsExt
 bool TfSetenv(const std::string& envName, const std::string& value);
 
-/*!
- * \brief Unset an environment variable.
- * \ingroup group_tf_SystemsExt
- *
- * Unsets an environment variable and ensures that it is also removed from the
- * Python environment if Python is initialized. If Python has not yet been
- * initialized, the variable \p envName is unset in the environment using \c
- * unsetenv. Otherwise, it is unset both in the environment and in Python
- * using \c TfPyUnsetenv.
- * 
- * If the value cannot be unset, false is returned and a warning is posted.
- * Otherwise, the return value is true.
- */
-
+/// Unset an environment variable.
+///
+/// Unsets an environment variable and ensures that it is also removed from
+/// the Python environment if Python is initialized. If Python has not yet
+/// been initialized, the variable \p envName is unset in the environment
+/// using \c unsetenv. Otherwise, it is unset both in the environment and in
+/// Python using \c TfPyUnsetenv.
+/// 
+/// If the value cannot be unset, false is returned and a warning is posted.
+/// Otherwise, the return value is true.
+///
+/// \ingroup group_tf_SystemsExt
 bool TfUnsetenv(const std::string& envName);
 
 #endif // TF_SETENV_H

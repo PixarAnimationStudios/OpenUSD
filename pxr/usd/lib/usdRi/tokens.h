@@ -24,6 +24,8 @@
 #ifndef USDRI_TOKENS_H
 #define USDRI_TOKENS_H
 
+/// \file usdRi/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -32,8 +34,6 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file pxr/usd/usdRi/tokens.h
 
 /// \hideinitializer
 #define USDRI_TOKENS \
@@ -52,7 +52,8 @@
     ((riLookVolume, "riLook:volume"))
 
 /// \anchor UsdRiTokens
-/// \brief <b>UsdRiTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdRiTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

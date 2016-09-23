@@ -55,6 +55,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
 TF_DECLARE_REF_PTRS(PcpPayloadDecorator);
 SDF_DECLARE_HANDLES(SdfSpec);
 
+/// \class PcpCache
+///
 /// PcpCache is the context required to make requests of the Pcp
 /// composition algorithm and cache the results.
 ///
@@ -252,57 +254,73 @@ public:
     ComputePrimIndex(const SdfPath &primPath, PcpErrorVector *allErrors);
 
     /// Compute PcpPrimIndexes in the subtree rooted at path in parallel,
-    /// subject to the supplied predicate \p pred.  This is similar to
-    /// ComputePrimIndex(), except it will compute an entire subtree of indexes
-    /// in parallel, so it can be much more efficient.  This function invokes
-    /// \p pred concurrently, so it must be safe to do so.  When a PcpPrimIndex
-    /// is finished being computed, this function invokes \p pred, passing it
-    /// the PcpPrimIndex.  If \p pred returns true, this function will continue
-    /// to the children and compute their indexes.  If \p pred returns false,
-    /// prim index computation ceases for that subtree.
-    template <class Predicate>
+    /// recursing to children based on the supplied \p childrenPred.  Also
+    /// include payloads not already in this cache's included payloads (see
+    /// GetIncludedPayloads()) according to \p payloadPred.
+    ///
+    /// This is similar to ComputePrimIndex(), except it computes an entire
+    /// subtree of indexes in parallel so it can be much more efficient.  This
+    /// function invokes both \p childrenPred and \p payloadPred concurrently,
+    /// so it must be safe to do so.  When a PcpPrimIndex computation completes
+    /// invoke \p childrenPred, passing it the PcpPrimIndex.  If \p childrenPred
+    /// returns true, continue indexing children prim indexes.  Conversely if
+    /// \p childrenPred returns false, stop indexing in that subtree.  If
+    /// payloads discovered during indexing do not already appear in this
+    /// cache's set of included payloads, invoke \p payloadPred, passing it the
+    /// path for the prim with the payload.  If \p payloadPred returns true,
+    /// include its payload and add it to the cache's set of included payloads
+    /// upon completion.
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPath &path,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred) {
-        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors, pred,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred) {
+        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors,
+                                     childrenPred, payloadPred,
                                      "Pcp", "ComputePrimIndexesInParallel");
     }
 
     /// \overload
     /// XXX Do not add new callers of this method.  It is needed as a workaround
     /// for bug #132031, which we hope to tackle soon (as of 6/2016)
-    template <class Predicate>
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPath &path,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred,
                                       const char *mallocTag1,
                                       const char *mallocTag2) {
-        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors, pred.
+        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors,
+                                     childrenPred, payloadPred,
                                      mallocTag1, mallocTag2);
     }
 
     /// Vectorized form of ComputePrimIndexesInParallel().  Equivalent to
     /// invoking that method for each path in \p paths, but more efficient.
-    template <class Predicate>
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPathVector &paths,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred) {
-        _UntypedPredicate p(&pred);
-        _ComputePrimIndexesInParallel(paths, allErrors, p,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred) {
+        _UntypedIndexingChildrenPredicate cp(&childrenPred);
+        _UntypedIndexingPayloadPredicate pp(&payloadPred);
+        _ComputePrimIndexesInParallel(paths, allErrors, cp, pp,
                                       "Pcp", "ComputePrimIndexesInParallel");
     }
 
     /// \overload
     /// XXX Do not add new callers of this method.  It is needed as a workaround
     /// for bug #132031, which we hope to tackle soon (as of 6/2016)
-    template <class Predicate>
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPathVector &paths,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred,
                                       const char *mallocTag1,
                                       const char *mallocTag2) {
-        _UntypedPredicate p(&pred);
-        _ComputePrimIndexesInParallel(paths, allErrors, p, 
+        _UntypedIndexingChildrenPredicate cp(&childrenPred);
+        _UntypedIndexingPayloadPredicate pp(&payloadPred);
+        _ComputePrimIndexesInParallel(paths, allErrors, cp, pp,
                                       mallocTag1, mallocTag2);
     }
 
@@ -358,9 +376,9 @@ public:
 
     /// Options for finding dependencies.
     enum UsingSite {
-        UsingSiteOnly,              //!< Dependencies of site only
-        UsingSiteAndDescendants,    //!< Dependencies at and under site
-        UsingSiteAndDescendantPrims //!< Dependencies on prims at and under site
+        UsingSiteOnly,              ///< Dependencies of site only
+        UsingSiteAndDescendants,    ///< Dependencies at and under site
+        UsingSiteAndDescendantPrims ///< Dependencies on prims at and under site
     };
 
     /// Returns set of all layers used by this cache. 
@@ -429,11 +447,11 @@ public:
     /// Types of namespace edits that a given layer stack site could need
     /// to perform to respond to a namespace edit.
     enum NamespaceEditType {
-        NamespaceEditPath,      //!< Must namespace edit spec
-        NamespaceEditInherit,   //!< Must fixup inherits
-        NamespaceEditReference, //!< Must fixup references
-        NamespaceEditPayload,   //!< Must fixup payload
-        NamespaceEditRelocate,  //!< Must fixup relocates
+        NamespaceEditPath,      ///< Must namespace edit spec
+        NamespaceEditInherit,   ///< Must fixup inherits
+        NamespaceEditReference, ///< Must fixup references
+        NamespaceEditPayload,   ///< Must fixup payload
+        NamespaceEditRelocate,  ///< Must fixup relocates
     };
 
     /// Sites that must respond to a namespace edit.
@@ -447,21 +465,21 @@ public:
 
         /// Cache site that must respond to a namespace edit.
         struct CacheSite {
-            size_t cacheIndex;  //!< Index of cache of site.
-            SdfPath oldPath;     //!< Old path of site.
-            SdfPath newPath;     //!< New path of site.
+            size_t cacheIndex;  ///< Index of cache of site.
+            SdfPath oldPath;    ///< Old path of site.
+            SdfPath newPath;    ///< New path of site.
         };
         typedef std::vector<CacheSite> CacheSites;
 
         /// Layer stack site that must respond to a namespace edit.  All
         /// of the specs at the site will respond the same way.
         struct LayerStackSite {
-            size_t cacheIndex;              //!< Index of cache of site.
-            NamespaceEditType type;         //!< Type of edit.
-            PcpLayerStackPtr layerStack;    //!< Layer stack needing fix.
-            SdfPath sitePath;                //!< Path of site needing fix.
-            SdfPath oldPath;                 //!< Old path.
-            SdfPath newPath;                 //!< New path.
+            size_t cacheIndex;              ///< Index of cache of site.
+            NamespaceEditType type;         ///< Type of edit.
+            PcpLayerStackPtr layerStack;    ///< Layer stack needing fix.
+            SdfPath sitePath;               ///< Path of site needing fix.
+            SdfPath oldPath;                ///< Old path.
+            SdfPath newPath;                ///< New path.
         };
         typedef std::vector<LayerStackSite> LayerStackSites;
 
@@ -604,12 +622,12 @@ private:
     friend class PcpChanges;
     friend class Pcp_Statistics;
 
-    template <class Predicate>
+    template <class ChildPredicate>
     friend struct Pcp_ParallelIndexer;
 
-    class _PathDebugInfo;
+    struct _PathDebugInfo;
 
-    // Helper struct to type-erase a predicate for the duration of
+    // Helper struct to type-erase a children predicate for the duration of
     // ComputePrimIndexesInParallel.
     //
     // This lets us achieve two goals.  First, clients may pass any arbitrary
@@ -622,9 +640,9 @@ private:
     // typecast and predicate invocation, and pass that function pointer into
     // the implementation.  There is no heap allocation, no predicate copy, no
     // argument marshalling, etc.
-    struct _UntypedPredicate {
+    struct _UntypedIndexingChildrenPredicate {
         template <class Pred>
-        explicit _UntypedPredicate(const Pred *pred)
+        explicit _UntypedIndexingChildrenPredicate(const Pred *pred)
             : pred(pred), invoke(_Invoke<Pred>) {}
 
         inline bool operator()(const PcpPrimIndex &index) const {
@@ -639,12 +657,33 @@ private:
         bool (*invoke)(const void *, const PcpPrimIndex &);
     };
 
+    // See doc for _UntypedIndexingChildrenPredicate above.  This does the same
+    // for the payload inclusion predicate.
+    struct _UntypedIndexingPayloadPredicate {
+        template <class Pred>
+        explicit _UntypedIndexingPayloadPredicate(const Pred *pred)
+            : pred(pred), invoke(_Invoke<Pred>) {}
+
+        inline bool operator()(const SdfPath &path) const {
+            return invoke(pred, path);
+        }
+    private:
+        template <class Pred>
+        static bool _Invoke(const void *pred, const SdfPath &path) {
+            return (*static_cast<const Pred *>(pred))(path);
+        }
+        const void *pred;
+        bool (*invoke)(const void *, const SdfPath &);
+    };
+
     // Parallel indexing implementation.
-    void _ComputePrimIndexesInParallel(const SdfPathVector &paths,
-                                       PcpErrorVector *allErrors,
-                                       _UntypedPredicate pred,
-                                       const char *mallocTag1,
-                                       const char *mallocTag2);
+    void _ComputePrimIndexesInParallel(
+        const SdfPathVector &paths,
+        PcpErrorVector *allErrors,
+        _UntypedIndexingChildrenPredicate childrenPred,
+        _UntypedIndexingPayloadPredicate payloadPred,
+        const char *mallocTag1,
+        const char *mallocTag2);
 
     // Helper to add a computed prim index to dependency structures.
     void _AddIndexDependencies(const SdfPath &path,

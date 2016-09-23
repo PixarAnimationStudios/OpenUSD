@@ -40,6 +40,7 @@
 #include "pxr/base/tf/warning.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/work/loops.h"
 
@@ -50,55 +51,19 @@
 #include <set>
 #include <string>
 #include <limits>
+#include <tuple>
 
 namespace {
-    // internal functions for merging clip data
+    // typedefs
     // ------------------------------------------------------------------------
-    bool _UsdUtilsStitchClipsImpl(const SdfLayerHandle& resultLayer, 
-                                  const SdfLayerRefPtr& topologyLayer,
-                                  const SdfLayerRefPtrVector& clipLayers,
-                                  const SdfPath& clipPath, 
-                                  const double startTimeCode);
-    
-    void _StitchClipAssetPath(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
-                              const SdfPath&);
-    void _StitchClipTime(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
-                         const SdfPath&);
-    void _StitchClipActive(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
-                           const SdfPath&);
-    void _StitchClipPrimPath(const SdfLayerRefPtr&, const SdfPath&);
-    void _StitchClipTopologyLayerReference(const SdfLayerRefPtr&, 
-                                           const SdfLayerRefPtr&, 
-                                           const std::string&);
-    void _StitchClipManifest(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
-                             const SdfPath&);
-    void _StitchClipMetadata(const SdfLayerRefPtr&, const SdfLayerRefPtr&,
-                             const SdfPath&, const double);
-    void _SetTimeCodeRange(const SdfLayerHandle&, const SdfPath&,
-                           double startTimeCode = 
-                            std::numeric_limits<double>::max());
-    void _StitchLayers(const SdfLayerHandle&, 
-                       const SdfLayerRefPtr&,
-                       const SdfLayerRefPtrVector&,
-                       const SdfPath&);
+    using _SdfAssetArray = VtArray<SdfAssetPath>;
+    using _ClipFileVector = std::vector<std::string>;
 
-    // general utilities
-    std::string _CreateTopologyName(const std::string&);
-    std::string _GetRelativePathIfPossible(const std::string&,
-                                           const std::string&, 
-                                           const std::string&);
-
-    // validation utilities 
-    bool _ClipLayersAreValid(const SdfLayerRefPtrVector&, const SdfPath&);
-    void _CleanUpGeneratedLayers(const std::string& topologyLayerName,
-                                 const std::string& resultLayerName,
-                                 const bool topologyWasGenerated);
-
-    // convenience typedefs
+    // constants
     // ------------------------------------------------------------------------
-    typedef VtArray<SdfAssetPath> _SdfAssetArray;
+    constexpr double TIME_MAX = std::numeric_limits<double>::max();
 
-    // convenience keys for indexing into the clip info
+    // keys for indexing into the clip info
     // XXX: This code is shared in usd/clip.h
     // ------------------------------------------------------------------------
     const TfToken clipActiveKey = TfToken("clipActive");
@@ -106,6 +71,22 @@ namespace {
     const TfToken clipTimeKey = TfToken("clipTimes");
     const TfToken clipAssetPathsKey = TfToken("clipAssetPaths");
     const TfToken clipManifestAssetPath = TfToken("clipManifestAssetPath");
+
+    // Convenience function for wrapping up nice error message
+    // when checking os permissions of a layers backing file.
+    bool
+    _LayerIsWritable(const SdfLayerHandle& layer)
+    {
+        if (layer 
+            and TfIsFile(layer->GetIdentifier())
+            and not TfIsWritable(layer->GetIdentifier())) {
+            TF_RUNTIME_ERROR("Error: Layer %s is unwritable.", 
+                             layer->GetIdentifier().c_str());
+            return false;
+        }
+
+        return true;
+    }
 
     // Private function for simplifying queries
     // Looks up a value at a prim and converts its type
@@ -158,7 +139,10 @@ namespace {
 
     // Retime a set of clipActives that have been joined together with 
     // _MergeRootLayerMetadata.
-    void _RetimeClipActive(const SdfLayerHandle& layer, const SdfPath& path) {
+    void 
+    _RetimeClipActive(const SdfLayerHandle& layer, 
+                      const SdfPath& path) 
+    {
         size_t timer = 0; 
         auto result = _GetUnboxedValue<VtVec2dArray>(layer, path, clipActiveKey);
 
@@ -170,6 +154,32 @@ namespace {
         layer->GetPrimAtPath(path)->SetInfo(clipActiveKey, VtValue(result));
     }
 
+    // Try to determine if we should use a relative path for this
+    // clip asset path. If the clip's identifier is itself has no
+    // directory component, assume it's relative to the result layer.
+    // Otherwise, look at the real paths to see if the clip path
+    // can be made relative to the result layer.
+    std::string
+    _GetRelativePathIfPossible(const std::string& referencedIdentifier,
+                               const std::string& referencedRealPath,
+                               const std::string& resultRealPath)
+    {
+        std::string resultingIdentifier;
+        if (TfGetPathName(referencedIdentifier).empty()) {
+            resultingIdentifier = "./" + referencedIdentifier;
+        } else {
+            std::string resultDir = TfGetPathName(resultRealPath);
+            if (TfStringStartsWith(referencedRealPath, resultDir)) {
+                resultingIdentifier = std::string(referencedRealPath).replace(0, 
+                    resultDir.length(), "./");
+            }
+        }
+
+        return resultingIdentifier.empty() ? 
+                referencedIdentifier 
+                : resultingIdentifier;
+    }
+
     // During parallel generation, we will generate non-releative paths
     // for clipAssetPaths so we need to make a post-processing pass.
     // We want to respect paths which have already been normalized,
@@ -178,9 +188,10 @@ namespace {
     // in from the current assetPaths in the root layer(note that this
     // is to be called after parallel stitching). This difference shows
     // us how many asset paths need to be normalized.
-    void _NormalizeClipAssetPaths(const SdfLayerHandle& resultLayer, 
-                                  const SdfLayerRefPtrVector& clipLayers,
-                                  const SdfPath& clipPath) 
+    void 
+    _NormalizeClipAssetPaths(const SdfLayerHandle& resultLayer, 
+                             const SdfLayerRefPtrVector& clipLayers,
+                             const SdfPath& clipPath) 
     {
         const auto currentAssetPaths 
             = _GetUnboxedValue<_SdfAssetArray>(resultLayer, clipPath, 
@@ -218,38 +229,14 @@ namespace {
     // rhs has a valid x, we'll take that. In this approach, we combine
     // lhs's x and rhs's x. This is useful when we have multiple root layers
     // created during parallel stitching.
-    void _MergeRootLayerMetadata(const SdfLayerRefPtr& lhs,
-                                 const SdfLayerRefPtr& rhs,
-                                 const SdfPath& clipPath) {
+    void 
+    _MergeRootLayerMetadata(const SdfLayerRefPtr& lhs,
+                            const SdfLayerRefPtr& rhs,
+                            const SdfPath& clipPath) 
+    {
         _AppendCollection<_SdfAssetArray>(lhs, rhs, clipPath, clipAssetPathsKey);
         _AppendCollection<VtVec2dArray>(lhs, rhs, clipPath, clipTimeKey);
         _AppendCollection<VtVec2dArray>(lhs, rhs, clipPath, clipActiveKey);
-    }
-
-    // Try to determine if we should use a relative path for this
-    // clip asset path. If the clip's identifier is itself has no
-    // directory component, assume it's relative to the result layer.
-    // Otherwise, look at the real paths to see if the clip path
-    // can be made relative to the result layer.
-    std::string
-    _GetRelativePathIfPossible(const std::string& referencedIdentifier,
-                               const std::string& referencedRealPath,
-                               const std::string& resultRealPath)
-    {
-        std::string resultingIdentifier;
-        if (TfGetPathName(referencedIdentifier).empty()) {
-            resultingIdentifier = "./" + referencedIdentifier;
-        } else {
-            std::string resultDir = TfGetPathName(resultRealPath);
-            if (TfStringStartsWith(referencedRealPath, resultDir)) {
-                resultingIdentifier = std::string(referencedRealPath).replace(0, 
-                    resultDir.length(), "./");
-            }
-        }
-
-        return resultingIdentifier.empty() ? 
-                referencedIdentifier 
-                : resultingIdentifier;
     }
 
     // Add the clipPrimPath metadata at the specified \p stitchPath
@@ -390,8 +377,13 @@ namespace {
 
             // insert the sample pair into the cliptimes
             currentClipTimes.push_back(GfVec2d(startTimeCode, startTimeCode));
-            currentClipTimes.push_back(GfVec2d(startTimeCode + timeSpent,
-                                               endTimeCode));
+
+            // We need not author duplicate pairs
+            if (timeSpent != 0) {
+                currentClipTimes.push_back(GfVec2d(startTimeCode + timeSpent,
+                                           endTimeCode));
+            }
+
             resultLayer
                 ->GetPrimAtPath(stitchPath)
                 ->SetInfo(clipTimeKey, VtValue(currentClipTimes));
@@ -404,7 +396,7 @@ namespace {
                                       const std::string& topIdentifier)
     {
         if (not resultLayer->GetPrimAtPath(rootPath)) {
-            TF_CODING_ERROR("Invalid prim path referenced in model clip layer");
+            TF_CODING_ERROR("Invalid prim path referenced in result layer");
             return;
         }
 
@@ -556,7 +548,7 @@ namespace {
         // grab the min at the front and max at the back
         double endTimeCode = (*currentClipTimes.rbegin())[0];
         modelClipLayer->SetEndTimeCode(endTimeCode);
-        if (startTimeCode == std::numeric_limits<double>::max()) {
+        if (startTimeCode == TIME_MAX) {
             startTimeCode = (*currentClipTimes.begin())[0];
         }
         modelClipLayer->SetStartTimeCode(startTimeCode);
@@ -584,6 +576,37 @@ namespace {
             delimiter+topologyFileBaseName);
     }
 
+    std::tuple<SdfLayerRefPtr, bool>
+    _CreateTopologyLayer(const SdfLayerHandle& resultLayer,
+                         const bool reuseExistingTopology)
+    {
+        const auto topologyName 
+            = _CreateTopologyName(resultLayer->GetIdentifier());
+
+        bool topologyWasGenerated = false;
+
+        SdfLayerRefPtr topologyLayer = SdfLayer::FindOrOpen(topologyName);
+
+        if (not _LayerIsWritable(topologyLayer)) {
+            return std::make_tuple(TfNullPtr, topologyWasGenerated); 
+        }
+
+        if (not reuseExistingTopology) {
+            topologyWasGenerated = true;
+            if (topologyLayer) {
+                topologyLayer->Clear();
+            } else {
+                topologyLayer = SdfLayer::CreateNew(topologyName);
+            }
+
+        } else if (not topologyLayer) {
+            topologyWasGenerated = true;
+            topologyLayer = SdfLayer::CreateNew(topologyName); 
+        }
+
+        return std::make_tuple(topologyLayer, topologyWasGenerated);
+    }
+
     struct _StitchLayersResult {
         SdfPath clipPath;
         SdfLayerRefPtr topology; 
@@ -607,17 +630,36 @@ namespace {
             for (const auto& layer : clipLayers) {
                 UsdUtilsStitchLayers(topology, layer,
                                      /*ignoreTimeSamples=*/ true);
-                _StitchClipMetadata(root, layer, clipPath,  
-                                    _GetStartTimeCode(layer));
+                if (clipPath != SdfPath::AbsoluteRootPath()) {
+                    _StitchClipMetadata(root, layer, clipPath,  
+                                        _GetStartTimeCode(layer));
+                }
             } 
         }
 
         void join(_StitchLayersResult& rhs) {
             UsdUtilsStitchLayers(topology, rhs.topology,
                                  /*ignoreTimeSamples=*/ true);  
-            _MergeRootLayerMetadata(root, rhs.root, clipPath);             
+            if (clipPath != SdfPath::AbsoluteRootPath()) {
+                _MergeRootLayerMetadata(root, rhs.root, clipPath);             
+            }
         }
     };
+
+    _StitchLayersResult
+    _AggregateDataFromClips(const SdfLayerRefPtr& topologyLayer,
+                            const SdfLayerRefPtrVector& clipLayers,
+                            const SdfPath& clipPath=SdfPath::AbsoluteRootPath())
+    {
+        // Create a result which will store the result of the 
+        // successive computations done by parallel_reduce
+        _StitchLayersResult result(clipPath);
+        tbb::blocked_range<SdfLayerRefPtrVector::const_iterator>
+            clipRange(clipLayers.begin(), clipLayers.end());
+        tbb::parallel_reduce(clipRange, result);
+
+        return result;
+    }
 
     // Stitches a manifest file, containing the clip meta data aggregated
     // from the input \p clipLayers. These include clipPrimPath, clipTimes, 
@@ -631,15 +673,8 @@ namespace {
                   const SdfLayerRefPtrVector& clipLayers,
                   const SdfPath& clipPath)
     {
-        // Create a result which will store the result of the 
-        // successive computations done by parallel_reduce
-        _StitchLayersResult result(clipPath);
-        tbb::blocked_range<SdfLayerRefPtrVector::const_iterator>
-            clipRange(clipLayers.begin(), clipLayers.end());
-        tbb::parallel_reduce(clipRange, result);
-
-        // Combine the temporary result into the real topology layer
-        // as well as the root layer, which needs special attention(see below).
+        auto result = _AggregateDataFromClips(
+            topologyLayer, clipLayers, clipPath);
         UsdUtilsStitchLayers(topologyLayer, result.topology, true);
 
         // if the rootLayer has no clip-metadata authored 
@@ -655,7 +690,6 @@ namespace {
         // which are out of sync with one another.
         _RetimeClipActive(resultLayer, clipPath);
         _NormalizeClipAssetPaths(resultLayer, clipLayers, clipPath);
-
 
         // set the topology reference and manifest path because we
         // use anonymous layers during parallel reduction
@@ -675,6 +709,18 @@ namespace {
         }
     }
 
+    bool
+    _UsdUtilsStitchClipsTopologyImpl(const SdfLayerRefPtr& topologyLayer,
+                                     const SdfLayerRefPtrVector& clipLayers)
+    {
+        // Note that we don't specify a unique clipPath since we're only
+        // interested in aggregating topology. 
+        auto result  = _AggregateDataFromClips(topologyLayer, clipLayers);
+        UsdUtilsStitchLayers(topologyLayer, result.topology, true);
+        topologyLayer->Save();
+        return true;
+    }
+
     bool 
     _UsdUtilsStitchClipsImpl(const SdfLayerHandle& resultLayer, 
                              const SdfLayerRefPtr& topologyLayer,
@@ -685,8 +731,6 @@ namespace {
         _StitchLayers(resultLayer, topologyLayer, clipLayers, clipPath); 
         _SetTimeCodeRange(resultLayer, clipPath, startTimeCode);
 
-        // save the updated resultLayer, 
-        // and updated/newly created topology layer
         topologyLayer->Save();
         resultLayer->Save();
 
@@ -695,7 +739,7 @@ namespace {
 
     bool 
     _ClipLayersAreValid(const SdfLayerRefPtrVector& clipLayers,
-                        const std::vector<std::string>& clipLayerFiles,
+                        const _ClipFileVector& clipLayerFiles,
                         const SdfPath& clipPath) 
     {
         bool somePrimContainsPath = false;
@@ -721,84 +765,87 @@ namespace {
         return true;
     }
 
-    void _CleanUpGeneratedLayers(const std::string& topologyLayerName,
-                                 const std::string& resultLayerName,
-                                 const bool topologyWasGenerated) 
-    {
-        // Clean up our generated files upon failure.
-        if (topologyWasGenerated) {
-            TfDeleteFile(topologyLayerName);
-        }
 
-        TfDeleteFile(resultLayerName);
+    bool
+    _OpenClipLayers(SdfLayerRefPtrVector* clipLayers,
+                    const _ClipFileVector& clipLayerFiles,
+                    const SdfPath& clipPath)
+    {
+        // Pre-allocate our destination vector for the clip layer handles
+        clipLayers->resize(clipLayerFiles.size());
+
+        // Open the clip layer files in parallel and place them into the vector
+        WorkParallelForN(clipLayerFiles.size(),
+            [&clipLayers, &clipLayerFiles](size_t begin, size_t end) 
+            {
+                for (size_t i = begin; i != end; ++i) {
+                    (*clipLayers)[i] = SdfLayer::FindOrOpen(clipLayerFiles[i]);
+                }
+            });
+
+        return _ClipLayersAreValid(*clipLayers, clipLayerFiles, clipPath);
     }
 }
 
 // public facing API
 // ----------------------------------------------------------------------------
 
-bool 
-UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
-                    const std::vector<std::string>& clipLayerFiles,
-                    const SdfPath& clipPath, 
-                    const bool reuseExistingTopology,
-                    const double startTimeCode)
+bool
+UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
+                            const _ClipFileVector& clipLayerFiles)
 {
     // XXX: This is necessary for any C++ API which may be called though
     // python. Since this will spawn workers(in WorkParallelForN) which 
     // will need to acquire the GIL, we need to explicitly release it.
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    const auto topologyName = _CreateTopologyName(resultLayer->GetIdentifier());
-    bool topologyWasGenerated = false;
-    SdfLayerRefPtr topologyLayer = SdfLayer::FindOrOpen(topologyName);
-
-    if (not TfIsWritable(resultLayer->GetIdentifier())) {
-        TF_RUNTIME_ERROR("Error: Result layer is unwritable %s", 
-                         resultLayer->GetIdentifier().c_str());
+    if (not _LayerIsWritable(topologyLayer)) {
         return false;
     }
 
-    if (TfIsFile(topologyName) and not TfIsWritable(topologyName)) {
-        TF_RUNTIME_ERROR("Error: Topology layer is unwritable %s", 
-                         topologyName.c_str());
-        return false;
-    }
-
-    if (not reuseExistingTopology) {
-        topologyWasGenerated = true;
-
-        if (topologyLayer) {
-            topologyLayer->Clear();
-        } else {
-            topologyLayer = SdfLayer::CreateNew(topologyName);
-        }
-    } else if (not topologyLayer) {
-        topologyWasGenerated = true;
-        topologyLayer = SdfLayer::CreateNew(topologyName); 
-    }
-
-    // Pre-allocate our destination vector for the clip layer handles
     SdfLayerRefPtrVector clipLayers;
-    clipLayers.resize(clipLayerFiles.size());
+    const bool clipLayersAreValid = _OpenClipLayers(&clipLayers, 
+        clipLayerFiles, SdfPath::AbsoluteRootPath());
 
-    // Open the clip layer files in parallel and place them into the vector
-    WorkParallelForN(clipLayerFiles.size(),
-                     [&clipLayers, &clipLayerFiles](size_t begin, size_t end) {
-                        for (size_t i = begin; i != end; ++i) {
-                            clipLayers[i] 
-                                = SdfLayer::FindOrOpen(clipLayerFiles[i]);
-                        }
-                     });
-
-    // Ensure all layers were opened and some contain the clip path.
-    if (not _ClipLayersAreValid(clipLayers, clipLayerFiles, clipPath)
-        or not _UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, clipLayers,
-                                        clipPath, startTimeCode)) {
-        _CleanUpGeneratedLayers(topologyName, resultLayer->GetIdentifier(),
-                                topologyWasGenerated);
+    if (not clipLayersAreValid) {
         return false;
-    } 
+    }
 
-    return true;
+    return _UsdUtilsStitchClipsTopologyImpl(topologyLayer, clipLayers);
+}
+
+bool 
+UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
+                    const _ClipFileVector& clipLayerFiles,
+                    const SdfPath& clipPath, 
+                    const bool reuseExistingTopology,
+                    const double startTimeCode)
+{
+    // XXX: See comment in UsdUtilsStitchClipsTopology above.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    if (not _LayerIsWritable(resultLayer)) {
+        return false;
+    }
+
+    SdfLayerRefPtr topologyLayer;
+    bool topologyWasGenerated;
+
+    std::tie(topologyLayer, topologyWasGenerated) = _CreateTopologyLayer(
+        resultLayer, reuseExistingTopology);
+
+    SdfLayerRefPtrVector clipLayers;
+    const bool clipLayersAreValid = _OpenClipLayers(&clipLayers, 
+        clipLayerFiles, clipPath);
+
+    if (not clipLayersAreValid) {
+        if (topologyWasGenerated) {
+            TfDeleteFile(topologyLayer->GetIdentifier());
+        }
+
+        return false;
+    }
+
+    return _UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, clipLayers, 
+        clipPath, startTimeCode);
 }

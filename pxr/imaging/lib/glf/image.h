@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file glf/image.h
-
 #ifndef GLF_IMAGE_H
 #define GLF_IMAGE_H
+
+/// \file glf/image.h
 
 #include "pxr/imaging/garch/gl.h"
 
@@ -40,16 +40,18 @@
 
 typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
-///
 /// \class GlfImage
-/// \brief A base class for reading and writing texture image data.
+///
+/// A base class for reading and writing texture image data.
 ///
 /// The class allows basic access to texture image file data.
 ///
 class GlfImage : public boost::noncopyable {
 public:
     /// \class StorageSpec
-    /// \brief Describes the memory layout and storage of a texture image
+    ///
+    /// Describes the memory layout and storage of a texture image
+    ///
     class StorageSpec {
     public:
         StorageSpec()
@@ -119,6 +121,9 @@ public:
 
     /// Returns the number of bytes per pixel.
     virtual int GetBytesPerPixel() const = 0;
+
+    /// Returns the number of mips available.
+    virtual int GetNumMipLevels() const = 0;
 
     /// Returns whether the iamge is in the sRGB color space.
     virtual bool IsColorSpaceSRGB() const = 0;

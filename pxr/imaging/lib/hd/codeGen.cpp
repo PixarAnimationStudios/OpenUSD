@@ -46,7 +46,7 @@
 
 #include <sstream>
 
-#include <opensubdiv3/osd/glslPatchShaderSource.h>
+#include <opensubdiv/osd/glslPatchShaderSource.h>
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -311,7 +311,7 @@ Hd_CodeGen::Compile()
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Hydra shading. 
-    _genCommon << "#define HD_SHADER_API 1\n";
+    _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
 
     // XXX: this is a hacky workaround for experimental support of GL 3.3
     //      the double is used in hd_dvec3 akin, so we are likely able to
@@ -1818,22 +1818,25 @@ Hd_CodeGen::_GenerateShaderParameters()
                     << "  return sampler2d_" << it->second.name << ";"
                     << "}\n";
             }
+            // vec4 HdGet_name(vec2 coord) { return texture(sampler2d_name, coord).xyz; }
             accessors
                 << it->second.dataType
                 << " HdGet_" << it->second.name
-                << "(vec2 coord = ";
+                << "(vec2 coord) { return texture(sampler2d_"
+                << it->second.name << ", coord)" << swizzle << ";}\n";
+            // vec4 HdGet_name() { return HdGet_name(HdGet_st().xy); }
+            accessors
+                << it->second.dataType
+                << " HdGet_" << it->second.name
+                << "() { return HdGet_" << it->second.name << "(";
             if (not it->second.inPrimVars.empty()) {
                 accessors 
-                    << " HdGet_" << it->second.inPrimVars[0] << "().xy";
+                    << "HdGet_" << it->second.inPrimVars[0] << "().xy";
             } else {
                 accessors
-                    << " vec2(0.0, 0.0)";
+                    << "vec2(0.0, 0.0)";
             }
-            accessors
-                << ") {\n"
-                << "  return texture(sampler2d_" << it->second.name
-                << ", coord)" << swizzle << ";\n"   // XXX: should be inprimvars
-                << "}\n";
+            accessors << "); }\n";
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
             accessors
                 << it->second.dataType

@@ -25,7 +25,6 @@
 #define TF_STACKED_H
 
 #include "pxr/base/tf/diagnostic.h"
-
 #include "pxr/base/arch/demangle.h"
 
 #include <boost/mpl/if.hpp>
@@ -36,14 +35,14 @@
 #include <atomic>
 #include <vector>
 
-
 /// \class TfStackedAccess
 ///
 /// Classes that derive \a TfStacked may befriend TfStackedAccess if they wish
 /// to customize aspects \a TfStacked's behavior.  See \a TfStacked
 /// documentation for more details.
 ///
-struct TfStackedAccess {
+class TfStackedAccess {
+public:
     template <class Derived>
     static void InitializeStack() {
         return Derived::_InitializeStack();

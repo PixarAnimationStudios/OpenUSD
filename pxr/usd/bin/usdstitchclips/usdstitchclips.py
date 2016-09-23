@@ -64,7 +64,9 @@ if os.path.isfile(results.out):
 
 try:
     outLayer = Sdf.Layer.FindOrOpen(results.out)
+    outLayerGenerated = False
     if not outLayer:
+        outLayerGenerated = True
         outLayer = Sdf.Layer.CreateNew(results.out)
 
     if results.startTimeCode:
@@ -77,7 +79,8 @@ try:
         outLayer.comment = 'Generated with ' + ' '.join(sys.argv)
         outLayer.Save()
 
-# if something in the authoring fails, remove the output file 
 except Tf.ErrorException as e:
-    print e
-    sys.exit(1)
+    # if something in the authoring fails, remove the output file 
+    if outLayerGenerated:
+        os.remove(results.out)
+    sys.exit(e)

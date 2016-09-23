@@ -56,8 +56,8 @@ class TestGfFrustum(unittest.TestCase):
     def test_Position(self):
         f1 = Gf.Frustum()
         f2 = Gf.Frustum()
-        f1.position = Gf.Vec3d(1, 0, 0);
-        f2.position = Gf.Vec3d(0, 1, 0);
+        f1.position = Gf.Vec3d(1, 0, 0)
+        f2.position = Gf.Vec3d(0, 1, 0)
         self.assertNotEqual(f1, f2)
 
     def test_Properties(self):
@@ -314,7 +314,7 @@ class TestGfFrustum(unittest.TestCase):
                             0.0, 4.2418940586972074, 0.0, 0.0,
                             0.0, 0.0, -1, -1.0,
                             0.0, 0.0, -20, 0.0)
-        viewProjMat = viewMat * projMat;
+        viewProjMat = viewMat * projMat
 
         # a typical box entirely in the view
         b = Gf.BBox3d( Gf.Range3d( Gf.Vec3d( 0, 0, 0 ), Gf.Vec3d( 1, 1, 1 ) ) )
@@ -379,6 +379,21 @@ class TestGfFrustum(unittest.TestCase):
         self.assertEqual(len(corners), len(results))
         for i in range(len(results)):
             self.assertTrue(Gf.IsClose(corners[i], results[i], 0.0001))
+            
+        corners = f.ComputeCornersAtDistance(20)
+        for i in range(len(corners)):
+            self.assertTrue(Gf.IsClose(corners[i], results[i], 0.0001))
+
+        corners = f.ComputeCornersAtDistance(90)
+        for i in range(len(corners)):
+            self.assertTrue(Gf.IsClose(corners[i], results[i+4], 0.0001))
+
+        corners = f.ComputeCornersAtDistance((20 + 90) / 2.0)
+        for i in range(len(corners)):
+            self.assertTrue(
+                Gf.IsClose(corners[i], (results[i] + results[i+4]) / 2.0,
+                           0.0001))
+        
 
 if __name__ == '__main__':
     unittest.main()

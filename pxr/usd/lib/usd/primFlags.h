@@ -24,7 +24,7 @@
 #ifndef USD_PRIMFLAGS_H
 #define USD_PRIMFLAGS_H
 
-/// \file primFlags.h
+/// \file usd/primFlags.h
 ///
 /// \anchor Usd_PrimFlags
 ///
@@ -81,6 +81,7 @@
 
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
+    // Flags for use with predicates.
     Usd_PrimActiveFlag,
     Usd_PrimLoadedFlag,
     Usd_PrimModelFlag,
@@ -88,9 +89,12 @@ enum Usd_PrimFlags {
     Usd_PrimAbstractFlag,
     Usd_PrimDefinedFlag,
     Usd_PrimHasDefiningSpecifierFlag,
+    Usd_PrimInstanceFlag,
+
+    // Flags for internal use.
+    Usd_PrimHasPayloadFlag,
     Usd_PrimClipsFlag,
     Usd_PrimDeadFlag,
-    Usd_PrimInstanceFlag,
     Usd_PrimMasterFlag,
     Usd_PrimNumFlags
 };
@@ -457,6 +461,5 @@ inline Usd_PrimFlagsDisjunction
 operator||(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
     return Usd_Term(lhs) || Usd_Term(rhs);
 }
-
 
 #endif // USD_PRIMFLAGS_H

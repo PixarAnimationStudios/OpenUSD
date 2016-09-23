@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file sdf/pyChildrenProxy.h
-
 #ifndef SDF_PYCHILDRENPROXY_H
 #define SDF_PYCHILDRENPROXY_H
+
+/// \file sdf/pyChildrenProxy.h
 
 #include "pxr/usd/sdf/childrenProxy.h"
 #include "pxr/base/arch/demangle.h"

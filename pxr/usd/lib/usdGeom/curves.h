@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_CURVES_H
 #define USDGEOM_GENERATED_CURVES_H
 
+/// \file usdGeom/curves.h
+
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,8 +46,14 @@ class SdfAssetPath;
 // CURVES                                                                     //
 // -------------------------------------------------------------------------- //
 
-/// \brief Base class for BasisCurves (RiCurves) and NurbsCurves
-/// (MayaCurves).
+/// \class UsdGeomCurves
+///
+/// Base class for BasisCurves and NurbsCurves.  The BasisCurves
+/// schema is designed to be analagous to RenderMan's RiCurves 
+/// and RiBasis, while the NurbsCurve schema is designed to be 
+/// analgous to  the NURBS curves found in packages like Maya 
+/// and Houdini while retaining their consistency with the 
+/// RenderMan specification for NURBS Patches.
 ///
 class UsdGeomCurves : public UsdGeomPointBased
 {
@@ -82,7 +90,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomCurves holding the prim adhering to this
+    /// Return a UsdGeomCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:

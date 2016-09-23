@@ -43,9 +43,10 @@ def CreateGLDebugContext(glFormat):
             return QtOpenGL.QGLContext.create(self, shareContext)
 
         def makeCurrent(self):
+            from pxr import Garch
             QtOpenGL.QGLContext.makeCurrent(self)
             if not self._platformContext:
-                self._platformContext = GLPlatformDebugContext(
+                self._platformContext = Garch.GLPlatformDebugContext(
                     self.format().majorVersion(),
                     self.format().minorVersion(),
                     self.format().profile() == QtOpenGL.QGLFormat.CoreProfile,

@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_BASISCURVES_H
 #define USDGEOM_GENERATED_BASISCURVES_H
 
+/// \file usdGeom/basisCurves.h
+
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,48 +46,76 @@ class SdfAssetPath;
 // BASISCURVES                                                                //
 // -------------------------------------------------------------------------- //
 
-/// Basis curves are analagous to RiCurves.  A basis matrix and vstep 
-/// are used to uniformly interpolate the curves.  These curves are often used 
-/// to render dense aggregate geometry like hair.
+/// \class UsdGeomBasisCurves
+///
+/// Basis curves are analagous to RiCurves.  A 'basis' matrix and 
+/// \em vstep are used to uniformly interpolate the curves.  These curves are 
+/// often used to render dense aggregate geometry like hair.
 /// 
-/// A segment is the smoothly interpolated part between vertices.  A curves prim 
-/// may have many curves, determined implicitly by the length of the 
-/// curveVertexCount vector.  The number of segments an individual curve has is 
-/// determined by the number of vertices it has, the wrap (periodicity), and the 
-/// vstep of the basis.
+/// A curves prim may have many curves, determined implicitly by the length of
+/// the 'curveVertexCounts' vector.  An individual curve is composed of one 
+/// or more curve segments, the smoothly interpolated part between vertices.
 /// 
-/// Basis to vstep mapping:
-/// [bezier - 3, catmullRom - 1, bspline - 1, hermite - 2, power - 4]
+/// Curves may have a m'type' of either linear or cubic.  Linear curve 
+/// segments are interpolated between two vertices, and cubic curve segments are 
+/// interpolated between 4 vertices.  The segment count of a cubic curve  
+/// is determined by the vertex count, the 'wrap' (periodicity), and 
+/// the vstep of the basis.
+/// 
+/// cubic basis   | vstep
+/// ------------- | -------------
+/// bezier        | 3
+/// catmullRom    | 1
+/// bspline       | 1
+/// hermite       | 2
+/// power         | 4
 /// 
 /// The first segment of a cubic curve is always defined by its first 4 points. 
 /// The vstep is the increment used to determine what cv determines the 
-/// next segment.  For a two segment bspline basis curve (vstep=1), the first 
+/// next segment.  For a two segment bspline basis curve (vstep = 1), the first 
 /// segment will be defined by interpolating vertices [0, 1, 2, 3] and the 
 /// second  segment will be defined by [1, 2, 3, 4].  For a two segment bezier 
 /// basis curve (vstep = 3), the first segment will be defined by interpolating 
 /// vertices [0, 1, 2, 3] and the second segment will be defined by 
 /// [3, 4, 5, 6].  If the vstep is not one, then you must take special care
-/// to make sure that the number of cvs properly divides by your vstep.
+/// to make sure that the number of cvs properly divides by your vstep.  If 
+/// the type of a curve is linear, the basis matrix and vstep are unused.
 /// 
-/// For a given cubic curve, it holds that:
-/// (curveVertexCount - 4) % vstep == 0 [nonperiodic]
-/// (curveVertexCount) % vstep == 0 [periodic]
+/// When validating curve topology, each entry in the curveVertexCounts vector
+/// must pass this check.
 /// 
-/// For a given linear curve: 
-/// segmentCount = curveVertexCount - 1 [nonperiodic]
-/// segmentCount = curveVertexCount [periodic]
-/// For a given cubic curve:
-/// segmentCount = (curveVertexCount - 4) / vstep + 1 [nonperiodic]
-/// segmentCount = curveVertexCount / vstep [periodic]
+/// wrap           | cubic vertex count validity
+/// -------------- | ---------------------------------------
+/// nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
+/// periodic       | (curveVertexCounts[i]) % vstep == 0
 /// 
-/// For cubic curves, data can be either interpolated between vertices or 
-/// across segments.  Per vertex data should be the same size as the number
+/// 
+/// To convert an entry in the curveVertexCounts vector into a segment count 
+/// for an individual curve, apply these rules.  Sum up all the results in
+/// order to compute how many total segments all curves have.
+/// 
+/// wrap          | segment count [linear curves]
+/// ------------- | ----------------------------------------
+/// nonperiodic   | curveVertexCounts[i] - 1
+/// periodic      | curveVertexCounts[i]
+/// 
+/// wrap          | segment count [cubic curves]
+/// ------------- | ----------------------------------------
+/// nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1
+/// periodic      | curveVertexCounts[i] / vstep 
+/// 
+/// 
+/// For cubic curves, primvar data can be either interpolated cubically between 
+/// vertices or linearly across segments.  The corresponding token
+/// for cubic interpolation is 'vertex' and for linear interpolation is
+/// 'varying'.  Per vertex data should be the same size as the number
 /// of vertices in your curve.  Segment varying data is dependent on the 
 /// wrap (periodicity) and number of segments in your curve.
 /// 
-/// For a given curve:
-/// segmentVaryingDataSize = segmentCount + 1 [nonperiodic]
-/// segmentVaryingDataSize = segmentCount [periodic]    
+/// wrap          | expected linear (varying) data size
+/// ------------- | ----------------------------------------
+/// nonperiodic   | segmentCount + 1
+/// periodic      | segmentCount
 /// 
 /// This prim represents two different entries in the RI spec:  RiBasis
 /// and RiCurves, hence the name "BasisCurves."  If we are interested in
@@ -93,6 +123,18 @@ class SdfAssetPath;
 /// enum could be extended with a new "custom" token and with additional 
 /// attributes vstep and matrix, but for compatability with AbcGeom and the
 /// rarity of this use case, it is omitted for now.
+/// 
+/// Example of deriving per curve segment and varying primvar data counts from
+/// the wrap, type, basis, and curveVertexCount.
+/// 
+/// wrap          | type    | basis   |  curveVertexCount | curveSegmentCount  | varyingDataCount
+/// ------------- | ---------------------------------------------------------------------------------------
+/// nonperiodic   | linear  | N/A     | [2 3 2 5]         | [1 2 1 4]          | [2 3 2 5]
+/// nonperiodic   | cubic   | bezier  | [4 7 10 4 7]      | [1 2 3 1 2]        | [2 3 4 2 3]
+/// nonperiodic   | cubic   | bspline | [5 4 6 7]         | [2 1 3 4]          | [3 2 4 5]
+/// periodic      | cubic   | bezier  | [6 9 6]           | [2 3 2]            | [2 3 2]
+/// periodic      | linear  | N/A     | [3 7]             | [3 7]              | [3 7]
+/// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
@@ -134,7 +176,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomBasisCurves holding the prim adhering to this
+    /// Return a UsdGeomBasisCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -146,7 +188,7 @@ public:
     static UsdGeomBasisCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -262,8 +304,10 @@ public:
     /// \{
 
     typedef std::vector< std::pair<TfToken, size_t> > ComputeInterpolationInfo;
-    /// \brief Computes interpolation token for \p n.  
-    /// if this returns an empty token and \p info was non-NULL, it'll contain
+
+    /// Computes interpolation token for \p n.
+    ///
+    /// If this returns an empty token and \p info was non-NULL, it'll contain
     /// the expected value for each token.
     ///
     /// The topology is determined using \p timeCode.
@@ -271,19 +315,19 @@ public:
             const UsdTimeCode& timeCode,
             ComputeInterpolationInfo* info=NULL) const;
 
-    /// \brief Computes the expected size for data with "uniform" interpolation
+    /// Computes the expected size for data with "uniform" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
     size_t ComputeUniformDataSize(const UsdTimeCode& timeCode) const;
 
-    /// \brief Computes the expected size for data with "varying" interpolation
+    /// Computes the expected size for data with "varying" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
     size_t ComputeVaryingDataSize(const UsdTimeCode& timeCode) const;
 
-    /// \brief Computes the expected size for data with "vertex" interpolation
+    /// Computes the expected size for data with "vertex" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize

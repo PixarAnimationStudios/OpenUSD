@@ -24,6 +24,8 @@
 #ifndef USDGEOM_GENERATED_NURBSCURVES_H
 #define USDGEOM_GENERATED_NURBSCURVES_H
 
+/// \file usdGeom/nurbsCurves.h
+
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -44,20 +46,22 @@ class SdfAssetPath;
 // NURBSCURVES                                                                //
 // -------------------------------------------------------------------------- //
 
-/// Nurbs curves are analagous to Maya Nurbs Curves,  used for 
-/// interchange of rigging and modeling curves.  Unlike Maya Curves, this 
-/// curve spec supports batching of multiple curves into a single prim and 
-/// widths in the schema.  Unlike maya, we require 
+/// \class UsdGeomNurbsCurves
+///
+/// This schema is analagous to NURBS Curves in packages like Maya
+/// and Houdini, often used for interchange of rigging and modeling curves.  
+/// Unlike Maya, this curve spec supports batching of multiple curves into a 
+/// single prim and widths in the schema.  Additionally, we require 
 /// 'numSegments + 2 * degree + 1' knots (2 more than maya does).  This is to
-/// be more consistent with renderman's NURBS specification.  
+/// be more consistent with RenderMan's NURBS patch specification.  
 /// 
 /// To express a periodic curve:
-/// knot[0] = knot[1] - (knots[-2] - knots[-3]; 
-/// knot[-1] = knot[-2] + (knot[2] - knots[1]);
+/// - knot[0] = knot[1] - (knots[-2] - knots[-3]; 
+/// - knot[-1] = knot[-2] + (knot[2] - knots[1]);
 /// 
 /// To express a nonperiodic curve:
-/// knot[0] = knot[1];
-/// knot[-1] = knot[-2];
+/// - knot[0] = knot[1];
+/// - knot[-1] = knot[-2];
 /// 
 /// In spite of these slight differences in the spec, curves generated in Maya
 /// should be preserved when roundtripping.
@@ -97,7 +101,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdGeomNurbsCurves holding the prim adhering to this
+    /// Return a UsdGeomNurbsCurves holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -109,7 +113,7 @@ public:
     static UsdGeomNurbsCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this

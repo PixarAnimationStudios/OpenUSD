@@ -185,12 +185,7 @@ UsdAttributeQuery::HasValue() const
 bool 
 UsdAttributeQuery::HasAuthoredValueOpinion() const
 {
-    bool authoredValueFound = 
-        _resolveInfo.source == Usd_ResolveInfoSourceDefault
-        or _resolveInfo.source == Usd_ResolveInfoSourceTimeSamples
-        or _resolveInfo.source == Usd_ResolveInfoSourceValueClips;
-
-    return authoredValueFound or _resolveInfo.valueIsBlocked;
+    return _resolveInfo.HasAuthoredValueOpinion();
 }
 
 bool

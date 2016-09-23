@@ -24,6 +24,8 @@
 #ifndef USDSCHEMAEXAMPLES_TOKENS_H
 #define USDSCHEMAEXAMPLES_TOKENS_H
 
+/// \file usdSchemaExamples/tokens.h
+
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
 // This is an automatically generated file (by usdGenSchema.py).
@@ -32,8 +34,6 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/base/tf/staticTokens.h"
-
-/// \file ./tokens.h
 
 /// \hideinitializer
 #define USDSCHEMAEXAMPLES_TOKENS \
@@ -45,7 +45,8 @@
     (target)
 
 /// \anchor UsdSchemaExamplesTokens
-/// \brief <b>UsdSchemaExamplesTokens</b> provides static, efficient TfToken's for
+///
+/// <b>UsdSchemaExamplesTokens</b> provides static, efficient TfToken's for
 /// use in all public USD API
 ///
 /// These tokens are auto-generated from the module's schema, representing

@@ -26,7 +26,6 @@
 #include "pxr/imaging/hd/renderPass.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/defaultLightingShader.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/glslProgram.h"

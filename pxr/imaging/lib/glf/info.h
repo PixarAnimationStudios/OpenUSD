@@ -21,22 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file Info.h
-
 #ifndef GLF_INFO_H
 #define GLF_INFO_H
 
+/// \file glf/info.h
+
 #include <string>
 
-/// \brief Tests for GL extension support.
+/// Tests for GL extension support.
 ///
 /// Returns \c true if each extension name listed in \a extensions
 /// is supported by the current GL context.
 bool GlfHasExtensions(std::string const & extensions);
 
-/// \brief Tests whether the current GL context only has
-/// minimal graphics support.  This is true for NX clients at least.
+/// Tests whether the current GL context only has minimal graphics support.
+/// This is true for NX clients at least.
 bool GlfHasLegacyGraphics();
 
 #endif

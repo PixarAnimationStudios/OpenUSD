@@ -24,8 +24,12 @@
 #ifndef TF_DEBUGNOTICE_H
 #define TF_DEBUGNOTICE_H
 
+/// \file tf/debugNotice.h
+
 #include "pxr/base/tf/notice.h"
 
+/// \class TfDebugSymbolsChangedNotice
+///
 /// Sent when the list of available debug symbol names has changed.
 class TfDebugSymbolsChangedNotice : public TfNotice
 {
@@ -34,6 +38,8 @@ public:
     virtual ~TfDebugSymbolsChangedNotice();
 };
 
+/// \class TfDebugSymbolEnableChangedNotice
+///
 /// Sent when a debug symbol has been enabled or disabled.
 class TfDebugSymbolEnableChangedNotice : public TfNotice
 {

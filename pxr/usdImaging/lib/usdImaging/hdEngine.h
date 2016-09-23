@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file hdEngine.h
+
 #pragma once
 
 #include "pxr/usdImaging/usdImaging/engine.h"
@@ -117,9 +120,9 @@ public:
         const UsdPrim& root, 
         RenderParams params,
         GfVec3d *outHitPoint,
-	SdfPath *outHitPrimPath = NULL,
+        SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-	int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL);
 
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
@@ -128,8 +131,10 @@ public:
         const SdfPathVector& paths, 
         RenderParams params,
         unsigned int pickResolution,
-        std::function< SdfPath(const SdfPath&) > pathTranslator,
+        PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
+
+    virtual VtDictionary GetResourceAllocation() const;
 
 private:
     // Helper functions for preparing multiple engines for

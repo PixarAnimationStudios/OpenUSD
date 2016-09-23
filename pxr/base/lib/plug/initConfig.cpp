@@ -29,10 +29,12 @@
 
 namespace {
 
-const char* pathEnvVarName  = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
-const char* buildLocation   = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
-const char* userLocation    = BOOST_PP_STRINGIZE(PXR_USER_LOCATION);
-const char* installLocation = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
+const char* pathEnvVarName      = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
+const char* buildLocation       = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
+const char* pluginBuildLocation = BOOST_PP_STRINGIZE(PXR_PLUGIN_BUILD_LOCATION);
+const char* userLocation        = BOOST_PP_STRINGIZE(PXR_USER_LOCATION);
+const char* installLocation     = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
+
 void
 _AppendPathList(std::vector<std::string>* result, const std::string& paths)
 {
@@ -56,6 +58,7 @@ Plug_InitConfig()
     // Fallback locations.
     _AppendPathList(&result, userLocation);
     _AppendPathList(&result, buildLocation);
+    _AppendPathList(&result, pluginBuildLocation);
     _AppendPathList(&result, installLocation);
 
     Plug_SetPaths(result);

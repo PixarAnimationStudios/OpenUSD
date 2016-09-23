@@ -38,11 +38,14 @@ typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
+/// \class HdBufferArrayRange
+///
 /// Interface class for representing range (subset) locator of HdBufferArray.
 /// 
 /// Each memory management strategy defines a specialized range class which is
 /// inherited of this interface so that client (drawItem) can be agnostic about
 /// the implementation detail of aggregation.
+///
 class HdBufferArrayRange : boost::noncopyable {
 public:
     /// Destructor (do nothing).
@@ -84,6 +87,9 @@ public:
     /// drawbatches to be rebuilt to remove expired BufferArrayRange.
     virtual void IncrementVersion() = 0;
 
+    /// Returns the max number of elements
+    virtual size_t GetMaxNumElements() const = 0;
+
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
     virtual HdBufferResourceSharedPtr GetResource() const = 0;
@@ -117,6 +123,8 @@ protected:
 std::ostream &operator <<(std::ostream &out,
                           const HdBufferArrayRange &self);
 
+/// \class HdBufferArrayRangeContainer
+///
 /// A resizable container of HdBufferArrayRanges.
 ///
 class HdBufferArrayRangeContainer

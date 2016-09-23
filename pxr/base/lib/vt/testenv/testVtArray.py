@@ -106,7 +106,7 @@ class TestVtArray(unittest.TestCase):
         for start in range(-2, 7):
             for stop in range(-2, 7):
                 for step in range(-5, 6):
-                    if step == 0 : break;
+                    if step == 0 : break
                     sub_a = a[start:stop:step]
                     sub_l = l[start:stop:step]
                     self.assertEqual(len(a), len(l))

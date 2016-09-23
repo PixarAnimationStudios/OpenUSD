@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -51,8 +52,10 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
+#include <boost/container/flat_map.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <tbb/spin_rw_mutex.h>
+#include <map>
 #include <string>
 
 TF_DECLARE_WEAK_PTRS(UsdImagingDelegate);
@@ -61,17 +64,26 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingPrimAdapter;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
+class UsdImagingDefaultShaderAdapter;
 
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 
+typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr ;
+
+/// \class UsdImagingDelegate
+///
 /// The primary translation layer between the Hydra (Hd) core and the Usd
 /// scene graph.
+///
 class UsdImagingDelegate : public HdSceneDelegate, public TfWeakBase {
     typedef UsdImagingDelegate This;
 public:
 
     typedef TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> RigidXformOverridesMap;
-    typedef TfHashMap<TfToken, int /*purposeMask*/, TfToken::HashFunctor> CollectionMap;
+    typedef boost::container::flat_map<SdfPath, int /*purposeMask*/>
+        CollectionMembershipMap;
+    typedef TfHashMap<TfToken, CollectionMembershipMap, TfToken::HashFunctor>
+        CollectionMap;
 
     UsdImagingDelegate();
 
@@ -215,6 +227,15 @@ public:
     /// entire delegate. IsInCollection responds based on this setting.
     void SetInCollection(TfToken const &collectionName, int purposeMask);
 
+    /// Sets the membership of user-defined \p collectionName as determined
+    /// by \p membershipMap, a SdfPathMap to purposeMask (int) from rprim
+    /// memership (or not) can be determined.
+    ///
+    /// IsInCollection responds based on this setting.
+    void TransferCollectionMembershipMap(
+        TfToken const &collectionName,
+        CollectionMembershipMap &&membershipMap);
+
     /// Sets the collection map
     /// (discard previously set existing map by SetInCollection)
     void SetCollectionMap(CollectionMap const &collectionMap);
@@ -266,6 +287,7 @@ public:
                                              SdfPath const &prototypeId);
 
     // Shader Support
+    virtual bool GetSurfaceShaderIsTimeVarying(SdfPath const& id);
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &id);
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &id, 
@@ -371,6 +393,9 @@ private:
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
+    // UsdImagingDefaultShaderAdapter needs access to _GetPrim.  We should
+    // consider making it public.
+    friend class UsdImagingDefaultShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
         if (not (0 <= level and level <= 8)) {
@@ -492,6 +517,15 @@ private:
     typedef SdfPathTable<_AdapterSharedPtr> _PathAdapterMap;
     _PathAdapterMap _pathAdapterMap;
 
+    typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
+    typedef SdfPathTable<_ShaderAdapterSharedPtr> _ShaderAdapterMap;
+    _ShaderAdapterMap _shaderAdapterMap;
+
+    // This method looks up a shader adapter based on the \p shaderId.
+    // This will never return a nullptr.  If there is no registered shader
+    // adapter, it will return the "default".
+    _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
+
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
     tbb::spin_rw_mutex _indexToUsdPathMapMutex;
@@ -505,11 +539,12 @@ private:
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _DirtyMap;
     _DirtyMap _dirtyMap;
 
+    typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
+    _ShaderMap _shaderMap;
+
     typedef TfHashSet<SdfPath, SdfPath::Hash> _TextureSet;
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _ShaderSet;
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _TextureSet _texturePaths;
-    _ShaderSet _shaderPaths;
     _InstancerSet _instancerPrimPaths;
 
     // Retrieves the dirty bits for a given usdPath and allows mutation of the
@@ -560,15 +595,21 @@ private:
     SdfPathVector _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
-    UsdImaging_LookBindingCache _lookBindingCache;
+    UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
 
     // Collection
     CollectionMap _collectionMap;
+
+    // default shader adapter
+    boost::shared_ptr<UsdImagingDefaultShaderAdapter> _defaultShaderAdapter;
 };
 
+/// \class UsdImagingIndexProxy
+///
 /// This proxy class exposes a subset of the private Delegate API to
 /// PrimAdapters.
+///
 class UsdImagingIndexProxy {
 public: 
     // Create a dependency on usdPath for the specified prim adapter. When no
@@ -578,6 +619,10 @@ public:
     void AddDependency(SdfPath const& usdPath, 
                         UsdImagingPrimAdapterSharedPtr const& adapter =
                                     UsdImagingPrimAdapterSharedPtr());
+
+    /// \brief Register a \p shaderAdapter to handle the shader at \p shaderId.
+    void AddShaderAdapter(SdfPath const& shaderId,
+            UsdImagingShaderAdapterSharedPtr const& shaderAdapter);
 
     SdfPath InsertMesh(SdfPath const& usdPath,
                        SdfPath const& shaderBinding,
@@ -656,6 +701,5 @@ private:
     SdfPathVector _instancersToRemove;
     SdfPathVector _depsToRemove;
 };
-
 
 #endif //USDIMAGING_DELEGATE_H

@@ -37,9 +37,10 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/strategyBase.h"
 
-/// VBO memory manager
+/// \class HdVBOMemoryManager
 ///
-
+/// VBO memory manager.
+///
 class HdVBOMemoryManager : public HdAggregationStrategy {
 public:
     /// Factory for creating HdBufferArray managed by
@@ -127,6 +128,9 @@ protected:
         virtual void IncrementVersion() {
             _stripedBufferArray->IncrementVersion();
         }
+
+        /// Returns the max number of elements
+        virtual size_t GetMaxNumElements() const;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
@@ -240,4 +244,3 @@ protected:
 };
 
 #endif  // HD_VBO_MEMORY_MANAGER_H
-

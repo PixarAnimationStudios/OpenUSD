@@ -29,17 +29,14 @@
             
 #define HD_TOKENS                               \
     (adjacency)                                 \
-    (attachments)                               \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
     (bbox)                                      \
     (bezier)                                    \
     (bSpline)                                   \
     (camera)                                    \
-    (cameraFrustum)                             \
     (catmullRom)                                \
     (children)                                  \
-    (clipPlanes)                                \
     (color)                                     \
     (collection)                                \
     (computeShader)                             \
@@ -47,7 +44,6 @@
     (cubic)                                     \
     (culledInstanceIndices)                     \
     (cullStyle)                                 \
-    (depthClearValue)                           \
     (doubleSided)                               \
     (dispatchBuffer)                            \
     (drawDispatch)                              \
@@ -59,7 +55,6 @@
     (drawingCoord0)                             \
     (drawingCoord1)                             \
     (drawingCoordI)                             \
-    (enable)                                    \
     (extent)                                    \
     (faceColors)                                \
     (geometry)                                  \
@@ -77,16 +72,11 @@
     (isFlipped)                                 \
     (itemsDrawn)                                \
     (layout)                                    \
-    (lightingContext)                           \
-    (lightingShader)                            \
-    (lightParams)                               \
-    (lightShadowCollection)                     \
-    (lightShadowParams)                         \
-    (lightTransform)                            \
     (leftHanded)                                \
     (linear)                                    \
     (nonperiodic)                               \
     (normals)                                   \
+    (packedNormals)                             \
     (params)                                    \
     (patchParam)                                \
     (periodic)                                  \
@@ -104,7 +94,6 @@
     (ulocResetPass)                             \
     (ulocCullMatrix)                            \
     (ulocDrawRangeNDC)                          \
-    (resolution)                                \
     (rightHanded)                               \
     (segmented)                                 \
     (smoothHull)                                \
@@ -119,9 +108,8 @@
     (visibility)                                \
     (widths)                                    \
     (wire)                                      \
-    (wireOnSurf)                                \
-    (windowPolicy)
-            
+    (wireOnSurf)
+
 #define HD_PERF_TOKENS                          \
     (basisCurvesTopology)                       \
     (bufferSourcesResolved)                     \

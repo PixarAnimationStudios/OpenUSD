@@ -24,15 +24,18 @@
 #ifndef SDF_SITE_UTILS_H
 #define SDF_SITE_UTILS_H
 
+/// \file sdf/siteUtils.h
+///
+/// Convenience API for working with SdfSite.
+///
+/// These functions simply forward to the indicated functions on SdfLayer.
+
 #include "pxr/usd/sdf/site.h"
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/spec.h"
-
-/// Convenience API for working with SdfSite. These functions simply forward
-/// to the indicated functions on SdfLayer.
 
 inline
 SdfSpecHandle

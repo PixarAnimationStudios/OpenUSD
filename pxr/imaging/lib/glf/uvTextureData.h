@@ -27,6 +27,7 @@
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <string>
 
@@ -78,13 +79,9 @@ public:
     const Params& GetParams() const { return _params; }
 
     // GlfBaseTextureData overrides
-    virtual int ResizedWidth() const {
-        return _resizedWidth;
-    };
+    virtual int ResizedWidth(int mipLevel = 0) const;
 
-    virtual int ResizedHeight() const {
-        return _resizedHeight;
-    };
+    virtual int ResizedHeight(int mipLevel = 0) const;
 
     virtual GLenum GLInternalFormat() const {
         return _glInternalFormat;
@@ -106,27 +103,49 @@ public:
         return _wrapInfo;
     };
 
-    virtual int  ComputeBytesUsed() const;
+    virtual size_t ComputeBytesUsed() const;
 
-    virtual bool HasRawBuffer() const;
+    virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const;
 
-    virtual unsigned char * GetRawBuffer() const;
+    virtual bool HasRawBuffer(int mipLevel = 0) const;
+
+    virtual unsigned char * GetRawBuffer(int mipLevel = 0) const;
 
     virtual bool Read(int degradeLevel, bool generateMipmap);
 
+    virtual int GetNumMipLevels() const;
+
 private:
+    // A structure that keeps the mips loaded from disk in the format
+    // that the gpu needs.
+    struct Mip {
+        Mip() 
+            : size(0), offset(0), width(0), height(0)
+        { }
+
+        size_t size;
+        size_t offset;
+        int width;
+        int height;
+    };
+
     // A structure keeping a down-sampled image input and floats indicating the
     // downsample rate (e.g., if the resolution changed from 2048x1024 to
     // 512x256, scaleX=0.25 and scaleY=0.25).
     struct _DegradedImageInput {
-        _DegradedImageInput(double scaleX, double scaleY,
-		            GlfImageSharedPtr image)
-            : scaleX(scaleX), scaleY(scaleY), image(image) 
+        _DegradedImageInput(double scaleX, double scaleY, 
+            GlfImageSharedPtr image) : scaleX(scaleX), scaleY(scaleY)
+        { 
+            images.push_back(image);
+        }
+
+        _DegradedImageInput(double scaleX, double scaleY)
+            : scaleX(scaleX), scaleY(scaleY)
         { }
 
         double         scaleX;
         double         scaleY;
-        GlfImageSharedPtr image;
+        std::vector<GlfImageSharedPtr> images;
     };
 
     // Reads an image using GlfImage. If possible and requested, it will
@@ -140,8 +159,19 @@ private:
                                                 size_t targetMemory,
                                                 size_t degradeLevel);
 
-    GlfUVTextureData(std::string const &filePath,
-                      Params const &params);
+    // Helper to read degraded image chains, given a starting mip and an 
+    // ending mip it will fill the image chain.
+    _DegradedImageInput _GetDegradedImageInputChain(double scaleX, 
+                                                    double scaleY, 
+                                                    int startMip, 
+                                                    int lastMip);
+
+    // Given a GlfImage it will return the number of mip levels that 
+    // are actually valid to be loaded to the GPU. For instance, it will
+    // drop textures with non valid OpenGL pyramids.
+    int _GetNumMipLevelsValid(const GlfImageSharedPtr image) const;
+
+    GlfUVTextureData(std::string const &filePath, Params const &params);
     virtual ~GlfUVTextureData();
         
     const std::string _filePath;
@@ -159,7 +189,8 @@ private:
 
     size_t _size;
 
-    unsigned char *_rawBuffer;
+    boost::scoped_ptr<unsigned char> _rawBuffer;
+    std::vector<Mip> _rawBufferMips;
 };
 
 #endif // GLF_UVTEXTURE_DATA_H

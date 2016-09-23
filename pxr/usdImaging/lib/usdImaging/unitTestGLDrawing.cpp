@@ -31,13 +31,27 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/gf/vec2i.h"
 
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/arch/systemInfo.h"
+
 #include <QtGui/QApplication>
 #include <QtGui/QMouseEvent>
 #include <QtOpenGL/QGLWidget>
 
-#include <mutex>
 #include <stdio.h>
 #include <stdarg.h>
+
+static void UsdImaging_UnitTestHelper_InitPlugins()
+{
+    // Unfortunately, in order to properly find plugins in our test setup, we
+    // need to know where the test is running.
+    std::string testDir = TfGetPathName(ArchGetExecutablePath());
+    std::string pluginDir = TfStringCatPaths(testDir, 
+            "UsdImagingPlugins/lib/UsdImagingTest.framework/Resources");
+    printf("registering plugins in: %s\n", pluginDir.c_str());
+
+    PlugRegistry::GetInstance().RegisterPlugins(pluginDir);
+}
 
 ////////////////////////////////////////////////////////////
 
@@ -235,6 +249,7 @@ UsdImaging_UnitTestDrawingQGLWidget::mouseMoveEvent(QMouseEvent * event)
 UsdImaging_UnitTestGLDrawing::UsdImaging_UnitTestGLDrawing()
     : _widget(NULL)
     , _testLighting(false)
+    , _testIdRender(false)
     , _complexity(1.0f)
     , _drawMode(UsdImagingEngine::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
@@ -269,32 +284,6 @@ void
 UsdImaging_UnitTestGLDrawing::_Redraw() const
 {
     _widget->update();
-}
-
-// copied from testSdGetObjectAtPath.cpp
-static std::string
-_FindDataFile(const std::string& file)
-{
-    static std::once_flag importOnce;
-    std::call_once(importOnce, [](){
-        const std::string importFindDataFile = "from Mentor.Runtime import *";
-        if (TfPyRunSimpleString(importFindDataFile) != 0) {
-            TF_FATAL_ERROR("ERROR: Could not import FindDataFile");
-        }
-    });
-
-    const std::string findDataFile =
-        TfStringPrintf("FindDataFile(\'%s\')", file.c_str());
-
-    using namespace boost::python;
-    const object resultObj(TfPyRunString(findDataFile, Py_eval_input));
-    const extract<std::string> dataFileObj(resultObj);
-
-    if (not dataFileObj.check()) {
-        TF_FATAL_ERROR("ERROR: Could not extract result of FindDataFile");
-        return std::string();
-    }
-    return dataFileObj();
 }
 
 struct UsdImaging_UnitTestGLDrawing::_Args {
@@ -337,7 +326,7 @@ static void Usage(int argc, char *argv[])
 {
     static const char usage[] =
 "%s [-stage filePath] [-write filePath]\n"
-"                           [-offscreen] [-lighting]\n"
+"                           [-offscreen] [-lighting] [-idRender]\n"
 "                           [-complexity complexity]\n"
 "                           [-shading [flat|smooth|wire|wireOnSurface]]\n"
 "                           [-frameAll]\n"
@@ -352,6 +341,7 @@ static void Usage(int argc, char *argv[])
 "  -write filePath     name of image file to write (suffix determines type) []\n"
 "  -offscreen          execute without mapping a window\n"
 "  -lighting           use simple lighting override shader\n"
+"  -idRender           ID rendering\n"
 "  -complexity complexity\n"
 "                      Set the fallback complexity [1]\n"
 "  -shading [flat|smooth|wire|wireOnSurface]\n"
@@ -443,6 +433,9 @@ UsdImaging_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-lighting") == 0) {
             _testLighting = true;
         }
+        else if (strcmp(argv[i], "-idRender") == 0) {
+            _testIdRender = true;
+        }
         else if (strcmp(argv[i], "-stage") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             args->unresolvedStageFilePath = argv[++i];
@@ -483,6 +476,8 @@ UsdImaging_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
+    UsdImaging_UnitTestHelper_InitPlugins();
+
     _Args args;
     _Parse(argc, argv, &args);
 
@@ -500,7 +495,7 @@ UsdImaging_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     }
 
     if (not args.unresolvedStageFilePath.empty()) {
-        _stageFilePath = _FindDataFile(args.unresolvedStageFilePath);
+        _stageFilePath = args.unresolvedStageFilePath;
     }
 
     _widget = new UsdImaging_UnitTestDrawingQGLWidget(this);

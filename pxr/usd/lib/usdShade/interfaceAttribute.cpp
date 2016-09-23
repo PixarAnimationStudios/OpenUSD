@@ -26,9 +26,11 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 
+// Windows does a #define for "interface", so 
+// interface -> interfaceNS (for interface namespace)
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((interface, "interface:"))
+    ((interfaceNS, "interface:"))
     ((interfaceRecipientsOf, "interfaceRecipientsOf:"))
 );
 
@@ -51,9 +53,9 @@ UsdShadeInterfaceAttribute::UsdShadeInterfaceAttribute(
         const UsdAttribute &attr)
 {
     TfToken const &interfaceAttrName = attr.GetName();
-    if (TfStringStartsWith(interfaceAttrName, _tokens->interface)){
+    if (TfStringStartsWith(interfaceAttrName, _tokens->interfaceNS)){
         _attr = attr;
-        _name = TfToken(interfaceAttrName.GetString().substr(_tokens->interface.GetString().size()));
+        _name = TfToken(interfaceAttrName.GetString().substr(_tokens->interfaceNS.GetString().size()));
     }
 }
 
@@ -61,12 +63,12 @@ UsdShadeInterfaceAttribute::UsdShadeInterfaceAttribute(
 UsdShadeInterfaceAttribute::_GetName(
         const TfToken& interfaceAttrName)
 {
-    if (TfStringStartsWith(interfaceAttrName, _tokens->interface)) {
+    if (TfStringStartsWith(interfaceAttrName, _tokens->interfaceNS)) {
         return interfaceAttrName;
     }
     
     return TfToken(TfStringPrintf("%s%s",
-            _tokens->interface.GetText(),
+            _tokens->interfaceNS.GetText(),
             interfaceAttrName.GetText()));
 }
 

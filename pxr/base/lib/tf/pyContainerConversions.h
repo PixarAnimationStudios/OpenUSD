@@ -24,10 +24,8 @@
 #ifndef TF_PYCONTAINERCONVERSIONS_H
 #define TF_PYCONTAINERCONVERSIONS_H
 
-///
-/// \file pyContainerConversions.h
-/// \brief Utilities for providing C++ <-> Python container support.
-///
+/// \file tf/pyContainerConversions.h
+/// Utilities for providing C++ <-> Python container support.
 
 /*
  * Adapted (modified) from original at http://cctbx.sourceforge.net
@@ -37,11 +35,6 @@
  * http://cvs.sourceforge.net/viewcvs.py/cctbx/cctbx/
  *                                      LICENSE.txt?rev=1.2&view=markup
  */
-
-
-// Due to this code being essentially copied from an external source, we are not
-// covering it.
-// CODE_COVERAGE_OFF_NO_REPORT
 
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -437,7 +430,5 @@ void TfPyRegisterStlSequencesFromPython()
     from_python_sequence<
         std::deque<T>, variable_capacity_all_items_convertible_policy>();
 }
-
-// CODE_COVERAGE_ON_NO_REPORT
 
 #endif // TF_PYCONTAINERCONVERSIONS_H

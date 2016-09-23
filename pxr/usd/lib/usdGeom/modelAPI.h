@@ -24,9 +24,6 @@
 #ifndef USDGEOM_GENERATED_MODEL_H
 #define USDGEOM_GENERATED_MODEL_H
 
-
-
-
 #include "pxr/usd/usdGeom/bboxCache.h"
 
 #include "pxr/usd/usd/modelAPI.h"
@@ -47,7 +44,8 @@ class UsdGeomConstraintTarget;
 #include <string>
 
 /// \class UsdGeomModelAPI
-/// \brief UsdGeomModelAPI extends the generic UsdModelAPI schema with geometry
+///
+/// UsdGeomModelAPI extends the generic UsdModelAPI schema with geometry
 /// specific concepts such as cached extents for the entire model,
 /// constraint targets, and geometry-inspired extensions to the payload
 /// lofting process.
@@ -192,7 +190,7 @@ public:
     /// 
     /// @{
         
-    /// \brief Get the constraint target with the given name, \p constraintName.
+    /// Get the constraint target with the given name, \p constraintName.
     /// 
     /// If the requested constraint target does not exist, then an invalid 
     /// UsdConstraintTarget object is returned.
@@ -200,7 +198,7 @@ public:
     UsdGeomConstraintTarget GetConstraintTarget(
         const std::string &constraintName) const;
 
-    /// \brief Creates a new constraint target with the given name, \p constraintName.
+    /// Creates a new constraint target with the given name, \p constraintName.
     /// 
     /// If the constraint target already exists, then the existing target is 
     /// returned. If it does not exist, a new one is created and returned.
@@ -208,7 +206,7 @@ public:
     UsdGeomConstraintTarget CreateConstraintTarget(
         const std::string &constraintName) const;
 
-    /// \brief Returns all the constraint targets belonging to the model.
+    /// Returns all the constraint targets belonging to the model.
     /// 
     /// Only valid constraint targets in the "constraintTargets" namespace 
     /// are returned by this method.

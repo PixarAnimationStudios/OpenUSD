@@ -161,5 +161,4 @@ Tf_PostStatusHelper(
     const TfEnum &code,
     const char *fmt, ...) ARCH_PRINTF_FUNCTION(4, 5);
 
-
 #endif // TF_DIAGNOSTIC_HELPER_H
