@@ -4,6 +4,7 @@ pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         gf
         ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaUI_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
         ${OPENGL_gl_LIBRARY}
 
