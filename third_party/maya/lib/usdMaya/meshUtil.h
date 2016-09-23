@@ -45,8 +45,8 @@ namespace PxrUsdMayaMeshUtil
     TfToken getSubdivInterpBoundary(const MFnMesh &mesh,  TfToken defaultValue);
     TfToken setSubdivInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
-    TfToken getSubdivFVInterpBoundary(const MFnMesh &mesh);
-    TfToken setSubdivFVInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn);
+    TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
+    TfToken setSubdivFVLinearInterpolation(const UsdGeomMesh& primSchema, MFnMesh& meshFn);
 
 } // namespace PxrUsdMayaMeshUtil
 

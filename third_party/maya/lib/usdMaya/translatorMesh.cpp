@@ -211,7 +211,7 @@ PxrUsdMayaTranslatorMesh::Create(
         }
     } else {
         PxrUsdMayaMeshUtil::setSubdivInterpBoundary(mesh, meshFn, UsdGeomTokens->edgeAndCorner);
-        PxrUsdMayaMeshUtil::setSubdivFVInterpBoundary(mesh, meshFn);
+        PxrUsdMayaMeshUtil::setSubdivFVLinearInterpolation(mesh, meshFn);
         _AssignSubDivTagsToMesh(mesh, meshObj, meshFn);
     }
  

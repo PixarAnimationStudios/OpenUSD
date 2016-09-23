@@ -202,13 +202,15 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
 
         primSchema.CreateInterpolateBoundaryAttr(VtValue(sdInterpBound), true);
         
-        TfToken sdFVInterpBound = PxrUsdMayaMeshUtil::getSubdivFVInterpBoundary(
-            lMesh);
+        TfToken sdFVLinearInterpolation =
+            PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(lMesh);
 
-        primSchema.CreateFaceVaryingLinearInterpolationAttr(
-            VtValue(sdFVInterpBound), true);
+        if (not sdFVLinearInterpolation.IsEmpty()) {
+            primSchema.CreateFaceVaryingLinearInterpolationAttr(
+                VtValue(sdFVLinearInterpolation), true);
+        }
 
-        assignSubDivTagsToUSDPrim( lMesh, primSchema);
+        assignSubDivTagsToUSDPrim(lMesh, primSchema);
     }
 
     // Holes - we treat InvisibleFaces as holes
