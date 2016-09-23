@@ -235,6 +235,10 @@ TestAutoCancel()
 static void
 TestFilePermissions()
 {
+    // Set the umask for this duration of this test to a predictable value.
+    const mode_t testUmask = 00002;
+    const mode_t mask = umask(testUmask);
+
     {
         unlink("testTf_NewFilePerm.txt");
         TfAtomicOfstreamWrapper wrapper("testTf_NewFilePerm.txt");
@@ -243,9 +247,9 @@ TestFilePermissions()
 
         struct stat st;
         TF_AXIOM(stat("testTf_NewFilePerm.txt", &st) != -1);
-        mode_t fileMode = st.st_mode & 0777;
-        fprintf(stderr, "testTf_NewFilePerm: fileMode = %03o\n", fileMode);
-        TF_AXIOM(fileMode == (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP));
+        mode_t perms = st.st_mode & ACCESSPERMS;
+        fprintf(stderr, "testTf_NewFilePerm: fileMode = 0%03o\n", perms);
+        TF_AXIOM(perms == (DEFFILEMODE - testUmask));
     }
 
     {
@@ -253,7 +257,7 @@ TestFilePermissions()
         int fd = open("testTf_ExistingFilePerm.txt", O_CREAT, S_IRUSR|S_IWUSR);
         struct stat est;
         TF_AXIOM(fstat(fd, &est) != -1);
-        TF_AXIOM((est.st_mode & 0777) == 0600);
+        TF_AXIOM((est.st_mode & ACCESSPERMS) == (S_IRUSR|S_IWUSR));
         close(fd);
 
         TfAtomicOfstreamWrapper wrapper("testTf_ExistingFilePerm.txt");
@@ -263,10 +267,13 @@ TestFilePermissions()
 
         struct stat st;
         TF_AXIOM(stat("testTf_ExistingFilePerm.txt", &st) != -1);
-        mode_t fileMode = st.st_mode & 0777;
-        fprintf(stderr, "testTf_ExistingFilePerm: fileMode = %03o\n", fileMode);
+        mode_t fileMode = st.st_mode & ACCESSPERMS;
+        fprintf(stderr, "testTf_ExistingFilePerm: fileMode = 0%03o\n", fileMode);
         TF_AXIOM(not (fileMode & (S_IRGRP|S_IWGRP)));
     }
+
+    // Restore umask to whatever it was.
+    umask(mask);
 }
 
 static bool
