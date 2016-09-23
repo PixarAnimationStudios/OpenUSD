@@ -14,6 +14,7 @@
 # You may obtain a copy of the License at
 # http://www.apache.org/licenses/LICENSE-2.0
 
+option(PTEX_PREFER_STATIC "Prefer static library when linking pTex" OFF)
 
 if (WIN32)
     find_path( PTEX_INCLUDE_DIR
@@ -71,9 +72,14 @@ else ()
             /usr/include
             /usr/local/include
             DOC "The directory where Ptexture.h resides")
+    if (${PTEX_PREFER_STATIC})
+        set(PTEX_LIBRARY_NAMES libPtex.a libwdasPtex.a Ptex wdasPtex)
+    else ()
+        set(PTEX_LIBRARY_NAMES Ptex wdasPtex libPtex.a libwdasPtex.a)
+    endif ()
     find_library( PTEX_LIBRARY
         NAMES
-            Ptex wdasPtex
+            ${PTEX_LIBRARY_NAMES}
         HINTS
             "${PTEX_LOCATION}/lib64"
             "${PTEX_LOCATION}/lib"
