@@ -683,6 +683,10 @@ class "PointBased" (
 
 class Mesh "Mesh" (
     inherits = </PointBased>
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usd/timeCode.h" """
+    }
     doc="""Encodes a mesh surface whose definition and feature-set
     will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
     
