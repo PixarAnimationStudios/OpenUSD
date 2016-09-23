@@ -73,14 +73,14 @@ static
 SdfFileFormatConstPtr
 _GetUnderlyingFileFormat(const string& filePath)
 {
-    auto usdaFormat = _GetFileFormat(UsdUsdaFileFormatTokens->Id);
-    if (usdaFormat->CanRead(filePath)) {
-        return usdaFormat;
-    }
-
     auto usdcFormat = _GetFileFormat(UsdUsdcFileFormatTokens->Id);
     if (usdcFormat->CanRead(filePath)) {
         return usdcFormat;
+    }
+
+    auto usdaFormat = _GetFileFormat(UsdUsdaFileFormatTokens->Id);
+    if (usdaFormat->CanRead(filePath)) {
+        return usdaFormat;
     }
 
     // XXX: Usdb has to come last because it unconditionally returns 'true' for
