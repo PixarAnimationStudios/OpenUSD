@@ -131,6 +131,12 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
         }
     }
 
+    // The following two lines should have no effect on user-visible state but
+    // prevent a Maya crash in MFnMesh.setUVs after creating a crease set.
+    // XXX this workaround is needed pending a fix by Autodesk.
+    MString currentSet = meshFn.currentUVSetName();
+    meshFn.setCurrentUVSetName(currentSet);
+
     // Create UVs on the mesh from the values we collected out of the primvar.
     // We'll assign mesh components to these values below.
     status = meshFn.setUVs(uCoords, vCoords, &uvSetName);
