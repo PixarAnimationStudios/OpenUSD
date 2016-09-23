@@ -21,23 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file translatorMesh.h
+
 #ifndef PXRUSDMAYA_TRANSLATOR_MESH_H
 #define PXRUSDMAYA_TRANSLATOR_MESH_H
 
-#include "usdMaya/primReaderContext.h"
 #include "usdMaya/primReaderArgs.h"
+#include "usdMaya/primReaderContext.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
-#include <maya/MFloatArray.h>
-#include <maya/MColorArray.h>
 #include <maya/MFnMesh.h>
+#include <maya/MIntArray.h>
+#include <maya/MObject.h>
+
 
 /// \brief Provides helper functions for creating UsdGeomMesh
 struct PxrUsdMayaTranslatorMesh
 {
-    // Creates a MFnMesh under \p parentNode from \p mesh.
+    /// Creates an MFnMesh under \p parentNode from \p mesh.
     static bool Create(
             const UsdGeomMesh& mesh,
             MObject parentNode,
@@ -45,10 +49,24 @@ struct PxrUsdMayaTranslatorMesh
             PxrUsdMayaPrimReaderContext* context);
 
 private:
-    static bool _AssignSubDivTagsToMesh( const UsdGeomMesh &primSchema, MObject &meshObj, MFnMesh &meshFn);
-    static bool _AssignUVSetPrimvarToMesh( const UsdGeomPrimvar &primvar, MFnMesh &meshFn);
-    static bool _AssignColorSetPrimvarToMesh( const UsdGeomMesh &primSchema, const UsdGeomPrimvar &primvar, MFnMesh &meshFn, MIntArray &polygonCounts, MIntArray &polygonConnects, MFnMesh::MColorRepresentation colorRep);
+    static bool _AssignSubDivTagsToMesh(
+            const UsdGeomMesh& primSchema,
+            MObject& meshObj,
+            MFnMesh& meshFn);
+
+    static bool _AssignUVSetPrimvarToMesh(
+            const UsdGeomPrimvar& primvar,
+            MFnMesh& meshFn);
+
+    static bool _AssignColorSetPrimvarToMesh(
+            const UsdGeomMesh& primSchema,
+            const UsdGeomPrimvar& primvar,
+            MFnMesh& meshFn,
+            MIntArray& polygonCounts,
+            MIntArray& polygonConnects,
+            MFnMesh::MColorRepresentation colorRep);
 
 };
+
 
 #endif // PXRUSDMAYA_TRANSLATOR_MESH_H

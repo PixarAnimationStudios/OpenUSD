@@ -249,17 +249,13 @@ PxrUsdMayaTranslatorMesh::Create(
             }
         }
         
-        // If Vec2f, we assume are UVs
         if (typeName == SdfValueTypeNames->Float2Array) {
-            if (interpolation == UsdGeomTokens->vertex ||
-                interpolation == UsdGeomTokens->faceVarying) {
-                if (_AssignUVSetPrimvarToMesh(primvar, meshFn)==false) {
-                    MGlobal::displayWarning(TfStringPrintf("Unable to retrieve and assign data for UVSet <%s> on mesh <%s>", 
-                                name.GetText(), mesh.GetPrim().GetPath().GetText()).c_str());
-                }
-            } else {
-                MGlobal::displayWarning(TfStringPrintf("UVSet <%s> on mesh <%s> has to be vertex of facevarying", 
-                                name.GetText(), mesh.GetPrim().GetPath().GetText()).c_str());
+            // We assume that Float2Array primvars are UV sets.
+            if (not _AssignUVSetPrimvarToMesh(primvar, meshFn)) {
+                MGlobal::displayWarning(
+                    TfStringPrintf("Unable to retrieve and assign data for UV set <%s> on mesh <%s>", 
+                                   name.GetText(),
+                                   mesh.GetPrim().GetPath().GetText()).c_str());
             }
         } else if (interpolation == UsdGeomTokens->vertex ||
                 interpolation == UsdGeomTokens->faceVarying ||

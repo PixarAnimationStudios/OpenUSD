@@ -22,130 +22,171 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "usdMaya/translatorMesh.h"
+
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/math.h"
-#include "pxr/base/gf/transform.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/inherits.h"
-#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
-#include <maya/MVector.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MGlobal.h>
+#include <maya/MItMeshFaceVertex.h>
 
-static bool computeVertexIndices(MFnMesh &meshFn, MIntArray &valuesPerPolygon, MIntArray &valueIndexes, MIntArray &remapIndexes, TfToken interpolation)
-{
-    MIntArray meshIdxRemap;
-    meshFn.getVertices(valuesPerPolygon, meshIdxRemap);
-    int numFaceVertices = meshFn.numFaceVertices();
-    valueIndexes.setLength(numFaceVertices);
-    int vertexIndex;
-    for (int i=0; i < numFaceVertices; i++) {
-        if (interpolation == UsdGeomTokens->vertex) {
-            vertexIndex=meshIdxRemap[i];
-        } else {
-            vertexIndex=i;
-        }
-        if (remapIndexes.length()>0) {
-            valueIndexes.set(remapIndexes[vertexIndex],i);
-        } else {
-            valueIndexes.set(vertexIndex,i);
-        }
-    }
-    return true;
-}
-
-static bool findCoincidentUVCoord(MFloatArray &uCoords, MFloatArray &vCoords, size_t uvCoordsArraySize, float newU, float newV, size_t *foundIdx)
-{
-    for (size_t i=0;i<uvCoordsArraySize;i++) {
-        if (GfIsClose(uCoords[i], newU, 1e-9) && 
-            GfIsClose(vCoords[i], newV, 1e-9)) {
-            *foundIdx=i;
-            return true;
-        }
-    }
-    return false;
-}
-
-static void compressUVValues(VtArray<GfVec2f> uvValues, MFloatArray &uCoords, MFloatArray &vCoords, MIntArray &remapIndexes)
-{
-    uCoords.setLength(uvValues.size());
-    vCoords.setLength(uvValues.size());
-    remapIndexes.setLength(uvValues.size());
-    size_t i=0, uvCoordsArraySize=0, foundIdx=0;
-    TF_FOR_ALL(vec, uvValues) {
-        if (findCoincidentUVCoord(uCoords, vCoords, uvCoordsArraySize, (*vec)[0], (*vec)[1], &foundIdx)) {
-            remapIndexes[i]=foundIdx;
-        } else {
-            uCoords[uvCoordsArraySize] = (*vec)[0];
-            vCoords[uvCoordsArraySize] = (*vec)[1];
-            remapIndexes[i]=uvCoordsArraySize;
-            uvCoordsArraySize++;
-        }
-        i++;
-    }
-    TF_VERIFY(i == uvValues.size());
-    uCoords.setLength(uvCoordsArraySize);
-    vCoords.setLength(uvCoordsArraySize);
-}
 
 /* static */
-bool 
-PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh( const UsdGeomPrimvar &primvar, MFnMesh &meshFn)
+bool
+PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
+        const UsdGeomPrimvar& primvar,
+        MFnMesh& meshFn)
 {
-    TfToken name, interpolation;
-    SdfValueTypeName typeName;
-    int elementSize;
-    primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
+    const TfToken& primvarName = primvar.GetBaseName();
 
-    VtVec2fArray rawVal;
-    if (primvar.ComputeFlattened(&rawVal, UsdTimeCode::Default())) {
-        MFloatArray uCoords;
-        MFloatArray vCoords;
-        MIntArray remapIndexes;
-        // Compress coincident UV points to preserve editability in maya
-        compressUVValues(rawVal, uCoords, vCoords, remapIndexes);
-        MString uvSetName(name.GetText());
-        MStatus status;
-        // We assume that the st UV set is the first UV set in maya called map1
-        if (uvSetName=="st") {
-            uvSetName="map1";
-            status = MS::kSuccess;
-        } else {
-            status = meshFn.createUVSet(uvSetName);
-        }
-        if (status == MS::kSuccess) {
-            status = meshFn.setUVs(uCoords, vCoords, &uvSetName );
-            if (status == MS::kSuccess) {
-                MIntArray valuesPerPolygon;
-                MIntArray valueIndexes;
-                if (computeVertexIndices(meshFn, valuesPerPolygon, valueIndexes, remapIndexes, interpolation)) {
-                    status = meshFn.assignUVs(valuesPerPolygon, valueIndexes, &uvSetName);
-                    if (status != MS::kSuccess) {
-                        MGlobal::displayWarning(TfStringPrintf("Unable to assign UV set <%s> to mesh", name.GetText()).c_str());
-                    } else {
-                        return true;
-                    }
-                } else {
-                    MGlobal::displayWarning(TfStringPrintf("Unable to computeVertexIndices on UV set <%s>", name.GetText()).c_str());
-                }
-            } else {
-                MGlobal::displayWarning(TfStringPrintf("Unable to set UV data on <%s>", name.GetText()).c_str());
-            }
-        } else {
-            MGlobal::displayWarning(TfStringPrintf("Unable to create UV <%s>", name.GetText()).c_str());
-        }
-    } else {
-        MGlobal::displayWarning(TfStringPrintf("Primvar <%s> doesn't hold an array of Vec2f", name.GetText()).c_str());
+    // Get the raw data before applying any indexing.
+    VtVec2fArray uvValues;
+    if (not primvar.Get(&uvValues) or uvValues.empty()) {
+        MGlobal::displayWarning(
+            TfStringPrintf("Could not read UV values from primvar '%s' on mesh: %s",
+                           primvarName.GetText(),
+                           meshFn.fullPathName().asChar()).c_str());
+        return false;
     }
 
-    return false;
+    // This is the number of UV values assuming the primvar is NOT indexed.
+    size_t numUVs = uvValues.size();
+
+    VtIntArray assignmentIndices;
+    int unauthoredValuesIndex = -1;
+    if (primvar.GetIndices(&assignmentIndices)) {
+        // The primvar IS indexed, so the indices array is what determines the
+        // number of UV values.
+        numUVs = assignmentIndices.size();
+        unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+    }
+
+    // Go through the UV data and add the U and V values to separate
+    // MFloatArrays, taking into consideration that indexed data may have been
+    // authored sparsely. If the assignmentIndices array is empty then the data
+    // is NOT indexed, in which case we can use it directly.
+    // Note that with indexed data, the data is added to the arrays in ascending
+    // component ID order according to the primvar's interpolation (ascending
+    // face ID for uniform interpolation, ascending vertex ID for vertex
+    // interpolation, etc.). This ordering may be different from the way the
+    // values are ordered in the primvar. Because of this, we recycle the
+    // assignmentIndices array as we go to store the new mapping from component
+    // index to UV index.
+    MFloatArray uCoords;
+    MFloatArray vCoords;
+    for (size_t i = 0; i < numUVs; ++i) {
+        size_t uvIndex = i;
+
+        if (i < assignmentIndices.size()) {
+            // The data is indexed, so consult the indices array for the
+            // correct index into the data.
+            uvIndex = assignmentIndices[i];
+
+            if (uvIndex == unauthoredValuesIndex) {
+                // This component is unauthored, so just update the
+                // mapping in assignmentIndices and then skip the value.
+                // We don't actually use the value at the unassigned index.
+                assignmentIndices[i] = -1;
+                continue;
+            }
+
+            // We'll be appending a new value, so the current length of the
+            // array gives us the new value's index.
+            assignmentIndices[i] = uCoords.length();
+        }
+
+        uCoords.append(uvValues[uvIndex][0]);
+        vCoords.append(uvValues[uvIndex][1]);
+    }
+
+    // uCoords and vCoords now store all of the values and any unassigned
+    // components have had their indices set to -1, so update the unauthored
+    // values index.
+    unauthoredValuesIndex = -1;
+
+    MStatus status;
+    MString uvSetName(primvarName.GetText());
+    if (primvarName == UsdUtilsGetPrimaryUVSetName()) {
+        // We assume that the primary USD UV set maps to Maya's default 'map1'
+        // set which always exists, so we shouldn't try to create it.
+        uvSetName = "map1";
+    } else {
+        status = meshFn.createUVSet(uvSetName);
+        if (status != MS::kSuccess) {
+            MGlobal::displayWarning(
+                TfStringPrintf("Unable to create UV set '%s' for mesh: %s",
+                               uvSetName.asChar(),
+                               meshFn.fullPathName().asChar()).c_str());
+            return false;
+        }
+    }
+
+    // Create UVs on the mesh from the values we collected out of the primvar.
+    // We'll assign mesh components to these values below.
+    status = meshFn.setUVs(uCoords, vCoords, &uvSetName);
+    if (status != MS::kSuccess) {
+        MGlobal::displayWarning(
+            TfStringPrintf("Unable to set UV data on UV set '%s' for mesh: %s",
+                           uvSetName.asChar(),
+                           meshFn.fullPathName().asChar()).c_str());
+        return false;
+    }
+
+    const TfToken& interpolation = primvar.GetInterpolation();
+
+    // Iterate through the mesh's face vertices assigning UV values to them.
+    MItMeshFaceVertex itFV(meshFn.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        int faceId = itFV.faceId();
+        int vertexId = itFV.vertId();
+        int faceVertexId = itFV.faceVertId();
+
+        // Primvars with constant or uniform interpolation are not really
+        // meaningful as UV sets, but we support them anyway.
+        int uvId = 0;
+        if (interpolation == UsdGeomTokens->constant) {
+            uvId = 0;
+        } else if (interpolation == UsdGeomTokens->uniform) {
+            uvId = faceId;
+        } else if (interpolation == UsdGeomTokens->vertex) {
+            uvId = vertexId;
+        } else if (interpolation == UsdGeomTokens->faceVarying) {
+            uvId = fvi;
+        }
+
+        if (uvId < assignmentIndices.size()) {
+            // The data is indexed, so consult the indices array for the
+            // correct index into the data.
+            uvId = assignmentIndices[uvId];
+
+            if (uvId == unauthoredValuesIndex) {
+                // This component had no authored value, so skip it.
+                continue;
+            }
+        }
+
+        status = meshFn.assignUV(faceId, faceVertexId, uvId, &uvSetName);
+        if (status != MS::kSuccess) {
+            MGlobal::displayWarning(
+                TfStringPrintf("Could not assign UV value to UV set '%s' on mesh: %s",
+                               uvSetName.asChar(),
+                               meshFn.fullPathName().asChar()).c_str());
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /* static */
