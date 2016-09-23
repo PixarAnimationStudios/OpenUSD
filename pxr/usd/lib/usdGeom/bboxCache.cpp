@@ -172,13 +172,15 @@ private:
                                         _owner, xfCaches);
         tbb::task::spawn_root_and_wait(rootTask);
 
-        // Update all of the master prims that depended on the completed
-        // master and dispatch new tasks for those whose dependencies have
-        // been resolved.
-        const _MasterTask& masterData = (*masterTasks)[master];
+        // Update all of the master prims that depended on the completed master
+        // and dispatch new tasks for those whose dependencies have been
+        // resolved.  We're guaranteed that all the entries were populated by
+        // _PopulateTasksForMaster, so we don't check the result of 'find()'.
+        const _MasterTask& masterData = masterTasks->find(master)->second;
         BOOST_FOREACH(const UsdPrim& dependentMaster, 
                       masterData.dependentMasters) {
-            _MasterTask& dependentMasterData = (*masterTasks)[dependentMaster];
+            _MasterTask& dependentMasterData =
+                masterTasks->find(dependentMaster)->second;
             if (dependentMasterData.numDependencies.fetch_and_decrement() == 1){
                 dispatcher->Run(
                     &_MasterBBoxResolver::_ExecuteTaskForMaster, 
