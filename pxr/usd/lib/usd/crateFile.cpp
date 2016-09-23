@@ -365,6 +365,10 @@ struct _MmapStream {
     }
     inline int64_t Tell() const { return _cur - _mapStart; }
     inline void Seek(int64_t offset) { _cur = _mapStart + offset; }
+    inline void Prefetch(int64_t offset, int64_t size) {
+        ArchMemAdvise(_mapStart + offset, size, ArchMemAdviceWillNeed);
+    }
+
 private:
     char const *_cur;
     char const *_mapStart;
@@ -377,6 +381,10 @@ struct _PreadStream {
     }
     inline int64_t Tell() const { return _cur; }
     inline void Seek(int64_t offset) { _cur = offset; }
+    inline void Prefetch(int64_t offset, int64_t size) {
+        ArchFileAdvise(_file, offset, size, ArchFileAdviceWillNeed);
+    }
+
 private:
     int64_t _cur;
     FILE *_file;
@@ -561,6 +569,8 @@ public:
         src.Read(&bits, sizeof(bits));
         return bits;
     }
+
+    void Prefetch(int64_t offset, int64_t size) { src.Prefetch(offset, size); }
 
     void Seek(uint64_t offset) { src.Seek(offset); }
 
@@ -1587,6 +1597,7 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     TfErrorMark m;
     _boot = _ReadBootStrap(reader.src, fileSize);
     if (m.IsClean()) _toc = _ReadTOC(reader, _boot);
+    if (m.IsClean()) _PrefetchStructuralSections(reader);
     if (m.IsClean()) _ReadTokens(reader);
     if (m.IsClean()) _ReadStrings(reader);
     if (m.IsClean()) _ReadFields(reader);
@@ -1619,6 +1630,24 @@ CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
             _SoftwareVersion.AsString().c_str());
     }
     return b;
+}
+
+template <class Reader>
+void
+CrateFile::_PrefetchStructuralSections(Reader reader) const
+{
+    // Go through the _toc and find its maximal range, then ask the reader to
+    // prefetch that range.
+    int64_t min = -1, max = -1;
+    for (_Section const &sec: _toc.sections) {
+        if (min == -1 || (sec.start < min))
+            min = sec.start;
+        int64_t end = sec.start + sec.size;
+        if (max == -1 || (end > max))
+            max = end;
+    }
+    if (min != -1 && max != -1)
+        reader.Prefetch(min, max-min);
 }
 
 template <class Reader>
