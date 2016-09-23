@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/sdf/path.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/hash.h"
@@ -87,27 +88,19 @@ _FindLongestPrefix(SdfPathVector const &paths, SdfPath const &path)
     return object(*result);
 }
 
-// XXX TODO:
-// In order to accommodate this code moving to amber, CtfPyAnnotatedBoolResult
-// would need to be moved to pxr/base/tf. This is a a medium sized move;
-// I'm deferring that to later to get this into the build now so that
-// refactoring can move forward. We should revisit this.
-
-// struct Sdf_PathIsValidPathStringResult : public CtfPyAnnotatedBoolResult<string>
-// {
-//     Sdf_PathIsValidPathStringResult(bool val, string const &msg) :
-//         TfPyAnnotatedBoolResult<string>(val, msg) {}
-// };
+struct Sdf_PathIsValidPathStringResult : public TfPyAnnotatedBoolResult<string>
+{
+    Sdf_PathIsValidPathStringResult(bool val, string const &msg) :
+        TfPyAnnotatedBoolResult<string>(val, msg) {}
+};
 
 static
-//Sdf_PathIsValidPathStringResult
-bool
+Sdf_PathIsValidPathStringResult
 _IsValidPathString(string const &pathString)
 {
     string errMsg;
     bool valid = SdfPath::IsValidPathString(pathString, &errMsg);
-    // return Sdf_PathIsValidPathStringResult(valid, errMsg);
-    return valid;
+    return Sdf_PathIsValidPathStringResult(valid, errMsg);
 }
 
 static
@@ -318,8 +311,8 @@ void wrapPath() {
 
     VtValueFromPython<SdfPath>();
 
-    // Sdf_PathIsValidPathStringResult::
-    //     Wrap<Sdf_PathIsValidPathStringResult>("_IsValidPathStringResult",
-    //                                          "errorMessage");
+    Sdf_PathIsValidPathStringResult::
+        Wrap<Sdf_PathIsValidPathStringResult>("_IsValidPathStringResult",
+                                            "errorMessage");
 
 }
