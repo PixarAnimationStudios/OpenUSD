@@ -187,6 +187,18 @@ ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
 ARCH_API
 ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
+enum ArchMemAdvice {
+    ArchMemAdviceWillNeed, // OS may prefetch this range.
+    ArchMemAdviceDontNeed  // OS may free resources related to this range.
+};
+
+/// Advise the OS regarding how the application intends to access a range of
+/// memory.  See ArchMemAdvice.  This is primarily useful for mapped file
+/// regions.  This call does not change program semantics.  It is only an
+/// optimization hint to the OS, and may be a no-op on some systems.
+ARCH_API
+void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv);
+
 /// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
 /// file position indicator for \p file is not changed.  Return the number of
 /// bytes read, or zero if at end of file.  Return -1 in case of an error, with
@@ -200,6 +212,19 @@ int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
 /// errno set appropriately.
 ARCH_API
 int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
+
+enum ArchFileAdvice {
+    ArchFileAdviceWillNeed, // OS may prefetch this range.
+    ArchFileAdviceDontNeed  // OS may free resources related to this range.
+};
+
+/// Advise the OS regarding how the application intends to access a range of
+/// bytes in a file.  See ArchFileAdvice.  This call does not change program
+/// semantics.  It is only an optimization hint to the OS, and may be a no-op on
+/// some systems.
+ARCH_API
+void ArchFileAdvise(FILE *file, int64_t offset, size_t count,
+                    ArchFileAdvice adv);
 
 ///@}
 

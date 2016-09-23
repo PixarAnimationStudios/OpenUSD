@@ -366,6 +366,19 @@ ArchMapFileReadWrite(FILE *file)
     return Arch_MapFileImpl<ArchMutableFileMapping>(file);
 }
 
+ARCH_API
+void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // No windows implementation yet.  Look at
+    // PrefetchVirtualMemory()/OfferVirtualMemory() in future.
+#else // assume POSIX
+    posix_madvise(const_cast<void *>(addr), len,
+                  adv == ArchMemAdviceWillNeed ?
+                  POSIX_MADV_WILLNEED : POSIX_MADV_DONTNEED);
+#endif
+}
+
 int64_t
 ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
 {
@@ -478,3 +491,15 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
 #endif
 }
 
+ARCH_API
+void ArchFileAdvise(
+    FILE *file, int64_t offset, size_t count, ArchFileAdvice adv)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // No windows implementation yet.  Not clear what's equivalent.
+#else // assume POSIX
+    posix_fadvise(fileno(file), offset, static_cast<off_t>(count),
+                  adv == ArchFileAdviceWillNeed ?
+                  POSIX_FADV_WILLNEED : POSIX_FADV_DONTNEED);
+#endif
+}
