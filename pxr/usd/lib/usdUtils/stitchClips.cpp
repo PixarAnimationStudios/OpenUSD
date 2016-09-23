@@ -508,7 +508,7 @@ namespace {
     }
 
     // This allows one to set the start and end frame data in 
-    // a \p modelClipLayer, based on model clip data contained at 
+    // a \p resultLayer, based on model clip data contained at 
     // \p stitchPath. This function will take the minimum available 
     // startTimeCode(unless one is supplied) from inside of the clipTimes at the 
     // \p stitchPath and the maximum available endTimeCode.
@@ -516,21 +516,22 @@ namespace {
     // Note: if the prim at \p stitchPath has no clip data, neither the start
     // nor end frame will be set by this operations
     void
-    _SetTimeCodeRange(const SdfLayerHandle& modelClipLayer,
+    _SetTimeCodeRange(const SdfLayerHandle& resultLayer,
                       const SdfPath& clipDataPath,
-                      double startTimeCode) 
+                      double startTimeCode,
+                      double endTimeCode) 
     {
         // it is a coding error to look up clip data in a non-existent path
-        if (not modelClipLayer->GetPrimAtPath(clipDataPath)) {
+        if (not resultLayer->GetPrimAtPath(clipDataPath)) {
             TF_CODING_ERROR("Invalid prim in path: @%s@<%s>",
-                            modelClipLayer->GetIdentifier().c_str(),
+                            resultLayer->GetIdentifier().c_str(),
                             clipDataPath.GetString().c_str());
             return;
         }
 
         // obtain the current set of clip times
         VtVec2dArray currentClipTimes 
-            = _GetUnboxedValue<VtVec2dArray>(modelClipLayer,
+            = _GetUnboxedValue<VtVec2dArray>(resultLayer,
                                              clipDataPath,
                                              clipTimeKey);
 
@@ -546,12 +547,15 @@ namespace {
         }
 
         // grab the min at the front and max at the back
-        double endTimeCode = (*currentClipTimes.rbegin())[0];
-        modelClipLayer->SetEndTimeCode(endTimeCode);
+        if (endTimeCode == TIME_MAX) {
+            endTimeCode = (*currentClipTimes.rbegin())[0];
+        }
+        resultLayer->SetEndTimeCode(endTimeCode);
+
         if (startTimeCode == TIME_MAX) {
             startTimeCode = (*currentClipTimes.begin())[0];
         }
-        modelClipLayer->SetStartTimeCode(startTimeCode);
+        resultLayer->SetStartTimeCode(startTimeCode);
     }
 
     // Generates a toplogy file name based on an input file name
@@ -726,10 +730,11 @@ namespace {
                              const SdfLayerRefPtr& topologyLayer,
                              const SdfLayerRefPtrVector& clipLayers,
                              const SdfPath& clipPath, 
-                             const double startTimeCode)
+                             const double startTimeCode,
+                             const double endTimeCode)
     {
         _StitchLayers(resultLayer, topologyLayer, clipLayers, clipPath); 
-        _SetTimeCodeRange(resultLayer, clipPath, startTimeCode);
+        _SetTimeCodeRange(resultLayer, clipPath, startTimeCode, endTimeCode);
 
         topologyLayer->Save();
         resultLayer->Save();
@@ -819,7 +824,8 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                     const _ClipFileVector& clipLayerFiles,
                     const SdfPath& clipPath, 
                     const bool reuseExistingTopology,
-                    const double startTimeCode)
+                    const double startTimeCode,
+                    const double endTimeCode)
 {
     // XXX: See comment in UsdUtilsStitchClipsTopology above.
     TF_PY_ALLOW_THREADS_IN_SCOPE();
@@ -847,5 +853,5 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
     }
 
     return _UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, clipLayers, 
-        clipPath, startTimeCode);
+        clipPath, startTimeCode, endTimeCode);
 }

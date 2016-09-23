@@ -33,29 +33,15 @@
 
 using namespace boost::python;
 
-// A wrapper to clean up the python API, allowing users to pass in None
-// and have it default to the no-stage-frame-supplied case
-double
-_ConvertStartFrame(const boost::python::object pyStartFrame)
+template <typename T>
+T
+_ConvertWithDefault(const boost::python::object obj, const T& def)
 {
-    double startFrame;
-    if (not TfPyIsNone(pyStartFrame)) {
-        startFrame = extract<double>(pyStartFrame);        
-    } else {
-        startFrame = std::numeric_limits<double>::max();
-    }
-
-    return startFrame;
-}
-
-bool
-_ConvertReuseTopology(const boost::python::object pyReuseTopology) 
-{
-    if (not TfPyIsNone(pyReuseTopology)) {
-        return extract<bool>(pyReuseTopology);
-    } else {
-        return true;
-    }
+    if (not TfPyIsNone(obj)) {
+        return extract<T>(obj);
+    } 
+        
+    return def;
 }
 
 void
@@ -63,11 +49,14 @@ _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
                     const boost::python::object reuseExistingTopology,
-                    const boost::python::object pyStartFrame)
+                    const boost::python::object pyStartFrame,
+                    const boost::python::object pyEndFrame)
 {
+    constexpr double dmax = std::numeric_limits<double>::max();
     UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
-                        _ConvertReuseTopology(reuseExistingTopology),
-                        _ConvertStartFrame(pyStartFrame));
+                        _ConvertWithDefault(reuseExistingTopology, true),
+                        _ConvertWithDefault(pyStartFrame, dmax),
+                        _ConvertWithDefault(pyEndFrame, dmax));
 }
 
 void _ConvertStitchClipsToplogy(const SdfLayerHandle& topologyLayer,
@@ -85,7 +74,8 @@ wrapStitchClips()
          arg("clipLayerFiles"), 
          arg("clipPath"), 
          arg("reuseExistingTopology")=boost::python::object(),
-         arg("startFrame")=boost::python::object()));
+         arg("startFrame")=boost::python::object(),
+         arg("endFrame")=boost::python::object()));
 
     def("StitchClipsTopology",
         _ConvertStitchClipsToplogy,

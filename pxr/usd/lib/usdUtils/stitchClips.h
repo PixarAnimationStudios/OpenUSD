@@ -54,7 +54,13 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// \p startTimeCode          The first time coordinate for the rootLayer 
 ///                           to point to. If none is provided, it will be 
 ///                           the lowest startTimeCode available from 
-///                           the \p clipLayers
+///                           the \p clipLayers.
+///
+/// \p endTimeCode            The last time coordinate for the rootLayer to 
+///                           point to. If none is provided, it will be the 
+///                           highest endTimeCode authored from the 
+///                           \p clipLayers.
+///
 ///
 /// Details on how this is accomplished can be found below:
 ///
@@ -86,7 +92,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// clipManifestAssetPath, clipActive etc. at the specified \p clipPath.
 /// The resultLayer will also have timeCode range data, such as start and end 
 /// timeCodes written to it, with the starting position being provided by 
-/// \p startTimeCode.
+/// \p startTimeCode and the ending provided by \p endTimeCode.
 ///
 /// Note: an invalid clip path(because the prim doesn't exist in
 /// the aggregate topologyLayer) will result in a TF_CODING_ERROR.
@@ -100,6 +106,8 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                     const bool reuseExistingTopology
                         = true,
                     const double startTimeCode 
+                        = std::numeric_limits<double>::max(),
+                    const double endTimeCode
                         = std::numeric_limits<double>::max());
 
 /// A function which aggregates the topology of a set of \p clipLayerFiles
