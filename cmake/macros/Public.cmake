@@ -170,12 +170,26 @@ function(pxr_shared_library LIBRARY_NAME)
             set(rpath "$ORIGIN/../../../../${PXR_INSTALL_SUBDIR}/lib:${rpath}")
         endif()
 
-        set_target_properties(${LIBRARY_NAME} 
-            PROPERTIES 
-                PREFIX ""
-                FOLDER "${PXR_PREFIX}/_python"
-                INSTALL_RPATH ${rpath}
-        )
+        # Python modules must be suffixed with .pyd on Windows and .so on
+        # other platforms.
+        if(WIN32)
+            set_target_properties(${LIBRARY_NAME}
+                PROPERTIES
+                    PREFIX ""
+                    SUFFIX ".pyd"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
+                    LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
+            )
+        else()
+            set_target_properties(${LIBRARY_NAME}
+                PROPERTIES
+                    PREFIX ""
+                    SUFFIX ".so"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
+            )
+        endif()
     else()
         _get_install_dir(lib LIB_INSTALL_PREFIX)
         _get_share_install_dir(SHARE_INSTALL_PREFIX)
