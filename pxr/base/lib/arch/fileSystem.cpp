@@ -497,6 +497,8 @@ void ArchFileAdvise(
 {
 #if defined(ARCH_OS_WINDOWS)
     // No windows implementation yet.  Not clear what's equivalent.
+#elif defined(ARCH_OS_DARWIN)
+    // No OSX implementation; posix_fadvise does not exist on that platform.
 #else // assume POSIX
     posix_fadvise(fileno(file), offset, static_cast<off_t>(count),
                   adv == ArchFileAdviceWillNeed ?
