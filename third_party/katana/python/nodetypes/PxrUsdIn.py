@@ -38,6 +38,7 @@ gb = FnAttribute.GroupBuilder()
 
 gb.set('fileName', '')
 nb.setHintsForParameter('fileName', {
+    'widget' : 'fileInput',
     'help' : 'The USD file to read.',
 })
 

@@ -27,12 +27,13 @@
 /// \file usdSchemaExamples/tokens.h
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// 
+//
 // This is an automatically generated file (by usdGenSchema.py).
 // Do not hand-edit!
-// 
+//
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 /// \hideinitializer
@@ -70,6 +71,7 @@
 /// \li <b>paramsVelocity</b> - UsdSchemaExamplesParamsAPI
 /// \li <b>paramsVolume</b> - UsdSchemaExamplesParamsAPI
 /// \li <b>target</b> - UsdSchemaExamplesSimple
-TF_DECLARE_PUBLIC_TOKENS(UsdSchemaExamplesTokens, USDSCHEMAEXAMPLES_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdSchemaExamplesTokens, ARCH_EXPORT,
+                         USDSCHEMAEXAMPLES_TOKENS);
 
 #endif

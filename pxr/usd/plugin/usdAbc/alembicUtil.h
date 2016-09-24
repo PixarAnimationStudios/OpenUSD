@@ -26,6 +26,7 @@
 
 /// \file usdAbc/alembicUtil.h
 
+#include "pxr/usd/usdAbc/api.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/schema.h"
@@ -33,6 +34,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <Alembic/Abc/ICompoundProperty.h>
 #include <Alembic/Abc/ISampleSelector.h>
@@ -52,6 +54,8 @@
 #include <string>
 #include <vector>
 
+namespace abc = Alembic::Util::ALEMBIC_VERSION_NS;
+
 class SdfAbstractDataValue;
 
 /// Flags for readers and writers.
@@ -62,6 +66,7 @@ class SdfAbstractDataValue;
     (promoteInstances) \
     /* end */
 TF_DECLARE_PUBLIC_TOKENS(UsdAbc_AlembicContextFlagNames,
+						 USDABC_API,
                          USDABC_ALEMBIC_CONTEXT_FLAG_NAMES);
 
 // A namespace so we can bring Alembic namespaces into it.
@@ -77,6 +82,7 @@ using namespace ::Alembic::Abc;
     ((SDF_VALUE_TAG(elem), SDF_VALUE_TRAITS_TYPE(elem)::Name())) \
     ((BOOST_PP_CAT(SDF_VALUE_TAG(elem), Array), SDF_VALUE_TRAITS_TYPE(elem)::ShapedName()))
 TF_DECLARE_PUBLIC_TOKENS(UsdAbc_UsdDataTypes,
+	USDABC_API,
     BOOST_PP_SEQ_FOR_EACH(USD_MAKE_USD_TYPE, ~, SDF_VALUE_TYPES)
     _SDF_VALUE_TYPE_NAME_TOKENS
 );
@@ -96,7 +102,8 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbc_UsdDataTypes,
     (Scope) \
     (Xform) \
     /* end */
-TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
+TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USDABC_API,
+						 USD_ABC_PRIM_TYPE_NAMES);
 
 // Property names in the UsdGeom schema.
 #define USD_ABC_GPRIM_NAMES \
@@ -110,14 +117,16 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
     USD_ABC_GPRIM_NAMES \
     USD_ABC_POINTBASED_NAMES \
     /* end */
-TF_DECLARE_PUBLIC_TOKENS(UsdAbcPropertyNames, USD_ABC_PROPERTY_NAMES);
+TF_DECLARE_PUBLIC_TOKENS(UsdAbcPropertyNames, USDABC_API,
+						 USD_ABC_PROPERTY_NAMES);
 
 #define USD_ABC_CUSTOM_METADATA \
     (gprimDataRender) \
     (riName) \
     (riType) \
     /* end */
-TF_DECLARE_PUBLIC_TOKENS(UsdAbcCustomMetadata, USD_ABC_CUSTOM_METADATA);
+TF_DECLARE_PUBLIC_TOKENS(UsdAbcCustomMetadata, USDABC_API,
+						 USD_ABC_CUSTOM_METADATA);
 
 //
 // Alembic property value types.
@@ -128,7 +137,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbcCustomMetadata, USD_ABC_CUSTOM_METADATA);
 /// extra bit.  It also supports compound types as their schema titles.
 struct UsdAbc_AlembicType : boost::totally_ordered<UsdAbc_AlembicType> {
     PlainOldDataType pod;     // POD type in scalar and array.
-    uint8_t extent;           // Extent of POD (e.g. 3 for a 3-tuple).
+	abc::uint8_t extent;      // Extent of POD (e.g. 3 for a 3-tuple).
     bool_t array;             // true for array, false otherwise.
 
     // An empty type.
@@ -139,7 +148,8 @@ struct UsdAbc_AlembicType : boost::totally_ordered<UsdAbc_AlembicType> {
     }
 
     // An array or scalar type.
-    UsdAbc_AlembicType(PlainOldDataType pod_, uint8_t extent_, bool_t array_) :
+    UsdAbc_AlembicType(PlainOldDataType pod_, abc::uint8_t extent_,
+					   bool_t array_) :
         pod(pod_), extent(extent_), array(array_)
     {
         // Do nothing
@@ -337,7 +347,7 @@ public:
     typedef bool (_SampleForAlembic::*_UnspecifiedBoolType)() const;
 #endif
 
-    typedef std::vector<uint32_t> IndexArray;
+    typedef std::vector<abc::uint32_t> IndexArray;
     typedef boost::shared_ptr<IndexArray> IndexArrayPtr;
 
     class Error {
@@ -640,7 +650,7 @@ struct _ConvertPODToUsdVec {
     }
 };
 template <>
-struct _ConvertPODToUsd<GfVec2i, int32_t,   2> : _ConvertPODToUsdVec<GfVec2i>{};
+struct _ConvertPODToUsd<GfVec2i, abc::int32_t,2> : _ConvertPODToUsdVec<GfVec2i>{};
 template <>
 struct _ConvertPODToUsd<GfVec2h, half,      2> : _ConvertPODToUsdVec<GfVec2h>{};
 template <>
@@ -648,7 +658,7 @@ struct _ConvertPODToUsd<GfVec2f, float32_t, 2> : _ConvertPODToUsdVec<GfVec2f>{};
 template <>
 struct _ConvertPODToUsd<GfVec2d, float64_t, 2> : _ConvertPODToUsdVec<GfVec2d>{};
 template <>
-struct _ConvertPODToUsd<GfVec3i, int32_t,   3> : _ConvertPODToUsdVec<GfVec3i>{};
+struct _ConvertPODToUsd<GfVec3i, abc::int32_t,3> : _ConvertPODToUsdVec<GfVec3i>{};
 template <>
 struct _ConvertPODToUsd<GfVec3h, half,      3> : _ConvertPODToUsdVec<GfVec3h>{};
 template <>
@@ -656,7 +666,7 @@ struct _ConvertPODToUsd<GfVec3f, float32_t, 3> : _ConvertPODToUsdVec<GfVec3f>{};
 template <>
 struct _ConvertPODToUsd<GfVec3d, float64_t, 3> : _ConvertPODToUsdVec<GfVec3d>{};
 template <>
-struct _ConvertPODToUsd<GfVec4i, int32_t,   4> : _ConvertPODToUsdVec<GfVec4i>{};
+struct _ConvertPODToUsd<GfVec4i, abc::int32_t,4> : _ConvertPODToUsdVec<GfVec4i>{};
 template <>
 struct _ConvertPODToUsd<GfVec4h, half,      4> : _ConvertPODToUsdVec<GfVec4h>{};
 template <>
@@ -712,7 +722,7 @@ template <class UsdType, class AlembicType, size_t extent>
 struct _ConvertPODToUsdArray {
     void operator()(UsdType* dst, const void* src, size_t size)
     {
-        const uint8_t* typedSrc = reinterpret_cast<const uint8_t*>(src);
+        const abc::uint8_t* typedSrc = reinterpret_cast<const abc::uint8_t*>(src);
         const size_t step = extent * sizeof(AlembicType);
         for (size_t i = 0, n = size; i != n; typedSrc += step, ++i) {
             dst[i] = _ConvertPODToUsd<UsdType, AlembicType, extent>()(typedSrc);
@@ -773,7 +783,7 @@ struct _ConvertPODFromUsdVec {
     }
 };
 template <>
-struct _ConvertPODFromUsd<GfVec2i, int32_t,   2> :
+struct _ConvertPODFromUsd<GfVec2i, abc::int32_t,2> :
     _ConvertPODFromUsdVec<GfVec2i> { };
 template <>
 struct _ConvertPODFromUsd<GfVec2h, half,      2> :
@@ -785,7 +795,7 @@ template <>
 struct _ConvertPODFromUsd<GfVec2d, float64_t, 2> :
     _ConvertPODFromUsdVec<GfVec2d> { };
 template <>
-struct _ConvertPODFromUsd<GfVec3i, int32_t,   3> :
+struct _ConvertPODFromUsd<GfVec3i, abc::int32_t,3> :
     _ConvertPODFromUsdVec<GfVec3i> { };
 template <>
 struct _ConvertPODFromUsd<GfVec3h, half,      3> :
@@ -797,7 +807,7 @@ template <>
 struct _ConvertPODFromUsd<GfVec3d, float64_t, 3> :
     _ConvertPODFromUsdVec<GfVec3d> { };
 template <>
-struct _ConvertPODFromUsd<GfVec4i, int32_t,   4> :
+struct _ConvertPODFromUsd<GfVec4i, abc::int32_t,4> :
     _ConvertPODFromUsdVec<GfVec4i> { };
 template <>
 struct _ConvertPODFromUsd<GfVec4h, half,      4> :
@@ -965,7 +975,7 @@ public:
     /// converter.
     SdfValueTypeName FindConverter(const UsdAbc_AlembicType& alembicType) const;
 
-    /// Returns a to-Usd converter that is fully specified (exactly matching 
+    /// Returns a to-Usd converter that is fully specified (exactly matching
     /// alembicType and usdType).
     const ToUsdConverter& GetToUsdConverter(
         const UsdAbc_AlembicType& alembicType,
@@ -1021,7 +1031,7 @@ struct UsdAbc_AlembicConversions {
 
 /// Format an Alembic version number as a string.
 std::string
-UsdAbc_FormatAlembicVersion(int32_t n);
+UsdAbc_FormatAlembicVersion(abc::int32_t n);
 
 /// Reverse the order of the subsequences in \p values where the subsequence
 /// lengths are given by \p counts.

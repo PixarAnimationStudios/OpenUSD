@@ -24,6 +24,8 @@
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 
+#include <regex>
+
 std::string ArchGetEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
@@ -71,4 +73,24 @@ bool ArchRemoveEnv(const std::string &name)
         return true;
 
     return false;
+}
+
+std::string ArchExpandEnvironmentVariables(const std::string& value)
+{
+    std::string str = value;
+    std::smatch match;
+#if defined(ARCH_OS_WINDOWS)
+    static std::regex regex("\\%([^\\%]+)\\%");
+#else
+    static std::regex regex("\\$\\{([^}]+)\\}");
+#endif
+
+    while (std::regex_search(str, match, regex))
+    {
+        const char* env = ArchGetEnv(match[1].str()).c_str();
+        const std::string var(!env ? "" : env );
+        str.replace(match[0].first, match[0].second, var);
+    }
+
+    return str;
 }

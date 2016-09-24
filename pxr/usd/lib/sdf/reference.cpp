@@ -52,7 +52,7 @@ SdfReference::SdfReference(
     _layerOffset(layerOffset),
     _customData(customData)
 {
-    _assetPath = TfPathCanonicalize(assetPath);
+    _assetPath = assetPath;
 }
 
 void

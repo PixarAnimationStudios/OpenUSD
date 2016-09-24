@@ -84,6 +84,7 @@ endif()
 foreach(OPENEXR_LIB
     Half
     Iex
+    IexMath
     Imath
     IlmImf
     IlmThread

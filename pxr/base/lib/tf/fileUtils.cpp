@@ -131,7 +131,12 @@ TfIsFile(string const& path, bool resolveSymlinks)
 bool
 TfIsLink(string const& path)
 {
-#if !defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_OS_WINDOWS)
+	DWORD attribs = GetFileAttributes(path.c_str());
+
+	return (attribs != INVALID_FILE_ATTRIBUTES &&
+		(attribs & FILE_ATTRIBUTE_REPARSE_POINT));
+#else
     struct stat st;
     if (Tf_Stat(path, /* resolveSymlinks */ false, &st)) {
         return S_ISLNK(st.st_mode);
@@ -216,7 +221,7 @@ TfMakeDir(string const& path, int mode)
 static bool
 Tf_MakeDirsRec(string const& path, int mode)
 {
-    string head = TfStringTrimRight(TfGetPathName(path), "/");
+    string head = TfStringTrimRight(TfGetPathName(path), "\\/");
 
     if (head.empty()) {
         return TfIsDir(path) ? true : TfMakeDir(path, mode);

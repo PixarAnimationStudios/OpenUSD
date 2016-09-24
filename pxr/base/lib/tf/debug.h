@@ -385,8 +385,11 @@ private:
     
     TF_API
     static void _ComplainAboutInvalidSymbol(const char*);
+    TF_API
     static void _SetNodes(_Node* ptr, size_t nNodes, bool state);
+    TF_API
     static void _SetParentChild(_Node* parent, _Node* child);
+    TF_API
     static void _ScopedOutput(bool start, const char* str);
 };
 

@@ -92,7 +92,7 @@ public:
     /// This may be set to an empty string to specify an internal reference.
     ///
     void SetAssetPath(const std::string &assetPath) {
-        _assetPath = TfPathCanonicalize(assetPath);
+        _assetPath = assetPath;
     }
 
     /// Returns the path of the referenced prim.

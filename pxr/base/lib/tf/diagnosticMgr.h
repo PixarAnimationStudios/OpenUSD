@@ -157,6 +157,7 @@ public:
 
     /// Remove error specified by iterator \p i.
     /// \deprecated Use TfErrorMark insetad.
+    TF_API
     ErrorIterator EraseError(ErrorIterator i);
 
     /// Remove all the errors in [first, last) from this thread's error

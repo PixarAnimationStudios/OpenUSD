@@ -55,10 +55,10 @@ ARCH_CONSTRUCTOR_DEFINE(102, Plug_InitConfig)
     _AppendPathList(&result, TfGetenv(pathEnvVarName));
 
     // Fallback locations.
-    _AppendPathList(&result, TfPathCanonicalize(userLocation));
-    _AppendPathList(&result, TfPathCanonicalize(buildLocation));
-    _AppendPathList(&result, TfPathCanonicalize(pluginBuildLocation));
-    _AppendPathList(&result, TfPathCanonicalize(installLocation));
+    _AppendPathList(&result, userLocation);
+    _AppendPathList(&result, buildLocation);
+    _AppendPathList(&result, pluginBuildLocation);
+    _AppendPathList(&result, installLocation);
 
     Plug_SetPaths(result);
 }

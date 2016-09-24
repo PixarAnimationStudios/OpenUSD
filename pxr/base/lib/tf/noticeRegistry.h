@@ -101,6 +101,7 @@ public:
                            const TfNotice& notice, const TfNotice* castNotice);
     
     // Return reference to singleton object.
+    TF_API
     static Tf_NoticeRegistry& _GetInstance() {
         return TfSingleton<Tf_NoticeRegistry>::GetInstance();
     }
@@ -247,6 +248,6 @@ private:
     tbb::enumerable_thread_specific<size_t> _perThreadBlockCount;
 };
 
-TF_API_TEMPLATE_CLASS(TfSingleton<Tf_EnumRegistry>);
+TF_API_TEMPLATE_CLASS(TfSingleton<Tf_NoticeRegistry>);
 
 #endif
