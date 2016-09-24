@@ -15,6 +15,28 @@ class "Imageable" (
     primitive and can override shader inputs.'''
 )
 {
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -47,10 +69,11 @@ class "Imageable" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -248,6 +271,28 @@ class "Xformable" (
 """
 )
 {
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -280,10 +325,11 @@ class "Xformable" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -314,6 +360,28 @@ class Scope "Scope" (
     transformability perspective."""
 )
 {
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -346,10 +414,11 @@ class Scope "Scope" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -366,6 +435,28 @@ class Xform "Xform" (
     doc = "Concrete prim schema for a transform, which implements Xformable "
 )
 {
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -398,10 +489,11 @@ class Xform "Xform" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -467,6 +559,28 @@ class "Boundable" (
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -499,10 +613,11 @@ class "Boundable" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -583,6 +698,28 @@ class "Gprim" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -615,10 +752,11 @@ class "Gprim" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -689,6 +827,28 @@ class Cube "Cube" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -721,10 +881,11 @@ class Cube "Cube" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     double size = 2 (
         doc = """Indicates the length of each edge of the cube.  If you
@@ -801,6 +962,28 @@ class Sphere "Sphere" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -833,10 +1016,11 @@ class Sphere "Sphere" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     double radius = 1 (
         doc = """Indicates the sphere's radius.  If you
@@ -924,6 +1108,28 @@ class Cylinder "Cylinder" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -956,10 +1162,11 @@ class Cylinder "Cylinder" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     double radius = 1 (
         doc = """The radius of the cylinder. If you author radius
@@ -1046,6 +1253,28 @@ class Capsule "Capsule" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -1078,10 +1307,11 @@ class Capsule "Capsule" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     double radius = 0.5 (
         doc = """The radius of the capsule.  If you
@@ -1170,6 +1400,28 @@ class Cone "Cone" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -1202,10 +1454,11 @@ class Cone "Cone" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     double radius = 1 (
         doc = """The radius of the cone.  If you
@@ -1302,6 +1555,28 @@ class "PointBased" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -1334,10 +1609,11 @@ class "PointBased" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
@@ -1518,6 +1794,28 @@ class Mesh "Mesh" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -1550,10 +1848,11 @@ class Mesh "Mesh" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     uniform token subdivisionScheme = "catmullClark" (
         allowedTokens = ["catmullClark", "loop", "bilinear", "none"]
@@ -1719,6 +2018,28 @@ class NurbsPatch "NurbsPatch" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -1751,10 +2072,11 @@ class NurbsPatch "NurbsPatch" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     int[] trimCurve:counts (
         doc = '''Each element specifies how many curves are present in each
@@ -1947,6 +2269,28 @@ class "Curves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -1979,10 +2323,11 @@ class "Curves" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
@@ -2189,6 +2534,28 @@ class BasisCurves "BasisCurves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -2221,10 +2588,11 @@ class BasisCurves "BasisCurves" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     uniform token type = "cubic" (
         allowedTokens = ["linear", "cubic"]
@@ -2371,6 +2739,28 @@ class NurbsCurves "NurbsCurves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -2403,10 +2793,11 @@ class NurbsCurves "NurbsCurves" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     double2[] ranges (
         doc = "Specifies the parametric range used to evaluate the curve."
@@ -2529,6 +2920,28 @@ class Points "Points" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -2561,10 +2974,11 @@ class Points "Points" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
@@ -2663,6 +3077,28 @@ class Camera "Camera" (
     token projection = "perspective" (
         allowedTokens = ["perspective", "orthographic"]
     )
+    rel proxyPrim = None (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         doc = '''Purpose is a concept we have found useful in our pipeline for 
@@ -2695,10 +3131,11 @@ class Camera "Camera" (
         proxy can be used together to partition a complicated model
         into a lightweight proxy representation for interactive use, and a
         fully realized, potentially quite heavy, representation for rendering.
-        One can also use UsdVariantSets to create proxy representations, but
-        this can potentially lead to an explosion in variants for models that
-        already have several axes of variation.  Purpose provides us with
-        another tool for interactive complexity management.'''
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
     )
     uniform token stereoRole = "mono" (
         allowedTokens = ["mono", "left", "right"]

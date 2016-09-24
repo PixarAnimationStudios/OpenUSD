@@ -44,6 +44,7 @@
 #include "pxr/base/tf/registryManager.h"
 
 #include "px_vp20/utils.h"
+#include "px_vp20/utils_legacy.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
 
@@ -968,37 +969,20 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "____________ SELECTION STAGE START ______________ (singleSelect = %d)\n",
             singleSelection );
-        
-        // We need to get the view and projection matrices for the
-        // area of the view that the user has clicked or dragged.
-        // Unfortunately the view does not give us that in an easy way..
-        // If we extract the view and projection matrices from the view object,
-        // it is just for the regular camera. The selectInfo also gives us the
-        // selection box, so we could use that to construct the correct view
-        // and projection matrixes, but if we call beginSelect on the view as
-        // if we were going to use the selection buffer, maya will do all the
-        // work for us and we can just extract the matrices from opengl.
-        
+
         GfMatrix4d viewMatrix;
         GfMatrix4d projectionMatrix;
-        GLuint glHitRecord;
-        
+        px_LegacyViewportUtils::GetViewSelectionMatrices(view,
+                                                         &viewMatrix,
+                                                         &projectionMatrix);
+
         // As Maya doesn't support batched selection, intersection testing is
         // actually performed in the first selection query that happens after a
         // render. This query occurs in the local space of SOME object, but
         // we need results in world space so that we have results for every
         // node available. worldToLocalSpace removes the local space we
         // happen to be in for the initial query.
-        
         GfMatrix4d worldToLocalSpace(localToWorldSpace.GetInverse());
-        
-        // Hit record can just be one because we are not going to draw
-        // anything anyway. We only want the matrices :)
-        
-        view.beginSelect(&glHitRecord, 1);
-        glGetDoublev(GL_MODELVIEW_MATRIX, viewMatrix.GetArray());
-        glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
-        view.endSelect();
 
         _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
         

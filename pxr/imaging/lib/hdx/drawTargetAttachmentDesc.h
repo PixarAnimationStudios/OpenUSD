@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DRAW_TARGET_ATTACHMENT_DESC_H
-#define HD_DRAW_TARGET_ATTACHMENT_DESC_H
+#ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_H
+#define HDX_DRAW_TARGET_ATTACHMENT_DESC_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
@@ -31,28 +31,28 @@
 
 #include <string>
 
-/// \class HdDrawTargetAttachmentDesc
+/// \class HdxDrawTargetAttachmentDesc
 ///
 /// Represents an render to texture render pass.
 ///
 /// \note This is a temporary API to aid transition to hydra, and is subject
 /// to major changes.
 ///
-class HdDrawTargetAttachmentDesc final
+class HdxDrawTargetAttachmentDesc final
 {
 public:
     /// default constructor - only for use by containers.
-    HdDrawTargetAttachmentDesc();
+    HdxDrawTargetAttachmentDesc();
 
     /// Construct a draw target attachment description
-    HdDrawTargetAttachmentDesc(const std::string &name,
+    HdxDrawTargetAttachmentDesc(const std::string &name,
                                HdFormat           format,
                                const VtValue      &clearColor);
-    ~HdDrawTargetAttachmentDesc() = default;
+    ~HdxDrawTargetAttachmentDesc() = default;
 
     // Copy for container support.
-    HdDrawTargetAttachmentDesc(const HdDrawTargetAttachmentDesc &copy);
-    HdDrawTargetAttachmentDesc &operator =(const HdDrawTargetAttachmentDesc &copy);
+    HdxDrawTargetAttachmentDesc(const HdxDrawTargetAttachmentDesc &copy);
+    HdxDrawTargetAttachmentDesc &operator =(const HdxDrawTargetAttachmentDesc &copy);
 
     const std::string &GetName()       const { return _name; }
     HdFormat           GetFormat()     const { return _format; }
@@ -61,8 +61,8 @@ public:
     // VtValue requirements
     size_t GetHash() const;
     void   Dump(std::ostream &out) const;
-    bool operator==(const HdDrawTargetAttachmentDesc &other) const;
-    bool operator!=(const HdDrawTargetAttachmentDesc &other) const;
+    bool operator==(const HdxDrawTargetAttachmentDesc &other) const;
+    bool operator!=(const HdxDrawTargetAttachmentDesc &other) const;
 
 private:
     std::string _name;
@@ -70,7 +70,7 @@ private:
     VtValue     _clearColor;
 };
 
-size_t hash_value(HdDrawTargetAttachmentDesc const &attachment);
-std::ostream &operator <<(std::ostream &out, const HdDrawTargetAttachmentDesc &pv);
+size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment);
+std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDesc &pv);
 
-#endif  // HD_DRAW_TARGET_ATTACHMENT_DESC_H
+#endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_H

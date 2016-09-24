@@ -307,7 +307,7 @@ UsdImagingGL::TestIntersectionBatch(
     const SdfPathVector& paths, 
     RenderParams params,
     unsigned int pickResolution,
-    std::function< SdfPath(const SdfPath&) > pathTranslator,
+    PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
     return _engine->TestIntersectionBatch(viewMatrix, projectionMatrix,

@@ -78,11 +78,12 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) const
 {
+    static std::vector<double> noMotion = {0.0};
+
     double currentTime = _usdInArgs->GetCurrentTimeD();
 
     if (attr and not PxrUsdKatanaUtils::IsAttributeVarying(attr, currentTime))
     {
-        static std::vector<double> noMotion = {0.0};
         return noMotion;
     }
 
@@ -149,6 +150,12 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         if (attr.GetBracketingTimeSamples(
                 shutterStartTime, &lower, &upper, &hasTimeSamples))
         {
+            if (lower > shutterStartTime)
+            {
+                // Did not find a sample ealier than the shutter start. Return no motion.
+                return noMotion;
+            }
+
             // Insert the first sample as long as it is different
             // than what we already have.
             if (fabs(lower-firstSample) > epsilon)
@@ -168,6 +175,12 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         if (attr.GetBracketingTimeSamples(
                 shutterCloseTime, &lower, &upper, &hasTimeSamples))
         {
+            if (upper < shutterCloseTime)
+            {
+                // Did not find a sample later than the shutter close. Return no motion.
+                return noMotion;
+            }
+
             // Append the last sample as long as it is different
             // than what we already have.
             if (fabs(upper-lastSample) > epsilon)

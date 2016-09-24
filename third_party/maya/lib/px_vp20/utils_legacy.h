@@ -21,30 +21,32 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_VERSION_H
-#define HD_VERSION_H
+#ifndef __PX_VP20_UTILS_LEGACY_H__
+#define __PX_VP20_UTILS_LEGACY_H__
 
-// 18 -> 19: Add support for SceneDelegate surface shaders.
-// 19 -> 20: RenderPass constructor takes RenderIndex. RasterState class.
-// 20 -> 21: Add HdSceneDelegate::IsEnabled().
-// 21 -> 22: split HdRasterState out of HdRenderPass and renamed to HdRenderPassState.
-//           HdEngine::Draw API change.
-// 22 -> 23: remove ID render API
-// 23 -> 24: GetPathForInstanceIndex returns absolute instance index.
-// 24 -> 25: move simpleLightingShader to Hdx.
-// 25 -> 26: move camera and light to Hdx.
-// 26 -> 27: move drawTarget to Hdx.
-#define HD_API  27
+/// \file utils_legacy.h
 
-// 1  ->  2: SimpleLighting -> FallbackLighting
-#define HD_SHADER_API 2
+#include "pxr/base/gf/matrix4d.h"
 
-// 1 -> 2: Changes "doubleShaded" API to "doubleSided".
-#define HD_CHANGETRACKER_API 2
-#define HD_ENGINE_API 1
-#define HD_RPRIMCOLLECTION_API 1
+#include <maya/M3dView.h>
 
-// 2 -> 3: Changes "doubleShaded" API to "doubleSided".
-#define HD_TOKENS_API   3
+/// This class contains helper methods and utilities to help with the
+/// transition from the Maya legacy viewport to Viewport 2.0.
+class px_LegacyViewportUtils
+{
+public:
+    /// Get the view and projection matrices used for selection from the given
+    /// M3dView \p view.
+    static void GetViewSelectionMatrices(M3dView& view,
+                                         GfMatrix4d* viewMatrix,
+                                         GfMatrix4d* projectionMatrix);
 
-#endif // HD_VERSION_H
+private:
+    /// Creating instances of this class is disallowed by making the
+    /// constructor private.
+    px_LegacyViewportUtils();
+    ~px_LegacyViewportUtils();
+};
+
+
+#endif // __PX_VP20_UTILS_LEGACY_H__

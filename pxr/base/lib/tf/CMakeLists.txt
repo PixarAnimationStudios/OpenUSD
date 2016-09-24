@@ -203,6 +203,14 @@ pxr_shared_library(tf
 )
 
 if(UNIX)
+    pxr_build_test(testTfPyFunction
+        LIBRARIES
+            tf
+            ${Boost_PYTHON_LIBRARY}
+        CPPFILES
+            testenv/testTfPyFunction.cpp
+    ) 
+
     pxr_build_test(testTfPyInterpreter
         LIBRARIES
             tf
@@ -571,6 +579,9 @@ if(UNIX)
     pxr_register_test(testTfPython
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPython"
+    )
+    pxr_register_test(testTfPyFunction
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyFunction"
     )
     pxr_register_test(testTfPyNotice
         PYTHON

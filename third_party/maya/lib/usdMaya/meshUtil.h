@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file meshUtil.h
+
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
@@ -33,7 +36,7 @@ class UsdGeomMesh;
 namespace PxrUsdMayaMeshUtil
 {
 
-    TfToken getEmitNormals(const MFnMesh &mesh, TfToken defaultValue);
+    bool getEmitNormals(const MFnMesh &mesh);
     TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
     
     TfToken getSubdivScheme(const MFnMesh &mesh, TfToken defaultValue);

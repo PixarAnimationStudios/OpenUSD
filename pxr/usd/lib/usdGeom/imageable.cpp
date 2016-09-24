@@ -110,6 +110,19 @@ UsdGeomImageable::CreatePurposeAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
+UsdRelationship
+UsdGeomImageable::GetProxyPrimRel() const
+{
+    return GetPrim().GetRelationship(UsdGeomTokens->proxyPrim);
+}
+
+UsdRelationship
+UsdGeomImageable::CreateProxyPrimRel() const
+{
+    return GetPrim().CreateRelationship(UsdGeomTokens->proxyPrim,
+                       /* custom = */ false);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -247,11 +260,6 @@ _ComputeVisibility(UsdPrim const &prim, UsdTimeCode const &time)
         TfToken myVis = _ComputeVisibility(parent, time);
         if (myVis == UsdGeomTokens->invisible)
             return myVis;
-        // XXX This could be a multithreaded performance concern
-        // due to operator-bool reliance on TfType, but it is more correct
-        // than just speculatively looking up an attribute called
-        // "visibility" and querying it, since it could appear as
-        // custom on a non-imageable prim.
         if (UsdGeomImageable ip = UsdGeomImageable(prim)){
             ip.GetVisibilityAttr().Get(&myVis, time);
         }
@@ -271,19 +279,17 @@ UsdGeomImageable::ComputeVisibility(UsdTimeCode const &time) const
 
 static
 TfToken
-_ComputePurpose(UsdPrim const &prim)
+_ComputePurpose(UsdPrim const &prim, UsdPrim *root=NULL)
 {
     if (UsdPrim parent = prim.GetParent()){
-        TfToken myPurpose = _ComputePurpose(parent);
+        TfToken myPurpose = _ComputePurpose(parent, root);
         if (myPurpose != UsdGeomTokens->default_)
             return myPurpose;
-        // XXX This could be a multithreaded performance concern
-        // due to operator-bool reliance on TfType, but it is more correct
-        // than just speculatively looking up an attribute called
-        // "purpose" and querying it, since it could appear as
-        // custom on a non-imageable prim.
         if (UsdGeomImageable ip = UsdGeomImageable(prim)){
             ip.GetPurposeAttr().Get(&myPurpose);
+            if (root){
+                *root = prim;
+            }
         }
 
         return myPurpose;
@@ -371,6 +377,65 @@ UsdGeomImageable::ComputePurpose() const
 {
     return _ComputePurpose(GetPrim());
 }
+
+UsdPrim
+UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
+{
+    UsdPrim  purposeRoot, self=GetPrim();
+    
+    TfToken purpose = _ComputePurpose(self, &purposeRoot);
+
+    if (purpose == UsdGeomTokens->render){
+        TF_VERIFY(purposeRoot);
+        SdfPathVector target;
+        UsdRelationship  proxyPrimRel = 
+            UsdGeomImageable(purposeRoot).GetProxyPrimRel();
+        if (proxyPrimRel.GetForwardedTargets(&target)){
+            if (target.size() == 1){
+                if (UsdPrim proxy = self.GetStage()->GetPrimAtPath(target[0])){
+                    if (_ComputePurpose(proxy) != UsdGeomTokens->proxy){
+                        TF_WARN("Prim <%s>, targeted as proxyPrim of prim "
+                                "<%s> does not have purpose 'proxy'",
+                                proxy.GetPath().GetText(),
+                                purposeRoot.GetPath().GetText());
+                        return UsdPrim();
+                    }
+                    if (renderPrim){
+                        *renderPrim = purposeRoot;
+                    }
+                    return proxy;
+                }
+            }
+            else if (target.size() > 1){
+                TF_WARN("Found multiple targets for proxyPrim rel on "
+                        "prim <%s>", purposeRoot.GetPath().GetText());
+            }
+        }
+    }
+
+    return UsdPrim();
+}
+
+bool
+UsdGeomImageable::SetProxyPrim(const UsdPrim &proxy) const
+{
+    if (proxy){
+        SdfPathVector targets {proxy.GetPath()};
+        return CreateProxyPrimRel().SetTargets(targets);
+    }
+    return false;
+}
+
+bool
+UsdGeomImageable::SetProxyPrim(const UsdSchemaBase &proxy) const
+{
+    if (proxy){
+        SdfPathVector targets {proxy.GetPrim().GetPath()};
+        return CreateProxyPrimRel().SetTargets(targets);
+    }
+    return false;
+}
+
 
 static
 TfTokenVector

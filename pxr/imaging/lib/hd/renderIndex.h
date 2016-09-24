@@ -43,7 +43,6 @@ class HdDrawItem;
 class HdRprimCollection;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdDrawTarget> HdDrawTargetSharedPtr;
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdRprim> HdRprimSharedPtr;
 typedef boost::shared_ptr<class HdRprim const> HdRprimConstSharedPtr;
@@ -68,7 +67,6 @@ public:
     // XXX: These should return iterator ranges, not vectors;
     //      they also shouldn't be pointers.
     typedef std::vector<HdDrawItem const*> HdDrawItemView;
-    typedef std::vector<HdDrawTargetSharedPtr> HdDrawTargetView;
 
 	HDLIB_API
     HdRenderIndex();
@@ -91,10 +89,6 @@ public:
 	HDLIB_API
     HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
-    /// Returns a list of all draw targets in the render index.
-	HDLIB_API
-    HdDrawTargetView GetDrawTargets();
-
     /// Synchronize all objects in the DirtyList
 	HDLIB_API
     void Sync(HdDirtyListSharedPtr const &dirtyList);
@@ -102,10 +96,6 @@ public:
     /// Processes all pending dirty lists 
 	HDLIB_API
     void SyncAll();
-
-    /// Synchronize all draw targets in the render index
-	HDLIB_API
-    void SyncDrawTargets();
 
     /// Synchronize all scene states in the render index
     HDLIB_API
@@ -274,23 +264,6 @@ public:
     HDLIB_API
     SdfPathVector GetSprimSubtree(SdfPath const& root) const;
 
-    // ---------------------------------------------------------------------- //
-    /// \name Draw Target Support
-    // ---------------------------------------------------------------------- //
-
-    /// Inserts a new draw target into the RenderIndex with an identifier of
-    /// \p id.
-    template <typename T>
-    void
-    InsertDrawTarget(HdSceneDelegate* delegate, SdfPath const& id);
-
-    /// Removes the given draw target from the RenderIndex.
-	HDLIB_API
-    void RemoveDrawTarget(SdfPath const& id);
-
-	HDLIB_API
-    HdDrawTargetSharedPtr const& GetDrawTarget(SdfPath const& id) const;
-
 private:
     // ---------------------------------------------------------------------- //
     // Private Helper methods 
@@ -327,12 +300,6 @@ private:
                               SdfPath const& textureId,
                               HdTextureSharedPtr const& texture);
 
-    // Inserts the draw target into the index and updates tracking state.
-	HDLIB_API
-    void _TrackDelegateDrawTarget(HdSceneDelegate* delegate,
-                                  SdfPath const& drawTargetId,
-                                  HdDrawTargetSharedPtr const& drawTarget);
-
     // Inserts the scene state prim into the index and updates tracking state.
 	HDLIB_API
     void _TrackDelegateSprim(HdSceneDelegate* delegate,
@@ -355,7 +322,6 @@ private:
     typedef TfHashMap<SdfPath, HdTextureSharedPtr, SdfPath::Hash> _TextureMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
-    typedef TfHashMap<SdfPath, HdDrawTargetSharedPtr, SdfPath::Hash> _DrawTargetMap;
     typedef TfHashMap<SdfPath, HdSprimSharedPtr, SdfPath::Hash> _SprimMap;
 
     typedef std::set<SdfPath> _RprimIDSet;
@@ -371,7 +337,6 @@ private:
     _ShaderMap _shaderMap;
     _TaskMap _taskMap;
     _TextureMap _textureMap;
-    _DrawTargetMap _drawTargetMap;
 
     _SprimMap _sprimMap;
     _SprimIDSet _sprimIDSet;
@@ -443,17 +408,6 @@ HdRenderIndex::InsertTexture(HdSceneDelegate* delegate, SdfPath const& id)
 
     HdTextureSharedPtr texture = boost::make_shared<T>(delegate, id);
     _TrackDelegateTexture(delegate, id, texture);
-}
-
-template <typename T>
-void
-HdRenderIndex::InsertDrawTarget(HdSceneDelegate* delegate, SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    boost::shared_ptr<T> drawTarget = boost::make_shared<T>(delegate, id);
-    _TrackDelegateDrawTarget(delegate, id, drawTarget);
 }
 
 template <typename T>

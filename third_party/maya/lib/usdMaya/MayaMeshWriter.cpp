@@ -33,6 +33,7 @@
 
 #include <maya/MFloatVectorArray.h>
 #include <maya/MUintArray.h>
+#include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
@@ -77,6 +78,45 @@ UsdPrim MayaMeshWriter::write(const UsdTimeCode &usdTime)
     return meshPrim;
 }
 
+static
+bool
+_GetMeshNormals(
+        const MFnMesh& mesh,
+        VtArray<GfVec3f>* normalsArray,
+        TfToken* interpolation)
+{
+    MStatus status;
+
+    // Sanity check first to make sure we can get this mesh's normals.
+    int numNormals = mesh.numNormals(&status);
+    if (status != MS::kSuccess or numNormals == 0) {
+        return false;
+    }
+
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    normalsArray->resize(numFaceVertices);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        MVector normal;
+        status = itFV.getNormal(normal);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        (*normalsArray)[fvi][0] = normal[0];
+        (*normalsArray)[fvi][1] = normal[1];
+        (*normalsArray)[fvi][2] = normal[2];
+    }
+
+    return true;
+}
 
 // virtual
 bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema)
@@ -145,33 +185,16 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
 
     // Polygonal Mesh Case
-    if (sdScheme==UsdGeomTokens->none) {
-        // Support for standard USD bool and with Mojito bool tag
-        TfToken normalInterp=PxrUsdMayaMeshUtil::getEmitNormals(lMesh, UsdGeomTokens->none);
-        
-        if (normalInterp==UsdGeomTokens->faceVarying) {
-            // Get References to members of meshData object
-            MFloatVectorArray normalArray;
-            MFloatVectorArray vertexNormalArray;
- 
-            lMesh.getNormals(normalArray, MSpace::kObject);
+    if (sdScheme == UsdGeomTokens->none) {
+        // Support for standard USD bool and Mojito bool tags.
+        if (PxrUsdMayaMeshUtil::getEmitNormals(lMesh)) {
+            VtArray<GfVec3f> meshNormals;
+            TfToken normalInterp;
 
-            // Iterate through each face in the mesh.
-            vertexNormalArray.setLength(lMesh.numFaceVertices());
-            VtArray<GfVec3f> meshNormals(lMesh.numFaceVertices());
-            size_t faceVertIdx = 0;
-            for (MItMeshPolygon faceIter(getDagPath()); !faceIter.isDone(); faceIter.next()) {
-                // Iterate through each face-vertex.
-                for (size_t locVertIdx = 0; locVertIdx < faceIter.polygonVertexCount();
-                        ++locVertIdx, ++faceVertIdx) {
-                    int index=faceIter.normalIndex(locVertIdx);
-                    for (int j=0;j<3;j++) {
-                        meshNormals[faceVertIdx][j]=normalArray[index][j];
-                    }
-                }
+            if (_GetMeshNormals(lMesh, &meshNormals, &normalInterp)) {
+                primSchema.GetNormalsAttr().Set(meshNormals, usdTime);
+                primSchema.SetNormalsInterpolation(normalInterp);
             }
-            primSchema.GetNormalsAttr().Set(meshNormals, usdTime);
-            primSchema.SetNormalsInterpolation(normalInterp);
         }
     } else {
         TfToken sdInterpBound = PxrUsdMayaMeshUtil::getSubdivInterpBoundary(

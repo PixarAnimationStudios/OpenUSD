@@ -583,6 +583,12 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
     return result;
 }
 
+size_t
+HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetMaxNumElements() const
+{
+    return _stripedBuffer->GetMaxNumElements();
+}
+
 HdBufferResourceSharedPtr
 HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetResource() const
 {

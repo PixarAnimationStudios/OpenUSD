@@ -51,11 +51,6 @@ pxr_shared_library(hd
         conversions
         copyComputation
         debugCodes
-        drawTarget
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
-        drawTargetRenderPass
-        drawTargetRenderPassState
         dirtyList
         dispatchBuffer
         drawingCoord

@@ -26,7 +26,6 @@
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/drawTarget.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/glslfxShader.h"
@@ -47,6 +46,7 @@
 
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
@@ -421,49 +421,6 @@ HdRenderIndex::RemoveTexture(SdfPath const& id)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Draw Target Support
-// -------------------------------------------------------------------------- //
-
-void
-HdRenderIndex::_TrackDelegateDrawTarget(HdSceneDelegate* delegate,
-                                    SdfPath const& drawTargetId,
-                                    HdDrawTargetSharedPtr const& drawTarget)
-{
-
-    if (drawTargetId == SdfPath()) {
-        return;
-    }
-    _tracker.DrawTargetInserted(drawTargetId);
-    _drawTargetMap.insert(std::make_pair(drawTargetId, drawTarget));
-}
-
-void
-HdRenderIndex::RemoveDrawTarget(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    _DrawTargetMap::iterator it = _drawTargetMap.find(id);
-    if (it == _drawTargetMap.end()) {
-        return;
-    }
-    _tracker.DrawTargetRemoved(id);
-    _drawTargetMap.erase(it);
-}
-
-HdDrawTargetSharedPtr const&
-HdRenderIndex::GetDrawTarget(SdfPath const& id) const
-{
-    _DrawTargetMap::const_iterator it = _drawTargetMap.find(id);
-    if (it != _drawTargetMap.end()) {
-        return it->second;
-    }
-
-    static HdDrawTargetSharedPtr EMPTY;
-    return EMPTY;
-}
-
-// -------------------------------------------------------------------------- //
 /// \name Sprim Support (scene state prim: light, camera...)
 // -------------------------------------------------------------------------- //
 
@@ -680,21 +637,6 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     finalResult.reserve(result.size());
     finalResult.insert(finalResult.begin(), result.begin(), result.end());
     return finalResult;
-}
-
-HdRenderIndex::HdDrawTargetView
-HdRenderIndex::GetDrawTargets()
-{
-    HD_TRACE_FUNCTION();
-
-    HdDrawTargetView result;
-    result.reserve(_drawTargetMap.size());
-
-    TF_FOR_ALL (it, _drawTargetMap) {
-        result.push_back(it->second);
-    }
-
-    return result;
 }
 
 bool 
@@ -956,7 +898,12 @@ HdRenderIndex::SyncAll()
                 ((float )numSkipped / (float)dirtyIds.size()) > 0.9f;
         }
 
-    } {
+    }
+
+    // Drop the GIL before we spawn parallel tasks.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    {
         TRACE_SCOPE("Delegate Sync");
         // Dispatch synchronization work to each delegate.
         _Worker worker(&syncMap);
@@ -1041,19 +988,6 @@ HdRenderIndex::SyncSprims()
             it->second->Sync();
 
             _tracker.MarkSprimClean(it->first);
-        }
-
-    }
-}
-
-void
-HdRenderIndex::SyncDrawTargets()
-{
-    TF_FOR_ALL(it, _drawTargetMap) {
-        if (_tracker.GetDrawTargetDirtyBits(it->first) != HdChangeTracker::Clean) {
-            it->second->Sync();
-
-            _tracker.MarkDrawTargetClean(it->first);
         }
 
     }

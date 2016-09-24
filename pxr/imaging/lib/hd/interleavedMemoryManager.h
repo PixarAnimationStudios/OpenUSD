@@ -106,6 +106,9 @@ protected:
             _stripedBuffer->IncrementVersion();
         }
 
+        /// Returns the max number of elements
+        virtual size_t GetMaxNumElements() const;
+
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
         virtual HdBufferResourceSharedPtr GetResource() const;

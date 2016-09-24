@@ -33,14 +33,14 @@ Hd_VertexAdjacency::Hd_VertexAdjacency()
 {
 }
 
-template <typename Vec3Type>
+template <typename SrcVec3Type, typename DstType>
 class _SmoothNormalsWorker
 {
 public:
-    _SmoothNormalsWorker(Vec3Type const * pointsPtr,
+    _SmoothNormalsWorker(SrcVec3Type const * pointsPtr,
                          std::vector<int> const &entry,
                          int stride,
-                         VtArray<Vec3Type> *normals)
+                         DstType *normals)
     : _pointsPtr(pointsPtr)
     , _entry(entry)
     , _stride(stride)
@@ -53,34 +53,34 @@ public:
         for(size_t i = begin; i < end; ++i) {
             int const * e = &_entry[i * _stride];
             int valence = *e++;
-            Vec3Type normal(0);
-            Vec3Type const & curr = _pointsPtr[i];
+            SrcVec3Type normal(0);
+            SrcVec3Type const & curr = _pointsPtr[i];
             for (int j=0; j<valence; ++j) {
-                Vec3Type const & prev = _pointsPtr[*e++];
-                Vec3Type const & next = _pointsPtr[*e++];
+                SrcVec3Type const & prev = _pointsPtr[*e++];
+                SrcVec3Type const & next = _pointsPtr[*e++];
                 // All meshes have all been converted to rightHanded
                 normal += GfCross(next-curr, prev-curr);
             }
             if (true) { // Could defer normalization to shader code
                 normal.Normalize();
             }
-            (*_normals)[i] = normal;
+            _normals[i] = normal;
         }
     }
 
 private:
-    Vec3Type const * _pointsPtr;
+    SrcVec3Type const * _pointsPtr;
     std::vector<int> const &_entry;
     int _stride;
-    VtArray<Vec3Type> *_normals;
+    DstType *_normals;
 };
 
 /// Returns an array of the same size and type as the source points
 /// containing normal vectors computed by averaging the cross products
 /// of incident face edges.
-template <typename Vec3Type>
-VtArray<Vec3Type>
-_ComputeSmoothNormals(int numPoints, Vec3Type const * pointsPtr,
+template <typename SrcVec3Type, typename DstType=SrcVec3Type>
+VtArray<DstType>
+_ComputeSmoothNormals(int numPoints, SrcVec3Type const * pointsPtr,
                       std::vector<int> const &entry, int stride)
 {
     // to be safe.
@@ -89,14 +89,15 @@ _ComputeSmoothNormals(int numPoints, Vec3Type const * pointsPtr,
     numPoints = std::min(numPoints,
                          (int)entry.size()/stride);
 
-    VtArray<Vec3Type> normals(numPoints);
+    VtArray<DstType> normals(numPoints);
 
-    _SmoothNormalsWorker<Vec3Type> workerState
-                                           (pointsPtr, entry, stride, &normals);
+    _SmoothNormalsWorker<SrcVec3Type, DstType> workerState
+        (pointsPtr, entry, stride, normals.data());
 
-    WorkParallelForN(numPoints,
-                     boost::bind(&_SmoothNormalsWorker<Vec3Type>::Compute,
-                                 workerState, _1, _2));
+    WorkParallelForN(
+        numPoints,
+        boost::bind(&_SmoothNormalsWorker<SrcVec3Type, DstType>::Compute,
+                    workerState, _1, _2));
 
 
 
@@ -119,16 +120,32 @@ Hd_VertexAdjacency::ComputeSmoothNormals(int numPoints,
                                  _entry, _stride);
 }
 
+VtArray<HdVec4f_2_10_10_10_REV>
+Hd_VertexAdjacency::ComputeSmoothNormalsPacked(int numPoints,
+                                         GfVec3f const * pointsPtr) const
+{
+    return _ComputeSmoothNormals<GfVec3f, HdVec4f_2_10_10_10_REV>(
+        numPoints, pointsPtr, _entry, _stride);
+}
+
+VtArray<HdVec4f_2_10_10_10_REV>
+Hd_VertexAdjacency::ComputeSmoothNormalsPacked(int numPoints,
+                                         GfVec3d const * pointsPtr) const
+{
+    return _ComputeSmoothNormals<GfVec3d, HdVec4f_2_10_10_10_REV>(
+        numPoints, pointsPtr, _entry, _stride);
+}
+
 HdBufferSourceSharedPtr
 Hd_VertexAdjacency::GetSmoothNormalsComputation(
     HdBufferSourceSharedPtr const &points,
-    TfToken const &dstName)
+    TfToken const &dstName, bool packed)
 {
     // if the vertex adjacency is scheduled to be built (and not yet resolved),
     // make a dependency to its builder.
     return HdBufferSourceSharedPtr(
         new Hd_SmoothNormalsComputation(
-            this, points, dstName, _adjacencyBuilder.lock()));
+            this, points, dstName, _adjacencyBuilder.lock(), packed));
 }
 
 HdComputationSharedPtr

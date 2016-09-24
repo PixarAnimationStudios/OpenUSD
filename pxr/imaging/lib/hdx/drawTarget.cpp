@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/drawTarget.h"
+#include "pxr/imaging/hdx/drawTarget.h"
+#include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
 
 #include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hd/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -35,9 +35,10 @@
 
 static const std::string DEPTH_ATTACHMENT_NAME = "depth";
 
-HdDrawTarget::HdDrawTarget(HdSceneDelegate *delegate, SdfPath const &id)
-    : _delegate(delegate)
-    , _id(id)
+TF_DEFINE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
+
+HdxDrawTarget::HdxDrawTarget(HdSceneDelegate *delegate, SdfPath const &id)
+    : HdSprim(delegate, id)
     , _version(1) // Clients tacking start at 0.
     , _enabled(true)
     , _cameraId()
@@ -50,74 +51,76 @@ HdDrawTarget::HdDrawTarget(HdSceneDelegate *delegate, SdfPath const &id)
 {
 }
 
-HdDrawTarget::~HdDrawTarget()
+HdxDrawTarget::~HdxDrawTarget()
 {
 }
 
+/*virtual*/
 void
-HdDrawTarget::Sync()
+HdxDrawTarget::Sync()
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (!TF_VERIFY(_delegate)) {
-        return;  
-    } 
+    SdfPath const &id = GetID();
+    HdSceneDelegate *delegate = GetDelegate();
+    if (!TF_VERIFY(delegate)) {
+        return;
+    }
 
     HdChangeTracker& changeTracker = 
-                                _delegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetDrawTargetDirtyBits(_id);
+                                delegate->GetRenderIndex().GetChangeTracker();
+    HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
 
 
-    if (bits & HdChangeTracker::DirtyDTEnable) {
-        VtValue vtValue =  _delegate->Get(_id, HdTokens->enable);
+    if (bits & DirtyDTEnable) {
+        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->enable);
 
         // Optional attribute.
         _enabled = vtValue.GetWithDefault<bool>(true);
     }
 
-    if (bits & HdChangeTracker::DirtyDTCamera) {
-        VtValue vtValue =  _delegate->Get(_id, HdTokens->camera);
+    if (bits & DirtyDTCamera) {
+        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->camera);
         _cameraId = vtValue.Get<SdfPath>();
         _renderPassState.SetCamera(_cameraId);
     }
 
-    if (bits & HdChangeTracker::DirtyDTResolution) {
-        VtValue vtValue =  _delegate->Get(_id, HdTokens->resolution);
+    if (bits & DirtyDTResolution) {
+        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->resolution);
 
         _resolution = vtValue.Get<GfVec2i>();
 
         // No point in Resizing the textures if new ones are going to
         // be created (see _SetAttachments())
-        if (_drawTarget &&
-            HdChangeTracker::IsClean(bits & HdChangeTracker::DirtyDTAttachment)) {
+        if (_drawTarget && ((bits & DirtyDTAttachment) == Clean)) {
             _ResizeDrawTarget();
         }
     }
 
-    if (bits & HdChangeTracker::DirtyDTAttachment) {
+    if (bits & DirtyDTAttachment) {
         // Depends on resolution being set correctly.
-        VtValue vtValue =  _delegate->Get(_id, HdTokens->attachments);
+        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->attachments);
 
 
-        const HdDrawTargetAttachmentDescArray &attachments =
-            vtValue.GetWithDefault<HdDrawTargetAttachmentDescArray>(
-                    HdDrawTargetAttachmentDescArray());
+        const HdxDrawTargetAttachmentDescArray &attachments =
+            vtValue.GetWithDefault<HdxDrawTargetAttachmentDescArray>(
+                    HdxDrawTargetAttachmentDescArray());
 
         _SetAttachments(attachments);
     }
 
 
-    if (bits & HdChangeTracker::DirtyDTDepthClearValue) {
-        VtValue vtValue =  _delegate->Get(_id, HdTokens->depthClearValue);
+    if (bits & DirtyDTDepthClearValue) {
+        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->depthClearValue);
 
         float depthClearValue = vtValue.GetWithDefault<float>(1.0f);
 
         _renderPassState.SetDepthClearValue(depthClearValue);
     }
 
-    if (bits & HdChangeTracker::DirtyDTCollection) {
-        VtValue vtValue =  _delegate->Get(_id, HdTokens->collection);
+    if (bits & DirtyDTCollection) {
+        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->collection);
 
         const HdRprimCollectionVector &collections =
                 vtValue.GetWithDefault<HdRprimCollectionVector>(
@@ -148,9 +151,18 @@ HdDrawTarget::Sync()
     }
 }
 
+/*virtual*/
+VtValue
+HdxDrawTarget::Get(TfToken const &token) const
+{
+    // nothing here, since right now all draw target tasks accessing
+    // HdxDrawTarget perform downcast from Sprim To HdxDrawTarget
+    // and use the C++ interface (e.g. IsEnabled(), GetRenderPassState()).
+    return VtValue();
+}
 
 bool
-HdDrawTarget::WriteToFile(const std::string &attachment,
+HdxDrawTarget::WriteToFile(const std::string &attachment,
                           const std::string &path)
 {
     // Check the draw targets been allocated
@@ -197,7 +209,7 @@ HdDrawTarget::WriteToFile(const std::string &attachment,
 
 
 void
-HdDrawTarget::_SetAttachments(const HdDrawTargetAttachmentDescArray &attachments)
+HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachments)
 {
     if (!_drawTargetContext) {
         // Use one of the shared contexts as the master.
@@ -222,7 +234,7 @@ HdDrawTarget::_SetAttachments(const HdDrawTargetAttachmentDescArray &attachments
 
     for (size_t attachmentNum = 0; attachmentNum < numAttachments;
                                                               ++attachmentNum) {
-      const HdDrawTargetAttachmentDesc &desc =
+      const HdxDrawTargetAttachmentDesc &desc =
                                        attachments.GetAttachment(attachmentNum);
 
         GLenum format = GL_RGBA;
@@ -258,13 +270,13 @@ HdDrawTarget::_SetAttachments(const HdDrawTargetAttachmentDescArray &attachments
 
 
 HdSprimSharedPtr
-HdDrawTarget::_GetCamera() const
+HdxDrawTarget::_GetCamera() const
 {
-    return _delegate->GetRenderIndex().GetSprim(_cameraId);
+    return GetDelegate()->GetRenderIndex().GetSprim(_cameraId);
 }
 
 void
-HdDrawTarget::_ResizeDrawTarget()
+HdxDrawTarget::_ResizeDrawTarget()
 {
     // Make sure all draw target operations happen on the same
     // context.
@@ -280,4 +292,22 @@ HdDrawTarget::_ResizeDrawTarget()
     ++_version;
 
     GlfGLContext::MakeCurrent(oldContext);
+}
+
+/*static*/
+void
+HdxDrawTarget::GetDrawTargets(HdSceneDelegate *delegate,
+                              HdxDrawTargetSharedPtrVector *drawTargets)
+{
+    SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
+        SdfPath::AbsoluteRootPath());
+    TF_FOR_ALL (it, sprimPaths) {
+        // XXX: same downcast problem as in simpleLight and shadow.
+        HdSprimSharedPtr const &sprim
+            = delegate->GetRenderIndex().GetSprim(*it);
+        if (HdxDrawTargetSharedPtr drawTarget
+            = boost::dynamic_pointer_cast<HdxDrawTarget>(sprim)) {
+            drawTargets->push_back(drawTarget);
+        }
+    }
 }

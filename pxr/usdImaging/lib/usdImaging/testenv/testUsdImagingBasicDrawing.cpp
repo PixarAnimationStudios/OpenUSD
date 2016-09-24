@@ -226,7 +226,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         }
         UsdImagingEngine::RenderParams params;
         params.drawMode = GetDrawMode();
-        params.enableLighting =  IsEnabledTestLighting();
+        params.enableLighting = IsEnabledTestLighting();
+        params.enableIdRender = IsEnabledIdRender();
         params.frame = time;
         params.complexity = _GetComplexity();
         params.cullStyle = IsEnabledCullBackfaces() ?

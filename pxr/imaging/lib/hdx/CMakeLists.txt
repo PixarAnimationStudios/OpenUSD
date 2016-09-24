@@ -21,6 +21,11 @@ pxr_shared_library(hdx
     PUBLIC_CLASSES
         camera
         debugCodes
+        drawTarget
+        drawTargetAttachmentDesc
+        drawTargetAttachmentDescArray
+        drawTargetRenderPass
+        drawTargetRenderPassState
         drawTargetTask
         intersector
         light

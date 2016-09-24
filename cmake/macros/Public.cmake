@@ -284,7 +284,7 @@ function(pxr_shared_library LIBRARY_NAME)
 	endif()
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
+            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_PLUGIN_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/plugin/usd;PXR_INSTALL_LOCATION=${installLocation}"
     )
 
     # Always bake the rpath.
@@ -592,7 +592,7 @@ function(pxr_plugin PLUGIN_NAME)
         set(HEADER_INSTALL_PREFIX 
             "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     else()
-        set(PLUGIN_INSTALL_PREFIX "plugin")
+        set(PLUGIN_INSTALL_PREFIX "plugin/usd")
         set(HEADER_INSTALL_PREFIX 
             "${CMAKE_INSTALL_PREFIX}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     endif()
@@ -614,9 +614,15 @@ function(pxr_plugin PLUGIN_NAME)
     else()
         # Ensure this plugin can find the libs for its matching component, e.g.
         # maya/plugin/px_usdIO.so can find maya/lib/*.so
-        set_target_properties(${PLUGIN_NAME}
-            PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../lib"
-        )
+        if (PXR_INSTALL_SUBDIR)
+            set_target_properties(${PLUGIN_NAME}
+                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../lib"
+            )
+        else()
+            set_target_properties(${PLUGIN_NAME}
+                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../../lib"
+            )
+        endif()
     endif()
 
     set_target_properties(${PLUGIN_NAME}
@@ -702,7 +708,7 @@ function(pxr_plugin PLUGIN_NAME)
         )
     endif()
 
-    _get_install_dir(plugin PLUGINS_PREFIX)
+    set(PLUGINS_PREFIX ${PLUGIN_INSTALL_PREFIX})
     set(LIBRARY_NAME ${PLUGIN_NAME})
     _get_library_file(${LIBRARY_NAME} LIBRARY_FILE)
 
@@ -960,7 +966,7 @@ function(pxr_setup_plugins)
         "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_PREFIX}/plugins/plugInfo.json\" ${plugInfoContents})"
     )
     install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/plugInfo.json\" ${plugInfoContents})"
+        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/usd/plugInfo.json\" ${plugInfoContents})"
     )
 endfunction() # pxr_setup_plugins
 

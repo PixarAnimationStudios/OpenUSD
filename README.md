@@ -9,13 +9,19 @@ interchange between graphics applications.
 
 For more details, please visit the web site [here](http://openusd.org).
 
+Build Status
+------------
+
+|       | master | dev |
+| ----- | ------ | --- |
+| Linux | [![Build Status](https://travis-ci.org/PixarAnimationStudios/USD.svg?branch=master)](https://travis-ci.org/PixarAnimationStudios/USD) | [![Build Status](https://travis-ci.org/PixarAnimationStudios/USD.svg?branch=dev)](https://travis-ci.org/PixarAnimationStudios/USD) |
+
 Additional Documentation
 ------------------------
 
 * [User Documentation and Tutorials](http://openusd.org/docs/index.html)
 * [API Documentation](http://openusd.org/docs/api/index.html)
 * [Advanced Build Configuration](BUILDING.md)
-
 
 Getting Help
 ------------
@@ -149,8 +155,11 @@ Launch usdview with a sample asset.
 
 ```bash
 $ export PYTHONPATH=$PYTHONPATH:USD_INSTALL_ROOT/lib/python
-$ usdview extras/usd/tutorials/convertingLayerFormats/sphere.usda
+$ usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
+
+> Note: Replace ```USD_INSTALL_ROOT``` with the location set in your build,
+> usually via ```CMAKE_INSTALL_PREFIX```.
 
 Contributing
 ------------

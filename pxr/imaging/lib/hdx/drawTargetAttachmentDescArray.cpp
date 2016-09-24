@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/drawTargetAttachmentDescArray.h"
+#include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
 
-HdDrawTargetAttachmentDescArray::HdDrawTargetAttachmentDescArray()
+HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray()
  : _attachments()
 {
 
 }
 
-HdDrawTargetAttachmentDescArray::HdDrawTargetAttachmentDescArray(
+HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
                                                          size_t attachmentCount)
  : _attachments()
 {
@@ -37,17 +37,17 @@ HdDrawTargetAttachmentDescArray::HdDrawTargetAttachmentDescArray(
 }
 
 
-HdDrawTargetAttachmentDescArray::HdDrawTargetAttachmentDescArray(
-                                    const HdDrawTargetAttachmentDescArray &copy)
+HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
+                                    const HdxDrawTargetAttachmentDescArray &copy)
   : _attachments(copy._attachments)
 {
 
 }
 
 
-HdDrawTargetAttachmentDescArray &
-HdDrawTargetAttachmentDescArray::operator =(
-                                    const HdDrawTargetAttachmentDescArray &copy)
+HdxDrawTargetAttachmentDescArray &
+HdxDrawTargetAttachmentDescArray::operator =(
+                                    const HdxDrawTargetAttachmentDescArray &copy)
 {
     _attachments = copy._attachments;
 
@@ -56,7 +56,7 @@ HdDrawTargetAttachmentDescArray::operator =(
 
 
 void
-HdDrawTargetAttachmentDescArray::AddAttachment(const std::string &name,
+HdxDrawTargetAttachmentDescArray::AddAttachment(const std::string &name,
                                                HdFormat           format,
                                                const VtValue      &clearColor)
 {
@@ -65,21 +65,21 @@ HdDrawTargetAttachmentDescArray::AddAttachment(const std::string &name,
 
 
 size_t
-HdDrawTargetAttachmentDescArray::GetNumAttachments() const
+HdxDrawTargetAttachmentDescArray::GetNumAttachments() const
 {
     return _attachments.size();
 }
 
 
-const HdDrawTargetAttachmentDesc &
-HdDrawTargetAttachmentDescArray::GetAttachment(size_t idx) const
+const HdxDrawTargetAttachmentDesc &
+HdxDrawTargetAttachmentDescArray::GetAttachment(size_t idx) const
 {
     return _attachments[idx];
 }
 
 
 size_t
-HdDrawTargetAttachmentDescArray::GetHash() const
+HdxDrawTargetAttachmentDescArray::GetHash() const
 {
     size_t hash = boost::hash_value(_attachments);
 
@@ -88,7 +88,7 @@ HdDrawTargetAttachmentDescArray::GetHash() const
 
 
 void
-HdDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
+HdxDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
 {
     size_t numAttachments = _attachments.size();
 
@@ -97,35 +97,35 @@ HdDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
     for (size_t attachmentNum = 0; attachmentNum < numAttachments;
                                                                 ++attachmentNum)
     {
-        const HdDrawTargetAttachmentDesc &desc = _attachments[attachmentNum];
+        const HdxDrawTargetAttachmentDesc &desc = _attachments[attachmentNum];
         out << desc;
     }
 }
 
 
 bool
-HdDrawTargetAttachmentDescArray::operator==(
-                             const HdDrawTargetAttachmentDescArray &other) const
+HdxDrawTargetAttachmentDescArray::operator==(
+                             const HdxDrawTargetAttachmentDescArray &other) const
 {
     return (_attachments == other._attachments);
 }
 
 
 bool
-HdDrawTargetAttachmentDescArray::operator!=(
-                            const HdDrawTargetAttachmentDescArray &other) const
+HdxDrawTargetAttachmentDescArray::operator!=(
+                            const HdxDrawTargetAttachmentDescArray &other) const
 {
     return (_attachments != other._attachments);
 }
 
 
-size_t hash_value(HdDrawTargetAttachmentDescArray const &attachments)
+size_t hash_value(HdxDrawTargetAttachmentDescArray const &attachments)
 {
     return attachments.GetHash();
 }
 
 std::ostream &operator <<(std::ostream &out,
-                          const HdDrawTargetAttachmentDescArray &pv)
+                          const HdxDrawTargetAttachmentDescArray &pv)
 {
     pv.Dump(out);
 

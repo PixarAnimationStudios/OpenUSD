@@ -31,12 +31,12 @@ xform = stage.GetPrimAtPath('/hello')
 sphere = stage.GetPrimAtPath('/hello/world')
 
 # section 2 
-expected = ['purpose', 'visibility', 'xformOpOrder']
+expected = ['proxyPrim', 'purpose', 'visibility', 'xformOpOrder']
 assert xform.GetPropertyNames() == expected
         
 expected = ['doubleSided', 'extent', 'orientation',
             'primvars:displayColor', 'primvars:displayOpacity', 
-            'purpose', 'radius', 'visibility', 'xformOpOrder']
+            'proxyPrim', 'purpose', 'radius', 'visibility', 'xformOpOrder']
 assert sphere.GetPropertyNames() == expected
 
 

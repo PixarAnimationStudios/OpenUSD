@@ -568,7 +568,16 @@ UsdImaging_DefaultTaskDelegate::IsConverged() const
     return true;
 }
 
-
+/* virtual */
+bool
+UsdImaging_DefaultTaskDelegate::IsEnabled(TfToken const& option) const
+{
+    if (option == HdxOptionTokens->taskSetAlphaToCoverage) {
+        // UsdImagingHdEngine enables ALPHA_TO_COVERAGE as needed.
+        return true;
+    }
+    return HdSceneDelegate::IsEnabled(option);
+}
 
 /* virtual */
 std::vector<GfVec4d>

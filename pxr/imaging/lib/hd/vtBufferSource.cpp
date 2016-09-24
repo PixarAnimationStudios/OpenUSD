@@ -135,6 +135,8 @@ template<> _GLDataType _GetGLType<GfMatrix4d>()
         { return _GLDataType(GL_DOUBLE, GL_DOUBLE_MAT4); }
 template<> _GLDataType _GetGLType<Hd_BSplinePatchIndex>()
         { return _GLDataType(GL_INT, GL_INT); }
+template<> _GLDataType _GetGLType<HdVec4f_2_10_10_10_REV>()
+        { return _GLDataType(GL_INT_2_10_10_10_REV, GL_INT_2_10_10_10_REV); }
 
 
 // XXX: we don't have BOOST_TTI_HAS_MEMBER_DATA yet. (requires boost 1.54)

@@ -60,12 +60,17 @@ public:
     void AddLight(SdfPath const &id, GlfSimpleLight const &light);
     void SetLight(SdfPath const &id, TfToken const &key, VtValue value);
 
+    // draw target
+    void AddDrawTarget(SdfPath const &id);
+    void SetDrawTarget(SdfPath const &id, TfToken const &key, VtValue value);
+
     // tasks
     void AddRenderTask(SdfPath const &id);
     void AddRenderSetupTask(SdfPath const &id);
     void AddSimpleLightTask(SdfPath const &id);
     void AddShadowTask(SdfPath const &id);
     void AddSelectionTask(SdfPath const &id);
+    void AddDrawTargetTask(SdfPath const &id);
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);
@@ -80,6 +85,12 @@ public:
                                 VtVec3fArray const &scale,
                                 VtVec4fArray const &rotate,
                                 VtVec3fArray const &translate);
+
+    /// Shader
+    void AddSurfaceShader(SdfPath const &id,
+                    std::string const &source,
+                    HdShaderParamVector const &params);
+    void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId);
 
     // prims
     void AddGrid(SdfPath const &id, GfMatrix4d const &transform,
@@ -106,6 +117,14 @@ public:
                                              SdfPath const& prototypeId);
     virtual int GetRefineLevel(SdfPath const& id);
     virtual bool IsInCollection(SdfPath const& id, TfToken const& collectionName);
+
+    virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
+    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
+    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId,
+                                               TfToken const &paramName);
+    virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
+    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
 private:
     struct _Mesh {
@@ -144,10 +163,27 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
+    struct _SurfaceShader {
+        _SurfaceShader() { }
+        _SurfaceShader(std::string const &src, HdShaderParamVector const &pms)
+            : source(src)
+            , params(pms) {
+        }
+
+        std::string source;
+        HdShaderParamVector params;
+    };
+    struct _DrawTarget {
+    };
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Instancer> _instancers;
+    std::map<SdfPath, _SurfaceShader> _surfaceShaders;
     std::map<SdfPath, int> _refineLevels;
+    std::map<SdfPath, _DrawTarget> _drawTargets;
     int _refineLevel;
+
+    typedef std::map<SdfPath, SdfPath> SdfPathMap;
+    SdfPathMap _surfaceShaderBindings;
 
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

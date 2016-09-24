@@ -412,7 +412,7 @@ UsdImagingHdEngine::TestIntersectionBatch(
     const SdfPathVector& paths, 
     RenderParams params,
     unsigned int pickResolution,
-    std::function< SdfPath(const SdfPath&) > pathTranslator,
+    PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
     if (not HdRenderContextCaps::GetInstance().SupportsHydra()) {
@@ -460,18 +460,15 @@ UsdImagingHdEngine::TestIntersectionBatch(
     }
 
     for (const HdxIntersector::Hit& hit : hits) {
-        // Preserve previous behavior of TestIntersection, returning the
-        // instancer when a prototype is picked.
-        SdfPath rprimPath = hit.objectId;
-        if (not hit.instancerId.IsEmpty()) {
-            rprimPath = hit.instancerId;
-        }
+        const SdfPath primPath = hit.objectId;
+        const SdfPath instancerPath = hit.instancerId;
+        const int instanceIndex = hit.instanceIndex;
 
-        HitInfo& info = (*outHit)[pathTranslator(rprimPath)];
+        HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath, instanceIndex)];
         info.worldSpaceHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
                                           hit.worldSpaceHitPoint[1],
                                           hit.worldSpaceHitPoint[2]);
-        info.hitInstanceIndex = hit.instanceIndex;
+        info.hitInstanceIndex = instanceIndex;
     }
 
     return true;
@@ -510,7 +507,9 @@ UsdImagingHdEngine::Render(HdRenderIndex& index, RenderParams params)
 
     // note: to get benefit of alpha-to-coverage, the target framebuffer
     // has to be a MSAA buffer.
-    if (params.enableSampleAlphaToCoverage) {
+    if (params.enableIdRender) {
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    } else if (params.enableSampleAlphaToCoverage) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
 

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DRAW_TARGET_RENDER_PASS_H
-#define HD_DRAW_TARGET_RENDER_PASS_H
+#ifndef HDX_DRAW_TARGET_RENDER_PASS_H
+#define HDX_DRAW_TARGET_RENDER_PASS_H
 
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -34,9 +34,9 @@
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
-class HdDrawTargetRenderPassState;
+class HdxDrawTargetRenderPassState;
 
-/// \class HdDrawTargetRenderPass
+/// \class HdxDrawTargetRenderPass
 ///
 /// Represents an render pass that renders to a draw target.
 ///
@@ -44,32 +44,34 @@ class HdDrawTargetRenderPassState;
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdDrawTargetRenderPass : boost::noncopyable {
+class HdxDrawTargetRenderPass : boost::noncopyable {
 public:
-	HDLIB_API
-    HdDrawTargetRenderPass(HdRenderIndex *index);
-	HDLIB_API
-    virtual ~HdDrawTargetRenderPass();
+
+	HDXLIB_API
+    HdxDrawTargetRenderPass(HdRenderIndex *index);
+
+	HDXLIB_API
+    virtual ~HdxDrawTargetRenderPass();
 
     /// Sets the target draw object of this render pass containing
     /// the color buffers and depth buffer to use.
-	HDLIB_API
+	HDXLIB_API
     void SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget);
 
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
-	HDLIB_API
+	HDXLIB_API
     void SetRenderPassState(HdDrawTargetRenderPassState *renderPassState);
 
-	HDLIB_API
+	HDXLIB_API
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Sync the render pass resources
-    HDLIB_API
+    HDXLIB_API
     void Sync();
 
     /// Execute render pass task
-    HDLIB_API
+    HDXLIB_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 
 private:
@@ -77,7 +79,7 @@ private:
     HdRenderPass _renderPass;
 
     /// drawtarget renderPass state
-    HdDrawTargetRenderPassState *_drawTargetRenderPassState;
+    HdxDrawTargetRenderPassState *_drawTargetRenderPassState;
 
     /// Local copy of the draw target object.
     GlfDrawTargetRefPtr  _drawTarget;
@@ -91,9 +93,9 @@ private:
     void _ClearBuffers();
 
     // No default/copy
-    HdDrawTargetRenderPass()                                           = delete;
-    HdDrawTargetRenderPass(const HdDrawTargetRenderPass &)             = delete;
-    HdDrawTargetRenderPass &operator =(const HdDrawTargetRenderPass &) = delete;
+    HdxDrawTargetRenderPass()                                           = delete;
+    HdxDrawTargetRenderPass(const HdxDrawTargetRenderPass &)             = delete;
+    HdxDrawTargetRenderPass &operator =(const HdxDrawTargetRenderPass &) = delete;
 };
 
-#endif // HD_DRAW_TARGET_RENDER_PASS_H
+#endif // HDX_DRAW_TARGET_RENDER_PASS_H

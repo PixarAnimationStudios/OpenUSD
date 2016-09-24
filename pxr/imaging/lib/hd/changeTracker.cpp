@@ -42,7 +42,6 @@ HdChangeTracker::HdChangeTracker()
     , _changeCount(1)       // changeCount in DirtyList starts from 0.
     , _visChangeCount(1)    // Clients (commandBuffer) start from 0.
     , _shaderBindingsVersion(1)
-    , _drawTargetSetVersion(1) // Clients (draw target task) start from 0.
 {
     /*NOTHING*/
 }
@@ -435,64 +434,6 @@ HdChangeTracker::MarkSprimClean(SdfPath const& id, DirtyBits newBits)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Draw Target Object Tracking
-// -------------------------------------------------------------------------- //
-
-void
-HdChangeTracker::DrawTargetInserted(SdfPath const& id)
-{
-    _drawTargetState[id] = AllDirty;
-    ++_drawTargetSetVersion;
-}
-
-void
-HdChangeTracker::DrawTargetRemoved(SdfPath const& id)
-{
-    _drawTargetState.erase(id);
-    ++_drawTargetSetVersion;
-}
-
-HdChangeTracker::DirtyBits
-HdChangeTracker::GetDrawTargetDirtyBits(SdfPath const& id)
-{
-    _IDStateMap::iterator it = _drawTargetState.find(id);
-    if (not TF_VERIFY(it != _drawTargetState.end())) {
-        return Clean;
-    }
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkDrawTargetDirty(SdfPath const& id, DirtyBits bits)
-{
-    _IDStateMap::iterator it = _drawTargetState.find(id);
-    if (not TF_VERIFY(it != _drawTargetState.end())) {
-        return;
-    }
-    it->second = it->second | bits;
-
-    if (bits & DirtyDTEnable) {
-        ++_drawTargetSetVersion;
-    }
-}
-
-unsigned
-HdChangeTracker::GetDrawTargetSetVersion()
-{
-    return _drawTargetSetVersion;
-}
-
-void
-HdChangeTracker::MarkDrawTargetClean(SdfPath const& id, DirtyBits newBits)
-{
-    _IDStateMap::iterator it = _drawTargetState.find(id);
-    if (not TF_VERIFY(it != _drawTargetState.end()))
-        return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
-}
-
-// -------------------------------------------------------------------------- //
 /// \name RPrim Object Tracking
 // -------------------------------------------------------------------------- //
 
@@ -821,6 +762,43 @@ unsigned
 HdChangeTracker::GetShaderBindingsVersion() const
 {
     return _shaderBindingsVersion;
+}
+
+void
+HdChangeTracker::AddState(TfToken const& name)
+{
+    _GeneralStateMap::iterator it = _generalState.find(name);
+    if (it != _generalState.end()) {
+        // mark state dirty
+        ++it->second;
+    } else {
+        _generalState[name] = 1;
+    }
+}
+
+void
+HdChangeTracker::MarkStateDirty(TfToken const& name)
+{
+    _GeneralStateMap::iterator it = _generalState.find(name);
+    if (it != _generalState.end()) {
+        ++it->second;
+    } else {
+        TF_CODING_ERROR("Change Tracker unable to find state %s",
+                        name.GetText());
+    }
+}
+
+unsigned
+HdChangeTracker::GetStateVersion(TfToken const &name) const
+{
+    _GeneralStateMap::const_iterator it = _generalState.find(name);
+    if (it != _generalState.end()) {
+        return it->second;
+    } else {
+        TF_CODING_ERROR("Change Tracker unable to find state %s",
+                        name.GetText());
+        return 0;
+    }
 }
 
 /*static*/
