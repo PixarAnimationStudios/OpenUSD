@@ -60,7 +60,7 @@ public:
     HDXLIB_API
     HdxCamera(HdSceneDelegate* delegate, SdfPath const & id);
 
-    HDLIB_API
+    HDXLIB_API
     ~HdxCamera();  // note: not virtual (for now)
 
     // change tracking for HdxLight
