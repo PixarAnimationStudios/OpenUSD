@@ -219,7 +219,7 @@ struct CrateFile::Version
     
     static Version FromString(char const *str) {
         uint32_t maj, min, pat;
-        if (sscanf(str, "%u.%u.%u", &maj, &min, &pat) != 3 ||
+        if (sscanf_s(str, "%u.%u.%u", &maj, &min, &pat) != 3 ||
             maj > 255 || min > 255 || pat > 255) {
             return Version();
         }

@@ -193,7 +193,8 @@ main(int argc, char **argv)
     if (perfMode) {
 
         // XXX:perfgen only accepts metric names ending in _time.  See bug 97317
-        FILE *outputFile = fopen("perfstats.raw", "w");
+        FILE *outputFile;
+        fopen_s(&outputFile, "perfstats.raw", "w");
         fprintf(outputFile,
             "{'profile':'TBB Loops_time','metric':'time','value':%f,'samples':1}\n",
             tbbSeconds);
