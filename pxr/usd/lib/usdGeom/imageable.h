@@ -237,10 +237,12 @@ public:
     /// \note It is only valid to author the proxyPrim relationship on
     /// prims whose purpose is "render".
     ///
+    USDGEOM_API
     UsdRelationship GetProxyPrimRel() const;
 
     /// See GetProxyPrimRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDGEOM_API
     UsdRelationship CreateProxyPrimRel() const;
 
 public:
@@ -491,6 +493,7 @@ public:
     /// change this method to return a context-aware result.
     ///
     /// \sa SetProxyPrim(), GetProxyPrimRel()
+    USDGEOM_API
     UsdPrim ComputeProxyPrim(UsdPrim *renderPrim=NULL) const;
 
     /// Convenience function for authoring the \em renderProxy rel on this
@@ -501,9 +504,11 @@ public:
     /// purpoes of the specified prim.
     ///
     /// \sa ComputeProxyPrim(), GetProxyPrimRel()
+    USDGEOM_API
     bool SetProxyPrim(const UsdPrim &proxy) const;
     
     /// \overload that takes any UsdSchemaBase-derived object
+    USDGEOM_API
     bool SetProxyPrim(const UsdSchemaBase &proxy) const;
     
     /// Compute the bound of this prim in world space, at the specified

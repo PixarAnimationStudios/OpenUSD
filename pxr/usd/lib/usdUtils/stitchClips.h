@@ -113,7 +113,7 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
 ///
 /// \p clipLayerFiles         The files containing the time varying data.
 /// 
-bool 
+USDUTILS_API bool 
 UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer, 
                             const std::vector<std::string>& clipLayerFiles);
 
