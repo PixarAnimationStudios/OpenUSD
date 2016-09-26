@@ -202,25 +202,6 @@ pxr_shared_library(tf
         testenv/testTfScriptModuleLoader_Unknown.py
 )
 
-<<<<<<< HEAD
-if(UNIX)
-    pxr_build_test(testTfPyFunction
-        LIBRARIES
-            tf
-            ${Boost_PYTHON_LIBRARY}
-        CPPFILES
-            testenv/testTfPyFunction.cpp
-    ) 
-
-    pxr_build_test(testTfPyInterpreter
-        LIBRARIES
-            tf
-        CPPFILES
-            testenv/testTfPyInterpreter.cpp
-    ) 
-=======
->>>>>>> f1a2e20b249ac1e8aa8ec5cd6b2f558ecdd06f74
-
 pxr_build_test(testTfPyInterpreter
     LIBRARIES
         tf
