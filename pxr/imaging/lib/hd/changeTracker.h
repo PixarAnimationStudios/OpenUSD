@@ -491,13 +491,16 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Adds a named state for tracking.
+    HDLIB_API
     void AddState(TfToken const& name);
 
     /// Marks a named state as being dirty., this bumps the version of the
     /// state.
+    HDLIB_API
     void MarkStateDirty(TfToken const& name);
 
     /// Returns the current version of the named state.
+    HDLIB_API
     unsigned GetStateVersion(TfToken const &name) const;
 
     // ---------------------------------------------------------------------- //

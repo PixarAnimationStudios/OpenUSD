@@ -24,7 +24,7 @@
 #ifndef HDX_DRAW_TARGET_RENDER_PASS_H
 #define HDX_DRAW_TARGET_RENDER_PASS_H
 
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
@@ -61,7 +61,7 @@ public:
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
 	HDXLIB_API
-    void SetRenderPassState(HdDrawTargetRenderPassState *renderPassState);
+    void SetRenderPassState(HdxDrawTargetRenderPassState *renderPassState);
 
 	HDXLIB_API
     void SetRprimCollection(HdRprimCollection const& col);
