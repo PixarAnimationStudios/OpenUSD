@@ -69,18 +69,6 @@ ARCH_API bool ArchStatIsWritable(const struct stat *st);
 /// available in the stat structure for the current platform.
 ARCH_API double ArchGetModificationTime(const struct stat& st);
 
-/// Returns the access time (atime) in seconds from the stat struct.
-///
-/// This function returns the access time with as much precision as is
-/// available in the stat structure for the current platform.
-ARCH_API double ArchGetAccessTime(const struct stat& st);
-
-/// Returns the status change time (ctime) in seconds from the stat struct.
-///
-/// This function returns the status change time with as much precision as is
-/// available in the stat structure for the current platform.
-ARCH_API double ArchGetStatusChangeTime(const struct stat& st);
-
 /// Return the path to a temporary directory for this platform.
 ///
 /// The returned temporary directory will be a location that will normally
@@ -144,12 +132,6 @@ int ArchMakeTmpFile(const std::string& tmpdir,
 ARCH_API
 std::string ArchMakeTmpSubdir(const std::string& tmpdir,
                               const std::string& prefix);
-
-/// Return all automounted directories.
-///
-/// Returns a set of all directories that are automount points for the host.
-ARCH_API
-std::set<std::string> ArchGetAutomountDirectories();
 
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
 #if defined(ARCH_OS_WINDOWS)
