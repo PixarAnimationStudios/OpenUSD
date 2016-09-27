@@ -60,15 +60,15 @@ _FixNormalizedKnotRange(
 
     if (startVal < knots[degree]) {
         changeVal = knots[degree];
-        for (int i=0; i<=degree; ++i) {
+        for (unsigned int i = 0; i <= degree; ++i) {
             if (knots[i] == changeVal) {
                 knots[i] = startVal;
             }
         }
     }
     if (endVal > knots[numKnots - (degree + 1)]) {
-        changeVal = knots[numKnots - (degree+1)];
-        for (int i=numKnots - (degree+1); i<numKnots; ++i) {
+        changeVal = knots[numKnots - (degree + 1)];
+        for (unsigned int i = numKnots - (degree + 1); i < numKnots; ++i) {
             if (knots[i] == changeVal) {
                 knots[i] = endVal;
             }

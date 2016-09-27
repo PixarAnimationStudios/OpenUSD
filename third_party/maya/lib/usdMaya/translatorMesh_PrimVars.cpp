@@ -85,7 +85,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
     MFloatArray uCoords;
     MFloatArray vCoords;
     for (size_t i = 0; i < numUVs; ++i) {
-        size_t uvIndex = i;
+        int uvIndex = i;
 
         if (i < assignmentIndices.size()) {
             // The data is indexed, so consult the indices array for the
@@ -171,7 +171,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
             uvId = fvi;
         }
 
-        if (uvId < assignmentIndices.size()) {
+        if (static_cast<size_t>(uvId) < assignmentIndices.size()) {
             // The data is indexed, so consult the indices array for the
             // correct index into the data.
             uvId = assignmentIndices[uvId];
