@@ -23,6 +23,8 @@
 #
 import json
 
+from pxr import UsdGeom
+
 from maya import cmds
 from maya.app.general import mayaMixin
 
@@ -30,6 +32,25 @@ from PySide import QtCore
 from PySide import QtGui
 
 EXPORTED_ATTRS_MAYA_ATTR_NAME = 'USD_UserExportedAttributesJson'
+
+USD_ATTR_TYPE_USD = 'USD'
+USD_ATTR_TYPE_PRIMVAR = 'primvar'
+USD_ATTR_TYPE_USDRI = 'usdRi'
+
+USD_ATTR_TYPE_OPTIONS = [
+    USD_ATTR_TYPE_USD,
+    USD_ATTR_TYPE_PRIMVAR,
+    USD_ATTR_TYPE_USDRI
+]
+
+# The first empty string option here allows the interpolation to be un-specified.
+PRIMVAR_INTERPOLATION_OPTIONS = [
+    '',
+    UsdGeom.Tokens.constant,
+    UsdGeom.Tokens.uniform,
+    UsdGeom.Tokens.vertex,
+    UsdGeom.Tokens.faceVarying
+]
 
 RESERVED_ATTRIBUTES = set([EXPORTED_ATTRS_MAYA_ATTR_NAME])
 
@@ -45,15 +66,41 @@ class ExportedAttribute(object):
 
     def __init__(self, mayaAttrName):
         self._mayaAttrName = mayaAttrName
+        self._usdAttrType = None
         self._usdAttrName = None
+        self._primvarInterpolation = None
 
     def __eq__(self, other):
+        # Note that _primvarInterpolation does not factor in here.
         return (self._mayaAttrName == other._mayaAttrName and
+                self._usdAttrType == other._usdAttrType and
                 self._usdAttrName == other._usdAttrName)
 
     @property
     def mayaAttrName(self):
         return self._mayaAttrName
+
+    @property
+    def usdAttrType(self):
+        if self._usdAttrType is None:
+            return USD_ATTR_TYPE_USD
+
+        return self._usdAttrType
+
+    @usdAttrType.setter
+    def usdAttrType(self, value):
+        exportableAttrTypes = [
+            USD_ATTR_TYPE_PRIMVAR,
+            USD_ATTR_TYPE_USDRI
+        ]
+        if value not in exportableAttrTypes:
+            self._usdAttrType = None
+        else:
+            self._usdAttrType = value
+
+        # Clear out interpolation as well if this is not a primvar.
+        if value != USD_ATTR_TYPE_PRIMVAR:
+            self._primvarInterpolation = None
 
     @property
     def usdAttrName(self):
@@ -66,14 +113,36 @@ class ExportedAttribute(object):
         else:
             self._usdAttrName = value
 
+    @property
+    def primvarInterpolation(self):
+        return self._primvarInterpolation
+
+    @primvarInterpolation.setter
+    def primvarInterpolation(self, value):
+        exportableInterpolations = [
+            UsdGeom.Tokens.constant,
+            UsdGeom.Tokens.uniform,
+            UsdGeom.Tokens.vertex,
+            UsdGeom.Tokens.faceVarying
+        ]
+        if (self._usdAttrType != USD_ATTR_TYPE_PRIMVAR or
+                value not in exportableInterpolations):
+            self._primvarInterpolation = None
+        else:
+            self._primvarInterpolation = value
+
     def GetJsonDict(self):
         """
         This method returns a dictionary representation of this object
         that can be dumped to JSON.
         """
         result = { self._mayaAttrName : {} }
+        if self._usdAttrType:
+            result[self._mayaAttrName]['usdAttrType'] = self._usdAttrType
         if self._usdAttrName:
             result[self._mayaAttrName]['usdAttrName'] = self._usdAttrName
+        if self._primvarInterpolation:
+            result[self._mayaAttrName]['interpolation'] = self._primvarInterpolation
         return result
 
     @staticmethod
@@ -96,7 +165,9 @@ class ExportedAttribute(object):
         for mayaAttrName in sorted(jsonDict.keys()):
             exportedAttr = ExportedAttribute(mayaAttrName)
             attrMetadata = jsonDict[mayaAttrName]
+            exportedAttr.usdAttrType = attrMetadata.get('usdAttrType')
             exportedAttr.usdAttrName = attrMetadata.get('usdAttrName')
+            exportedAttr.primvarInterpolation = attrMetadata.get('interpolation')
             result.append(exportedAttr)
 
         return result
@@ -176,11 +247,15 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
     model changes.
     """
     MAYA_ATTR_NAME_COLUMN = 0
-    USD_ATTR_NAME_COLUMN = 1
-    NUM_COLUMNS = 2
+    USD_ATTR_TYPE_COLUMN = 1
+    USD_ATTR_NAME_COLUMN = 2
+    PRIMVAR_INTERPOLATION_COLUMN = 3
+    NUM_COLUMNS = 4
 
-    def __init__(self, exportedAttrs=[], parent=None):
+    def __init__(self, exportedAttrs=None, parent=None):
         super(ExportedAttributesModel, self).__init__(parent=parent)
+        if exportedAttrs is None:
+            exportedAttrs = []
         self._exportedAttrs = exportedAttrs
 
     @property
@@ -192,27 +267,42 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
         self._exportedAttrs = exportedAttrs
         self.reset()
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=QtCore.QModelIndex()):
         if not self._exportedAttrs:
             return 0
         return len(self._exportedAttrs)
 
-    def columnCount(self, parent):
+    def columnCount(self, parent=QtCore.QModelIndex()):
         if not self.rowCount(parent):
             return 0
         return ExportedAttributesModel.NUM_COLUMNS
 
     def headerData(self, section, orientation, role):
-        COLUMN_HEADERS = ["Maya Attribute Name", "USD Attribute Name"]
+        COLUMN_HEADERS = [
+            'Maya Attribute Name',
+            'USD Attribute Type',
+            'USD Attribute Name',
+            'Interpolation']
 
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        COLUMN_TOOLTIPS = [
+            'The name of the Maya node attribute to be exported to USD',
+            'The type of attribute to create in USD',
+            'Which name to use for the attribute in USD (defaults to Maya Attribute Name if empty)',
+            'Which interpolation to use for primvar-type attributes'
+        ]
+
+        if role == QtCore.Qt.DisplayRole:
             return COLUMN_HEADERS[section]
+        elif role == QtCore.Qt.ToolTipRole:
+            return COLUMN_TOOLTIPS[section]
 
         return None
 
-    def data(self, index, role):
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        value = None
+
         if not self._exportedAttrs or not index.isValid() or role != QtCore.Qt.DisplayRole:
-            return None
+            return value
 
         row = index.row()
         column = index.column()
@@ -220,26 +310,32 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
         exportedAttr = self._exportedAttrs[row]
         if column == ExportedAttributesModel.MAYA_ATTR_NAME_COLUMN:
             value = exportedAttr.mayaAttrName
+        elif column == ExportedAttributesModel.USD_ATTR_TYPE_COLUMN:
+            value = exportedAttr.usdAttrType
         elif column == ExportedAttributesModel.USD_ATTR_NAME_COLUMN:
             value = exportedAttr.usdAttrName
-        else:
-            return None
+        elif column == ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN:
+            value = exportedAttr.primvarInterpolation
 
         return value
 
-    def setData(self, index, value, role):
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
         if not self._exportedAttrs:
             return False
 
         row = index.row()
         column = index.column()
 
-        # Currently, only the usdAttrName is editable.
-        if column != ExportedAttributesModel.USD_ATTR_NAME_COLUMN:
-            return False
-
         exportedAttr = self._exportedAttrs[row]
-        exportedAttr.usdAttrName = value
+
+        if column == ExportedAttributesModel.USD_ATTR_TYPE_COLUMN:
+            exportedAttr.usdAttrType = value
+        elif column == ExportedAttributesModel.USD_ATTR_NAME_COLUMN:
+            exportedAttr.usdAttrName = value
+        elif column == ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN:
+            exportedAttr.primvarInterpolation = value
+        else:
+            return False
 
         # Update the selected nodes with the new data.
         selectedNodeNames = cmds.ls(selection=True, long=True)
@@ -259,10 +355,17 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
 
         itemFlags = (QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
 
-        if index.column() == ExportedAttributesModel.MAYA_ATTR_NAME_COLUMN:
+        column = index.column()
+        if column == ExportedAttributesModel.MAYA_ATTR_NAME_COLUMN:
             itemFlags |= QtCore.Qt.ItemIsDragEnabled
-        elif index.column() == ExportedAttributesModel.USD_ATTR_NAME_COLUMN:
+        elif (column == ExportedAttributesModel.USD_ATTR_TYPE_COLUMN or
+                column == ExportedAttributesModel.USD_ATTR_NAME_COLUMN):
             itemFlags |= QtCore.Qt.ItemIsEditable
+        elif column == ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN:
+            # The primvar column is only editable if this is a primvar.
+            exportedAttr = self._exportedAttrs[index.row()]
+            if exportedAttr.usdAttrType == USD_ATTR_TYPE_PRIMVAR:
+                itemFlags |= QtCore.Qt.ItemIsEditable
 
         return itemFlags
 
@@ -299,12 +402,49 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
         return True
 
 
+class ExportedAttributesViewItemDelegate(QtGui.QStyledItemDelegate):
+
+    def __init__(self, choices, parent=None):
+        super(ExportedAttributesViewItemDelegate, self).__init__(parent=parent)
+        self._choices = choices
+
+    def createEditor(self, parent, option, index):
+        editor = QtGui.QComboBox(parent)
+        editor.addItems(self._choices)
+
+        # Use the model data to pre-select a choice in the combo box.
+        currentValue = index.model().data(index)
+        if currentValue in self._choices:
+            currentIndex = self._choices.index(currentValue)
+            editor.setCurrentIndex(currentIndex)
+
+        editor.currentIndexChanged.connect(self.currentIndexChanged)
+        return editor
+
+    def setEditorData(self, editor, index):
+        editor.blockSignals(True)
+        editor.setCurrentIndex(editor.currentIndex())
+        editor.blockSignals(False)
+
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.currentText())
+
+    def currentIndexChanged(self):
+        self.commitData.emit(self.sender())
+
+
 class ExportedAttributesView(QtGui.QTableView):
 
     def __init__(self, parent=None):
         super(ExportedAttributesView, self).__init__(parent=parent)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
+
+        self.setItemDelegateForColumn(ExportedAttributesModel.USD_ATTR_TYPE_COLUMN,
+            ExportedAttributesViewItemDelegate(USD_ATTR_TYPE_OPTIONS, self))
+
+        self.setItemDelegateForColumn(ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN,
+            ExportedAttributesViewItemDelegate(PRIMVAR_INTERPOLATION_OPTIONS, self))
 
     def dragEnterEvent(self, event):
         if event.source() == self:
@@ -540,6 +680,22 @@ class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QtGui.QWid
         commonExportedAttrs = [commonExportedAttrs[x] for x in commonExportedAttributeNames]
         commonExportedAttrs.sort(key=lambda x: x.mayaAttrName)
         self.exportedAttrsModel.exportedAttributes = commonExportedAttrs
+
+        # Normally, the combo boxes for selecting usdAttrType and
+        # primvarInterpolation would only appear when the table cell is put into
+        # edit mode. Instead, we want the combo boxes to always be visible, so
+        # we tell the view to open them as persistent editors.
+        for row in xrange(self.exportedAttrsModel.rowCount()):
+            usdAttrTypeIndex = self.exportedAttrsModel.index(row,
+                ExportedAttributesModel.USD_ATTR_TYPE_COLUMN)
+            self.exportedAttrsView.openPersistentEditor(usdAttrTypeIndex)
+
+            # Only open the interpolation editor if this is a primvar.
+            if self.exportedAttrsModel.data(usdAttrTypeIndex) == USD_ATTR_TYPE_PRIMVAR:
+                primvarInterpolationIndex = self.exportedAttrsModel.index(row,
+                    ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN)
+                self.exportedAttrsView.openPersistentEditor(primvarInterpolationIndex)
+
         self.exportedAttrsView.resizeColumnsToContents()
 
         # Collect the attributes common to all selected nodes.
