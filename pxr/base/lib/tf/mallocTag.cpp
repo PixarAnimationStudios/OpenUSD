@@ -45,6 +45,7 @@
 #include <string>
 #include <stdlib.h>
 #include <thread>
+#include <type_traits>
 #include <vector>
 #include <ostream>
 
@@ -841,8 +842,18 @@ public:
     Find()
     {
 #if defined(ARCH_HAS_THREAD_LOCAL)
-        static thread_local _ThreadData data;
-        return &data;
+        // This weirdness is so we don't use the heap and we don't call
+        // the destructor of _ThreadData when the thread is exiting.
+        // We can't do the latter because we don't know in what order
+        // objects will be destroyed and objects destroyed after the
+        // _ThreadData may do heap (de)allocation, which requires the
+        // _ThreadData object.  We leak the heap allocated blocks in
+        // the _ThreadData.
+        static thread_local
+            std::aligned_storage<sizeof(_ThreadData), 
+                                 alignof(_ThreadData)>::type dataBuffer;
+        static thread_local _ThreadData* data = new (&dataBuffer) _ThreadData;
+        return data;
 #else
         TF_FATAL_ERROR("TfMallocTag not supported on platforms "
                        "without thread_local");
