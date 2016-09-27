@@ -3460,6 +3460,30 @@ namespace {
 using _MasterToFlattenedPathMap 
     = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
 
+SdfPath
+_GenerateTranslatedTargetPath(const SdfPath& inputPath,
+                              const _MasterToFlattenedPathMap& masterToFlattened)
+{
+    if (inputPath == SdfPath::AbsoluteRootPath()) {
+        return inputPath;
+    }
+
+    // Master prims will always be the root        
+    auto prefix = inputPath;
+    for ( ; prefix.GetParentPath() != SdfPath::AbsoluteRootPath(); 
+            prefix = prefix.GetParentPath()) { 
+
+        // Nothing to do here, just climbing to the parent path
+    }
+
+    auto replacement = masterToFlattened.find(prefix);
+    if (replacement == end(masterToFlattened)) {
+        return inputPath;
+    }
+
+    return inputPath.ReplacePrefix(prefix, replacement->second);
+}
+
 // We want to give generated masters in the flattened stage
 // reserved(using '__' as a prefix), unclashing paths, however,
 // we don't want to use the '__Master' paths which have special
@@ -3599,7 +3623,7 @@ UsdStage::_FlattenPrim(const UsdPrim &usdPrim,
     
     _CopyMetadata(usdPrim, newPrim);
     for (auto const &prop : usdPrim.GetAuthoredProperties()) {
-        _CopyProperty(prop, newPrim);
+        _CopyProperty(prop, newPrim, masterToFlattened);
     }
 }
 
@@ -3626,7 +3650,9 @@ UsdStage::_CopyMasterPrim(const UsdPrim &masterPrim,
 
 void 
 UsdStage::_CopyProperty(const UsdProperty &prop,
-                        const SdfPrimSpecHandle &dest) const
+                        const SdfPrimSpecHandle &dest,
+                        const _MasterToFlattenedPathMap
+                            &masterToFlattened) const
 {
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
@@ -3682,7 +3708,8 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
          SdfTargetsProxy sdfTargets = sdfRel->GetTargetPathList();
          sdfTargets.ClearEditsAndMakeExplicit();
          for (auto const& path : targets) {
-             sdfTargets.Add(path);
+             sdfTargets.Add(_GenerateTranslatedTargetPath(path, 
+                                                          masterToFlattened));
          }
      }
 }
