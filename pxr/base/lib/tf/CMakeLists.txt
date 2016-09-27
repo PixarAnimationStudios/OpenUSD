@@ -57,6 +57,7 @@ pxr_shared_library(tf
         patternMatcher
         pointerAndBits
         poolAllocator
+        pyAnnotatedBoolResult
         pyArg
         pyCall
         pyClassMethod
