@@ -54,53 +54,71 @@ set(LIBRARY_PATHS
 
 # Find Alembic libs
 
-find_library(ALEMBIC_ABC_LIBRARY
-    NAMES AlembicAbc
+# First look for single Alembic library,
+# as shipped in versions >= 1.6.0
+find_library(ALEMBIC_LIBRARY
+    NAMES Alembic
     PATHS ${LIBRARY_PATHS}
   )
 
-find_library(ALEMBIC_ABCGEOM_LIBRARY
-    NAMES AlembicAbcGeom
-    PATHS ${LIBRARY_PATHS}
-  )
+# If single library is not found, look for legacy Alembic libraries.
+if(NOT ALEMBIC_LIBRARY)
+    message(STATUS "Single Alembic library not found; looking for legacy libs")
 
-find_library(ALEMBIC_ABCCOREHDF5_LIBRARY
-    NAMES AlembicAbcCoreHDF5
-    PATHS ${LIBRARY_PATHS}
-  )
+    find_library(ALEMBIC_ABC_LIBRARY
+	NAMES AlembicAbc
+	PATHS ${LIBRARY_PATHS}
+    )
 
-find_library(ALEMBIC_ABCCOREOGAWA_LIBRARY
-    NAMES AlembicAbcCoreOgawa
-    PATHS ${LIBRARY_PATHS}
-  )
+    find_library(ALEMBIC_ABCGEOM_LIBRARY
+	NAMES AlembicAbcGeom
+	PATHS ${LIBRARY_PATHS}
+    )
 
-find_library(ALEMBIC_ABCCOREABSTRACT_LIBRARY
-    NAMES AlembicAbcCoreAbstract
-    PATHS ${LIBRARY_PATHS}
-  )
+    find_library(ALEMBIC_ABCCOREHDF5_LIBRARY
+	NAMES AlembicAbcCoreHDF5
+	PATHS ${LIBRARY_PATHS}
+    )
 
-find_library(ALEMBIC_UTIL_LIBRARY
-    NAMES AlembicUtil
-    PATHS ${LIBRARY_PATHS}
-  )
+    find_library(ALEMBIC_ABCCOREOGAWA_LIBRARY
+	NAMES AlembicAbcCoreOgawa
+	PATHS ${LIBRARY_PATHS}
+    )
 
-find_library(ALEMBIC_OGAWA_LIBRARY
-    NAMES AlembicOgawa
-    PATHS ${LIBRARY_PATHS}
-)
+    find_library(ALEMBIC_ABCCOREABSTRACT_LIBRARY
+	NAMES AlembicAbcCoreAbstract
+	PATHS ${LIBRARY_PATHS}
+    )
 
+    find_library(ALEMBIC_UTIL_LIBRARY
+	NAMES AlembicUtil
+	PATHS ${LIBRARY_PATHS}
+    )
 
-set (ALEMBIC_LIBRARIES
-    ${ALEMBIC_ABCGEOM_LIBRARY}
-    ${ALEMBIC_ABC_LIBRARY}
-    ${ALEMBIC_ABCCOREHDF5_LIBRARY}
-    ${ALEMBIC_ABCCOREOGAWA_LIBRARY}
-    ${ALEMBIC_ABCCOREABSTRACT_LIBRARY}
-    ${ALEMBIC_UTIL_LIBRARY}
-    ${ALEMBIC_OGAWA_LIBRARY}
-)
+    find_library(ALEMBIC_OGAWA_LIBRARY
+	NAMES AlembicOgawa
+	PATHS ${LIBRARY_PATHS}
+    )
 
-get_filename_component(ALEMBIC_LIBRARY_DIR ${ALEMBIC_ABC_LIBRARY} PATH)
+    set (ALEMBIC_LIBRARIES
+	${ALEMBIC_ABCGEOM_LIBRARY}
+	${ALEMBIC_ABC_LIBRARY}
+	${ALEMBIC_ABCCOREHDF5_LIBRARY}
+	${ALEMBIC_ABCCOREOGAWA_LIBRARY}
+	${ALEMBIC_ABCCOREABSTRACT_LIBRARY}
+	${ALEMBIC_UTIL_LIBRARY}
+	${ALEMBIC_OGAWA_LIBRARY}
+    )
+
+    get_filename_component(ALEMBIC_LIBRARY_DIR ${ALEMBIC_ABC_LIBRARY} PATH)
+else()
+    set (ALEMBIC_LIBRARIES
+	${ALEMBIC_LIBRARY}
+    )
+
+    get_filename_component(ALEMBIC_LIBRARY_DIR ${ALEMBIC_LIBRARY} PATH)
+endif()
+
 
 # Find Alembic include dir
 find_path (ALEMBIC_INCLUDE_DIR Alembic/Abc/All.h
