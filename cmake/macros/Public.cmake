@@ -32,7 +32,7 @@ function(pxr_python_bins)
         # python executable. This doesn't use the CMake ${...} or @...@ syntax
         # for backwards compatibility with other build systems.
         file(READ ${pyFile} contents)
-        string(REGEX REPLACE "/pxrpythonsubst" ${PXR_PYTHON_SHEBANG} 
+        string(REGEX REPLACE "/pxrpythonsubst" ${PXR_PYTHON_SHEBANG}
             contents "${contents}")
         file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} ${contents})
 
@@ -46,7 +46,7 @@ function(pxr_python_bins)
         # we create a batch file wrapper that invokes the python
         # files.
         if(WIN32)
-            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@set PATH=C:\\Program Files\\usd\\lib;%PATH%\r\n@python \"%~dp0${file}\" %*")
+            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@python \"%~dp0${file}\" %*")
             install(PROGRAMS
                 "${CMAKE_BINARY_DIR}/${pyFile}.cmd"
                 DESTINATION ${installDir}
@@ -58,14 +58,14 @@ endfunction() # pxr_install_python_bins
 
 function(pxr_cpp_bin BIN_NAME)
     _get_install_dir(bin installDir)
-    
+
     set(multiValueArgs
         LIBRARIES
         INCLUDE_DIRS
     )
 
     cmake_parse_arguments(cb
-        ""  
+        ""
         ""
         "${multiValueArgs}"
         ${ARGN}
@@ -82,13 +82,13 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     target_include_directories(${BIN_NAME}
-        PRIVATE 
+        PRIVATE
         ${cb_INCLUDE_DIRS}
         ${PRIVATE_INC_DIR}
     )
 
     set_target_properties(${BIN_NAME}
-        PROPERTIES 
+        PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
     )
 
@@ -101,7 +101,7 @@ function(pxr_cpp_bin BIN_NAME)
         )
     endif()
 
-    install(TARGETS 
+    install(TARGETS
         ${BIN_NAME}
         DESTINATION ${installDir}
     )
@@ -206,7 +206,7 @@ function(pxr_shared_library LIBRARY_NAME)
 
     # Convert the name of the library into the python module name
     # , e.g. _tf.so -> Tf. This is later used to determine the eventual
-    # install location as well as for inclusion into the __init__.py's 
+    # install location as well as for inclusion into the __init__.py's
     # __all__ list.
     _get_python_module_name(${LIBRARY_NAME} pyModuleName)
 
@@ -214,12 +214,12 @@ function(pxr_shared_library LIBRARY_NAME)
     # _foo.so and install to ${project}/lib/python/${project}/${libname}
     if(sl_PYTHON_LIBRARY)
         # Always install under the 'pxr' module, rather than base on the
-        # project name. This makes importing consistent, e.g. 
+        # project name. This makes importing consistent, e.g.
         # 'from pxr import X'. Additionally, python libraries always install
         # into the default lib install, not into the third_party subdirectory
         # or similar.
         set(LIB_INSTALL_PREFIX "lib/python/pxr/${pyModuleName}")
-        
+
         set_property(GLOBAL
             APPEND PROPERTY PXR_PYTHON_MODULES ${pyModuleName}
         )
@@ -234,16 +234,16 @@ function(pxr_shared_library LIBRARY_NAME)
 
         if(WIN32)
 			add_definitions(-D_BUILDING_PYD=1)
-            set_target_properties(${LIBRARY_NAME} 
-                PROPERTIES 
+            set_target_properties(${LIBRARY_NAME}
+                PROPERTIES
                     PREFIX ""
                     SUFFIX ".pyd"
                     FOLDER "${PXR_PREFIX}/_python"
                     LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
             )
         else()
-            set_target_properties(${LIBRARY_NAME} 
-                PROPERTIES 
+            set_target_properties(${LIBRARY_NAME}
+                PROPERTIES
                     PREFIX ""
                     SUFFIX ".pyd"
                     FOLDER "${PXR_PREFIX}/_python"
@@ -263,10 +263,10 @@ function(pxr_shared_library LIBRARY_NAME)
     endif()
 
     if(PXR_INSTALL_SUBDIR)
-        set(HEADER_INSTALL_PREFIX 
+        set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${LIBRARY_NAME}")
     else()
-        set(HEADER_INSTALL_PREFIX 
+        set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/include/${PXR_PREFIX}/${LIBRARY_NAME}")
     endif()
 
@@ -282,7 +282,7 @@ function(pxr_shared_library LIBRARY_NAME)
 		set(_PxrUserLocation "/usr/local/share/usd/plugins")
 	endif()
     set_target_properties(${LIBRARY_NAME}
-        PROPERTIES COMPILE_DEFINITIONS 
+        PROPERTIES COMPILE_DEFINITIONS
             "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
     )
 
@@ -306,7 +306,7 @@ function(pxr_shared_library LIBRARY_NAME)
         PROPERTIES
             PUBLIC_HEADER
                 "${sl_PUBLIC_HEADERS};${${LIBRARY_NAME}_PUBLIC_HEADERS}"
-            INTERFACE_INCLUDE_DIRECTORIES 
+            INTERFACE_INCLUDE_DIRECTORIES
                 ""
             DEFINE_SYMBOL
                 "${ucLibName}_EXPORTS"
@@ -348,8 +348,8 @@ function(pxr_shared_library LIBRARY_NAME)
         APPEND
         FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
     )
-    
-    if (PXR_MALLOC_LIBRARY) 
+
+    if (PXR_MALLOC_LIBRARY)
         target_link_libraries(${LIBRARY_NAME}
             ${sl_LIBRARIES}
             ${PXR_MALLOC_LIBRARY}
@@ -358,7 +358,7 @@ function(pxr_shared_library LIBRARY_NAME)
         target_link_libraries(${LIBRARY_NAME}
             ${sl_LIBRARIES}
         )
-    endif() 
+    endif()
 
     # Include system headers before our own.  We define several headers
     # that conflict; for example, half.h in EXR versus gf
@@ -386,7 +386,7 @@ function(pxr_shared_library LIBRARY_NAME)
 
     if (sl_PYSIDE_UI_FILES)
         _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
-    endif()        
+    endif()
 
 endfunction() # pxr_shared_library
 
@@ -431,15 +431,15 @@ function(pxr_static_library LIBRARY_NAME)
     )
 
     if(PXR_INSTALL_SUBDIR)
-        set(HEADER_INSTALL_PREFIX 
+        set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${LIBRARY_NAME}")
     else()
-        set(HEADER_INSTALL_PREFIX 
+        set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/include/${PXR_PREFIX}/${LIBRARY_NAME}")
     endif()
 
     set_target_properties(${LIBRARY_NAME}
-        PROPERTIES COMPILE_DEFINITIONS 
+        PROPERTIES COMPILE_DEFINITIONS
             "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}"
     )
 
@@ -525,8 +525,8 @@ function(pxr_plugin PLUGIN_NAME)
     set(options
         KATANA_PLUGIN
     )
-    set(oneValueArgs 
-        PREFIX 
+    set(oneValueArgs
+        PREFIX
     )
     set(multiValueArgs
         PUBLIC_CLASSES
@@ -587,11 +587,11 @@ function(pxr_plugin PLUGIN_NAME)
 
     if (PXR_INSTALL_SUBDIR)
         set(PLUGIN_INSTALL_PREFIX "${PXR_INSTALL_SUBDIR}/plugin")
-        set(HEADER_INSTALL_PREFIX 
+        set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     else()
         set(PLUGIN_INSTALL_PREFIX "plugin")
-        set(HEADER_INSTALL_PREFIX 
+        set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     endif()
 
@@ -605,8 +605,8 @@ function(pxr_plugin PLUGIN_NAME)
         set(rpath ${CMAKE_INSTALL_RPATH})
         set(rpath "$ORIGIN/../../lib:$ORIGIN/../../../../lib:${rpath}")
 
-        set_target_properties(${PLUGIN_NAME} 
-            PROPERTIES 
+        set_target_properties(${PLUGIN_NAME}
+            PROPERTIES
                 INSTALL_RPATH ${rpath}
         )
     else()
@@ -618,7 +618,7 @@ function(pxr_plugin PLUGIN_NAME)
     endif()
 
     set_target_properties(${PLUGIN_NAME}
-        PROPERTIES COMPILE_DEFINITIONS 
+        PROPERTIES COMPILE_DEFINITIONS
             "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}"
     )
 
@@ -716,7 +716,7 @@ function(pxr_plugin PLUGIN_NAME)
         set(LIBRARY_NAME ${PLUGIN_NAME})
 
         _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
-    endif()        
+    endif()
 
     # Build python module.
     if(DEFINED sl_PYMODULE_CPPFILES)
@@ -762,22 +762,22 @@ function (pxr_create_test_module MODULE_NAME)
 
     if (EXISTS ${initPyFile})
         install(
-            FILES 
+            FILES
                 ${initPyFile}
-            RENAME 
+            RENAME
                 __init__.py
-            DESTINATION 
+            DESTINATION
                 tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
         )
     endif()
 
     if (EXISTS ${plugInfoFile})
         install(
-            FILES 
+            FILES
                 ${plugInfoFile}
-            RENAME 
+            RENAME
                 plugInfo.json
-            DESTINATION 
+            DESTINATION
                 tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
         )
     endif()
@@ -789,7 +789,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         "LIBRARIES;CPPFILES"
         ${ARGN}
     )
-    
+
     add_library(${LIBRARY_NAME}
         SHARED
         ${bt_CPPFILES}
@@ -798,7 +798,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         ${bt_LIBRARIES}
     )
     set_target_properties(${LIBRARY_NAME}
-        PROPERTIES 
+        PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
             FOLDER "${PXR_PREFIX}/tests/lib"
     )
@@ -838,7 +838,7 @@ function(pxr_build_test TEST_NAME)
         PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
     )
     set_target_properties(${TEST_NAME}
-        PROPERTIES 
+        PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
             POSITION_INDEPENDENT_CODE ON
             FOLDER "${PXR_PREFIX}/tests/bin"
