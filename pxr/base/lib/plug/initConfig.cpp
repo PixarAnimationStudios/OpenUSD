@@ -27,6 +27,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/env.h"
 #include <boost/preprocessor/stringize.hpp>
 
 namespace {
@@ -50,12 +51,13 @@ ARCH_CONSTRUCTOR_DEFINE(102, Plug_InitConfig)
     std::vector<std::string> result;
 
     // Environment locations.
-    _AppendPathList(&result, TfGetenv(pathEnvVarName));
+    _AppendPathList(&result, ArchExpandEnvironmentVariables(
+                                TfGetenv(pathEnvVarName)));
 
     // Fallback locations.
-    _AppendPathList(&result, userLocation);
-    _AppendPathList(&result, buildLocation);
-    _AppendPathList(&result, installLocation);
+    _AppendPathList(&result, ArchExpandEnvironmentVariables(userLocation));
+    _AppendPathList(&result, ArchExpandEnvironmentVariables(buildLocation));
+    _AppendPathList(&result, ArchExpandEnvironmentVariables(installLocation));
 
     Plug_SetPaths(result);
 }
