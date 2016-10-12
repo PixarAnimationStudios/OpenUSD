@@ -174,6 +174,7 @@ pxr_shared_library(tf
         wrapStopwatch.cpp
         wrapStringUtils.cpp
         wrapTemplateString.cpp
+        wrapTestPyAnnotatedBoolResult.cpp
         wrapTestPyContainerConversions.cpp
         wrapTestPyDateTime.cpp
         wrapTestPyStaticTokens.cpp
