@@ -8,6 +8,8 @@ if(APPLE)
 elseif(X11_FOUND)
     set(GLPLATFORMCONTEXT_H   glPlatformContextGLX.h)
     set(GLPLATFORMCONTEXT_CPP glPlatformContextGLX.cpp)
+    set(GLPLATFORMDEBUGWINDOW glPlatformDebugWindowGLX)
+    set(GLDEBUGWINDOW         glDebugWindow)
 elseif(WIN32)
     set(GLPLATFORMCONTEXT_H   glPlatformContextWindows.h)
     set(GLPLATFORMCONTEXT_CPP glPlatformContextWindows.cpp)
@@ -27,6 +29,7 @@ pxr_shared_library(garch
     PUBLIC_CLASSES
         glPlatformContext
         glPlatformDebugContext
+        ${GLDEBUGWINDOW}
 
     PUBLIC_HEADERS
         gl.h
@@ -34,6 +37,9 @@ pxr_shared_library(garch
         glu.h
         glut.h
         ${GLPLATFORMCONTEXT_H}
+
+    PRIVATE_CLASSES
+        ${GLPLATFORMDEBUGWINDOW}
 
     CPPFILES
         moduleDeps.cpp
