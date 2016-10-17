@@ -34,7 +34,6 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 

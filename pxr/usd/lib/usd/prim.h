@@ -34,7 +34,6 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakBase.h"

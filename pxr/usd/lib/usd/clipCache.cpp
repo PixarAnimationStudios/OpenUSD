@@ -38,7 +38,6 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
-#include <boost/foreach.hpp>
 #include <string>
 
 Usd_ClipCache::Usd_ClipCache()
@@ -321,9 +320,9 @@ Usd_ClipCache::InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat)
 {
     tbb::mutex::scoped_lock lock(_mutex);
 
-    BOOST_FOREACH(const _ClipTable::value_type& entry,
-                  _table.FindSubtreeRange(path)) {
-
+    auto range = _table.FindSubtreeRange(path);
+    for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
+        const auto& entry = *entryIter;
         lifeboat->_clips.insert(
             lifeboat->_clips.end(), entry.second.begin(), entry.second.end());
     }

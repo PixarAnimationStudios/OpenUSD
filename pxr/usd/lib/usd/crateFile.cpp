@@ -49,7 +49,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/stringUtils.h"

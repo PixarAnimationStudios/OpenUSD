@@ -29,7 +29,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tracelite/trace.h"
 
-#include <boost/foreach.hpp>
 #include <utility>
 
 using std::make_pair;

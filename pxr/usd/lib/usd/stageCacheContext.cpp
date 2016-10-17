@@ -27,8 +27,6 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/instantiateStacked.h"
 
-#include <boost/foreach.hpp>
-
 using std::vector;
 
 TF_INSTANTIATE_STACKED(UsdStageCacheContext);
@@ -46,7 +44,8 @@ UsdStageCacheContext::_GetReadOnlyCaches()
     const Stack &stack = GetStack();
     vector<const UsdStageCache *> caches;
     caches.reserve(stack.size());
-    BOOST_REVERSE_FOREACH(const UsdStageCacheContext *ctx, stack) {
+    for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
+        const auto& ctx = *ctxIter;
         if (ctx->_blockType == UsdBlockStageCaches) {
             break;
         } else if (ctx->_blockType == UsdBlockStageCachePopulation) {
@@ -65,7 +64,8 @@ UsdStageCacheContext::_GetReadableCaches()
     const Stack &stack = GetStack();
     vector<const UsdStageCache *> caches;
     caches.reserve(stack.size());
-    BOOST_REVERSE_FOREACH(const UsdStageCacheContext *ctx, stack) {
+    for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
+        const auto& ctx = *ctxIter;
         if (ctx->_blockType == UsdBlockStageCaches) {
             break;
         } else if (ctx->_blockType == UsdBlockStageCachePopulation) {
@@ -85,7 +85,8 @@ UsdStageCacheContext::_GetWritableCaches()
     const Stack &stack = GetStack();
     vector<UsdStageCache *> caches;
     caches.reserve(stack.size());
-    BOOST_REVERSE_FOREACH(const UsdStageCacheContext *ctx, stack) {
+    for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
+        const auto& ctx = *ctxIter;
         if (ctx->_blockType == UsdBlockStageCaches or
             ctx->_blockType == UsdBlockStageCachePopulation) {
             break;

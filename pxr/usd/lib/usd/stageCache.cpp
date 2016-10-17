@@ -32,7 +32,6 @@
 #include "pxr/base/arch/nap.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -384,7 +383,9 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer,
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+        auto range = byRootLayer.equal_range(rootLayer);
+        for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+            const auto& entry = *entryIt;
             if (entry.stage->GetSessionLayer() == sessionLayer) {
                 result = entry.stage;
                 break;
@@ -411,7 +412,9 @@ UsdStageCache::FindOneMatching(
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+        auto range = byRootLayer.equal_range(rootLayer);
+        for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+            const auto& entry = *entryIt;
             if (entry.stage->GetPathResolverContext() == pathResolverContext) {
                 result = entry.stage;
                 break;
@@ -437,7 +440,9 @@ UsdStageCache::FindOneMatching(
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+        auto range = byRootLayer.equal_range(rootLayer);
+        for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+            const auto& entry = *entryIt;
             if (entry.stage->GetSessionLayer() == sessionLayer and
                 entry.stage->GetPathResolverContext() == pathResolverContext) {
                 result = entry.stage;
@@ -463,8 +468,11 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer) const
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer))
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+         const auto& entry = *entryIt;
         result.push_back(entry.stage);
+    }
     return result;
 }
 
@@ -475,7 +483,9 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer,
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+        const auto& entry = *entryIt;
         if (entry.stage->GetSessionLayer() == sessionLayer)
             result.push_back(entry.stage);
     }
@@ -490,7 +500,9 @@ UsdStageCache::FindAllMatching(
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+        const auto& entry = *entryIt;
         if (entry.stage->GetPathResolverContext() == pathResolverContext)
             result.push_back(entry.stage);
     }
@@ -506,7 +518,9 @@ UsdStageCache::FindAllMatching(
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+        const auto& entry = *entryIt;
         if (entry.stage->GetSessionLayer() == sessionLayer and
             entry.stage->GetPathResolverContext() == pathResolverContext) {
             result.push_back(entry.stage);
