@@ -117,6 +117,15 @@ public:
                                    VtIntArray const &instanceIndices,
                                    HdxSelectionSharedPtr const &result);
 
+    // ---------------------------------------------------------------------- //
+    /// \name Utilities
+    // ---------------------------------------------------------------------- //
+
+    /// Returns the depending rprim paths which don't exist in descendants.
+    /// Used for change tracking over subtree boundary (e.g. instancing)
+    virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+
+
 private:
 
     struct _ProtoRprim;

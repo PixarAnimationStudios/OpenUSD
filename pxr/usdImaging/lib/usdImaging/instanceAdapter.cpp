@@ -1513,3 +1513,30 @@ UsdImagingInstanceAdapter::PopulateSelection(
 
     return found;
 }
+
+/*virtual*/
+SdfPathVector
+UsdImagingInstanceAdapter::GetDependPaths(SdfPath const &instancerPath) const
+{
+    _InstancerDataMap::const_iterator it = _instancerData.find(instancerPath);
+
+    SdfPathVector result;
+    if (it != _instancerData.end()) {
+        _InstancerData const & instancerData = it->second;
+
+        // if the proto path is property path, that should be in the subtree
+        // and no need to return.
+        TF_FOR_ALL (protoIt, instancerData.primMap) {
+            SdfPath const &protoPath = protoIt->first;
+            if (protoPath.IsPrimOrPrimVariantSelectionPath()) {
+                if (not protoPath.HasPrefix(instancerPath)) {
+                    result.push_back(protoPath);
+                }
+            }
+        }
+    }
+    // XXX: we may want to cache this result in _instancerData.
+    return result;
+}
+
+

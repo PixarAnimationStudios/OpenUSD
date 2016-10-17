@@ -2099,6 +2099,17 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
 
             // redirect to native instancer.
             _MarkRprimOrInstancerDirty(instancer, instancerDirtyFlag);
+
+
+            // also communicate adapter to get the list of instanced proto rprims
+            // to be marked as dirty. for those are not in the namespace children
+            // of the instancer (needed for NI-PI cases).
+            SdfPathVector const &paths = adapter->GetDependPaths(instancer);
+            TF_FOR_ALL (instIt, paths) {
+                // recurse
+                _MarkSubtreeDirty(*instIt, rprimDirtyFlag, instancerDirtyFlag);
+            }
+
         } else if (_instancerPrimPaths.find(it->first) != _instancerPrimPaths.end()) {
             // XXX: workaround for per-instance visibility in nested case.
             // testPxUsdGeomGLPopOut/test_*_5, test_*_6
@@ -2109,18 +2120,18 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
 
             // instancer itself
             _MarkRprimOrInstancerDirty(it->first, instancerDirtyFlag);
+
+            // also communicate adapter to get the list of instanced proto rprims
+            // to be marked as dirty. for those are not in the namespace children
+            // of the instancer.
+            SdfPathVector const &paths = adapter->GetDependPaths(it->first);
+            TF_FOR_ALL (instIt, paths) {
+                // recurse
+                _MarkSubtreeDirty(*instIt, rprimDirtyFlag, instancerDirtyFlag);
+            }
         } else {
             // rprim
             _MarkRprimOrInstancerDirty(it->first, rprimDirtyFlag);
-        }
-
-        // also communicate adapter to get the list of instanced proto rprims
-        // to be marked as dirty. for those are not in the namespace children
-        // of the instancer.
-        SdfPathVector const &paths = adapter->GetDependPaths(it->first);
-        TF_FOR_ALL (instIt, paths) {
-            // recurse
-            _MarkSubtreeDirty(*instIt, rprimDirtyFlag, instancerDirtyFlag);
         }
     }
 }
