@@ -51,9 +51,6 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 /// \p clipPath               The path at which we will put the clip meta data.
 ///
-/// \p reuseExistingTopology  Whether or not we will attempt to reuse an 
-///                           existing topology file.
-///
 /// \p startTimeCode          The first time coordinate for the rootLayer 
 ///                           to point to. If none is provided, it will be 
 ///                           the lowest startTimeCode available from 
@@ -67,11 +64,9 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 /// Details on how this is accomplished can be found below:
 ///
-/// This will begin by generating a topology layer, if necessary.
-/// If the user has marked \p reuseExistingTopology as true, and a layer
-/// exists, it will be reused. Otherwise, a fresh one will be generated. 
-/// In either case, topology layers will be named/looked up 
-/// via the following scheme: 
+/// Pre-existing opinions will be wiped away upon success. Upon failure, the 
+/// original topology layer, if it was pre-existing, will be preserved. 
+/// Topology layers will be named/looked up via the following scheme: 
 ///
 ///     topologyLayerName = <resultIdWithoutExt>.topology.<resultExt>
 ///
@@ -100,14 +95,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// Note: an invalid clip path(because the prim doesn't exist in
 /// the aggregate topologyLayer) will result in a TF_CODING_ERROR.
 /// 
-/// Note: if this function fails, the root layer will be not be created.
-/// If the topology is not being reused, it will not be generated either.
 bool 
 UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath, 
-                    const bool reuseExistingTopology
-                        = true,
                     const double startTimeCode 
                         = std::numeric_limits<double>::max(),
                     const double endTimeCode

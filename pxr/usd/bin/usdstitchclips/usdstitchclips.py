@@ -45,11 +45,6 @@ parser.add_argument('-s', '--startTimeCode', action='store',
                     help='specify a start time')
 parser.add_argument('-e', '--endTimeCode', action='store',
                     help='specify an end time')
-parser.add_argument('-r', '--reuseExistingTopology', 
-                    action='store_true', 
-                    help='Pre-existing topology layer named '
-                         'ROOTLAYER.topology.usd will be reused if '
-                         'it exists.')
 # useful for debugging with diffs
 parser.add_argument('-n', '--noComment', action='store_true',
                     help='''do not write a comment specifying how the
@@ -64,9 +59,10 @@ assert results.usdFiles is not None, "must specify clip files"
 if os.path.isfile(results.out):
     print "Warning: merging with current result layer"
 
+outLayerGenerated = False
+
 try:
     outLayer = Sdf.Layer.FindOrOpen(results.out)
-    outLayerGenerated = False
     if not outLayer:
         outLayerGenerated = True
         outLayer = Sdf.Layer.CreateNew(results.out)
@@ -78,8 +74,7 @@ try:
         results.endTimeCode = float(results.endTimeCode)
 
     UsdUtils.StitchClips(outLayer, results.usdFiles, results.clipPath, 
-                         results.reuseExistingTopology, results.startTimeCode,
-                         results.endTimeCode)
+                         results.startTimeCode, results.endTimeCode)
 
     if not results.noComment:
         outLayer.comment = 'Generated with ' + ' '.join(sys.argv)
@@ -87,6 +82,6 @@ try:
 
 except Tf.ErrorException as e:
     # if something in the authoring fails, remove the output file 
-    if outLayerGenerated:
+    if outLayerGenerated and os.path.isfile(results.out):
         os.remove(results.out)
     sys.exit(e)

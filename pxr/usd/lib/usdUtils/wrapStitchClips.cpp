@@ -48,13 +48,11 @@ void
 _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
-                    const boost::python::object reuseExistingTopology,
                     const boost::python::object pyStartFrame,
                     const boost::python::object pyEndFrame)
 {
     constexpr double dmax = std::numeric_limits<double>::max();
     UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
-                        _ConvertWithDefault(reuseExistingTopology, true),
                         _ConvertWithDefault(pyStartFrame, dmax),
                         _ConvertWithDefault(pyEndFrame, dmax));
 }
@@ -73,7 +71,6 @@ wrapStitchClips()
         (arg("resultLayer"), 
          arg("clipLayerFiles"), 
          arg("clipPath"), 
-         arg("reuseExistingTopology")=boost::python::object(),
          arg("startFrame")=boost::python::object(),
          arg("endFrame")=boost::python::object()));
 
