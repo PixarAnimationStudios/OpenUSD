@@ -43,6 +43,47 @@
 #include <maya/MItMeshFaceVertex.h>
 
 
+static
+MIntArray
+_GetMayaFaceVertexAssignmentIds(
+        const MFnMesh& meshFn,
+        const TfToken& interpolation,
+        const VtIntArray& assignmentIndices,
+        const int unauthoredValuesIndex)
+{
+    MIntArray valueIds(meshFn.numFaceVertices(), -1);
+
+    MItMeshFaceVertex itFV(meshFn.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        int valueId = 0;
+        if (interpolation == UsdGeomTokens->constant) {
+            valueId = 0;
+        } else if (interpolation == UsdGeomTokens->uniform) {
+            valueId = itFV.faceId();
+        } else if (interpolation == UsdGeomTokens->vertex) {
+            valueId = itFV.vertId();
+        } else if (interpolation == UsdGeomTokens->faceVarying) {
+            valueId = fvi;
+        }
+
+        if (static_cast<size_t>(valueId) < assignmentIndices.size()) {
+            // The data is indexed, so consult the indices array for the
+            // correct index into the data.
+            valueId = assignmentIndices[valueId];
+
+            if (valueId == unauthoredValuesIndex) {
+                // This component had no authored value, so leave it unassigned.
+                continue;
+            }
+        }
+
+        valueIds[fvi] = valueId;
+    }
+
+    return valueIds;
+}
+
 /* static */
 bool
 PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
@@ -152,46 +193,31 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
 
     const TfToken& interpolation = primvar.GetInterpolation();
 
-    // Iterate through the mesh's face vertices assigning UV values to them.
-    MItMeshFaceVertex itFV(meshFn.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
-        int faceId = itFV.faceId();
-        int vertexId = itFV.vertId();
-        int faceVertexId = itFV.faceVertId();
+    // Build an array of value assignments for each face vertex in the mesh.
+    // Any assignments left as -1 will not be assigned a value.
+    MIntArray uvIds = _GetMayaFaceVertexAssignmentIds(meshFn,
+                                                      interpolation,
+                                                      assignmentIndices,
+                                                      unauthoredValuesIndex);
 
-        // Primvars with constant or uniform interpolation are not really
-        // meaningful as UV sets, but we support them anyway.
-        int uvId = 0;
-        if (interpolation == UsdGeomTokens->constant) {
-            uvId = 0;
-        } else if (interpolation == UsdGeomTokens->uniform) {
-            uvId = faceId;
-        } else if (interpolation == UsdGeomTokens->vertex) {
-            uvId = vertexId;
-        } else if (interpolation == UsdGeomTokens->faceVarying) {
-            uvId = fvi;
-        }
+    MIntArray vertexCounts;
+    MIntArray vertexList;
+    status = meshFn.getVertices(vertexCounts, vertexList);
+    if (status != MS::kSuccess) {
+        MGlobal::displayWarning(
+            TfStringPrintf("Could not get vertex counts for UV set '%s' on mesh: %s",
+                           uvSetName.asChar(),
+                           meshFn.fullPathName().asChar()).c_str());
+        return false;
+    }
 
-        if (static_cast<size_t>(uvId) < assignmentIndices.size()) {
-            // The data is indexed, so consult the indices array for the
-            // correct index into the data.
-            uvId = assignmentIndices[uvId];
-
-            if (uvId == unauthoredValuesIndex) {
-                // This component had no authored value, so skip it.
-                continue;
-            }
-        }
-
-        status = meshFn.assignUV(faceId, faceVertexId, uvId, &uvSetName);
-        if (status != MS::kSuccess) {
-            MGlobal::displayWarning(
-                TfStringPrintf("Could not assign UV value to UV set '%s' on mesh: %s",
-                               uvSetName.asChar(),
-                               meshFn.fullPathName().asChar()).c_str());
-            return false;
-        }
+    status = meshFn.assignUVs(vertexCounts, uvIds, &uvSetName);
+    if (status != MS::kSuccess) {
+        MGlobal::displayWarning(
+            TfStringPrintf("Could not assign UV values to UV set '%s' on mesh: %s",
+                           uvSetName.asChar(),
+                           meshFn.fullPathName().asChar()).c_str());
+        return false;
     }
 
     return true;
@@ -384,39 +410,12 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     const TfToken& interpolation = primvar.GetInterpolation();
 
-    // Assigning all of the colors in one shot with MFnMesh::assignColors() is
-    // MUCH faster than assigning each face vertex individually with
-    // MFnMesh::assignColor(), so we build an array of value assignments for
-    // each face vertex in the mesh. Any assignments left as -1 will not be
-    // assigned a value.
-    MIntArray colorIds(meshFn.numFaceVertices(), -1);
-    MItMeshFaceVertex itFV(meshFn.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
-        int colorId = 0;
-        if (interpolation == UsdGeomTokens->constant) {
-            colorId = 0;
-        } else if (interpolation == UsdGeomTokens->uniform) {
-            colorId = itFV.faceId();
-        } else if (interpolation == UsdGeomTokens->vertex) {
-            colorId = itFV.vertId();
-        } else if (interpolation == UsdGeomTokens->faceVarying) {
-            colorId = fvi;
-        }
-
-        if (static_cast<size_t>(colorId) < assignmentIndices.size()) {
-            // The data is indexed, so consult the indices array for the
-            // correct index into the data.
-            colorId = assignmentIndices[colorId];
-
-            if (colorId == unauthoredValuesIndex) {
-                // This component had no authored value, so leave it unassigned.
-                continue;
-            }
-        }
-
-        colorIds[fvi] = colorId;
-    }
+    // Build an array of value assignments for each face vertex in the mesh.
+    // Any assignments left as -1 will not be assigned a value.
+    MIntArray colorIds = _GetMayaFaceVertexAssignmentIds(meshFn,
+                                                         interpolation,
+                                                         assignmentIndices,
+                                                         unauthoredValuesIndex);
 
     status = meshFn.assignColors(colorIds, &colorSetName);
     if (status != MS::kSuccess) {
