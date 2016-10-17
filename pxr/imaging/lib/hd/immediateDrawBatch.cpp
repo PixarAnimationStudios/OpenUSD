@@ -120,14 +120,13 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
     if (not TF_VERIFY(glslProgram->Validate())) return;
 
     const Hd_ResourceBinder &binder = program.GetBinder();
+    const HdShaderSharedPtrVector &shaders = program.GetComposedShaders();
 
     GLuint programId = glslProgram->GetProgram().GetId();
     TF_VERIFY(programId);
 
     glUseProgram(programId);
 
-    HdShaderSharedPtrVector shaders
-        = renderPassState->GetShaders(/*surfaceShader=*/HdShaderSharedPtr());
     bool hasOverrideShader = bool(renderPassState->GetOverrideShader());
 
     TF_FOR_ALL(it, shaders) {
@@ -136,9 +135,8 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
-    HdDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
     Hd_GeometricShaderSharedPtr const &geometricShader
-        = batchItem->GetGeometricShader();
+        = program.GetGeometricShader();
     geometricShader->BindResources(binder, programId);
 
     size_t numItemsDrawn = 0;
@@ -239,7 +237,8 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
         //
         HdBufferArrayRangeSharedPtr const & instanceIndexBar =
             drawItem->GetInstanceIndexRange();
-        if (instanceIndexBar and (not instanceIndexBar->IsAggregatedWith(instanceIndexBarCurrent))) {
+        if (instanceIndexBar and 
+            (not instanceIndexBar->IsAggregatedWith(instanceIndexBarCurrent))) {
             binder.UnbindBufferArray(instanceIndexBarCurrent);
             binder.BindBufferArray(instanceIndexBar);
             instanceIndexBarCurrent = instanceIndexBar;
@@ -251,7 +250,7 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & shaderBar =
             renderPassState->GetOverrideShader()
                 ? HdBufferArrayRangeSharedPtr()
-                : drawItem->GetSurfaceShader()->GetShaderData();
+                : program.GetSurfaceShader()->GetShaderData();
         // shaderBar isn't needed when the surfaceShader is overriden
         if (shaderBar and (not shaderBar->IsAggregatedWith(shaderBarCurrent))) {
             if (shaderBarCurrent) {
@@ -267,7 +266,7 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
         // shader textures
         //
         if (not hasOverrideShader) {
-            drawItem->GetSurfaceShader()->BindResources(binder, programId);
+            program.GetSurfaceShader()->BindResources(binder, programId);
         }
 
         /*
@@ -371,7 +370,7 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
         }
 
         if (not hasOverrideShader) {
-            drawItem->GetSurfaceShader()->UnbindResources(binder, programId);
+            program.GetSurfaceShader()->UnbindResources(binder, programId);
         }
 
         HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);

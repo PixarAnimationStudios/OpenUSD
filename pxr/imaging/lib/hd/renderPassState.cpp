@@ -307,18 +307,12 @@ HdRenderPassState::SetOverrideShader(HdShaderSharedPtr const &overrideShader)
 }
 
 HdShaderSharedPtrVector
-HdRenderPassState::GetShaders(HdShaderSharedPtr const &surfaceShader) const
+HdRenderPassState::GetShaders() const
 {
     HdShaderSharedPtrVector shaders;
-    shaders.reserve(3);
+    shaders.reserve(2);
     shaders.push_back(_lightingShader);
     shaders.push_back(_renderPassShader);
-    if (_overrideShader) {
-        shaders.push_back(_overrideShader);
-    } else if (surfaceShader) {
-        shaders.push_back(surfaceShader);
-    }
-
     return shaders;
 }
 
@@ -407,9 +401,6 @@ HdRenderPassState::GetShaderHash() const
     size_t hash = _lightingShader->ComputeHash();
     boost::hash_combine(hash, _renderPassShader->ComputeHash());
     boost::hash_combine(hash, _clipPlanes.size());
-    if (_overrideShader) {
-        boost::hash_combine(hash, _overrideShader->ComputeHash());
-    }
     return hash;
 }
 

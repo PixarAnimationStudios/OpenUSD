@@ -119,9 +119,8 @@ public:
         return _overrideShader;
     }
 
-    /// returns composed shader vectors. surfaceShader may be overriden.
-    HdShaderSharedPtrVector GetShaders(
-        HdShaderSharedPtr const &surfaceShader) const;
+    /// returns shaders (lighting/renderpass)
+    HdShaderSharedPtrVector GetShaders() const;
 
     GfMatrix4d const &GetCullMatrix() const {
         return _cullMatrix;
