@@ -150,10 +150,7 @@ protected:
         /// Returns array of composed shaders, this include the shaders passed
         /// via SetShaders and the shader passed to SetSurfaceShader.
         HdShaderSharedPtrVector GetComposedShaders() const { 
-            HdShaderSharedPtrVector shaders;
-            for (int i=0; i<_shaders.size(); i++) {
-                shaders.push_back(_shaders[i]);
-            }
+            HdShaderSharedPtrVector shaders = _shaders;
             if (_surfaceShader) {
                 shaders.push_back(_surfaceShader);
             }
