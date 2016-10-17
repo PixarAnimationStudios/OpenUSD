@@ -34,6 +34,13 @@ Garch_GetModifierKeys(NSUInteger flags)
 {
     int keys = 0;
 
+    // The 10.12 SDK has new symbols.
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
+  #define NSEventModifierFlagShift NSShiftKeyMask
+  #define NSEventModifierFlagControl NSControlKeyMask
+  #define NSEventModifierFlagOption NSAlternateKeyMask
+  #define NSEventModifierFlagCommand NSCommandKeyMask
+#endif
     if (flags & NSEventModifierFlagShift)   keys |= GarchGLDebugWindow::Shift;
     if (flags & NSEventModifierFlagControl) keys |= GarchGLDebugWindow::Ctrl;
     if (flags & NSEventModifierFlagOption)  keys |= GarchGLDebugWindow::Alt;
@@ -87,7 +94,7 @@ Garch_GetModifierKeys(NSUInteger flags)
     return self;
 }
 
--(bool)acceptsFirstResponder
+-(BOOL)acceptsFirstResponder
 {
     return YES;
 }
