@@ -79,6 +79,6 @@ if (QT4_FOUND)
             Qt4::QtOpenGL
         CPPFILES
             unitTestGLDrawing.cpp
-            testenv/testUsdImagingBasicDrawing.cpp
+            testenv/testUsdImagingGLBasicDrawing.cpp
     )
 endif()
