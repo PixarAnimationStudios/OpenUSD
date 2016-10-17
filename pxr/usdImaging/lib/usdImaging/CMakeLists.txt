@@ -28,17 +28,12 @@ pxr_shared_library(usdImaging
         ar
         ${Boost_PYTHON_LIBRARY}
         ${PYTHON_LIBRARY}
-        ${OPENGL_gl_LIBRARY}
-        ${OPENGL_glu_LIBRARY}
-        ${GLEW_LIBRARY}
         ${TBB_tbb_LIBRARY}
         ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${PYTHON_INCLUDE_PATH}
         ${PYTHON_INCLUDE_DIRS}
-        ${OPENGL_INCLUDE_DIR}
-        ${GLEW_INCLUDE_DIR}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
