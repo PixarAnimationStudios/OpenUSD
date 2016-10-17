@@ -157,6 +157,40 @@ static SdfAssetPath _GetClipManifestAssetPath(UsdClipsAPI &self) {
     return manifestAssetPath;
 }
 
+static void _SetClipTemplateAssetPath(UsdClipsAPI& self, TfPyObjWrapper pyVal) {
+    VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->String);
+    if (not v.IsHolding<std::string>()) {
+        TF_CODING_ERROR("Invalid value for 'clipTemplateAssetPath' on %s",
+                        UsdDescribe(self.GetPrim()).c_str());
+        return;
+    }
+
+    self.SetClipTemplateAssetPath(v.UncheckedGet<std::string>());
+}
+
+static std::string _GetClipTemplateAssetPath(UsdClipsAPI &self) {
+    std::string clipTemplateAssetPath;
+    self.GetClipTemplateAssetPath(&clipTemplateAssetPath);
+    return clipTemplateAssetPath;
+}
+
+static double _GetClipTemplateStride(UsdClipsAPI &self) {
+    double clipTemplateStride;
+    self.GetClipTemplateStride(&clipTemplateStride);
+    return clipTemplateStride;
+}
+
+static double _GetClipTemplateStartTime(UsdClipsAPI &self) {
+    double clipTemplateStartTime;
+    self.GetClipTemplateStartTime(&clipTemplateStartTime);
+    return clipTemplateStartTime;
+}
+
+static double _GetClipTemplateEndTime(UsdClipsAPI &self) {
+    double clipTemplateEndTime;
+    self.GetClipTemplateEndTime(&clipTemplateEndTime);
+    return clipTemplateEndTime;
+}
 
 WRAP_CUSTOM {
     _class
@@ -172,5 +206,24 @@ WRAP_CUSTOM {
         .def("GetClipManifestAssetPath", _GetClipManifestAssetPath)
         .def("SetClipManifestAssetPath", 
              &UsdClipsAPI::SetClipManifestAssetPath, arg("manifestAssetPath"))
+        .def("GetClipTemplateAssetPath", _GetClipTemplateAssetPath)
+        .def("SetClipTemplateAssetPath", _SetClipTemplateAssetPath,
+             arg("clipTemplateAssetPath"))
+        .def("GetClipTemplateStride", _GetClipTemplateStride)
+        .def("SetClipTemplateStride", &UsdClipsAPI::SetClipTemplateStride,
+             arg("clipTemplateStride"))
+        .def("GetClipTemplateStride", _GetClipTemplateStride)
+        .def("SetClipTemplateStride", &UsdClipsAPI::SetClipTemplateStride,
+             arg("clipTemplateStride"))
+        .def("GetClipTemplateStartTime", _GetClipTemplateStartTime)
+        .def("SetClipTemplateStartTime", &UsdClipsAPI::SetClipTemplateStartTime,
+             arg("clipTemplateStartTime"))
+        .def("GetClipTemplateEndTime", _GetClipTemplateEndTime)
+        .def("SetClipTemplateEndTime", &UsdClipsAPI::SetClipTemplateEndTime,
+             arg("clipTemplateEndTime"))
+        .def("ClearNonTemplateClipMetadata", 
+             &UsdClipsAPI::ClearNonTemplateClipMetadata)
+        .def("ClearTemplateClipMetadata", 
+             &UsdClipsAPI::ClearTemplateClipMetadata)
         ;
 }

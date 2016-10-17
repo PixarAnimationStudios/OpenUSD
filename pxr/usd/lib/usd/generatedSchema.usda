@@ -41,11 +41,20 @@ class "ClipsAPI" (
     SetClipActive() specifies the ordering of clip application over time            
     (clips can be repeated), while SetClipTimes() specifies time-mapping            
     from stage-time to clip-time for the clip active at a given stage-time,         
-    which allows for time-dilation and repetition of clips.  Finally,           
-    SetClipPrimPath() determines the path within each clip that will map            
+    which allows for time-dilation and repetition of clips. 
+    Finally, SetClipPrimPath() determines the path within each clip that will map            
     to this prim, i.e. the location within the clip at which we will look           
-    for opinions for this prim.         
-            
+    for opinions for this prim. 
+
+    The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
+    through template clip metadata. This can be desirable when your set of 
+    assets is very large, as the template metadata is much more concise. 
+    SetClipTemplateAssetPath() establishes the asset identifier pattern of the set of
+    clips to be consulted. SetClipTemplateStride(), SetClipTemplateEndTime(), 
+    and SetClipTemplateStartTime() specify the range in which USD will search, based
+    on the template. From the set of resolved asset paths, clipTimes, and clipActive
+    will be derived internally.
+                
     Important facts about clips:            
     li Within the layerstack in which clips are established, the           
     opinions within the clips will be em weaker than any direct opinions           

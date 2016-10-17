@@ -209,3 +209,132 @@ UsdClipsAPI::GetClipTimes(VtVec2dArray* clipTimes) const
 
     return GetPrim().GetMetadata(UsdTokens->clipTimes, clipTimes);
 }
+
+bool 
+UsdClipsAPI::GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().GetMetadata(UsdTokens->clipTemplateAssetPath, 
+                                 clipTemplateAssetPath); 
+}
+
+bool 
+UsdClipsAPI::SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath)
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().SetMetadata(UsdTokens->clipTemplateAssetPath, 
+                                 clipTemplateAssetPath); 
+}
+
+bool 
+UsdClipsAPI::GetClipTemplateStride(double* clipTemplateStride) const
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().GetMetadata(UsdTokens->clipTemplateStride, 
+                                 clipTemplateStride);
+}
+
+bool 
+UsdClipsAPI::SetClipTemplateStride(const double clipTemplateStride)
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().SetMetadata(UsdTokens->clipTemplateStride, 
+                                 clipTemplateStride);
+}
+
+bool 
+UsdClipsAPI::GetClipTemplateStartTime(double* clipTemplateStartTime) const
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().GetMetadata(UsdTokens->clipTemplateStartTime, 
+                                 clipTemplateStartTime);
+}
+
+bool 
+UsdClipsAPI::SetClipTemplateStartTime(const double clipTemplateStartTime)
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().SetMetadata(UsdTokens->clipTemplateStartTime, 
+                                 clipTemplateStartTime);
+}
+
+bool 
+UsdClipsAPI::GetClipTemplateEndTime(double* clipTemplateEndTime) const
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().GetMetadata(UsdTokens->clipTemplateEndTime, 
+                                 clipTemplateEndTime);
+}
+
+bool 
+UsdClipsAPI::SetClipTemplateEndTime(const double clipTemplateEndTime)
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetPrim().SetMetadata(UsdTokens->clipTemplateEndTime, 
+                                 clipTemplateEndTime);
+}
+
+bool
+UsdClipsAPI::ClearTemplateClipMetadata()
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    auto prim = GetPrim();
+    prim.ClearMetadata(UsdTokens->clipTemplateAssetPath);
+    prim.ClearMetadata(UsdTokens->clipTemplateStride);
+    prim.ClearMetadata(UsdTokens->clipTemplateEndTime);
+    prim.ClearMetadata(UsdTokens->clipTemplateStartTime);
+
+    return true;
+}
+
+bool
+UsdClipsAPI::ClearNonTemplateClipMetadata()
+{
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    auto prim = GetPrim();
+    prim.ClearMetadata(UsdTokens->clipAssetPaths);
+    prim.ClearMetadata(UsdTokens->clipTimes);
+    prim.ClearMetadata(UsdTokens->clipActive);
+
+    return true;
+}
