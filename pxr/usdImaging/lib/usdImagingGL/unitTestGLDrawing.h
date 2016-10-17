@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-class UsdImagingGL_UnitTestDrawingQGLWidget;
+class UsdImagingGL_UnitTestWindow;
 
 /// \class UsdImagingGL_UnitTestGLDrawing
 ///
@@ -65,23 +65,23 @@ public:
     virtual void DrawTest(bool offscreen) = 0;
     virtual void ShutdownTest() { }
 
-    virtual void MousePress(int button, int x, int y) = 0;
-    virtual void MouseRelease(int button, int x, int y) = 0;
-    virtual void MouseMove(int x, int y) = 0;
+    virtual void MousePress(int button, int x, int y, int modKeys);
+    virtual void MouseRelease(int button, int x, int y, int modKeys);
+    virtual void MouseMove(int x, int y, int modKeys);
+    virtual void KeyRelease(int key);
 
     bool WriteToFile(std::string const & attachment, std::string const & filename) const;
 
 protected:
     float _GetComplexity() const { return _complexity; }
     bool _ShouldFrameAll() const { return _shouldFrameAll; }
-    void _Redraw() const;
 
 private:
     struct _Args;
     void _Parse(int argc, char *argv[], _Args* args);
 
 private:
-    UsdImagingGL_UnitTestDrawingQGLWidget *_widget;
+    UsdImagingGL_UnitTestWindow *_widget;
     bool _testLighting;
     bool _testIdRender;
 

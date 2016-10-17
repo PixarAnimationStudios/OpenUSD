@@ -61,19 +61,17 @@ pxr_shared_library(usdImagingGL
         __init__.py
 )
 
-if (QT4_FOUND)
+if (X11_FOUND OR APPLE)
     pxr_build_test(testUsdImagingGLBasicDrawing
         LIBRARIES
             hd
+            garch
             glf
-            glfq
             usd
             usdUtils
             usdImaging
             usdImagingGL
             sdf
-            Qt4::QtCore
-            Qt4::QtOpenGL
         CPPFILES
             unitTestGLDrawing.cpp
             testenv/testUsdImagingGLBasicDrawing.cpp

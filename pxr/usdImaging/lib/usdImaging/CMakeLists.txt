@@ -1,11 +1,6 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImaging)
 
-set(optionalPublicClasses "")
-if (QT4_FOUND)
-    list(APPEND optionalPublicClasses unitTestHelper)
-endif()
-
 # Note: both python include directives are included for compatibility.
 pxr_shared_library(usdImaging
     LIBRARIES
@@ -57,7 +52,7 @@ pxr_shared_library(usdImaging
         primAdapter
         sphereAdapter
         nurbsPatchAdapter
-        ${optionalPublicClasses}
+        unitTestHelper
 
     PUBLIC_HEADERS
         version.h

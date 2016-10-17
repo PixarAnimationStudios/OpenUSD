@@ -26,17 +26,13 @@
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glfq/glDebugContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/gf/vec2i.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/arch/systemInfo.h"
-
-#include <QtGui/QApplication>
-#include <QtGui/QMouseEvent>
-#include <QtOpenGL/QGLWidget>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -55,64 +51,48 @@ static void UsdImagingGL_UnitTestHelper_InitPlugins()
 
 ////////////////////////////////////////////////////////////
 
-static QGLFormat
-_GetGLFormat()
-{
-    QGLFormat fmt;
-    fmt.setDoubleBuffer(true);
-    fmt.setDepth(true);
-    fmt.setAlpha(true);
-    fmt.setStencil(true);
-    //fmt.setSampleBuffers(1);
-    //fmt.setSamples(4);
-    return fmt;
-}
-
-class UsdImagingGL_UnitTestDrawingQGLWidget : public QGLWidget {
+class UsdImagingGL_UnitTestWindow : public GarchGLDebugWindow {
 public:
-    typedef UsdImagingGL_UnitTestDrawingQGLWidget This;
+    typedef UsdImagingGL_UnitTestWindow This;
 
 public:
-    UsdImagingGL_UnitTestDrawingQGLWidget(UsdImagingGL_UnitTestGLDrawing * unitTest,
-                                QWidget * parent = NULL);
-    virtual ~UsdImagingGL_UnitTestDrawingQGLWidget();
+    UsdImagingGL_UnitTestWindow(UsdImagingGL_UnitTestGLDrawing * unitTest,
+                                int w, int h);
+    virtual ~UsdImagingGL_UnitTestWindow();
 
     void DrawOffscreen();
 
     bool WriteToFile(std::string const & attachment, 
                      std::string const & filename);
 
-protected:
-    // QGLWidget overrides
-    void initializeGL();
-    void paintGL();
-
-    // QWidget overrides
-    virtual void keyReleaseEvent(QKeyEvent * event);
-    virtual void mousePressEvent(QMouseEvent * event);
-    virtual void mouseReleaseEvent(QMouseEvent * event);
-    virtual void mouseMoveEvent(QMouseEvent * event);
+    // GarchGLDebugWIndow overrides;
+    virtual void OnInitializeGL();
+    virtual void OnUninitializeGL();
+    virtual void OnPaintGL();
+    virtual void OnKeyRelease(int key);
+    virtual void OnMousePress(int button, int x, int y, int modKeys);
+    virtual void OnMouseRelease(int button, int x, int y, int modKeys);
+    virtual void OnMouseMove(int x, int y, int modKeys);
 
 private:
     UsdImagingGL_UnitTestGLDrawing *_unitTest;
     GlfDrawTargetRefPtr _drawTarget;
 };
 
-UsdImagingGL_UnitTestDrawingQGLWidget::UsdImagingGL_UnitTestDrawingQGLWidget(
-        UsdImagingGL_UnitTestGLDrawing * unitTest,
-        QWidget * parent) :
-    QGLWidget(new GlfQGLDebugContext(_GetGLFormat()), parent),
-    _unitTest(unitTest)
+UsdImagingGL_UnitTestWindow::UsdImagingGL_UnitTestWindow(
+    UsdImagingGL_UnitTestGLDrawing * unitTest, int w, int h)
+    : GarchGLDebugWindow("UsdImagingGL Test", w, h)
+    , _unitTest(unitTest)
 {
 }
 
-UsdImagingGL_UnitTestDrawingQGLWidget::~UsdImagingGL_UnitTestDrawingQGLWidget()
+UsdImagingGL_UnitTestWindow::~UsdImagingGL_UnitTestWindow()
 {
 }
 
 /* virtual */
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::initializeGL()
+UsdImagingGL_UnitTestWindow::OnInitializeGL()
 {
     GlfGlewInit();
     GlfRegisterDefaultDebugOutputMessageCallback();
@@ -121,7 +101,7 @@ UsdImagingGL_UnitTestDrawingQGLWidget::initializeGL()
     // Create an offscreen draw target which is the same size as this
     // widget and initialize the unit test with the draw target bound.
     //
-    _drawTarget = GlfDrawTarget::New(GfVec2i(width(), height()));
+    _drawTarget = GlfDrawTarget::New(GfVec2i(GetWidth(), GetHeight()));
     _drawTarget->Bind();
     _drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
     _drawTarget->AddAttachment("depth", GL_DEPTH_COMPONENT, GL_FLOAT,
@@ -134,14 +114,25 @@ UsdImagingGL_UnitTestDrawingQGLWidget::initializeGL()
 
 /* virtual */
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::paintGL()
+UsdImagingGL_UnitTestWindow::OnUninitializeGL()
+{
+    _drawTarget = GlfDrawTargetRefPtr();
+
+    _unitTest->ShutdownTest();
+}
+
+/* virtual */
+void
+UsdImagingGL_UnitTestWindow::OnPaintGL()
 {
     //
     // Update the draw target's size and execute the unit test with
     // the draw target bound.
     //
+    int width = GetWidth();
+    int height = GetHeight();
     _drawTarget->Bind();
-    _drawTarget->SetSize(GfVec2i(width(), height()));
+    _drawTarget->SetSize(GfVec2i(width, height));
 
     _unitTest->DrawTest(false);
 
@@ -154,8 +145,8 @@ UsdImagingGL_UnitTestDrawingQGLWidget::paintGL()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
 
-    glBlitFramebuffer(0, 0, width(), height(),
-                      0, 0, width(), height(),
+    glBlitFramebuffer(0, 0, width, height,
+                      0, 0, width, height,
                       GL_COLOR_BUFFER_BIT,
                       GL_NEAREST);
 
@@ -164,15 +155,10 @@ UsdImagingGL_UnitTestDrawingQGLWidget::paintGL()
 }
 
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::DrawOffscreen()
+UsdImagingGL_UnitTestWindow::DrawOffscreen()
 {
-    //
-    // Ask Qt to initialize and draw
-    //
-    glInit();
-
     _drawTarget->Bind();
-    _drawTarget->SetSize(GfVec2i(width(), height()));
+    _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
 
     _unitTest->DrawTest(true);
 
@@ -180,7 +166,7 @@ UsdImagingGL_UnitTestDrawingQGLWidget::DrawOffscreen()
 }
 
 bool
-UsdImagingGL_UnitTestDrawingQGLWidget::WriteToFile(std::string const & attachment,
+UsdImagingGL_UnitTestWindow::WriteToFile(std::string const & attachment,
         std::string const & filename)
 {
     // We need to unbind the draw target before writing to file to be sure the
@@ -198,50 +184,37 @@ UsdImagingGL_UnitTestDrawingQGLWidget::WriteToFile(std::string const & attachmen
 
 /* virtual */
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::keyReleaseEvent(QKeyEvent * event)
+UsdImagingGL_UnitTestWindow::OnKeyRelease(int key)
 {
-    switch (event->key()) {
-    case Qt::Key_Escape:
-    case Qt::Key_Q:
-        QApplication::instance()->exit(0);
-	return;
+    switch (key) {
+    case 'q':
+        ExitApp();
+        return;
     }
+    _unitTest->KeyRelease(key);
 }
 
 /* virtual */
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::mousePressEvent(QMouseEvent * event)
+UsdImagingGL_UnitTestWindow::OnMousePress(int button,
+                                          int x, int y, int modKeys)
 {
-    int button = 0;
-    switch(event->button()){
-    case Qt::LeftButton: button = 0; break;
-    case Qt::MidButton: button = 1; break;
-    case Qt::RightButton: button = 2; break;
-    default: break;
-    }
-    _unitTest->MousePress(button, event->x(), event->y());
+    _unitTest->MousePress(button, x, y, modKeys);
 }
 
 /* virtual */
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::mouseReleaseEvent(QMouseEvent * event)
+UsdImagingGL_UnitTestWindow::OnMouseRelease(int button,
+                                            int x, int y, int modKeys)
 {
-    int button = 0;
-    switch(event->button()){
-    case Qt::LeftButton: button = 0; break;
-    case Qt::MidButton: button = 1; break;
-    case Qt::RightButton: button = 2; break;
-    default: break;
-    }
-    _unitTest->MouseRelease(button, event->x(), event->y());
+    _unitTest->MouseRelease(button, x, y, modKeys);
 }
 
 /* virtual */
 void
-UsdImagingGL_UnitTestDrawingQGLWidget::mouseMoveEvent(QMouseEvent * event)
+UsdImagingGL_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
 {
-    _unitTest->MouseMove(event->x(), event->y());
-    glDraw();
+    _unitTest->MouseMove(x, y, modKeys);
 }
 
 ////////////////////////////////////////////////////////////
@@ -264,13 +237,13 @@ UsdImagingGL_UnitTestGLDrawing::~UsdImagingGL_UnitTestGLDrawing()
 int
 UsdImagingGL_UnitTestGLDrawing::GetWidth() const
 {
-    return _widget->width();
+    return _widget->GetWidth();
 }
 
 int
 UsdImagingGL_UnitTestGLDrawing::GetHeight() const
 {
-    return _widget->height();
+    return _widget->GetHeight();
 }
 
 bool
@@ -278,12 +251,6 @@ UsdImagingGL_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
         std::string const & filename) const
 {
     return _widget->WriteToFile(attachment, filename);
-}
-
-void
-UsdImagingGL_UnitTestGLDrawing::_Redraw() const
-{
-    _widget->update();
 }
 
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
@@ -471,11 +438,32 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
     }
 }
 
+/* virtual */
+void
+UsdImagingGL_UnitTestGLDrawing::MousePress(int button, int x, int y,
+                                           int modKeys)
+{
+}
+/* virtual */
+void
+UsdImagingGL_UnitTestGLDrawing::MouseRelease(int button, int x, int y,
+                                             int modKeys)
+{
+}
+/* virtual */
+void
+UsdImagingGL_UnitTestGLDrawing::MouseMove(int x, int y, int modKeys)
+{
+}
+/* virtual */
+void
+UsdImagingGL_UnitTestGLDrawing::KeyRelease(int key)
+{
+}
+
 void
 UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-
     UsdImagingGL_UnitTestHelper_InitPlugins();
 
     _Args args;
@@ -498,18 +486,14 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _stageFilePath = args.unresolvedStageFilePath;
     }
 
-    _widget = new UsdImagingGL_UnitTestDrawingQGLWidget(this);
-    _widget->setWindowTitle("Drawing Test");
-    _widget->resize(640, 480);
+    _widget = new UsdImagingGL_UnitTestWindow(this, 640, 480);
+    _widget->Init();
 
     if (_times.empty()) {
         _times.push_back(-999);
     }
 
     if (args.complexities.size() > 0) {
-        _widget->hide();
-        _widget->makeCurrent();
-
         std::string imageFilePath = GetOutputFilePath();
 
         TF_FOR_ALL(compIt, args.complexities) {
@@ -523,26 +507,9 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
             _widget->DrawOffscreen();
         }
 
-        // Give tests the opportunity to shutdown any OGL 
-        // buffers before they have no context available
-        ShutdownTest();
-        _widget->doneCurrent();
-
     } else if (args.offscreen) {
-        _widget->hide();
-        _widget->makeCurrent();
         _widget->DrawOffscreen();
-
-        // Give tests the opportunity to shutdown any OGL 
-        // buffers before they have no context available
-        ShutdownTest();
-        _widget->doneCurrent();
     } else {
-        _widget->show();
-        app.exec();
-
-        // Give tests the opportunity to shutdown any OGL 
-        // buffers before they have no context available
-        ShutdownTest();
+        _widget->Run();
     }
 }
