@@ -34,7 +34,6 @@
 #include "pxr/usd/usdGeom/primvar.h"
 
 #include <maya/MFnMesh.h>
-#include <maya/MIntArray.h>
 #include <maya/MObject.h>
 
 
@@ -61,11 +60,7 @@ private:
     static bool _AssignColorSetPrimvarToMesh(
             const UsdGeomMesh& primSchema,
             const UsdGeomPrimvar& primvar,
-            MFnMesh& meshFn,
-            MIntArray& polygonCounts,
-            MIntArray& polygonConnects,
-            MFnMesh::MColorRepresentation colorRep);
-
+            MFnMesh& meshFn);
 };
 
 

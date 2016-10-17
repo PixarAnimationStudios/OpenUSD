@@ -26,20 +26,14 @@
 #include "usdMaya/meshUtil.h"
 
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MFloatVectorArray.h>
-#include <maya/MUintArray.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
-
-TF_DEFINE_PRIVATE_TOKENS(_tokens,
-    ((DisplayColorColorSetName, "displayColor"))
-    ((DisplayOpacityColorSetName, "displayOpacity"))
-);
+#include <maya/MUintArray.h>
 
 
 const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(-1.0e30);
@@ -292,17 +286,17 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
 
         bool isDisplayColor = false;
 
-        if (colorSetNames[i] == _tokens->DisplayColorColorSetName.GetText()) {
+        if (colorSetNames[i] == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText()) {
             if (not getArgs().exportDisplayColor) {
                 continue;
             }
             isDisplayColor=true;
         }
         
-        if (colorSetNames[i] == _tokens->DisplayOpacityColorSetName.GetText()) {
+        if (colorSetNames[i] == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName.GetText()) {
             MGlobal::displayWarning("Mesh \"" + lMesh.fullPathName() +
                 "\" has a color set named \"" +
-                MString(_tokens->DisplayOpacityColorSetName.GetText()) +
+                MString(PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName.GetText()) +
                 "\" which is a reserved Primvar name in USD. Skipping...");
             continue;
         }

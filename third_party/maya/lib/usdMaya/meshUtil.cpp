@@ -23,16 +23,21 @@
 //
 #include "usdMaya/meshUtil.h"
 
-#include <maya/MFnMesh.h>
-#include <maya/MPlug.h>
-#include <maya/MString.h>
-#include <maya/MGlobal.h>
-#include <maya/MStatus.h>
-#include <maya/MFnStringData.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnTypedAttribute.h>
-
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/mesh.h"
+
+#include <maya/MFnMesh.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+    PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
 // These tokens are supported Maya attributes used for Mesh surfaces
 TF_DEFINE_PRIVATE_TOKENS(
@@ -54,6 +59,7 @@ TF_DEFINE_PRIVATE_TOKENS(
         // and translate to the equivalent new value for backwards compatibility.
         (USD_faceVaryingInterpolateBoundary)
         );
+
 
 // This can be customized for specific pipeline
 // We read the USD bool attribute, if not present we look for the mojito bool attribute

@@ -27,11 +27,22 @@
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
 class MFnMesh;
 class MString;
 class UsdGeomMesh;
+
+#define PXRUSDMAYA_MESH_COLOR_SET_TOKENS \
+    (Authored) \
+    (Clamped) \
+    ((DisplayColorColorSetName, "displayColor")) \
+    ((DisplayOpacityColorSetName, "displayOpacity"))
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+    PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
+
 
 namespace PxrUsdMayaMeshUtil
 {
