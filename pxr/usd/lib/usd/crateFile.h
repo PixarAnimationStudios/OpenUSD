@@ -526,6 +526,7 @@ private:
     static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
     class _Writer;
+    class _BufferedOutput;
     class _ReaderBase;
     template <class ByteStream> class _Reader;
 

@@ -26,6 +26,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/nap.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -59,6 +60,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
@@ -70,6 +72,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+
+#include <tbb/concurrent_queue.h>
 
 #include <iostream>
 #include <memory>
@@ -414,15 +418,167 @@ CrateFile::_TableOfContents::GetMinimumSectionStart() const
 }
 
 ////////////////////////////////////////////////////////////////////////
-// PackingContext
+// _BufferedOutput
+class CrateFile::_BufferedOutput
+{
+public:
+    // Current buffer size is 512k.
+    static const size_t BufferCap = 512*1024;
+
+    // Helper move-only buffer object -- memory + valid size.
+    struct _Buffer {
+        _Buffer() = default;
+        _Buffer(_Buffer const &) = delete;
+        _Buffer &operator=(_Buffer const &) = delete;
+        _Buffer(_Buffer &&) = default;
+        _Buffer &operator=(_Buffer &&) = default;
+
+        unique_ptr<char []> bytes { new char[BufferCap] };
+        int64_t size = 0;
+    };
+
+    explicit _BufferedOutput(FILE *file)
+        : _filePos(0)
+        , _file(file)
+        , _bufferPos(0)
+        , _writeTask(
+            _dispatcher, std::bind(&_BufferedOutput::_DoWrites, this)) {
+        // Create NumBuffers buffers.  One is _buffer, the remainder live in
+        // _freeBuffers.
+        constexpr const int NumBuffers = 8;
+        for (int i = 1; i != NumBuffers; ++i) {
+            _freeBuffers.push(_Buffer());
+        }
+    }
+
+    inline FILE *GetFile() const { return _file; }
+
+    inline void Flush() {
+        _FlushBuffer();
+        _dispatcher.Wait();
+    }
+
+    inline void Write(void const *bytes, int64_t nBytes) {
+        // Write and flush as needed.
+        while (nBytes) {
+            int64_t available = BufferCap - (_filePos - _bufferPos);
+            int64_t numToWrite = std::min(available, nBytes);
+            
+            _WriteToBuffer(bytes, numToWrite);
+            
+            bytes = static_cast<char const *>(bytes) + numToWrite;
+            nBytes -= numToWrite;
+
+            if (numToWrite == available)
+                _FlushBuffer();
+        }
+    }
+
+    inline int64_t Tell() const { return _filePos; }
+
+    inline void Seek(int64_t offset) {
+        // If the seek lands in a valid buffer region, then just adjust the
+        // _filePos.  Otherwise _FlushBuffer() and reset.
+        if (offset >= _bufferPos && offset <= (_bufferPos + _buffer.size)) {
+            _filePos = offset;
+        }
+        else {
+            _FlushBuffer();
+            _bufferPos = _filePos = offset;
+        }
+    }
+
+private:
+    inline void _FlushBuffer() {
+        if (_buffer.size) {
+            // Queue a write of _buffer bytes to the file at _bufferPos.  Set
+            // _bufferPos to be _filePos.
+            _QueueWrite(std::move(_buffer), _bufferPos);
+            // Get a new _buffer.  May have to wait if all are pending writes.
+            while (!_freeBuffers.try_pop(_buffer))
+                ArchThreadYield();
+        }
+        // Adjust the buffer to start at the write head.
+        _bufferPos = _filePos;
+    }
+
+    inline void _WriteToBuffer(void const *bytes, int64_t nBytes) {
+        // Fill the buffer, update its size and update the write head. Client
+        // guarantees no overrun.
+        size_t writeStart = (_filePos - _bufferPos);
+        if (writeStart + nBytes > _buffer.size) {
+            _buffer.size = writeStart + nBytes;
+        }
+        void *bufPtr = static_cast<void *>(_buffer.bytes.get() + writeStart);
+        memcpy(bufPtr, bytes, nBytes);
+        _filePos += nBytes;
+    }
+    
+    // Move-only write operation for the writer task to process.
+    struct _WriteOp {
+        _WriteOp() = default;
+        _WriteOp(_WriteOp const &) = delete;
+        _WriteOp(_WriteOp &&) = default;
+        _WriteOp &operator=(_WriteOp &&) = default;
+        _WriteOp(_Buffer &&buf, int64_t pos) : buf(std::move(buf)), pos(pos) {}
+        _Buffer buf;
+        int64_t pos = 0;
+    };
+
+    inline int64_t _QueueWrite(_Buffer &&buf, int64_t pos) {
+        // Arrange to write the buffered data.  Enqueue the op and wake the
+        // writer task.
+        int64_t sz = static_cast<int64_t>(buf.size);
+        _writeQueue.push(_WriteOp(std::move(buf), pos));
+        _writeTask.Wake();
+        return sz;
+    }
+
+    void _DoWrites() {
+        // This is the writer task.  It just pops off ops and writes them, then
+        // moves the buffer to the free list.
+        _WriteOp op;
+        while (_writeQueue.try_pop(op)) {
+            // Write the bytes.
+            WriteToFd(_file, op.buf.bytes.get(), op.buf.size, op.pos);
+            // Add the buffer back to _freeBuffers for reuse.
+            op.buf.size = 0;
+            _freeBuffers.push(std::move(op.buf));
+        }
+    }
+    
+    // Write head in the file.  Always inside the buffer region.
+    int64_t _filePos;
+    FILE *_file;
+
+    // Start of current buffer is at this file offset.
+    int64_t _bufferPos;
+    _Buffer _buffer;
+
+    // Queue of free buffer objects.
+    tbb::concurrent_queue<_Buffer> _freeBuffers;
+    // Queue of pending write operations.
+    tbb::concurrent_queue<_WriteOp> _writeQueue;
+
+    WorkDispatcher _dispatcher;
+    WorkSingularTask _writeTask;
+};
+
+////////////////////////////////////////////////////////////////////////
+// _PackingContext
 struct CrateFile::_PackingContext
 {
+    _PackingContext() = delete;
+    _PackingContext(_PackingContext const &) = delete;
+    _PackingContext &operator=(_PackingContext const &) = delete;
+
     _PackingContext(CrateFile *crate, FILE *file, std::string const &fileName) 
-        : file(file)
-        , fileName(fileName)
+        : fileName(fileName)
         , writeVersion(crate->_fileName.empty() ?
                        GetVersionForNewlyCreatedFiles() :
-                       Version(crate->_boot)) {
+                       Version(crate->_boot))
+        , bufferedOutput(file) {
+        
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
         WorkArenaDispatcher wd;
@@ -478,10 +634,11 @@ struct CrateFile::_PackingContext
             });
 
         // Set file pos to start of the structural sections in the current TOC.
-        outFilePos = crate->_toc.GetMinimumSectionStart();
-
+        bufferedOutput.Seek(crate->_toc.GetMinimumSectionStart());
         wd.Wait();
     }
+
+    inline FILE *GetFile() const { return bufferedOutput.GetFile(); }
 
     // Read the bytes of some unknown section into memory so we can rewrite them
     // out later (to preserve it).
@@ -505,13 +662,13 @@ struct CrateFile::_PackingContext
     // Unknown sections we're moving to the new structural area.
     vector<tuple<string, unique_ptr<char[]>, size_t>> unknownSections;
 
-    // File and filename we're writing to.
-    FILE *file;
+    // Filename we're writing to.
     std::string fileName;
     // Version we're writing.
     Version writeVersion;
-    // Current position in output file.
-    int64_t outFilePos;
+    // BufferedOutput helper.
+    _BufferedOutput bufferedOutput;
+
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -761,7 +918,8 @@ class CrateFile::_Writer
 {
 public:
     explicit _Writer(CrateFile *crate)
-        : crate(crate), sink(crate->_packCtx->file) {}
+        : crate(crate)
+        , sink(&crate->_packCtx->bufferedOutput) {}
 
     // Recursive write helper.  We use these when writing values if we may
     // invoke _PackValue() recursively.  Since _PackValue() may or may not write
@@ -785,9 +943,9 @@ public:
 
 public:
 
-    int64_t Tell() const { return crate->_packCtx->outFilePos; }
-
-    void Seek(int64_t offset) { crate->_packCtx->outFilePos = offset; }
+    int64_t Tell() const { return sink->Tell(); }
+    void Seek(int64_t offset) { sink->Seek(offset); }
+    void Flush() { sink->Flush(); }
 
     template <class T>
     uint32_t GetInlinedValue(T x) {
@@ -817,10 +975,7 @@ public:
     // Basic Write
     template <class T>
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
-    Write(T const &bits) {
-        crate->_packCtx->outFilePos += WriteToFd(
-            sink, &bits, sizeof(bits), crate->_packCtx->outFilePos);
-    }
+    Write(T const &bits) { sink->Write(&bits, sizeof(bits)); }
 
     template <class U, class T>
     void WriteAs(T const &obj) { return Write(static_cast<U>(obj)); }
@@ -905,8 +1060,7 @@ public:
     template <class T>
     typename std::enable_if<_IsBitwiseReadWrite<T>::value>::type
     WriteContiguous(T const *values, size_t sz) {
-        crate->_packCtx->outFilePos += WriteToFd(
-            sink, values, sizeof(*values) * sz, crate->_packCtx->outFilePos);
+        sink->Write(values, sizeof(*values) * sz);
     }
 
     template <class T>
@@ -916,7 +1070,7 @@ public:
     }
 
     CrateFile *crate;
-    FILE *sink;
+    _BufferedOutput *sink;
 };
 
 
@@ -1241,7 +1395,7 @@ CrateFile::Packer::Close()
     if (not TF_VERIFY(_crate))
         return false;
 
-    if (FILE *fp = _crate->_packCtx->file) {
+    if (FILE *fp = _crate->_packCtx->GetFile()) {
 
         // Write contents.
         bool writeResult = _crate->_Write();
@@ -1430,6 +1584,9 @@ CrateFile::_Write()
     // Write bootstrap at start of file.
     w.Seek(0);
     w.Write(boot);
+
+    // Flush any buffered writes.
+    w.Flush();
 
     _toc = toc;
     _boot = boot;
