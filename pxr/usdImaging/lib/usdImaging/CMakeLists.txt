@@ -50,7 +50,6 @@ pxr_shared_library(usdImaging
         shaderAdapter
         tokens
         valueCache
-        taskDelegate
         basisCurvesAdapter
         capsuleAdapter
         coneAdapter
