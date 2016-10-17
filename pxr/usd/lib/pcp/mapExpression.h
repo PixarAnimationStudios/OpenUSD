@@ -116,6 +116,12 @@ public:
     /// (if necessary) mapping from </> to </>.
     PcpMapExpression AddRootIdentity() const;
 
+    /// Return true if the map function is the constant identity function.
+    bool IsConstantIdentity() const {
+        return _node && _node->key.op == _OpConstant &&
+            _node->key.valueForConstant.IsIdentity();
+    }
+
     /// @}
 
     /// \name Convenience API

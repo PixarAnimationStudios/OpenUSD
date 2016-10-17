@@ -2256,6 +2256,10 @@ static PcpMapExpression
 _GetImpliedClass( const PcpMapExpression & transfer,
                   const PcpMapExpression & classArc )
 {
+    if (transfer.IsConstantIdentity()) {
+        return classArc;
+    }
+
     return transfer.Compose( classArc.Compose( transfer.Inverse() ))
         .AddRootIdentity();
 }
@@ -2477,6 +2481,11 @@ _EvalImpliedClasses(
     // nodes of the propagated inherits have a consistent strength 
     // ordering.  This is handled with the implied specializes task.
     if (_IsPropagatedSpecializesNode(node)) {
+        return;
+    }
+
+    // Optimization: early-out if there are no class arcs to propagate.
+    if (not _HasClassBasedChild(node)) {
         return;
     }
 

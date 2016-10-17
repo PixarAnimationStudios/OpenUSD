@@ -88,6 +88,13 @@ PcpMapExpression::Constant( const Value & value )
 PcpMapExpression
 PcpMapExpression::Compose(const PcpMapExpression &f) const
 {
+    // Fast path short-circuits for identities
+    if (IsConstantIdentity()) {
+        return f;
+    }
+    if (f.IsConstantIdentity()) {
+        return *this;
+    }
     if (_node->key.op == _OpConstant and f._node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( Evaluate().Compose( f.Evaluate() ) );
@@ -98,6 +105,10 @@ PcpMapExpression::Compose(const PcpMapExpression &f) const
 PcpMapExpression
 PcpMapExpression::Inverse() const
 {
+    // Fast path short-circuits for identities
+    if (IsConstantIdentity()) {
+        return *this;
+    }
     if (_node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( Evaluate().GetInverse() );
@@ -108,6 +119,10 @@ PcpMapExpression::Inverse() const
 PcpMapExpression
 PcpMapExpression::AddRootIdentity() const
 {
+    // Fast path short-circuits for identities
+    if (IsConstantIdentity()) {
+        return *this;
+    }
     if (_node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( _AddRootIdentity(Evaluate()) );
