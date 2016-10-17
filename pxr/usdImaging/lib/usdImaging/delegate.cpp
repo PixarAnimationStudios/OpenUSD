@@ -27,9 +27,9 @@
 
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
-#include "pxr/usdImaging/usdImaging/defaultShaderAdapter.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/glf/ptexTexture.h"
@@ -93,7 +93,7 @@ UsdImagingDelegate::UsdImagingDelegate()
     , _xformCache(GetTime(), GetRootCompensation())
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
-    , _defaultShaderAdapter(boost::make_shared<UsdImagingDefaultShaderAdapter>(this))
+    , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
 {
     // this constructor create a new render index.
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
@@ -127,7 +127,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _xformCache(GetTime(), GetRootCompensation())
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
-    , _defaultShaderAdapter(boost::make_shared<UsdImagingDefaultShaderAdapter>(this))
+    , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
 {
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
     tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
@@ -259,7 +259,7 @@ UsdImagingDelegate::_ShaderAdapterSharedPtr
 UsdImagingDelegate::_ShaderAdapterLookup(
         SdfPath const& shaderId) const
 {
-    return _defaultShaderAdapter;
+    return _shaderAdapter;
 }
 
 // -------------------------------------------------------------------------- //

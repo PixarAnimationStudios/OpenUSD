@@ -393,9 +393,9 @@ private:
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
-    // UsdImagingDefaultShaderAdapter needs access to _GetPrim.  We should
+    // UsdImagingShaderAdapter needs access to _GetPrim.  We should
     // consider making it public.
-    friend class UsdImagingDefaultShaderAdapter;
+    friend class UsdImagingShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
         if (not (0 <= level and level <= 8)) {
@@ -518,12 +518,12 @@ private:
     _PathAdapterMap _pathAdapterMap;
 
     typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
-    typedef SdfPathTable<_ShaderAdapterSharedPtr> _ShaderAdapterMap;
-    _ShaderAdapterMap _shaderAdapterMap;
 
     // This method looks up a shader adapter based on the \p shaderId.
-    // This will never return a nullptr.  If there is no registered shader
-    // adapter, it will return the "default".
+    // Currently, it's hard coded to return _shaderAdapter but could be
+    // extended.
+    //
+    // This will never return a nullptr.  
     _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
 
     // XXX: These maps could be store as individual member paths on the Rprim
@@ -601,8 +601,7 @@ private:
     // Collection
     CollectionMap _collectionMap;
 
-    // default shader adapter
-    boost::shared_ptr<UsdImagingDefaultShaderAdapter> _defaultShaderAdapter;
+    UsdImagingShaderAdapterSharedPtr _shaderAdapter;
 };
 
 /// \class UsdImagingIndexProxy

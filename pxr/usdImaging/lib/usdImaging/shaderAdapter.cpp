@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/defaultShaderAdapter.h"
+#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -36,13 +36,13 @@
 #include "pxr/usd/usdHydra/primvar.h"
 #include "pxr/usd/usdHydra/tokens.h"
 
-UsdImagingDefaultShaderAdapter::UsdImagingDefaultShaderAdapter(UsdImagingDelegate* delegate)
+UsdImagingShaderAdapter::UsdImagingShaderAdapter(UsdImagingDelegate* delegate)
     : _delegate(delegate)
 {
 }
 
 bool
-UsdImagingDefaultShaderAdapter::GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const
+UsdImagingShaderAdapter::GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const
 {
     if (UsdPrim p = _delegate->_GetPrim(usdPath)) {
         const std::vector<UsdAttribute> &attrs = p.GetAttributes();
@@ -57,7 +57,7 @@ UsdImagingDefaultShaderAdapter::GetSurfaceShaderIsTimeVarying(SdfPath const& usd
 }
 
 std::string
-UsdImagingDefaultShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
+UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
 {
     std::string const EMPTY;
     if (not TF_VERIFY(usdPath != SdfPath()))
@@ -111,7 +111,7 @@ UsdImagingDefaultShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) c
 }
 
 TfTokenVector
-UsdImagingDefaultShaderAdapter::GetSurfaceShaderParamNames(SdfPath const &usdPath) const
+UsdImagingShaderAdapter::GetSurfaceShaderParamNames(SdfPath const &usdPath) const
 {
     TfTokenVector names;
     if (not TF_VERIFY(usdPath != SdfPath()))
@@ -153,7 +153,7 @@ UsdImagingDefaultShaderAdapter::GetSurfaceShaderParamNames(SdfPath const &usdPat
 }
 
 VtValue
-UsdImagingDefaultShaderAdapter::GetSurfaceShaderParamValue(SdfPath const &usdPath, 
+UsdImagingShaderAdapter::GetSurfaceShaderParamValue(SdfPath const &usdPath, 
                                                TfToken const &paramName) const
 {
     if (not TF_VERIFY(usdPath != SdfPath()))
@@ -182,7 +182,7 @@ UsdImagingDefaultShaderAdapter::GetSurfaceShaderParamValue(SdfPath const &usdPat
 }
 
 HdShaderParamVector
-UsdImagingDefaultShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
+UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
 {
     HdShaderParamVector params;
 
@@ -319,7 +319,7 @@ UsdImagingDefaultShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) c
 }
 
 SdfPathVector
-UsdImagingDefaultShaderAdapter::GetSurfaceShaderTextures(SdfPath const &usdPath) const
+UsdImagingShaderAdapter::GetSurfaceShaderTextures(SdfPath const &usdPath) const
 {
     SdfPathVector textureIDs;
 
