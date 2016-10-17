@@ -44,9 +44,6 @@ pxr_shared_library(usdImagingGL
         refEngine
         taskDelegate
 
-    PUBLIC_HEADERS
-        version.h
-
     PRIVATE_CLASSES
         defaultTaskDelegate
 
