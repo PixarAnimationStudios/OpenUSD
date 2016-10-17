@@ -151,7 +151,8 @@ public:
     /// return the instanceCountForThisLevel as the number of instances.
     virtual SdfPath GetPathForInstanceIndex(
         SdfPath const &path, int instanceIndex,
-        int *instanceCountForThisLevel, int *absoluteInstanceIndex);
+        int *instanceCountForThisLevel, int *absoluteInstanceIndex,
+        std::vector<UsdPrim> *instanceContext);
 
     /// Returns the instancer path for given \p instancePath. If it's not
     /// instanced path, returns empty.

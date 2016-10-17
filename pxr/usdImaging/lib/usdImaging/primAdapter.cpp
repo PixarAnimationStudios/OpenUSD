@@ -109,10 +109,12 @@ UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 
 /*virtual*/
 SdfPath 
-UsdImagingPrimAdapter::GetPathForInstanceIndex(SdfPath const &path,
-                                               int instanceIndex,
-                                               int *instanceCount,
-                                               int *absoluteInstanceIndex)
+UsdImagingPrimAdapter::GetPathForInstanceIndex(
+    SdfPath const &path,
+    int instanceIndex,
+    int *instanceCount,
+    int *absoluteInstanceIndex,
+    std::vector<UsdPrim> *instanceContext)
 {
     if (absoluteInstanceIndex) {
         *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;

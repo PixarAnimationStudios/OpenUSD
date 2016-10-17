@@ -28,6 +28,8 @@
 // Version 4 -- Populate returns SdfPath, HdxSelectionInstanceMap
 // Version 5 -- GetPathForInstanceIndex returns absoluteInstanceIndex.
 // Version 6 -- PrimAdater::GetDependPaths
-#define USD_IMAGING_API 6
+// Version 7 -- GetPathForInstanceIndex returns instanceContext.
+
+#define USD_IMAGING_API 7
 
 #endif // USD_IMAGING_VERSION_H

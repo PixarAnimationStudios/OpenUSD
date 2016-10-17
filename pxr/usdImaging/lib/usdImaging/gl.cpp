@@ -206,10 +206,12 @@ UsdImagingGL::GetPrimPathFromPrimIdColor(
 SdfPath 
 UsdImagingGL::GetPrimPathFromInstanceIndex(const SdfPath& protoPrimPath,
                                            int instanceIndex,
-                                           int *absoluteInstanceIndex)
+                                           int *absoluteInstanceIndex,
+                                           std::vector<UsdPrim> *instanceContext)
 {
     return _engine->GetPrimPathFromInstanceIndex(protoPrimPath, instanceIndex,
-                                                 absoluteInstanceIndex);
+                                                 absoluteInstanceIndex, 
+                                                 instanceContext);
 }
 
 /* virtual */

@@ -618,9 +618,11 @@ UsdImagingEngine::GetPrimPathFromPrimIdColor(GfVec4i const &/*primIdColor*/,
 
 /* virtual */
 SdfPath 
-UsdImagingEngine::GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
-                                               int instanceIndex,
-                                               int *absoluteInstanceIndex)
+UsdImagingEngine::GetPrimPathFromInstanceIndex(
+    SdfPath const& protoPrimPath,
+    int instanceIndex,
+    int *absoluteInstanceIndex,
+    std::vector<UsdPrim> *instanceContext)
 {
     return SdfPath();
 }

@@ -290,10 +290,16 @@ public:
     /// of all instances in the instancer. Note that if the instancer instances
     /// heterogeneously, instanceIndex of the prototype rprim doesn't match
     /// the absoluteInstanceIndex in the instancer (see hd/sceneDelegate.h)
+    /// 
+    /// If \p instanceContext is not NULL, it is populated with the list of 
+    /// instance roots that must be traversed to get to the rprim. The last prim
+    /// in this vector is always the resolved (or forwarded) rprim.
+    /// 
     virtual SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoRprimPath,
         int instanceIndex,
-        int *absoluteInstanceIndex=NULL);
+        int *absoluteInstanceIndex=NULL,
+        std::vector<UsdPrim> *instanceContext=NULL);
 
     /// Returns true if the resulting image is fully converged.
     /// (otherwise, caller may need to call Render() again to refine the result)

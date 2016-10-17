@@ -1269,8 +1269,10 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     _GetPathForInstanceIndexFn(
         UsdImagingInstanceAdapter* adapter_,
         SdfPath const &usdPath_,
-        int instanceIndex_)
-        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_)
+        int instanceIndex_,
+        std::vector<UsdPrim> *instanceContextPtr_)
+        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_),
+          instanceContextPtr(instanceContextPtr_)
     { }
 
     void Initialize(size_t numInstances)
@@ -1282,9 +1284,13 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     {
         if (instanceIdx == static_cast<size_t>(instanceIndex) && instanceContext.size() > 0) {
             instancePath = instanceContext.back().GetPath();
+
+            if (instanceContextPtr) {
+                *instanceContextPtr = instanceContext;
+            }
+
             return false;
         }
-
         return true;
     }
 
@@ -1292,13 +1298,15 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     SdfPath usdPath;
     SdfPath instancePath;
     int instanceIndex;
+    std::vector<UsdPrim> *instanceContextPtr;
 };
 
 /*virtual*/
 SdfPath 
 UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     SdfPath const &path, int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex)
+    int *absoluteInstanceIndex,
+    std::vector<UsdPrim> *instanceContext)
 {
     UsdPrim const &prim = _GetPrim(path.GetAbsoluteRootOrPrimPath());
     if (not prim) {
@@ -1327,7 +1335,8 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
                     return GetPathForInstanceIndex(instIt->first,
                                                    instanceIndex,
                                                    instanceCount,
-                                                   absoluteInstanceIndex);
+                                                   absoluteInstanceIndex,
+                                                   instanceContext);
                 }
             }
         }
@@ -1361,9 +1370,9 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         instanceIndex = instanceIndices[instanceIndex];
         break;
     }
-
+        
     _GetPathForInstanceIndexFn getPathForInstanceIndexFn(
-        this, instancerPath, instanceIndex);
+        this, instancerPath, instanceIndex, instanceContext);
 
     _RunForAllInstancesToDraw(prim, &getPathForInstanceIndexFn);
 
@@ -1377,6 +1386,23 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     if (instanceCount) {
         *instanceCount = 0;
     }
+
+    // instanceContext doesn't contain the rprim itself yet. Add it here.
+    if (instanceContext) {
+        const auto rprimPathIt = instIt->second.primMap.find(path);
+        if (rprimPathIt != instIt->second.primMap.end()) {
+            SdfPath rprimPath = rprimPathIt->second.path;
+
+            TF_DEBUG(USDIMAGING_SELECTION).Msg(
+                "NI: rprimPath %s\n", rprimPath.GetText());
+
+            instanceContext->push_back(prim.GetStage()->GetPrimAtPath(rprimPath));
+        } else {
+            TF_WARN("Failed to find rprimPath for <%s>, instanceIndex = %d", 
+                path.GetText(), instanceIndex);
+        }
+    }
+
     // intentionally leave absoluteInstanceIndex as it is, so that
     // partial selection of point instancer can be passed through.
 

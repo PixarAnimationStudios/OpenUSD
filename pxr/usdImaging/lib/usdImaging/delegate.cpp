@@ -2176,7 +2176,8 @@ UsdImagingDelegate::SetCollectionMap(CollectionMap const &collectionMap)
 SdfPath 
 UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
                                             int instanceIndex,
-                                            int *absoluteInstanceIndex)
+                                            int *absoluteInstanceIndex,
+                                            std::vector<UsdPrim> *instanceContext)
 {
     SdfPath usdPath = GetPathForUsd(protoPrimPath);
 
@@ -2188,6 +2189,7 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
     int instanceCount = 0;
     int protoInstanceIndex = instanceIndex;
     int absIndex = ALL_INSTANCES; // PointInstancer may overwrite.
+    std::vector<UsdPrim> resolvedInstanceContext;
     do {
         _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
         if (not TF_VERIFY(adapter, "can't find primAdapter for %s",
@@ -2196,7 +2198,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
         }
 
         usdPath = adapter->GetPathForInstanceIndex(
-            usdPath, instanceIndex, &instanceCount, &absIndex);
+            usdPath, instanceIndex, &instanceCount, &absIndex, 
+            &resolvedInstanceContext);
 
         if (usdPath.IsEmpty()) {
             break;
@@ -2214,13 +2217,17 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
     } while(true);
 
-    TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = (%s, %d)\n",
-                                       protoPrimPath.GetText(),
-                                       protoInstanceIndex,
-                                       usdPath.GetText(),
-                                       absIndex);
+    TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
+        "(%s, %d, %s)\n", protoPrimPath.GetText(), protoInstanceIndex,
+        usdPath.GetText(), absIndex, 
+        resolvedInstanceContext.back().GetPath().GetText());
+
     if (absoluteInstanceIndex) {
         *absoluteInstanceIndex = absIndex;
+    }
+
+    if (instanceContext) {
+        *instanceContext = resolvedInstanceContext;
     }
 
     return GetPathForIndex(usdPath);

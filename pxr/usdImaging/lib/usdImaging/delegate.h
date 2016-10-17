@@ -317,12 +317,18 @@ public:
     /// is an instanceIndex of the instancer for the given instanceIndex of
     /// the prototype.
     ///
+    /// If \p instanceContext is not NULL, it is populated with the list of 
+    /// instance roots that must be traversed to get to the rprim. The last prim
+    /// in this list is always the forwarded rprim.
+    /// 
     /// ALL_INSTANCES may be returned if the protoPrimPath isn't instanced.
     ///
     static constexpr int ALL_INSTANCES = -1;
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
-                                            int *absoluteInstanceIndex);
+                                            int *absoluteInstanceIndex,
+                                            std::vector<UsdPrim> *
+                                                instanceContext=NULL);
 
 private:
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PathToPathMap;

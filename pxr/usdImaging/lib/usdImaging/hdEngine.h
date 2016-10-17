@@ -105,7 +105,9 @@ public:
 
     virtual SdfPath GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
                                                  int instanceIndex,
-                                                 int *absoluteInstanceIndex=NULL);
+                                                 int *absoluteInstanceIndex=NULL,
+                                                 std::vector<UsdPrim>
+                                                        *instanceContext=NULL);
 
     virtual bool IsConverged() const;
 

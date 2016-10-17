@@ -104,7 +104,9 @@ public:
     virtual SdfPath GetPathForInstanceIndex(SdfPath const &path,
                                             int instanceIndex,
                                             int *instanceCount,
-                                            int *absoluteInstanceIndex);
+                                            int *absoluteInstanceIndex,
+                                            std::vector<UsdPrim> *
+                                                instanceContext);
 
     virtual SdfPath GetInstancer(SdfPath const &cachePath);
 
