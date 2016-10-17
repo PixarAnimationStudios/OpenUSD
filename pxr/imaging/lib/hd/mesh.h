@@ -119,7 +119,8 @@ protected:
     void _UpdateDrawItem(HdDrawItem *drawItem,
                          HdChangeTracker::DirtyBits *dirtyBits,
                          bool isNew,
-                         HdMeshReprDesc desc);
+                         HdMeshReprDesc desc,
+                         bool requireSmoothNormals);
 
     void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
                                         HdMeshReprDesc desc);
@@ -137,7 +138,8 @@ protected:
     void _PopulateVertexPrimVars(HdDrawItem *drawItem,
                                  HdChangeTracker::DirtyBits *dirtyBits,
                                  bool isNew,
-                                 HdMeshReprDesc desc);
+                                 HdMeshReprDesc desc,
+                                 bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
                                       HdChangeTracker::DirtyBits *dirtyBits,

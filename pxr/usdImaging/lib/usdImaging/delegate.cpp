@@ -1202,7 +1202,8 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
         bool& isTimeVarying = it->second;
         if (isTimeVarying) {
             HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-            tracker.MarkShaderDirty(it->first, HdChangeTracker::DirtyParams);
+            tracker.MarkShaderDirty(
+                GetPathForIndex(it->first), HdChangeTracker::DirtyParams);
         }
     }
 }
@@ -2389,7 +2390,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             _UpdateSingleValue(usdPath,HdChangeTracker::DirtySurfaceShader);
             SdfPath pathValue;
             TF_VERIFY(_valueCache.ExtractSurfaceShader(usdPath, &pathValue));
-            value = VtValue(pathValue);
+            value = VtValue(GetPathForIndex(pathValue));
         } else if (key == HdTokens->transform) {
             GfMatrix4d xform(1.);
             bool resetsXformStack=false;
