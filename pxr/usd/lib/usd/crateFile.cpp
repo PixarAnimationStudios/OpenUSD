@@ -26,7 +26,6 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -495,7 +494,7 @@ private:
             _QueueWrite(std::move(_buffer), _bufferPos);
             // Get a new _buffer.  May have to wait if all are pending writes.
             while (!_freeBuffers.try_pop(_buffer))
-                ArchThreadYield();
+                _dispatcher.Wait();
         }
         // Adjust the buffer to start at the write head.
         _bufferPos = _filePos;
