@@ -62,9 +62,6 @@ pxr_shared_library(usdImagingGL
 
     PYTHON_FILES
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
 )
 
 if (QT4_FOUND)
