@@ -1234,27 +1234,6 @@ class StageView(QtOpenGL.QGLWidget):
             self._freeCamera = self._freeCamera.clone()
         self.update()
 
-
-    def setupOpenGLViewMatricesForFrustum(self, frustum):
-        from OpenGL import GL
-        import ctypes
-        GLMtx = ctypes.c_double * 16
-        MakeGLMtx = lambda m: GLMtx.from_buffer_copy(m)
-
-        GL.glMatrixMode(GL.GL_PROJECTION)
-        GL.glLoadIdentity()
-        GL.glMultMatrixd(MakeGLMtx(frustum.ComputeProjectionMatrix()))
-
-        GL.glMatrixMode(GL.GL_MODELVIEW)
-        GL.glLoadIdentity()
-        GL.glMultMatrixd(MakeGLMtx(frustum.ComputeViewMatrix()))
-
-        GL.glViewport(0, 0, self.size().width(), self.size().height())
-
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
-
-        self._renderer.SetCameraStateFromOpenGL()
-
     def drawWireframeCube(self, size):
         from OpenGL import GL
 
@@ -1313,7 +1292,16 @@ class StageView(QtOpenGL.QGLWidget):
         cam_up = frustum.ComputeUpVector()
         cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
 
-        self.setupOpenGLViewMatricesForFrustum(frustum)
+        self._renderer.SetCameraState(
+            frustum.ComputeViewMatrix(),
+            frustum.ComputeProjectionMatrix(),
+            Gf.Vec4d(0, 0, self.size().width(), self.size().height()))
+
+        # XXX: this is redundant for refEngine, but currently hdEngine
+        #      doesn't call glViewport.
+        GL.glViewport(0, 0, self.size().width(), self.size().height())
+
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
         # Set the clipping planes.
         self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
