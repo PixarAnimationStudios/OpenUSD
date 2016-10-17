@@ -41,6 +41,9 @@ def main():
                       help="sets asset's model kind")
     parser.add_option('-o', '--outputDir',
             help='directory to create assets.  if none specified, will use modelName.')
+    parser.add_option('-s', '--shadingVariantLayer',
+            help='add <asset>.shadingVariants.usda to model references.', default=False,
+            action='store_true')
     parser.add_option('-f', '--force', default=False, action='store_true',
             help='if False, this will error if [outputDir] exists')
     options, args = parser.parse_args()
@@ -61,9 +64,9 @@ def main():
     else:
         os.makedirs(outputDir)
 
-    _CreateAsset(asset, outputDir, options.kind)
+    _CreateAsset(asset, outputDir, options.kind, options.shadingVariantLayer)
 
-def _CreateAsset(assetName, assetDir, assetKind):
+def _CreateAsset(assetName, assetDir, assetKind, addShadingVariantLayer):
     assetFilePath = os.path.join(assetDir, '%s.usd' % assetName)
 
     print "Creating asset at %s" % assetFilePath
@@ -87,11 +90,15 @@ def _CreateAsset(assetName, assetDir, assetKind):
     model.SetAssetName(assetName)
     model.SetAssetIdentifier('%s/%s.usd' % (assetName, assetName))
     
-    # shading is stronger than geom
-    _CreateAndReferenceLayers(assetPrim, assetDir, [
-        './%s.shadingVariants.usda' % assetName,
-        './%s.maya.usd' % assetName,
-        ])
+    refs = []
+    if addShadingVariantLayer:
+        # if we're going to add it, then shading is stronger than geom and needs
+        # to be added first
+        refs.append('./%s.shadingVariants.usda' % assetName)
+
+    refs.append('./%s.maya.usd' % assetName)
+
+    _CreateAndReferenceLayers(assetPrim, assetDir, refs)
 
     assetStage.GetRootLayer().Save()
 

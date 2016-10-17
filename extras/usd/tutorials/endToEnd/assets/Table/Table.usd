@@ -10,12 +10,8 @@ def Xform "Table" (
         string name = "Table"
     }
     kind = "component"
-    add references = [
-        @./Table.shadingVariants.usda@,
-        @./Table.maya.usd@
-    ]
+    add references = @./Table.maya.usd@
 )
 {
 }
-
 
