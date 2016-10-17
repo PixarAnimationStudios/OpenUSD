@@ -38,7 +38,6 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usdUtils/stageCache.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/gf/bbox3d.h"
 
 #include <maya/MDagPath.h>
@@ -79,11 +78,6 @@ UsdMayaProxyShape::initialize(
         PluginStaticData* psData)
 {
     MStatus retValue = MS::kSuccess;
-
-    static std::once_flag once;
-    std::call_once(once, [](){
-        WorkSetMaximumConcurrencyLimit();
-    });
 
     //
     // create attr factories
