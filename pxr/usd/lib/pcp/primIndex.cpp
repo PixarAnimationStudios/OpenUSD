@@ -390,8 +390,7 @@ Pcp_BuildPrimIndex(
 
 static bool
 _NodeCanBeCulled(const PcpNodeRef& node, 
-                 const PcpLayerStackSite& rootLayerStack,
-                 bool finalPass);
+                 const PcpLayerStackSite& rootLayerStack);
 
 static void
 _GatherNodesRecursively(const PcpNodeRef& node,
@@ -1397,8 +1396,7 @@ _AddArc(
     // This is because computing the source prim index above will have culled
     // everything it can *except* for the direct node. 
     if (indexer->inputs.cull) {
-        if (_NodeCanBeCulled(newNode, indexer->rootSite,
-                             /* finalPass = */ false)) {
+        if (_NodeCanBeCulled(newNode, indexer->rootSite)) {
             newNode.SetCulled(true);
         }
         else {
@@ -3696,8 +3694,7 @@ _ConvertNodeForChild(
 static bool
 _NodeCanBeCulled(
     const PcpNodeRef& node,
-    const PcpLayerStackSite& rootSite,
-    bool finalPass)
+    const PcpLayerStackSite& rootSite)
 {
     // Trivial case if this node has already been culled. 
     // This could happen if this node was culled ancestrally.
@@ -3737,12 +3734,12 @@ _NodeCanBeCulled(
     }
 
     // We cannot cull any nodes that directly OR ancestrally provide
-    // variant selections until the finalPass.  The reason is that
-    // during recursive prim indexing calls, variant selections from
-    // ancestral sites are necessary to get the correct results
-    // across arcs like local inerhits.
+    // variant selections. Variant selections from ancestral sites are
+    // necessary when evaluating variants in a recursive prim indexing
+    // call. Otherwise, the recursive call may wind up using a different
+    // selection than what had been used in the parent index.
     // See TrickyInheritsInVariants2 for an example of this.
-    if (!finalPass && node.HasVariantSelections()) {
+    if (node.HasVariantSelections()) {
         return false;
     }
 
@@ -3790,8 +3787,7 @@ _NodeCanBeCulled(
 static void
 _CullSubtreesWithNoOpinions(
     PcpNodeRef node,
-    const PcpLayerStackSite& rootSite,
-    bool finalPass)
+    const PcpLayerStackSite& rootSite)
 {
     // Recurse and attempt to cull all children first. Order doesn't matter.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
@@ -3804,12 +3800,12 @@ _CullSubtreesWithNoOpinions(
             continue;
         }
 
-        _CullSubtreesWithNoOpinions(*child, rootSite, finalPass);
+        _CullSubtreesWithNoOpinions(*child, rootSite);
     }
 
     // Now, mark this node as culled if we can. These nodes will be
     // removed from the prim index at the end of prim indexing.
-    if (_NodeCanBeCulled(node, rootSite, finalPass)) {
+    if (_NodeCanBeCulled(node, rootSite)) {
         node.SetCulled(true);
     }
 }
@@ -3912,8 +3908,7 @@ _BuildInitialPrimIndexFromAncestor(
     _ConvertNodeForChild(rootNode, site.path.GetNameToken(), inputs);
 
     if (inputs.cull) {
-        _CullSubtreesWithNoOpinions(rootNode, rootSite,
-                                    /* finalPass = */ false);
+        _CullSubtreesWithNoOpinions(rootNode, rootSite);
     }
 
     // The child inherits the parent's dependencies as ancestral dependencies,
@@ -4089,13 +4084,6 @@ PcpComputePrimIndex(
     // doing some redundant work.
     if (not inputs.usd) {
         _EnforcePermissions(&outputs->primIndex, &outputs->allErrors);
-    }
-
-    // Do a final, more aggressive culling pass.
-    if (inputs.cull) {
-        PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
-        _CullSubtreesWithNoOpinions(rootNode, rootNode.GetSite(),
-                                    /* finalPass = */ true);
     }
 
     // Determine whether this prim index is instanceable and store that
