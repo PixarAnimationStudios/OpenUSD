@@ -178,7 +178,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeOnly
+-- glsl MeshWire.Fragment.EdgeOnlyBlendColor
 
 in EdgeData
 {
@@ -200,6 +200,27 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     // If wireColor is unset (zero), ignore it altogether
     
     Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
+
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeOnlyNoBlend
+
+in EdgeData
+{
+    noperspective vec3 edgeDistance;
+} inEdgeData;
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    vec3 edgeDistance = inEdgeData.edgeDistance;
+
+    float d = min(edgeDistance.x,
+                  min(edgeDistance.y,
+                      edgeDistance.z));
+    float p = exp2(-4 * d * d);
+    if (p < 0.5) discard;
 
     return Cfill;
 }

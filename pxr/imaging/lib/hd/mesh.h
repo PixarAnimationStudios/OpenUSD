@@ -50,17 +50,20 @@ struct HdMeshReprDesc {
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    bool lit = false,
-                   bool smoothNormals = false)
+                   bool smoothNormals = false,
+                   bool blendWireframeColor = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , lit(lit)
         , smoothNormals(smoothNormals)
+        , blendWireframeColor(blendWireframeColor)
         {}
 
     HdMeshGeomStyle geomStyle:3;
     HdCullStyle     cullStyle:3;
     bool            lit:1;
     bool            smoothNormals:1;
+    bool            blendWireframeColor:1;
 };
 
 /// A subdivision surface or poly-mesh object.

@@ -78,38 +78,45 @@ HdRenderIndex::HdRenderIndex()
                               HdMeshReprDesc(HdMeshGeomStyleHull,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/false));
+                                             /*smoothNormals=*/false,
+                                             /*blendWireframeColor=*/false));
         HdMesh::ConfigureRepr(HdTokens->smoothHull,
                               HdMeshReprDesc(HdMeshGeomStyleHull,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/false));
         HdMesh::ConfigureRepr(HdTokens->wire,
                               HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
         HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
                               HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
 
         HdMesh::ConfigureRepr(HdTokens->refined,
                               HdMeshReprDesc(HdMeshGeomStyleSurf,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/false));
         HdMesh::ConfigureRepr(HdTokens->refinedWire,
                               HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
         HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
                               HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
 
 
         HdBasisCurves::ConfigureRepr(HdTokens->hull,

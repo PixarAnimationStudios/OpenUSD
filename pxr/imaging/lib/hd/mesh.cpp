@@ -1009,12 +1009,15 @@ HdMesh::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem, HdMeshReprDesc desc
         cullStyle = desc.cullStyle;
     }
 
+    bool blendWireframeColor = desc.blendWireframeColor;
+
     // create a shaderKey and set to the geometric shader.
     Hd_MeshShaderKey shaderKey(primType,
                                desc.lit,
                                smoothNormals,
                                _doubleSided,
                                hasFaceVaryingPrimVars,
+                               blendWireframeColor,
                                cullStyle,
                                geomStyle);
 
