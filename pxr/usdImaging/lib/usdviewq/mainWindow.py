@@ -3252,7 +3252,9 @@ class MainWindow(QtGui.QMainWindow):
             for i, layer in enumerate(layers):
                 layerItem = QtGui.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
-                layerItem.setToolTip(layer.layer.realPath)
+                toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
+                    (layer.layer.identifier, layerItem.layerPath)
+                layerItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 0, layerItem)
 
                 offsetItem = QtGui.QTableWidgetItem(layer.GetOffsetString())
