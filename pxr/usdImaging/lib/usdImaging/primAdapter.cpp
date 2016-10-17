@@ -114,7 +114,8 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
     int instanceIndex,
     int *instanceCount,
     int *absoluteInstanceIndex,
-    std::vector<UsdPrim> *instanceContext)
+    SdfPath * rprimPath,
+    SdfPathVector *instanceContext)
 {
     if (absoluteInstanceIndex) {
         *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;

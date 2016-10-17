@@ -327,8 +327,8 @@ public:
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
                                             int *absoluteInstanceIndex,
-                                            std::vector<UsdPrim> *
-                                                instanceContext=NULL);
+                                            SdfPath * rprimPath=NULL,
+                                            SdfPathVector *instanceContext=NULL);
 
 private:
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PathToPathMap;

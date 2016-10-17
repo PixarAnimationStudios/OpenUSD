@@ -622,7 +622,8 @@ UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
     SdfPath const& protoPrimPath,
     int instanceIndex,
     int *absoluteInstanceIndex,
-    std::vector<UsdPrim> *instanceContext)
+    SdfPath *rprimPath,
+    SdfPathVector *instanceContext)
 {
     return SdfPath();
 }

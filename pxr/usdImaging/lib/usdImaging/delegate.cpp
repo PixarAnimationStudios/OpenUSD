@@ -2188,7 +2188,8 @@ SdfPath
 UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
                                             int instanceIndex,
                                             int *absoluteInstanceIndex,
-                                            std::vector<UsdPrim> *instanceContext)
+                                            SdfPath *rprimPath,
+                                            SdfPathVector *instanceContext)
 {
     SdfPath usdPath = GetPathForUsd(protoPrimPath);
 
@@ -2200,7 +2201,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
     int instanceCount = 0;
     int protoInstanceIndex = instanceIndex;
     int absIndex = ALL_INSTANCES; // PointInstancer may overwrite.
-    std::vector<UsdPrim> resolvedInstanceContext;
+    SdfPathVector resolvedInstanceContext;
+    SdfPath resolvedRprimPath;
     do {
         _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
         if (not TF_VERIFY(adapter, "can't find primAdapter for %s",
@@ -2210,7 +2212,7 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
         usdPath = adapter->GetPathForInstanceIndex(
             usdPath, instanceIndex, &instanceCount, &absIndex, 
-            &resolvedInstanceContext);
+            &resolvedRprimPath, &resolvedInstanceContext);
 
         if (usdPath.IsEmpty()) {
             break;
@@ -2231,10 +2233,14 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
     TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
         "(%s, %d, %s)\n", protoPrimPath.GetText(), protoInstanceIndex,
         usdPath.GetText(), absIndex, 
-        resolvedInstanceContext.back().GetPath().GetText());
+        resolvedInstanceContext.back().GetText());
 
     if (absoluteInstanceIndex) {
         *absoluteInstanceIndex = absIndex;
+    }
+
+    if (rprimPath) {
+        *rprimPath = resolvedRprimPath;
     }
 
     if (instanceContext) {

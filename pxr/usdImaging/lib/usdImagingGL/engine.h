@@ -299,7 +299,8 @@ public:
         SdfPath const& protoRprimPath,
         int instanceIndex,
         int *absoluteInstanceIndex=NULL,
-        std::vector<UsdPrim> *instanceContext=NULL);
+        SdfPath * rprimPath=NULL,
+        SdfPathVector *instanceContext=NULL);
 
     /// Returns true if the resulting image is fully converged.
     /// (otherwise, caller may need to call Render() again to refine the result)

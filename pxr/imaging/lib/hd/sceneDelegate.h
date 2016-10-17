@@ -200,7 +200,9 @@ public:
     ///
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
-                                            int *absoluteInstanceIndex);
+                                            int *absoluteInstanceIndex,
+                                            SdfPath * rprimPath=NULL,
+                                            SdfPathVector *instanceContext=NULL);
 
     // -----------------------------------------------------------------------//
     /// \name SurfaceShader Aspects

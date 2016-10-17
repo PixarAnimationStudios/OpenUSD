@@ -103,11 +103,12 @@ public:
                                                GfVec4i const& instanceIdColor,
                                                int* instanceIndexOut = NULL);
 
-    virtual SdfPath GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
-                                                 int instanceIndex,
-                                                 int *absoluteInstanceIndex=NULL,
-                                                 std::vector<UsdPrim>
-                                                        *instanceContext=NULL);
+    virtual SdfPath GetPrimPathFromInstanceIndex(
+        SdfPath const& protoPrimPath,
+        int instanceIndex,
+        int *absoluteInstanceIndex=NULL,
+        SdfPath * rprimPath=NULL,
+        SdfPathVector *instanceContext=NULL);
 
     virtual bool IsConverged() const;
 

@@ -183,7 +183,9 @@ HdSceneDelegate::GetInstancerTransform(SdfPath const &instancerId,
 SdfPath
 HdSceneDelegate::GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                          int instanceIndex,
-                                         int *absoluteInstanceIndex)
+                                         int *absoluteInstanceIndex,
+                                         SdfPath * rprimPath,
+                                         SdfPathVector *instanceContext)
 {
     return SdfPath();
 }

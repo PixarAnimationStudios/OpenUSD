@@ -25,11 +25,13 @@
 #define USD_IMAGING_VERSION_H
 
 // Version 3 -- add support for nested instancers in InsertInstancer.
-// Version 4 -- Populate returns SdfPath, HdxSelectionInstanceMap
+// Version 4 -- Populate returns SdfPath, HdxSelectionInstanceMap.
 // Version 5 -- GetPathForInstanceIndex returns absoluteInstanceIndex.
-// Version 6 -- PrimAdater::GetDependPaths
+// Version 6 -- PrimAdater::GetDependPaths.
 // Version 7 -- GetPathForInstanceIndex returns instanceContext.
+// Version 8 -- GetPathForInstanceIndex returns instanceContext (as 
+//              SdfPathVector) and rprimPath  separately.
 
-#define USD_IMAGING_API 7
+#define USD_IMAGING_API 8
 
 #endif // USD_IMAGING_VERSION_H

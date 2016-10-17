@@ -152,7 +152,8 @@ public:
     virtual SdfPath GetPathForInstanceIndex(
         SdfPath const &path, int instanceIndex,
         int *instanceCountForThisLevel, int *absoluteInstanceIndex,
-        std::vector<UsdPrim> *instanceContext);
+        SdfPath * rprimPath=NULL,
+        SdfPathVector *instanceContext=NULL);
 
     /// Returns the instancer path for given \p instancePath. If it's not
     /// instanced path, returns empty.

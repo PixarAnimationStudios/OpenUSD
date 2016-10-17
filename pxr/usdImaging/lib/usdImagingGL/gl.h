@@ -137,7 +137,8 @@ public:
         const SdfPath& protoPrimPath,
         int instanceIndex,
         int *absoluteInstanceIndex = NULL,
-        std::vector<UsdPrim> *instanceContext=NULL);
+        SdfPath * rprimPath=NULL,
+        SdfPathVector *instanceContext=NULL);
 
     virtual bool IsConverged() const;
 
