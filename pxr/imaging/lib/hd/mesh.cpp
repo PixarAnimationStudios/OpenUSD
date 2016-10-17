@@ -1113,12 +1113,17 @@ HdMesh::_GetRepr(TfToken const &reprName,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // for the bits geometric shader depends on, reset all geometric shaders.
+    bool needsSetGeometricShader = false;
+    // For the bits geometric shader depends on, reset all geometric shaders.
     // they are populated again at the end of _GetRepr.
+    // Since the dirty bits are cleaned by UpdateDrawItem (because certain
+    // reprs have multiple draw items) we need to remember if we need to set 
+    // the geometric shader again
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided)) {
         _ResetGeometricShaders();
+        needsSetGeometricShader = true;
     }
 
     // iterate through all reprs to figure out if any requires smoothnormals
@@ -1148,9 +1153,7 @@ HdMesh::_GetRepr(TfToken const &reprName,
 
     // if we need to rebuild geometric shader, make sure all reprs to have
     // their geometric shader up-to-date.
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
-                      HdChangeTracker::DirtyCullStyle|
-                      HdChangeTracker::DirtyDoubleSided)) {
+    if (needsSetGeometricShader) {
         _SetGeometricShaders();
     }
 
