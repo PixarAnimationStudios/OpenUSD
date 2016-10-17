@@ -1,4 +1,4 @@
-set(PXR_PREFIX pxr/usdImagingGL)
+set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImagingGL)
 
 # Note: both python include directives are included for compatibility.
