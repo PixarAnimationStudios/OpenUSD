@@ -24,7 +24,7 @@
 #ifndef GARCH_GLDEBUGWINDOW_H
 #define GARCH_GLDEBUGWINDOW_H
 
-#include <boost/scoped_ptr.hpp>
+#include <string>
 
 class Garch_GLPlatformDebugWindow;
 
@@ -67,7 +67,7 @@ public:
     virtual void OnMouseMove(int x, int y, int modKeys);
 
 private:
-    boost::scoped_ptr<Garch_GLPlatformDebugWindow> _private;
+    Garch_GLPlatformDebugWindow *_private;
     std::string _title;
     int _width, _height;
 };

@@ -39,11 +39,12 @@ GarchGLDebugWindow::GarchGLDebugWindow(const char *title, int width, int height)
     , _width(width)
     , _height(height)
 {
-    _private.reset(new Garch_GLPlatformDebugWindow(this));
+    _private = new Garch_GLPlatformDebugWindow(this);
 }
 
 GarchGLDebugWindow::~GarchGLDebugWindow()
 {
+    delete _private;
 }
 
 void

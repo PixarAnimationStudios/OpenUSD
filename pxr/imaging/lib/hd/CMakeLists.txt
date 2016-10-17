@@ -143,7 +143,7 @@ pxr_shared_library(hd
         shaders/renderPassShader.glslfx
 )
 
-if (X11_FOUND AND NOT APPLE)
+if (X11_FOUND OR APPLE)
 pxr_build_test(testHdBasicDrawing
     LIBRARIES
         hd

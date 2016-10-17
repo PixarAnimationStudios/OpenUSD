@@ -24,8 +24,6 @@
 #ifndef GARCH_GLPLATFORM_DEBUG_WINDOW_DARWIN_H
 #define GARCH_GLPLATFORM_DEBUG_WINDOW_DARWIN_H
 
-#include <boost/scoped_ptr.hpp>
-
 class GarchGLDebugWindow;
 
 /// \class Garch_GLPlatformDebugWindow
@@ -40,7 +38,6 @@ public:
     void ExitApp();
 
 private:
-    bool _running;
     GarchGLDebugWindow *_callback;
 };
 
