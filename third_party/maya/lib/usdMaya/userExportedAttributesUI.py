@@ -287,7 +287,9 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
         COLUMN_TOOLTIPS = [
             'The name of the Maya node attribute to be exported to USD',
             'The type of attribute to create in USD',
-            'Which name to use for the attribute in USD (defaults to Maya Attribute Name if empty)',
+            'Which name to use for the attribute in USD\n' +
+                '(If empty, the Maya Attribute Name will be used, and for USD-type\n' +
+                'attributes, they will be exported into the "userProperties" namespace)',
             'Which interpolation to use for primvar-type attributes'
         ]
 

@@ -76,6 +76,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (usdAttrType)
     ((USDAttrTypePrimvar, "primvar"))
     ((USDAttrTypeUsdRi, "usdRi"))
+    ((UserPropertiesNamespace, "userProperties:"))
 );
 
 
@@ -600,7 +601,9 @@ _GetExportAttributeMetadata(
 //
 // If the attribute metadata contains a value for "usdAttrName", the attribute
 // will be given that name in USD. Otherwise, the Maya attribute name will be
-// used. Maya attributes in the JSON will be processed in sorted order, and any
+// used for primvars and UsdRi attributes, or the Maya attribute name prepended
+// with the "userProperties" namespace will be used for regular USD attributes.
+// Maya attributes in the JSON will be processed in sorted order, and any
 // USD attribute name collisions will be resolved by using the first attribute
 // visited and warning about subsequent attribute tags.
 //
@@ -660,24 +663,6 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
 
         const JsObject& attrMetadata = iter->second.GetJsObject();
 
-        // Check whether the USD attribute name should be different than the
-        // Maya attribute name.
-        std::string usdAttrName =
-            _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
-        if (usdAttrName.empty()) {
-            usdAttrName = mayaAttrName;
-        }
-
-        const auto& insertIter = exportedUsdAttrNames.insert(usdAttrName);
-
-        if (not insertIter.second) {
-            MString errorMsg(TfStringPrintf(
-                "Ignoring duplicate USD export tag for attribute '%s' on node at dagPath '%s'",
-                usdAttrName.c_str(), dagPath.fullPathName().asChar()).c_str());
-            MGlobal::displayError(errorMsg);
-            continue;
-        }
-
         // Check if this is a particular type of attribute (e.g. primvar or
         // usdRi attribute). If we don't recognize the type specified, we'll
         // fall back to a regular USD attribute.
@@ -689,6 +674,35 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
         TfToken interpolation(
             _GetExportAttributeMetadata(attrMetadata,
                                         UsdGeomTokens->interpolation));
+
+        // Check whether the USD attribute name should be different than the
+        // Maya attribute name.
+        std::string usdAttrName =
+            _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
+        if (usdAttrName.empty()) {
+            if (usdAttrType == _tokens->USDAttrTypePrimvar or
+                    usdAttrType == _tokens->USDAttrTypeUsdRi) {
+                // Primvars and UsdRi attributes will be given a type-specific
+                // namespace, so just use the Maya attribute name.
+                usdAttrName = mayaAttrName;
+            } else {
+                // For regular USD attributes, when no name was specified we
+                // prepend the userProperties namespace to the Maya attribute
+                // name to get the USD attribute name.
+                usdAttrName = _tokens->UserPropertiesNamespace.GetString() +
+                              mayaAttrName;
+            }
+        }
+
+        const auto& insertIter = exportedUsdAttrNames.insert(usdAttrName);
+
+        if (not insertIter.second) {
+            MString errorMsg(TfStringPrintf(
+                "Ignoring duplicate USD export tag for attribute '%s' on node at dagPath '%s'",
+                usdAttrName.c_str(), dagPath.fullPathName().asChar()).c_str());
+            MGlobal::displayError(errorMsg);
+            continue;
+        }
 
         UsdAttribute usdAttr;
 
