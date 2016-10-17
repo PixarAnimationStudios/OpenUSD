@@ -3141,15 +3141,24 @@ class MainWindow(QtGui.QMainWindow):
         m = obj.GetAllMetadata()
 
         # We have to explicitly add in metadata related to composition arcs
-        # here, since GetAllMetadata prunes them out.
+        # and value clips here, since GetAllMetadata prunes them out.
         #
         # XXX: Would be nice to have some official facility to query
         # this.
-        compKeys = ["references", "inheritPaths", "specializes",
+        compKeys = [# composition related metadata
+                    "references", "inheritPaths", "specializes",
                     "payload", "subLayers", 
-                    "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
-                    "clipActive", "clipPrimPath"]
 
+                    # non-template clip metadata
+                    "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
+                    "clipActive", "clipPrimPath",
+                   
+                    # template clip metadata
+                    "clipTemplateAssetPath",
+                    "clipTemplateStartTime", "clipTemplateEndTime",
+                    "clipTemplateStride"]
+        
+        
         for k in compKeys:
             v = obj.GetMetadata(k)
             if not v is None:
