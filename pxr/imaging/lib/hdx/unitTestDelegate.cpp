@@ -380,7 +380,6 @@ Hdx_UnitTestDelegate::AddDrawTargetTask(SdfPath const &id)
     cache[HdTokens->children] = VtValue(SdfPathVector());
 
     HdxDrawTargetTaskParams params;
-    params.enableDrawTargets = true;
     params.enableLighting = true;
     cache[HdTokens->params] = params;
 

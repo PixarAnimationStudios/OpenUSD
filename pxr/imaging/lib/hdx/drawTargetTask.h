@@ -62,7 +62,6 @@ private:
         HdxDrawTargetWeakPtr              target;
         unsigned int                      version;
     };
-    bool     _enableDrawTargets;
     unsigned _currentDrawTargetSetVersion;
 
 
@@ -106,8 +105,7 @@ private:
 struct HdxDrawTargetTaskParams
 {
     HdxDrawTargetTaskParams()
-        : enableDrawTargets(false)
-        , overrideColor(0.0)
+        : overrideColor(0.0)
         , wireframeColor(0.0)
         , enableLighting(false)
         , alphaThreshold(0.0)
@@ -124,8 +122,6 @@ struct HdxDrawTargetTaskParams
         , hullVisibility(false)
         , surfaceVisibility(true)
         {}
-
-    bool enableDrawTargets;
 
 //    ClipPlanesVector clipPlanes;
     GfVec4f overrideColor;
