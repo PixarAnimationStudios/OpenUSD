@@ -1234,6 +1234,21 @@ class StageView(QtOpenGL.QGLWidget):
             self._freeCamera = self._freeCamera.clone()
         self.update()
 
+
+    def setupOpenGLViewMatricesForFrustum(self, frustum):
+        from OpenGL import GL
+        import ctypes
+        GLMtx = ctypes.c_double * 16
+        MakeGLMtx = lambda m: GLMtx.from_buffer_copy(m)
+
+        GL.glMatrixMode(GL.GL_PROJECTION)
+        GL.glLoadIdentity()
+        GL.glMultMatrixd(MakeGLMtx(frustum.ComputeProjectionMatrix()))
+
+        GL.glMatrixMode(GL.GL_MODELVIEW)
+        GL.glLoadIdentity()
+        GL.glMultMatrixd(MakeGLMtx(frustum.ComputeViewMatrix()))
+
     def drawWireframeCube(self, size):
         from OpenGL import GL
 
@@ -1308,7 +1323,8 @@ class StageView(QtOpenGL.QGLWidget):
                                          gfCamera.clippingPlanes]
 
         if self._nodes:
-            
+            self.setupOpenGLViewMatricesForFrustum(frustum)
+
             GL.glColor3f(1.0,1.0,1.0)
 
             # for renderModes that need lights 
