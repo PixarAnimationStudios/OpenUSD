@@ -654,7 +654,7 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
     // Apply relocations that affect namespace at and below this site.
     if (not inputs.usd) {
         arcExpr = targetNode.GetLayerStack()
-            ->GetExpressionForRelocatesAtPath(targetNode.GetPath())
+            ->GetExpressionForRelocatesAtPath(targetPath)
             .Compose(arcExpr);
     }
 
