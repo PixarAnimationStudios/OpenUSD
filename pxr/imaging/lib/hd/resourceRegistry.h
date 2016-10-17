@@ -215,6 +215,11 @@ public:
     std::unique_lock<std::mutex> RegisterTextureResource(HdTextureResource::ID id,
          HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *pInstance);
 
+    /// Find a texture in the texture registry. If found, it returns it.
+    std::unique_lock<std::mutex> FindTextureResource(HdTextureResource::ID id,
+         HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance, 
+         bool *found);
+
     /// Register a buffer allocated with \a count * \a commandNumUints *
     /// sizeof(GLuint) to be used as an indirect dispatch buffer.
     HdDispatchBufferSharedPtr RegisterDispatchBuffer(
