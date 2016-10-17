@@ -1088,13 +1088,13 @@ class MainWindow(QtGui.QMainWindow):
             Tf.MallocTag.Initialize()
 
         with Timer() as t:
-            if self._noRender:
-                # no point in optimizing for editing if we're not redrawing
-                loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
-                stage = Usd.Stage.Open(usdFilePath, 
-                                       self._pathResolverContext, 
-                                       loadSet)
-            else:
+            loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
+            stage = Usd.Stage.Open(usdFilePath, 
+                                   self._pathResolverContext, 
+                                   loadSet)
+
+            # no point in optimizing for editing if we're not redrawing
+            if stage and not self._noRender:
                 # as described in bug #99309, UsdStage change processing
                 # can't yet tell the difference between an effectively
                 # "inert" change caused by adding an empty Over primSpec, and
@@ -1106,11 +1106,8 @@ class MainWindow(QtGui.QMainWindow):
                 # away and start over.  Here, we limit the propagation of
                 # invalidation due to creation of new overs to the enclosing
                 # model by pre-populating the session layer with overs for
-                # the interior of the model hierarchy, very cheaply, by
-                # creating the overs before we've loaded any models. 
-                stage = Usd.Stage.Open(usdFilePath, 
-                                       self._pathResolverContext,
-                                       Usd.Stage.LoadNone)
+                # the interior of the model hierarchy, before the renderer
+                # starts listening for changes. 
                 sl = stage.GetSessionLayer()
                 # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
                 # so gather all the paths from the UsdStage first
@@ -1121,8 +1118,6 @@ class MainWindow(QtGui.QMainWindow):
                     for mpp in modelPaths:
                         parent = sl.GetPrimAtPath(mpp.GetParentPath())
                         Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-                if not self._unloaded:
-                    stage.GetPseudoRoot().Load()
         if not stage:
             print >> sys.stderr, "Error opening stage '" + usdFilePath + "'"
         else:
