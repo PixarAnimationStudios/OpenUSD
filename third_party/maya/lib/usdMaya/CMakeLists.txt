@@ -69,6 +69,9 @@ pxr_shared_library(${PXR_PACKAGE}
 
         Chaser
         ChaserRegistry
+        
+        AttributeConverter
+        AttributeConverterRegistry
 
     PRIVATE_CLASSES
         registryHelper
@@ -97,6 +100,7 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorMesh_SubDiv.cpp
         translatorXformable_decompose.cpp
         usdReadJob_ImportWithProxies.cpp
+        UsdMetadataAttributeConverters.cpp
 
     PYMODULE_CPPFILES
         module.cpp
