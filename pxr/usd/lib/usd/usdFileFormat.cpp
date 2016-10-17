@@ -356,6 +356,7 @@ bool
 UsdUsdFileFormat::_IsStreamingLayer(
     const SdfLayerBase& layer) const
 {
-    return (_GetUnderlyingFileFormatForLayer(&layer)->GetFormatId() ==
-            UsdUsdbFileFormatTokens->Id);
+    auto formatId = _GetUnderlyingFileFormatForLayer(&layer)->GetFormatId();
+    return formatId == UsdUsdbFileFormatTokens->Id ||
+        formatId == UsdUsdcFileFormatTokens->Id;
 }
