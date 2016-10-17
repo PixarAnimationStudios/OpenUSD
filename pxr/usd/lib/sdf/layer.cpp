@@ -2413,6 +2413,9 @@ SdfLayer::Clear()
     }
 
     _SetData(GetFileFormat()->InitData(GetFileFormatArguments()));
+
+    if (GetFileFormat()->IsStreamingLayer(*this))
+        _stateDelegate->_MarkCurrentStateAsDirty();
 }
 
 bool
@@ -2506,21 +2509,28 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
     // multiple layers to be sharing the same data object, so we
     // have to make a copy of the data here.
     //
-    if (_ShouldNotify()) {
-        if (GetFileFormat()->IsStreamingLayer(*this)) {
-            SdfAbstractDataRefPtr newData = 
-                GetFileFormat()->InitData(GetFileFormatArguments());
-            newData->CopyFrom(layer->_data);
-            _SetData(newData);
-        }
-        else {
-            _SetData(layer->_data);
-        }
-    } else {
-        SdfAbstractDataRefPtr newData = 
-            GetFileFormat()->InitData(GetFileFormatArguments());
+
+    bool notify = _ShouldNotify();
+    bool isStreamingLayer = GetFileFormat()->IsStreamingLayer(*this);
+    SdfAbstractDataRefPtr newData;
+
+    if (!notify || isStreamingLayer) {
+        newData = GetFileFormat()->InitData(GetFileFormatArguments());
         newData->CopyFrom(layer->_data);
+    }
+    else {
+        newData = layer->_data;
+    }
+
+    if (notify) {
+        _SetData(newData);
+    } else {
         _data = newData;
+    }
+
+    // If this is a "streaming" layer, we must mark it dirty.
+    if (isStreamingLayer) {
+        _stateDelegate->_MarkCurrentStateAsDirty();
     }
 }
 
