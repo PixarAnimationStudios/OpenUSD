@@ -74,12 +74,10 @@ _ValidateClipFields(
     const size_t numClips = clipAssetPaths.size();
 
     // Each entry in the 'clipAssetPaths' array is the asset path to a clip.
-    TF_FOR_ALL(it, clipAssetPaths) {
-        const std::string& assetPath = it->GetAssetPath();
-        if (assetPath.empty()) {
-            *errMsg = TfStringPrintf(
-                "Empty clip asset path in metadata '%s'",
-                UsdTokens->clipAssetPaths.GetText());
+    for (const auto& clipAssetPath : clipAssetPaths) {
+        if (clipAssetPath.GetAssetPath().empty()) {
+            *errMsg = TfStringPrintf("Empty clip asset path in metadata '%s'",
+                                     UsdTokens->clipAssetPaths.GetText());
             return false;
         }
     }
@@ -101,8 +99,7 @@ _ValidateClipFields(
 
     // Each Vec2d in the 'clipActive' array is a (start frame, clip index)
     // tuple. Ensure the clip index points to a valid clip.
-    TF_FOR_ALL(it, clipActive) {
-        const GfVec2d& startFrameAndClipIndex = *it;
+    for (const auto& startFrameAndClipIndex : clipActive) {
         if (startFrameAndClipIndex[1] < 0 or
             startFrameAndClipIndex[1] >= numClips) {
 
@@ -118,8 +115,7 @@ _ValidateClipFields(
     // active at the same time.
     typedef std::map<double, int> _ActiveClipMap;
     _ActiveClipMap activeClipMap;
-    TF_FOR_ALL(it, clipActive) {
-        const GfVec2d& startFrameAndClipIndex = *it;
+    for (const auto& startFrameAndClipIndex : clipActive) {
         std::pair<_ActiveClipMap::iterator, bool> status = 
             activeClipMap.insert(std::make_pair(
                     startFrameAndClipIndex[0], startFrameAndClipIndex[1]));
@@ -186,14 +182,14 @@ _AddClipsFromNode(
     // If a clip manifest has been specified, create a clip for it.
     if (clipInfo.clipManifestAssetPath) {
         const Usd_ClipRefPtr clip(new Usd_Clip(
-            /* clipSourceNode = */ node,
+            /* clipSourceNode       = */ node,
             /* clipSourceLayerIndex = */ 
                 clipInfo.indexOfLayerWhereAssetPathsFound,
-            /* clipAssetPath = */ *clipInfo.clipManifestAssetPath,
-            /* clipPrimPath = */ SdfPath(*clipInfo.clipPrimPath),
-            /* clipStartTime = */ -std::numeric_limits<int>::max(),
-            /* clipEndTime = */ std::numeric_limits<int>::max(),
-            /* clipTimes = */ Usd_Clip::TimeMappings()));
+            /* clipAssetPath        = */ *clipInfo.clipManifestAssetPath,
+            /* clipPrimPath         = */ SdfPath(*clipInfo.clipPrimPath),
+            /* clipStartTime        = */ Usd_ClipTimesEarliest,
+            /* clipEndTime          = */ Usd_ClipTimesLatest,
+            /* clipTimes            = */ Usd_Clip::TimeMappings()));
         clips->manifestClip = clip;
     }
 
@@ -202,9 +198,9 @@ _AddClipsFromNode(
     typedef std::map<double, Usd_ClipEntry> _TimeToClipMap;
     _TimeToClipMap startTimeToClip;
 
-    TF_FOR_ALL(it, *clipInfo.clipActive) {
-        const double startFrame = (*it)[0];
-        const int clipIndex = (int)((*it)[1]);
+    for (const auto& startFrameAndClipIndex : *clipInfo.clipActive) {
+        const double startFrame = startFrameAndClipIndex[0];
+        const int clipIndex = (int)(startFrameAndClipIndex[1]);
         const SdfAssetPath& assetPath = (*clipInfo.clipAssetPaths)[clipIndex];
 
         Usd_ClipEntry entry;
@@ -227,17 +223,17 @@ _AddClipsFromNode(
         const Usd_ClipEntry clipEntry = it->second;
 
         const Usd_Clip::ExternalTime clipStartTime = 
-            (it == itBegin ? -std::numeric_limits<double>::max() : it->first);
+            (it == itBegin ? Usd_ClipTimesEarliest : it->first);
         ++it;
         const Usd_Clip::ExternalTime clipEndTime = 
-            (it == itEnd ? std::numeric_limits<double>::max() : it->first);
+            (it == itEnd ? Usd_ClipTimesLatest : it->first);
 
         // Generate the clip time mapping that applies to this clip.
         Usd_Clip::TimeMappings timeMapping;
         if (clipInfo.clipTimes) {
-            TF_FOR_ALL(it, *clipInfo.clipTimes) {
-                const Usd_Clip::ExternalTime extTime = (*it)[0];
-                const Usd_Clip::InternalTime intTime = (*it)[1];
+            for (const auto& clipTime : *clipInfo.clipTimes) {
+                const Usd_Clip::ExternalTime extTime = clipTime[0];
+                const Usd_Clip::InternalTime intTime = clipTime[1];
                 
                 if (clipStartTime <= extTime and extTime < clipEndTime) {
                     timeMapping.push_back(

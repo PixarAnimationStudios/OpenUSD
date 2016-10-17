@@ -5564,14 +5564,12 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 // See _GetBracketingTimeSamplesFromResolveInfo for more
                 // details.
                 if (interval.Contains(clipInterval.GetMin())
-                    and clipInterval.GetMin() 
-                        != -std::numeric_limits<double>::max()) {
+                    and clipInterval.GetMin() != Usd_ClipTimesEarliest) {
                     timesFromAllClips.push_back(clip->startTime);
                 }
 
                 if (interval.Contains(clipInterval.GetMax())
-                    and clipInterval.GetMax() 
-                        != std::numeric_limits<double>::max()){
+                    and clipInterval.GetMax() != Usd_ClipTimesLatest){
                     timesFromAllClips.push_back(clip->endTime);
                 }
             }
@@ -5778,13 +5776,13 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
                 }
 
                 if (not foundLower and 
-                    clip->startTime != -std::numeric_limits<double>::max()) {
+                    clip->startTime != Usd_ClipTimesEarliest) {
                     *lower = clip->startTime;
                     foundLower = true;
                 }
 
                 if (not foundUpper and
-                    clip->endTime != std::numeric_limits<double>::max()) {
+                    clip->endTime != Usd_ClipTimesLatest) {
                     *upper = clip->endTime;
                     foundUpper = true;
                 }
@@ -5836,8 +5834,8 @@ _ValueFromClipsMightBeTimeVarying(const Usd_ClipRefPtr &firstClipWithSamples,
     // clip that affects this attribute) and it has more than one time
     // sample, then it might be time varying. If it only has one sample,
     // its value must be constant over all time.
-    if (firstClipWithSamples->startTime == -std::numeric_limits<double>::max()
-      and firstClipWithSamples->endTime == std::numeric_limits<double>::max()) {
+    if (firstClipWithSamples->startTime == Usd_ClipTimesEarliest
+        and firstClipWithSamples->endTime == Usd_ClipTimesLatest) {
         return firstClipWithSamples->GetNumTimeSamplesForPath(attrSpecId) > 1;
     }
 
