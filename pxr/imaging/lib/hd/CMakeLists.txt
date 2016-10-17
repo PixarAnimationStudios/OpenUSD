@@ -154,5 +154,3 @@ pxr_build_test(testHdBasicDrawing
         testenv/testHdBasicDrawing.cpp
 )
 endif()
-
-endif()
