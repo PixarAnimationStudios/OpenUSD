@@ -34,7 +34,6 @@ from PySide import QtGui, QtCore, QtOpenGL
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
-from pxr import Glfq
 from pxr import Sdf, Usd, UsdGeom, UsdUtils
 from pxr import UsdImagingGL
 from pxr import CameraUtil
@@ -768,8 +767,7 @@ class StageView(QtOpenGL.QGLWidget):
         if msaa == "1":
             glFormat.setSampleBuffers(True)
             glFormat.setSamples(4)
-        super(StageView, self).__init__(
-            Glfq.CreateGLDebugContext(glFormat), parent)
+        super(StageView, self).__init__(glFormat, parent)
                                     
         self._freeCamera = FreeCamera(True)
         self._lastComputedGfCamera = None
