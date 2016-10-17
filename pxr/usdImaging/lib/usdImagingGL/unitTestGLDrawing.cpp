@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/usdImaging/usdImaging/unitTestGLDrawing.h"
+#include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glfq/glDebugContext.h"
@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-static void UsdImaging_UnitTestHelper_InitPlugins()
+static void UsdImagingGL_UnitTestHelper_InitPlugins()
 {
     // Unfortunately, in order to properly find plugins in our test setup, we
     // need to know where the test is running.
@@ -68,14 +68,14 @@ _GetGLFormat()
     return fmt;
 }
 
-class UsdImaging_UnitTestDrawingQGLWidget : public QGLWidget {
+class UsdImagingGL_UnitTestDrawingQGLWidget : public QGLWidget {
 public:
-    typedef UsdImaging_UnitTestDrawingQGLWidget This;
+    typedef UsdImagingGL_UnitTestDrawingQGLWidget This;
 
 public:
-    UsdImaging_UnitTestDrawingQGLWidget(UsdImaging_UnitTestGLDrawing * unitTest,
+    UsdImagingGL_UnitTestDrawingQGLWidget(UsdImagingGL_UnitTestGLDrawing * unitTest,
                                 QWidget * parent = NULL);
-    virtual ~UsdImaging_UnitTestDrawingQGLWidget();
+    virtual ~UsdImagingGL_UnitTestDrawingQGLWidget();
 
     void DrawOffscreen();
 
@@ -94,25 +94,25 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent * event);
 
 private:
-    UsdImaging_UnitTestGLDrawing *_unitTest;
+    UsdImagingGL_UnitTestGLDrawing *_unitTest;
     GlfDrawTargetRefPtr _drawTarget;
 };
 
-UsdImaging_UnitTestDrawingQGLWidget::UsdImaging_UnitTestDrawingQGLWidget(
-        UsdImaging_UnitTestGLDrawing * unitTest,
+UsdImagingGL_UnitTestDrawingQGLWidget::UsdImagingGL_UnitTestDrawingQGLWidget(
+        UsdImagingGL_UnitTestGLDrawing * unitTest,
         QWidget * parent) :
     QGLWidget(new GlfQGLDebugContext(_GetGLFormat()), parent),
     _unitTest(unitTest)
 {
 }
 
-UsdImaging_UnitTestDrawingQGLWidget::~UsdImaging_UnitTestDrawingQGLWidget()
+UsdImagingGL_UnitTestDrawingQGLWidget::~UsdImagingGL_UnitTestDrawingQGLWidget()
 {
 }
 
 /* virtual */
 void
-UsdImaging_UnitTestDrawingQGLWidget::initializeGL()
+UsdImagingGL_UnitTestDrawingQGLWidget::initializeGL()
 {
     GlfGlewInit();
     GlfRegisterDefaultDebugOutputMessageCallback();
@@ -134,7 +134,7 @@ UsdImaging_UnitTestDrawingQGLWidget::initializeGL()
 
 /* virtual */
 void
-UsdImaging_UnitTestDrawingQGLWidget::paintGL()
+UsdImagingGL_UnitTestDrawingQGLWidget::paintGL()
 {
     //
     // Update the draw target's size and execute the unit test with
@@ -164,7 +164,7 @@ UsdImaging_UnitTestDrawingQGLWidget::paintGL()
 }
 
 void
-UsdImaging_UnitTestDrawingQGLWidget::DrawOffscreen()
+UsdImagingGL_UnitTestDrawingQGLWidget::DrawOffscreen()
 {
     //
     // Ask Qt to initialize and draw
@@ -180,7 +180,7 @@ UsdImaging_UnitTestDrawingQGLWidget::DrawOffscreen()
 }
 
 bool
-UsdImaging_UnitTestDrawingQGLWidget::WriteToFile(std::string const & attachment,
+UsdImagingGL_UnitTestDrawingQGLWidget::WriteToFile(std::string const & attachment,
         std::string const & filename)
 {
     // We need to unbind the draw target before writing to file to be sure the
@@ -198,7 +198,7 @@ UsdImaging_UnitTestDrawingQGLWidget::WriteToFile(std::string const & attachment,
 
 /* virtual */
 void
-UsdImaging_UnitTestDrawingQGLWidget::keyReleaseEvent(QKeyEvent * event)
+UsdImagingGL_UnitTestDrawingQGLWidget::keyReleaseEvent(QKeyEvent * event)
 {
     switch (event->key()) {
     case Qt::Key_Escape:
@@ -210,7 +210,7 @@ UsdImaging_UnitTestDrawingQGLWidget::keyReleaseEvent(QKeyEvent * event)
 
 /* virtual */
 void
-UsdImaging_UnitTestDrawingQGLWidget::mousePressEvent(QMouseEvent * event)
+UsdImagingGL_UnitTestDrawingQGLWidget::mousePressEvent(QMouseEvent * event)
 {
     int button = 0;
     switch(event->button()){
@@ -224,7 +224,7 @@ UsdImaging_UnitTestDrawingQGLWidget::mousePressEvent(QMouseEvent * event)
 
 /* virtual */
 void
-UsdImaging_UnitTestDrawingQGLWidget::mouseReleaseEvent(QMouseEvent * event)
+UsdImagingGL_UnitTestDrawingQGLWidget::mouseReleaseEvent(QMouseEvent * event)
 {
     int button = 0;
     switch(event->button()){
@@ -238,7 +238,7 @@ UsdImaging_UnitTestDrawingQGLWidget::mouseReleaseEvent(QMouseEvent * event)
 
 /* virtual */
 void
-UsdImaging_UnitTestDrawingQGLWidget::mouseMoveEvent(QMouseEvent * event)
+UsdImagingGL_UnitTestDrawingQGLWidget::mouseMoveEvent(QMouseEvent * event)
 {
     _unitTest->MouseMove(event->x(), event->y());
     glDraw();
@@ -246,47 +246,47 @@ UsdImaging_UnitTestDrawingQGLWidget::mouseMoveEvent(QMouseEvent * event)
 
 ////////////////////////////////////////////////////////////
 
-UsdImaging_UnitTestGLDrawing::UsdImaging_UnitTestGLDrawing()
+UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     : _widget(NULL)
     , _testLighting(false)
     , _testIdRender(false)
     , _complexity(1.0f)
-    , _drawMode(UsdImagingEngine::DRAW_SHADED_SMOOTH)
+    , _drawMode(UsdImagingGLEngine::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
     , _cullBackfaces(false)
 {
 }
 
-UsdImaging_UnitTestGLDrawing::~UsdImaging_UnitTestGLDrawing()
+UsdImagingGL_UnitTestGLDrawing::~UsdImagingGL_UnitTestGLDrawing()
 {
 }
 
 int
-UsdImaging_UnitTestGLDrawing::GetWidth() const
+UsdImagingGL_UnitTestGLDrawing::GetWidth() const
 {
     return _widget->width();
 }
 
 int
-UsdImaging_UnitTestGLDrawing::GetHeight() const
+UsdImagingGL_UnitTestGLDrawing::GetHeight() const
 {
     return _widget->height();
 }
 
 bool
-UsdImaging_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
+UsdImagingGL_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
         std::string const & filename) const
 {
     return _widget->WriteToFile(attachment, filename);
 }
 
 void
-UsdImaging_UnitTestGLDrawing::_Redraw() const
+UsdImagingGL_UnitTestGLDrawing::_Redraw() const
 {
     _widget->update();
 }
 
-struct UsdImaging_UnitTestGLDrawing::_Args {
+struct UsdImagingGL_UnitTestGLDrawing::_Args {
     _Args() : offscreen(false) { }
 
     std::string unresolvedStageFilePath;
@@ -415,7 +415,7 @@ ParseDoubleVector(
 }
 
 void
-UsdImaging_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
+UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
 {
     for (int i = 1; i != argc; ++i) {
         if (strcmp(argv[i], "-") == 0) {
@@ -472,11 +472,11 @@ UsdImaging_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
 }
 
 void
-UsdImaging_UnitTestGLDrawing::RunTest(int argc, char *argv[])
+UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    UsdImaging_UnitTestHelper_InitPlugins();
+    UsdImagingGL_UnitTestHelper_InitPlugins();
 
     _Args args;
     _Parse(argc, argv, &args);
@@ -485,20 +485,20 @@ UsdImaging_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _clipPlanes.push_back(GfVec4d(&args.clipPlaneCoords[i*4]));
     }
 
-    _drawMode = UsdImagingEngine::DRAW_SHADED_SMOOTH;
+    _drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
 
     // Only wireOnSurface/flat are supported
     if (args.shading.compare("wireOnSurface") == 0) {
-        _drawMode = UsdImagingEngine::DRAW_WIREFRAME_ON_SURFACE;
+        _drawMode = UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE;
     } else if (args.shading.compare("flat") == 0 ) {
-        _drawMode = UsdImagingEngine::DRAW_SHADED_FLAT;
+        _drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
     }
 
     if (not args.unresolvedStageFilePath.empty()) {
         _stageFilePath = args.unresolvedStageFilePath;
     }
 
-    _widget = new UsdImaging_UnitTestDrawingQGLWidget(this);
+    _widget = new UsdImagingGL_UnitTestDrawingQGLWidget(this);
     _widget->setWindowTitle("Drawing Test");
     _widget->resize(640, 480);
 

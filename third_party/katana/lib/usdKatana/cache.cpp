@@ -27,7 +27,7 @@
 
 #include "pxr/usd/ar/resolver.h"
 
-#include "pxr/usdImaging/usdImaging/gl.h"
+#include "pxr/usdImaging/usdImagingGL/gl.h"
 
 #include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usd/sdf/layer.h"

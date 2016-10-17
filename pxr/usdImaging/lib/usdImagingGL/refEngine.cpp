@@ -23,7 +23,8 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/usdImaging/usdImaging/refEngine.h"
+#include "pxr/usdImaging/usdImagingGL/refEngine.h"
+
 #include "pxr/usdImaging/usdImaging/cubeAdapter.h"
 #include "pxr/usdImaging/usdImaging/sphereAdapter.h"
 #include "pxr/usdImaging/usdImaging/coneAdapter.h"
@@ -73,7 +74,7 @@
 // single draw call, if the hardware supports it.
 #define _PRIM_RESTART_INDEX 0xffffffff 
 
-UsdImagingRefEngine::UsdImagingRefEngine(const SdfPathVector &excludedPrimPaths) :
+UsdImagingGLRefEngine::UsdImagingGLRefEngine(const SdfPathVector &excludedPrimPaths) :
     _ctm(GfMatrix4d(1.0)),
     _vertCount(0),
     _lineVertCount(0),
@@ -86,21 +87,21 @@ UsdImagingRefEngine::UsdImagingRefEngine(const SdfPathVector &excludedPrimPaths)
     }
 }
 
-UsdImagingRefEngine::~UsdImagingRefEngine()
+UsdImagingGLRefEngine::~UsdImagingGLRefEngine()
 {
     TfNotice::Revoke(_objectsChangedNoticeKey);
     InvalidateBuffers();
 }
 
 bool
-UsdImagingRefEngine::_SupportsPrimitiveRestartIndex()
+UsdImagingGLRefEngine::_SupportsPrimitiveRestartIndex()
 {
     static bool supported = GlfHasExtensions("GL_NV_primitive_restart");
     return supported;
 }
 
 void
-UsdImagingRefEngine::InvalidateBuffers()
+UsdImagingGLRefEngine::InvalidateBuffers()
 {
     TRACE_FUNCTION();
 
@@ -139,7 +140,7 @@ _AppendSubData(GLenum target, GLintptr* offset, T const& vec)
 }
 
 void
-UsdImagingRefEngine::_PopulateBuffers()
+UsdImagingGLRefEngine::_PopulateBuffers()
 {
     glGenBuffers(1, &_attribBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, _attribBuffer);
@@ -191,7 +192,7 @@ UsdImagingRefEngine::_PopulateBuffers()
 
 /*virtual*/ 
 SdfPath 
-UsdImagingRefEngine::GetPrimPathFromPrimIdColor(
+UsdImagingGLRefEngine::GetPrimPathFromPrimIdColor(
         GfVec4i const& primIdColor,
         GfVec4i const& instanceIdColor,
         int* instanceIndexOut)
@@ -204,7 +205,7 @@ UsdImagingRefEngine::GetPrimPathFromPrimIdColor(
 }
 
 void
-UsdImagingRefEngine::_DrawPolygons(bool drawID)
+UsdImagingGLRefEngine::_DrawPolygons(bool drawID)
 {
     if (_points.empty()) {
         return;
@@ -235,7 +236,7 @@ UsdImagingRefEngine::_DrawPolygons(bool drawID)
 }
 
 void
-UsdImagingRefEngine::_DrawLines(bool drawID)
+UsdImagingGLRefEngine::_DrawLines(bool drawID)
 {
     // We are just drawing curves as unrefined line segments, so we turn off
     // normals.
@@ -270,12 +271,12 @@ UsdImagingRefEngine::_DrawLines(bool drawID)
 }
 
 void
-UsdImagingRefEngine::Render(const UsdPrim& root, RenderParams params)
+UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
 {
     TRACE_FUNCTION();
 
     // Start listening for change notices from this stage.
-    UsdImagingRefEnginePtr self = TfCreateWeakPtr(this);
+    UsdImagingGLRefEnginePtr self = TfCreateWeakPtr(this);
 
     // Invalidate existing buffers if we are drawing from a different root or
     // frame.
@@ -460,7 +461,7 @@ UsdImagingRefEngine::Render(const UsdPrim& root, RenderParams params)
 }
 
 void
-UsdImagingRefEngine::SetCameraState(const GfMatrix4d& viewMatrix,
+UsdImagingGLRefEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport)
 {
@@ -474,14 +475,14 @@ UsdImagingRefEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 }
 
 void 
-UsdImagingRefEngine::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
+UsdImagingGLRefEngine::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                                        UsdStageWeakPtr const& sender)
 {
     InvalidateBuffers(); 
 }
 
 static void 
-UsdImagingRefEngine_ComputeSmoothNormals(const VtVec3fArray &points,
+UsdImagingGLRefEngine_ComputeSmoothNormals(const VtVec3fArray &points,
                                   const VtIntArray &numVerts,
                                   const VtIntArray &verts, 
                                   bool ccw,
@@ -563,7 +564,7 @@ _ShouldCullDueToOpacity(const UsdGeomGprim *gprimSchema, const UsdTimeCode &fram
 }
 
 void
-UsdImagingRefEngine::_TraverseStage(const UsdPrim& root)
+UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
 {
     // Instead of using root.begin(), setup a special iterator that does both
     // pre-order and post-order traversal so we can push and pop state.
@@ -656,7 +657,7 @@ UsdImagingRefEngine::_TraverseStage(const UsdPrim& root)
 }
 
 void
-UsdImagingRefEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
+UsdImagingGLRefEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
                                  const UsdPrim &prim,
                                  bool *doubleSided,
                                  VtArray<GfVec3f> *color,
@@ -678,7 +679,7 @@ UsdImagingRefEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
 }
 
 void 
-UsdImagingRefEngine::_HandleXform(const UsdPrim &prim) 
+UsdImagingGLRefEngine::_HandleXform(const UsdPrim &prim) 
 { 
     // Don't apply the root prim's transform.
     if (prim == _root)
@@ -702,7 +703,7 @@ UsdImagingRefEngine::_HandleXform(const UsdPrim &prim)
 }
 
 GfVec4f 
-UsdImagingRefEngine::_IssueID(SdfPath const& path)
+UsdImagingGLRefEngine::_IssueID(SdfPath const& path)
 {
     _PrimID::ValueType maxId = (1 << 24) - 1;
     // Notify the user (failed verify) and return an invalid ID.
@@ -716,7 +717,7 @@ UsdImagingRefEngine::_IssueID(SdfPath const& path)
 }
 
 void 
-UsdImagingRefEngine::_HandleMesh(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleMesh(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -740,7 +741,7 @@ UsdImagingRefEngine::_HandleMesh(const UsdPrim &prim)
 }
 
 void
-UsdImagingRefEngine::_HandleCurves(const UsdPrim& prim)
+UsdImagingGLRefEngine::_HandleCurves(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
 
@@ -822,7 +823,7 @@ UsdImagingRefEngine::_HandleCurves(const UsdPrim& prim)
 }
 
 void 
-UsdImagingRefEngine::_HandleCube(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleCube(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -850,7 +851,7 @@ UsdImagingRefEngine::_HandleCube(const UsdPrim &prim)
 }
 
 void 
-UsdImagingRefEngine::_HandleSphere(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleSphere(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -878,7 +879,7 @@ UsdImagingRefEngine::_HandleSphere(const UsdPrim &prim)
 }
 
 void 
-UsdImagingRefEngine::_HandleCone(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleCone(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -902,7 +903,7 @@ UsdImagingRefEngine::_HandleCone(const UsdPrim &prim)
 }
 
 void 
-UsdImagingRefEngine::_HandleCylinder(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleCylinder(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -926,7 +927,7 @@ UsdImagingRefEngine::_HandleCylinder(const UsdPrim &prim)
 }
 
 void 
-UsdImagingRefEngine::_HandleCapsule(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleCapsule(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -950,13 +951,13 @@ UsdImagingRefEngine::_HandleCapsule(const UsdPrim &prim)
 }
 
 void 
-UsdImagingRefEngine::_HandlePoints(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandlePoints(const UsdPrim &prim)
 {
     TF_WARN("Point primitives are not yet supported.");
 }
 
 void 
-UsdImagingRefEngine::_HandleNurbsPatch(const UsdPrim &prim)
+UsdImagingGLRefEngine::_HandleNurbsPatch(const UsdPrim &prim)
 { 
     TRACE_FUNCTION();
 
@@ -979,7 +980,7 @@ UsdImagingRefEngine::_HandleNurbsPatch(const UsdPrim &prim)
 }
 
 void 
-UsdImagingRefEngine::_RenderPrimitive(const UsdPrim &prim, 
+UsdImagingGLRefEngine::_RenderPrimitive(const UsdPrim &prim, 
                                       const UsdGeomGprim *gprimSchema, 
                                       const VtArray<GfVec3f>& pts, 
                                       const VtIntArray& nmvts,
@@ -1062,7 +1063,7 @@ UsdImagingRefEngine::_RenderPrimitive(const UsdPrim &prim,
     // If the user is using FLAT SHADING it will still use interpolated normals
     // which means that OpenGL will pick one normal (provoking vertex) out of the 
     // normals array.
-    UsdImagingRefEngine_ComputeSmoothNormals(pts, nmvts, vts, true /*ccw*/, &normals);
+    UsdImagingGLRefEngine_ComputeSmoothNormals(pts, nmvts, vts, true /*ccw*/, &normals);
 
     TF_FOR_ALL(itr, normals) {
         _normals.push_back((*itr)[0]);
@@ -1076,7 +1077,7 @@ UsdImagingRefEngine::_RenderPrimitive(const UsdPrim &prim,
         // reversed, so that we handle doublesided geometry alongside
         // backface-culled geometry in the same draw call.
 
-        TRACE_SCOPE("UsdImagingRefEngine::HandleMesh (doublesided)");
+        TRACE_SCOPE("UsdImagingGLRefEngine::HandleMesh (doublesided)");
 
         index = 0;
         TF_FOR_ALL(itr, pts) {

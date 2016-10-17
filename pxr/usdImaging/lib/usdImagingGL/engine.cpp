@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/usdImaging/usdImaging/engine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -44,11 +44,11 @@ struct _HitData {
 typedef TfHashMap< int32_t, _HitData > _HitDataById;
 
 
-UsdImagingEngine::~UsdImagingEngine() { /*nothing*/ }
+UsdImagingGLEngine::~UsdImagingGLEngine() { /*nothing*/ }
 
 /*virtual*/
 void 
-UsdImagingEngine::SetCameraState(const GfMatrix4d& viewMatrix,
+UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport)
 {
@@ -56,7 +56,7 @@ UsdImagingEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 }
 
 void
-UsdImagingEngine::SetCameraStateFromOpenGL()
+UsdImagingGLEngine::SetCameraStateFromOpenGL()
 {
     GfMatrix4d viewMatrix, projectionMatrix;
     GfVec4d viewport;
@@ -69,76 +69,76 @@ UsdImagingEngine::SetCameraStateFromOpenGL()
 
 /* virtual */
 void
-UsdImagingEngine::SetLightingStateFromOpenGL()
+UsdImagingGLEngine::SetLightingStateFromOpenGL()
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
+UsdImagingGLEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::SetRootTransform(GfMatrix4d const& xf)
+UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::SetRootVisibility(bool isVisible)
+UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::SetSelected(SdfPathVector const& paths)
+UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::ClearSelected()
+UsdImagingGLEngine::ClearSelected()
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::AddSelected(SdfPath const &path, int instanceIndex)
+UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
     // By default, do nothing.
 }
 
 /*virtual*/
 void
-UsdImagingEngine::SetSelectionColor(GfVec4f const& color)
+UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
+UsdImagingGLEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
 {
     // By default, do nothing.
 }
 
 /* virtual */
 void
-UsdImagingEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
+UsdImagingGLEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
 {
     // By default, do nothing.
 }
 
 bool
-UsdImagingEngine::TestIntersection(
+UsdImagingGLEngine::TestIntersection(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
@@ -359,7 +359,7 @@ _pow2roundup (uint32_t x)
 }
 
 bool
-UsdImagingEngine::TestIntersectionBatch(
+UsdImagingGLEngine::TestIntersectionBatch(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
@@ -609,7 +609,7 @@ UsdImagingEngine::TestIntersectionBatch(
 
 /* virtual */
 SdfPath
-UsdImagingEngine::GetPrimPathFromPrimIdColor(GfVec4i const &/*primIdColor*/,
+UsdImagingGLEngine::GetPrimPathFromPrimIdColor(GfVec4i const &/*primIdColor*/,
                                              GfVec4i const &/*instanceIdColor*/,
                                              int * /*instanceIndexOut*/)
 {
@@ -618,7 +618,7 @@ UsdImagingEngine::GetPrimPathFromPrimIdColor(GfVec4i const &/*primIdColor*/,
 
 /* virtual */
 SdfPath 
-UsdImagingEngine::GetPrimPathFromInstanceIndex(
+UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
     SdfPath const& protoPrimPath,
     int instanceIndex,
     int *absoluteInstanceIndex,
@@ -629,7 +629,7 @@ UsdImagingEngine::GetPrimPathFromInstanceIndex(
 
 /* virtual */
 bool
-UsdImagingEngine::IsConverged() const
+UsdImagingGLEngine::IsConverged() const
 {
     // always converges by default.
     return true;
@@ -637,21 +637,21 @@ UsdImagingEngine::IsConverged() const
 
 /* virtual */
 std::vector<TfType>
-UsdImagingEngine::GetRenderGraphPlugins()
+UsdImagingGLEngine::GetRenderGraphPlugins()
 {
     return std::vector<TfType>();
 }
 
 /* virtual */
 bool
-UsdImagingEngine::SetRenderGraphPlugin(TfType const &type)
+UsdImagingGLEngine::SetRenderGraphPlugin(TfType const &type)
 {
     return false;
 }
 
 /* virtual */
 VtDictionary
-UsdImagingEngine::GetResourceAllocation() const
+UsdImagingGLEngine::GetResourceAllocation() const
 {
     return VtDictionary();
 }

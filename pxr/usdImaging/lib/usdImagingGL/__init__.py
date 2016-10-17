@@ -21,10 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from . import _usdImaging
+from . import _usdImagingGL
 from pxr import Tf
-Tf.PrepareModule(_usdImaging, locals())
-del _usdImaging, Tf
+Tf.PrepareModule(_usdImagingGL, locals())
+del _usdImagingGL, Tf
 
 try:
     from . import __DOC

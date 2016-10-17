@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "pxr/usdImaging/usdImaging/engine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -35,7 +35,7 @@ class SdfPath;
 typedef std::vector<SdfPath> SdfPathVector;
 typedef std::vector<UsdPrim> UsdPrimVector;
 
-typedef boost::shared_ptr<class UsdImagingEngine> UsdImagingEngineSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
 typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
 typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 
@@ -52,7 +52,7 @@ typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 /// 
 /// So, to disable Hd rendering for testing purposes, set HD_ENABLED to "0"
 ///
-class UsdImagingGL : public UsdImagingEngine {
+class UsdImagingGL : public UsdImagingGLEngine {
 public:
 
     /// Returns true if Hydra is enabled for GL drawing.
@@ -169,6 +169,6 @@ public:
     virtual VtDictionary GetResourceAllocation() const;
 
 private:
-    UsdImagingEngineSharedPtr _engine;
+    UsdImagingGLEngineSharedPtr _engine;
 };
 

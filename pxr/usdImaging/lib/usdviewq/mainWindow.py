@@ -31,7 +31,7 @@ from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
-from pxr import Usd, UsdGeom, UsdUtils, UsdImaging
+from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL
 from pxr import Glf
 from pxr import Sdf
 from pxr import Tf
@@ -2734,7 +2734,7 @@ class MainWindow(QtGui.QMainWindow):
         return self._nodeToItemMap[self._stage.GetPrimAtPath(path)]
 
     def resetSelectionToPseudoroot(self):
-        self.selectNodeByPath("/", UsdImaging.GL.ALL_INSTANCES, "replace")
+        self.selectNodeByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
 
     def selectNodeByPath(self, path, instanceIndex, updateMode):
         """Modifies selection by a stage prim based on a prim path,
@@ -2765,7 +2765,7 @@ class MainWindow(QtGui.QMainWindow):
         # If not in instances picking mode, select all instances.
         if not self._ui.actionPick_Instances.isChecked():
             self._stageView.clearInstanceSelection()
-            instanceIndex = UsdImaging.GL.ALL_INSTANCES
+            instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
 
         item = self._getItemAtPath(path, ensureExpanded=True)
 
@@ -2777,7 +2777,7 @@ class MainWindow(QtGui.QMainWindow):
             self._stageView.setInstanceSelection(path, instanceIndex, True)
             item.setSelected(True)
         else:   # "toggle"
-            if instanceIndex != UsdImaging.GL.ALL_INSTANCES:
+            if instanceIndex != UsdImagingGL.GL.ALL_INSTANCES:
                 self._stageView.setInstanceSelection(path, instanceIndex,
                     not self._stageView.getInstanceSelection(path, instanceIndex))
                 # if no instances selected, unselect item
@@ -2793,7 +2793,7 @@ class MainWindow(QtGui.QMainWindow):
                 item = self._getItemAtPath(self._stage.GetPseudoRoot().GetPath())
                 item.setSelected(True)
 
-        if instanceIndex != UsdImaging.GL.ALL_INSTANCES:
+        if instanceIndex != UsdImagingGL.GL.ALL_INSTANCES:
             self._itemSelectionChanged()
 
         return item
@@ -2856,7 +2856,7 @@ class MainWindow(QtGui.QMainWindow):
             first = True
             for prim in primsToSelect:
                 if self._primShouldBeShown(prim):
-                    instanceIndex = UsdImaging.GL.ALL_INSTANCES
+                    instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
                     item = self.selectNodeByPath(prim.GetPath(), instanceIndex,
                                           "replace" if first else "add")
                     first = False

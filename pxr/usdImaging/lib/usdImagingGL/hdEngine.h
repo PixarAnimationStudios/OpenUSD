@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "pxr/usdImaging/usdImaging/engine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/engine.h"
@@ -39,34 +39,34 @@
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 class HdRenderIndex;
-typedef boost::shared_ptr<class UsdImagingTaskDelegate>
-                                        UsdImagingTaskDelegateSharedPtr;
-typedef boost::shared_ptr<class UsdImaging_DefaultTaskDelegate>
-                                        UsdImaging_DefaultTaskDelegateSharedPtr;
-typedef boost::shared_ptr<class UsdImagingHdEngine> UsdImagingHdEngineSharedPtr;
-typedef std::vector<UsdImagingHdEngineSharedPtr> 
-                                        UsdImagingHdEngineSharedPtrVector;
+typedef boost::shared_ptr<class UsdImagingGLTaskDelegate>
+                                        UsdImagingGLTaskDelegateSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGL_DefaultTaskDelegate>
+                                        UsdImagingGL_DefaultTaskDelegateSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGLHdEngine> UsdImagingGLHdEngineSharedPtr;
+typedef std::vector<UsdImagingGLHdEngineSharedPtr> 
+                                        UsdImagingGLHdEngineSharedPtrVector;
 typedef std::vector<UsdPrim> UsdPrimVector;
 typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 
-class UsdImagingHdEngine : public UsdImagingEngine
+class UsdImagingGLHdEngine : public UsdImagingGLEngine
 {
 public:
-    UsdImagingHdEngine(const SdfPath& rootPath,
+    UsdImagingGLHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
                        const SdfPath& sharedId = SdfPath::AbsoluteRootPath(),
-                       const UsdImagingHdEngineSharedPtr& sharedImaging =
-                           UsdImagingHdEngineSharedPtr());
+                       const UsdImagingGLHdEngineSharedPtr& sharedImaging =
+                           UsdImagingGLHdEngineSharedPtr());
 
-    virtual ~UsdImagingHdEngine();
+    virtual ~UsdImagingGLHdEngine();
 
     HdRenderIndexSharedPtr GetRenderIndex() const;
 
     virtual void InvalidateBuffers();
 
     static void PrepareBatch(
-        const UsdImagingHdEngineSharedPtrVector& engines,
+        const UsdImagingGLHdEngineSharedPtrVector& engines,
         const UsdPrimVector& rootPrims,
         const std::vector<UsdTimeCode>& times,
         RenderParams params);
@@ -141,14 +141,14 @@ public:
 private:
     // Helper functions for preparing multiple engines for
     // batched drawing.
-    static void _PrepareBatch(const UsdImagingHdEngineSharedPtrVector& engines,
+    static void _PrepareBatch(const UsdImagingGLHdEngineSharedPtrVector& engines,
                               const UsdPrimVector& rootPrims,
                               const std::vector<UsdTimeCode>& times,
                               const RenderParams& params);
 
-    static void _Populate(const UsdImagingHdEngineSharedPtrVector& engines,
+    static void _Populate(const UsdImagingGLHdEngineSharedPtrVector& engines,
                           const UsdPrimVector& rootPrims);
-    static void _SetTimes(const UsdImagingHdEngineSharedPtrVector& engines,
+    static void _SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engines,
                           const UsdPrimVector& rootPrims,
                           const std::vector<UsdTimeCode>& times,
                           const RenderParams& params);
@@ -161,7 +161,7 @@ private:
 
     // returns the active task delegate for \p param. param is used to fallback
     // to the default task delegate when enableIdRender is true for picking.
-    UsdImagingTaskDelegateSharedPtr _GetTaskDelegate(
+    UsdImagingGLTaskDelegateSharedPtr _GetTaskDelegate(
         const RenderParams &params) const ;
 
     HdEngine _engine;
@@ -171,14 +171,14 @@ private:
     UsdImagingDelegate _delegate;
 
     // built-in render graph delegate
-    UsdImaging_DefaultTaskDelegateSharedPtr _defaultTaskDelegate;
+    UsdImagingGL_DefaultTaskDelegateSharedPtr _defaultTaskDelegate;
 
     // plug-in render graphs delegate
     bool _pluginDiscovered;
-    typedef std::map<TfType, UsdImagingTaskDelegateSharedPtr>
+    typedef std::map<TfType, UsdImagingGLTaskDelegateSharedPtr>
         _PluginTaskDelegateMap;
     _PluginTaskDelegateMap _pluginTaskDelegates;
-    UsdImagingTaskDelegateSharedPtr _currentPluginTaskDelegate;
+    UsdImagingGLTaskDelegateSharedPtr _currentPluginTaskDelegate;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
 

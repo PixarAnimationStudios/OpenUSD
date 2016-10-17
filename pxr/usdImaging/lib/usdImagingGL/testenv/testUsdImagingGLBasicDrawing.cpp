@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/usdImaging/usdImaging/unitTestGLDrawing.h"
+#include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/gf/bbox3d.h"
@@ -44,10 +44,11 @@
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/usdImaging/usdImaging/unitTestHelper.h"
-#include "pxr/usdImaging/usdImaging/gl.h"
-#include "pxr/usdImaging/usdImaging/hdEngine.h"
-#include "pxr/usdImaging/usdImaging/refEngine.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
+
+#include "pxr/usdImaging/usdImagingGL/gl.h"
+#include "pxr/usdImaging/usdImagingGL/hdEngine.h"
+#include "pxr/usdImaging/usdImagingGL/refEngine.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -55,9 +56,9 @@
 #include <iostream>
 #include <sstream>
 
-typedef boost::shared_ptr<class UsdImagingEngine> UsdImagingEngineSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
 
-class My_TestGLDrawing : public UsdImaging_UnitTestGLDrawing {
+class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {
 public:
     My_TestGLDrawing() {
         _mousePos[0] = _mousePos[1] = 0;
@@ -66,18 +67,18 @@ public:
         _translate[0] = _translate[1] = _translate[2] = 0;
     }
 
-    // UsdImaging_UnitTestGLDrawing overrides
+    // UsdImagingGL_UnitTestGLDrawing overrides
     virtual void InitTest();
     virtual void DrawTest(bool offscreen);
     virtual void ShutdownTest();
 
-    virtual void MousePress(int button, int x, int y);
-    virtual void MouseRelease(int button, int x, int y);
-    virtual void MouseMove(int x, int y);
+    virtual void MousePress(int button, int x, int y, int modKeys);
+    virtual void MouseRelease(int button, int x, int y, int modKeys);
+    virtual void MouseMove(int x, int y, int modKeys);
 
 private:
     UsdStageRefPtr _stage;
-    UsdImagingEngineSharedPtr _engine;
+    UsdImagingGLEngineSharedPtr _engine;
     GlfSimpleLightingContextRefPtr _lightingContext;
 
     float _rotate[2];
@@ -98,11 +99,11 @@ My_TestGLDrawing::InitTest()
     bool isEnabledHydra = (TfGetenv("HD_ENABLED", "1") == "1");
     if (isEnabledHydra) {
         std::cout << "Using HD Renderer.\n";
-        _engine.reset(new UsdImagingHdEngine(
+        _engine.reset(new UsdImagingGLHdEngine(
             _stage->GetPseudoRoot().GetPath(), excludedPaths));
     } else{
         std::cout << "Using Reference Renderer.\n"; 
-        _engine.reset(new UsdImagingRefEngine(excludedPaths));
+        _engine.reset(new UsdImagingGLRefEngine(excludedPaths));
     }
 
     std::cout << glGetString(GL_VENDOR) << "\n";
@@ -224,15 +225,15 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         if (*timeIt == -999) {
             time = UsdTimeCode::Default();
         }
-        UsdImagingEngine::RenderParams params;
+        UsdImagingGLEngine::RenderParams params;
         params.drawMode = GetDrawMode();
         params.enableLighting = IsEnabledTestLighting();
         params.enableIdRender = IsEnabledIdRender();
         params.frame = time;
         params.complexity = _GetComplexity();
         params.cullStyle = IsEnabledCullBackfaces() ?
-                            UsdImagingEngine::CULL_STYLE_BACK :
-                            UsdImagingEngine::CULL_STYLE_NOTHING;
+                            UsdImagingGLEngine::CULL_STYLE_BACK :
+                            UsdImagingGLEngine::CULL_STYLE_NOTHING;
 
         glViewport(0, 0, width, height);
 
@@ -286,7 +287,7 @@ My_TestGLDrawing::ShutdownTest()
 }
 
 void
-My_TestGLDrawing::MousePress(int button, int x, int y)
+My_TestGLDrawing::MousePress(int button, int x, int y, int modKeys)
 {
     _mouseButton[button] = 1;
     _mousePos[0] = x;
@@ -294,13 +295,13 @@ My_TestGLDrawing::MousePress(int button, int x, int y)
 }
 
 void
-My_TestGLDrawing::MouseRelease(int button, int x, int y)
+My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
 {
     _mouseButton[button] = 0;
 }
 
 void
-My_TestGLDrawing::MouseMove(int x, int y)
+My_TestGLDrawing::MouseMove(int x, int y, int modKeys)
 {
     int dx = x - _mousePos[0];
     int dy = y - _mousePos[1];

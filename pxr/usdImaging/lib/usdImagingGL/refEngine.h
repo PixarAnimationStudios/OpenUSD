@@ -26,7 +26,7 @@
 
 #include "pxr/imaging/garch/gl.h"
 
-#include "pxr/usdImaging/usdImaging/engine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/notice.h"
@@ -36,15 +36,15 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
-TF_DECLARE_WEAK_PTRS(UsdImagingRefEngine);
+TF_DECLARE_WEAK_PTRS(UsdImagingGLRefEngine);
 
-class UsdImagingRefEngine : public UsdImagingEngine, public TfWeakBase {
-    typedef UsdImagingRefEngine This;
+class UsdImagingGLRefEngine : public UsdImagingGLEngine, public TfWeakBase {
+    typedef UsdImagingGLRefEngine This;
 public:
 
-    UsdImagingRefEngine(const SdfPathVector& excludedPaths);
+    UsdImagingGLRefEngine(const SdfPathVector& excludedPaths);
 
-    ~UsdImagingRefEngine();
+    ~UsdImagingGLRefEngine();
 
     // Entry point for kicking off a render
     virtual void Render(const UsdPrim& root, RenderParams params);

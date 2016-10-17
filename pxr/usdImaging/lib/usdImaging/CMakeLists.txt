@@ -45,12 +45,8 @@ pxr_shared_library(usdImaging
         adapterRegistry
         debugCodes
         delegate
-        engine
-        gl
-        hdEngine
         inheritedCache
         instancerContext
-        refEngine
         shaderAdapter
         tokens
         valueCache
@@ -72,40 +68,7 @@ pxr_shared_library(usdImaging
     PUBLIC_HEADERS
         version.h
 
-    PRIVATE_CLASSES
-        defaultTaskDelegate
-
-    PRIVATE_HEADERS
-        unitTestGLDrawing.h
-
-    CPPFILES
-        moduleDeps.cpp
-
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapGL.cpp
-
-    PYTHON_FILES
-        __init__.py
-
     RESOURCE_FILES
         plugInfo.json
 )
 
-if (QT4_FOUND)
-    pxr_build_test(testUsdImagingBasicDrawing
-        LIBRARIES
-            hd
-            glf
-            glfq
-            usd
-            usdUtils
-            usdImaging
-            sdf
-            Qt4::QtCore
-            Qt4::QtOpenGL
-        CPPFILES
-            unitTestGLDrawing.cpp
-            testenv/testUsdImagingBasicDrawing.cpp
-    )
-endif()

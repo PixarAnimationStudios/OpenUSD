@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/taskDelegate.h"
+#include "pxr/usdImaging/usdImagingGL/taskDelegate.h"
 
 #include "pxr/base/tf/type.h"
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdImagingTaskDelegate>();
+    TfType::Define<UsdImagingGLTaskDelegate>();
 }
 
-UsdImagingTaskDelegate::UsdImagingTaskDelegate(
+UsdImagingGLTaskDelegate::UsdImagingGLTaskDelegate(
     HdRenderIndexSharedPtr const& parentIndex,
     SdfPath const& delegateID)
     : HdSceneDelegate(parentIndex, delegateID)
@@ -38,14 +38,14 @@ UsdImagingTaskDelegate::UsdImagingTaskDelegate(
     /* nothing */
 }
 
-UsdImagingTaskDelegate::~UsdImagingTaskDelegate()
+UsdImagingGLTaskDelegate::~UsdImagingGLTaskDelegate()
 {
     /* nothing */
 }
 
 /*virtual*/
 HdRprimCollection const&
-UsdImagingTaskDelegate::GetRprimCollection() const
+UsdImagingGLTaskDelegate::GetRprimCollection() const
 {
     static HdRprimCollection col;
     return col;

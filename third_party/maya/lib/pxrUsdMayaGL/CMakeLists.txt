@@ -13,6 +13,7 @@ pxr_shared_library(${PXR_PACKAGE}
         sdf
         usd
         usdImaging
+        usdImagingGL
         usdMaya
         ${Boost_LIBRARIES}
         ${GLUT_LIBRARIES}

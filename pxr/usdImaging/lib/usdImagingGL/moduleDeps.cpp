@@ -33,7 +33,7 @@
 
 TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     std::vector<TfToken> reqs;
-    reqs.reserve(22);
+    reqs.reserve(23);
     reqs.push_back(TfToken("ar"));
     reqs.push_back(TfToken("arch"));
     reqs.push_back(TfToken("cameraUtil"));
@@ -53,10 +53,11 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     reqs.push_back(TfToken("usd"));
     reqs.push_back(TfToken("usdGeom"));
     reqs.push_back(TfToken("usdHydra"));
+    reqs.push_back(TfToken("usdImaging"));
     reqs.push_back(TfToken("usdShade"));
     reqs.push_back(TfToken("vt"));
     reqs.push_back(TfToken("work"));
     TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("usdImaging"), TfToken("pxr.UsdImaging"), reqs);
+        RegisterLibrary(TfToken("usdImagingGL"), TfToken("pxr.UsdImagingGL"), reqs);
 }
 

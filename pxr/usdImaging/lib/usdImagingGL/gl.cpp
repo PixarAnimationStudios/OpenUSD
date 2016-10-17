@@ -23,9 +23,9 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/usdImaging/usdImaging/gl.h"
-#include "pxr/usdImaging/usdImaging/hdEngine.h"
-#include "pxr/usdImaging/usdImaging/refEngine.h"
+#include "pxr/usdImaging/usdImagingGL/gl.h"
+#include "pxr/usdImaging/usdImagingGL/hdEngine.h"
+#include "pxr/usdImaging/usdImagingGL/refEngine.h"
 
 #include "pxr/imaging/hd/renderContextCaps.h"
 
@@ -68,25 +68,25 @@ UsdImagingGL::IsEnabledHydra()
 }
 
 static
-UsdImagingEngine* _InitEngine(const SdfPath& rootPath,
+UsdImagingGLEngine* _InitEngine(const SdfPath& rootPath,
                               const SdfPathVector& excludedPaths,
                               const SdfPathVector& invisedPaths,
                               const SdfPath& sharedId =
                                         SdfPath::AbsoluteRootPath(),
-                              const UsdImagingEngineSharedPtr& sharedEngine =
-                                        UsdImagingEngineSharedPtr())
+                              const UsdImagingGLEngineSharedPtr& sharedEngine =
+                                        UsdImagingGLEngineSharedPtr())
 {
     if (UsdImagingGL::IsEnabledHydra()) {
-        return new UsdImagingHdEngine(rootPath, excludedPaths, invisedPaths, 
+        return new UsdImagingGLHdEngine(rootPath, excludedPaths, invisedPaths, 
             sharedId, 
-            boost::dynamic_pointer_cast<UsdImagingHdEngine>(sharedEngine));
+            boost::dynamic_pointer_cast<UsdImagingGLHdEngine>(sharedEngine));
     } else {
         // In the refEngine, both excluded paths and invised paths are treated
         // the same way.
         SdfPathVector pathsToExclude = excludedPaths;
         pathsToExclude.insert(pathsToExclude.end(), 
             invisedPaths.begin(), invisedPaths.end());
-        return new UsdImagingRefEngine(pathsToExclude);
+        return new UsdImagingGLRefEngine(pathsToExclude);
     }
 }
 
@@ -103,7 +103,7 @@ UsdImagingGL::UsdImagingGL(const SdfPath& rootPath,
                            const UsdImagingGLSharedPtr& sharedImaging)
 {
     _engine.reset(_InitEngine(rootPath, excludedPaths, invisedPaths, sharedId,
-        (sharedImaging ? sharedImaging->_engine : UsdImagingEngineSharedPtr())));
+        (sharedImaging ? sharedImaging->_engine : UsdImagingGLEngineSharedPtr())));
 }
 
 UsdImagingGL::~UsdImagingGL()
@@ -139,17 +139,17 @@ UsdImagingGL::PrepareBatch(
 
     // Batching is only supported if the Hydra engine is enabled, and if
     // it is then all of the UsdImagingGL instances we've been given
-    // must use a UsdImagingHdEngine engine. So we explicitly call the
+    // must use a UsdImagingGLHdEngine engine. So we explicitly call the
     // the static method on that class.
-    UsdImagingHdEngineSharedPtrVector hdEngines;
+    UsdImagingGLHdEngineSharedPtrVector hdEngines;
     hdEngines.reserve(renderers.size());
     TF_FOR_ALL(it, renderers) {
         hdEngines.push_back(
-            boost::dynamic_pointer_cast<UsdImagingHdEngine>(
+            boost::dynamic_pointer_cast<UsdImagingGLHdEngine>(
                 (*it)->_engine));
     }
 
-    UsdImagingHdEngine::PrepareBatch(hdEngines, rootPrims, times, params);
+    UsdImagingGLHdEngine::PrepareBatch(hdEngines, rootPrims, times, params);
 }
 
 /*virtual*/

@@ -28,21 +28,21 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 
-#include "pxr/usdImaging/usdImaging/engine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include <string>
 #include <vector>
 
-class UsdImaging_UnitTestDrawingQGLWidget;
+class UsdImagingGL_UnitTestDrawingQGLWidget;
 
-/// \class UsdImaging_UnitTestGLDrawing
+/// \class UsdImagingGL_UnitTestGLDrawing
 ///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
-class UsdImaging_UnitTestGLDrawing {
+class UsdImagingGL_UnitTestGLDrawing {
 public:
-    UsdImaging_UnitTestGLDrawing();
-    virtual ~UsdImaging_UnitTestGLDrawing();
+    UsdImagingGL_UnitTestGLDrawing();
+    virtual ~UsdImagingGL_UnitTestGLDrawing();
 
     int GetWidth() const;
     int GetHeight() const;
@@ -51,7 +51,7 @@ public:
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
 
-    UsdImagingEngine::DrawMode GetDrawMode() const { return _drawMode; }
+    UsdImagingGLEngine::DrawMode GetDrawMode() const { return _drawMode; }
 
     std::string const & GetStageFilePath() const { return _stageFilePath; }
     std::string const & GetOutputFilePath() const { return _outputFilePath; }
@@ -81,7 +81,7 @@ private:
     void _Parse(int argc, char *argv[], _Args* args);
 
 private:
-    UsdImaging_UnitTestDrawingQGLWidget *_widget;
+    UsdImagingGL_UnitTestDrawingQGLWidget *_widget;
     bool _testLighting;
     bool _testIdRender;
 
@@ -93,7 +93,7 @@ private:
 
     std::vector<GfVec4d> _clipPlanes;
 
-    UsdImagingEngine::DrawMode _drawMode;
+    UsdImagingGLEngine::DrawMode _drawMode;
     bool _shouldFrameAll;
     bool _cullBackfaces;
 };

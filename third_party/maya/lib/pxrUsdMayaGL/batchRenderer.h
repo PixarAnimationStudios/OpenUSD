@@ -40,7 +40,6 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/engine.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include <maya/M3dView.h>

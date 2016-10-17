@@ -27,8 +27,10 @@
 #include <boost/python.hpp>
 #include <boost/python/converter/from_python.hpp>
 
-#include "pxr/usdImaging/usdImaging/gl.h"
+#include "pxr/usdImaging/usdImagingGL/gl.h"
+
 #include "pxr/usdImaging/usdImaging/delegate.h"
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"

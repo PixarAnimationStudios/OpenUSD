@@ -23,8 +23,8 @@
 //
 #pragma once
 
-#include "pxr/usdImaging/usdImaging/engine.h"
-#include "pxr/usdImaging/usdImaging/taskDelegate.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/usdImaging/usdImagingGL/taskDelegate.h"
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -33,23 +33,23 @@
 
 // ---------------------------------------------------------------------------
 // Task Delegate for built-in render graph
-class UsdImaging_DefaultTaskDelegate : public UsdImagingTaskDelegate {
+class UsdImagingGL_DefaultTaskDelegate : public UsdImagingGLTaskDelegate {
 public:
-    UsdImaging_DefaultTaskDelegate(HdRenderIndexSharedPtr const&renderIndex,
+    UsdImagingGL_DefaultTaskDelegate(HdRenderIndexSharedPtr const&renderIndex,
                   SdfPath const& delegateID);
-    ~UsdImaging_DefaultTaskDelegate();
+    ~UsdImagingGL_DefaultTaskDelegate();
 
     // HdSceneDelegate interface
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
 
     // returns tasks in the render graph for the given params
     virtual HdTaskSharedPtrVector GetRenderTasks(
-        UsdImagingEngine::RenderParams const &params);
+        UsdImagingGLEngine::RenderParams const &params);
 
     // update roots and RenderParam
     virtual void SetCollectionAndRenderParams(
         const SdfPathVector &roots,
-        const UsdImagingEngine::RenderParams &params);
+        const UsdImagingGLEngine::RenderParams &params);
 
     virtual HdRprimCollection const& GetRprimCollection() const;
 
@@ -70,7 +70,7 @@ public:
     void SetSelectionColor(GfVec4f const& color);
 
     // always returns true for the default task
-    virtual bool CanRender(const UsdImagingEngine::RenderParams &params);
+    virtual bool CanRender(const UsdImagingGLEngine::RenderParams &params);
 
     // returns true if the image is converged.
     virtual bool IsConverged() const;
@@ -93,8 +93,8 @@ protected:
                            SdfPathVector const &roots,
                            SdfPath const &renderTaskId,
                            SdfPath const &idRenderTaskId);
-    void _UpdateRenderParams(UsdImagingEngine::RenderParams const &renderParams,
-                         UsdImagingEngine::RenderParams const &oldRenderParams,
+    void _UpdateRenderParams(UsdImagingGLEngine::RenderParams const &renderParams,
+                         UsdImagingGLEngine::RenderParams const &oldRenderParams,
                          SdfPath const &renderTaskId);
 
     template <typename T>
@@ -110,8 +110,8 @@ protected:
 
 private:
     HdRprimCollection _rprims;
-    UsdImagingEngine::RenderParams _renderParams;
-    UsdImagingEngine::RenderParams _idRenderParams;
+    UsdImagingGLEngine::RenderParams _renderParams;
+    UsdImagingGLEngine::RenderParams _idRenderParams;
     GfVec4d _viewport;
 
     SdfPath _rootId;

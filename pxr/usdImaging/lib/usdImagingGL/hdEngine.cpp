@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/usdImaging/usdImaging/hdEngine.h"
+#include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 
-#include "pxr/usdImaging/usdImaging/defaultTaskDelegate.h"
-#include "pxr/usdImaging/usdImaging/taskDelegate.h"
+#include "pxr/usdImaging/usdImagingGL/defaultTaskDelegate.h"
+#include "pxr/usdImaging/usdImagingGL/taskDelegate.h"
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -48,19 +48,19 @@
 #include "pxr/imaging/glf/info.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
-UsdImagingHdEngine::UsdImagingHdEngine(
+UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPath& rootPath,
         const SdfPathVector& excludedPrimPaths,
         const SdfPathVector& invisedPrimPaths,
         const SdfPath& sharedId,
-        const UsdImagingHdEngineSharedPtr& sharedEngine)
+        const UsdImagingGLHdEngineSharedPtr& sharedEngine)
     : _renderIndex(sharedEngine 
                         ? sharedEngine->GetRenderIndex() 
                         : HdRenderIndexSharedPtr(new HdRenderIndex()))
     , _selTracker(new HdxSelectionTracker)
     , _intersector(new HdxIntersector(_renderIndex))
     , _delegate(_renderIndex, sharedId)
-    , _defaultTaskDelegate(new UsdImaging_DefaultTaskDelegate(
+    , _defaultTaskDelegate(new UsdImagingGL_DefaultTaskDelegate(
                                _renderIndex, sharedId))
     , _pluginDiscovered(false)
     , _rootPath(rootPath)
@@ -70,18 +70,18 @@ UsdImagingHdEngine::UsdImagingHdEngine(
 {
 }
 
-UsdImagingHdEngine::~UsdImagingHdEngine() 
+UsdImagingGLHdEngine::~UsdImagingGLHdEngine() 
 {
 }
 
 HdRenderIndexSharedPtr
-UsdImagingHdEngine::GetRenderIndex() const
+UsdImagingGLHdEngine::GetRenderIndex() const
 {
     return _renderIndex;
 }
 
 void
-UsdImagingHdEngine::InvalidateBuffers()
+UsdImagingGLHdEngine::InvalidateBuffers()
 {
     //_delegate.GetRenderIndex().GetChangeTracker().MarkPrimDirty(path, flag);
 }
@@ -123,7 +123,7 @@ _GetRefineLevel(float c)
 }
 
 bool 
-UsdImagingHdEngine::_CanPrepareBatch(const UsdPrim& root, 
+UsdImagingGLHdEngine::_CanPrepareBatch(const UsdPrim& root, 
                                      const RenderParams& params)
 {
     HD_TRACE_FUNCTION();
@@ -143,7 +143,7 @@ UsdImagingHdEngine::_CanPrepareBatch(const UsdPrim& root,
 }
 
 void
-UsdImagingHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& params)
+UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& params)
 {
     HD_TRACE_FUNCTION();
 
@@ -153,7 +153,7 @@ UsdImagingHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& params)
 }
 
 void
-UsdImagingHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& params)
+UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& params)
 {
     HD_TRACE_FUNCTION();
     if (_isPopulated)
@@ -165,8 +165,8 @@ UsdImagingHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& params
     _delegate.SetRootCompensation(root.GetPath());
 }
 
-UsdImagingTaskDelegateSharedPtr
-UsdImagingHdEngine::_GetTaskDelegate(const RenderParams &params) const
+UsdImagingGLTaskDelegateSharedPtr
+UsdImagingGLHdEngine::_GetTaskDelegate(const RenderParams &params) const
 {
     // if \p params can be handled by the plugin task, return it
     if (_currentPluginTaskDelegate) {
@@ -182,7 +182,7 @@ UsdImagingHdEngine::_GetTaskDelegate(const RenderParams &params) const
 
 /*virtual*/
 void
-UsdImagingHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
+UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
 {
     HD_TRACE_FUNCTION();
 
@@ -203,8 +203,8 @@ UsdImagingHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
 
 /* static */ 
 void 
-UsdImagingHdEngine::PrepareBatch(
-    const UsdImagingHdEngineSharedPtrVector& engines,
+UsdImagingGLHdEngine::PrepareBatch(
+    const UsdImagingGLHdEngineSharedPtrVector& engines,
     const UsdPrimVector& rootPrims,
     const std::vector<UsdTimeCode>& times,
     RenderParams params)
@@ -230,7 +230,7 @@ UsdImagingHdEngine::PrepareBatch(
     }
     else {
         // Filter out all the engines that fail the error check.
-        UsdImagingHdEngineSharedPtrVector tmpEngines = engines;
+        UsdImagingGLHdEngineSharedPtrVector tmpEngines = engines;
         UsdPrimVector tmpRootPrims = rootPrims;
         std::vector<UsdTimeCode> tmpTimes = times;
 
@@ -246,8 +246,8 @@ UsdImagingHdEngine::PrepareBatch(
 
 /* static */ 
 void 
-UsdImagingHdEngine::_PrepareBatch(
-    const UsdImagingHdEngineSharedPtrVector& engines,
+UsdImagingGLHdEngine::_PrepareBatch(
+    const UsdImagingGLHdEngineSharedPtrVector& engines,
     const UsdPrimVector& rootPrims,
     const std::vector<UsdTimeCode>& times,
     const RenderParams& params)
@@ -260,7 +260,7 @@ UsdImagingHdEngine::_PrepareBatch(
 
 /*static */
 void
-UsdImagingHdEngine::_SetTimes(const UsdImagingHdEngineSharedPtrVector& engines,
+UsdImagingGLHdEngine::_SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engines,
                               const UsdPrimVector& rootPrims,
                               const std::vector<UsdTimeCode>& times,
                               const RenderParams& params)
@@ -284,7 +284,7 @@ UsdImagingHdEngine::_SetTimes(const UsdImagingHdEngineSharedPtrVector& engines,
 
 /* static */
 void 
-UsdImagingHdEngine::_Populate(const UsdImagingHdEngineSharedPtrVector& engines,
+UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engines,
                               const UsdPrimVector& rootPrims)
 {
     HD_TRACE_FUNCTION();
@@ -322,7 +322,7 @@ UsdImagingHdEngine::_Populate(const UsdImagingHdEngineSharedPtrVector& engines,
 
 /*virtual*/
 void
-UsdImagingHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
+UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
 {
     _GetTaskDelegate(params)->SetCollectionAndRenderParams(
         paths, params);
@@ -332,7 +332,7 @@ UsdImagingHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
 
 /*virtual*/
 void
-UsdImagingHdEngine::Render(const UsdPrim& root, RenderParams params)
+UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
 {
     PrepareBatch(root, params);
 
@@ -346,7 +346,7 @@ UsdImagingHdEngine::Render(const UsdPrim& root, RenderParams params)
 }
 
 bool
-UsdImagingHdEngine::TestIntersection(
+UsdImagingGLHdEngine::TestIntersection(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
@@ -405,7 +405,7 @@ UsdImagingHdEngine::TestIntersection(
 }
 
 bool
-UsdImagingHdEngine::TestIntersectionBatch(
+UsdImagingGLHdEngine::TestIntersectionBatch(
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
     const GfMatrix4d &worldToLocalSpace,
@@ -436,7 +436,7 @@ UsdImagingHdEngine::TestIntersectionBatch(
     };
     static_assert(((sizeof(USD_2_HD_CULL_STYLE) / 
                     sizeof(USD_2_HD_CULL_STYLE[0])) 
-                == UsdImagingEngine::CULL_STYLE_COUNT),"enum size mismatch");
+                == UsdImagingGLEngine::CULL_STYLE_COUNT),"enum size mismatch");
 
     HdxIntersector::Params qparams;
     qparams.viewMatrix = worldToLocalSpace * viewMatrix;
@@ -475,7 +475,7 @@ UsdImagingHdEngine::TestIntersectionBatch(
 }
 
 void
-UsdImagingHdEngine::Render(HdRenderIndex& index, RenderParams params)
+UsdImagingGLHdEngine::Render(HdRenderIndex& index, RenderParams params)
 {
     // User is responsible for initalizing GL contenxt and glew
     if (not HdRenderContextCaps::GetInstance().SupportsHydra()) {
@@ -551,7 +551,7 @@ UsdImagingHdEngine::Render(HdRenderIndex& index, RenderParams params)
 
 /*virtual*/
 void 
-UsdImagingHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
+UsdImagingGLHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport)
 {
@@ -567,7 +567,7 @@ UsdImagingHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 
 /*virtual*/
 SdfPath 
-UsdImagingHdEngine::GetPrimPathFromPrimIdColor(GfVec4i const & primIdColor,
+UsdImagingGLHdEngine::GetPrimPathFromPrimIdColor(GfVec4i const & primIdColor,
                                                GfVec4i const & instanceIdColor,
                                                int * instanceIndexOut)
 {
@@ -577,7 +577,7 @@ UsdImagingHdEngine::GetPrimPathFromPrimIdColor(GfVec4i const & primIdColor,
 
 /* virtual */
 SdfPath
-UsdImagingHdEngine::GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
+UsdImagingGLHdEngine::GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
                                                  int instanceIndex,
                                                  int *absoluteInstanceIndex,
                                                  std::vector<UsdPrim> *instanceContext)
@@ -589,7 +589,7 @@ UsdImagingHdEngine::GetPrimPathFromInstanceIndex(SdfPath const& protoPrimPath,
 
 /* virtual */
 void
-UsdImagingHdEngine::SetLightingStateFromOpenGL()
+UsdImagingGLHdEngine::SetLightingStateFromOpenGL()
 {
     if (not _lightingContextForOpenGLState) {
         _lightingContextForOpenGLState = GlfSimpleLightingContext::New();
@@ -605,7 +605,7 @@ UsdImagingHdEngine::SetLightingStateFromOpenGL()
 
 /* virtual */
 void
-UsdImagingHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
+UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
     // leave all lighting plumbing work to the incoming lighting context.
     // XXX: this call will be replaced with SetLightingState() when Phd takes
@@ -617,14 +617,14 @@ UsdImagingHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 
 /* virtual */
 void
-UsdImagingHdEngine::SetRootTransform(GfMatrix4d const& xf)
+UsdImagingGLHdEngine::SetRootTransform(GfMatrix4d const& xf)
 {
     _delegate.SetRootTransform(xf);
 }
 
 /* virtual */
 void
-UsdImagingHdEngine::SetRootVisibility(bool isVisible)
+UsdImagingGLHdEngine::SetRootVisibility(bool isVisible)
 {
     _delegate.SetRootVisibility(isVisible);
 }
@@ -632,7 +632,7 @@ UsdImagingHdEngine::SetRootVisibility(bool isVisible)
 
 /*virtual*/
 void
-UsdImagingHdEngine::SetSelected(SdfPathVector const& paths)
+UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 {
     // populate new selection
     HdxSelectionSharedPtr selection(new HdxSelection(&*_renderIndex));
@@ -648,7 +648,7 @@ UsdImagingHdEngine::SetSelected(SdfPathVector const& paths)
 
 /*virtual*/
 void
-UsdImagingHdEngine::ClearSelected()
+UsdImagingGLHdEngine::ClearSelected()
 {
     HdxSelectionSharedPtr selection(new HdxSelection(&*_renderIndex));
     _selTracker->SetSelection(selection);
@@ -656,7 +656,7 @@ UsdImagingHdEngine::ClearSelected()
 
 /* virtual */
 void
-UsdImagingHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
+UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
     HdxSelectionSharedPtr selection = _selTracker->GetSelectionMap();
     if (not selection) {
@@ -671,14 +671,14 @@ UsdImagingHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
 
 /*virtual*/
 void
-UsdImagingHdEngine::SetSelectionColor(GfVec4f const& color)
+UsdImagingGLHdEngine::SetSelectionColor(GfVec4f const& color)
 {
     _defaultTaskDelegate->SetSelectionColor(color);
 }
 
 /* virtual */
 bool
-UsdImagingHdEngine::IsConverged() const
+UsdImagingGLHdEngine::IsConverged() const
 {
     if (_currentPluginTaskDelegate)
         return _currentPluginTaskDelegate->IsConverged();
@@ -688,7 +688,7 @@ UsdImagingHdEngine::IsConverged() const
 
 /* virtual */
 std::vector<TfType>
-UsdImagingHdEngine::GetRenderGraphPlugins()
+UsdImagingGLHdEngine::GetRenderGraphPlugins()
 {
     // discover plugins
     if (not _pluginDiscovered) {
@@ -696,11 +696,11 @@ UsdImagingHdEngine::GetRenderGraphPlugins()
 
         std::set<TfType> pluginTaskTypes;
         PlugRegistry::GetAllDerivedTypes(
-            TfType::Find<UsdImagingTaskDelegate>(), &pluginTaskTypes);
+            TfType::Find<UsdImagingGLTaskDelegate>(), &pluginTaskTypes);
 
         // create entries (not load plugins yet)
         TF_FOR_ALL (it, pluginTaskTypes) {
-            _pluginTaskDelegates[*it] = UsdImagingTaskDelegateSharedPtr();
+            _pluginTaskDelegates[*it] = UsdImagingGLTaskDelegateSharedPtr();
         }
     }
 
@@ -715,7 +715,7 @@ UsdImagingHdEngine::GetRenderGraphPlugins()
 
 /* virtual */
 bool
-UsdImagingHdEngine::SetRenderGraphPlugin(TfType const &type)
+UsdImagingGLHdEngine::SetRenderGraphPlugin(TfType const &type)
 {
     _currentPluginTaskDelegate.reset();
     if (not type) {
@@ -748,14 +748,14 @@ UsdImagingHdEngine::SetRenderGraphPlugin(TfType const &type)
         return false;
     }
 
-    UsdImagingTaskDelegateFactoryBase* factory =
-        type.GetFactory<UsdImagingTaskDelegateFactoryBase>();
+    UsdImagingGLTaskDelegateFactoryBase* factory =
+        type.GetFactory<UsdImagingGLTaskDelegateFactoryBase>();
     if (not factory) {
         TF_WARN("Plugin type not manufacturable: %s\n", type.GetTypeName().c_str());
         return false;
     }
 
-    UsdImagingTaskDelegateSharedPtr taskDelegate =
+    UsdImagingGLTaskDelegateSharedPtr taskDelegate =
         factory->New(_renderIndex, _delegate.GetDelegateID()/*=shareId*/);
     if (not taskDelegate) {
         TF_WARN("Fail to manufacture plugin %s\n", type.GetTypeName().c_str());
@@ -770,7 +770,7 @@ UsdImagingHdEngine::SetRenderGraphPlugin(TfType const &type)
 
 /* virtual */
 VtDictionary
-UsdImagingHdEngine::GetResourceAllocation() const
+UsdImagingGLHdEngine::GetResourceAllocation() const
 {
     return HdResourceRegistry::GetInstance().GetResourceAllocation();
 }

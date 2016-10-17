@@ -23,7 +23,7 @@
 //
 #pragma once
 
-#include "pxr/usdImaging/usdImaging/engine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -37,27 +37,27 @@
 // Render-graph delegate base
 //
 
-typedef boost::shared_ptr<class UsdImagingTaskDelegate> UsdImagingTaskDelegateSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGLTaskDelegate> UsdImagingGLTaskDelegateSharedPtr;
 
-class UsdImagingTaskDelegate : public HdSceneDelegate {
+class UsdImagingGLTaskDelegate : public HdSceneDelegate {
 public:
-    UsdImagingTaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
+    UsdImagingGLTaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
                            SdfPath const& delegateID);
 
-    ~UsdImagingTaskDelegate();
+    ~UsdImagingGLTaskDelegate();
 
     // HdSceneDelegate interface
     virtual VtValue Get(SdfPath const& id, TfToken const& key) = 0;
 
-    // UsdImagingTaskDelegate interface
+    // UsdImagingGLTaskDelegate interface
     // returns tasks in the render graph for the given params
     virtual HdTaskSharedPtrVector GetRenderTasks(
-        UsdImagingEngine::RenderParams const &params) = 0;
+        UsdImagingGLEngine::RenderParams const &params) = 0;
 
     // update roots and RenderParam
     virtual void SetCollectionAndRenderParams(
         const SdfPathVector &roots,
-        const UsdImagingEngine::RenderParams &params) = 0;
+        const UsdImagingGLEngine::RenderParams &params) = 0;
 
     // Return the current active RprimCollection
     virtual HdRprimCollection const& GetRprimCollection() const;
@@ -75,26 +75,26 @@ public:
     // returns true if the task delegate can handle \p params.
     // if it's false, the default task will be used instead.
     // (for example, a plugin task may not support enableIdRender)
-    virtual bool CanRender(const UsdImagingEngine::RenderParams &params) = 0;
+    virtual bool CanRender(const UsdImagingGLEngine::RenderParams &params) = 0;
 
     // returns true if the image is converged.
     virtual bool IsConverged() const = 0;
 };
 
-class UsdImagingTaskDelegateFactoryBase : public TfType::FactoryBase {
+class UsdImagingGLTaskDelegateFactoryBase : public TfType::FactoryBase {
 public:
-    virtual UsdImagingTaskDelegateSharedPtr
+    virtual UsdImagingGLTaskDelegateSharedPtr
     New(HdRenderIndexSharedPtr const& renderIndex,
         SdfPath const& delegateID) const = 0;
 };
 
 template <class T>
-class UsdImagingTaskDelegateFactory : public UsdImagingTaskDelegateFactoryBase {
+class UsdImagingGLTaskDelegateFactory : public UsdImagingGLTaskDelegateFactoryBase {
 public:
-    virtual UsdImagingTaskDelegateSharedPtr
+    virtual UsdImagingGLTaskDelegateSharedPtr
     New(HdRenderIndexSharedPtr const& renderIndex,
         SdfPath const& delegateID) const
     {
-        return UsdImagingTaskDelegateSharedPtr(new T(renderIndex, delegateID));
+        return UsdImagingGLTaskDelegateSharedPtr(new T(renderIndex, delegateID));
     }
 };

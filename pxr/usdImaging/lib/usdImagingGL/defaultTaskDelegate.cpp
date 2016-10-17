@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/defaultTaskDelegate.h"
+#include "pxr/usdImaging/usdImagingGL/defaultTaskDelegate.h"
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -54,21 +54,21 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 static bool
-_ShouldEnableLighting(UsdImagingEngine::RenderParams params)
+_ShouldEnableLighting(UsdImagingGLEngine::RenderParams params)
 {
     switch(params.drawMode) {
-    case UsdImagingEngine::DRAW_GEOM_ONLY:
-    case UsdImagingEngine::DRAW_POINTS:
+    case UsdImagingGLEngine::DRAW_GEOM_ONLY:
+    case UsdImagingGLEngine::DRAW_POINTS:
         return false;
     default:
         return params.enableLighting and not params.enableIdRender;
     }
 }
 
-UsdImaging_DefaultTaskDelegate::UsdImaging_DefaultTaskDelegate(
+UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
     HdRenderIndexSharedPtr const& parentIndex,
     SdfPath const& delegateID)
-    : UsdImagingTaskDelegate(parentIndex, delegateID)
+    : UsdImagingGLTaskDelegate(parentIndex, delegateID)
     , _viewport(0,0,1,1)
     , _selectionColor(1,1,0,1)
 {
@@ -148,7 +148,7 @@ UsdImaging_DefaultTaskDelegate::UsdImaging_DefaultTaskDelegate(
                         _idRenderTaskId);
 }
 
-UsdImaging_DefaultTaskDelegate::~UsdImaging_DefaultTaskDelegate()
+UsdImagingGL_DefaultTaskDelegate::~UsdImagingGL_DefaultTaskDelegate()
 {
     // remove the render graph entities from the renderIndex
     HdRenderIndex &renderIndex = GetRenderIndex();
@@ -166,13 +166,13 @@ UsdImaging_DefaultTaskDelegate::~UsdImaging_DefaultTaskDelegate()
 
 /*virtual*/
 HdRprimCollection const&
-UsdImaging_DefaultTaskDelegate::GetRprimCollection() const
+UsdImagingGL_DefaultTaskDelegate::GetRprimCollection() const
 {
     return _rprims;
 }
 
 void
-UsdImaging_DefaultTaskDelegate::_InsertRenderTask(SdfPath const &id)
+UsdImagingGL_DefaultTaskDelegate::_InsertRenderTask(SdfPath const &id)
 {
     GetRenderIndex().InsertTask<HdxRenderTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
@@ -188,8 +188,8 @@ UsdImaging_DefaultTaskDelegate::_InsertRenderTask(SdfPath const &id)
 }
 
 HdTaskSharedPtrVector
-UsdImaging_DefaultTaskDelegate::GetRenderTasks(
-    UsdImagingEngine::RenderParams const &params)
+UsdImagingGL_DefaultTaskDelegate::GetRenderTasks(
+    UsdImagingGLEngine::RenderParams const &params)
 {
     HdTaskSharedPtrVector tasks; // XXX: we can cache this vector
     tasks.reserve(3);
@@ -215,24 +215,24 @@ UsdImaging_DefaultTaskDelegate::GetRenderTasks(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::SetCollectionAndRenderParams(
+UsdImagingGL_DefaultTaskDelegate::SetCollectionAndRenderParams(
     const SdfPathVector &roots,
-    const UsdImagingEngine::RenderParams &params)
+    const UsdImagingGLEngine::RenderParams &params)
 {
     // choose repr
     TfToken repr = HdTokens->smoothHull;
     bool refined = params.complexity > 1.0;
 
-    if (params.drawMode == UsdImagingEngine::DRAW_GEOM_FLAT or
-        params.drawMode == UsdImagingEngine::DRAW_SHADED_FLAT) {
+    if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT or
+        params.drawMode == UsdImagingGLEngine::DRAW_SHADED_FLAT) {
         repr = HdTokens->hull;
-    } else if (params.drawMode == UsdImagingEngine::DRAW_WIREFRAME_ON_SURFACE) {
+    } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE) {
         if (refined) {
             repr = HdTokens->refinedWireOnSurf;
         } else {
             repr = HdTokens->wireOnSurf;
         }
-    } else if (params.drawMode == UsdImagingEngine::DRAW_WIREFRAME) {
+    } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME) {
         if (refined) {
             repr = HdTokens->refinedWire;
         } else {
@@ -262,7 +262,7 @@ UsdImaging_DefaultTaskDelegate::SetCollectionAndRenderParams(
                       _renderTaskId,
                       _idRenderTaskId);
 
-    UsdImagingEngine::RenderParams &oldParams = params.enableIdRender
+    UsdImagingGLEngine::RenderParams &oldParams = params.enableIdRender
                     ? _idRenderParams
                     : _renderParams;
     SdfPath const &taskId = params.enableIdRender
@@ -276,7 +276,7 @@ UsdImaging_DefaultTaskDelegate::SetCollectionAndRenderParams(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::_UpdateCollection(
+UsdImagingGL_DefaultTaskDelegate::_UpdateCollection(
     HdRprimCollection *rprims,
     TfToken const &colName, TfToken const &reprName,
     SdfPathVector const &roots,
@@ -326,9 +326,9 @@ UsdImaging_DefaultTaskDelegate::_UpdateCollection(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::_UpdateRenderParams(
-    UsdImagingEngine::RenderParams const &renderParams,
-    UsdImagingEngine::RenderParams const &oldRenderParams,
+UsdImagingGL_DefaultTaskDelegate::_UpdateRenderParams(
+    UsdImagingGLEngine::RenderParams const &renderParams,
+    UsdImagingGLEngine::RenderParams const &oldRenderParams,
     SdfPath const &renderTaskId)
 {
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
@@ -340,7 +340,7 @@ UsdImaging_DefaultTaskDelegate::_UpdateRenderParams(
     };
     static_assert(((sizeof(USD_2_HD_CULL_STYLE) / 
                     sizeof(USD_2_HD_CULL_STYLE[0])) 
-                == UsdImagingEngine::CULL_STYLE_COUNT),"enum size mismatch");
+                == UsdImagingGLEngine::CULL_STYLE_COUNT),"enum size mismatch");
 
     HdxRenderTaskParams params =
                 _GetValue<HdxRenderTaskParams>(renderTaskId, HdTokens->params);
@@ -403,7 +403,7 @@ UsdImaging_DefaultTaskDelegate::_UpdateRenderParams(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::SetLightingState(
+UsdImagingGL_DefaultTaskDelegate::SetLightingState(
     const GlfSimpleLightingContextPtr &src)
 {
     if (not TF_VERIFY(src)) return;
@@ -467,7 +467,7 @@ UsdImaging_DefaultTaskDelegate::SetLightingState(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::SetBypassedLightingState(
+UsdImagingGL_DefaultTaskDelegate::SetBypassedLightingState(
     const GlfSimpleLightingContextPtr &src)
 {
     HdxSimpleLightBypassTaskParams params;
@@ -484,7 +484,7 @@ UsdImaging_DefaultTaskDelegate::SetBypassedLightingState(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::SetCameraState(
+UsdImagingGL_DefaultTaskDelegate::SetCameraState(
     const GfMatrix4d& viewMatrix,
     const GfMatrix4d& projectionMatrix,
     const GfVec4d& viewport)
@@ -523,7 +523,7 @@ UsdImaging_DefaultTaskDelegate::SetCameraState(
 }
 
 void
-UsdImaging_DefaultTaskDelegate::SetSelectionColor(GfVec4f const& color)
+UsdImagingGL_DefaultTaskDelegate::SetSelectionColor(GfVec4f const& color)
 {
     if (_selectionColor != color) {
         _selectionColor = color;
@@ -540,7 +540,7 @@ UsdImaging_DefaultTaskDelegate::SetSelectionColor(GfVec4f const& color)
 
 /* virtual */
 VtValue
-UsdImaging_DefaultTaskDelegate::Get(SdfPath const& id, TfToken const& key)
+UsdImagingGL_DefaultTaskDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
@@ -554,15 +554,15 @@ UsdImaging_DefaultTaskDelegate::Get(SdfPath const& id, TfToken const& key)
 
 /* virtual */
 bool
-UsdImaging_DefaultTaskDelegate::CanRender(
-    const UsdImagingEngine::RenderParams &params)
+UsdImagingGL_DefaultTaskDelegate::CanRender(
+    const UsdImagingGLEngine::RenderParams &params)
 {
     return true;
 }
 
 /* virtual */
 bool
-UsdImaging_DefaultTaskDelegate::IsConverged() const
+UsdImagingGL_DefaultTaskDelegate::IsConverged() const
 {
     // default task always converges.
     return true;
@@ -570,10 +570,10 @@ UsdImaging_DefaultTaskDelegate::IsConverged() const
 
 /* virtual */
 bool
-UsdImaging_DefaultTaskDelegate::IsEnabled(TfToken const& option) const
+UsdImagingGL_DefaultTaskDelegate::IsEnabled(TfToken const& option) const
 {
     if (option == HdxOptionTokens->taskSetAlphaToCoverage) {
-        // UsdImagingHdEngine enables ALPHA_TO_COVERAGE as needed.
+        // UsdImagingGLHdEngine enables ALPHA_TO_COVERAGE as needed.
         return true;
     }
     return HdSceneDelegate::IsEnabled(option);
@@ -581,7 +581,7 @@ UsdImaging_DefaultTaskDelegate::IsEnabled(TfToken const& option) const
 
 /* virtual */
 std::vector<GfVec4d>
-UsdImaging_DefaultTaskDelegate::GetClipPlanes(SdfPath const& cameraId)
+UsdImagingGL_DefaultTaskDelegate::GetClipPlanes(SdfPath const& cameraId)
 {
     return _clipPlanes;
 }
