@@ -864,7 +864,13 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (requestedBits & HdChangeTracker::DirtySurfaceShader) {
-            valueCache->GetSurfaceShader(cachePath) = GetShaderBinding(prim);
+            // First try to get the shader binded in the instance, if no shader
+            // is bound then access the shader bound to the master prim.
+            SdfPath p = GetShaderBinding(prim);
+            if (p.IsEmpty()) {
+                p = GetShaderBinding(_GetPrim(rproto.path));
+            }
+            valueCache->GetSurfaceShader(cachePath) = p;
         }
 
     } else {
