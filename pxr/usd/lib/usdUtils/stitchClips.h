@@ -42,7 +42,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// clipPath without copying the samples into a separate layer.
 ///
 /// \p resultLayer            The layer to which clip meta data and frame data 
-///                           will be written
+///                           will be written. The layer representing the static
+///                           scene topology will be authored as a sublayer on
+///                           this layer as well; it will be authored as the 
+///                           first sublayer in the list(strongest).
 ///
 /// \p clipLayerFiles         The files containing the time varying data.
 ///

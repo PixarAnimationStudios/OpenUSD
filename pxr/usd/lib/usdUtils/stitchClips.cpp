@@ -63,6 +63,9 @@ namespace {
     // ------------------------------------------------------------------------
     constexpr double TIME_MAX = std::numeric_limits<double>::max();
 
+    // We insert the topology layer as the strongest
+    constexpr size_t TOPOLOGY_SUBLAYER_STRENGTH = 0;
+
     // keys for indexing into the clip info
     // XXX: This code is shared in usd/clip.h
     // ------------------------------------------------------------------------
@@ -391,29 +394,18 @@ namespace {
     }
 
     void
-    _StitchClipTopologyLayerReference(const SdfLayerRefPtr& resultLayer,
-                                      const SdfPath& rootPath,
-                                      const std::string& topIdentifier)
+    _StitchClipsTopologySubLayerPath(const SdfLayerRefPtr& resultLayer,
+                                     const std::string& topIdentifier)
     {
-        if (not resultLayer->GetPrimAtPath(rootPath)) {
-            TF_CODING_ERROR("Invalid prim path referenced in result layer");
-            return;
+        auto sublayers = resultLayer->GetSubLayerPaths();
+
+        // We only want to add the topology layer if it hasn't been
+        // previously sublayered into this result layer.
+        if (std::find(sublayers.begin(), sublayers.end(), topIdentifier) 
+            == sublayers.end()) {
+            resultLayer->InsertSubLayerPath(topIdentifier, 
+                                            TOPOLOGY_SUBLAYER_STRENGTH);
         }
-
-        // fetch any available references at the prim
-        SdfReferencesProxy currentReferenceVec 
-            = resultLayer
-                ->GetPrimAtPath(rootPath)
-                ->GetReferenceList();
-
-        // insert the new reference to the topology file
-        currentReferenceVec
-            .Add(SdfReference(topIdentifier, rootPath));
-
-        // make the ref owning prim a def
-        resultLayer
-            ->GetPrimAtPath(rootPath)
-            ->SetSpecifier(SdfSpecifierDef);
     }
 
     // Add the clipAssetPath metadata at the specified \p stitchPath
@@ -709,7 +701,8 @@ namespace {
                 = _GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
                                              topologyLayer->GetRealPath(),
                                              resultLayer->GetRealPath());
-            _StitchClipTopologyLayerReference(resultLayer, rootPath, topologyId); 
+
+            _StitchClipsTopologySubLayerPath(resultLayer, topologyId); 
         }
     }
 
@@ -733,7 +726,7 @@ namespace {
                              const double startTimeCode,
                              const double endTimeCode)
     {
-        _StitchLayers(resultLayer, topologyLayer, clipLayers, clipPath); 
+        _StitchLayers(resultLayer, topologyLayer, clipLayers, clipPath);
         _SetTimeCodeRange(resultLayer, clipPath, startTimeCode, endTimeCode);
 
         topologyLayer->Save();
@@ -837,12 +830,12 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
     SdfLayerRefPtr topologyLayer;
     bool topologyWasGenerated;
 
-    std::tie(topologyLayer, topologyWasGenerated) = _CreateTopologyLayer(
-        resultLayer, reuseExistingTopology);
+    std::tie(topologyLayer, topologyWasGenerated) 
+        = _CreateTopologyLayer(resultLayer, reuseExistingTopology);
 
     SdfLayerRefPtrVector clipLayers;
-    const bool clipLayersAreValid = _OpenClipLayers(&clipLayers, 
-        clipLayerFiles, clipPath);
+    const bool clipLayersAreValid 
+        = _OpenClipLayers(&clipLayers, clipLayerFiles, clipPath);
 
     if (not clipLayersAreValid) {
         if (topologyWasGenerated) {
