@@ -716,6 +716,110 @@ UsdStage::Open(const std::string& filePath,
     return Open(rootLayer, pathResolverContext, load);
 }
 
+class Usd_StageOpenRequest : public UsdStageCacheRequest
+{
+public:
+    Usd_StageOpenRequest(UsdStage::InitialLoadSet load,
+                         SdfLayerHandle const &rootLayer)
+        : _rootLayer(rootLayer)
+        , _initialLoadSet(load) {}
+    Usd_StageOpenRequest(UsdStage::InitialLoadSet load,
+                         SdfLayerHandle const &rootLayer,
+                         SdfLayerHandle const &sessionLayer)
+        : _rootLayer(rootLayer)
+        , _sessionLayer(sessionLayer)
+        , _initialLoadSet(load) {}
+    Usd_StageOpenRequest(UsdStage::InitialLoadSet load,
+                         SdfLayerHandle const &rootLayer,
+                         ArResolverContext const &pathResolverContext)
+        : _rootLayer(rootLayer)
+        , _pathResolverContext(pathResolverContext)
+        , _initialLoadSet(load) {}
+    Usd_StageOpenRequest(UsdStage::InitialLoadSet load,
+                         SdfLayerHandle const &rootLayer,
+                         SdfLayerHandle const &sessionLayer,
+                         ArResolverContext const &pathResolverContext)
+        : _rootLayer(rootLayer)
+        , _sessionLayer(sessionLayer)
+        , _pathResolverContext(pathResolverContext)
+        , _initialLoadSet(load) {}
+
+    virtual ~Usd_StageOpenRequest() {}
+    virtual bool IsSatisfiedBy(UsdStageRefPtr const &stage) const {
+        // Works if other stage's root layer matches and we either don't care
+        // about the session layer or it matches, and we either don't care about
+        // the path resolverContext or it matches.
+        return _rootLayer == stage->GetRootLayer() &&
+            (!_sessionLayer || (*_sessionLayer == stage->GetSessionLayer())) &&
+            (!_pathResolverContext || (*_pathResolverContext ==
+                                       stage->GetPathResolverContext()));
+    }
+    virtual bool IsSatisfiedBy(UsdStageCacheRequest const &other) const {
+        auto req = dynamic_cast<Usd_StageOpenRequest const *>(&other);
+        if (!req)
+            return false;
+
+        // Works if other's root layer matches and we either don't care about
+        // the session layer or it matches, and we either don't care about the
+        // path resolverContext or it matches.
+        return _rootLayer == req->_rootLayer &&
+            (!_sessionLayer || (_sessionLayer == req->_sessionLayer)) &&
+            (!_pathResolverContext || (_pathResolverContext ==
+                                       req->_pathResolverContext));
+    }
+    virtual UsdStageRefPtr Manufacture() {
+        return UsdStage::_InstantiateStage(
+            SdfLayerRefPtr(_rootLayer),
+            _sessionLayer ? SdfLayerRefPtr(*_sessionLayer) :
+            _CreateAnonymousSessionLayer(_rootLayer),
+            _pathResolverContext ? *_pathResolverContext :
+            _CreatePathResolverContext(_rootLayer),
+            _initialLoadSet);
+    }
+
+private:
+    SdfLayerHandle _rootLayer;
+    boost::optional<SdfLayerHandle> _sessionLayer;
+    boost::optional<ArResolverContext> _pathResolverContext;
+    UsdStage::InitialLoadSet _initialLoadSet;
+};
+
+/* static */
+template <class... Args>
+UsdStageRefPtr
+UsdStage::_OpenImpl(InitialLoadSet load, Args const &... args)
+{
+    // Try to find a matching stage in read-only caches.
+    for (const UsdStageCache *cache:
+             UsdStageCacheContext::_GetReadableCaches()) {
+        if (UsdStageRefPtr stage = cache->FindOneMatching(args...))
+            return stage;
+    }
+
+    // If none found, request the stage in all the writable caches.  If we
+    // manufacture a stage, we'll publish it to all the writable caches, so
+    // subsequent requests will get the same stage out.
+    UsdStageRefPtr stage;
+    auto writableCaches = UsdStageCacheContext::_GetWritableCaches();
+    if (writableCaches.empty()) {
+        stage = Usd_StageOpenRequest(load, args...).Manufacture();
+    }
+    else {
+        for (UsdStageCache *cache: writableCaches) {
+            auto r = cache->RequestStage(Usd_StageOpenRequest(load, args...));
+            if (!stage)
+                stage = r.first;
+            if (r.second) {
+                // We manufactured the stage -- we published it to all the other
+                // caches too, so nothing left to do.
+                break;
+            }
+        }
+    }
+    TF_VERIFY(stage);
+    return stage;
+}
+
 /* static */
 UsdStageRefPtr
 UsdStage::Open(const SdfLayerHandle& rootLayer, InitialLoadSet load)
@@ -730,19 +834,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer, InitialLoadSet load)
              rootLayer->GetIdentifier().c_str(),
              TfStringify(load).c_str());
 
-    // Try to find a matching stage in any caches.
-    BOOST_FOREACH(const UsdStageCache *cache,
-                  UsdStageCacheContext::_GetReadableCaches()) {
-        if (UsdStageRefPtr stage = cache->FindOneMatching(rootLayer))
-            return stage;
-    }
-
-    // No cached stages.  Make a new stage, and populate caches with it.
-    return _InstantiateStage(
-        rootLayer,
-        _CreateAnonymousSessionLayer(rootLayer),
-        _CreatePathResolverContext(rootLayer),
-        load);
+    return _OpenImpl(load, rootLayer);
 }
 
 /* static */
@@ -762,21 +854,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              sessionLayer ? sessionLayer->GetIdentifier().c_str() : "<null>",
              TfStringify(load).c_str());
 
-    // Try to find a matching stage in any caches.
-    BOOST_FOREACH(const UsdStageCache *cache,
-                  UsdStageCacheContext::_GetReadableCaches()) {
-        if (UsdStageRefPtr stage =
-            cache->FindOneMatching(rootLayer, sessionLayer)) {
-            return stage;
-        }
-    }
-
-    // No cached stages.  Make a new stage, and populate caches with it.
-    return _InstantiateStage(
-        rootLayer,
-        sessionLayer,
-        _CreatePathResolverContext(rootLayer),
-        load);
+    return _OpenImpl(load, rootLayer, sessionLayer);
 }
 
 /* static */
@@ -797,21 +875,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              pathResolverContext.GetDebugString().c_str(), 
              TfStringify(load).c_str());
 
-    // Try to find a matching stage in any caches.
-    BOOST_FOREACH(const UsdStageCache *cache,
-                  UsdStageCacheContext::_GetReadableCaches()) {
-        if (UsdStageRefPtr stage =
-            cache->FindOneMatching(rootLayer, pathResolverContext)) {
-            return stage;
-        }
-    }
-
-    // No cached stages.  Make a new stage, and populate caches with it.
-    return _InstantiateStage(
-        rootLayer,
-        _CreateAnonymousSessionLayer(rootLayer),
-        pathResolverContext,
-        load);
+    return _OpenImpl(load, rootLayer, pathResolverContext);
 }
 
 /* static */
@@ -834,21 +898,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              pathResolverContext.GetDebugString().c_str(),
              TfStringify(load).c_str());
 
-    // Try to find a matching stage in any caches.
-    BOOST_FOREACH(const UsdStageCache *cache,
-                  UsdStageCacheContext::_GetReadableCaches()) {
-        if (UsdStageRefPtr stage = cache->FindOneMatching(
-                rootLayer, sessionLayer, pathResolverContext)) {
-            return stage;
-        }
-    }
-
-    // No cached stages.  Make a new stage, and populate caches with it.
-    return _InstantiateStage(
-        rootLayer,
-        sessionLayer,
-        pathResolverContext,
-        load);
+    return _OpenImpl(load, rootLayer, sessionLayer, pathResolverContext);
 }
 
 SdfPropertySpecHandle

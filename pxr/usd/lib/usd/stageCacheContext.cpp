@@ -41,6 +41,25 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 
 /* static */
 vector<const UsdStageCache *>
+UsdStageCacheContext::_GetReadOnlyCaches()
+{
+    const Stack &stack = GetStack();
+    vector<const UsdStageCache *> caches;
+    caches.reserve(stack.size());
+    BOOST_REVERSE_FOREACH(const UsdStageCacheContext *ctx, stack) {
+        if (ctx->_blockType == UsdBlockStageCaches) {
+            break;
+        } else if (ctx->_blockType == UsdBlockStageCachePopulation) {
+            continue;
+        } else if (ctx->_isReadOnlyCache) {
+            caches.push_back(ctx->_roCache);
+        }
+    }
+    return caches;
+}
+
+/* static */
+vector<const UsdStageCache *>
 UsdStageCacheContext::_GetReadableCaches()
 {
     const Stack &stack = GetStack();

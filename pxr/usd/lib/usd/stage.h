@@ -1114,6 +1114,10 @@ private:
              const ArResolverContext& pathResolverContext,
              InitialLoadSet load);
 
+    // Helper for Open() overloads -- searches and publishes to bound caches.
+    template <class... Args>
+    static UsdStageRefPtr _OpenImpl(InitialLoadSet load, Args const &... args);
+
     // Common ref ptr initialization, called by public, static constructors.
     //
     // This method will either return a valid refptr (if the stage is correctly
@@ -1673,6 +1677,7 @@ private:
     friend class UsdVariantSet;
     friend class UsdVariantSets;
     friend class Usd_PrimData;
+    friend class Usd_StageOpenRequest;
 };
 
 template<typename T>

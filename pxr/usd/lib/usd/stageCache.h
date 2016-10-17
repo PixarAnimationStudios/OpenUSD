@@ -40,6 +40,8 @@ TF_DECLARE_REF_PTRS(UsdStage);
 
 class ArResolverContext;
 
+class UsdStageCacheRequest;
+
 /// \class UsdStageCache
 ///
 /// A strongly concurrency safe collection of UsdStageRefPtr s, enabling
@@ -161,6 +163,32 @@ public:
     /// Return true if this cache holds no stages, false otherwise.
     bool IsEmpty() const { return Size() == 0; }
 
+    /// Find an existing stage in the cache that satisfies \p request, or invoke
+    /// request.Manufacture() to create one and insert it into the cache.
+    /// Return the resulting stage and a bool indicating whether or not this
+    /// call manufactured the stage.
+    ///
+    /// This avoids race conditions in concurrent code that can occur using the
+    /// other public methods.  Consider this racy example:
+    ///
+    /// \code
+    /// if (!cache.FindOneMatching(rootLayer)) {
+    ///     auto stage = UsdStage::Open(rootLayer);
+    ///     cache.Insert(stage);
+    /// }
+    /// \endcode
+    ///
+    /// This will race with another thread doing the same thing, resulting in
+    /// two stages with the same root layer inserted in the cache.  This is
+    /// potentially rather inefficient since stage creation can be expensive,
+    /// depending on how many objects and how many prims & layers the stage
+    /// contains.  RequestStage() avoids this by ensuring that there is no race
+    /// and the stage is created only once.
+    ///
+    /// Note that request should not be retained and must not be reused.
+    std::pair<UsdStageRefPtr, bool>
+    RequestStage(UsdStageCacheRequest &&request);
+
     /// Find the stage in this cache corresponding to \p id in this cache.  If
     /// \p id is not valid (see Id::IsValid()) or if this cache does not have a
     /// stage corresponding to \p id, return null.
@@ -177,7 +205,7 @@ public:
     /// than one matching stage in this cache, return an arbitrary matching one.
     /// See also FindAllMatching().
     UsdStageRefPtr FindOneMatching(const SdfLayerHandle &rootLayer,
-                                     const SdfLayerHandle &sessionLayer) const;
+                                   const SdfLayerHandle &sessionLayer) const;
 
     /// Find a stage in this cache with \p rootLayer and \p pathResolverContext.
     /// If there is no matching stage in this cache, return null.  If there is
@@ -300,6 +328,33 @@ private:
     typedef struct Usd_StageCacheImpl _Impl;
     std::unique_ptr<_Impl> _impl;
     mutable std::mutex _mutex;
+};
+
+class UsdStageCacheRequest
+{
+public:
+    virtual ~UsdStageCacheRequest();
+
+    // Return true if the stage satisfies this request.
+    virtual bool IsSatisfiedBy(UsdStageRefPtr const &stage) const = 0;
+
+    // Return true if the pending request will satisfy this request, once
+    // complete.
+    virtual bool IsSatisfiedBy(UsdStageCacheRequest const &pending) const = 0;
+
+    // Invoked to manufacture a stage to insert in the cache.  Postcondition:
+    // IsSatisfiedBy() must return true for the resulting stage.
+    virtual UsdStageRefPtr Manufacture() = 0;
+
+private:
+    friend class UsdStageCache;
+
+    struct _Mailbox;
+    void _Subscribe(_Mailbox *);
+
+    struct _Data;
+    struct _DataDeleter { void operator()(_Data *); };
+    std::unique_ptr<_Data, _DataDeleter> _data;
 };
 
 #endif // USD_STAGECACHE_H
