@@ -227,15 +227,14 @@ public:
     /// These control the amount of padding USD will supply when looking up 
     /// the assets. For instance, a value of 'foo.###.usd', 
     /// with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1:
-    /// USD will look for: foo.11.usd, foo.12.usd, foo.13.usd, foo.14.usd, foo.15.usd, 
-    /// foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd.
+    /// USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd.
     bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const;
     /// Set the clipTemplateAssetPath metadata for this prim.
     /// \sa GetClipTemplateAssetPath
     bool SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath);
 
     /// A double representing the increment value USD will use when
-    /// searching for asset paths. For example usage see clipTemplateAssetPath.
+    /// searching for asset paths. For example usage \sa GetClipTemplateAssetPath.
     bool GetClipTemplateStride(double* clipTemplateStride) const;
     /// Set the clipTemplateStride metadata for this prim
     /// \sa GetClipTemplateStride()
@@ -243,7 +242,7 @@ public:
 
     /// A double which indicates the start of the range USD will use 
     /// to search for asset paths. This value is inclusive in that range.
-    /// For example usage see clipTemplateAssetPath.
+    /// For example usage \sa GetClipTemplateAssetPath.
     bool GetClipTemplateStartTime(double* clipTemplateStartTime) const;
     /// Set the clipTemplateStartTime metadata for this prim
     /// \sa GetClipTemplateStartTime
@@ -251,7 +250,7 @@ public:
 
     /// A double which indicates the end of the range USD will use to
     /// to search for asset paths. This value is inclusive in that range.
-    /// For example usage see clipTemplateAssetPath.
+    /// For example usage \sa GetClipTemplateAssetPath.
     bool GetClipTemplateEndTime(double* clipTemplateEndTime) const;
     /// Set the clipTemplateEndTime metadata for this prim
     /// \sa GetClipTemplateEndTime()
