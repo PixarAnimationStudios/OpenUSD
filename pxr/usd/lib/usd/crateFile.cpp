@@ -59,7 +59,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
-#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -560,7 +559,7 @@ private:
     // Queue of pending write operations.
     tbb::concurrent_queue<_WriteOp> _writeQueue;
 
-    WorkDispatcher _dispatcher;
+    WorkArenaDispatcher _dispatcher;
     WorkSingularTask _writeTask;
 };
 
