@@ -56,11 +56,16 @@ SdfPath
 UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
                                         std::string* whyNot) const
 {
-    if (Usd_InstanceCache::IsPathMasterOrInMaster(target)) {
-        if (whyNot) { 
-            *whyNot = "Cannot target a master or an object within a master.";
+    if (!target.IsEmpty()) {
+        SdfPath absTarget =
+            target.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
+        if (Usd_InstanceCache::IsPathMasterOrInMaster(absTarget)) {
+            if (whyNot) { 
+                *whyNot = "Cannot target a master or an object within a "
+                    "master.";
+            }
+            return SdfPath();
         }
-        return SdfPath();
     }
 
     UsdStage *stage = _GetStage();

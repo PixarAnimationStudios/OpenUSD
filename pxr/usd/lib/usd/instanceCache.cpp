@@ -362,6 +362,13 @@ Usd_InstanceCache::IsPathMasterOrInMaster(const SdfPath& path)
     if (path.IsEmpty()) {
         return false;
     }
+    if (!path.IsAbsolutePath()) {
+        // We require an absolute path because there is no way for us
+        // to walk to the root prim level from a relative path.
+        TF_CODING_ERROR("IsPathMasterOrInMaster() requires an absolute path "
+                        "but was given <%s>", path.GetText());
+        return false;
+    }
 
     SdfPath rootPath = path;
     while (not rootPath.IsRootPrimPath()) {
