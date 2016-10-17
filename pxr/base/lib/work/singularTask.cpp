@@ -22,33 +22,3 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/work/singularTask.h"
-
-#include "pxr/base/work/dispatcher.h"
-
-struct WorkSingularTask::_Invoker
-{
-    explicit _Invoker(WorkSingularTask *task) : _task(task) {}
-
-    void operator()() const {
-        // We read the current refCount into oldCount, then we invoke the task
-        // function.  Finally we try to CAS the refCount to zero.  If we fail,
-        // it means some other clients have invoked Wake() in the meantime.  In
-        // that case we start over to ensure the task can do whatever it was
-        // awakened to do.  Once we successfully take the count to zero, we
-        // stop.
-        size_t oldCount = _task->_refCount;
-        do {
-            _task->_fn();
-        } while (not _task->_refCount.compare_exchange_strong(oldCount, 0));
-    }
-
-private:
-    WorkSingularTask *_task;
-};
-
-void
-WorkSingularTask::Wake()
-{
-    if (++_refCount == 1)
-        _dispatcher.Run(_Invoker(this));
-}
