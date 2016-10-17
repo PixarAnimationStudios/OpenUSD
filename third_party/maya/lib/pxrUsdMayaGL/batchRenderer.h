@@ -44,18 +44,19 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include <maya/M3dView.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
-#include <maya/MUserData.h>
-#include <maya/MViewport2Renderer.h>
+#include <maya/MDrawRequest.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MPxSurfaceShape.h>
-#include <maya/MDrawRequest.h>
-#include <maya/MDagPath.h>
+#include <maya/MUserData.h>
+#include <maya/MViewport2Renderer.h>
 
-#include <set>
-#include <unordered_set>
-#include <unordered_map>
+#include <memory>
 #include <functional>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 TF_DEBUG_CODES(
     PXRUSDMAYAGL_QUEUE_INFO
@@ -89,8 +90,8 @@ public:
     /// called at least once and it is OK to call it multiple times.  This
     /// handles things like initializing Gl/Glew.
     static void Init();
-    
-    static UsdMayaGLBatchRenderer& GetGlobalRenderer() { return _sGlobalRenderer; }
+
+    static UsdMayaGLBatchRenderer& GetGlobalRenderer();
 
     struct RenderParams
     {
@@ -303,9 +304,16 @@ public:
     const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
 
     /// \brief Construct a new, unique BatchRenderer. In almost all cases,
-    /// this should not be used -- use \c GlobalBatchRenderer() instead.
+    /// this should not be used -- use \c GetGlobalRenderer() instead.
     UsdMayaGLBatchRenderer();
-    
+
+    /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
+    /// In particular, it's important that this happen when switching to a new
+    /// Maya scene so that any UsdImagingDelegates held by ShapeRenderers that
+    /// have been populated with USD stages can have those stages released,
+    /// since the delegates hold a strong pointers to their stages.
+    static void Reset();
+
     /// \brief Render batch or bounds in VP1 based on \p request
     void Draw(
             const MDrawRequest& request,
@@ -401,9 +409,9 @@ private:
     TaskDelegateSharedPtr _taskDelegate;
     HdxIntersectorSharedPtr _intersector;
     UsdMayaGLSoftSelectHelper _softSelectHelper;
-    
+
     /// \brief Sole global batch renderer used by default.
-    static UsdMayaGLBatchRenderer _sGlobalRenderer;
+    static std::unique_ptr<UsdMayaGLBatchRenderer> _sGlobalRendererPtr;
 };
 
 #endif // PXRUSDMAYAGL_BATCHRENDERER_H
