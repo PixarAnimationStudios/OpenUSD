@@ -818,10 +818,13 @@ function(pxr_setup_python)
 
     # Install a pxr __init__.py with an appropriate __all__
     _get_install_dir(lib/python/pxr installPrefix)
-    install(DIRECTORY DESTINATION ${installPrefix})
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installPrefix}/__init__.py\" \"__all__ = [${pyModulesStr}]\n\")"
-    )
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+         "__all__ = [${pyModulesStr}]\n")
+
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+            DESTINATION ${installPrefix}
+            RENAME "__init__.py")
 endfunction() # pxr_setup_python
 
 function (pxr_create_test_module MODULE_NAME)
@@ -1077,15 +1080,19 @@ function(pxr_setup_plugins)
     # Install a top-level plugInfo.json in the shared area and into the 
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
-    set(plugInfoContents "{\\n    \\\"Includes\\\": [ \\\"*/${resourcesDir}/\\\" ]\\n}\\n")
-    install(DIRECTORY DESTINATION ${SHARE_INSTALL_PREFIX}/plugins)
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_PREFIX}/plugins/plugInfo.json\" ${plugInfoContents})"
-    )
-    install(DIRECTORY DESTINATION plugin/usd)
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/usd/plugInfo.json\" ${plugInfoContents})"
-    )
+    set(plugInfoContents "{\n    \"Includes\": [ \"*/${resourcesDir}/\" ]\n}\n")
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
+         "${plugInfoContents}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
+            DESTINATION "${SHARE_INSTALL_PREFIX}/plugins"
+            RENAME "plugInfo.json")
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
+         "${plugInfoContents}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
+            DESTINATION plugin/usd
+            RENAME "plugInfo.json")
 endfunction() # pxr_setup_plugins
 
 function(pxr_katana_nodetypes NODE_TYPES)
@@ -1105,9 +1112,10 @@ function(pxr_katana_nodetypes NODE_TYPES)
     )
 
     # Install a __init__.py that imports all the known node types
-    install(DIRECTORY DESTINATION ${installDir})
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installDir}/__init__.py\" \"${importLines}\")"
-    )
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_NodeTypes_init.py"
+         "${importLines}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_NodeTypes_init.py"
+            DESTINATION "${installDir}"
+            RENAME "__init__.py")
 endfunction() # pxr_katana_nodetypes
 
