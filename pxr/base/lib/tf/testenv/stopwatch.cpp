@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/nap.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -28,7 +29,9 @@
 #include <iostream>
 #include <algorithm>
 
+#if !defined(ARCH_OS_WINDOWS)
 #include <unistd.h>
+#endif
 #include <time.h>
 
 using namespace std;
@@ -49,7 +52,7 @@ Pause(double seconds)
     delay.tv_nsec = nanoseconds % 1000000000;
 
     pauseWatch.Start();
-    nanosleep(&delay, 0);
+    ArchNanoSleep(&delay, 0);
     pauseWatch.Stop();
 }
 
@@ -87,7 +90,7 @@ Test_TfStopwatch()
     delay.tv_nsec = 500000000;
 
     watch1.Start();
-    nanosleep(&delay, 0);
+    ArchNanoSleep(&delay, 0);
     watch1.Stop();
 
     // The value of watch1 should be "near" 0.5 seconds
@@ -102,7 +105,7 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if watch is near 1
     //
     watch1.Start();
-    nanosleep(&delay, 0);
+    ArchNanoSleep(&delay, 0);
     watch1.Stop();
 
     // The value of watch1 should be "near" 1.0 seconds
@@ -199,7 +202,7 @@ Test_TfStopwatch()
     delay.tv_nsec = 500000000;
 
     swatch1.Start();
-    nanosleep(&delay, 0);
+    ArchNanoSleep(&delay, 0);
     swatch1.Stop();
 
     // The value of swatch1 should be "near" 0.5 seconds
@@ -214,7 +217,7 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if swatch is near 1
     //
     swatch1.Start();
-    nanosleep(&delay, 0);
+    ArchNanoSleep(&delay, 0);
     swatch1.Stop();
 
     // The value of swatch1 should be "near" 1.0 seconds

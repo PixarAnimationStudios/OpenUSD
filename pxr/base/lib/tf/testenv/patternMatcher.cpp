@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/defines.h"
+
+#if !defined(ARCH_OS_WINDOWS)
 #include "pxr/base/tf/patternMatcher.h"
 #include "pxr/base/tf/regTest.h"
 
@@ -52,3 +55,5 @@ Test_TfPatternMatcher()
 }
 
 TF_ADD_REGTEST(TfPatternMatcher);
+
+#endif // #if !defined(ARCH_OS_WINDOWS)

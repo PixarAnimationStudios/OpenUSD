@@ -87,6 +87,13 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
 	return stream;
 }
 
+#if defined(ARCH_OS_WINDOWS)
+int ArchRmDir(const char* path)
+{
+    return RemoveDirectory(path) ? 0 : -1;
+}
+#endif
+
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 int
 ArchGetFilesystemStats(const char *path, struct statfs *buf)

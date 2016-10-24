@@ -82,21 +82,18 @@ pxr_build_test_shared_lib(TestPlugDsoIncomplete
 	CPPFILES
 		testenv/TestPlugDsoIncomplete.cpp
 )
-
-if (UNIX)
-	pxr_build_test_shared_lib(TestPlugDsoUnloadable
-		LIBRARIES
-			tf
-		CPPFILES
-			testenv/TestPlugDsoUnloadable.cpp
-	)
-endif()
+pxr_build_test_shared_lib(TestPlugDsoUnloadable
+	LIBRARIES
+		tf
+	CPPFILES
+		testenv/TestPlugDsoUnloadable.cpp
+)
 
 # This library helps test behavior when a plugin is unloadable,
 # but clang by default will error out when building this due to
 # the references to undefined symbols. So we need to specify a
 # link flag to force these symbols to be looked up at runtime.
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 set_target_properties(TestPlugDsoUnloadable
     PROPERTIES
     LINK_FLAGS "-undefined dynamic_lookup"

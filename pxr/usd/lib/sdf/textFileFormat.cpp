@@ -146,7 +146,7 @@ SdfTextFileFormat::ReadFromFile(
 {
     TRACE_FUNCTION();
 
-    Sdf_ScopedFilePointer fp(filePath.c_str());
+    Sdf_ScopedFilePointer fp(filePath.c_str(), "rb");
     if (not *fp)
         return false;
 

@@ -41,6 +41,7 @@ TF_DEFINE_ENV_SETTING(TF_TEST_STRING_ENV_SETTING, "default",
 
 TF_DEFINE_ENV_SETTING(TF_TEST_POST_ENV_SETTING_X, false, "post-registry-manager setting (not set by test)");
 
+#if !defined(ARCH_OS_WINDOWS)
 // This function runs after registry functions are registered but before
 // global dynamic initializations without the constructor attribute.  This
 // tests that there are no issues with getting an env setting related to
@@ -52,6 +53,7 @@ static void _PostRegistryManager()
 {
     TF_AXIOM(TfGetEnvSetting(TF_TEST_POST_ENV_SETTING_X) == false);
 }
+#endif
 
 static bool
 Test_TfEnvSetting()

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/env.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/regTest.h"
 
@@ -29,51 +30,51 @@ Test_TfGetenv()
 {
     bool status = true;
     std::string testVar = "GetEnvTestsuiteTestVar";
-    setenv(testVar.c_str(), "testing", 1);
+    ArchSetEnv(testVar.c_str(), "testing", 1);
     status &= ( TfGetenv(testVar, "bogusValue") == "testing" );
-    unsetenv(testVar.c_str());
+    ArchRemoveEnv(testVar.c_str());
     status &= ( TfGetenv(testVar, "bogusValue") == "bogusValue" );
 
-    setenv(testVar.c_str(), "42", 1);
+    ArchSetEnv(testVar.c_str(), "42", 1);
     status &= ( TfGetenvInt(testVar, 99) == 42 );
-    unsetenv(testVar.c_str());
+    ArchRemoveEnv(testVar.c_str());
     status &= ( TfGetenvInt(testVar, 99) == 99 );
 
-    setenv(testVar.c_str(), "true", 1);
+    ArchSetEnv(testVar.c_str(), "true", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
-    unsetenv(testVar.c_str());
+    ArchRemoveEnv(testVar.c_str());
     status &= ( TfGetenvBool(testVar, false) == false );
 
-    setenv(testVar.c_str(), "TRUE", 1);
+    ArchSetEnv(testVar.c_str(), "TRUE", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
-    unsetenv(testVar.c_str());
+    ArchRemoveEnv(testVar.c_str());
     status &= ( TfGetenvBool(testVar, false) == false );
 
-    setenv(testVar.c_str(), "yes", 1);
+    ArchSetEnv(testVar.c_str(), "yes", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
 
-    setenv(testVar.c_str(), "YES", 1);
+    ArchSetEnv(testVar.c_str(), "YES", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
 
-    setenv(testVar.c_str(), "1", 1);
+    ArchSetEnv(testVar.c_str(), "1", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
 
-    setenv(testVar.c_str(), "ON", 1);
+    ArchSetEnv(testVar.c_str(), "ON", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
 
-    setenv(testVar.c_str(), "on", 1);
+    ArchSetEnv(testVar.c_str(), "on", 1);
     status &= ( TfGetenvBool(testVar, false) == true );
 
-    setenv(testVar.c_str(), "false", 1);
+    ArchSetEnv(testVar.c_str(), "false", 1);
     status &= ( TfGetenvBool(testVar, false) == false );
 
-    setenv(testVar.c_str(), "false", 1);
+    ArchSetEnv(testVar.c_str(), "false", 1);
     status &= ( TfGetenvBool(testVar, true) == false );
 
-    setenv(testVar.c_str(), "someothercrap", 1);
+    ArchSetEnv(testVar.c_str(), "someothercrap", 1);
     status &= ( TfGetenvBool(testVar, false) == false );
 
-    setenv(testVar.c_str(), "someothercrap", 1);
+    ArchSetEnv(testVar.c_str(), "someothercrap", 1);
     status &= ( TfGetenvBool(testVar, true) == false );
 
     return status;
