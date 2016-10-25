@@ -1485,7 +1485,6 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
         GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._clearColor))))
-        GL.glShadeModel(GL.GL_SMOOTH)
 
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glDepthFunc(GL.GL_LESS)
@@ -1516,58 +1515,54 @@ class StageView(QtOpenGL.QGLWidget):
                                          gfCamera.clippingPlanes]
 
         if self._nodes:
-            self.setupOpenGLViewMatricesForFrustum(frustum)
-
-            GL.glColor3f(1.0,1.0,1.0)
-
             # for renderModes that need lights 
             if self.renderMode in ("Flat Shaded",
                                    "Smooth Shaded",
                                    "WireframeOnSurface",
                                    "Geom Smooth",
                                    "Geom Flat"):
-                GL.glEnable(GL.GL_LIGHTING)
+
                 stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
                                     self._bbcenter[2])
                 stageDir = (stagePos - cam_pos).GetNormalized()
+                lights = []
 
                 # ambient light located at the camera
                 if self.ambientLightOnly:
-                    GL.glEnable(GL.GL_LIGHT0)
-                    GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION,
-                                 (cam_pos[0], cam_pos[1], cam_pos[2], 1))
+                    l = Glf.SimpleLight()
+                    l.ambient = (0, 0, 0, 0)
+                    l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
+                    lights.append(l)
                 # three-point lighting
                 else:
-                    GL.glDisable(GL.GL_LIGHT0)
-
                     if self.keyLightEnabled:
                         # 45 degree horizontal viewing angle, 20 degree vertical
                         keyHorz = -1 / tan(rad(45)) * cam_right
                         keyVert = 1 / tan(rad(70)) * cam_up
                         keyPos = cam_pos + (keyVert + keyHorz) * self._dist
                         keyColor = (.8, .8, .8, 1.0)
-                        
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_AMBIENT,(0,0,0,0))
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_DIFFUSE, keyColor)
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, keyColor)
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, 
-                                    (keyPos[0], keyPos[1], keyPos[2], 1))
-                        GL.glEnable(GL.GL_LIGHT1)
-                
+
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.diffuse = keyColor
+                        l.specular = keyColor
+                        l.position = (keyPos[0], keyPos[1], keyPos[2], 1)
+                        lights.append(l)
+
                     if self.fillLightEnabled:
                         # 60 degree horizontal viewing angle, 45 degree vertical
                         fillHorz = 1 / tan(rad(30)) * cam_right
                         fillVert = 1 / tan(rad(45)) * cam_up
                         fillPos = cam_pos + (fillVert + fillHorz) * self._dist
                         fillColor = (.6, .6, .6, 1.0)
-                        
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, (0,0,0,0))
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, fillColor)
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, fillColor) 
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION,
-                                     (fillPos[0], fillPos[1], fillPos[2], 1))
-                        GL.glEnable(GL.GL_LIGHT2)
-                        
+
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.diffuse = fillColor
+                        l.specular = fillColor
+                        l.position = (fillPos[0], fillPos[1], fillPos[2], 1)
+                        lights.append(l)
+
                     if self.backLightEnabled:
                         # back light base is camera position refelcted over origin
                         # 30 degree horizontal viewing angle, 30 degree vertical
@@ -1576,23 +1571,21 @@ class StageView(QtOpenGL.QGLWidget):
                         backVert = -1 / tan(rad(60)) * cam_up
                         backPos += (backHorz + backVert) * self._dist
                         backColor = (.6, .6, .6, 1.0)
-                        
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, (0,0,0,0))
-                        GL.glLightfv(GL.GL_LIGHT3, GL.GL_DIFFUSE, backColor)
-                        GL.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, backColor)
-                        GL.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, 
-                                     (backPos[0], backPos[1], backPos[2], 1))
-                        GL.glEnable(GL.GL_LIGHT3)
-                        
-                GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_AMBIENT,
-                                (0.2, 0.2, 0.2, 1.0))
-                GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_SPECULAR,
-                                (0.5, 0.5, 0.5, 1.0))
-                GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_SHININESS, 32.0)
 
-                # XXX continue to set lighting state via OpenGL
-                # for compatibility w/ and w/o hydra enabled
-                self._renderer.SetLightingStateFromOpenGL()
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.diffuse = backColor
+                        l.specular = backColor
+                        l.position = (backPos[0], backPos[1], backPos[2], 1)
+                        lights.append(l)
+
+                material = Glf.SimpleMaterial()
+                material.ambient = (0.2, 0.2, 0.2, 1.0)
+                material.specular = (0.5, 0.5, 0.5, 1.0)
+                material.shininess = 32.0
+                sceneAmbient = (0.2, 0.2, 0.2, 1.0)
+
+                self._renderer.SetLightingState(lights, material, sceneAmbient)
 
             if self.renderMode == "Hidden Surface Wireframe":
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
@@ -1608,6 +1601,9 @@ class StageView(QtOpenGL.QGLWidget):
 
             self.renderSinglePass(self._renderModeDict[self.renderMode],
                                   self.drawSelHighlights)
+
+            # Axis bbox drawing
+            self.setupOpenGLViewMatricesForFrustum(frustum)
 
             # lights interfere with the correct coloring of bbox and axes
             GL.glDisable(GL.GL_LIGHTING)

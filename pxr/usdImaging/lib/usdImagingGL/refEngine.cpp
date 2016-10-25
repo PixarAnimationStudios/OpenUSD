@@ -474,6 +474,44 @@ UsdImagingGLRefEngine::SetCameraState(const GfMatrix4d& viewMatrix,
     glLoadMatrixd(viewMatrix.GetArray());
 }
 
+void
+UsdImagingGLRefEngine::SetLightingState(GlfSimpleLightVector const &lights,
+                                        GlfSimpleMaterial const &material,
+                                        GfVec4f const &sceneAmbient)
+{
+    if (lights.empty()) {
+        glDisable(GL_LIGHTING);
+    } else {
+        glEnable(GL_LIGHTING);
+
+        static int maxLights = 0;
+        if (maxLights == 0) {
+            glGetIntegerv(GL_MAX_LIGHTS, &maxLights);
+        }
+
+        for (size_t i = 0; i < maxLights; ++i) {
+            if (i < (int)lights.size()) {
+                glEnable(GL_LIGHT0+i);
+                GlfSimpleLight const &light = lights[i];
+
+                glLightfv(GL_LIGHT0+i, GL_POSITION, light.GetPosition().data());
+                glLightfv(GL_LIGHT0+i, GL_AMBIENT,  light.GetAmbient().data());
+                glLightfv(GL_LIGHT0+i, GL_DIFFUSE,  light.GetDiffuse().data());
+                glLightfv(GL_LIGHT0+i, GL_SPECULAR, light.GetSpecular().data());
+                // omit spot parameters.
+            } else {
+                glDisable(GL_LIGHT0+i);
+            }
+        }
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,
+                     material.GetAmbient().data());
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,
+                     material.GetSpecular().data());
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS,
+                    material.GetShininess());
+    }
+}
+
 void 
 UsdImagingGLRefEngine::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                                        UsdStageWeakPtr const& sender)

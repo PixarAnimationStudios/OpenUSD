@@ -88,6 +88,10 @@ public:
 
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
+    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+                                  GlfSimpleMaterial const &material,
+                                  GfVec4f const &sceneAmbient);
+
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
     virtual void SetRootVisibility(bool isVisible);

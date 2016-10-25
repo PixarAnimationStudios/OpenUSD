@@ -607,6 +607,29 @@ UsdImagingGLHdEngine::SetLightingStateFromOpenGL()
 
 /* virtual */
 void
+UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightVector const &lights,
+                                       GlfSimpleMaterial const &material,
+                                       GfVec4f const &sceneAmbient)
+{
+    // we still use _lightingContextForOpenGLState for convenience, but
+    // set the values directly.
+    if (not _lightingContextForOpenGLState) {
+        _lightingContextForOpenGLState = GlfSimpleLightingContext::New();
+    }
+    _lightingContextForOpenGLState->SetLights(lights);
+    _lightingContextForOpenGLState->SetMaterial(material);
+    _lightingContextForOpenGLState->SetSceneAmbient(sceneAmbient);
+    _lightingContextForOpenGLState->SetUseLighting(lights.size() > 0);
+
+    _defaultTaskDelegate->SetLightingState(_lightingContextForOpenGLState);
+
+    if (_currentPluginTaskDelegate)
+        _currentPluginTaskDelegate->SetLightingState(
+            _lightingContextForOpenGLState);
+}
+
+/* virtual */
+void
 UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
     // leave all lighting plumbing work to the incoming lighting context.

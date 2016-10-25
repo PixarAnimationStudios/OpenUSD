@@ -224,6 +224,16 @@ UsdImagingGL::SetLightingStateFromOpenGL()
 
 /* virtual */
 void
+UsdImagingGL::SetLightingState(GlfSimpleLightVector const &lights,
+                               GlfSimpleMaterial const &material,
+                               GfVec4f const &sceneAmbient)
+{
+    _engine->SetLightingState(lights, material, sceneAmbient);
+}
+
+
+/* virtual */
+void
 UsdImagingGL::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
     _engine->SetLightingState(src);

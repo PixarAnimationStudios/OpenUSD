@@ -28,6 +28,9 @@
 
 #include "pxr/usdImaging/usdImaging/version.h"
 
+#include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/glf/simpleMaterial.h"
+
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/usd/sdf/path.h"
@@ -36,6 +39,7 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/vt/dictionary.h"
 
@@ -177,6 +181,11 @@ public:
 
     /// Copy lighting state from another lighting context.
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
+
+    /// Set lighting state
+    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+                                  GlfSimpleMaterial const &material,
+                                  GfVec4f const &sceneAmbient);
 
     /// Sets the root transform.
     virtual void SetRootTransform(GfMatrix4d const& xf);

@@ -83,6 +83,16 @@ UsdImagingGLEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 
 /* virtual */
 void
+UsdImagingGLEngine::SetLightingState(GlfSimpleLightVector const &lights,
+                                     GlfSimpleMaterial const &material,
+                                     GfVec4f const &sceneAmbient)
+{
+    // By default, do nothing.
+}
+
+
+/* virtual */
+void
 UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 {
     // By default, do nothing.

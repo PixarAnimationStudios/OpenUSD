@@ -53,6 +53,11 @@ public:
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
+    /// Set lighting state
+    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+                                  GlfSimpleMaterial const &material,
+                                  GfVec4f const &sceneAmbient);
+
     virtual void InvalidateBuffers();
 
     virtual SdfPath GetPrimPathFromPrimIdColor(
