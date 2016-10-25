@@ -33,7 +33,6 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <regex>
 #include <set>
@@ -266,7 +265,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     }
 
     // Report unexpected keys.
-    BOOST_FOREACH(const JsObject::value_type& v, top) {
+    for (const auto& v : top) {
         const JsObject::key_type& key = v.first;
         if (key != _Tokens->PluginsKey and
             key != _Tokens->IncludesKey) {
@@ -384,7 +383,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
             Msg("Globbing plugin info path %s\n", pathname.c_str());
 
         // Yes, no recursive searches so do the glob.
-        BOOST_FOREACH(const std::string& match, TfGlob(pathname, 0)) {
+        for (const auto& match : TfGlob(pathname, 0)) {
             context->taskArena.Run(boost::bind(_ReadPlugInfo, context, match));
         }
         return;
@@ -667,7 +666,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Report unexpected keys.
-    BOOST_FOREACH(const JsObject::value_type& v, topInfo) {
+    for (const auto& v : topInfo) {
         const JsObject::key_type& subkey = v.first;
         if (subkey != _Tokens->TypeKey and
             subkey != _Tokens->NameKey and
@@ -699,7 +698,7 @@ Plug_ReadPlugInfo(
 {
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
     _ReadContext context(*taskArena, addVisitedPath, addPlugin);
-    BOOST_FOREACH(const std::string& pathname, pathnames) {
+    for (const auto& pathname : pathnames) {
         // For convenience we allow given paths that are directories but
         // don't end in "/" to be handled as directories.  Includes in
         // plugInfo files must still explicitly append '/' to be handled

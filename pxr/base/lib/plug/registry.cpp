@@ -40,8 +40,6 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_mutex.h>
 
-#include <boost/foreach.hpp>
-
 using std::pair;
 using std::string;
 using std::vector;
@@ -155,8 +153,9 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo)
 
     if (not newPlugins.empty()) {
         PlugPluginPtrVector v(newPlugins.begin(), newPlugins.end());
-        BOOST_FOREACH(const PlugPluginPtr &plug, v)
+        for (const auto& plug : v) {
             plug->_DeclareTypes();
+        }
         return v;
     }
     return PlugPluginPtrVector();

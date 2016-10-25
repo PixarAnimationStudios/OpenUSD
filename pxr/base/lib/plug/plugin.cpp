@@ -47,7 +47,6 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include <mutex>
 #include <string>
