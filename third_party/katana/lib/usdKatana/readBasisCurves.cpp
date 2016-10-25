@@ -33,8 +33,9 @@
 
 FnLogSetup("PxrUsdKatanaReadBasisCurves");
 
-static FnKat::GroupAttribute
-_GetCurveAttrs(const UsdGeomBasisCurves& basisCurves, double currentTime)
+static void
+_SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
+               const UsdGeomBasisCurves& basisCurves, double currentTime)
 {
     VtIntArray vtxCts;
     basisCurves.GetCurveVertexCountsAttr().Get(&vtxCts, currentTime);
@@ -44,15 +45,14 @@ _GetCurveAttrs(const UsdGeomBasisCurves& basisCurves, double currentTime)
     std::vector<int> &numVerts = numVertsBuilder.get();
     numVerts = ctsVec;
 
-    FnKat::GroupBuilder curveBuilder;
-    curveBuilder.set("numVertices", numVertsBuilder.build());
+    attrs.set("geometry.numVertices", numVertsBuilder.build());
 
     VtFloatArray widths;
     basisCurves.GetWidthsAttr().Get(&widths, currentTime);
     size_t numWidths = widths.size();
     if (numWidths == 1)
     {
-        curveBuilder.set("constantWidth",
+        attrs.set("geometry.constantWidth",
             FnKat::FloatAttribute(widths[0]));
     }
     else if (numWidths > 1)
@@ -60,15 +60,13 @@ _GetCurveAttrs(const UsdGeomBasisCurves& basisCurves, double currentTime)
         FnKat::FloatBuilder widthsBuilder(1);
         widthsBuilder.set(
             std::vector<float>(widths.begin(), widths.end()));
-        curveBuilder.set("point.width", widthsBuilder.build());
+        attrs.set("geometry.point.width", widthsBuilder.build());
     }
 
     TfToken curveType;
     basisCurves.GetTypeAttr().Get(&curveType, currentTime);
-    curveBuilder.set("degree",
+    attrs.set("geometry.degree",
         FnKat::IntAttribute(curveType == UsdGeomTokens->linear ? 1 : 3));
-
-    return curveBuilder.build();
 }
 
 void
@@ -139,17 +137,10 @@ PxrUsdKatanaReadBasisCurves(
     // Construct the 'geometry' attribute.
     //
 
-    FnKat::GroupBuilder geometryBuilder;
-
-    FnKat::GroupAttribute curveAttr = _GetCurveAttrs(
-        basisCurves, data.GetUsdInArgs()->GetCurrentTime());
-    
-    if (curveAttr.isValid()) {
-        geometryBuilder.update(curveAttr);
-    }
+    _SetCurveAttrs(attrs, basisCurves, data.GetUsdInArgs()->GetCurrentTime());
     
     // position
-    geometryBuilder.set("point.P",
+    attrs.set("geometry.point.P",
         PxrUsdKatanaGeomGetPAttr(basisCurves, data));
 
     // normals
@@ -163,7 +154,7 @@ PxrUsdKatanaReadBasisCurves(
         if (interp == UsdGeomTokens->faceVarying
          || interp == UsdGeomTokens->varying
          || interp == UsdGeomTokens->vertex) {
-            geometryBuilder.set("point.N", normalsAttr);
+            attrs.set("geometry.point.N", normalsAttr);
         }
     }
 
@@ -172,23 +163,10 @@ PxrUsdKatanaReadBasisCurves(
         PxrUsdKatanaGeomGetVelocityAttr(basisCurves, data);
     if (velocityAttr.isValid())
     {
-        geometryBuilder.set("point.v", velocityAttr);
+        attrs.set("geometry.point.v", velocityAttr);
     }
 
-    // Construct the 'geometry.arbitrary' attribute.
-    
-    FnKat::GroupBuilder arbBuilder;
-
-    arbBuilder.set("SPT_HwColor",
-        PxrUsdKatanaGeomGetDisplayColorAttr(basisCurves, data));
-
-    FnKat::Attribute primvarGroup =
-        PxrUsdKatanaGeomGetPrimvarGroup(basisCurves, data);
-    if (primvarGroup.isValid())
-    {
-        arbBuilder.update(primvarGroup);
-    }
-
-    geometryBuilder.set("arbitrary", arbBuilder.build());
-    attrs.set("geometry", geometryBuilder.build());  
+    // Add SPT_HwColor primvar
+    attrs.set("geometry.arbitrary.SPT_HwColor", 
+              PxrUsdKatanaGeomGetDisplayColorAttr(basisCurves, data));
 }

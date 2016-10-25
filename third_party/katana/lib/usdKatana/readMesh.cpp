@@ -69,12 +69,11 @@ _GetPolyAttr(const UsdGeomMesh &mesh, double time)
     return polyBuilder.build();
 }
 
-static FnKat::Attribute
-_GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
+static void
+_SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
+                    const UsdGeomMesh &mesh, bool hierarchical, double time)
 {
     std::string err;
-
-    FnKat::GroupBuilder builder;
 
     TfToken interpolateBoundary; 
     if (mesh.GetInterpolateBoundaryAttr().Get(&interpolateBoundary, time)){
@@ -84,7 +83,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
                 Msg("\tinterpolateBoundary = %s (%d)\n",
                     interpolateBoundary.GetText(),
                     UsdRiConvertToRManInterpolateBoundary(interpolateBoundary));
-            builder.set("interpolateBoundary",
+            attrs.set("geometry.interpolateBoundary",
                   FnKat::IntAttribute(
                   UsdRiConvertToRManInterpolateBoundary(interpolateBoundary)));
         }
@@ -113,7 +112,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
                 fvInterpolateBoundary.GetText(),
                 UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterpolateBoundary));
         
-        builder.set("facevaryinginterpolateboundary",
+        attrs.set("geometry.facevaryinginterpolateboundary",
             FnKat::IntAttribute(
                 UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterpolateBoundary)));
     }
@@ -130,7 +129,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::IntBuilder holeIndicesBuilder(1);
         holeIndicesBuilder.set(std::vector<int>(holeIndices.begin(),
                                                 holeIndices.end()));
-        builder.set("holePolyIndices", holeIndicesBuilder.build());
+        attrs.set("geometry.holePolyIndices", holeIndicesBuilder.build());
     }
 
     // Creases
@@ -140,7 +139,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::IntBuilder creasesBuilder(1);
         creasesBuilder.set(std::vector<int>(creaseIndices.begin(),
                                             creaseIndices.end()));
-        builder.set("creaseIndices", creasesBuilder.build());
+        attrs.set("geometry.creaseIndices", creasesBuilder.build());
 
         VtIntArray creaseLengths;
         if (mesh.GetCreaseLengthsAttr().Get(&creaseLengths, time)
@@ -148,7 +147,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
             FnKat::IntBuilder creaseLengthsBuilder(1);
             creaseLengthsBuilder.set(std::vector<int>(creaseLengths.begin(),
                                                       creaseLengths.end()));
-            builder.set("creaseLengths", creaseLengthsBuilder.build());
+            attrs.set("geometry.creaseLengths", creaseLengthsBuilder.build());
         }
         VtFloatArray creaseSharpness;
         if (mesh.GetCreaseSharpnessesAttr().Get(&creaseSharpness, time)
@@ -171,8 +170,8 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
             }
             creaseSharpnessLengthsBuilder.set(numSharpnesses);
 
-            builder.set("creaseSharpness", creaseSharpnessBuilder.build());
-            builder.set("creaseSharpnessLengths",
+            attrs.set("geometry.creaseSharpness", creaseSharpnessBuilder.build());
+            attrs.set("geometry.creaseSharpnessLengths",
                         creaseSharpnessLengthsBuilder.build());
         }
     }
@@ -184,7 +183,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::IntBuilder cornersBuilder(1);
         cornersBuilder.set(std::vector<int>(cornerIndices.begin(),
                                             cornerIndices.end()));
-        builder.set("cornerIndices", cornersBuilder.build());
+        attrs.set("geometry.cornerIndices", cornersBuilder.build());
     }
     VtFloatArray cornerSharpness;
     if (mesh.GetCornerSharpnessesAttr().Get(&cornerSharpness, time)
@@ -192,10 +191,8 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::FloatBuilder cornerSharpnessBuilder(1);
         cornerSharpnessBuilder.set(std::vector<float>(cornerSharpness.begin(),
                                                       cornerSharpness.end()));
-        builder.set("cornerSharpness", cornerSharpnessBuilder.build());
+        attrs.set("geometry.cornerSharpness", cornerSharpnessBuilder.build());
     }
-
-    return builder.build();
 }
 
 
@@ -274,10 +271,8 @@ PxrUsdKatanaReadMesh(
     // Construct the 'geometry' attribute.
     //
 
-    FnKat::GroupBuilder geometryBuilder;
-
     // position
-    geometryBuilder.set("point.P", PxrUsdKatanaGeomGetPAttr(mesh, data));
+    attrs.set("geometry.point.P", PxrUsdKatanaGeomGetPAttr(mesh, data));
 
     /// Only use custom normals if the object is a polymesh.
     if (not isSubd){
@@ -289,10 +284,10 @@ PxrUsdKatanaReadMesh(
             TfToken interp = mesh.GetNormalsInterpolation();
             if (interp == UsdGeomTokens->varying
              || interp == UsdGeomTokens->vertex) {
-                geometryBuilder.set("point.N", normalsAttr);
+                attrs.set("geometry.point.N", normalsAttr);
             }
             else if (interp == UsdGeomTokens->faceVarying) {
-                geometryBuilder.set("vertex.N", normalsAttr);
+                attrs.set("geometry.vertex.N", normalsAttr);
             }
         }
     }
@@ -301,39 +296,21 @@ PxrUsdKatanaReadMesh(
     FnKat::Attribute velocityAttr = PxrUsdKatanaGeomGetVelocityAttr(mesh, data);
     if (velocityAttr.isValid())
     {
-        geometryBuilder.set("point.v", velocityAttr);
+        attrs.set("geometry.point.v", velocityAttr);
     }
 
     FnKat::GroupAttribute polyAttr = _GetPolyAttr(mesh, currentTime);
     
-    geometryBuilder.set("poly", polyAttr);
+    attrs.set("geometry.poly", polyAttr);
 
     if (isSubd)
     {
-        FnKat::Attribute subdivTagsGroup =
-            _GetSubdivTagsGroup(mesh, /* hierarchical=*/ false, currentTime);
-
-        if (subdivTagsGroup.isValid())
-        {
-            geometryBuilder.update( subdivTagsGroup );
-        }
+        _SetSubdivTagsGroup(attrs, mesh, /* hierarchical=*/ false, currentTime);
     }
 
-    FnKat::GroupBuilder arbBuilder;
-
-    arbBuilder.set("SPT_HwColor", 
-        PxrUsdKatanaGeomGetDisplayColorAttr(mesh, data));
-
-    FnKat::GroupAttribute primvarGroup =
-        PxrUsdKatanaGeomGetPrimvarGroup(mesh, data);
-
-    if (primvarGroup.isValid())
-    {
-        arbBuilder.update(primvarGroup);
-    }
-
-    geometryBuilder.set("arbitrary", arbBuilder.build());
-    attrs.set("geometry", geometryBuilder.build());
+    // SPT_HwColor primvar
+    attrs.set("geometry.arbitrary.SPT_HwColor", 
+              PxrUsdKatanaGeomGetDisplayColorAttr(mesh, data));
 
     attrs.set(
         "viewer.default.drawOptions.windingOrder",
