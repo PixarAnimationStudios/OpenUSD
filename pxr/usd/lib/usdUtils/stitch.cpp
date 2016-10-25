@@ -35,8 +35,6 @@
 #include "pxr/base/tf/warning.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/foreach.hpp>
-
 #include <set>
 #include <string>
 #include <algorithm>
@@ -195,8 +193,7 @@ namespace {
                  const SdfPrimSpecHandle& weakPrim,
                  bool ignoreTimeSamples)
     {
-        BOOST_FOREACH(SdfPrimSpecHandle const& weakPrimIter,
-                      weakPrim->GetNameChildren()) { 
+        for (const auto& weakPrimIter : weakPrim->GetNameChildren()) {
             // lookup prim in strong layer
             SdfPrimSpecHandle strongPrimHandle 
                 = strongPrim->GetPrimAtPath(weakPrimIter->GetPath()); 
@@ -232,9 +229,7 @@ namespace {
                       const SdfPrimSpecHandle& weakPrim,
                       bool ignoreTimeSamples) 
     {
-        BOOST_FOREACH(SdfAttributeSpecHandle const& childAttribute,
-                      weakPrim->GetAttributes()) {
-
+        for (const auto& childAttribute : weakPrim->GetAttributes()) {
             SdfPath pathToChildAttr = childAttribute->GetPath();
             SdfAttributeSpecHandle strongAttrHandle
                 = strongPrim->GetAttributeAtPath(pathToChildAttr);
@@ -257,9 +252,8 @@ namespace {
                 // time samples needs special attention, we can't simply
                 // call UsdUtilsStitchInfo(), because both attributes will
                 // have the key 'timeSamples', and we must do an inner compare
-                BOOST_FOREACH(const double timeSamplePoint, 
-                              weakParent
-                                ->ListTimeSamplesForPath(currAttrPath)) {
+                for (const double timeSamplePoint 
+                        : weakParent->ListTimeSamplesForPath(currAttrPath)) {
                     // if the parent doesn't contain the time
                     // sample point key in its dict
                     if (not strongParent->QueryTimeSample(pathToChildAttr,
@@ -283,9 +277,7 @@ namespace {
                          const SdfPrimSpecHandle& weakPrim,
                          bool ignoreTimeSamples) 
     {
-        BOOST_FOREACH(SdfRelationshipSpecHandle const& childRelationship,
-                      weakPrim->GetRelationships()) {
-
+        for (const auto& childRelationship : weakPrim->GetRelationships()) {
             SdfPath pathToChildRel = childRelationship->GetPath();
             SdfRelationshipSpecHandle strongRelHandle
                 = strongPrim->GetRelationshipAtPath(pathToChildRel);
@@ -326,20 +318,17 @@ namespace {
         UsdUtilsStitchInfo(newPrim, primToCopy, ignoreTimeSamples);
 
         // copy child prims
-        BOOST_FOREACH(SdfPrimSpecHandle const& childPrim,
-                      primToCopy->GetNameChildren()) {
+        for (const auto& childPrim : primToCopy->GetNameChildren()) {
             _MakePrimCopy(newPrim, childPrim, ignoreTimeSamples); 
         }
 
         // copy child attributes
-        BOOST_FOREACH(SdfAttributeSpecHandle const& childAttribute,
-                      primToCopy->GetAttributes()) {
+        for (const auto& childAttribute : primToCopy->GetAttributes()) {
             _MakeAttributeCopy(newPrim, childAttribute, ignoreTimeSamples);
         }
 
         // copy child relationships
-        BOOST_FOREACH(SdfRelationshipSpecHandle const& childRelationship,
-                      primToCopy->GetRelationships()) {
+        for (const auto& childRelationship : primToCopy->GetRelationships()) {
             _MakeRelationshipCopy(newPrim, childRelationship,ignoreTimeSamples);
         }
     }
@@ -435,7 +424,7 @@ UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
                    const SdfSpecHandle& weakObj,
                    bool ignoreTimeSamples)
 {
-    BOOST_FOREACH(TfToken const& key, _ObtainRelevantKeysToStitch(weakObj)) {
+    for (const auto& key : _ObtainRelevantKeysToStitch(weakObj)) {
         const VtValue strongValue = strongObj->GetSchema().GetFallback(key); 
             
         // if we have a dictionary type, we need to do a merge
