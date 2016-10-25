@@ -62,7 +62,7 @@ public:
                            UsdImagingGLHdEngineSharedPtr());
 
     USDIMAGINGGL_API
-    virtual ~UsdImagingHdEngine();
+    virtual ~UsdImagingGLHdEngine();
 
     USDIMAGINGGL_API
     HdRenderIndexSharedPtr GetRenderIndex() const;
