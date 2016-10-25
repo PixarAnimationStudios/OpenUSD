@@ -26,8 +26,6 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 
-#include <boost/foreach.hpp>
-
 #include <map>
 #include <cstdio>
 
@@ -205,7 +203,7 @@ void
 UsdObjStream::AppendComments(std::string const &text)
 {
     vector<string> lines = TfStringSplit(text, "\n");
-    BOOST_FOREACH(string const &line, lines) {
+    for (const auto& line : lines) {
         _comments.push_back(_MakeComment(line));
     }
     _AddSequence(SequenceElem::Comments, lines.size());
@@ -216,7 +214,7 @@ UsdObjStream::PrependComments(string const &text)
 {
     vector<string> lines = TfStringSplit(text, "\n");
     // Mutate all the lines into comments.
-    BOOST_FOREACH(string &line, lines) {
+    for (const auto& line : lines) {
         line = _MakeComment(line);
     }
     // Insert them at the beginning.
@@ -234,7 +232,7 @@ void
 UsdObjStream::AppendArbitraryText(std::string const &text)
 {
     vector<string> lines = TfStringSplit(text, "\n");
-    BOOST_FOREACH(string const &line, lines) {
+    for (const auto& line : lines) {
         if (_IsComment(line)) {
             AppendComments(line);
         } else {
@@ -248,7 +246,8 @@ void
 UsdObjStream::PrependArbitraryText(string const &text)
 {
     vector<string> lines = TfStringSplit(text, "\n");
-    BOOST_REVERSE_FOREACH(string const &line, lines) {
+    for (auto lineIter = lines.rbegin(); lineIter != lines.rend(); ++lineIter){
+        const auto& line = *lineIter;
         if (_IsComment(line)) {
             PrependComments(line);
         } else {
@@ -352,7 +351,7 @@ UsdObjStream::AddData(UsdObjStream const &other)
     vector<Point> const &points = other.GetPoints();
 
     // Add elements from the other data in sequence.
-    BOOST_FOREACH(SequenceElem const &elem, other.GetSequence()) {
+    for (const auto& elem : other.GetSequence()) {
         switch (elem.type) {
         default:
             TF_CODING_ERROR("Unknown sequence element '%s', aborting",
@@ -373,7 +372,7 @@ UsdObjStream::AddData(UsdObjStream const &other)
         case SequenceElem::Groups:
             for (int i = 0; i != elem.repeat; ++i, ++groupIter) {
                 AddGroup(_GetUniqueGroupName(groupIter->name));
-                BOOST_FOREACH(Face const &face, groupIter->faces) {
+                for (const auto& face : groupIter->faces) {
                     for (int j = face.pointsBegin; j != face.pointsEnd; ++j)
                         AddPoint(OffsetPoint(points[j], offset));
 
