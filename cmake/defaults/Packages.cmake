@@ -87,11 +87,8 @@ if (PXR_BUILD_IMAGING)
     find_package(PTex REQUIRED)
     # --X11
     find_package(X11)
-    # --Qt
-    find_package(Qt4)
-    if (QT4_FOUND)
-        find_package(PySide REQUIRED)
-    endif()
+    # --PySide
+    find_package(PySide)
 endif()
 
 # Third Party Plugin Package Requirements
