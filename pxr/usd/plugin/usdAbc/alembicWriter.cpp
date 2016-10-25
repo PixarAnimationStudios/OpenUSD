@@ -41,7 +41,6 @@
 #include <Alembic/AbcGeom/OXform.h>
 #include <Alembic/AbcGeom/Visibility.h>
 #include <Alembic/AbcCoreOgawa/All.h>
-#include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>
@@ -230,7 +229,7 @@ UsdSamples::_Validate()
     const TfType backupType =
         (type == TfType::Find<float>()) ? TfType::Find<double>() : type;
 restart:
-    BOOST_FOREACH(const SdfTimeSampleMap::value_type& v, *_samples) {
+    for (const auto& v : *_samples) {
         if (v.second.GetType() != type) {
             if (not TF_VERIFY(v.second.GetType() == backupType,
                               "Expected sample at <%s> time %f of type '%s', "
@@ -321,7 +320,7 @@ UsdSamples::Get(double time) const
 void
 UsdSamples::AddTimes(UsdAbc_TimeSamples* times) const
 {
-    BOOST_FOREACH(const SdfTimeSampleMap::value_type& v, *_samples) {
+    for (const auto& v : *_samples) {
         times->insert(v.first);
     }
 }
@@ -745,7 +744,7 @@ _WriterContext::AddTimeSampling(const UsdAbc_TimeSamples& inSamples)
 
     // Scale and offset samples.
     UsdAbc_TimeSamples samples;
-    BOOST_FOREACH(double time, inSamples) {
+    for (double time : inSamples) {
         samples.insert((time - _timeOffset) / _timeScale);
     }
 
@@ -1110,8 +1109,7 @@ _ReverseWindingOrder(UsdSamples* valuesMap, const UsdSamples& countsMap)
     typedef VtArray<int> CountArray;
 
     SdfTimeSampleMap result;
-    BOOST_FOREACH(const SdfTimeSampleMap::value_type& v,
-                  valuesMap->GetSamples()) {
+    for (const auto& v : valuesMap->GetSamples()) {
         const VtValue& valuesValue = v.second;
         const VtValue& countsValue = countsMap.Get(v.first);
         if (not TF_VERIFY(valuesValue.IsHolding<ValueArray>())) {
@@ -2057,7 +2055,7 @@ _WriteOutOfSchemaProperty(
                                     context->GetSchema().GetDataType(samples),
                                     _GetPropertyMetadata(*context, usdName,
                                                          samples));
-            BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+            for (double time : context->GetSampleTimesUnion()) {
                 _Copy(context->GetSchema(), converter, time, samples,&property);
             }
             property.setTimeSampling(
@@ -2068,7 +2066,7 @@ _WriteOutOfSchemaProperty(
                                      context->GetSchema().GetDataType(samples),
                                      _GetPropertyMetadata(*context, usdName,
                                                           samples));
-            BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+            for (double time : context->GetSampleTimesUnion()) {
                 _Copy(context->GetSchema(), converter, time, samples,&property);
             }
             property.setTimeSampling(
@@ -2098,7 +2096,7 @@ _WriteGenericProperty(
     if (context->GetSchema().IsValid(samples)) {
         T property(parent, alembicName, alembicDataType,
                    _GetPropertyMetadata(*context, usdName, samples));
-        BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+        for (double time : context->GetSampleTimesUnion()) {
             _Copy(context->GetSchema(), converter, time, samples, &property);
         }
         property.setTimeSampling(
@@ -2200,7 +2198,7 @@ _WriteNamespacedPropertyGroup(
     // however, that we don't confirm that conversion will succeed so
     // we may still create the property with nothing in it.
     bool anyProperties = false;
-    BOOST_FOREACH(const TfToken& name, context->GetUnextractedNames()) {
+    for (const auto& name : context->GetUnextractedNames()) {
         TfTokenVector names = SdfPath::TokenizeIdentifierAsTokens(name);
         if (names.size() >= 2 and names[0] == namespaceName) {
             anyProperties = true;
@@ -2222,7 +2220,7 @@ _WriteNamespacedPropertyGroup(
         _CompoundPropertyTable subgroups(parent);
 
         // Convert each property.
-        BOOST_FOREACH(const TfToken& name, context->GetUnextractedNames()) {
+        for (const auto& name : context->GetUnextractedNames()) {
             TfTokenVector names = SdfPath::TokenizeIdentifierAsTokens(name);
             if (names.size() >= 2 and names[0] == namespaceName) {
                 // Remove the namespace prefix.
@@ -2313,7 +2311,7 @@ _WriteMayaColor(_PrimWriterContext* context)
                                  name,
                                  DataType(kFloat32POD, 4),
                                  metadata);
-        BOOST_FOREACH(double time, sampleTimes) {
+        for (double time : sampleTimes) {
             _Copy(context->GetSchema(), _CopyAdskColor, time, color,&property);
         }
         property.setTimeSampling(context->AddTimeSampling(sampleTimes));
@@ -2347,7 +2345,7 @@ _WriteOther(_PrimWriterContext* context)
     // Usd name with namespaces is written to Alembic with the namespaces
     // embedded in the name.
     //
-    BOOST_FOREACH(const TfToken& name, context->GetUnextractedNames()) {
+    for (const auto& name : context->GetUnextractedNames()) {
         _WriteOutOfSchemaProperty(context,
                                   context->GetParent().GetProperties(),
                                   name, context->GetAlembicPropertyName(name));
@@ -2483,7 +2481,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
 
     // Copy all the samples to set up alembic camera frustum.
     typedef CameraSample SampleT;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.
         SampleT sample;
 
@@ -2626,7 +2624,7 @@ _WriteXform(_PrimWriterContext* context)
     // At this point, all transform related attributes (including all xformOps)
     // should have been extracted. Validate here to make sure there aren't 
     // any unextracted xformOp attributes. 
-    BOOST_FOREACH(const TfToken& name, context->GetUnextractedNames()) {
+    for (const auto& name : context->GetUnextractedNames()) {
         if (UsdGeomXformOp::IsXformOp(name)) {
             TF_RUNTIME_ERROR("Found unextracted property '%s' in xformOp "
                 "namespace.", name.GetText());
@@ -2661,7 +2659,7 @@ _WriteXform(_PrimWriterContext* context)
     // Copy all the samples.
     typedef XformSample SampleT;
     SampleT sample;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.
         sample.reset();
         _CopyXform(time, transform, &sample);
@@ -2731,7 +2729,7 @@ _WritePolyMesh(_PrimWriterContext* context)
     // Copy all the samples.
     typedef Type::schema_type::Sample SampleT;
     SampleT sample;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.
         sample.reset();
         _CopySelfBounds(time, extent, &sample);
@@ -2852,7 +2850,7 @@ _WriteSubD(_PrimWriterContext* context)
     typedef Type::schema_type::Sample SampleT;
     MySampleT mySample;
     SampleT& sample = mySample;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.  Usd defaults faceVaryingLinearInterpolation to
         // edgeAndCorner but Alembic defaults to bilinear so set that first
         // in case we have no opinion.
@@ -2969,7 +2967,7 @@ _WriteNurbsCurves(_PrimWriterContext* context)
     // Copy all the samples.
     typedef Type::schema_type::Sample SampleT;
     SampleT sample;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.
         sample.reset();
         _CopySelfBounds(time, extent, &sample);
@@ -3063,7 +3061,7 @@ _WriteBasisCurves(_PrimWriterContext* context)
     // Copy all the samples.
     typedef Type::schema_type::Sample SampleT;
     SampleT sample;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.
         sample.reset();
         _CopySelfBounds(time, extent, &sample);
@@ -3145,7 +3143,7 @@ _WritePoints(_PrimWriterContext* context)
     typedef Type::schema_type::Sample SampleT;
     SampleT sample;
     bool first = true;
-    BOOST_FOREACH(double time, context->GetSampleTimesUnion()) {
+    for (double time : context->GetSampleTimesUnion()) {
         // Build the sample.
         sample.reset();
         _CopySelfBounds(time, extent, &sample);
@@ -3233,8 +3231,7 @@ _WritePrim(
 
         // Write the properties.
         _PrimWriterContext primContext(context, parent, id);
-        BOOST_FOREACH(const _WriterSchema::PrimWriter& writer,
-                      context.GetSchema().GetPrimWriters(typeName)) {
+        for (const auto& writer : context.GetSchema().GetPrimWriters(typeName)) {
             TRACE_SCOPE("UsdAbc_AlembicDataWriter:_WritePrim");
             writer(&primContext);
         }
@@ -3245,8 +3242,7 @@ _WritePrim(
     const VtValue childrenNames =
         context.GetData().Get(id, SdfChildrenKeys->PrimChildren);
     if (childrenNames.IsHolding<TfTokenVector>()) {
-        BOOST_FOREACH(const TfToken& childName,
-                      childrenNames.UncheckedGet<TfTokenVector>()) {
+        for (const auto& childName : childrenNames.UncheckedGet<TfTokenVector>()) {
             _WritePrim(context, prim, path.AppendChild(childName));
         }
     }

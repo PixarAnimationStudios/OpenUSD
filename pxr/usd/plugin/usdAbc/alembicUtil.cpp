@@ -28,8 +28,6 @@
 #include <Alembic/Abc/IArrayProperty.h>
 #include <Alembic/Abc/IScalarProperty.h>
 
-#include <boost/foreach.hpp>
-
 TF_DEFINE_PUBLIC_TOKENS(UsdAbc_AlembicContextFlagNames,
                         USDABC_ALEMBIC_CONTEXT_FLAG_NAMES);
 
@@ -242,7 +240,7 @@ SdfValueTypeName
 UsdAbc_AlembicDataConversion::FindConverter(
     const UsdAbc_AlembicType& alembicType) const
 {
-    BOOST_FOREACH(const _ConverterData &c, _typeConverters) {
+    for (const auto& c : _typeConverters) {
         if (c.abcType == alembicType) {
             return c.usdType;
         }
@@ -255,7 +253,7 @@ UsdAbc_AlembicDataConversion::GetToUsdConverter(
     const UsdAbc_AlembicType& alembicType,
     const SdfValueTypeName &usdType) const
 {
-    BOOST_FOREACH(const _ConverterData &c, _typeConverters) {
+    for (const auto& c : _typeConverters) {
         if (c.usdType == usdType and c.abcType == alembicType) {
             return c.toUsdFn;
         }
@@ -268,7 +266,7 @@ UsdAbc_AlembicType
 UsdAbc_AlembicDataConversion::FindConverter(
     const SdfValueTypeName& usdType) const
 {
-    BOOST_FOREACH(const _ConverterData &c, _typeConverters) {
+    for (const auto& c : _typeConverters) {
         if (c.usdType == usdType) {
             return c.abcType;
         }
@@ -280,7 +278,7 @@ const UsdAbc_AlembicDataConversion::FromUsdConverter&
 UsdAbc_AlembicDataConversion::GetConverter(
     const SdfValueTypeName& usdType) const
 {
-    BOOST_FOREACH(const _ConverterData &c, _typeConverters) {
+    for (const auto& c : _typeConverters) {
         if (c.usdType == usdType) {
             return c.fromUsdFn;
         }
