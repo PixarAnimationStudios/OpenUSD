@@ -41,7 +41,6 @@
 
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/task.h>
-#include <boost/foreach.hpp>
 #include <algorithm>
 
 // Thread-local Xform cache.
@@ -115,7 +114,7 @@ public:
         TRACE_FUNCTION();
 
         _MasterTaskMap masterTasks;
-        BOOST_FOREACH(const UsdPrim& masterPrim, masterPrims) {
+        for (const auto& masterPrim : masterPrims) {
             _PopulateTasksForMaster(masterPrim, &masterTasks);
         }
 
@@ -125,7 +124,7 @@ public:
         _ThreadXformCache xfCache;
 
         WorkDispatcher dispatcher;
-        BOOST_FOREACH(const _MasterTaskMap::value_type& t, masterTasks) {
+        for (const auto& t : masterTasks) {
             if (t.second.numDependencies == 0) {
                 dispatcher.Run(
                     &_MasterBBoxResolver::_ExecuteTaskForMaster, 
@@ -156,7 +155,7 @@ private:
 
         // Recursively populate the task map for the masters needed for
         // nested instances.
-        BOOST_FOREACH(const UsdPrim& reqMaster, requiredMasters) {
+        for (const auto& reqMaster : requiredMasters) {
             _PopulateTasksForMaster(reqMaster, masterTasks);
             (*masterTasks)[reqMaster].dependentMasters.push_back(masterPrim);
         }
@@ -177,8 +176,7 @@ private:
         // resolved.  We're guaranteed that all the entries were populated by
         // _PopulateTasksForMaster, so we don't check the result of 'find()'.
         const _MasterTask& masterData = masterTasks->find(master)->second;
-        BOOST_FOREACH(const UsdPrim& dependentMaster, 
-                      masterData.dependentMasters) {
+        for (const auto& dependentMaster : masterData.dependentMasters) {
             _MasterTask& dependentMasterData =
                 masterTasks->find(dependentMaster)->second;
             if (dependentMasterData.numDependencies.fetch_and_decrement() == 1){
