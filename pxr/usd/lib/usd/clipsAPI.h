@@ -222,12 +222,35 @@ public:
     bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath);
 
     /// A template string representing a set of assets. This string
-    /// can be of two forms: path/basename.###.usd and path/basename.##.##.usd.
-    /// In either case, the number of hash marks in each section is variable.
-    /// These control the amount of padding USD will supply when looking up 
-    /// the assets. For instance, a value of 'foo.###.usd', 
-    /// with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1:
-    /// USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd.
+    /// can be of two forms: 
+    ///
+    /// integer frames: path/basename.###.usd 
+    ///
+    /// subinteger frames: path/basename.##.##.usd.
+    ///
+    /// For the integer portion of the specification, USD will take 
+    /// a particular time, determined by the clipTemplateStartTime, 
+    /// clipTemplateStride and clipTemplateEndTime, and pad it with 
+    /// zeros up to the number of hashes provided so long as the number of hashes 
+    /// is greater than the digits required to specify the integer value.
+    ///
+    /// For instance:
+    ///
+    ///    time = 12,  clipTemplateAssetPath = foo.##.usd  => foo.12.usd
+    ///    time = 12,  clipTemplateAssetPath = foo.###.usd => foo.012.usd
+    ///    time = 333, clipTemplateAssetPath = foo.#.usd   => foo.333.usd
+    ///
+    /// In the case of subinteger portion of a specifications, USD requires the 
+    /// specification to be exact. 
+    ///
+    /// For instance:
+    /// 
+    ///    time = 1.15,  clipTemplateAssetPath = foo.#.###.usd => foo.1.150.usd
+    ///    time = 1.145, clipTemplateAssetPath = foo.#.##.usd  => foo.1.15.usd
+    ///    time = 1.1,   clipTemplateAssetPath = foo.#.##.usd  => foo.1.10.usd
+    ///
+    /// Note that USD requires that hash groups be adjacent in the string, 
+    /// and that there only be one or two such groups.
     bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const;
     /// Set the clipTemplateAssetPath metadata for this prim.
     /// \sa GetClipTemplateAssetPath
