@@ -214,7 +214,7 @@ UsdObjStream::PrependComments(string const &text)
 {
     vector<string> lines = TfStringSplit(text, "\n");
     // Mutate all the lines into comments.
-    for (const auto& line : lines) {
+    for (auto& line : lines) {
         line = _MakeComment(line);
     }
     // Insert them at the beginning.
