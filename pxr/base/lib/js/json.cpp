@@ -26,7 +26,6 @@
 
 #include "pxr/base/js/json.h"
 #include "pxr/base/tf/diagnostic.h"
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <vector>
 
@@ -126,7 +125,7 @@ _ToImplObjectValue(
 {
     rj::Value value(rj::kObjectType);
 
-    BOOST_FOREACH(const JsObject::value_type& p, object) {
+    for (const auto& p : object) {
         value.AddMember(
             rj::Value(p.first.c_str(), allocator).Move(),
             _JsValueToImplValue(p.second, allocator),
@@ -144,7 +143,7 @@ _ToImplArrayValue(
 {
     rj::Value value(rj::kArrayType);
 
-    BOOST_FOREACH(const JsValue& e, array) {
+    for (const auto& e : array) {
         value.PushBack(
             rj::Value(_JsValueToImplValue(e, allocator)).Move(),
             allocator);

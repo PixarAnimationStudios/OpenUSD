@@ -28,7 +28,6 @@
 
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/diagnostic.h"
-#include <boost/foreach.hpp>
 #include <boost/utility/enable_if.hpp>
 
 // Converts a \c JsValue \p value holding an \c int value to a \c ValueType
@@ -114,7 +113,7 @@ private:
     /// Converts \p object to \c MapType.
     static MapType _ObjectToMap(const JsObject& object) {
         MapType result;
-        BOOST_FOREACH(const JsObject::value_type& p, object) {
+        for (const auto& p : object) {
             result[p.first] = _ToValueType(p.second);
         }
         return result;
@@ -124,7 +123,7 @@ private:
     static VectorType _ArrayToVector(const JsArray& array) {
         VectorType result;
         result.reserve(array.size());
-        BOOST_FOREACH(const JsValue& value, array) {
+        for (const auto& value : array) {
             result.push_back(_ToValueType(value));
         }
         return result;
