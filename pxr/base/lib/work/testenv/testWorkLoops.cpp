@@ -31,7 +31,6 @@
 #include "pxr/base/tf/staticData.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include <cstdio>
 #include <iostream>
@@ -46,7 +45,7 @@ _Double(size_t begin, size_t end, std::vector<int> *v)
 static void
 _DoubleAll(std::vector<int> &v)
 {
-    BOOST_FOREACH(int &i, v) {
+    for (int &i : v) {
         i *= 2;
     }
 }
@@ -105,7 +104,7 @@ _DoTBBTestForEach(
 {
     static const size_t partitionSize = 20;
     std::vector< std::vector<int> > vs(partitionSize);
-    BOOST_FOREACH(std::vector<int> &v, vs) {
+    for (auto& v : vs) {
         _PopulateVector(arraySize / partitionSize, v);
     }
 
@@ -119,7 +118,7 @@ _DoTBBTestForEach(
 
     if (verify) {
         TF_AXIOM(numIterations == 1);
-        BOOST_FOREACH(const std::vector<int> &v, vs) {
+        for (const auto& v : vs) {
             _VerifyDoubled(v);
         }
     }
