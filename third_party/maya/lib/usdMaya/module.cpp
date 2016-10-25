@@ -28,4 +28,5 @@ TF_WRAP_MODULE {
     TF_WRAP(EditUtil);
     TF_WRAP(Query);
     TF_WRAP(StageCache);
+    TF_WRAP(UserTaggedAttribute);
 }
