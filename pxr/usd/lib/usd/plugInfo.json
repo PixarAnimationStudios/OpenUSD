@@ -30,6 +30,30 @@
                         ], 
                         "type": "string"
                     }, 
+                    "clipTemplateAssetPath": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "type": "string"
+                    }, 
+                    "clipTemplateEndTime": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "type": "double"
+                    }, 
+                    "clipTemplateStartTime": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "type": "double"
+                    }, 
+                    "clipTemplateStride": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "type": "double"
+                    }, 
                     "clipTimes": {
                         "appliesTo": [
                             "prims"

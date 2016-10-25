@@ -63,10 +63,19 @@ class SdfAssetPath;
 /// SetClipActive() specifies the ordering of clip application over time            
 /// (clips can be repeated), while SetClipTimes() specifies time-mapping            
 /// from stage-time to clip-time for the clip active at a given stage-time,         
-/// which allows for time-dilation and repetition of clips.  Finally,           
-/// SetClipPrimPath() determines the path within each clip that will map            
+/// which allows for time-dilation and repetition of clips. 
+/// Finally, SetClipPrimPath() determines the path within each clip that will map            
 /// to this prim, i.e. the location within the clip at which we will look           
-/// for opinions for this prim.         
+/// for opinions for this prim. 
+/// 
+/// The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
+/// through template clip metadata. This can be desirable when your set of 
+/// assets is very large, as the template metadata is much more concise. 
+/// SetClipTemplateAssetPath() establishes the asset identifier pattern of the set of
+/// clips to be consulted. SetClipTemplateStride(), SetClipTemplateEndTime(), 
+/// and SetClipTemplateStartTime() specify the range in which USD will search, based
+/// on the template. From the set of resolved asset paths, clipTimes, and clipActive
+/// will be derived internally.
 /// 
 /// Important facts about clips:            
 /// li Within the layerstack in which clips are established, the           
@@ -222,10 +231,75 @@ public:
     /// exists and is varying in the manifest.
     USD_API
     bool GetClipManifestAssetPath(SdfAssetPath* manifestAssetPath) const;
-    /// Get the clipManifestAssetPath metadata for this prim.
+    /// Set the clipManifestAssetPath metadata for this prim.
     /// \sa GetClipManifestAssetPath()
     USD_API
     bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath);
+
+    /// A template string representing a set of assets. This string
+    /// can be of two forms: path/basename.###.usd and path/basename.##.##.usd.
+    /// In either case, the number of hash marks in each section is variable.
+    /// These control the amount of padding USD will supply when looking up 
+    /// the assets. For instance, a value of 'foo.###.usd', 
+    /// with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1:
+    /// USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd.
+    USD_API
+    bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const;
+    /// Set the clipTemplateAssetPath metadata for this prim.
+    /// \sa GetClipTemplateAssetPath
+    USD_API
+    bool SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath);
+
+    /// A double representing the increment value USD will use when
+    /// searching for asset paths. For example usage \sa GetClipTemplateAssetPath.
+    USD_API
+    bool GetClipTemplateStride(double* clipTemplateStride) const;
+    /// Set the clipTemplateStride metadata for this prim
+    /// \sa GetClipTemplateStride()
+    USD_API
+    bool SetClipTemplateStride(const double clipTemplateStride);
+
+    /// A double which indicates the start of the range USD will use 
+    /// to search for asset paths. This value is inclusive in that range.
+    /// For example usage \sa GetClipTemplateAssetPath.
+    USD_API
+    bool GetClipTemplateStartTime(double* clipTemplateStartTime) const;
+    /// Set the clipTemplateStartTime metadata for this prim
+    /// \sa GetClipTemplateStartTime
+    USD_API
+    bool SetClipTemplateStartTime(const double clipTemplateStartTime);
+
+    /// A double which indicates the end of the range USD will use to
+    /// to search for asset paths. This value is inclusive in that range.
+    /// For example usage \sa GetClipTemplateAssetPath.
+    USD_API
+    bool GetClipTemplateEndTime(double* clipTemplateEndTime) const;
+    /// Set the clipTemplateEndTime metadata for this prim
+    /// \sa GetClipTemplateEndTime()
+    USD_API
+    bool SetClipTemplateEndTime(const double clipTemplateEndTime);
+
+    /// Clear out the following metadata from the current edit target:
+    /// 
+    /// clipTemplateAssetPath
+    /// clipTemplateStride
+    /// clipTemplateStartTime
+    /// clipTemplateEndTime
+    ///
+    /// \sa ClearNonTemplateClipMetadata()
+    USD_API
+    bool ClearTemplateClipMetadata();
+
+    /// Clear out the following metadata from the current edit target:
+    ///
+    /// clipTimes
+    /// clipActive
+    /// clipAssetPaths
+    ///
+    /// \sa ClearTemplateClipMetadata()
+    USD_API
+    bool ClearNonTemplateClipMetadata();
+
 };
 
 #endif

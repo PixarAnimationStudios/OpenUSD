@@ -381,6 +381,7 @@ static void
 Pcp_BuildPrimIndex(
     const PcpLayerStackSite & site,
     const PcpLayerStackSite & rootSite,
+    int ancestorRecursionDepth,
     bool evaluateImpliedSpecializes,
     bool evaluateVariants,
     bool directNodeShouldContributeSpecs,
@@ -654,7 +655,7 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
     // Apply relocations that affect namespace at and below this site.
     if (not inputs.usd) {
         arcExpr = targetNode.GetLayerStack()
-            ->GetExpressionForRelocatesAtPath(targetNode.GetPath())
+            ->GetExpressionForRelocatesAtPath(targetPath)
             .Compose(arcExpr);
     }
 
@@ -697,6 +698,9 @@ struct Pcp_PrimIndexer
     // The root site for the prim indexing process.
     PcpLayerStackSite rootSite;
 
+    // Total depth of ancestral recursion.
+    int ancestorRecursionDepth;
+
     // Context for the prim index we are building.
     PcpPrimIndexInputs inputs;
     PcpPrimIndexOutputs* outputs;
@@ -736,7 +740,8 @@ struct Pcp_PrimIndexer
 #endif // PCP_DIAGNOSTIC_VALIDATION
 
     Pcp_PrimIndexer()
-        : outputs(0)
+        : ancestorRecursionDepth(0)
+        , outputs(0)
         , previousFrame(0)
         , handledRelocations(false)
         , evaluateImpliedSpecializes(true)
@@ -1362,6 +1367,7 @@ _AddArc(
         PcpPrimIndexOutputs childOutputs;
         Pcp_BuildPrimIndex( site,
                             indexer->rootSite,
+                            indexer->ancestorRecursionDepth,
                             evaluateImpliedSpecializes,
                             evaluateVariants,
                             directNodeShouldContributeSpecs,
@@ -2256,6 +2262,10 @@ static PcpMapExpression
 _GetImpliedClass( const PcpMapExpression & transfer,
                   const PcpMapExpression & classArc )
 {
+    if (transfer.IsConstantIdentity()) {
+        return classArc;
+    }
+
     return transfer.Compose( classArc.Compose( transfer.Inverse() ))
         .AddRootIdentity();
 }
@@ -2477,6 +2487,11 @@ _EvalImpliedClasses(
     // nodes of the propagated inherits have a consistent strength 
     // ordering.  This is handled with the implied specializes task.
     if (_IsPropagatedSpecializesNode(node)) {
+        return;
+    }
+
+    // Optimization: early-out if there are no class arcs to propagate.
+    if (not _HasClassBasedChild(node)) {
         return;
     }
 
@@ -2919,33 +2934,34 @@ _ComposeVariantSelectionForNode(
     return false;
 }
 
+// Check the tree of nodes rooted at the given node for any node
+// representing a prior selection for the given variant set.
 static bool
-_ComposeVariantSelectionForSubtree(
+_FindPriorVariantSelection(
     const PcpNodeRef& node,
-    const SdfPath& pathInNode,
+    int ancestorRecursionDepth,
     const std::string & vset,
     std::string *vsel,
-    PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    PcpNodeRef *nodeWithVsel)
 {
-    // Compose variant selection in strong-to-weak order.
-    if (_ComposeVariantSelectionForNode(
-            node, pathInNode, vset, vsel, nodeWithVsel, outputs)) {
-        return true;
-    }
-
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        const PcpNodeRef& childNode = *child;
-        const SdfPath pathInChildNode =
-            childNode.GetMapToParent().MapTargetToSource(pathInNode);
-
-        if (not pathInChildNode.IsEmpty() and 
-            _ComposeVariantSelectionForSubtree(
-                *child, pathInChildNode, vset, vsel, nodeWithVsel, outputs)) {
+    if (node.GetArcType() == PcpArcTypeVariant &&
+        node.GetDepthBelowIntroduction() == ancestorRecursionDepth) {
+        // If this node represents a variant selection at the same
+        // effective depth of namespace, check its selection.
+        const std::pair<std::string, std::string> nodeVsel =
+            node.GetPathAtIntroduction().GetVariantSelection();
+        if (nodeVsel.first == vset) {
+            *vsel = nodeVsel.second;
+            *nodeWithVsel = node;
             return true;
         }
     }
-
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        if (_FindPriorVariantSelection(
+                *child, ancestorRecursionDepth, vset, vsel, nodeWithVsel)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -3017,6 +3033,7 @@ _ComposeVariantSelectionAcrossStackFrames(
 
 static bool
 _ComposeVariantSelection(
+    int ancestorRecursionDepth,
     PcpPrimIndex_StackFrame *previousFrame,
     PcpNodeRef node,
     const SdfPath &pathInNode,
@@ -3029,6 +3046,27 @@ _ComposeVariantSelection(
     TF_VERIFY(not pathInNode.IsEmpty());
     TF_VERIFY(not pathInNode.ContainsPrimVariantSelection(),
               pathInNode.GetText());
+
+    // First check if we have already resolved this variant set.
+    // Try all nodes in all parent frames; ancestorRecursionDepth
+    // accounts for any ancestral recursion.
+    {
+        PcpNodeRef rootNode = node.GetRootNode();
+        PcpPrimIndex_StackFrame *prevFrame = previousFrame;
+        while (rootNode) {
+            if (_FindPriorVariantSelection(rootNode,
+                                           ancestorRecursionDepth,
+                                           vset, vsel, nodeWithVsel)) {
+                return true;
+            } 
+            if (prevFrame) {
+                rootNode = prevFrame->parentNode.GetRootNode();
+                prevFrame = prevFrame->previousFrame;
+            } else {
+                break;
+            }
+        }
+    }
 
     // We want to look for variant selections in all nodes that have been 
     // added up to this point. Because Pcp follows all other arcs it 
@@ -3209,7 +3247,8 @@ _EvalNodeVariants(
         // Determine the variant selection for this set.
         std::string vsel;
         PcpNodeRef nodeWithVsel;
-        _ComposeVariantSelection(indexer->previousFrame, node,
+        _ComposeVariantSelection(indexer->ancestorRecursionDepth,
+                                 indexer->previousFrame, node,
                               node.GetPath().StripAllVariantSelections(),
                               vset, &vsel, &nodeWithVsel,
                               indexer->outputs);
@@ -3724,16 +3763,6 @@ _NodeCanBeCulled(
         return false;
     }
 
-    // We cannot cull any nodes that directly OR ancestrally provide
-    // variant selections. Variant selections from ancestral sites are
-    // necessary when evaluating variants in a recursive prim indexing
-    // call. Otherwise, the recursive call may wind up using a different
-    // selection than what had been used in the parent index.
-    // See TrickyInheritsInVariants2 for an example of this.
-    if (node.HasVariantSelections()) {
-        return false;
-    }
-
     // CsdPrim::GetBases wants to return the path of all prims in the
     // composed scene from which this prim inherits opinions. To ensure
     // Csd has all the info it needs for this, Pcp has to avoid culling any
@@ -3819,6 +3848,7 @@ static void
 _BuildInitialPrimIndexFromAncestor(
     const PcpLayerStackSite &site,
     const PcpLayerStackSite &rootSite,
+    int ancestorRecursionDepth,
     PcpPrimIndex_StackFrame *previousFrame,
     bool evaluateImpliedSpecializes,
     bool directNodeShouldContributeSpecs,
@@ -3861,6 +3891,7 @@ _BuildInitialPrimIndexFromAncestor(
                                            site.path.GetParentPath());
 
         Pcp_BuildPrimIndex(parentSite, parentSite,
+                           ancestorRecursionDepth+1,
                            evaluateImpliedSpecializes,
                            /* Always pick up ancestral opinions from variants
                               evaluateVariants = */ true,
@@ -3935,6 +3966,7 @@ static void
 Pcp_BuildPrimIndex(
     const PcpLayerStackSite & site,
     const PcpLayerStackSite& rootSite,
+    int ancestorRecursionDepth,
     bool evaluateImpliedSpecializes,
     bool evaluateVariants,
     bool directNodeShouldContributeSpecs,
@@ -3979,7 +4011,7 @@ Pcp_BuildPrimIndex(
         // other arcs introduced by namespace ancestors that might
         // contribute opinions to this child.
         _BuildInitialPrimIndexFromAncestor(
-            site, rootSite, previousFrame,
+            site, rootSite, ancestorRecursionDepth, previousFrame,
             evaluateImpliedSpecializes,
             directNodeShouldContributeSpecs,
             inputs, outputs);
@@ -3988,6 +4020,7 @@ Pcp_BuildPrimIndex(
     // Initialize the task list.
     Pcp_PrimIndexer indexer;
     indexer.rootSite = rootSite;
+    indexer.ancestorRecursionDepth = ancestorRecursionDepth;
     indexer.inputs = inputs;
     indexer.outputs = outputs;
     indexer.previousFrame = previousFrame;
@@ -4058,6 +4091,7 @@ PcpComputePrimIndex(
 
     const PcpLayerStackSite site(layerStack, primPath);
     Pcp_BuildPrimIndex(site, site,
+                       /* ancestorRecursionDepth = */ 0,
                        /* evaluateImpliedSpecializes = */ true,
                        /* evaluateVariants = */ true,
                        /* directNodeShouldContributeSpecs = */ true,

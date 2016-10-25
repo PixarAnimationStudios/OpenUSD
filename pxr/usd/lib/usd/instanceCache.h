@@ -132,7 +132,7 @@ public:
     void ProcessChanges(Usd_InstanceChanges* changes);
 
     /// Returns true if an object at \p path is a master or in a
-    /// master.
+    /// master.  \p path must be either an absolute path or empty.
     static bool IsPathMasterOrInMaster(const SdfPath& path);
 
     /// Returns the paths of all master prims for instance prim 

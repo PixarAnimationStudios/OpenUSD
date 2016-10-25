@@ -43,27 +43,31 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// clipPath without copying the samples into a separate layer.
 ///
 /// \p resultLayer            The layer to which clip meta data and frame data 
-///                           will be written
+///                           will be written. The layer representing the static
+///                           scene topology will be authored as a sublayer on
+///                           this layer as well; it will be authored as the 
+///                           first sublayer in the list(strongest).
 ///
 /// \p clipLayerFiles         The files containing the time varying data.
 ///
 /// \p clipPath               The path at which we will put the clip meta data.
 ///
-/// \p reuseExistingTopology  Whether or not we will attempt to reuse an 
-///                           existing topology file.
-///
 /// \p startTimeCode          The first time coordinate for the rootLayer 
 ///                           to point to. If none is provided, it will be 
 ///                           the lowest startTimeCode available from 
-///                           the \p clipLayers
+///                           the \p clipLayers.
+///
+/// \p endTimeCode            The last time coordinate for the rootLayer to 
+///                           point to. If none is provided, it will be the 
+///                           highest endTimeCode authored from the 
+///                           \p clipLayers.
+///
 ///
 /// Details on how this is accomplished can be found below:
 ///
-/// This will begin by generating a topology layer, if necessary.
-/// If the user has marked \p reuseExistingTopology as true, and a layer
-/// exists, it will be reused. Otherwise, a fresh one will be generated. 
-/// In either case, topology layers will be named/looked up 
-/// via the following scheme: 
+/// Pre-existing opinions will be wiped away upon success. Upon failure, the 
+/// original topology layer, if it was pre-existing, will be preserved. 
+/// Topology layers will be named/looked up via the following scheme: 
 ///
 ///     topologyLayerName = <resultIdWithoutExt>.topology.<resultExt>
 ///
@@ -87,20 +91,18 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// clipManifestAssetPath, clipActive etc. at the specified \p clipPath.
 /// The resultLayer will also have timeCode range data, such as start and end 
 /// timeCodes written to it, with the starting position being provided by 
-/// \p startTimeCode.
+/// \p startTimeCode and the ending provided by \p endTimeCode.
 ///
 /// Note: an invalid clip path(because the prim doesn't exist in
 /// the aggregate topologyLayer) will result in a TF_CODING_ERROR.
 /// 
-/// Note: if this function fails, the root layer will be not be created.
-/// If the topology is not being reused, it will not be generated either.
 USDUTILS_API bool 
 UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath, 
-                    const bool reuseExistingTopology
-                        = true,
                     const double startTimeCode 
+                        = std::numeric_limits<double>::max(),
+                    const double endTimeCode
                         = std::numeric_limits<double>::max());
 
 /// A function which aggregates the topology of a set of \p clipLayerFiles

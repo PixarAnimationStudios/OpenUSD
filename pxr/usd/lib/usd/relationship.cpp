@@ -35,8 +35,6 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/tracelite/trace.h"
 
-#include <boost/foreach.hpp>
-
 #include <algorithm>
 #include <set>
 #include <vector>
@@ -56,11 +54,16 @@ SdfPath
 UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
                                         std::string* whyNot) const
 {
-    if (Usd_InstanceCache::IsPathMasterOrInMaster(target)) {
-        if (whyNot) { 
-            *whyNot = "Cannot target a master or an object within a master.";
+    if (!target.IsEmpty()) {
+        SdfPath absTarget =
+            target.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
+        if (Usd_InstanceCache::IsPathMasterOrInMaster(absTarget)) {
+            if (whyNot) { 
+                *whyNot = "Cannot target a master or an object within a "
+                    "master.";
+            }
+            return SdfPath();
         }
-        return SdfPath();
     }
 
     UsdStage *stage = _GetStage();
@@ -329,12 +332,12 @@ UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
     bool success = GetTargets(&curTargets, forwardToObjectsInMasters);
 
     // Process all targets at this relationship.
-    TF_FOR_ALL(trgIt, curTargets) {
-        UsdPrim nextPrim = GetStage()->GetPrimAtPath(trgIt->GetPrimPath());
+    for (const auto& target : curTargets) {
+        UsdPrim nextPrim = GetStage()->GetPrimAtPath(target.GetPrimPath());
 
         if (nextPrim) {
             if (UsdRelationship rel =
-                        nextPrim.GetRelationship(trgIt->GetNameToken())) {
+                        nextPrim.GetRelationship(target.GetNameToken())) {
                 // It doesn't matter if we fail here, just track the error
                 // state and continue attempting to gather targets.
                 success = success and 
@@ -345,8 +348,9 @@ UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
             } 
         }
         
-        if (uniqueTargets->insert(*trgIt).second)
-            targets->push_back(*trgIt);
+        if (uniqueTargets->insert(target).second) {
+            targets->push_back(target);
+        }
     }
 
     return success;

@@ -29,6 +29,26 @@
 #include "pxr/base/tf/staticData.h"
 #include <limits>
 
+namespace {
+    // Order PathPairs using FastLessThan.
+    struct _PathPairOrder
+    {
+        bool operator()(const PcpMapFunction::PathPair &lhs,
+                        const PcpMapFunction::PathPair &rhs) {
+            if (SdfPath::FastLessThan()(lhs.first, rhs.first)) {
+                return true;
+            }
+            if (SdfPath::FastLessThan()(rhs.first, lhs.first)) {
+                return false;
+            }
+            if (SdfPath::FastLessThan()(lhs.second, rhs.second)) {
+                return true;
+            }
+            return false;
+        }
+    };
+};
+
 PcpMapFunction::PcpMapFunction()
 {
 }
@@ -69,9 +89,20 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
          i != vec->end(); /* increment below */)
     {
         bool redundant = false;
+
+        // Check for trivial dupes before doing further work.
+        for (PcpMapFunction::PathPairVector::iterator j = vec->begin();
+             j != i; ++j) {
+            if (*i == *j) {
+                redundant = true;
+                break;
+            }
+        }
+
         // Find the closest enclosing mapping.  If the trailing name
         // components do not match, this pair cannot be redundant.
-        if (i->first.GetNameToken() == i->second.GetNameToken()) {
+        if (not redundant &&
+            i->first.GetNameToken() == i->second.GetNameToken()) {
             // The tail component matches.  Walk up the prefixes.
             for (SdfPath source = i->first, target = i->second;
                  not source.IsEmpty() and not target.IsEmpty()
@@ -103,17 +134,6 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
             }
         }
 
-        // Check for trivial dupes.
-        if (not redundant) {
-            for (PcpMapFunction::PathPairVector::iterator j = vec->begin();
-                 j != i; ++j) {
-                if (*i == *j) {
-                    redundant = true;
-                    break;
-                }
-            }
-        }
-
         if (redundant) {
             // Entries are not sorted yet so swap to back for O(1) erase.
             std::swap(*i, vec->back());
@@ -124,7 +144,7 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
     }
 
     // Final sort to canonical order.
-    std::sort(vec->begin(), vec->end());
+    std::sort(vec->begin(), vec->end(), _PathPairOrder());
 }
 
 PcpMapFunction
@@ -254,77 +274,80 @@ _Map(const SdfPath& path,
 
     // Find longest prefix that has a mapping;
     // this represents the most-specific mapping to apply.
-    SdfPath result;
-    int entryFound = -1;
-    for (SdfPath p = path; result.IsEmpty() and not p.IsEmpty();
-         p = p.GetParentPath()) {
-        for (int i=0; i < numPairs; ++i) {
-            const SdfPath &source = invert? pairs[i].second : pairs[i].first;
-            const SdfPath &target = invert? pairs[i].first : pairs[i].second;
-            if (p == source) {
-                result = path.ReplacePrefix( source, target,
-                                           /* fixTargetPaths = */ false);
-                entryFound = i;
-                break;
-            }
+    int bestIndex = -1;
+    size_t bestElemCount = 0;
+    for (int i=0; i < numPairs; ++i) {
+        const SdfPath &source = invert? pairs[i].second : pairs[i].first;
+        const size_t count = source.GetPathElementCount();
+        if (count >= bestElemCount and path.HasPrefix(source)) {
+            bestElemCount = count;
+            bestIndex = i;
         }
     }
-
-    if (not result.IsEmpty()) {
-        // To maintain the bijection, we need to check if the mapped path
-        // would translate back to the original path. For instance, given
-        // the mapping:
-        //      { / -> /, /_class_Model -> /Model }
-        //
-        // mapping /Model shouldn't be allowed, as the result is noninvertible:
-        //      source to target: /Model -> /Model (due to identity mapping)
-        //      target to source: /Model -> /_class_Model
-        //
-        // However, given the mapping:
-        //     { /A -> /A/B }
-        //
-        // mapping /A/B should be allowed, as the result is invertible:
-        //     source to target: /A/B -> /A/B/B
-        //     target to source: /A/B/B -> /A/B
-        //
-        // Another example:
-        //    { /A -> /B, /C -> /B/C }
-        //
-        // mapping /A/C should not be allowed, as the result is noninvertible:
-        //    source to target: /A/C -> /B/C
-        //    target to source: /B/C -> /C
-        //
-        // For examples, see test case for bug 74847 and bug 112645 in 
-        // testPcpMapFunction.
-        //
-        // XXX: It seems inefficient to have to do this check every time
-        //      we do a path mapping. I think it might be possible to figure
-        //      out the 'disallowed' mappings and mark them in the mapping
-        //      in PcpMapFunction's c'tor. That would let us get rid of this 
-        //      code. Figuring out the 'disallowed' mappings might be
-        //      expensive though, possibly O(n^2) where n is the number of
-        //      paths in the mapping.
-        //
-        for (SdfPath p = result; not p.IsEmpty(); p = p.GetParentPath()) {
-            for (int i=0; i < numPairs; ++i) {
-                const SdfPath &target =
-                    invert? pairs[i].first : pairs[i].second;
-                if (p == target) {
-                    // Found the applicable mapping.
-                    if (i == entryFound) {
-                        // This mapping provides a bijection, so use it.
-                        return result;
-                    } else {
-                        // The input path maps outside the range,
-                        // so we must exclude it from the domain too.
-                        return SdfPath();
-                    }
-                }
-            }
-        }
+    if (bestIndex == -1) {
+        // No mapping found.
+        return SdfPath();
+    }
+    const SdfPath &source =
+        invert? pairs[bestIndex].second : pairs[bestIndex].first;
+    const SdfPath &target =
+        invert? pairs[bestIndex].first : pairs[bestIndex].second;
+    SdfPath result =
+        path.ReplacePrefix(source, target, /* fixTargetPaths = */ false);
+    if (result.IsEmpty()) {
+        return result;
     }
 
-    return SdfPath();
+    // To maintain the bijection, we need to check if the mapped path
+    // would translate back to the original path. For instance, given
+    // the mapping:
+    //      { / -> /, /_class_Model -> /Model }
+    //
+    // mapping /Model shouldn't be allowed, as the result is noninvertible:
+    //      source to target: /Model -> /Model (due to identity mapping)
+    //      target to source: /Model -> /_class_Model
+    //
+    // However, given the mapping:
+    //     { /A -> /A/B }
+    //
+    // mapping /A/B should be allowed, as the result is invertible:
+    //     source to target: /A/B -> /A/B/B
+    //     target to source: /A/B/B -> /A/B
+    //
+    // Another example:
+    //    { /A -> /B, /C -> /B/C }
+    //
+    // mapping /A/C should not be allowed, as the result is noninvertible:
+    //    source to target: /A/C -> /B/C
+    //    target to source: /B/C -> /C
+    //
+    // For examples, see test case for bug 74847 and bug 112645 in 
+    // testPcpMapFunction.
+    //
+    // XXX: It seems inefficient to have to do this check every time
+    //      we do a path mapping. I think it might be possible to figure
+    //      out the 'disallowed' mappings and mark them in the mapping
+    //      in PcpMapFunction's c'tor. That would let us get rid of this 
+    //      code. Figuring out the 'disallowed' mappings might be
+    //      expensive though, possibly O(n^2) where n is the number of
+    //      paths in the mapping.
+    //
+
+    // Optimistically assume the same mapping will be the best;
+    // we can skip even considering any mapping that is shorter.
+    bestElemCount = target.GetPathElementCount();
+    for (int i=0; i < numPairs; ++i) {
+        if (i == bestIndex) {
+            continue;
+        }
+        const SdfPath &target = invert? pairs[i].first : pairs[i].second;
+        const size_t count = target.GetPathElementCount();
+        if (count > bestElemCount and result.HasPrefix(target)) {
+            // There is a more-specific reverse mapping for this path.
+            return SdfPath();
+        }
+    }
+    return result;
 }
 
 SdfPath
@@ -347,10 +370,22 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     TfAutoMallocTag2 tag("Pcp", "PcpMapFunction");
     TRACE_FUNCTION();
 
+    // Fast path identities.  These do occur in practice and are
+    // worth special-casing since it lets us avoid heap allocation.
+    if (IsIdentity())
+        return inner;
+    if (inner.IsIdentity())
+        return *this;
+
     // The composition of this function over inner is the result
     // of first applying inner, then this function.  Build a list
     // of all of the (source,target) path pairs that result.
     std::vector<PathPair> pairs;
+
+    // A 100k random test subset from a production
+    // shot show a mean result size of 1.906050;
+    // typically a root identity + other path pair.
+    pairs.reserve(2);
 
     // Apply outer function to the output range of inner.
     const _Data& data_inner = inner._GetData();
@@ -358,7 +393,9 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
         PathPair pair = data_inner._pairs[i];
         pair.second = MapSourceToTarget(pair.second);
         if (not pair.second.IsEmpty()) {
-            pairs.push_back(pair);
+            if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
+                pairs.push_back(pair);
+            }
         }
     }
 
@@ -368,7 +405,9 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
         PathPair pair = data_outer._pairs[i];
         pair.first = inner.MapTargetToSource(pair.first);
         if (not pair.first.IsEmpty()) {
-            pairs.push_back(pair);
+            if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
+                pairs.push_back(pair);
+            }
         }
     }
 

@@ -360,7 +360,6 @@ Hdx_UnitTestDelegate::AddShadowTask(SdfPath const &id)
     HdxShadowTaskParams params;
     params.camera = _cameraId;
     params.viewport = GfVec4f(0,0,512,512);
-    params.enableShadows = true;
     cache[HdTokens->children] = VtValue(SdfPathVector());
     cache[HdTokens->params] = VtValue(params);
 }
@@ -381,7 +380,6 @@ Hdx_UnitTestDelegate::AddDrawTargetTask(SdfPath const &id)
     cache[HdTokens->children] = VtValue(SdfPathVector());
 
     HdxDrawTargetTaskParams params;
-    params.enableDrawTargets = true;
     params.enableLighting = true;
     cache[HdTokens->params] = params;
 

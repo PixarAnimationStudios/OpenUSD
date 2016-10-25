@@ -70,6 +70,41 @@ def "GLOBAL" (
               at time 0 and clip 1 is active at time 20.
               """
             }
+
+            dictionary clipTemplateAssetPath = {
+              string doc = """
+              A template string representing a set of assets. This string
+              can be of two forms: path/basename.###.usd and path/basename.##.##.usd.
+              In either case, the number of hash marks in each section is variable.
+              These control the amount of padding USD will supply when looking up 
+              the assets. For instance, a value of 'foo.###.usd', 
+              with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1:
+              USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd.
+              """
+            }
+
+            dictionary clipTemplateStride = {
+              string doc = """
+              A double representing the increment value USD will use when
+              searching for asset paths. For example usage see clipTemplateAssetPath.
+              """
+            }
+
+            dictionary clipTemplateStartTime = {
+              string doc = """
+              A double which indicates the start of the range USD will use 
+              to search for asset paths. This value is inclusive in that range.
+              For example usage see clipTemplateAssetPath.
+              """
+            }
+
+            dictionary clipTemplateEndTime = {
+              string doc = """
+              A double which indicates the end of the range USD will use to
+              to search for asset paths. This value is inclusive in that range.
+              For example usage see clipTemplateAssetPath.
+              """
+            }
         }
     }
 )
@@ -128,11 +163,20 @@ class "ClipsAPI"
     SetClipActive() specifies the ordering of clip application over time            
     (clips can be repeated), while SetClipTimes() specifies time-mapping            
     from stage-time to clip-time for the clip active at a given stage-time,         
-    which allows for time-dilation and repetition of clips.  Finally,           
-    SetClipPrimPath() determines the path within each clip that will map            
+    which allows for time-dilation and repetition of clips. 
+    Finally, SetClipPrimPath() determines the path within each clip that will map            
     to this prim, i.e. the location within the clip at which we will look           
-    for opinions for this prim.         
-            
+    for opinions for this prim. 
+
+    The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
+    through template clip metadata. This can be desirable when your set of 
+    assets is very large, as the template metadata is much more concise. 
+    SetClipTemplateAssetPath() establishes the asset identifier pattern of the set of
+    clips to be consulted. SetClipTemplateStride(), SetClipTemplateEndTime(), 
+    and SetClipTemplateStartTime() specify the range in which USD will search, based
+    on the template. From the set of resolved asset paths, clipTimes, and clipActive
+    will be derived internally.
+                
     Important facts about clips:            
     \li Within the layerstack in which clips are established, the           
     opinions within the clips will be \em weaker than any direct opinions           

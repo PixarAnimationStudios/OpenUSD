@@ -233,6 +233,8 @@ function(pxr_shared_library LIBRARY_NAME)
             set(rpath "$ORIGIN/../../../../${PXR_INSTALL_SUBDIR}/lib:${rpath}")
         endif()
 
+        # Python modules must be suffixed with .pyd on Windows and .so on
+        # other platforms.
         if(WIN32)
 			add_definitions(-D_BUILDING_PYD=1)
             set_target_properties(${LIBRARY_NAME}
@@ -240,13 +242,14 @@ function(pxr_shared_library LIBRARY_NAME)
                     PREFIX ""
                     SUFFIX ".pyd"
                     FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
                     LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
             )
         else()
             set_target_properties(${LIBRARY_NAME}
                 PROPERTIES
                     PREFIX ""
-                    SUFFIX ".pyd"
+                    SUFFIX ".so"
                     FOLDER "${PXR_PREFIX}/_python"
                     INSTALL_RPATH ${rpath}
             )
@@ -283,13 +286,8 @@ function(pxr_shared_library LIBRARY_NAME)
 		set(_PxrUserLocation "/usr/local/share/usd/plugins")
 	endif()
     set_target_properties(${LIBRARY_NAME}
-<<<<<<< HEAD
         PROPERTIES COMPILE_DEFINITIONS 
             "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_PLUGIN_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/plugin/usd;PXR_INSTALL_LOCATION=${installLocation}"
-=======
-        PROPERTIES COMPILE_DEFINITIONS
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=${_PxrUserLocation};PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_INSTALL_LOCATION=${installLocation}"
->>>>>>> 4780e01e13db12c573b140b595b530a492003b70
     )
 
     # Always bake the rpath.
@@ -607,13 +605,8 @@ function(pxr_plugin PLUGIN_NAME)
         set(HEADER_INSTALL_PREFIX
             "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     else()
-<<<<<<< HEAD
-        set(PLUGIN_INSTALL_PREFIX "plugin/usd")
-        set(HEADER_INSTALL_PREFIX 
-=======
         set(PLUGIN_INSTALL_PREFIX "plugin")
         set(HEADER_INSTALL_PREFIX
->>>>>>> 4780e01e13db12c573b140b595b530a492003b70
             "${CMAKE_INSTALL_PREFIX}/include/${PXR_PREFIX}/${PLUGIN_NAME}")
     endif()
 

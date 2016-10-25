@@ -114,10 +114,9 @@ Hd_IndirectDrawBatch::_GetCullingProgram()
         // sharing the culling geometric shader for the same configuration.
         Hd_GeometricShaderSharedPtr cullShader =
             Hd_GeometricShader::Create(shaderKey);
+        _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
-                                      cullShader,
-                                      HdShaderSharedPtrVector(),
                                       /*indirect=*/true);
     }
     return _cullingProgram;
@@ -993,10 +992,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     glUseProgram(programId);
 
     const Hd_ResourceBinder &binder = program.GetBinder();
-
-    // resolve shaders (surface shader may be overriden)
-    HdShaderSharedPtrVector shaders
-        = renderPassState->GetShaders(batchItem->GetSurfaceShader());
+    const HdShaderSharedPtrVector &shaders = program.GetComposedShaders();
 
     // XXX: for surfaces shader, we need to iterate all drawItems to
     //      make textures resident, instead of just the first batchItem
@@ -1054,12 +1050,11 @@ Hd_IndirectDrawBatch::ExecuteDraw(
 
     // shader buffer bind
     HdBufferArrayRangeSharedPtr shaderBar;
-
-    // shaderBar isn't needed when the surfaceShader is overriden
-    if (not renderPassState->GetOverrideShader()) {
-        shaderBar = batchItem->GetSurfaceShader()->GetShaderData();
+    TF_FOR_ALL(shader, shaders) {
+        shaderBar = (*shader)->GetShaderData();
         if (shaderBar) {
-            binder.BindBuffer(HdTokens->surfaceShaderParams, shaderBar->GetResource());
+            binder.BindBuffer(HdTokens->surfaceShaderParams, 
+                              shaderBar->GetResource());
         }
     }
 
@@ -1069,7 +1064,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     binder.BindBufferArray(dispatchBar);
 
     // update geometric shader states
-    batchItem->GetGeometricShader()->BindResources(binder, programId);
+    program.GetGeometricShader()->BindResources(binder, programId);
 
     GLuint batchCount = _dispatchBuffer->GetCount();
 
@@ -1081,12 +1076,12 @@ Hd_IndirectDrawBatch::ExecuteDraw(
                 " - indirect: %d\n"
                 " - drawCount: %d\n"
                 " - stride: %zu\n",
-               batchItem->GetGeometricShader()->GetPrimitiveMode(),
+               program.GetGeometricShader()->GetPrimitiveMode(),
                0, batchCount,
                _dispatchBuffer->GetCommandNumUints()*sizeof(GLuint));
 
         glMultiDrawArraysIndirect(
-            batchItem->GetGeometricShader()->GetPrimitiveMode(),
+            program.GetGeometricShader()->GetPrimitiveMode(),
             0, // draw command always starts with 0
             batchCount,
             _dispatchBuffer->GetCommandNumUints()*sizeof(GLuint));
@@ -1097,12 +1092,12 @@ Hd_IndirectDrawBatch::ExecuteDraw(
                 " - indirect: %d\n"
                 " - drawCount: %d\n"
                 " - stride: %zu\n",
-               batchItem->GetGeometricShader()->GetPrimitiveMode(),
+               program.GetGeometricShader()->GetPrimitiveMode(),
                0, batchCount,
                _dispatchBuffer->GetCommandNumUints()*sizeof(GLuint));
 
         glMultiDrawElementsIndirect(
-            batchItem->GetGeometricShader()->GetPrimitiveMode(),
+            program.GetGeometricShader()->GetPrimitiveMode(),
             GL_UNSIGNED_INT,
             0, // draw command always starts with 0
             batchCount,
@@ -1122,7 +1117,8 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     binder.UnbindBufferArray(vertexBar);
     binder.UnbindBufferArray(dispatchBar);
     if(shaderBar) {
-        binder.UnbindBuffer(HdTokens->surfaceShaderParams, shaderBar->GetResource());
+        binder.UnbindBuffer(HdTokens->surfaceShaderParams, 
+                            shaderBar->GetResource());
     }
 
     if (instanceIndexBar) {
@@ -1135,7 +1131,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     TF_FOR_ALL(it, shaders) {
         (*it)->UnbindResources(binder, programId);
     }
-    batchItem->GetGeometricShader()->UnbindResources(binder, programId);
+    program.GetGeometricShader()->UnbindResources(binder, programId);
 
     glUseProgram(0);
 }

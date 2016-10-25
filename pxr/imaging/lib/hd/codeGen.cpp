@@ -1797,7 +1797,12 @@ Hd_CodeGen::_GenerateShaderParameters()
 
             if (not it->second.inPrimVars.empty()) {
                 accessors 
-                    << " HdGet_" << it->second.inPrimVars[0] << "().xy";
+                    << "\n"
+                    << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
+                    << " HdGet_" << it->second.inPrimVars[0] << "().xy\n"
+                    << "#else\n"
+                    << "vec2(0.0, 0.0)\n"
+                    << "#endif\n";
             } else {
             // allow to fetch uv texture without sampler coordinate for convenience.
                 accessors
@@ -1830,8 +1835,13 @@ Hd_CodeGen::_GenerateShaderParameters()
                 << " HdGet_" << it->second.name
                 << "() { return HdGet_" << it->second.name << "(";
             if (not it->second.inPrimVars.empty()) {
-                accessors 
-                    << "HdGet_" << it->second.inPrimVars[0] << "().xy";
+                accessors
+                    << "\n"
+                    << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
+                    << "HdGet_" << it->second.inPrimVars[0] << "().xy\n"
+                    << "#else\n"
+                    << "vec2(0.0, 0.0)\n"
+                    << "#endif\n";
             } else {
                 accessors
                     << "vec2(0.0, 0.0)";
@@ -1902,7 +1912,11 @@ Hd_CodeGen::_GenerateShaderParameters()
                 accessors
                     << it->second.dataType
                     << " HdGet_" << it->second.name << "() {\n"
-                    << "  return HdGet_" << it->second.inPrimVars[0] << "();"
+                    << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
+                    << "  return HdGet_" << it->second.inPrimVars[0] << "();\n"
+                    << "#else\n"
+                    << "  return " << it->second.dataType << "(0);\n"
+                    << "#endif\n"
                     << "\n}\n"
                     ;
             }

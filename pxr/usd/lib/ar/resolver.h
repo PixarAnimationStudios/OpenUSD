@@ -149,19 +149,19 @@ public:
     /// @}
 
     // --------------------------------------------------------------------- //
-    /// \name Layer-specific Operations
+    /// \name File/asset-specific Operations
     ///
-    /// \see SdfLayer
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Returns the resolved filesystem path for the layer identified
+    /// Returns the resolved filesystem path for the file identified
     /// by \p path following the same path resolution behavior as in
     /// \ref Resolve(const std::string&).
     ///
-    /// If the layer identified by \p path represents an asset and
-    /// \p assetInfo is not \c nullptr, it will be populated with
-    /// additional information about the asset.
+    /// If the file identified by \p path represents an asset and
+    /// \p assetInfo is not \c nullptr, the resolver should populate 
+    /// \p assetInfo with whatever additional metadata it knows or can
+    /// reasonably compute about the asset without actually opening it.
     ///
     /// \see Resolve(const std::string&).
     AR_API
@@ -169,7 +169,9 @@ public:
         const std::string& path, 
         ArAssetInfo* assetInfo) = 0;
 
-    /// Update \p assetInfo with respect to the given \p fileVersion
+    /// Update \p assetInfo with respect to the given \p fileVersion .
+    /// \note This API is currently in flux.  In general, you should prefer
+    /// to call ResolveWithAssetInfo()
     AR_API
     virtual void UpdateAssetInfo(
         const std::string& identifier,
@@ -177,7 +179,7 @@ public:
         const std::string& fileVersion,
         ArAssetInfo* assetInfo) = 0;
 
-    /// Returns true if a layer may be written to the given \p path, false
+    /// Returns true if a file may be written to the given \p path, false
     /// otherwise. 
     /// 
     /// If this function returns false and \p whyNot is not \c nullptr,
@@ -187,7 +189,7 @@ public:
         const std::string& path,
         std::string* whyNot) = 0;
 
-    /// Returns true if a new layer may be created using the given
+    /// Returns true if a new file may be created using the given
     /// \p identifier, false otherwise.
     ///
     /// If this function returns false and \p whyNot is not \c nullptr,

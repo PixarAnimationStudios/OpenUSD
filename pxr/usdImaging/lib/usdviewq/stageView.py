@@ -34,9 +34,8 @@ from PySide import QtGui, QtCore, QtOpenGL
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
-from pxr import Glfq
 from pxr import Sdf, Usd, UsdGeom, UsdUtils
-from pxr import UsdImaging
+from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 # default includedPurposes for the bbox cache
@@ -501,7 +500,7 @@ class StageView(QtOpenGL.QGLWidget):
     signalBboxUpdateTimeChanged = QtCore.Signal(int)
 
     # First arg is primPath, (which could be empty Path)
-    # Second arg is instanceIndex (or UsdImaging.GL.ALL_INSTANCES for all instances)
+    # Second arg is instanceIndex (or UsdImagingGL.GL.ALL_INSTANCES for all instances)
     # Third and Fourth args represent state at time of the pick
     signalPrimSelected = QtCore.Signal(Sdf.Path, int, QtCore.Qt.MouseButton,
                                        QtCore.Qt.KeyboardModifiers)
@@ -768,8 +767,7 @@ class StageView(QtOpenGL.QGLWidget):
         if msaa == "1":
             glFormat.setSampleBuffers(True)
             glFormat.setSamples(4)
-        super(StageView, self).__init__(
-            Glfq.CreateGLDebugContext(glFormat), parent)
+        super(StageView, self).__init__(glFormat, parent)
                                     
         self._freeCamera = FreeCamera(True)
         self._lastComputedGfCamera = None
@@ -793,18 +791,18 @@ class StageView(QtOpenGL.QGLWidget):
         self._lastY = 0
 
         self._renderer = None
-        self._renderModeDict={"Wireframe":UsdImaging.GL.DrawMode.DRAW_WIREFRAME,
-                              "WireframeOnSurface":UsdImaging.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
-                              "Smooth Shaded":UsdImaging.GL.DrawMode.DRAW_SHADED_SMOOTH,
-                              "Points":UsdImaging.GL.DrawMode.DRAW_POINTS,
-                              "Flat Shaded":UsdImaging.GL.DrawMode.DRAW_SHADED_FLAT,
-                              "Geom Only":UsdImaging.GL.DrawMode.DRAW_GEOM_ONLY,
-                              "Geom Smooth":UsdImaging.GL.DrawMode.DRAW_GEOM_SMOOTH,
-                              "Geom Flat":UsdImaging.GL.DrawMode.DRAW_GEOM_FLAT,
-                              "Hidden Surface Wireframe":UsdImaging.GL.DrawMode.DRAW_WIREFRAME}
+        self._renderModeDict={"Wireframe":UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME,
+                              "WireframeOnSurface":UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
+                              "Smooth Shaded":UsdImagingGL.GL.DrawMode.DRAW_SHADED_SMOOTH,
+                              "Points":UsdImagingGL.GL.DrawMode.DRAW_POINTS,
+                              "Flat Shaded":UsdImagingGL.GL.DrawMode.DRAW_SHADED_FLAT,
+                              "Geom Only":UsdImagingGL.GL.DrawMode.DRAW_GEOM_ONLY,
+                              "Geom Smooth":UsdImagingGL.GL.DrawMode.DRAW_GEOM_SMOOTH,
+                              "Geom Flat":UsdImagingGL.GL.DrawMode.DRAW_GEOM_FLAT,
+                              "Hidden Surface Wireframe":UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
 
         self._renderMode = "Smooth Shaded"
-        self._renderParams = UsdImaging.GL.RenderParams()
+        self._renderParams = UsdImagingGL.GL.RenderParams()
         self._defaultFov = 60
         self._dist = 50
         self._oldDist = self._dist
@@ -880,7 +878,7 @@ class StageView(QtOpenGL.QGLWidget):
         disable rendering for this widget, you MUST have already set
         self.noRender to True prior to calling this function'''
         if not self._noRender:
-            self._renderer = UsdImaging.GL()
+            self._renderer = UsdImagingGL.GL()
 
     def GetRenderGraphPlugins(self):
         if self._renderer:
@@ -1092,7 +1090,7 @@ class StageView(QtOpenGL.QGLWidget):
                 for instanceIndex in self._selectedInstances[p.GetPath()]:
                     self._renderer.AddSelected(p.GetPath(), instanceIndex)
             else:
-                self._renderer.AddSelected(p.GetPath(), UsdImaging.GL.ALL_INSTANCES)
+                self._renderer.AddSelected(p.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
 
     def _getEmptyBBox(self):
         return Gf.BBox3d()
@@ -1145,9 +1143,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.showGuides = self._displayGuides
         self._renderParams.showRenderGuides = self._displayRenderingGuides
         self._renderParams.forceRefresh = self._forceRefresh
-        self._renderParams.cullStyle =  (UsdImaging.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
+        self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
                                                if self._cullBackfaces
-                                               else UsdImaging.GL.CullStyle.CULL_STYLE_NOTHING)
+                                               else UsdImagingGL.GL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = self._displayPrimId
         self._renderParams.enableSampleAlphaToCoverage = not self._displayPrimId
@@ -1249,12 +1247,6 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glLoadIdentity()
         GL.glMultMatrixd(MakeGLMtx(frustum.ComputeViewMatrix()))
 
-        GL.glViewport(0, 0, self.size().width(), self.size().height())
-
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
-
-        self._renderer.SetCameraStateFromOpenGL()
-
     def drawWireframeCube(self, size):
         from OpenGL import GL
 
@@ -1313,14 +1305,24 @@ class StageView(QtOpenGL.QGLWidget):
         cam_up = frustum.ComputeUpVector()
         cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
 
-        self.setupOpenGLViewMatricesForFrustum(frustum)
+        self._renderer.SetCameraState(
+            frustum.ComputeViewMatrix(),
+            frustum.ComputeProjectionMatrix(),
+            Gf.Vec4d(0, 0, self.size().width(), self.size().height()))
+
+        # XXX: this is redundant for refEngine, but currently hdEngine
+        #      doesn't call glViewport.
+        GL.glViewport(0, 0, self.size().width(), self.size().height())
+
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
         # Set the clipping planes.
         self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
                                          gfCamera.clippingPlanes]
 
         if self._nodes:
-            
+            self.setupOpenGLViewMatricesForFrustum(frustum)
+
             GL.glColor3f(1.0,1.0,1.0)
 
             # for renderModes that need lights 
@@ -1548,7 +1550,7 @@ class StageView(QtOpenGL.QGLWidget):
 
             # Hydra Enabled
             toPrint = {"Hydra":
-                         "Enabled" if UsdImaging.GL.IsEnabledHydra() 
+                         "Enabled" if UsdImagingGL.GL.IsEnabledHydra() 
                          else "Disabled"}
             self.printDict(self.width()-140, 14, col, toPrint)
 
@@ -1778,9 +1780,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.showGuides = self._displayGuides
         self._renderParams.showRenderGuides = self._displayRenderingGuides
         self._renderParams.forceRefresh = self._forceRefresh
-        self._renderParams.cullStyle =  (UsdImaging.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
+        self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
                                                if self._cullBackfaces
-                                               else UsdImaging.GL.CullStyle.CULL_STYLE_NOTHING)
+                                               else UsdImagingGL.GL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = True
         self._renderParams.enableSampleAlphaToCoverage = False
@@ -1834,7 +1836,7 @@ class StageView(QtOpenGL.QGLWidget):
                 selectedPrimPath = instancePrimPath
                 selectedInstanceIndex = absInstanceIndex
         else:
-            selectedInstanceIndex = UsdImaging.GL.ALL_INSTANCES
+            selectedInstanceIndex = UsdImagingGL.GL.ALL_INSTANCES
  
         selectedPrim = self._stage.GetPrimAtPath(selectedPrimPath)
 
@@ -1850,7 +1852,7 @@ class StageView(QtOpenGL.QGLWidget):
         if selected:
             if not self._selectedInstances.has_key(path):
                 self._selectedInstances[path] = set()
-            if instanceIndex == UsdImaging.GL.ALL_INSTANCES:
+            if instanceIndex == UsdImagingGL.GL.ALL_INSTANCES:
                 del self._selectedInstances[path]
             else:
                 self._selectedInstances[path].add(instanceIndex)

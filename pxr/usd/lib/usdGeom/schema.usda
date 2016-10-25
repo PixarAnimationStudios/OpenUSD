@@ -683,6 +683,10 @@ class "PointBased" (
 
 class Mesh "Mesh" (
     inherits = </PointBased>
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usd/timeCode.h" """
+    }
     doc="""Encodes a mesh surface whose definition and feature-set
     will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
     
@@ -1225,4 +1229,17 @@ class Camera "Camera" (
         allowedTokens = ["mono", "left", "right"]
         doc = """If different from mono, the camera is intended to be the left
                  or right camera of a stereo setup.""")
+
+    # Parameters for motion blur
+    double shutter:open = 0.0 (
+        doc = """Frame relative shutter open time in UsdTimeCode units (negative
+                 value indicates that the shutter opens before the current
+                 frame time). Used for motion blur."""
+    )
+    double shutter:close = 0.0 (
+        doc = """Frame relative shutter close time, analogous comments from
+                 shutter:open apply. A value greater or equal to shutter:open
+                 should be authored, otherwise there is no exposure and a
+                 renderer should produce a black image."""
+    )
 }

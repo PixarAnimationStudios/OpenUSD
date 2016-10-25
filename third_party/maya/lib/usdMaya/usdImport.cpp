@@ -132,16 +132,15 @@ MStatus usdImport::doIt(const MArgList & args)
 
         if (shadingMode.IsEmpty()) {
             jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
-        }
-        else {
-            if (PxrUsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode)) {
-                jobArgs.shadingMode = shadingMode;
+        } else if (PxrUsdMayaShadingModeRegistry::GetInstance().GetImporter(shadingMode)) {
+            jobArgs.shadingMode = shadingMode;
+        } else {
+            if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
+                MGlobal::displayError(
+                    TfStringPrintf("No shadingMode '%s' found. Setting shadingMode='none'",
+                                   shadingMode.GetText()).c_str());
             }
-            else {
-                MGlobal::displayError(TfStringPrintf("No shadingMode '%s' found.  Setting shadingMode='none'", 
-                            shadingMode.GetText()).c_str());
-                jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
-            }
+            jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
         }
     }
 

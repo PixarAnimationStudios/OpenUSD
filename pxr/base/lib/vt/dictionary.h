@@ -188,6 +188,7 @@ public:
     VtDictionary(VtDictionary && other) = default;
 
     /// Creates a new VtDictionary from a braced initializer list.
+    VT_API
     VtDictionary(std::initializer_list<value_type> init);
 
     /// Copy assignment operator

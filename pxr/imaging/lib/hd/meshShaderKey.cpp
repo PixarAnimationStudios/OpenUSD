@@ -28,29 +28,30 @@
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((baseGLSLFX,       "mesh.glslfx"))
-    ((smooth,           "MeshNormal.Smooth"))
-    ((flat,             "MeshNormal.Flat"))
-    ((limit,            "MeshNormal.Limit"))
-    ((doubleSidedFS,    "MeshNormal.Fragment.DoubleSided"))
-    ((singleSidedFS,    "MeshNormal.Fragment.SingleSided"))
-    ((edgeNoneGS,       "MeshWire.Geometry.NoEdge"))
-    ((edgeNoneFS,       "MeshWire.Fragment.NoEdge"))
-    ((edgeOnlyGS,       "MeshWire.Geometry.Edge"))
-    ((edgeOnlyFS,       "MeshWire.Fragment.EdgeOnly"))
-    ((edgeOnSurfGS,     "MeshWire.Geometry.Edge"))
-    ((edgeOnSurfFS,     "MeshWire.Fragment.EdgeOnSurface"))
-    ((patchEdgeOnlyFS,  "MeshPatchWire.Fragment.EdgeOnly"))
-    ((patchEdgeOnSurfFS,"MeshPatchWire.Fragment.EdgeOnSurface"))
-    ((mainVS,           "Mesh.Vertex"))
-    ((mainBSplineTCS,   "Mesh.TessControl.BSpline"))
-    ((mainBezierTES,    "Mesh.TessEval.Bezier"))
-    ((mainTriangleGS,   "Mesh.Geometry.Triangle"))
-    ((mainQuadGS,       "Mesh.Geometry.Quad"))
-    ((litFS,            "Mesh.Fragment.Lit"))
-    ((unlitFS,          "Mesh.Fragment.Unlit"))
-    ((mainFS,           "Mesh.Fragment"))
-    ((instancing,       "Instancing.Transform"))
+    ((baseGLSLFX,              "mesh.glslfx"))
+    ((smooth,                  "MeshNormal.Smooth"))
+    ((flat,                    "MeshNormal.Flat"))
+    ((limit,                   "MeshNormal.Limit"))
+    ((doubleSidedFS,           "MeshNormal.Fragment.DoubleSided"))
+    ((singleSidedFS,           "MeshNormal.Fragment.SingleSided"))
+    ((edgeNoneGS,              "MeshWire.Geometry.NoEdge"))
+    ((edgeNoneFS,              "MeshWire.Fragment.NoEdge"))
+    ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
+    ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
+    ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
+    ((edgeOnSurfGS,            "MeshWire.Geometry.Edge"))
+    ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
+    ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
+    ((patchEdgeOnSurfFS,       "MeshPatchWire.Fragment.EdgeOnSurface"))
+    ((mainVS,                  "Mesh.Vertex"))
+    ((mainBSplineTCS,          "Mesh.TessControl.BSpline"))
+    ((mainBezierTES,           "Mesh.TessEval.Bezier"))
+    ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
+    ((mainQuadGS,              "Mesh.Geometry.Quad"))
+    ((litFS,                   "Mesh.Fragment.Lit"))
+    ((unlitFS,                 "Mesh.Fragment.Unlit"))
+    ((mainFS,                  "Mesh.Fragment"))
+    ((instancing,              "Instancing.Transform"))
 );
 
 Hd_MeshShaderKey::Hd_MeshShaderKey(
@@ -59,6 +60,7 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
     bool smoothNormals,
     bool doubleSided,
     bool faceVarying,
+    bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle)
     : primitiveMode(primType)
@@ -140,11 +142,16 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
                                                               : _tokens->edgeNoneFS));
     } else {
-        FS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly or
-                  geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->edgeOnlyFS
-              : ((geomStyle == HdMeshGeomStyleEdgeOnSurf or
-                  geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfFS
-                                                              : _tokens->edgeNoneFS));
+        if (geomStyle == HdMeshGeomStyleEdgeOnly or
+            geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+            FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
+                                        : _tokens->edgeOnlyNoBlendFS;
+        } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf or
+                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
+            FS[3] = _tokens->edgeOnSurfFS;
+        } else {
+            FS[3] = _tokens->edgeNoneFS;
+        }
     }
     FS[4] = lit ? _tokens->litFS : _tokens->unlitFS;
     FS[5] = _tokens->mainFS;

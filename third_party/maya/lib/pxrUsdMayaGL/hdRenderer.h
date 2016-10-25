@@ -30,7 +30,7 @@
 
 #include "pxrUsdMayaGL/api.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usdImaging/usdImaging/gl.h"
+#include "pxr/usdImaging/usdImagingGL/gl.h"
 #include <boost/scoped_ptr.hpp>
 #include <maya/MColor.h>
 #include <maya/MDrawRequest.h>

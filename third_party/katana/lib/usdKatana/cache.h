@@ -78,31 +78,31 @@ public:
     /// Get (or create) a cached usd stage with a sessionlayer containing the
     /// specified variant selections
     USDKATANA_API
-    UsdStageRefPtr const GetStage(std::string const& fileName,
-                             std::string const& variantSelections,
-                             std::string const& ignoreLayerRegex,
-                             bool forcePopulate);
+    UsdStageRefPtr GetStage(std::string const& fileName, 
+                            std::string const& variantSelections,
+                            std::string const& ignoreLayerRegex,
+                            bool forcePopulate);
 
     /// Same as above, variant selections as an std::set<SdfPath> instead of str
     USDKATANA_API
-    UsdStageRefPtr const GetStage(std::string const& fileName,
-                             std::set<SdfPath> const& variantSelections,
-                             std::string const& ignoreLayerRegex,
-                             bool forcePopulate);
+    UsdStageRefPtr GetStage(std::string const& fileName, 
+                            std::set<SdfPath> const& variantSelections,
+                            std::string const& ignoreLayerRegex,
+                            bool forcePopulate);
     
     // Equivalent to GetStage above but without caching
     USDKATANA_API
-    UsdStageRefPtr const GetUncachedStage(std::string const& fileName, 
-                             std::string const& variantSelections,
-                             std::string const& ignoreLayerRegex,
-                             bool forcePopulate);
+    UsdStageRefPtr GetUncachedStage(std::string const& fileName, 
+                            std::string const& variantSelections,
+                            std::string const& ignoreLayerRegex,
+                            bool forcePopulate);
     
     // Equivalent to GetStage above but without caching
     USDKATANA_API
-    UsdStageRefPtr const GetUncachedStage(std::string const& fileName, 
-                             std::set<SdfPath> const& variantSelections,
-                             std::string const& ignoreLayerRegex,
-                             bool forcePopulate);
+    UsdStageRefPtr GetUncachedStage(std::string const& fileName, 
+                            std::set<SdfPath> const& variantSelections,
+                            std::string const& ignoreLayerRegex,
+                            bool forcePopulate);
 
 
 

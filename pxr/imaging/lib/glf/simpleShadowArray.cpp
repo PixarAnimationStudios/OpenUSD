@@ -87,24 +87,40 @@ GlfSimpleShadowArray::SetNumLayers(size_t numLayers)
 GfMatrix4d
 GlfSimpleShadowArray::GetViewMatrix(size_t index) const
 {
+    if (not TF_VERIFY(index < _viewMatrix.size())) {
+        return GfMatrix4d(1.0);
+    }
+
     return _viewMatrix[index];
 }
 
 void
 GlfSimpleShadowArray::SetViewMatrix(size_t index, GfMatrix4d const & matrix)
 {
+    if (not TF_VERIFY(index < _viewMatrix.size())) {
+        return;
+    }
+
     _viewMatrix[index] = matrix;
 }
 
 GfMatrix4d
 GlfSimpleShadowArray::GetProjectionMatrix(size_t index) const
 {
+    if (not TF_VERIFY(index < _projectionMatrix.size())) {
+        return GfMatrix4d(1.0);
+    }
+
     return _projectionMatrix[index];
 }
 
 void
 GlfSimpleShadowArray::SetProjectionMatrix(size_t index, GfMatrix4d const & matrix)
 {
+    if (not TF_VERIFY(index < _projectionMatrix.size())) {
+        return;
+    }
+
     _projectionMatrix[index] = matrix;
 }
 

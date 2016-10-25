@@ -29,8 +29,9 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 
+#include "pxr/base/arch/nap.h"
+
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -181,9 +182,36 @@ private:
 
 } // anonymous ns
 
+struct UsdStageCacheRequest::_Mailbox {
+    _Mailbox() : state(0) {}
+
+    UsdStageRefPtr Wait() {
+        while (state == 1)
+            ArchThreadYield();
+        return stage;
+    }
+
+    bool Subscribed() const { return state > 0; }            
+
+    std::atomic_int state; // 0: unsubscribed, 1: subscribed, 2: delivered.
+    UsdStageRefPtr stage;
+};
+
+struct UsdStageCacheRequest::_Data
+{
+    std::vector<_Mailbox *> subscribed;
+};
+
+void
+UsdStageCacheRequest::_DataDeleter::operator()(UsdStageCacheRequest::_Data *d)
+{
+    delete d;
+}
+
 struct Usd_StageCacheImpl
 {
     StageContainer stages;
+    std::vector<UsdStageCacheRequest *> pendingRequests;
     string debugName;
 };
 
@@ -246,6 +274,71 @@ UsdStageCache::Size() const
     return _impl->stages.size();
 }
 
+std::pair<UsdStageRefPtr, bool>
+UsdStageCache::RequestStage(UsdStageCacheRequest &&request)
+{
+    UsdStageCacheRequest::_Mailbox mailbox;
+
+    { LockGuard lock(_mutex);
+        // Does the cache currently have a match?  If so, done.
+        StagesByStage &byStage = _impl->stages.get<ByStage>();
+        for (auto const &entry: byStage)
+            if (request.IsSatisfiedBy(entry.stage))
+                return std::make_pair(entry.stage, false);
+
+        // Check to see if any pending requests can satisfy.
+        for (auto *pending: _impl->pendingRequests) {
+            if (request.IsSatisfiedBy(*pending)) {
+                // Subscribe to the request so it delivers us a stage.
+                pending->_Subscribe(&mailbox);
+                break;
+            }
+        }
+
+        // If we didn't subscribe to a pending request, then we will become a
+        // pending request and load the stage.
+        if (!mailbox.Subscribed())
+            _impl->pendingRequests.push_back(&request);
+
+        // Drop the lock to wait for the pending request or to load the stage.
+    }
+
+    // If we subscribed to another pending request, just wait for it.
+    if (mailbox.Subscribed())
+        return std::make_pair(mailbox.Wait(), false);
+
+    // We are a pending request -- manufacture a stage.  If manufacturing fails,
+    // issue an error only if the manufacturing process didn't issue its own.
+    TfErrorMark m;
+    UsdStageRefPtr stage = request.Manufacture();
+    if (!stage && m.IsClean()) {
+        TF_RUNTIME_ERROR("UsdStageCacheRequest failed to manufacture a valid "
+                         "stage.");
+    }
+
+    // If we successfully instantiated a stage, insert it into the cache.
+    if (stage)
+        Insert(stage);
+
+    // We have to deliver our stage to all the subscribed mailboxes, even if our
+    // stage is null.
+    { LockGuard lock(_mutex);
+        if (request._data) {
+            for (auto *mbox: request._data->subscribed) {
+                mbox->stage = stage;
+                mbox->state = 2; // delivered - this unblocks Wait()ing mboxes.
+            }
+        }
+        // Remove this request as a pending request.
+        _impl->pendingRequests.erase(
+            std::remove(_impl->pendingRequests.begin(),
+                        _impl->pendingRequests.end(), &request),
+            _impl->pendingRequests.end());
+    }
+
+    return std::make_pair(stage, true);
+}
+
 UsdStageRefPtr
 UsdStageCache::Find(Id id) const
 {
@@ -290,7 +383,9 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer,
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+        auto range = byRootLayer.equal_range(rootLayer);
+        for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+            const auto& entry = *entryIt;
             if (entry.stage->GetSessionLayer() == sessionLayer) {
                 result = entry.stage;
                 break;
@@ -317,7 +412,9 @@ UsdStageCache::FindOneMatching(
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+        auto range = byRootLayer.equal_range(rootLayer);
+        for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+            const auto& entry = *entryIt;
             if (entry.stage->GetPathResolverContext() == pathResolverContext) {
                 result = entry.stage;
                 break;
@@ -343,7 +440,9 @@ UsdStageCache::FindOneMatching(
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+        auto range = byRootLayer.equal_range(rootLayer);
+        for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+            const auto& entry = *entryIt;
             if (entry.stage->GetSessionLayer() == sessionLayer and
                 entry.stage->GetPathResolverContext() == pathResolverContext) {
                 result = entry.stage;
@@ -369,8 +468,11 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer) const
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer))
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+         const auto& entry = *entryIt;
         result.push_back(entry.stage);
+    }
     return result;
 }
 
@@ -381,7 +483,9 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer,
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+        const auto& entry = *entryIt;
         if (entry.stage->GetSessionLayer() == sessionLayer)
             result.push_back(entry.stage);
     }
@@ -396,7 +500,9 @@ UsdStageCache::FindAllMatching(
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+        const auto& entry = *entryIt;
         if (entry.stage->GetPathResolverContext() == pathResolverContext)
             result.push_back(entry.stage);
     }
@@ -412,7 +518,9 @@ UsdStageCache::FindAllMatching(
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
     vector<UsdStageRefPtr> result;
-    BOOST_FOREACH(const Entry &entry, byRootLayer.equal_range(rootLayer)) {
+    auto range = byRootLayer.equal_range(rootLayer);
+    for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
+        const auto& entry = *entryIt;
         if (entry.stage->GetSessionLayer() == sessionLayer and
             entry.stage->GetPathResolverContext() == pathResolverContext) {
             result.push_back(entry.stage);
@@ -567,3 +675,15 @@ UsdDescribe(const UsdStageCache &cache)
                           cache.Size());
 }
 
+UsdStageCacheRequest::~UsdStageCacheRequest()
+{
+}
+
+void
+UsdStageCacheRequest::_Subscribe(_Mailbox *mailbox)
+{
+    if (!_data)
+        _data.reset(new _Data);
+    _data->subscribed.push_back(mailbox);
+    mailbox->state = 1; // subscribed.
+}

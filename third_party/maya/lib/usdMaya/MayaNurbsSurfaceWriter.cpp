@@ -44,6 +44,38 @@ MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
 {
 }
 
+static void
+_FixNormalizedKnotRange(
+    VtArray <double> & knots,
+    const unsigned int numKnots,
+    const unsigned int degree,
+    const double startVal,
+    const double endVal)
+{
+    // ensure we've produced valid knot ranges; the data coming
+    // from Maya is fine but sometimes rounding errors in the normalization
+    // cause problems.  So we change the knots on the boundaries
+    // (whether single or multiple) to match the u/v range.
+    double changeVal;
+
+    if (startVal < knots[degree]) {
+        changeVal = knots[degree];
+        for (unsigned int i = 0; i <= degree; ++i) {
+            if (knots[i] == changeVal) {
+                knots[i] = startVal;
+            }
+        }
+    }
+    if (endVal > knots[numKnots - (degree + 1)]) {
+        changeVal = knots[numKnots - (degree + 1)];
+        for (unsigned int i = numKnots - (degree + 1); i < numKnots; ++i) {
+            if (knots[i] == changeVal) {
+                knots[i] = endVal;
+            }
+        }
+    }
+}
+
 //virtual 
 UsdPrim MayaNurbsSurfaceWriter::write(const UsdTimeCode &usdTimeCode)
 {
@@ -171,6 +203,12 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     for (unsigned int i = 0; i < numKnotsInV; i++) {
         sampKnotsInV[i+1]=(double)((knotsInV[i]-vOffset)*vScale);
     }
+
+    if (getArgs().normalizeNurbs) {
+        _FixNormalizedKnotRange(sampKnotsInU, numKnotsInU+2, nurbs.degreeU(), startU, endU);
+        _FixNormalizedKnotRange(sampKnotsInV, numKnotsInV+2, nurbs.degreeV(), startV, endV);
+    }
+
 
     sampKnotsInU[0] = (2.0 * sampKnotsInU[1] - sampKnotsInU[2]);
     sampKnotsInU[numKnotsInU+1] = (2.0 * sampKnotsInU[numKnotsInU] - 

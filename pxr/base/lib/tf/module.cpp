@@ -56,6 +56,7 @@ TF_WRAP_MODULE {
     TF_WRAP( TimeStamp );
     TF_WRAP( Token );
     TF_WRAP( Type );
+    TF_WRAP( Tf_TestPyAnnotatedBoolResult );
     TF_WRAP( Tf_TestPyContainerConversions );
     TF_WRAP( Tf_TestPyDateTime );
     TF_WRAP( Tf_TestPyStaticTokens );

@@ -93,6 +93,16 @@ def _getFileFormat(path):
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
     call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)) 
 
+
+def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
+    if composed:
+        sys.exit('Error: Cannot write out flattened result.')
+
+    if not os.access(fileName, os.W_OK):
+        sys.exit('Error: Cannot write to %s, insufficient permissions' % fileName)
+    
+    _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
@@ -155,22 +165,14 @@ def main():
 
         # If we intend to edit either of the files
         if not results.noeffect:
-            accessError = 'Error: Cannot write to %s, insufficient permissions' 
-            if tempBaselineChanged:
-                if not os.access(results.baseline, os.W_OK):
-                    sys.exit(accessError % results.baseline)
 
-                _convertTo(tempBaseline.name, results.baseline,
-                           usdcatCmd, flatten=results.compose,
-                           fmt=baselineFileType)
+            if tempBaselineChanged:
+                _tryEdit(results.baseline, tempBaseline.name, 
+                         usdcatCmd, baselineFileType, results.compose)
 
             if tempComparisonChanged:
-                if not os.access(results.comparison, os.W_OK):
-                    sys.exit(accessError % results.comparison)
-
-                _convertTo(tempComparison.name, results.comparison,
-                           usdcatCmd, flatten=results.compose,
-                           fmt=comparisonFileType)
+                _tryEdit(results.comparison, tempComparison.name,
+                         usdcatCmd, comparisonFileType, results.compose)
 
         sys.exit(diffResult)
 

@@ -533,6 +533,7 @@ private:
     static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
     class _Writer;
+    class _BufferedOutput;
     class _ReaderBase;
     template <class ByteStream> class _Reader;
 
@@ -567,6 +568,7 @@ private:
     template <class Reader>
     _TableOfContents _ReadTOC(Reader src, _BootStrap const &b) const;
 
+    template <class Reader> void _PrefetchStructuralSections(Reader src) const; 
     template <class Reader> void _ReadFieldSets(Reader src);
     template <class Reader> void _ReadFields(Reader src);
     template <class Reader> void _ReadSpecs(Reader src);

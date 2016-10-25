@@ -142,6 +142,7 @@ public:
 private:
     friend class UsdStage;
 
+    static std::vector<const UsdStageCache *> _GetReadOnlyCaches();
     static std::vector<const UsdStageCache *> _GetReadableCaches();
     static std::vector<UsdStageCache *> _GetWritableCaches();
 

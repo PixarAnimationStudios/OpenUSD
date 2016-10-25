@@ -8,6 +8,7 @@ pxr_shared_library(hdx
         vt
         gf
         work
+        garch
         glf
         pxOsd
         hd

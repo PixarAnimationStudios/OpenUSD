@@ -740,6 +740,15 @@ HdResourceRegistry::RegisterTextureResource(HdTextureResource::ID id,
     return _textureResourceRegistry.GetInstance(id, instance);
 }
 
+std::unique_lock<std::mutex>
+HdResourceRegistry::FindTextureResource(HdTextureResource::ID id,
+                        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance, 
+                        bool *found)
+{
+    return _textureResourceRegistry.FindInstance(id, instance, found);
+}
+
+
 std::ostream &operator <<(std::ostream &out,
                           const HdResourceRegistry& self)
 {

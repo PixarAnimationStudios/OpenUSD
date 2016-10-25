@@ -37,6 +37,7 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnNumericData.h>
 #include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 
@@ -319,6 +320,15 @@ bool setPlugValue(MFnDependencyNode const &depNode,
 
     return false;
 }
+
+bool createStringAttribute(
+        MFnDependencyNode& depNode,
+        const MString& attr);
+
+bool createNumericAttribute(
+        MFnDependencyNode& depNode,
+        const MString& attr,
+        MFnNumericData::Type type);
 
 } // namespace PxrUsdMayaUtil
 

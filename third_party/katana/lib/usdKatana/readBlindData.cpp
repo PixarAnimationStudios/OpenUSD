@@ -40,10 +40,6 @@ PxrUsdKatanaReadBlindData(
         UsdProperty blindProp = *blindPropIter;
         if (blindProp.Is<UsdAttribute>()) {
             UsdAttribute blindAttr = blindProp.As<UsdAttribute>();
-            VtValue vtValue;
-            if (not blindAttr.Get(&vtValue)) {
-                continue;
-            }
 
             std::string attrName = 
                 UsdKatanaBlindDataObject::GetKbdAttributeNameSpace(blindProp).GetString();
@@ -63,13 +59,23 @@ PxrUsdKatanaReadBlindData(
                 attrName += UsdKatanaBlindDataObject::GetGroupBuilderKeyForProperty(blindProp);
             }
 
-            // we set asShaderParam=true because we want the attribute to be
-            // generated "as is", we *do not* want the prmanStatement style
-            // "type"/"value" declaration to be created.
-            attrs.set(attrName, 
-                PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
-                    vtValue, 
-                    /* asShaderParam */ true));
+            VtValue vtValue;
+            if (blindAttr.Get(&vtValue))
+            {
+                // we set asShaderParam=true because we want the attribute to be
+                // generated "as is", we *do not* want the prmanStatement style
+                // "type"/"value" declaration to be created.
+                attrs.set(attrName, 
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
+                        vtValue, 
+                        /* asShaderParam */ true));
+            }
+            else if (blindAttr.HasAuthoredValueOpinion())
+            {
+                // The attr has a block, so set a null attr
+                // (see bug 136179 for a better detection api)
+                attrs.set(attrName, FnKat::NullAttribute());
+            }
         }
     }
 }

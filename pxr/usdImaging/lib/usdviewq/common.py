@@ -151,12 +151,22 @@ def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
     for i, l in enumerate(layer.subLayerPaths):
         offset = offsets[i] if offsets is not None and len(offsets) > i else Sdf.LayerOffset()
         subLayer = Sdf.Layer.FindRelativeToLayer(layer, l)
+        # Due to an unfortunate behavior of the Pixar studio resolver, 
+        # FindRelativeToLayer() may fail to resolve certain paths.  We will
+        # remove this extra Find() call as soon as we can retire the behavior;
+        # in the meantime, the extra call does not hurt (but should not, in 
+        # general, be necessary)
+        if not subLayer:
+            subLayer = Sdf.Layer.Find(l)
+        
         if subLayer:
             # This gives a 'tree'-ish presentation, but it looks sad in
             # a QTableWidget.  Just use spaces for now
             # addedPrefix = "|-- " if parentLayer is None else "|    "
             addedPrefix = "     "
             _AddSubLayers(subLayer, offset, addedPrefix + prefix, layer, layers)
+        else:
+            print "Could not find layer " + l
 
 def GetRootLayerStackInfo(layer):
     from pxr import Sdf

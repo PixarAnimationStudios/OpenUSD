@@ -196,14 +196,20 @@ TfAtomicOfstreamWrapper::Commit(
 	return true;
 
 #else
-    // The default file mode for new files is user r/w and group r/w, subject
-    // to the process umask. If the file already exists, renaming the
-    // temporary file results in temporary file permissions, which doesn't
-    // allow the group to write.
-    mode_t fileMode = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP;
+    // The mode of the temporary file is set by ArchMakeTmpFile, which tries
+    // to be slightly less restrictive by setting the mode to 0660, whereas
+    // the underlying temporary file API used by arch creates files with mode
+    // 0600. When renaming our temporary file into place, we either want the
+    // permissions to match that of an existing target file, or to be created
+    // with default permissions modulo umask.
+    mode_t fileMode = 0;
     struct stat st;
     if (stat(_filePath.c_str(), &st) != -1) {
-        fileMode = st.st_mode & 0777;
+        fileMode = st.st_mode & DEFFILEMODE;
+    } else {
+        const mode_t mask = umask(0);
+        umask(mask);
+        fileMode = DEFFILEMODE - mask;
     }
 
     if (chmod(_tmpFilePath.c_str(), fileMode) != 0) {

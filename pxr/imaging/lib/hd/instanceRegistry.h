@@ -122,6 +122,11 @@ public:
     std::unique_lock<std::mutex> GetInstance(typename INSTANCE::KeyType const &key,
                                              INSTANCE *instance);
 
+    /// Returns a shared instance for a given key as a pair of (key, value)
+    /// only if the key exists in the dictionary.
+    std::unique_lock<std::mutex> FindInstance(typename INSTANCE::KeyType const &key, 
+                                             INSTANCE *instance, bool *found);
+
     /// Remove entries which has unreferenced key and returns the count of
     /// remaining entries.
     size_t GarbageCollect();
@@ -171,6 +176,29 @@ HdInstanceRegistry<INSTANCE>::GetInstance(typename INSTANCE::KeyType const &key,
     }
 
     instance->Create(key, it->second, &_dictionary, firstInstance);
+
+    return lock;
+}
+
+template <typename INSTANCE>
+std::unique_lock<std::mutex>
+HdInstanceRegistry<INSTANCE>::FindInstance(typename INSTANCE::KeyType const &key, 
+                                          INSTANCE *instance, bool *found)
+{
+    HD_TRACE_FUNCTION();
+    HD_MALLOC_TAG_FUNCTION();
+
+    // Grab Registry lock
+    // (and don't release it in this function, return it instead)
+    std::unique_lock<std::mutex> lock(_regLock);
+
+    typename _Dictionary::iterator it = _dictionary.find(key);
+    if (it == _dictionary.end()) {
+        *found = false;
+    } else {
+        *found = true;
+        instance->Create(key, it->second, &_dictionary, false /*firstInstance*/);
+    }
 
     return lock;
 }

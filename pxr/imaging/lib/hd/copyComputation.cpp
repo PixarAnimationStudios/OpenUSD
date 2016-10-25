@@ -40,34 +40,56 @@ HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not glBufferSubData) return;
+    if (not glBufferSubData) {
+        return;
+    }
 
     HdBufferResourceSharedPtr src = _src->GetResource(_name);
     HdBufferResourceSharedPtr dst = range->GetResource(_name);
 
-    if (not TF_VERIFY(src)) return;
-    if (not TF_VERIFY(dst)) return;
-
-    GLint srcId = src->GetId();
-    GLint dstId = dst->GetId();
-
-    if (not TF_VERIFY(srcId)) return;
-    if (not TF_VERIFY(dstId)) return;
+    if (not TF_VERIFY(src)) {
+        return;
+    }
+    if (not TF_VERIFY(dst)) {
+        return;
+    }
 
     int srcBytesPerElement = (int)(src->GetNumComponents() * src->GetComponentSize());
     int dstBytesPerElement = (int)(dst->GetNumComponents() * dst->GetComponentSize());
 
-    if (not TF_VERIFY(srcBytesPerElement == dstBytesPerElement)) return;
+    if (not TF_VERIFY(srcBytesPerElement == dstBytesPerElement)) {
+        return;
+    }
 
     GLintptr readOffset = _src->GetOffset() *  srcBytesPerElement;
     GLintptr writeOffset = range->GetOffset() * dstBytesPerElement;
     GLsizeiptr copySize = _src->GetNumElements() * srcBytesPerElement;
 
-    if (not TF_VERIFY(_src->GetNumElements() <= range->GetNumElements())) return;
+    if (not TF_VERIFY(_src->GetNumElements() <= range->GetNumElements())) {
+         return;
+    }
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
+    // Unfortunately at the time the copy computation is added, we don't
+    // know if the source buffer has 0 length.  So we can get here with
+    // a zero sized copy.
     if (copySize > 0) {
+
+        // If the buffer's have 0 size, resources for them would not have
+        // be allocated, so the check for resource allocation has been moved
+        // until after the copy size check.
+
+        GLint srcId = src->GetId();
+        GLint dstId = dst->GetId();
+
+        if (not TF_VERIFY(srcId)) {
+            return;
+        }
+        if (not TF_VERIFY(dstId)) {
+            return;
+        }
+
         HD_PERF_COUNTER_INCR(HdPerfTokens->glCopyBufferSubData);
 
         if (caps.directStateAccessEnabled) {

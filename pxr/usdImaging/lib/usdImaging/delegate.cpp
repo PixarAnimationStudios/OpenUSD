@@ -21,15 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
-#include "pxr/usdImaging/usdImaging/defaultShaderAdapter.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/glf/ptexTexture.h"
@@ -93,7 +91,7 @@ UsdImagingDelegate::UsdImagingDelegate()
     , _xformCache(GetTime(), GetRootCompensation())
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
-    , _defaultShaderAdapter(boost::make_shared<UsdImagingDefaultShaderAdapter>(this))
+    , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
 {
     // this constructor create a new render index.
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
@@ -127,7 +125,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _xformCache(GetTime(), GetRootCompensation())
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
-    , _defaultShaderAdapter(boost::make_shared<UsdImagingDefaultShaderAdapter>(this))
+    , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
 {
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
     tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
@@ -259,12 +257,7 @@ UsdImagingDelegate::_ShaderAdapterSharedPtr
 UsdImagingDelegate::_ShaderAdapterLookup(
         SdfPath const& shaderId) const
 {
-    auto it = _shaderAdapterMap.find(shaderId);
-    if (it != _shaderAdapterMap.end()) {
-        return it->second;
-    }
-
-    return _defaultShaderAdapter;
+    return _shaderAdapter;
 }
 
 // -------------------------------------------------------------------------- //
@@ -489,17 +482,6 @@ UsdImagingIndexProxy::AddDependency(SdfPath const& usdPath,
         }
     }
     _delegate->_pathAdapterMap[usdPath] = adapterToInsert;
-}
-
-void
-UsdImagingIndexProxy::AddShaderAdapter(
-        SdfPath const& shaderId,
-        UsdImagingShaderAdapterSharedPtr const& shaderAdapter)
-{
-    TF_DEBUG(USDIMAGING_SHADERS).Msg(
-            "Registering shader adapter for %s\n", shaderId.GetText());
-
-    _delegate->_shaderAdapterMap[shaderId] = shaderAdapter;
 }
 
 void
@@ -1218,7 +1200,8 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
         bool& isTimeVarying = it->second;
         if (isTimeVarying) {
             HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-            tracker.MarkShaderDirty(it->first, HdChangeTracker::DirtyParams);
+            tracker.MarkShaderDirty(
+                GetPathForIndex(it->first), HdChangeTracker::DirtyParams);
         }
     }
 }
@@ -2114,6 +2097,17 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
 
             // redirect to native instancer.
             _MarkRprimOrInstancerDirty(instancer, instancerDirtyFlag);
+
+
+            // also communicate adapter to get the list of instanced proto rprims
+            // to be marked as dirty. for those are not in the namespace children
+            // of the instancer (needed for NI-PI cases).
+            SdfPathVector const &paths = adapter->GetDependPaths(instancer);
+            TF_FOR_ALL (instIt, paths) {
+                // recurse
+                _MarkSubtreeDirty(*instIt, rprimDirtyFlag, instancerDirtyFlag);
+            }
+
         } else if (_instancerPrimPaths.find(it->first) != _instancerPrimPaths.end()) {
             // XXX: workaround for per-instance visibility in nested case.
             // testPxUsdGeomGLPopOut/test_*_5, test_*_6
@@ -2124,18 +2118,18 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
 
             // instancer itself
             _MarkRprimOrInstancerDirty(it->first, instancerDirtyFlag);
+
+            // also communicate adapter to get the list of instanced proto rprims
+            // to be marked as dirty. for those are not in the namespace children
+            // of the instancer.
+            SdfPathVector const &paths = adapter->GetDependPaths(it->first);
+            TF_FOR_ALL (instIt, paths) {
+                // recurse
+                _MarkSubtreeDirty(*instIt, rprimDirtyFlag, instancerDirtyFlag);
+            }
         } else {
             // rprim
             _MarkRprimOrInstancerDirty(it->first, rprimDirtyFlag);
-        }
-
-        // also communicate adapter to get the list of instanced proto rprims
-        // to be marked as dirty. for those are not in the namespace children
-        // of the instancer.
-        SdfPathVector const &paths = adapter->GetDependPaths(it->first);
-        TF_FOR_ALL (instIt, paths) {
-            // recurse
-            _MarkSubtreeDirty(*instIt, rprimDirtyFlag, instancerDirtyFlag);
         }
     }
 }
@@ -2191,7 +2185,9 @@ UsdImagingDelegate::SetCollectionMap(CollectionMap const &collectionMap)
 SdfPath 
 UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
                                             int instanceIndex,
-                                            int *absoluteInstanceIndex)
+                                            int *absoluteInstanceIndex,
+                                            SdfPath *rprimPath,
+                                            SdfPathVector *instanceContext)
 {
     SdfPath usdPath = GetPathForUsd(protoPrimPath);
 
@@ -2203,6 +2199,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
     int instanceCount = 0;
     int protoInstanceIndex = instanceIndex;
     int absIndex = ALL_INSTANCES; // PointInstancer may overwrite.
+    SdfPathVector resolvedInstanceContext;
+    SdfPath resolvedRprimPath;
     do {
         _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
         if (not TF_VERIFY(adapter, "can't find primAdapter for %s",
@@ -2211,7 +2209,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
         }
 
         usdPath = adapter->GetPathForInstanceIndex(
-            usdPath, instanceIndex, &instanceCount, &absIndex);
+            usdPath, instanceIndex, &instanceCount, &absIndex, 
+            &resolvedRprimPath, &resolvedInstanceContext);
 
         if (usdPath.IsEmpty()) {
             break;
@@ -2229,13 +2228,21 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
     } while(true);
 
-    TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = (%s, %d)\n",
-                                       protoPrimPath.GetText(),
-                                       protoInstanceIndex,
-                                       usdPath.GetText(),
-                                       absIndex);
+    TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
+        "(%s, %d, %s)\n", protoPrimPath.GetText(), protoInstanceIndex,
+        usdPath.GetText(), absIndex, 
+        resolvedInstanceContext.back().GetText());
+
     if (absoluteInstanceIndex) {
         *absoluteInstanceIndex = absIndex;
+    }
+
+    if (rprimPath) {
+        *rprimPath = resolvedRprimPath;
+    }
+
+    if (instanceContext) {
+        *instanceContext = resolvedInstanceContext;
     }
 
     return GetPathForIndex(usdPath);
@@ -2405,7 +2412,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             _UpdateSingleValue(usdPath,HdChangeTracker::DirtySurfaceShader);
             SdfPath pathValue;
             TF_VERIFY(_valueCache.ExtractSurfaceShader(usdPath, &pathValue));
-            value = VtValue(pathValue);
+            value = VtValue(GetPathForIndex(pathValue));
         } else if (key == HdTokens->transform) {
             GfMatrix4d xform(1.);
             bool resetsXformStack=false;

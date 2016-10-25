@@ -205,18 +205,6 @@ ARCH_API bool ArchStatIsWritable(const struct stat *st);
 /// available in the stat structure for the current platform.
 ARCH_API double ArchGetModificationTime(const struct stat& st);
 
-/// Returns the access time (atime) in seconds from the stat struct.
-///
-/// This function returns the access time with as much precision as is
-/// available in the stat structure for the current platform.
-ARCH_API double ArchGetAccessTime(const struct stat& st);
-
-/// Returns the status change time (ctime) in seconds from the stat struct.
-///
-/// This function returns the status change time with as much precision as is
-/// available in the stat structure for the current platform.
-ARCH_API double ArchGetStatusChangeTime(const struct stat& st);
-
 /// Return the path to a temporary directory for this platform.
 ///
 /// The returned temporary directory will be a location that will normally
@@ -281,12 +269,6 @@ ARCH_API
 std::string ArchMakeTmpSubdir(const std::string& tmpdir,
                               const std::string& prefix);
 
-/// Return all automounted directories.
-///
-/// Returns a set of all directories that are automount points for the host.
-ARCH_API
-std::set<std::string> ArchGetAutomountDirectories();
-
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
 #if defined(ARCH_OS_WINDOWS)
 struct Arch_Unmapper {
@@ -323,6 +305,18 @@ ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
 ARCH_API
 ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
+enum ArchMemAdvice {
+    ArchMemAdviceWillNeed, // OS may prefetch this range.
+    ArchMemAdviceDontNeed  // OS may free resources related to this range.
+};
+
+/// Advise the OS regarding how the application intends to access a range of
+/// memory.  See ArchMemAdvice.  This is primarily useful for mapped file
+/// regions.  This call does not change program semantics.  It is only an
+/// optimization hint to the OS, and may be a no-op on some systems.
+ARCH_API
+void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv);
+
 /// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
 /// file position indicator for \p file is not changed.  Return the number of
 /// bytes read, or zero if at end of file.  Return -1 in case of an error, with
@@ -343,6 +337,19 @@ int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
 ARCH_API
 std::string ArchResolveSymlink(const char* path);
 #endif
+
+enum ArchFileAdvice {
+    ArchFileAdviceWillNeed, // OS may prefetch this range.
+    ArchFileAdviceDontNeed  // OS may free resources related to this range.
+};
+
+/// Advise the OS regarding how the application intends to access a range of
+/// bytes in a file.  See ArchFileAdvice.  This call does not change program
+/// semantics.  It is only an optimization hint to the OS, and may be a no-op on
+/// some systems.
+ARCH_API
+void ArchFileAdvise(FILE *file, int64_t offset, size_t count,
+                    ArchFileAdvice adv);
 
 ///@}
 

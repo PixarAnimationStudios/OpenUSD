@@ -38,7 +38,11 @@
 
 #include <boost/foreach.hpp>
 
-static const char* _FileRelativePathPrefix = "./";
+static bool
+_IsFileRelative(const std::string& path) {
+    return path.find("./") == 0 or path.find("../") == 0;
+}
+
 
 struct Ar_DefaultResolver::_Cache
 {
@@ -86,13 +90,9 @@ Ar_DefaultResolver::AnchorRelativePath(
     const std::string& anchorPath, 
     const std::string& path)
 {
-    if (path.empty() or not IsRelativePath(path)) {
+    if (anchorPath.empty() or anchorPath[0] != '/' or
+        path.empty() or path[0] == '/' or not _IsFileRelative(path))
         return path;
-    }
-
-    if (anchorPath.empty() or IsRelativePath(anchorPath)) {
-        return path;
-    }
 
     // Ensure we are using forward slashes and not back slashes.
     std::string forwardPath = anchorPath;
@@ -101,18 +101,15 @@ Ar_DefaultResolver::AnchorRelativePath(
     // If anchorPath does not end with a '/', we assume it is specifying
     // a file, strip off the last component, and anchor the path to that
     // directory.
-    std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(forwardPath, '/'), path);
-    anchoredPath = TfNormPath(anchoredPath);
-    anchoredPath = TfAbsPath(anchoredPath);
-    return anchoredPath;
+    const std::string anchoredPath = TfStringCatPaths(
+        TfStringGetBeforeSuffix(anchorPath, '/'), path);
+    return TfNormPath(anchoredPath);
 }
 
 bool
 Ar_DefaultResolver::IsSearchPath(const std::string& path)
 {
-    return IsRelativePath(path)
-        and not TfStringStartsWith(path, _FileRelativePathPrefix);
+    return IsRelativePath(path) and not _IsFileRelative(path);
 }
 
 std::string

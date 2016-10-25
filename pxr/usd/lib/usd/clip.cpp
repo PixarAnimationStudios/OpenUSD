@@ -34,7 +34,6 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -59,13 +58,19 @@ UsdIsClipRelatedField(const TfToken& fieldName)
 
 struct Usd_SortByExternalTime
 {
-    bool operator()(
-        const Usd_Clip::TimeMapping& x, Usd_Clip::ExternalTime y) const
-    { return x.first < y; }
+    bool 
+    operator()(const Usd_Clip::TimeMapping& x, 
+               const Usd_Clip::ExternalTime y) const
+    { 
+        return x.externalTime < y; 
+    }
 
-    bool operator()(
-        const Usd_Clip::TimeMapping& x, const Usd_Clip::TimeMapping& y) const
-    { return x.first < y.first; }
+    bool 
+    operator()(const Usd_Clip::TimeMapping& x, 
+               const Usd_Clip::TimeMapping& y) const
+    { 
+        return x.externalTime < y.externalTime; 
+    }
 };
 
 std::ostream&
@@ -75,11 +80,9 @@ operator<<(std::ostream& out, const Usd_ClipRefPtr& clip)
         "%s<%s> (start: %s end: %s)",
         TfStringify(clip->assetPath).c_str(),
         clip->primPath.GetString().c_str(),
-
-        (clip->startTime == -std::numeric_limits<double>::max() ?
+        (clip->startTime == Usd_ClipTimesEarliest ?
             "-inf" : TfStringPrintf("%.3f", clip->startTime).c_str()),
-
-        (clip->endTime == std::numeric_limits<double>::max() ? 
+        (clip->endTime == Usd_ClipTimesLatest ? 
             "inf" : TfStringPrintf("%.3f", clip->endTime).c_str()));
     return out;
 }
@@ -133,9 +136,24 @@ _ApplyLayerOffsetToExternalTimes(
     }
 
     const SdfLayerOffset inverse = layerOffset.GetInverse();
-    TF_FOR_ALL(it, *array) {
-        (*it)[0] = inverse * (*it)[0];
+    for (auto& time : *array) {
+        time[0] = inverse * time[0]; 
     }
+}
+
+static void
+_ClipDebugMsg(const PcpNodeRef& node,
+              const SdfLayerRefPtr& layer,
+              const TfToken& metadataName) 
+{
+    TF_DEBUG(USD_CLIPS).Msg(
+        "%s for prim <%s> found in LayerStack %s "
+        "at spec @%s@<%s>\n",
+        metadataName.GetText(),
+        node.GetRootNode().GetPath().GetString().c_str(),
+        TfStringify(node.GetLayerStack()).c_str(),
+        layer->GetIdentifier().c_str(), 
+        node.GetPath().GetString().c_str());
 }
 
 void
@@ -150,17 +168,9 @@ Usd_ResolveClipInfo(
     for (size_t i = 0, j = layers.size(); i != j; ++i) {
         const SdfLayerRefPtr& layer = layers[i];
         VtArray<SdfAssetPath> clipAssetPaths;
-        if (layer->HasField(
-                primPath, UsdTokens->clipAssetPaths, &clipAssetPaths)){
-
-            TF_DEBUG(USD_CLIPS).Msg(
-                "clipAssetPaths for prim <%s> found in LayerStack %s "
-                "at spec @%s@<%s>\n",
-                node.GetRootNode().GetPath().GetString().c_str(),
-                TfStringify(layerStack).c_str(),
-                layer->GetIdentifier().c_str(), 
-                primPath.GetString().c_str());
-
+        if (layer->HasField(primPath, UsdTokens->clipAssetPaths, 
+                            &clipAssetPaths)){
+            _ClipDebugMsg(node, layer, UsdTokens->clipAssetPaths);
             clipInfo->indexOfLayerWhereAssetPathsFound = i;
             clipInfo->clipAssetPaths = boost::in_place();
             clipInfo->clipAssetPaths->swap(clipAssetPaths);
@@ -181,36 +191,18 @@ Usd_ResolveClipInfo(
 
         if (not clipInfo->clipManifestAssetPath) {
             SdfAssetPath clipManifestAssetPath;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipManifestAssetPath, 
-                    &clipManifestAssetPath)) {
-
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipManifestAssetPath for prim <%s> found in LayerStack "
-                    "%s at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-                
+            if (layer->HasField(primPath, UsdTokens->clipManifestAssetPath, 
+                                &clipManifestAssetPath)) {
+                _ClipDebugMsg(node, layer, UsdTokens->clipManifestAssetPath);
                 clipInfo->clipManifestAssetPath = clipManifestAssetPath;
             }
         }
 
-
         if (not clipInfo->clipPrimPath) {
             std::string clipPrimPath;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipPrimPath, &clipPrimPath)) {
-                
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipPrimPath for prim <%s> found in LayerStack %s "
-                    "at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-
+            if (layer->HasField(primPath, UsdTokens->clipPrimPath, 
+                                &clipPrimPath)) {
+                _ClipDebugMsg(node, layer, UsdTokens->clipPrimPath);
                 clipInfo->clipPrimPath = boost::in_place();
                 clipInfo->clipPrimPath->swap(clipPrimPath);
             }
@@ -218,20 +210,10 @@ Usd_ResolveClipInfo(
 
         if (not clipInfo->clipActive) {
             VtVec2dArray clipActive;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipActive, &clipActive)) {
-
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipActive for prim <%s> found in LayerStack %s "
-                    "at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-
+            if (layer->HasField(primPath, UsdTokens->clipActive, &clipActive)) {
+                _ClipDebugMsg(node, layer, UsdTokens->clipActive);
                 _ApplyLayerOffsetToExternalTimes(
                     _GetLayerOffsetToRoot(node, layer), &clipActive);
-                
                 clipInfo->clipActive = boost::in_place();
                 clipInfo->clipActive->swap(clipActive);
             }
@@ -239,20 +221,10 @@ Usd_ResolveClipInfo(
 
         if (not clipInfo->clipTimes) {
             VtVec2dArray clipTimes;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipTimes, &clipTimes)) {
-
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipTimes for prim <%s> found in LayerStack %s "
-                    "at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-
+            if (layer->HasField(primPath, UsdTokens->clipTimes, &clipTimes)) {
+                _ClipDebugMsg(node, layer, UsdTokens->clipTimes);
                 _ApplyLayerOffsetToExternalTimes(
                     _GetLayerOffsetToRoot(node, layer), &clipTimes);
-
                 clipInfo->clipTimes = boost::in_place();
                 clipInfo->clipTimes->swap(clipTimes);
             }
@@ -327,11 +299,11 @@ _GetBracketingTimeSegment(
     // This relies on the Usd_Clip c'tor inserting sentinel values at the
     // beginning and end of the TimeMappings object. Consumers rely on this
     // function never returning m1 == m2.
-    if (time <= times.front().first) {
+    if (time <= times.front().externalTime) {
         *m1 = 0;
         *m2 = 1;
     }
-    else if (time >= times.back().first) {
+    else if (time >= times.back().externalTime) {
         *m1 = times.size() - 2;
         *m2 = times.size() - 1;
     }
@@ -425,56 +397,45 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     }
 
     boost::optional<ExternalTime> translatedLower, translatedUpper;
+    auto _CanTranslate = [&time, &upperInClip, &lowerInClip, this, 
+                          &translatedLower, &translatedUpper](
+                                            const TimeMapping& map1, 
+                                            const TimeMapping& map2, 
+                                            const bool translatingLower) {
+        const double timeInClip = translatingLower ? lowerInClip : upperInClip;
+        auto& translated = translatingLower ? translatedLower : translatedUpper;
 
-    for (int i1 = static_cast<int>(m1), i2 = static_cast<int>(m2); i1 >= 0 and i2 >= 0; --i1, --i2) {
-        const TimeMapping& map1 = times[i1];
-        const TimeMapping& map2 = times[i2];
+        const double lower = std::min(map1.internalTime, map2.internalTime);
+        const double upper = std::max(map1.internalTime, map2.internalTime);
 
-        const double lower = std::min(map1.second, map2.second);
-        const double upper = std::max(map1.second, map2.second);
-
-        if (lower <= lowerInClip and lowerInClip <= upper) {
-            if (map1.second != map2.second) {
-                translatedLower.reset(
-                    _TranslateTimeToExternal(lowerInClip, map1, map2));
+        if (lower <= timeInClip and timeInClip <= upper) {
+            if (map1.internalTime != map2.internalTime) {
+                translated.reset(
+                    this->_TranslateTimeToExternal(timeInClip, map1, map2));
             } else {
                 const bool lowerUpperMatch = (lowerInClip == upperInClip);
-                if (lowerUpperMatch && time == map1.first) {
-                    translatedLower.reset(map1.first);
-                } else if (lowerUpperMatch && time == map2.first) {
-                    translatedLower.reset(map2.first);
+                if (lowerUpperMatch && time == map1.externalTime) {
+                    translated.reset(map1.externalTime);
+                } else if (lowerUpperMatch && time == map2.externalTime) {
+                    translated.reset(map2.externalTime);
                 } else {
-                    translatedLower.reset(map1.first);
+                    if (translatingLower) {
+                        translated.reset(map1.externalTime);
+                    } else {
+                        translated.reset(map2.externalTime);
+                    }
                 }
             }
-            break;
         }
+        return static_cast<bool>(translated);
+    };
+
+    for (int i1 = m1, i2 = m2; i1 >= 0 and i2 >= 0; --i1, --i2) {
+         if (_CanTranslate(times[i1], times[i2], /*lower=*/true)) { break; }
     }
         
-    for (size_t i1 = m1, i2 = m2; 
-         i1 < times.size() and i2 < times.size(); ++i1, ++i2) {
-        const TimeMapping& map1 = times[i1];
-        const TimeMapping& map2 = times[i2];
-
-        const double lower = std::min(map1.second, map2.second);
-        const double upper = std::max(map1.second, map2.second);
-
-        if (lower <= upperInClip and upperInClip <= upper) {
-            if (map1.second != map2.second) {
-                translatedUpper.reset(
-                    _TranslateTimeToExternal(upperInClip, map1, map2));
-            } else {
-                const bool lowerUpperMatch = (lowerInClip == upperInClip);
-                if (lowerUpperMatch && time == map1.first) {
-                    translatedUpper.reset(map1.first);
-                } else if (lowerUpperMatch && time == map2.first) {
-                    translatedUpper.reset(map2.first);
-                } else {
-                    translatedUpper.reset(map2.first);
-                }
-            }
-            break;
-        }
+    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz and i2 < sz; ++i1, ++i2) {
+         if (_CanTranslate(times[i1], times[i2], /*lower=*/false)) { break; }
     }
 
     if (translatedLower and not translatedUpper) {
@@ -495,18 +456,18 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         //
         // The 'timingOutsideClip' test case in testUsdModelClips exercises
         // this behavior.
-        if (lowerInClip < times.front().second) {
-            translatedLower.reset(times.front().first);
+        if (lowerInClip < times.front().internalTime) {
+            translatedLower.reset(times.front().externalTime);
         }
-        else if (lowerInClip > times.back().second) {
-            translatedLower.reset(times.back().first);
+        else if (lowerInClip > times.back().internalTime) {
+            translatedLower.reset(times.back().externalTime);
         }
 
-        if (upperInClip < times.front().second) {
-            translatedUpper.reset(times.front().first);
+        if (upperInClip < times.front().internalTime) {
+            translatedUpper.reset(times.front().externalTime);
         }
-        else if (upperInClip > times.back().second) {
-            translatedUpper.reset(times.back().first);
+        else if (upperInClip > times.back().internalTime) {
+            translatedUpper.reset(times.back().externalTime);
         }
     }
             
@@ -545,10 +506,10 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
 
-            if (m1.second <= t and t <= m2.second) {
-                if (m1.second == m2.second) {
-                    timeSamples.insert(m1.first);
-                    timeSamples.insert(m2.first);
+            if (m1.internalTime <= t and t <= m2.internalTime) {
+                if (m1.internalTime == m2.internalTime) {
+                    timeSamples.insert(m1.externalTime);
+                    timeSamples.insert(m2.externalTime);
                 }
                 else {
                     timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
@@ -563,11 +524,11 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
     // maintain consistency.
     if (timeSamples.empty()) {
         for (InternalTime t: timeSamplesInClip) {
-            if (t < times.front().second) {
-                timeSamples.insert(times.front().first);
+            if (t < times.front().internalTime) {
+                timeSamples.insert(times.front().externalTime);
             }
-            else if (t > times.back().second) {
-                timeSamples.insert(times.back().first);
+            else if (t > times.back().internalTime) {
+                timeSamples.insert(times.back().externalTime);
             }
         }
     }
@@ -602,19 +563,20 @@ Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
 
     // Early out in some special cases to avoid unnecessary
     // math operations that could introduce precision issues.
-    if (m1.first == m2.first) {
-        return m1.second;
+    if (m1.externalTime == m2.externalTime) {
+        return m1.internalTime;
     }
-    else if (extTime == m1.first) {
-        return m1.second;
+    else if (extTime == m1.externalTime) {
+        return m1.internalTime;
     }
-    else if (extTime == m2.first) {
-        return m2.second;
+    else if (extTime == m2.externalTime) {
+        return m2.internalTime;
     }
 
-    return (m2.second - m1.second) / (m2.first - m1.first)
-        * (extTime - m1.first)
-        + m1.second;
+    return (m2.internalTime - m1.internalTime) /
+           (m2.externalTime - m1.externalTime)
+        * (extTime - m1.externalTime)
+        + m1.internalTime;
 }
 
 Usd_Clip::ExternalTime
@@ -623,19 +585,20 @@ Usd_Clip::_TranslateTimeToExternal(
 {
     // Early out in some special cases to avoid unnecessary
     // math operations that could introduce precision issues.
-    if (m1.second == m2.second) {
-        return m1.first;
+    if (m1.internalTime == m2.internalTime) {
+        return m1.externalTime;
     }
-    else if (intTime == m1.second) {
-        return m1.first;
+    else if (intTime == m1.internalTime) {
+        return m1.externalTime;
     }
-    else if (intTime == m2.second) {
-        return m2.first;
+    else if (intTime == m2.internalTime) {
+        return m2.externalTime;
     }
 
-    return (m2.first - m1.first) / (m2.second - m1.second)
-        * (intTime - m1.second)
-        + m1.first;
+    return (m2.externalTime - m1.externalTime) / 
+           (m2.internalTime - m1.internalTime)
+        * (intTime - m1.internalTime)
+        + m1.externalTime;
 }
 
 SdfPropertySpecHandle

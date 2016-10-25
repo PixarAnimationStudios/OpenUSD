@@ -1123,6 +1123,10 @@ private:
              const ArResolverContext& pathResolverContext,
              InitialLoadSet load);
 
+    // Helper for Open() overloads -- searches and publishes to bound caches.
+    template <class... Args>
+    static UsdStageRefPtr _OpenImpl(InitialLoadSet load, Args const &... args);
+
     // Common ref ptr initialization, called by public, static constructors.
     //
     // This method will either return a valid refptr (if the stage is correctly
@@ -1137,14 +1141,16 @@ private:
     // --------------------------------------------------------------------- //
     // Spec Existence & Definition Helpers
     // --------------------------------------------------------------------- //
+    using _MasterToFlattenedPathMap 
+        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+
     void _CopyMetadata(const UsdObject &source,
                        const SdfSpecHandle& dest) const;
     
     void _CopyProperty(const UsdProperty &prop,
-                       const SdfPrimSpecHandle& dest) const;
-
-    using _MasterToFlattenedPathMap 
-        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+                       const SdfPrimSpecHandle& dest,
+                       const _MasterToFlattenedPathMap 
+                            &masterToFlattened) const;
 
     void _CopyMasterPrim(const UsdPrim &masterPrim,
                          const SdfLayerHandle &destinationLyer,
@@ -1678,6 +1684,7 @@ private:
     friend class UsdVariantSet;
     friend class UsdVariantSets;
     friend class Usd_PrimData;
+    friend class Usd_StageOpenRequest;
 };
 
 template<typename T>

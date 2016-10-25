@@ -78,38 +78,45 @@ HdRenderIndex::HdRenderIndex()
                               HdMeshReprDesc(HdMeshGeomStyleHull,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/false));
+                                             /*smoothNormals=*/false,
+                                             /*blendWireframeColor=*/false));
         HdMesh::ConfigureRepr(HdTokens->smoothHull,
                               HdMeshReprDesc(HdMeshGeomStyleHull,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/false));
         HdMesh::ConfigureRepr(HdTokens->wire,
                               HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
         HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
                               HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
 
         HdMesh::ConfigureRepr(HdTokens->refined,
                               HdMeshReprDesc(HdMeshGeomStyleSurf,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/false));
         HdMesh::ConfigureRepr(HdTokens->refinedWire,
                               HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
         HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
                               HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
                                              HdCullStyleDontCare,
                                              /*lit=*/true,
-                                             /*smoothNormals=*/true));
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
 
 
         HdBasisCurves::ConfigureRepr(HdTokens->hull,
@@ -888,14 +895,21 @@ HdRenderIndex::SyncAll()
         }
 
         // Use a heuristic to determine whether or not to destroy the entire
-        // dirty state.  We say that if we've skipped more than 90% of the
+        // dirty state.  We say that if we've skipped more than 25% of the
         // rprims that were claimed dirty, then it's time to clean up this
         // list.  This leads to performance improvements after many rprims
         // get dirty and then cleaned one, and the steady state becomes a 
         // small number of dirty items.
         if (not dirtyIds.empty()) {
             resetVaryingState = 
-                ((float )numSkipped / (float)dirtyIds.size()) > 0.9f;
+                ((float )numSkipped / (float)dirtyIds.size()) > 0.25f;
+
+            if (TfDebug::IsEnabled(HD_VARYING_STATE)) {
+                std::cout << "Dirty List Redundancy  = "
+                          << ((float )numSkipped * 100.0f / (float)dirtyIds.size())
+                          << "% (" <<  numSkipped << " / "
+                          << dirtyIds.size() << ")" << std::endl;
+            }
         }
 
     }

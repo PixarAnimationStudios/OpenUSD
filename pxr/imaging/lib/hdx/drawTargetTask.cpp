@@ -42,7 +42,6 @@
 HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
  : HdSceneTask(delegate, id)
- , _enableDrawTargets(false)
  , _currentDrawTargetSetVersion(0)
  , _renderPasses()
  , _depthBiasUseDefault(true)
@@ -71,8 +70,6 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
-        _enableDrawTargets       = params.enableDrawTargets;
-
         // Raster State
         // XXX: Update master raster state that is used by all passes?
         _wireframeColor          = params.wireframeColor;
@@ -97,10 +94,6 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         _complexity              = params.complexity;
         _hullVisibility          = params.hullVisibility;
         _surfaceVisibility       = params.surfaceVisibility;
-    }
-
-    if (not _enableDrawTargets) {
-        return;
     }
 
     HdSceneDelegate* delegate = GetDelegate();
@@ -258,12 +251,6 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    // When the draw targets are not enabled we don't need to do any
-    // draw target computation
-    if (not _enableDrawTargets) {
-        return;
-    }
-
     // Apply polygon offset to whole pass.
     // XXX TODO: Move to an appropriate home
     glPushAttrib(GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
@@ -336,15 +323,46 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
 
 std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
 {
-    out << "GlimRG Draw Target Task Params: (...) "
-        << pv.enableDrawTargets;
+    out << "HdxDrawTargetTaskParams: (...) \n"
+        << "         overrideColor           = " << pv.overrideColor << "\n"
+        << "         wireframeColor          = " << pv.wireframeColor << "\n"
+        << "         enableLighting          = " << pv.enableLighting << "\n"
+        << "         alphaThreshold          = " << pv.alphaThreshold << "\n"
+        << "         tessLevel               = " << pv.tessLevel << "\n"
+        << "         drawingRange            = " << pv.drawingRange << "\n"
+        << "         depthBiasUseDefault     = " << pv.depthBiasUseDefault << "\n"
+        << "         depthBiasEnable         = " << pv.depthBiasEnable << "\n"
+        << "         depthBiasConstantFactor = " << pv.depthBiasConstantFactor << "\n"
+        << "         depthFunc               = " << pv.depthFunc << "\n"
+        << "         cullStyle               = " << pv.cullStyle << "\n"
+        << "         geomStyle               = " << pv.geomStyle << "\n"
+        << "         complexity              = " << pv.complexity << "\n"
+        << "         hullVisibility          = " << pv.hullVisibility << "\n"
+        << "         surfaceVisibility       = " << pv.surfaceVisibility << "\n"
+        ;
 
     return out;
 }
 
 bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
 {
-    return (lhs.enableDrawTargets == rhs.enableDrawTargets);
+    return 
+        lhs.overrideColor == rhs.overrideColor and 
+        lhs.wireframeColor == rhs.wireframeColor and
+        lhs.enableLighting == rhs.enableLighting and
+        lhs.alphaThreshold == rhs.alphaThreshold and
+        lhs.tessLevel == rhs.tessLevel and
+        lhs.drawingRange == rhs.drawingRange and
+        lhs.depthBiasUseDefault == rhs.depthBiasUseDefault and
+        lhs.depthBiasEnable == rhs.depthBiasEnable and
+        lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor and
+        lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor and
+        lhs.depthFunc == rhs.depthFunc and
+        lhs.cullStyle == rhs.cullStyle and
+        lhs.geomStyle == rhs.geomStyle and
+        lhs.complexity == rhs.complexity and
+        lhs.hullVisibility == rhs.hullVisibility and
+        lhs.surfaceVisibility == rhs.surfaceVisibility;
 }
 
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)

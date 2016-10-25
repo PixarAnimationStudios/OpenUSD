@@ -108,12 +108,6 @@ class VtArray {
 
     typedef boost::container::vector<ELEM> _VecType;
 
-    // VtArray should derive from boost::equality_comparable, but because of
-    // gcc's awesomeness, that increases the size of VtArray by a pointer.
-    // Which is stupid, because equality_comparable is empty, and in fact, ONLY
-    // creates friend free functions.  So instead, we manually provide != in
-    // terms of ==.
-
   public:
 
     /// Type this array holds.

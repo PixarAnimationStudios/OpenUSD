@@ -146,7 +146,7 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
             FnLogWarn(std::string("Cannot compose ") + 
                 _prim.GetPath().GetString());
 
-        _params.cullStyle = UsdImagingEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+        _params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
 
         _renderer = UsdKatanaCache::GetInstance()
                                   .GetRenderer(_stage, _prim, variantString);

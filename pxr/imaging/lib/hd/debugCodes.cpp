@@ -86,4 +86,5 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TEXTURE_ADDED, "Report when textures are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TEXTURE_REMOVED, "Report when textures are removed");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_VARYING_STATE, "Reports state tracking of varying state");
 }

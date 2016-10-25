@@ -48,7 +48,10 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
     _initialized = true;
 
     // Validate type.
-    const TfType& tfType = TfType::Find(type);
+    // We use FindByName because Find requres that std::type_info has been
+    // regisered, but that won't happen until the plugin is loaded.
+    const TfType &tfType =
+        TfType::FindByName(TfType::GetCanonicalTypeName(type));
     if (not tfType) {
         TF_CODING_ERROR("Failed to load plugin interface: "
                         "Can't find type %s", type.name());

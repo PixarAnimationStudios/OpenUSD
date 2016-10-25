@@ -197,7 +197,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
             params.drawMode = request.drawRequest.token() == UsdMayaGLHdRenderer::DRAW_WIREFRAME ? UsdImagingGL::DRAW_WIREFRAME :
                 UsdImagingGL::DRAW_POINTS;
             params.enableLighting = false;
-            params.cullStyle = UsdImagingEngine::CULL_STYLE_NOTHING;
+            params.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
 
             params.overrideColor = request.fWireframeColor;
 
@@ -213,7 +213,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
             params.drawMode = ((request.drawRequest.token() == UsdMayaGLHdRenderer::DRAW_SHADED_FLAT) ?
                 UsdImagingGL::DRAW_GEOM_FLAT : UsdImagingGL::DRAW_GEOM_SMOOTH);
             params.enableLighting = true;
-            params.cullStyle = UsdImagingEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+            params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
 
             _renderer->Render(_renderedPrim, params);
 

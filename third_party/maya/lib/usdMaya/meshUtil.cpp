@@ -23,16 +23,21 @@
 //
 #include "usdMaya/meshUtil.h"
 
-#include <maya/MFnMesh.h>
-#include <maya/MPlug.h>
-#include <maya/MString.h>
-#include <maya/MGlobal.h>
-#include <maya/MStatus.h>
-#include <maya/MFnStringData.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnTypedAttribute.h>
-
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/mesh.h"
+
+#include <maya/MFnMesh.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+    PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
 // These tokens are supported Maya attributes used for Mesh surfaces
 TF_DEFINE_PRIVATE_TOKENS(
@@ -47,8 +52,14 @@ TF_DEFINE_PRIVATE_TOKENS(
         _subdivTokens, 
         (USD_subdivisionScheme)
         (USD_interpolateBoundary)
+        (USD_faceVaryingLinearInterpolation)
+
+        // This token is deprecated as it is from OpenSubdiv 2 and the USD
+        // schema now conforms to OpenSubdiv 3, but we continue to look for it
+        // and translate to the equivalent new value for backwards compatibility.
         (USD_faceVaryingInterpolateBoundary)
         );
+
 
 // This can be customized for specific pipeline
 // We read the USD bool attribute, if not present we look for the mojito bool attribute
@@ -187,58 +198,97 @@ TfToken PxrUsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh &mesh, TfToken
     }
 }
 
-// This can be customize for specific pipeline
-// We read the USD string attribute, if not present we look for the mojito int attribute
-// If not present we look for the renderman for maya int attribute
-// XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken PxrUsdMayaMeshUtil::getSubdivFVInterpBoundary(const MFnMesh &mesh)
+// XXX: Note that this function is not exposed publicly since the USD schema
+// has been updated to conform to OpenSubdiv 3. We still look for this attribute
+// on Maya nodes specifying this value from OpenSubdiv 2, but we translate the
+// value to OpenSubdiv 3. This is to support legacy assets authored against
+// OpenSubdiv 2.
+static
+TfToken _getSubdivFVInterpBoundary(const MFnMesh& mesh)
 {
-    MString sdFVInterpBound;
+    TfToken sdFVInterpBound;
     MPlug plug = mesh.findPlug(MString(_subdivTokens->USD_faceVaryingInterpolateBoundary.GetText()));
     if (!plug.isNull()) {
-        sdFVInterpBound = plug.asString();
+        sdFVInterpBound = TfToken(plug.asString().asChar());
+
+        // Translate OSD2 values to OSD3.
+        if (sdFVInterpBound == UsdGeomTokens->bilinear) {
+            sdFVInterpBound = UsdGeomTokens->all;
+        } else if (sdFVInterpBound == UsdGeomTokens->edgeAndCorner) {
+            sdFVInterpBound = UsdGeomTokens->cornersPlus1;
+        } else if (sdFVInterpBound == UsdGeomTokens->alwaysSharp) {
+            sdFVInterpBound = UsdGeomTokens->boundaries;
+        } else if (sdFVInterpBound == UsdGeomTokens->edgeOnly) {
+            sdFVInterpBound = UsdGeomTokens->none;
+        }
     } else {
         plug = mesh.findPlug(MString("mjtoSdSmoothFVInterp"));
         if (!plug.isNull()) {
             switch(plug.asInt()) {
-                case 1: sdFVInterpBound = "cornersPlus1"; break;
-                case 2: sdFVInterpBound = "all"; break;
-                case 3: sdFVInterpBound = "boundaries"; break;
-                default: break;
+                case 1:
+                    sdFVInterpBound = UsdGeomTokens->cornersPlus1;
+                    break;
+                case 2:
+                    sdFVInterpBound = UsdGeomTokens->all;
+                    break;
+                case 3:
+                    sdFVInterpBound = UsdGeomTokens->boundaries;
+                    break;
+                default:
+                    break;
             }
         } else {
             plug = mesh.findPlug(MString("rman__torattr___subdivFacevaryingInterp"));
             if (!plug.isNull()) {
                 switch(plug.asInt()) {
-                    case 0: sdFVInterpBound = "all"; break;
-                    case 1: sdFVInterpBound = "cornersPlus1"; break;
-                    case 2: sdFVInterpBound = "none"; break;
-                    case 3: sdFVInterpBound = "boundaries"; break;
-                    default: break;
+                    case 0:
+                        sdFVInterpBound = UsdGeomTokens->all;
+                        break;
+                    case 1:
+                        sdFVInterpBound = UsdGeomTokens->cornersPlus1;
+                        break;
+                    case 2:
+                        sdFVInterpBound = UsdGeomTokens->none;
+                        break;
+                    case 3:
+                        sdFVInterpBound = UsdGeomTokens->boundaries;
+                        break;
+                    default:
+                        break;
                 }
             }
         }
     }
-    if (sdFVInterpBound=="") {
-        return UsdGeomTokens->cornersPlus1;
-    } else if (sdFVInterpBound == "all"
-               or sdFVInterpBound == "bilinear") {
-        return UsdGeomTokens->all;
-    } else if (sdFVInterpBound == "cornersPlus1"
-               or sdFVInterpBound == "edgeAndCorner") {
-        return UsdGeomTokens->cornersPlus1;
-    } else if (sdFVInterpBound == "none"
-               or sdFVInterpBound == "edgeOnly") {
-        return UsdGeomTokens->none;
-    } else if (sdFVInterpBound == "boundaries"
-               or sdFVInterpBound == "alwaysSharp") {
-        return UsdGeomTokens->boundaries;
+
+    return sdFVInterpBound;
+}
+
+TfToken PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
+{
+    TfToken sdFVLinearInterpolation;
+    MPlug plug = mesh.findPlug(MString(_subdivTokens->USD_faceVaryingLinearInterpolation.GetText()));
+    if (!plug.isNull()) {
+        sdFVLinearInterpolation = TfToken(plug.asString().asChar());
     } else {
-        MGlobal::displayError("Unsupported Face Varying InterpBoundary Attribute:" +
-            sdFVInterpBound + " on mesh:" + MString(mesh.fullPathName()) + 
-           ". Defaulting to cornersPlus1");
-        return UsdGeomTokens->cornersPlus1;
+        // If the OpenSubdiv 3-style face varying linear interpolation value
+        // wasn't specified, fall back to the old OpenSubdiv 2-style face
+        // varying interpolate boundary value if we have that.
+        sdFVLinearInterpolation = _getSubdivFVInterpBoundary(mesh);
     }
+
+    if (not sdFVLinearInterpolation.IsEmpty() and
+            sdFVLinearInterpolation != UsdGeomTokens->all and
+            sdFVLinearInterpolation != UsdGeomTokens->none and
+            sdFVLinearInterpolation != UsdGeomTokens->boundaries and
+            sdFVLinearInterpolation != UsdGeomTokens->cornersOnly and
+            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 and
+            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus2) {
+        MGlobal::displayError("Unsupported Face Varying Linear Interpolation Attribute: " +
+            MString(sdFVLinearInterpolation.GetText()) + " on mesh: " + MString(mesh.fullPathName()));
+        sdFVLinearInterpolation = TfToken();
+    }
+
+    return sdFVLinearInterpolation;
 }
 
 TfToken PxrUsdMayaMeshUtil::setSubdivScheme(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue)
@@ -294,22 +344,23 @@ TfToken PxrUsdMayaMeshUtil::setSubdivInterpBoundary(const UsdGeomMesh &primSchem
     return interpBoundary;
 }
 
-TfToken PxrUsdMayaMeshUtil::setSubdivFVInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn)
+TfToken PxrUsdMayaMeshUtil::setSubdivFVLinearInterpolation(const UsdGeomMesh &primSchema, MFnMesh &meshFn)
 {
     MStatus status;
-    
-    TfToken fvInterpBoundary = 
+
+    TfToken fvLinearInterpolation =
         primSchema.GetFaceVaryingLinearInterpolation();
-        
-    if (fvInterpBoundary != UsdGeomTokens->cornersPlus1) {
+
+    if (fvLinearInterpolation != UsdGeomTokens->cornersPlus1) {
         MFnTypedAttribute stringAttr;
         MFnStringData stringData;
-        MObject stringVal = stringData.create(fvInterpBoundary.GetText());
+        MObject stringVal = stringData.create(fvLinearInterpolation.GetText());
         MObject attr = stringAttr.create(_subdivTokens->USD_faceVaryingInterpolateBoundary.GetText(),
                                          "", MFnData::kString, stringVal, &status);
         if (status == MS::kSuccess) {
             meshFn.addAttribute(attr);
         }
     }
-    return fvInterpBoundary;
+
+    return fvLinearInterpolation;
 }
