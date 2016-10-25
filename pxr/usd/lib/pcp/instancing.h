@@ -32,8 +32,6 @@
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex.h"
 
-#include <boost/foreach.hpp>
-
 /// Helper function to determine whether the given prim index is
 /// instanceable. An instanceable prim index must have instanceable
 /// nodes and must have been tagged so that the composed value of

@@ -41,7 +41,6 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/work/arenaDispatcher.h"
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/unordered_map.hpp>
@@ -458,8 +457,7 @@ Pcp_Dependencies::Add(
         pcpSitePath.GetText(),
         _FormatDependencies(dependencies).c_str());
 
-    BOOST_FOREACH(const PcpPrimIndexDependencies::Map::value_type& dep,
-                  dependencies.sites) {
+    for (const auto& dep : dependencies.sites) {
         const PcpPrimIndexDependencies::Site& site = dep.first;
 
         // Retain the layer stack.
@@ -519,8 +517,7 @@ Pcp_Dependencies::AddSpookySitesUsedByPrim(
         pcpSitePath.GetText(),
         _FormatDependencies(spookyDependencies).c_str());
 
-    BOOST_FOREACH(const PcpPrimIndexDependencies::Map::value_type& dep,
-                  spookyDependencies.sites) {
+    for (const auto& dep : spookyDependencies.sites) {
         const PcpPrimIndexDependencies::Site& site = dep.first;
 
         // Spooky dependencies do not retain the layer stack.
@@ -570,8 +567,8 @@ Pcp_Dependencies::Remove(
 
         // Discard sdToPcp entries, i.e. the entries in the reverse mapping of
         // the pcpToSd/sdToPcp bidirectional map.
-        BOOST_FOREACH(const Pcp_DependenciesData::PcpToSd::value_type& value,
-                      range) {
+        for (auto valueIter = range.first; valueIter != range.second; ++valueIter) {
+            const auto& value = *valueIter;
             const Pcp_DependenciesData::SdfSiteMultiset& entry = value.second;
             if (TfDebug::IsEnabled(PCP_DEPENDENCIES)) {
                 debugSites.push_back(
@@ -581,7 +578,7 @@ Pcp_Dependencies::Remove(
             }
 
             // Remove the reverse mapping.
-            BOOST_FOREACH(const SdfSite& sdfSite, entry) {
+            for (const auto& sdfSite : entry) {
                 _data->sdToPcp[sdfSite.layer][sdfSite.path].EraseOne(value.first);
 
                 // Only mark this Sd site as needing to be flushed if we're
@@ -641,8 +638,8 @@ Pcp_Dependencies::Remove(
         // Discard spookySdToPcp entries, i.e. the entries in the
         // reverse mapping of the spookyPcpToSd/spookySdToPcp
         // bidirectional map.
-        BOOST_FOREACH(const Pcp_DependenciesData::PcpToSd::value_type& value,
-                      range) {
+        for (auto valueIter = range.first; valueIter != range.second; ++valueIter) {
+            const auto& value = *valueIter;
             const Pcp_DependenciesData::SdfSiteMultiset& entry = value.second;
             if (TfDebug::IsEnabled(PCP_DEPENDENCIES)) {
                 debugSites.push_back(
@@ -653,7 +650,7 @@ Pcp_Dependencies::Remove(
             }
 
             // Remove the reverse mapping.
-            BOOST_FOREACH(const SdfSite& sdfSite, entry) {
+            for (const auto& sdfSite : entry) {
                 _data->spookySdToPcp[sdfSite.layer][sdfSite.path].
                     EraseOne(value.first);
                 _data->sdfSpookySiteNeedsFlush.Insert(sdfSite);
@@ -680,8 +677,10 @@ Pcp_Dependencies::Remove(
 
         // Discard sites using site entries, i.e. the entries in the reverse
         // mapping of the PcpSite dependencies bidirectional map.
-        BOOST_FOREACH(const Pcp_DependenciesData::
-                                SitesUsedBySite::value_type& value, siteRange) {
+        for (auto valueIter = siteRange.first; valueIter != siteRange.second;
+             ++valueIter) 
+        {
+            const auto& value = *valueIter;
             if (TfDebug::IsEnabled(PCP_DEPENDENCIES)) {
                 debugSites.push_back(
                     TfStringPrintf("  <%s> (site):",
@@ -691,8 +690,7 @@ Pcp_Dependencies::Remove(
             }
 
             // Remove the reverse mapping.
-            BOOST_FOREACH(const Pcp_DependenciesData::PcpStackSite& pcpSite,
-                          value.second) {
+            for (const auto& pcpSite : value.second) {
                 _data->sitesUsingSite[pcpSite.first][pcpSite.second].
                                                         EraseOne(value.first);
                 _data->pcpSiteNeedsFlush.Insert(pcpSite);
@@ -721,8 +719,10 @@ Pcp_Dependencies::Remove(
 
         // Discard sites using site entries, i.e. the entries in the reverse
         // mapping of the PcpSite dependencies bidirectional map.
-        BOOST_FOREACH(const Pcp_DependenciesData::
-                            SitesUsedBySite::value_type& value, siteRange) {
+        for (auto valueIter = siteRange.first; valueIter != siteRange.second;
+             ++valueIter) {
+            const auto& value = *valueIter;
+
             if (TfDebug::IsEnabled(PCP_DEPENDENCIES)) {
                 debugSites.push_back(
                     TfStringPrintf("  <%s> (spooky site):",
@@ -732,8 +732,7 @@ Pcp_Dependencies::Remove(
             }
 
             // Remove the reverse mapping.
-            BOOST_FOREACH(const Pcp_DependenciesData::PcpStackSite& pcpSite,
-                          value.second) {
+            for (const auto& pcpSite : value.second) {
                 _data->spookySitesUsingSite[pcpSite.first][pcpSite.second].
                                                         EraseOne(value.first);
                 _data->pcpSpookySiteNeedsFlush.Insert(pcpSite);
@@ -764,14 +763,13 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
 
     // Collect all of the used layer stacks.
     std::set<PcpLayerStackRefPtr> layerStacks;
-    BOOST_FOREACH(const Pcp_LayerStackRefCountMap::value_type& v,
-                  _data->layerStacks) {
+    for (const auto& v : _data->layerStacks) {
         layerStacks.insert(v.first);
     }
 
     // Put layer stacks in the lifeboat.
     if (lifeboat) {
-        BOOST_FOREACH(const PcpLayerStackRefPtr& layerStack, layerStacks) {
+        for (const auto& layerStack : layerStacks) {
             lifeboat->Retain(layerStack);
         }
     }
@@ -800,8 +798,7 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
     // If we don't then Flush() will get upset when calling EraseOne()
     // for each layer stack in retainedLayerStacks since there won't be
     // an expected entry.
-    BOOST_FOREACH(const PcpLayerStackRefPtr& layerStack,
-                  _data->retainedLayerStacks) {
+    for (const auto& layerStack : _data->retainedLayerStacks) {
         _data->layerStacks.Insert(layerStack);
     }
 }
@@ -835,7 +832,7 @@ Pcp_Dependencies::Flush()
 
     // Go through Sd sites discarding unused sites and layers.
     anyFound = false;
-    BOOST_FOREACH(const SdfSite& sdfSite, sdfSites) {
+    for (const auto& sdfSite : sdfSites) {
         // Find the layer.
         Pcp_DependenciesData::SdToPcp::iterator i =
             _data->sdToPcp.find(sdfSite.layer);
@@ -885,7 +882,7 @@ Pcp_Dependencies::Flush()
 
     // Flush spooky spec dependencies.
     anyFound = false;
-    BOOST_FOREACH(const SdfSite& sdfSite, sdfSpookySites) {
+    for (const auto& sdfSite : sdfSpookySites) {
         // Find the layer.
         const Pcp_DependenciesData::SdToPcp::iterator j =
             _data->spookySdToPcp.find(sdfSite.layer);
@@ -919,7 +916,7 @@ Pcp_Dependencies::Flush()
     // Go through pcpSites discarding unused sites.  This is the same
     // algorithm as above.
     anyFound = false;
-    BOOST_FOREACH(const Pcp_DependenciesData::PcpStackSite& pcpSite, pcpSites){
+    for (const auto& pcpSite : pcpSites) {
         // Find the layer stack.
         Pcp_DependenciesData::SitesUsingSite::iterator i =
             _data->sitesUsingSite.find(pcpSite.first);
@@ -955,8 +952,7 @@ Pcp_Dependencies::Flush()
 
     // Flush spooky site dependencies.
     anyFound = false;
-    BOOST_FOREACH(const Pcp_DependenciesData::PcpStackSite& pcpSite,
-                  pcpSpookySites) {
+    for (const auto& pcpSite : pcpSpookySites) {
         const Pcp_DependenciesData::SitesUsingSite::iterator j =
             _data->spookySitesUsingSite.find(pcpSite.first);
         if (j != _data->spookySitesUsingSite.end()) {
@@ -1104,8 +1100,9 @@ Pcp_GetSdToPcpDependenciesRecursive(
         sdToPcp.find(sdfSite.layer);
     if (i != sdToPcp.end()) {
         typedef Pcp_DependenciesData::PathToNodeMultiset::value_type ValueType;
-        BOOST_FOREACH(const ValueType& value,
-                      i->second.FindSubtreeRange(sdfSite.path)) {
+        auto range = i->second.FindSubtreeRange(sdfSite.path);
+        for (auto valueIter = range.first; valueIter != range.second; ++valueIter) {
+            const auto& value = *valueIter;
             if (not primsOnly or 
                 value.first.IsPrimOrPrimVariantSelectionPath()) {
                 TF_FOR_ALL(j, value.second) {
@@ -1150,7 +1147,7 @@ Pcp_GetWithType(
     const Pcp_DependencyPathTypeMultiset& paths,
     unsigned int dependencyType)
 {
-    BOOST_FOREACH(const Pcp_DependencyPathType &curPath, paths) {
+    for (const auto& curPath : paths) {
         // Only include paths that match the specified type.
         if (dependencyType & curPath.dependencyType) {
             result->insert(curPath.path);
@@ -1174,7 +1171,7 @@ Pcp_GetAncestral(
         Pcp_DependenciesData::PathToPathTypeMultiset::const_iterator j =
             pathsUsingSite.find(path);
         if (j != pathsUsingSite.end()) {
-            BOOST_FOREACH(const Pcp_DependencyPathType &curPath, j->second) {
+            for (const auto& curPath : j->second) {
                 result->insert(originalPath
                     .ReplacePrefix(path, curPath.path)
                     .StripAllVariantSelections());
@@ -1254,10 +1251,10 @@ Pcp_Dependencies::GetLayersUsedByPrim(const SdfPath& path,
     // Get layer stacks.
     std::set<PcpLayerStackPtr> layerStacks;
     if (recursive) {
-        BOOST_FOREACH(const ValueType& value,
-                      _data->sitesUsedBySite.FindSubtreeRange(path)) {
-            BOOST_FOREACH(const Pcp_DependenciesData::PcpStackSite& site,
-                          value.second) {
+        auto range = _data->sitesUsedBySite.FindSubtreeRange(path);
+        for (auto valueIter = range.first; valueIter != range.second; ++valueIter) {
+            const auto& value = *valueIter;
+            for (const auto& site : value.second) {
                 layerStacks.insert(site.first);
             }
         }
@@ -1266,8 +1263,7 @@ Pcp_Dependencies::GetLayersUsedByPrim(const SdfPath& path,
         Pcp_DependenciesData::SitesUsedBySite::const_iterator i =
             _data->sitesUsedBySite.find(path);
         if (i != _data->sitesUsedBySite.end()) {
-            BOOST_FOREACH(const Pcp_DependenciesData::PcpStackSite& site,
-                          i->second) {
+            for (const auto& site : i->second) {
                 layerStacks.insert(site.first);
             }
         }
@@ -1275,7 +1271,7 @@ Pcp_Dependencies::GetLayersUsedByPrim(const SdfPath& path,
 
     // Get layers.
     SdfLayerHandleSet layers;
-    BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
+    for (const auto& layerStack : layerStacks) {
         const SdfLayerRefPtrVector& localLayers = layerStack->GetLayers();
         layers.insert(localLayers.begin(), localLayers.end());
     }
@@ -1288,8 +1284,7 @@ Pcp_Dependencies::GetUsedLayers() const
 {
     SdfLayerHandleSet reachedLayers;
 
-    BOOST_FOREACH(const Pcp_LayerStackRefCountMap::value_type& v,
-                  _data->layerStacks) {
+    for (const auto& v : _data->layerStacks) {
         const SdfLayerRefPtrVector& layers = v.first->GetLayers();
         reachedLayers.insert(layers.begin(), layers.end());
     }
@@ -1302,8 +1297,7 @@ Pcp_Dependencies::GetUsedRootLayers() const
 {
     SdfLayerHandleSet reachedRootLayers;
 
-    BOOST_FOREACH(const Pcp_LayerStackRefCountMap::value_type& v,
-                  _data->layerStacks) {
+    for (const auto& v : _data->layerStacks) {
         const PcpLayerStackPtr& layerStack = v.first;
         reachedRootLayers.insert(layerStack->GetIdentifier().rootLayer);
     }
@@ -1425,7 +1419,7 @@ _DumpDependencies(
     // Print forward dependencies.
     if (not fwd.empty()) {
         s << prefix << T::GetForwardLabel() << ":" << std::endl;
-        BOOST_FOREACH(const T& x, fwd) {
+        for (const auto& x : fwd) {
             if (prev.a != x.a) {
                 prev.a = x.a;
                 s << "  @" << x.GetIdentifier() << "@:" << std::endl;
@@ -1445,7 +1439,7 @@ _DumpDependencies(
     if (not rev.empty()) {
         prev = T();
         s << prefix << T::GetReverseLabel() << ":" << std::endl;
-        BOOST_FOREACH(const T& x, rev) {
+        for (const auto& x : rev) {
             if (prev.c != x.c) {
                 prev.c = x.c;
                 s << "  <" << x.c.GetText() << ">:" << std::endl;
@@ -1490,17 +1484,17 @@ _GetDependencies(
     fwd->clear();
     rev->clear();
 
-    BOOST_FOREACH(const DD::SdToPcp::value_type& x, fwdInput) {
-        BOOST_FOREACH(const DD::PathToNodeMultiset::value_type& y, x.second) {
-            BOOST_FOREACH(const PcpNodeRef& z, y.second) {
+    for (const auto& x : fwdInput) {
+        for (const auto& y : x.second) {
+            for (const auto& z : y.second) {
                 fwd->insert(Pcp_DependenciesSpecTuple(
                         x.first, y.first, z.GetRootNode().GetPath()));
             }
         }
     }
 
-    BOOST_FOREACH(const DD::PcpToSd::value_type& x, revInput) {
-        BOOST_FOREACH(const DD::SdfSiteMultiset::value_type& y, x.second) {
+    for (const auto& x : revInput) {
+        for (const auto& y : x.second) {
             rev->insert(Pcp_DependenciesSpecTuple(y.layer, y.path, x.first));
         }
     }
@@ -1519,16 +1513,16 @@ _GetDependencies(
     fwd->clear();
     rev->clear();
 
-    BOOST_FOREACH(const DD::SitesUsingSite::value_type& x, fwdInput) {
-        BOOST_FOREACH(const DD::PathToPathTypeMultiset::value_type& y,x.second){
-            BOOST_FOREACH(const Pcp_DependencyPathType& z, y.second) {
+    for (const auto& x : fwdInput) {
+        for (const auto& y : x.second) {
+            for (const auto& z : y.second) {
                 fwd->insert(Pcp_DependenciesSiteTuple(x.first, y.first,z.path));
             }
         }
     }
 
-    BOOST_FOREACH(const DD::SitesUsedBySite::value_type& x, revInput) {
-        BOOST_FOREACH(const DD::PcpSiteMultiset::value_type& y, x.second) {
+    for (const auto& x : revInput) {
+        for (const auto& y : x.second) {
             rev->insert(Pcp_DependenciesSiteTuple(y.first, y.second, x.first));
         }
     }

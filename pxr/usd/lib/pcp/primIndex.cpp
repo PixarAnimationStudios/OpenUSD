@@ -50,7 +50,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/foreach.hpp>
 #include <boost/algorithm/cxx11/is_sorted.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>
@@ -300,7 +299,9 @@ PcpNodeRef
 PcpPrimIndex::GetNodeProvidingSpec(
     const SdfLayerHandle& layer, const SdfPath& path) const
 {
-    BOOST_FOREACH(const PcpNodeRef& node, GetNodeRange()) {
+    auto range = GetNodeRange();
+    for (auto nodeIter = range.first; nodeIter != range.second; ++nodeIter) {
+        const auto& node = *nodeIter;
         // If the site has the given path and contributes specs then
         // search for the layer.
         if (node.CanContributeSpecs() and 

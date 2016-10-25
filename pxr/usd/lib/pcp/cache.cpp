@@ -58,7 +58,6 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include <algorithm>
 #include <utility>
@@ -535,7 +534,7 @@ PcpCache::_GetPathsUsingPcpSite(
         sourceNodes->clear();
         sourceNodes->reserve(results.size());
         
-        BOOST_FOREACH(const SdfPath& pcpSitePath, results) {
+        for (const auto& pcpSitePath : results) {
             SdfPath primUsingSite = pcpSitePath;
             PcpLayerStackSite usedSite(layerStack, path);
             PcpNodeRef nodeUsingSite;
@@ -584,7 +583,7 @@ PcpCache::_UsesLayer(const SdfLayerHandle& layer) const
     const PcpLayerStackPtrVector& layerStacks = 
         FindAllLayerStacksUsingLayer(layer);
 
-    BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
+    for (const auto& layerStack : layerStacks) {
         // PcpCache doesn't record dependencies on its root layer stack,
         // so we have to check that explicitly.
         if (layerStack == _layerStack or
@@ -735,7 +734,7 @@ PcpCache::_GetPathsUsingPrim(
 
         const PcpLayerStackPtrVector& layerStacks =
             FindAllLayerStacksUsingLayer(layer);
-        BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
+        for (const auto& layerStack : layerStacks) {
             PcpNodeRefVector spookyNodes;
             const SdfPathVector spookyPaths = 
                 _GetPathsUsingPcpSite(layerStack, path,
@@ -778,7 +777,7 @@ PcpCache::_GetPathsUsingPrim(
             layer, fallbackAncestor, sourceNodes);
 
         if (not result.empty()) {
-            BOOST_FOREACH(SdfPath& resultPath, result) {
+            for (auto& resultPath : result) {
                 // Strip out any variant selections from the result path,
                 // as each should be a Pcp site path and not a storage path.
                 // XXX: This probably isn't handling
@@ -798,7 +797,7 @@ PcpCache::_GetPathsUsingPrim(
         // Pcp site to site dependencies to find that dangling inherit.
         const PcpLayerStackPtrVector& layerStacks =
             FindAllLayerStacksUsingLayer(layer);
-        BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
+        for (const auto& layerStack : layerStacks) {
             PcpNodeRefVector nodes;
             const SdfPathVector paths = 
                 _GetPathsUsingPcpSite(layerStack, path,
@@ -986,10 +985,12 @@ PcpCache::_GetPathsUsingSite(
         const bool descendantsNeedSourceNodes = 
             (descendantsNeedPathTranslation or needsSourceNodes);
 
-        BOOST_FOREACH(const SdfPath& depPath, result) {
-            BOOST_FOREACH(const _PropertyIndexCache::value_type& v,
-                          _propertyIndexCache.FindSubtreeRange(depPath)) {
-
+        for (const auto& depPath : result) {
+            auto range = _propertyIndexCache.FindSubtreeRange(depPath);
+            for (auto valueIter = range.first; valueIter != range.second; 
+                 ++valueIter) 
+            {
+                const auto& v = *valueIter;
                 const SdfPath& propertyPath = v.first;
                 const PcpPropertyIndex& propertyIndex = v.second;
 
@@ -1174,7 +1175,7 @@ PcpCache::_Translate(
         layerOffsets->reserve(depSourceNodes.size());
     }
 
-    BOOST_FOREACH(const PcpNodeRef& sourceNode, depSourceNodes) {
+    for (const auto& sourceNode : depSourceNodes) {
         const SdfPath translatedPath = 
             PcpTranslatePathFromNodeToRoot(sourceNode, path);
         if (not translatedPath.IsEmpty()) {
@@ -1238,7 +1239,8 @@ PcpCache::CanHaveOpinionForSite(
 
         // Iterate over all nodes.
         PcpNodeRange range = primIndex->GetNodeRange();
-        BOOST_FOREACH(const PcpNodeRef& node, range) {
+        for (auto nodeIter = range.first; nodeIter != range.second; ++nodeIter) {
+            const auto& node = *nodeIter;
             // Ignore nodes that don't provide specs.
             if (node.CanContributeSpecs()) {
                 // Check each layer stack that contributes specs only once.
@@ -1372,7 +1374,7 @@ _TranslatePathAndTargetPaths(
 
     SdfPathVector targetPaths;
     path.GetAllTargetPathsRecursively(&targetPaths);
-    BOOST_FOREACH(const SdfPath& targetPath, targetPaths) {
+    for (const auto& targetPath : targetPaths) {
         // Do allow translation via </> -> </> in target paths.
         const SdfPath translatedTargetPath =
             node.GetMapToParent().MapSourceToTarget(targetPath);
@@ -1685,7 +1687,7 @@ PcpCache::ComputeNamespaceEdits(
 
             // Get all sites in cache that depend on primPath in any of
             // the layer stacks.
-            BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
+            for (const auto& layerStack : layerStacks) {
                 PcpNodeRefVector depNodes;
                 depPaths = cache->_GetPathsUsingPcpSite(
                     layerStack, primPath, PcpDirect | PcpAncestral, &depNodes);
@@ -1700,7 +1702,7 @@ PcpCache::ComputeNamespaceEdits(
                 }
 
                 // Store the node for each dependent site.
-                BOOST_FOREACH(const PcpNodeRef& node, depNodes) {
+                for (const auto& node : depNodes) {
                     _CacheNodeHelper::InsertCacheNodePair(
                         cacheIndex, node, &nodes);
                 }
@@ -1714,7 +1716,7 @@ PcpCache::ComputeNamespaceEdits(
             PcpCache* cache = caches[cacheIndex];
 
             // Get all sites in cache that depend on any spec in primSites.
-            BOOST_FOREACH(const SdfSite& primSite, primSites) {
+            for (const auto& primSite : primSites) {
                 TF_VERIFY(primSite.path == primPath);
                 PcpNodeRefVector depNodes;
                 depPaths =
@@ -1723,7 +1725,7 @@ PcpCache::ComputeNamespaceEdits(
                                               not spooky, &depNodes);
 
                 // Store the node for each dependent site.
-                BOOST_FOREACH(const PcpNodeRef& node, depNodes) {
+                for (const auto& node : depNodes) {
                     _CacheNodeHelper::InsertCacheNodePair(
                         cacheIndex, node, &nodes);
                 }
@@ -1763,10 +1765,13 @@ PcpCache::ComputeNamespaceEdits(
                 // at this cache's layer stack. Make sure to skip ancestral
                 // nodes, since the code that handles direct inherits below
                 // needs to have the nodes where the inherits are introduced.
-                BOOST_FOREACH(const SdfPath& descendantSite, descendantSites) {
-                    BOOST_FOREACH(const PcpNodeRef& node,
-                                  _GetPrimIndex(descendantSite)->GetNodeRange(
-                                      PcpRangeTypeLocalInherit)) {
+                for (const auto& descendantSite : descendantSites) {
+                    auto range = _GetPrimIndex(descendantSite)->GetNodeRange(
+                                      PcpRangeTypeLocalInherit);
+                    for (auto nodeIter = range.first; nodeIter != range.second;
+                         ++nodeIter) 
+                    {
+                        const auto& node = *nodeIter;
                         if (node.GetLayerStack() == _layerStack and
                             not node.IsDueToAncestor()) {
                             // Found an inherit using a descendant.
@@ -1880,7 +1885,7 @@ PcpCache::ComputeNamespaceEdits(
     typedef NamespaceEdits::LayerStackSite LayerStackSite;
     typedef NamespaceEdits::CacheSite CacheSite;
     std::set<PcpLayerStackSite> sites;
-    BOOST_FOREACH(const CacheNodePair& cacheAndNode, nodes) {
+    for (const auto& cacheAndNode : nodes) {
         size_t cacheIndex   = cacheAndNode.first;
         PcpNodeRef node     = cacheAndNode.second;
         SdfPath oldNodePath  = curPath;
@@ -1979,7 +1984,7 @@ PcpCache::ComputeNamespaceEdits(
         // descendants.  We don't want to remove those but we may
         // want to remove their descendants.
         std::set<PcpLayerStackSite> doNotRemoveSites;
-        BOOST_FOREACH(const CacheNodePair& cacheAndNode, descendantNodes) {
+        for (const auto& cacheAndNode : descendantNodes) {
             const PcpNodeRef& node = cacheAndNode.second;
             doNotRemoveSites.insert(node.GetParentNode().GetSite());
         }
@@ -1992,7 +1997,7 @@ PcpCache::ComputeNamespaceEdits(
             // namespace edited site and what each site depends on.
             std::map<SdfPath, PcpNodeRef> descendantPathsAndNodes;
             PcpNodeRefVector sourceNodes;
-            BOOST_FOREACH(const SdfLayerRefPtr& layer, _layerStack->GetLayers()) {
+            for (const auto& layer : _layerStack->GetLayers()) {
                 SdfPathVector paths = 
                     cache->_GetPathsUsingSite(layer, curPath,
                                               UsingSiteAndDescendants,
@@ -2053,7 +2058,7 @@ PcpCache::ComputeNamespaceEdits(
 
     // Fix up all direct inherits to a descendant site.
     if (not descendantNodes.empty()) {
-        BOOST_FOREACH(const CacheNodePair& cacheAndNode, descendantNodes) {
+        for (const auto& cacheAndNode : descendantNodes) {
             size_t cacheIndex   = cacheAndNode.first;
             const PcpNodeRef& node = cacheAndNode.second;
             SdfPath oldNodePath  = node.GetPath();
@@ -2125,7 +2130,7 @@ PcpCache::GetInvalidAssetPaths() const
         const PcpPrimIndex& primIndex = it->second;
         if (primIndex.GetRootNode()) {
             PcpErrorVector errors = primIndex.GetLocalErrors();
-            BOOST_FOREACH(const PcpErrorBasePtr & e, errors) {
+            for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
                     dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)){
                     result[primPath].push_back(typedErr->resolvedAssetPath);
@@ -2294,7 +2299,7 @@ PcpCache::Reload(PcpChanges* changes)
         _layerStackCache->GetAllLayerStacks();
     TF_FOR_ALL(layerStack, allLayerStacks) {
         const PcpErrorVector errors = (*layerStack)->GetLocalErrors();
-        BOOST_FOREACH(const PcpErrorBasePtr& e, errors) {
+        for (const auto& e : errors) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
                 dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(e)) {
                 changes->DidMaybeFixSublayer(this,
@@ -2307,7 +2312,7 @@ PcpCache::Reload(PcpChanges* changes)
         const PcpPrimIndex& primIndex = it->second;
         if (primIndex.GetRootNode()) {
             const PcpErrorVector errors = primIndex.GetLocalErrors();
-            BOOST_FOREACH(const PcpErrorBasePtr& e, errors) {
+            for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
                     dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
                     changes->DidMaybeFixAsset(this,
@@ -2342,12 +2347,13 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     // Traverse every PrimIndex at or under primPath to find
     // InvalidAssetPath errors, and collect the unique layer stacks used.
     std::set<PcpLayerStackPtr> layerStacksAtOrUnderPrim;
-    BOOST_FOREACH(const _PrimIndexCache::value_type& entry,
-                  _primIndexCache.FindSubtreeRange(primPath)) {
+    auto range = _primIndexCache.FindSubtreeRange(primPath);
+    for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
+        const auto& entry = *entryIter;
         const PcpPrimIndex& primIndex = entry.second;
         if (primIndex.GetRootNode()) {
             PcpErrorVector errors = primIndex.GetLocalErrors();
-            BOOST_FOREACH(const PcpErrorBasePtr& e, errors) {
+            for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
                     dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
                 {
@@ -2585,7 +2591,7 @@ struct Pcp_ParallelIndexer
             TfTokenVector names;
             PcpTokenSet prohibitedNames;
             index->ComputePrimChildNames(&names, &prohibitedNames);
-            BOOST_FOREACH(const TfToken &name, names) {
+            for (const auto& name : names) {
                 // We only check the cache for the children if we got a cache
                 // hit for this index.  Pcp tends to invalidate entire subtrees
                 // at once.
@@ -2754,7 +2760,7 @@ PcpCache::_ComputePrimIndexesInParallel(
                     GetPrimIndexInputs().USD(_usd), allErrors, &parentCache,
                     mallocTag1, mallocTag2);
 
-    BOOST_FOREACH(const SdfPath &rootPath, roots) {
+    for (const auto& rootPath : roots) {
         // Obtain the parent index, if this is not the absolute root.  Note that
         // the call to ComputePrimIndex below is not concurrency safe.
         const PcpPrimIndex *parentIndex =

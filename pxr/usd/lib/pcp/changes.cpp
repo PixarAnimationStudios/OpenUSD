@@ -38,7 +38,6 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tracelite/trace.h"
-#include <boost/foreach.hpp>
 
 static
 void
@@ -392,7 +391,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         typedef std::vector<CacheLayerStacks> CacheLayerStacksVector;
 
         CacheLayerStacksVector cacheLayerStacks;
-        BOOST_FOREACH(PcpCache* cache, caches) {
+        for (auto cache : caches) {
             PcpLayerStackPtrVector stacks =
                 cache->FindAllLayerStacksUsingLayer(layer);
             if (not stacks.empty()) {
@@ -598,7 +597,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     pathsWithSignificantChanges.insert(path);
                 }
                 else {
-                    BOOST_FOREACH(const CacheLayerStacks& c, cacheLayerStacks) {
+                    for (const auto& c : cacheLayerStacks) {
                         PcpCache* cache = c.first;
                         if (Pcp_DecoratorRequiresPrimIndexChange(
                                 cache->GetPayloadDecorator(), 
@@ -682,8 +681,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // Note that in the below code, the order of the if statements does
         // matter, as a spec could be added, then removed (for example) within 
         // the same change.
-        BOOST_FOREACH(const SpecChangesTypes::value_type& value,
-                      pathsWithSpecChangesTypes) {
+        for (const auto& value : pathsWithSpecChangesTypes) {
             const SdfPath& path = value.first;
             if (path.IsPrimOrPrimVariantSelectionPath()) {
                 if (value.second & Pcp_EntryChangeSpecsNonInert) {
@@ -721,11 +719,11 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // (layer,path).  If there aren't any and we want to fallback to our
         // parent then find all paths in the cache that use the parent.  In
         // either case mark the found paths as having a significant change.
-        BOOST_FOREACH(const SdfPath& path, pathsWithSignificantChanges) {
+        for (const auto& path : pathsWithSignificantChanges) {
             // Compute the closest ancestor that must have dependencies.
             SdfPath fallbackPath = findAncestor(path);
 
-            BOOST_FOREACH(PcpCache* cache, caches) {
+            for (auto cache : caches) {
                 _DidChangeDependents(
                     _ChangeTypeSignificant, cache, layer,
                     path, fallbackPath, debugSummary);
@@ -735,8 +733,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // For every path we've found that has a significant change in
         // a specific cache, use the same logic as above to mark those paths
         // as having a significant change, but only in the associated cache.
-        BOOST_FOREACH(const CacheAndLayerPathPair& p,
-                      pathsWithSignificantChangesByCache) {
+        for (const auto& p : pathsWithSignificantChangesByCache) {
             // Compute the closest ancestor that must have dependencies.
             SdfPath fallbackPath = findAncestor(p.second);
 
@@ -789,7 +786,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // there aren't any then find all paths in the cache that use the
         // parent.  In either case mark the found paths as needing their
         // property spec stacks blown.
-        BOOST_FOREACH(const PathChangeValue& value, pathsWithSpecChanges) {
+        for (const auto& value : pathsWithSpecChanges) {
             const SdfPath& path        = value.first;
             PathChangeBitmask changes = value.second;
 
@@ -810,7 +807,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
             // Compute the closest ancestor that must have dependencies.
             SdfPath fallbackPath = findAncestor(path);
 
-            BOOST_FOREACH(PcpCache* cache, caches) {
+            for (auto cache : caches) {
                 _DidChangeDependents(
                     changeType, cache, layer,
                     path, fallbackPath, debugSummary);
@@ -825,7 +822,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
             SdfPathVector depPaths;
             PcpNodeRefVector depNodes;
 
-            BOOST_FOREACH(PcpCache* cache, caches) {
+            for (auto cache : caches) {
                 PcpCacheChanges::PathEditMap& renameChanges =
                     _GetRenameChanges(cache);
 
@@ -839,7 +836,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     // act as if we're deleting the object at the new path.
                     if (not newPath.IsEmpty()) {
                         depPaths = cache->GetPathsUsingSite(layer, newPath);
-                        BOOST_FOREACH(const SdfPath& depNewPath, depPaths) {
+                        for (const auto& depNewPath : depPaths) {
                             renameChanges[depNewPath] = SdfPath();
                         }
                     }
@@ -1055,7 +1052,7 @@ PcpChanges::DidMaybeFixAsset(
         SdfPathVector depPaths =
             cache->GetPathsUsingSite(layerStack, site.path, 
                                      PcpDirect | PcpAncestral);
-        BOOST_FOREACH(const SdfPath& depPath, depPaths) {
+        for (const auto& depPath : depPaths) {
             PCP_APPEND_DEBUG("    <%s>\n", depPath.GetText());
             DidChangeSignificantly(cache, depPath);
         }
@@ -1329,7 +1326,7 @@ PcpChanges::_OptimizePathChanges(
 
     // sdOnly now has the path changes that Sd told us about but
     // DidChangePaths() did not.  We must assume the worst.
-    BOOST_FOREACH(const PathPair& change, sdOnly) {
+    for (const auto& change : sdOnly) {
         const SdfPath& oldPath = change.first;
         const SdfPath& newPath = change.second;
 
@@ -1434,7 +1431,7 @@ PcpChanges::_DidChangeDependents(
     if (cache->_usd) {
         const PcpLayerStackPtrVector& layerStacks =
             cache->FindAllLayerStacksUsingLayer(layer);
-        BOOST_FOREACH(const PcpLayerStackPtr &layerStack, layerStacks) {
+        for (const auto& layerStack : layerStacks) {
             if (layerStack == cache->GetLayerStack()) {
                 depPaths.push_back(path.StripAllVariantSelections());
             }
@@ -1470,7 +1467,7 @@ PcpChanges::_DidChangeDependents(
             layer->GetIdentifier().c_str(), path.GetText(),
             TfStringReplace(pathDebugSummary, "\n", "\n  ").c_str());
 
-        BOOST_FOREACH(const SdfPath& depPath, depPaths) {
+        for (const auto& depPath : depPaths) {
             changeFuncs.RunFunctionsOnDependency(cache, depPath, layer, path);
         }
     }
@@ -1507,7 +1504,7 @@ PcpChanges::_DidChangeDependents(
                 layer->GetIdentifier().c_str(), path.GetText(),
                 TfStringReplace(pathDebugSummary, "\n", "\n  ").c_str());
 
-            BOOST_FOREACH(const SdfPath& depPath, spookyDepPaths) {
+            for (const auto& depPath : spookyDepPaths) {
                 changeFuncs.RunFunctionsOnDependency(cache, depPath,
                                                      layer, path);
             }
@@ -1645,7 +1642,7 @@ PcpChanges::_DidChangeSublayer(
     // stack that may need to be adjusted due to the addition or removal of
     // a layer from that stack.
     const SdfPath& rootPath = SdfPath::AbsoluteRootPath();
-    BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
+    for (const auto& layerStack : layerStacks) {
         static bool recursive = true;
         SdfPathVector paths =
             cache->GetPathsUsingSite(layerStack, rootPath, 
@@ -1676,7 +1673,7 @@ PcpChanges::_DidChangeSublayer(
                 layerStack->GetIdentifier().rootLayer->
                      GetIdentifier().c_str());
 
-            BOOST_FOREACH(const SdfPath& path, paths) {
+            for (const auto& path : paths) {
                 PCP_APPEND_DEBUG("    <%s>\n", path.GetText());
                 if (*significant) {
                     DidChangeSignificantly(cache, path);
@@ -1788,11 +1785,10 @@ PcpChanges::_DidChangeLayerStackRelocations(
     }
 
     // Resync affected prims.
-    BOOST_FOREACH(const SdfPath& path,
-                  changes.pathsAffectedByRelocationChanges) {
+    for (const auto& path : changes.pathsAffectedByRelocationChanges) {
         PCP_APPEND_DEBUG("  Relocation change affected path <%s>\n",
                          path.GetText());
-        BOOST_FOREACH(PcpCache* cache, caches) {
+        for (auto cache : caches) {
             // Find paths to dependent caches.
             SdfPathSet depPathSet;
 
@@ -1828,7 +1824,7 @@ PcpChanges::_DidChangeLayerStackRelocations(
                     /* spooky = */ true);
             depPathSet.insert(depPathsSpooky.begin(), depPathsSpooky.end());
 
-            BOOST_FOREACH(const SdfPath& depPath, depPathSet) {
+            for (const auto& depPath : depPathSet) {
                 DidChangeSignificantly(cache, depPath);
             }
         }
