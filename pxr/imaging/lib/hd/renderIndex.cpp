@@ -61,10 +61,7 @@ HdRenderIndex::HdRenderIndex()
     : _nextPrimId(1)
 {
     // Creating the fallback shader
-    GlfGLSLFXSharedPtr glslfx = GlfGLSLFXSharedPtr(new GlfGLSLFX(
-        HdPackageFallbackSurfaceShader()));
-
-    _surfaceFallback = HdSurfaceShaderSharedPtr(new HdGLSLFXShader(glslfx));
+    ReloadFallbackShader();
 
     // Register well-known collection types (to be deprecated)
     // XXX: for compatibility and smooth transition,
@@ -349,6 +346,16 @@ HdRenderIndex::RemoveShader(SdfPath const& id)
     _tracker.ShaderRemoved(id);
     _shaderMap.erase(it);
 }
+
+void
+HdRenderIndex::ReloadFallbackShader()
+{
+    GlfGLSLFXSharedPtr glslfx = GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                                             HdPackageFallbackSurfaceShader()));
+
+    _surfaceFallback = HdSurfaceShaderSharedPtr(new HdGLSLFXShader(glslfx));
+}
+
 
 // -------------------------------------------------------------------------- //
 /// \name Task Support

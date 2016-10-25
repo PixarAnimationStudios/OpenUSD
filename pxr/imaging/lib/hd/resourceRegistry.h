@@ -230,6 +230,8 @@ public:
     HdPersistentBufferSharedPtr RegisterPersistentBuffer(
         TfToken const &role, size_t dataSize, void *data);
 
+    void InvalidateGeometricShaderRegistry();
+
     /// Remove any entries associated with expired dispatch buffers.
     void GarbageCollectDispatchBuffers();
 

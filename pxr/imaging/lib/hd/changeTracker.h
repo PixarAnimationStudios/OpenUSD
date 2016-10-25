@@ -126,7 +126,12 @@ public:
     /// Mark the primvar for the rprim with \p id as being dirty.
     void MarkPrimVarDirty(SdfPath const& id, TfToken const& name);
 
-    /// Clear Varying bit of all prims.
+    /// Flag all the Rprim with the given \p id as being dirty. Multiple calls
+    /// with different dirty bits accumulate.
+    /// Doesn't touch varying state.
+    void MarkAllRprimsDirty(DirtyBits bits);
+
+    // Clear Varying bit of all prims.
     ///
     /// The idea is that from frame to frame (update iteration), the set of
     /// dirty rprims and their dirty bits do not change; that is, the same
@@ -274,6 +279,9 @@ public:
 
     /// Set the dirty flags to \p newBits.
     void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
+
+    /// Sets all shaders to the given dirty \p bits
+    void MarkAllShadersDirty(DirtyBits bits);
 
     // ---------------------------------------------------------------------- //
     /// @}
