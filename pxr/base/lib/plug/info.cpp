@@ -89,7 +89,7 @@ _MergePaths(
 
     // Join dirname(ownerPathname) and subpathname.
     const std::string result =
-        TfNormPath(TfStringCatPaths(TfGetPathName(ownerPathname), subpathname));
+        TfStringCatPaths(TfGetPathName(ownerPathname), subpathname);
 
     // Retain trailing slash if request and if any.
     return (keepTrailingSlash and *subpathname.rbegin() == '/')
@@ -115,7 +115,7 @@ _AppendToRootPath(
     }
 
     // Join rootPathname and subpathname.
-    return TfNormPath(TfStringCatPaths(rootPathname, subpathname));
+    return TfStringCatPaths(rootPathname, subpathname);
 }
 
 void
@@ -322,26 +322,24 @@ _TraverseDirectory(
     const std::string& dirname,
     const std::shared_ptr<std::regex> dirRegex)
 {
-    const std::vector<std::string> dirContents = TfListDir(dirname);
+    std::vector<std::string> dirnames, filenames;
+    TfReadDir(dirname, &dirnames, &filenames, &filenames);
 
     // Traverse all files in the directory to see if we have a
     // match first so that we can terminate the recursive walk
     // if we find one.
-    for (const auto& path : dirContents) {
-        const bool isFilePath = (*path.rbegin() != '/');
-        if (isFilePath and std::regex_match(path, *dirRegex)) {
-            context->taskArena.Run(boost::bind(_ReadPlugInfo, 
-                                               context, path));
+    for (const auto& f : filenames) {
+        const std::string path = TfStringCatPaths(dirname, f);
+        if (std::regex_match(path, *dirRegex)) {
+            context->taskArena.Run(boost::bind(_ReadPlugInfo, context, path));
             return;
         }
     }
 
-    for (const auto& path : dirContents) {
-        const bool isDirPath = (*path.rbegin() == '/');
-        if (isDirPath) {
-            context->taskArena.Run(boost::bind(_TraverseDirectory, 
-                                               context, path, dirRegex));
-        }
+    for (const auto& d : dirnames) {
+        const std::string path = TfStringCatPaths(dirname, d);
+        context->taskArena.Run(
+            boost::bind(_TraverseDirectory, context, path, dirRegex));
     }
 }
 
@@ -703,9 +701,7 @@ Plug_ReadPlugInfo(
         // don't end in "/" to be handled as directories.  Includes in
         // plugInfo files must still explicitly append '/' to be handled
         // as directories.
-        if (not pathname.empty() and
-                *pathname.rbegin() != '/' and
-                TfIsDir(pathname)) {
+        if (not pathname.empty() and *pathname.rbegin() != '/') {
             context.taskArena.Run(
                 boost::bind(_ReadPlugInfoWithWildcards, &context,
                             pathname + "/"));

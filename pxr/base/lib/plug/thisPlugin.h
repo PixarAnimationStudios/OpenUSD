@@ -21,29 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file package.cpp
+#ifndef PLUG_THISPLUGIN_H
+#define PLUG_THISPLUGIN_H
 
-#include "pxr/imaging/glf/package.h"
+#include "pxr/base/plug/registry.h"
+#include <boost/preprocessor/stringize.hpp>
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/thisPlugin.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/stringUtils.h"
+/// Returns a plugin registered with the name of the current library (uses the
+/// define for MFB_PACKAGE_NAME). Note that plugin registration occurs as a
+/// side effect of using this macro, at the point in time the code at the
+/// macro site is invoked.
+#define PLUG_THIS_PLUGIN \
+    PlugRegistry::GetInstance().GetPluginWithName(\
+        BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME))
 
-static TfToken
-_GetShaderPath(char const * shader)
-{
-    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
-    const std::string path =
-        PlugFindPluginResource(plugin, TfStringCatPaths("shaders", shader));
-    TF_VERIFY(not path.empty(), "Could not find shader: %s\n", shader);
-
-    return TfToken(path);
-}
-
-TfToken
-GlfPackageSimpleLightingShader()
-{
-    return _GetShaderPath("simpleLightingShader.glslfx");
-}
+#endif // PLUG_THISPLUGIN_H

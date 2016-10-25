@@ -178,15 +178,9 @@ PlugRegistry::GetAllPlugins() const
 }
 
 PlugPluginPtr
-PlugRegistry::GetPluginWithAddress(void* address) const
+PlugRegistry::GetPluginWithName(const string& name) const
 {
-    return PlugPlugin::_GetPluginWithAddress(address);
-}
-
-PlugPluginPtr
-PlugRegistry::GetPluginWithPath(const std::string& path) const
-{
-    return PlugPlugin::_GetPluginWithPath(path);
+    return PlugPlugin::_GetPluginWithName(name);
 }
 
 JsValue
