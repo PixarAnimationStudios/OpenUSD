@@ -36,7 +36,7 @@ TF_INSTANTIATE_SINGLETON(HdRenderContextCaps);
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHADER_STORAGE_BUFFER, true,
                       "Use GL shader storage buffer (OpenGL 4.3)");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_BINDLESS_BUFFER, true,
+TF_DEFINE_ENV_SETTING(HD_ENABLE_BINDLESS_BUFFER, false,
                       "Use GL bindless buffer extention");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extention");
