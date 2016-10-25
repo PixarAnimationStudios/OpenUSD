@@ -25,14 +25,10 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 
-#include <boost/foreach.hpp>
-
 #include <algorithm>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
-
-
 
 TF_INSTANTIATE_SINGLETON(TfRegTest);
 
@@ -101,8 +97,9 @@ TfRegTest::_PrintTestNames()
 
 
     sort(names.begin(), names.end());
-    BOOST_FOREACH(string const &name, names)
+    for (const auto& name : names) {
         cerr << "\n    " << name;
+    }
 
     cerr << endl;
 }

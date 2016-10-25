@@ -36,7 +36,6 @@
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tf/typeNotice.h"
 
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
