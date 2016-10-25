@@ -502,7 +502,7 @@ private:
     inline void _WriteToBuffer(void const *bytes, int64_t nBytes) {
         // Fill the buffer, update its size and update the write head. Client
         // guarantees no overrun.
-        size_t writeStart = (_filePos - _bufferPos);
+        int64_t writeStart = (_filePos - _bufferPos);
         if (writeStart + nBytes > _buffer.size) {
             _buffer.size = writeStart + nBytes;
         }
