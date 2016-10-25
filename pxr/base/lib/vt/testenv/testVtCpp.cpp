@@ -50,6 +50,9 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/fileUtils.h"
+
+#include "pxr/base/arch/fileSystem.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -488,7 +491,7 @@ static void testDictionaryOverRecursive() {
 
 static void testDictionaryPyFormatting() {
     VtDictionary vt0;
-    vt0["key"] = "value";
+    vt0["key"] = {"value"};
     vt0["list"] = VtValue(vector<VtValue>(1, VtValue("single item")));
 
     string stuff = VtDictionaryPrettyPrint(vt0);
@@ -511,11 +514,11 @@ static void testDictionaryPyFormatting() {
     if (vt0 != vt2)
         die("VtDictionaryFromFile - written and read dictionaries differ!");
 
-    unlink("link-to-dictionary");
-    symlink(fileName, "link-to-dictionary");
+    ArchUnlinkFile("link-to-dictionary");
+    TfSymlink(fileName, "link-to-dictionary");
     VtDictionary vt3 = VtDictionaryFromFile("link-to-dictionary");
     if (vt3 != vt2)
-        die("VtDictionaryFromFile - read from symlink failed!");
+        die("VtDictionaryFromFile - read from TfSymlink failed!");
 
     {
         TfErrorMark m;
@@ -949,7 +952,7 @@ static void testValue() {
     // Streaming...
     VtDictionary d;
     d["foo"] = 1.234;
-    d["bar"] = "baz";
+    d["bar"] = {"baz"};
 
     vector<VtValue> vals;
     vals.push_back(VtValue(1.234));
@@ -986,7 +989,7 @@ static void testValue() {
     // Assignment and equality with string literals.
     {
         VtValue val;
-        val = "hello";
+        val = {"hello"};
         TF_AXIOM(val.IsHolding<string>());
         TF_AXIOM(val.Get<string>() == "hello");
         TF_AXIOM(val == "hello");
@@ -1053,8 +1056,8 @@ static void testValue() {
         VtValue a, b;
         VtDictionary d1, d2;
 
-        d1["foo"] = "bar";
-        d2["bar"] = "foo";
+        d1["foo"] = {"bar"};
+        d2["bar"] = {"foo"};
 
         a = d1;
         b = d2;

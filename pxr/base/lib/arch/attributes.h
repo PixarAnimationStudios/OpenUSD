@@ -129,6 +129,8 @@
     __attribute__((constructor(_priority)))                                 \
     static void _name(__VA_ARGS__)
 
+#   define ARCH_CONSTRUCTOR(_priority, tag, name) __attribute__((constructor(_priority)))
+
 /// Macro to indicate a function should be executed by the dynamic loader when
 /// the dynamic object (library or program) is unloaded.
 ///

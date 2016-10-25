@@ -250,53 +250,51 @@ pxr_build_test(testTfCast
         testenv/testTfCast.cpp
 )
 
-if (UNIX)
-    pxr_build_test(testTf
-        LIBRARIES
-            tf
-        CPPFILES
-            testenv/main.cpp
-            testenv/atomicOfstreamWrapper.cpp
-            testenv/bitUtils.cpp
-            testenv/debug.cpp
-            testenv/denseHashMap.cpp
-            testenv/diagnosticNotices.cpp
-            testenv/dl.cpp
-            testenv/enum.cpp
-            testenv/error.cpp
-            testenv/envSetting.cpp
-            testenv/fileUtils.cpp
-            testenv/getenv.cpp
-            testenv/hash.cpp
-            testenv/iterator.cpp
-            testenv/mallocTag.cpp
-            testenv/notice.cpp
-            testenv/pathUtils.cpp
-            testenv/patternMatcher.cpp
-            testenv/pointerAndBits.cpp
-            testenv/preprocessorUtils.cpp
-            testenv/probe.cpp
-            testenv/refPtr.cpp
-            testenv/registryManager.cpp
-            testenv/registryManagerUnload.cpp
-            testenv/scoped.cpp
-            testenv/scopeDescription.cpp
-            testenv/setenv.cpp
-            testenv/stacked.cpp
-            testenv/staticData.cpp
-            testenv/stl.cpp
-            testenv/stopwatch.cpp
-            testenv/stringUtils.cpp
-            testenv/staticTokens.cpp
-            testenv/templateString.cpp
-            testenv/timeStamp.cpp
-            testenv/token.cpp
-            testenv/type.cpp
-            testenv/typeMultipleInheritance.cpp
-            testenv/typeInfoMap.cpp
-            testenv/weakPtr.cpp
-    )
-endif()
+pxr_build_test(testTf
+    LIBRARIES
+        tf
+    CPPFILES
+        testenv/main.cpp
+        testenv/atomicOfstreamWrapper.cpp
+        testenv/bitUtils.cpp
+        testenv/debug.cpp
+        testenv/denseHashMap.cpp
+        testenv/diagnosticNotices.cpp
+        testenv/dl.cpp
+        testenv/enum.cpp
+        testenv/error.cpp
+        testenv/envSetting.cpp
+        testenv/fileUtils.cpp
+        testenv/getenv.cpp
+        testenv/hash.cpp
+        testenv/iterator.cpp
+        testenv/mallocTag.cpp
+        testenv/notice.cpp
+        testenv/pathUtils.cpp
+        testenv/patternMatcher.cpp
+        testenv/pointerAndBits.cpp
+        testenv/preprocessorUtils.cpp
+        testenv/probe.cpp
+        testenv/refPtr.cpp
+        testenv/registryManager.cpp
+        testenv/registryManagerUnload.cpp
+        testenv/scoped.cpp
+        testenv/scopeDescription.cpp
+        testenv/setenv.cpp
+        testenv/stacked.cpp
+        testenv/staticData.cpp
+        testenv/stl.cpp
+        testenv/stopwatch.cpp
+        testenv/stringUtils.cpp
+        testenv/staticTokens.cpp
+        testenv/templateString.cpp
+        testenv/timeStamp.cpp
+        testenv/token.cpp
+        testenv/type.cpp
+        testenv/typeMultipleInheritance.cpp
+        testenv/typeInfoMap.cpp
+        testenv/weakPtr.cpp
+)
 
 pxr_test_scripts(
     testenv/testTfCrashHandler.py

@@ -57,7 +57,7 @@ Test_TfRegistryManagerUnload()
 
     // Make sure that this .so exists
     printf("Checking test shared lib: %s\n", libraryPath.c_str());
-    TF_AXIOM(!access(libraryPath.c_str(), R_OK));
+    TF_AXIOM(!ArchFileAccess(libraryPath.c_str(), R_OK));
 
     // Load and unload a shared library that has a registration function
     // before anyone subscribes to that type.

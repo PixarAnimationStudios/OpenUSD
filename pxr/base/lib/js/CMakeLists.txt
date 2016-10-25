@@ -25,15 +25,14 @@ pxr_build_test(testJsIO
         testenv/testJsIO.cpp
 )
 
-if (UNIX)
-	pxr_build_test(testJsConverter
-		LIBRARIES
-			tf
-			js
-		CPPFILES
-			testenv/testJsConverter.cpp
-	)
-endif()
+pxr_build_test(testJsConverter
+	LIBRARIES
+		tf
+		js
+	CPPFILES
+		testenv/testJsConverter.cpp
+)
+
 pxr_build_test(testJsUtils
     LIBRARIES
         tf
@@ -94,12 +93,11 @@ pxr_register_test(testJsIO_Errors_MismatchedBraces
     DIFF_COMPARE
         testJsIO_Errors-Run2-stderr.txt
 )
-if (UNIX)
-	pxr_register_test(testJsConverter
-		COMMAND
-			"${CMAKE_INSTALL_PREFIX}/tests/testJsConverter"
-	)
-endif()
+
+pxr_register_test(testJsConverter
+	COMMAND
+		"${CMAKE_INSTALL_PREFIX}/tests/testJsConverter"
+)
 
 pxr_register_test(testJsUtils
     COMMAND

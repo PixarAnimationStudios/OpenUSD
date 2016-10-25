@@ -165,6 +165,12 @@ ArchOpenFile(char const* fileName, char const* mode);
 #   define ArchFileIsaTTY(stream)       isatty(stream)
 #endif
 
+#if defined(ARCH_OS_WINDOWS)
+    ARCH_API int ArchRmDir(const char* path);
+#else
+#   define ArchRmDir(path)   rmdir(path)
+#endif
+
 /// Compares two \c stat structures.
 /// \ingroup group_arch_SystemFunctions
 ///

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/export.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <assert.h>
@@ -40,7 +41,7 @@ using std::string;
 
 // Public tokens.
 // Normally only in .h file:
-TF_DECLARE_PUBLIC_TOKENS( TfTestPublicTokens, TFTEST_TOKENS );
+TF_DECLARE_PUBLIC_TOKENS( TfTestPublicTokens, ARCH_EXPORT, TFTEST_TOKENS );
 // Normally only in .cpp file:
 TF_DEFINE_PUBLIC_TOKENS( TfTestPublicTokens, TFTEST_TOKENS );
 

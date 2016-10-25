@@ -86,6 +86,7 @@ TestTF_PP_EAT_PARENS()
     #define _STR BOOST_PP_STRINGIZE
     #define _EAT TF_PP_EAT_PARENS
 
+#if !defined(ARCH_OS_WINDOWS)
     TF_AXIOM(not strcmp(_STR(), ""));
     TF_AXIOM(not strcmp(_STR(_EAT()), ""));
     TF_AXIOM(not strcmp(_STR(_EAT(())), ""));
@@ -112,7 +113,7 @@ TestTF_PP_EAT_PARENS()
     //TF_AXIOM(not strcmp(_STR(_EAT((x)(x))), "(x)(x)"));
     //TF_AXIOM(not strcmp(_STR(_EAT((x)f(x))), "(x)f(x)"));
     //TF_AXIOM(not strcmp(_STR(_EAT((x)(x)(x))), "(x)(x)(x)"));
-
+#endif // #if !defined(ARCH_OS_WINDOWS)
     #undef _STR
     #undef _EAT
 

@@ -49,7 +49,7 @@ def _findExe(name):
 # this will cause the program to abort with a suitable error message.
 def _findEditorTools(usdFileName, readOnly):
     # Ensure the usdcat executable has been installed
-    usdcatCmd = find_executable("usdcat")
+    usdcatCmd = _findExe("usdcat")
     if not usdcatCmd:
         sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH.")
 

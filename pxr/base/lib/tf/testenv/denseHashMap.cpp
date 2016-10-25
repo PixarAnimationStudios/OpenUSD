@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <ciso646>
 #include "pxr/base/tf/denseHashMap.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/regTest.h"

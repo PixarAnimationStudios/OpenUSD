@@ -25,12 +25,16 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/systemInfo.h"
 
 #include <string>
 #include <vector>
 #include <errno.h>
+
+#if !defined(ARCH_OS_WINDOWS)
 #include <unistd.h>
+#endif
 
 using namespace std;
 
@@ -109,15 +113,16 @@ TestTfReadLink()
 {
     TF_AXIOM(TfReadLink("") == "");
 
-    unlink("test-link");
-    if (symlink("/etc/passwd", "test-link") == -1) {
-        TF_RUNTIME_ERROR("failed to create test link: %s", strerror(errno));
+    ArchUnlinkFile("test-link");
+    if (TfSymlink("/etc/passwd", "test-link")) {
+        TF_RUNTIME_ERROR("failed to create test link: %s",
+                            ArchStrerror(errno).c_str());
         return false;
     }
 
     TF_AXIOM(TfReadLink("test-link") == "/etc/passwd");
     TF_AXIOM(TfReadLink("/usr") == "");
-    unlink("test-link");
+    ArchUnlinkFile("test-link");
 
     return true;
 }
