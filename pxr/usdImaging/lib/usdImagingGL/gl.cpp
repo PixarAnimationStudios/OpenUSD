@@ -35,8 +35,6 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 
-#include <boost/foreach.hpp>
-
 namespace {
 
 static
