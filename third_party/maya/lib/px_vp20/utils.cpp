@@ -22,8 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "px_vp20/utils.h"
-
-#include <GL/gl.h>
+#include "pxr/imaging/garch/gl.h"
 
 bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
 {

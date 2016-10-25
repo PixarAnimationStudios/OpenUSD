@@ -3,6 +3,7 @@ set(PXR_PACKAGE pxrUsdMayaGL)
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         arch
+        garch
         gf
         tf
         plug
