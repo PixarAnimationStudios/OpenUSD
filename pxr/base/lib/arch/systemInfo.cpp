@@ -96,55 +96,6 @@ ArchGetCwd()
 }
 
 string
-ArchGetHomeDirectory(const std::string &login)
-{
-    if (login.empty()) {
-        const char* home = getenv("HOME");
-        if (home && home[0] != '\0')
-            return home;
-    }
-
-
-    struct passwd pwd;
-    struct passwd* pwdPtr = &pwd;
-    struct passwd* tmpPtr;
-    char buf[2048];
-
-    // Both getpw* functions return zero on success, or an error number if an
-    // error occurs. If no entry is found for the uid/login, zero is returned
-    // and tmpPtr is set to NULL.
-    int result = login.empty()
-        ? getpwuid_r(getuid(), pwdPtr, buf, sizeof(buf), &tmpPtr)
-        : getpwnam_r(login.c_str(), pwdPtr, buf, sizeof(buf), &tmpPtr);
-    if (result == 0 and tmpPtr)
-        return pwd.pw_dir;
-
-    return "";
-}
-
-string
-ArchGetUserName()
-{
-    const char* envVarNames[] = {"LOGNAME", "USER", "LNAME", "USERNAME"};
-    for (size_t i = 0; i < sizeof(envVarNames) / sizeof(*envVarNames); ++i) {
-        if (const char* user = getenv(envVarNames[i])) {
-            if (user && user[0] != '\0')
-                return user;
-        }
-    }
-
-    // Convert the effective user ID into a string. If we can't do it, 
-    // fall back to user name.
-    char buffer[2048];
-    passwd pwd, *resultPwd;
-
-    if (getpwuid_r(geteuid(), &pwd, buffer, sizeof(buffer), &resultPwd) == 0)
-        return pwd.pw_name;
-
-    return "";
-}
-
-string
 ArchGetExecutablePath()
 {
 #if defined(ARCH_OS_LINUX) 

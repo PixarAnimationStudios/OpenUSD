@@ -33,14 +33,7 @@ using std::string;
 //most of these tests are just for code coverage
 int main(int argc, char const* argv[])
 {
-    assert(! ArchGetUserName().empty());
-    assert(ArchGetHomeDirectory("~nosuchuser").empty());
-    assert(ArchGetHomeDirectory().find(ArchGetUserName(), 0) != string::npos);
-    assert(ArchGetHomeDirectory(
-                ArchGetUserName()).find(ArchGetUserName(), 0) != string::npos);
-
     assert(ArchGetExecutablePath().find("testArch", 0) != string::npos);
-
     return 0;
 }
 
