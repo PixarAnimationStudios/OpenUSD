@@ -26,6 +26,7 @@
 #include "pxr/usd/sdf/valueTypePrivate.h"
 #include "pxr/usd/sdf/types.h" // For SdfDimensionlessUnitDefault
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/type.h"
 #include <boost/functional/hash.hpp>
 
