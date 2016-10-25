@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_CONE_ADAPTER_H
 #define USDIMAGING_CONE_ADAPTER_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
+
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
 class UsdGeomCone;
@@ -79,9 +81,11 @@ public:
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
+    USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 
                                 UsdTimeCode time);
     
+    USDIMAGING_API
     static VtValue GetMeshTopology();
 };
 

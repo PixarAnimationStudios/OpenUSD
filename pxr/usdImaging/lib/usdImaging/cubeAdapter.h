@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_CUBE_ADAPTER_H
 #define USDIMAGING_CUBE_ADAPTER_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
+
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
@@ -80,11 +82,14 @@ public:
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
+    USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 
                                  UsdTimeCode time);
     
+    USDIMAGING_API
     static VtValue GetMeshTopology();
 
+    USDIMAGING_API
     static GfMatrix4d GetMeshTransform(UsdPrim const& prim, 
                                        UsdTimeCode time);
 };

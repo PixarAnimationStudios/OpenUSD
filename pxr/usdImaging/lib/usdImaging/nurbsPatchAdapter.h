@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_NURBS_PATCH_ADAPTER_H
 #define USDIMAGING_NURBS_PATCH_ADAPTER_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
+
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
@@ -78,9 +80,11 @@ public:
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
+    USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 
                                  UsdTimeCode time);
 
+    USDIMAGING_API
     static VtValue GetMeshTopology(UsdPrim const& prim, 
                                  UsdTimeCode time);
 };

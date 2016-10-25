@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_GPRIM_ADAPTER_H
 #define USDIMAGING_GPRIM_ADAPTER_H
 
+#include "pxr/usdImaging/usdImaging/api.h"
+
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -92,6 +94,7 @@ public:
 
     /// Returns the color and opacity for a given prim, taking into account
     /// surface shader colors and explicitly authored color on the prim.
+    USDIMAGING_API
     static VtValue GetColorAndOpacity(UsdPrim const& prim, 
                         UsdImagingValueCache::PrimvarInfo* primvarInfo,
                         UsdTimeCode time);
