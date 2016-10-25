@@ -41,6 +41,7 @@
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/collectionAPI.h"
 
 #include "pxr/usd/usdShade/pShaderUtils.h"
 #include "pxr/usd/usdShade/look.h"
@@ -326,19 +327,55 @@ _BuildScopedCoordinateSystems(
     return foundCoordSys;
 }
 
+static bool
+_BuildCollections(
+        const UsdPrim& prim,
+        FnKat::GroupBuilder& collectionsBuilder)
+{
+    std::vector<UsdGeomCollectionAPI> collections = 
+        UsdGeomCollectionAPI::GetCollections(prim);
+
+    std::string prefix = prim.GetPath().GetString();
+    int prefixLength = prefix.length();
+    
+    SdfPathVector targets;
+    for (int iCollection = 0; iCollection < collections.size(); ++iCollection)
+    {
+        FnKat::StringBuilder collectionBuilder;
+        UsdGeomCollectionAPI &collection = collections[iCollection];
+        TfToken name = collection.GetCollectionName();
+        collection.GetTargets(&targets);
+        for (int iTarget = 0; iTarget < targets.size(); ++iTarget)
+        {
+            std::string relativePath = 
+                targets[iTarget].GetString().substr(prefixLength);
+
+            collectionBuilder.push_back(relativePath);
+        }
+
+        collectionsBuilder.set(name.GetString() + ".baked",
+            collectionBuilder.build());
+    }
+
+    return (collections.size() > 0);
+}
+
+
 static void
 _AddExtraAttributesOrNamespaces(
         const UsdPrim& prim,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs)
 {
-    const std::string& rootLocation = data.GetUsdInArgs()->GetRootLocationPath();
+    const std::string& rootLocation = 
+        data.GetUsdInArgs()->GetRootLocationPath();
     const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
 
     const PxrUsdKatanaUsdInArgs::StringListMap& extraAttributesOrNamespaces =
         data.GetUsdInArgs()->GetExtraAttributesOrNamespaces();
 
-    PxrUsdKatanaUsdInArgs::StringListMap::const_iterator I = extraAttributesOrNamespaces.begin();
+    PxrUsdKatanaUsdInArgs::StringListMap::const_iterator I = 
+        extraAttributesOrNamespaces.begin();
     for (; I != extraAttributesOrNamespaces.end(); ++I)
     {
         const std::string& name = (*I).first;
@@ -676,6 +713,17 @@ PxrUsdKatanaReadPrim(
     {
         attrs.set("relativeScopedCoordinateSystems", coordSysBuilder.build());
     }
+
+    //
+    // Set the 'collections' attribute if any found
+    //
+
+    FnKat::GroupBuilder collectionsBuilder;
+    if (_BuildCollections(prim, collectionsBuilder))
+    {
+        attrs.set("collections", collectionsBuilder.build());
+    }
+
 
     //
     // Set the 'customProperties' attribute (if enabled by env variable).
