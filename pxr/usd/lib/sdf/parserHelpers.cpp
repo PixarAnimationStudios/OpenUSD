@@ -52,7 +52,6 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/mpl/for_each.hpp>
 
 #include <utility>
@@ -380,8 +379,7 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     //      appropriate C++ type (which mostly involves moving the
     //      MakeScalarValueImpl functions into the value type name
     //      registration code).  Then we could do this:
-    //    BOOST_FOREACH(const SdfValueTypeName& typeName,
-    //                  SdfSchema::GetInstance().GetAllTypes()) {
+    //     for (const auto& typeName : SdfSchema::GetInstance().GetAllTypes()) {
     //        builder(typeName);
     //    }
     //            For symmetry (and I think it would actually be useful

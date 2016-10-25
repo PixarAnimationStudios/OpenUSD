@@ -37,7 +37,6 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/foreach.hpp>
 #include "pxr/base/tf/hashmap.h"
 
 #include <map>
@@ -122,7 +121,7 @@ struct Sdf_SpecTypeInfo
     // specTypeInfoToTfType cache first to avoid hitting the TfType lock.
     inline TfType TfTypeFind(const std::type_info &specCPPtype) const {
         typedef pair<const std::type_info *, TfType> Pair;
-        BOOST_FOREACH(const Pair &p, specTypeInfoToTfType) {
+        for (const auto& p : specTypeInfoToTfType) {
             if (p.first == &specCPPtype)
                 return p.second;
         }
