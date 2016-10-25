@@ -609,6 +609,14 @@ _GetMaterialAttr(
         // Eventually, this "derivesFrom" relationship will be
         // a "derives" composition in usd, in which case we'll have to
         // rewrite this to use partial usd composition
+        //
+        // Note that there are additional workarounds in using the
+        // "derivesFrom"/BaseMaterial relationship in the non-op SGG that
+        // would need to be replicated here if the USD Material AttributeFn
+        // were to use the PxrUsdIn op instead, particularly with respect to
+        // the tree structure that the non-op the SGG creates
+        // See _ConvertUsdMAterialPathToKatLocation in
+        // katanapkg/plugin/sgg/usd/utils.cpp
         UsdShadeMaterial materialSchema(materialPrim);
         if (materialSchema.HasBaseMaterial()) {
             SdfPath baseMaterialPath = UsdShadeMaterial(
