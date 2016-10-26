@@ -89,9 +89,20 @@ directory where these files will be located. This variable may be a ':'-delimite
 
 ##### Shared library prefix
 
-By default shared libraries will have the prefix 'lib'  (NOTE: this does not apply to made PYTHON libraries) To change the prefix
-to a custom prefix or to remove it use the cmake variable ```PXR_LIB_PREFIX``` like this ```PXR_LIB_PREFIX:STRING="prefix_string_"````
-If you wish to remove the prefix from the libraries set the variable with empty string like this ```PXR_LIB_PREFIX:STRING=""```` (remember to prefix cmake variables with ```-D```)
+By default shared libraries will have the prefix 'lib'. This means, for a given
+component such as [usdGeom](pxr/usd/lib/usdGeom), the build will generate a corresponding 
+libusdGeom object (libusdGeom.so on Linux, libusdGeom.dll on Windows 
+and libusdGeom.dylib on Mac). You can change the prefix(or remove it) through 
+```PXR_LIB_PREFIX```. For example,
+
+```
+-DPXR_LIB_PREFIX=pxr
+```
+
+Will generate pxrusdGeom.so on Linux, pxrusdGeom.dll on Windows and 
+pxrusdGeom.dylib on Mac for the usdGeom component.
+
+> Note: This prefix does not apply to shared objects used for Python bindings.
 
 ## USD Developer Options
 
