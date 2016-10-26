@@ -29,9 +29,7 @@ pxr_shared_library(garch
 		
 	INCLUDE_DIRS
 		${Boost_INCLUDE_DIRS}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
+        ${HACK_GL_EXTRA_INCLUDE_DIR}
 
     PUBLIC_CLASSES
         glPlatformContext
