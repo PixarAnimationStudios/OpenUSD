@@ -51,6 +51,7 @@ class Subgraph "Subgraph" (
         string extraIncludes = """
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
+#include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/parameter.h"
 """
