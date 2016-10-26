@@ -21,6 +21,7 @@ pxr_shared_library(pcp
         cache
         changes
         composeSite
+        dependency
         diagnostic
         errors
         instanceKey
