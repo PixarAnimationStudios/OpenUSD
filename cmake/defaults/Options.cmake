@@ -41,7 +41,11 @@ set(PXR_ALL_LIBS ""
     INTERNAL
     "Aggregation of all built libraries."
 )
-
+set(PXR_LIB_PREFIX "lib"
+    CACHE
+    STRING
+    "Prefix for build library name"
+)
 if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
     message(STATUS
         "PXR_BUILD_IMAGING=OFF implies PXR_BUILD_USD_IMAGING=OFF"

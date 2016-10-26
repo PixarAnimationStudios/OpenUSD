@@ -87,6 +87,12 @@ properly based on the install location of the build. However, if you plan to rel
 the build, you must inform the build by setting the cmake variable ```PXR_INSTALL_LOCATION``` to the intended final
 directory where these files will be located. This variable may be a ':'-delimited list of paths.
 
+##### Shared library prefix
+
+By default shared libraries will have the prefix 'lib'  (NOTE: this does not apply to made PYTHON libraries) To change the prefix
+to a custom prefix or to remove it use the cmake variable ```PXR_LIB_PREFIX``` like this ```PXR_LIB_PREFIX:STRING="prefix_string_"````
+If you wish to remove the prefix from the libraries set the variable with empty string like this ```PXR_LIB_PREFIX:STRING=""```` (remember to prefix cmake variables with ```-D```)
+
 ## USD Developer Options
 
 ##### ASCII Parser Editing/Validation
