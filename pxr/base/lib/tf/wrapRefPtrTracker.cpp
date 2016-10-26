@@ -69,8 +69,8 @@ wrapRefPtrTracker()
      class_<This, ThisPtr, boost::noncopyable>("RefPtrTracker", no_init)
         .def(TfPySingleton())
 
-        .def("GetAllWatchedCountsReport", ::_ReportAllWatchedCounts)
-        .def("GetAllTracesReport", ::_ReportAllTraces)
-        .def("GetTracesReportForWatched", ::_ReportTracesForWatched)
+        .def("GetAllWatchedCountsReport", _ReportAllWatchedCounts)
+        .def("GetAllTracesReport", _ReportAllTraces)
+        .def("GetTracesReportForWatched", _ReportTracesForWatched)
         ;
 }

@@ -118,7 +118,7 @@ typedef std::pair<void*, size_t> _ChunkRecord;
  * Used by std::sort
  */
 static bool
-_RecordComparison (::_ChunkRecord a, ::_ChunkRecord b)
+_RecordComparison (::_ChunkRecord a, _ChunkRecord b)
 {
     return a.first < b.first;
 }
@@ -138,12 +138,12 @@ _AddressInChunk(void* addr, void* start, size_t bytesPerChunk)
 /*
  * Return v[i] owning addr.
  */
-static ::_ChunkRecord*
+static _ChunkRecord*
 _LocateOwner(::_ChunkRecord v[],
              size_t n, void* addr, size_t bytesPerChunk)
 {
     TF_AXIOM(n > 0);
-    ::_ChunkRecord* owner = NULL;
+    _ChunkRecord* owner = NULL;
     
     if (n < 5) {
         for (size_t i = 0; i < n; i++) {
@@ -212,13 +212,13 @@ TfPoolAllocator::Reclaim()
            chunksFreed = 0,
            nChunks = _chunks.size();
 
-    ::_ChunkRecord* v = new ::_ChunkRecord[nChunks];
+    _ChunkRecord* v = new _ChunkRecord[nChunks];
     for (size_t i = 0; i < nChunks; i++)
-        v[i] = ::_ChunkRecord(_chunks[i], itemsPerChunk);
+        v[i] = _ChunkRecord(_chunks[i], itemsPerChunk);
     std::sort(&v[0], &v[nChunks], &::_RecordComparison);
     
     for (_PoolNode* node = _freeList; node; node = node->next)  // (2)
-        ::_LocateOwner(v, nChunks, node, _bytesPerChunk)->second--;
+        _LocateOwner(v, nChunks, node, _bytesPerChunk)->second--;
 
                                                                 
     _PoolNode  dummyNode;                                       // (3)
@@ -238,7 +238,7 @@ TfPoolAllocator::Reclaim()
     _chunks.clear();                                            // (4)
     for (size_t i = 0; i < nChunks; i++) {
         if (v[i].second == 0) {
-            :: delete [] reinterpret_cast<char*>(v[i].first);
+             delete [] reinterpret_cast<char*>(v[i].first);
             chunksFreed++;
         }
         else
