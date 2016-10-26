@@ -1825,9 +1825,23 @@ UsdStage::GetLoadSet()
 {
     SdfPathSet loadSet;
     for (const auto& primIndexPath : _cache->GetIncludedPayloads()) {
-        const SdfPath primPath = _GetPrimPathUsingPrimIndexAtPath(primIndexPath);
-        if (TF_VERIFY(not primPath.IsEmpty(), "Unable to get prim path using "
-            "prim index at path <%s>.", primIndexPath.GetText())) {
+        // Get the path of the Usd prim using this prim index path.
+        // This ensures we return the appropriate path if this prim index
+        // is being used by a prim within a master.
+        //
+        // If there is no Usd prim using this prim index, we return the
+        // prim index path anyway. This could happen if the ancestor of
+        // a previously-loaded prim is deactivated, for instance. 
+        // Including this path in the returned set reflects what's loaded
+        // in the underlying PcpCache and ensures users can still unload
+        // the payloads for those prims by calling 
+        // LoadAndUnload([], GetLoadSet()).
+        const SdfPath primPath = 
+            _GetPrimPathUsingPrimIndexAtPath(primIndexPath);
+        if (primPath.IsEmpty()) {
+            loadSet.insert(primIndexPath);
+        }
+        else {
             loadSet.insert(primPath);
         }
     }
