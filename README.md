@@ -59,6 +59,7 @@ Dependencies
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11             |
 | [Ptex](http://ptex.us/)                                           | 2.0.30             |
 | [Pyside](http://wiki.qt.io/PySide)                                | 1.2.2              |
+| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0              |
 
 
 Getting and Building the Code
