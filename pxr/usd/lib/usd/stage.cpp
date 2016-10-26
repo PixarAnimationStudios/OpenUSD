@@ -371,7 +371,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
 
     _mallocTagID = TfMallocTag::IsInitialized() ?
         strdup(::_StageTag(rootLayer->GetIdentifier()).c_str()) :
-        ::_dormantMallocTagID;
+        _dormantMallocTagID;
 
     _cache->SetVariantFallbacks(GetGlobalVariantFallbacks());
 }
@@ -383,7 +383,7 @@ UsdStage::~UsdStage()
         _rootLayer ? _rootLayer->GetIdentifier().c_str() : "<null>",
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
     Close();
-    if (_mallocTagID != ::_dormantMallocTagID){
+    if (_mallocTagID != _dormantMallocTagID){
         free(const_cast<char*>(_mallocTagID));
     }
 }
@@ -497,7 +497,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
     boost::optional<TfAutoMallocTag2> tag;
 
     if (TfMallocTag::IsInitialized()){
-        tag = boost::in_place("Usd", ::_StageTag(rootLayer->GetIdentifier()));
+        tag = boost::in_place("Usd", _StageTag(rootLayer->GetIdentifier()));
     }
 
     // Debug timing info
@@ -565,7 +565,7 @@ _CreateNewLayer(const std::string &identifier)
 UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, _CreateAnonymousSessionLayer(layer));
@@ -577,7 +577,7 @@ UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier,
                     const SdfLayerHandle& sessionLayer)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, sessionLayer);
@@ -589,7 +589,7 @@ UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier,
                     const ArResolverContext& pathResolverContext)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, pathResolverContext);
@@ -602,7 +602,7 @@ UsdStage::CreateNew(const std::string& identifier,
                     const SdfLayerHandle& sessionLayer,
                     const ArResolverContext& pathResolverContext)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, sessionLayer, pathResolverContext);
@@ -687,7 +687,7 @@ _OpenLayer(
 UsdStageRefPtr
 UsdStage::Open(const std::string& filePath, InitialLoadSet load)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(filePath));
+    TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath);
     if (not rootLayer) {
@@ -703,7 +703,7 @@ UsdStage::Open(const std::string& filePath,
                const ArResolverContext& pathResolverContext,
                InitialLoadSet load)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(filePath));
+    TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath, pathResolverContext);
     if (not rootLayer) {
