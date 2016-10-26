@@ -129,8 +129,6 @@ std::string Pcp_Dump(
         _GetString(node.HasSpecs()));
     s += TfStringPrintf("    Has symmetry:             %s\n",
         _GetString(node.HasSymmetry()));
-    s += TfStringPrintf("    Has variant selection:    %s\n",
-        _GetString(node.HasVariantSelections()));
 
     const SdfPrimSpecHandleVector* specs =
         TfMapLookupPtr(nodeToPrimSpecs, node);

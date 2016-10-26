@@ -1295,9 +1295,6 @@ _AddArc(
                 // Determine whether this node has any symmetry information.
                 newNode.SetHasSymmetry(PcpComposeSiteHasSymmetry(site));
             }
-
-            newNode.SetHasVariantSelections(
-                PcpComposeSiteHasVariantSelections(site));
         }
 
         PCP_GRAPH_UPDATE(
@@ -2659,7 +2656,6 @@ _PropagateNodeToParent(
         if (newNode) {
             newNode.SetInert(srcNode.IsInert());
             newNode.SetHasSymmetry(srcNode.HasSymmetry());
-            newNode.SetHasVariantSelections(srcNode.HasVariantSelections());
             newNode.SetPermission(srcNode.GetPermission());
             newNode.SetRestricted(srcNode.IsRestricted());
 
@@ -2898,14 +2894,6 @@ _ComposeVariantSelectionForNode(
                 node.GetPath().StripAllVariantSelections(),
                 node.GetPath());
         }
-
-        // XXX: We should be able to skip this computation by checking
-        //      PcpNodeRef::HasVariantSelections here, but we need to be
-        //      careful about the case where site != node.GetSite(). I
-        //      think the logic should be:
-        //      if (site.layerStack == node.GetLayerStack() and
-        //          site.path.HasPrefix(node.GetPath()) and
-        //          not node.HasVariantSelections()) { return false; }
 
         if (PcpComposeSiteVariantSelection(site, vset, vsel)) {
             *nodeWithVsel = node;
@@ -3656,13 +3644,6 @@ _ConvertNodeForChild(
             if (not node.HasSymmetry()) {
                 node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node.GetSite()));
             }
-        }
-
-        // If the parent had variant selections, it will be inherited by
-        // the child. Otherwise, we recompute it here.
-        if (not node.HasVariantSelections()) {
-            node.SetHasVariantSelections(
-                PcpComposeSiteHasVariantSelections(node.GetSite()));
         }
     }
 

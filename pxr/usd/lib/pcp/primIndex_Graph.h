@@ -252,7 +252,6 @@ private:
             /* The equivalent initializations to the memset().
             , permission(SdfPermissionPublic)
             , hasSymmetry(false)
-            , hasVariantSelections(false)
             , inert(false)
             , culled(false)
             , permissionDenied(false)
@@ -309,10 +308,6 @@ private:
             // or at any of its namespace ancestors contain symmetry 
             // information.
             bool hasSymmetry:1;
-            // Whether this node contains variant selections. This implies
-            // that prims at this node's site or at any of its namespace
-            // ancestors contain variant selections.
-            bool hasVariantSelections:1;
             // Whether this node is inert. This is set to true in cases
             // where a node is needed to represent a structural dependency
             // but no opinions are allowed to be added.

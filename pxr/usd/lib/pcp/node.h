@@ -201,11 +201,6 @@ public:
     void SetHasSymmetry(bool hasSymmetry);
     bool HasSymmetry() const;
 
-    /// Get/set whether this node provides any variant selection opinions,
-    /// either directly or from a namespace ancestor.
-    void SetHasVariantSelections(bool hasVariantSelections);
-    bool HasVariantSelections() const;
-
     /// Get/set the permission for this node. This indicates whether specs
     /// on this node can be accessed from other nodes.
     void SetPermission(SdfPermission perm);
