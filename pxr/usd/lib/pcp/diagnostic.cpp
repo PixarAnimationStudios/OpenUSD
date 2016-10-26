@@ -553,13 +553,13 @@ Pcp_GraphOutputManager::_OutputGraph() const
     _nextGraphFileIndex++;
 
     // Write the graph and label out to the file.
-    ::_WriteGraphHeader(f);
+    _WriteGraphHeader(f);
 
     f << "\tlabel = <" << currentGraph.dotGraphLabel << ">\n";
     f << "\tlabelloc = b\n";
     f << currentGraph.dotGraph;
 
-    ::_WriteGraphFooter(f);
+    _WriteGraphFooter(f);
 }
 
 void 
@@ -579,7 +579,7 @@ Pcp_GraphOutputManager::_UpdateCurrentDotGraph()
 
     std::stringstream ss;
 
-    ::_WriteGraph(
+    _WriteGraph(
         ss, 
         currentGraph.index->GetRootNode(),
         /* includeInheritOriginInfo = */ true,
