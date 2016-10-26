@@ -1,11 +1,6 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdviewq)
 
-if (NOT Qt5Core_FOUND)
-    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: Qt4")
-    return()
-endif()
-
 if (NOT PYSIDE_FOUND)
     message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
     return()

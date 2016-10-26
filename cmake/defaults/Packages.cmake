@@ -101,17 +101,8 @@ if (PXR_BUILD_IMAGING)
         # --X11
         find_package(X11)
     endif()
-    # --Qt
-    #find_package(Qt4)
-    #if (QT4_FOUND)
-    find_package(Qt5Core)
-    find_package(Qt5Gui)
-    find_package(Qt5OpenGL)
-    find_package(Qt5Xml)
-    find_package(Qt5Network)
-    if (Qt5Core_FOUND)
-        find_package(PySide REQUIRED)
-    endif()
+    # --PySide
+    find_package(PySide)
     # --Zlib
     find_package(ZLIB REQUIRED)
 endif()
