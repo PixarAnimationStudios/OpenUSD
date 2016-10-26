@@ -81,7 +81,7 @@ void wrapLayerOffset()
         .def( self * self )
         .def( self * double() )
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", _Repr)
         
         ;
 

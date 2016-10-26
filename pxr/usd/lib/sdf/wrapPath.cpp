@@ -278,7 +278,7 @@ void wrapPath() {
         .def(self > self)
         .def(self <= self)
         .def(self >= self)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", _Repr)
         .def("__hash__", &This::GetHash)
         ;
 
