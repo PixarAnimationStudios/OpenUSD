@@ -47,7 +47,8 @@ private:
     GarchGLDebugWindow *_callback;
     Display *_display;
     Window _window;
-    boost::scoped_ptr<GarchGLPlatformDebugContext> _glContext;
+    GLXContext _glContext;
+    boost::scoped_ptr<GarchGLPlatformDebugContext> _glDebugContext;
 };
 
 #endif  // GARCH_GLPLATFORM_DEBUG_WINDOW_GLX_H

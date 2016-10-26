@@ -37,6 +37,7 @@ Garch_GLPlatformDebugWindow::Garch_GLPlatformDebugWindow(GarchGLDebugWindow *w)
     : _running(false)
     , _callback(w)
     , _display(NULL)
+    , _glContext(NULL)
 {
 }
 
@@ -101,10 +102,15 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     GLXContext tmpCtx = glXCreateContextAttribsARB(_display, fbc[0], 0, true, attribs);
     glXMakeCurrent(_display, _window, tmpCtx);
 
-    // switch to the debug context
-    _glContext.reset(new GarchGLPlatformDebugContext(4, 5, true, true));
-    _glContext->makeCurrent();
-    glXDestroyContext(_display, tmpCtx);
+    if (GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
+        // switch to the debug context
+        _glDebugContext.reset(new GarchGLPlatformDebugContext(4, 5, true, true));
+        _glDebugContext->makeCurrent();
+        glXDestroyContext(_display, tmpCtx);
+    } else {
+        // continue to use the GL context
+        _glContext = tmpCtx;
+    }
 
     _callback->OnInitializeGL();
 }
@@ -178,7 +184,11 @@ Garch_GLPlatformDebugWindow::Run()
             }
             }
         }
-        _glContext->makeCurrent();
+        if (_glDebugContext) {
+            _glDebugContext->makeCurrent();
+        } else {
+            glXMakeCurrent(_display, _window, _glContext);
+        }
 
         // XXX: this should be constant interval
         _callback->OnIdle();
@@ -192,7 +202,11 @@ Garch_GLPlatformDebugWindow::Run()
     _callback->OnUninitializeGL();
 
     glXMakeCurrent(_display, 0, 0);
-    _glContext.reset();
+    if (_glDebugContext) {
+        _glDebugContext.reset();
+    } else {
+        glXDestroyContext(_display, _glContext);
+    }
     XDestroyWindow(_display, _window);
     XCloseDisplay(_display);
 }
