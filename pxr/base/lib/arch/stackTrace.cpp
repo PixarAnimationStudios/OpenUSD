@@ -988,7 +988,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
 #if defined(ARCH_OS_DARWIN)
 
 /*
- * This function will use ::_LogStackTraceForPid(const char*), which uses
+ * This function will use _LogStackTraceForPid(const char*), which uses
  * the stacktrace script, to log the stack to a file.  Then it reads the lines
  * back in and puts them into an output iterator.
  */
@@ -1000,7 +1000,7 @@ _LogStackTraceToOutputIterator(OutputIterator oi, size_t maxDepth, bool addEndl)
     char logfile[1024];
     _GetStackTraceName(logfile, sizeof(logfile));
 
-    ::_LogStackTraceForPid(logfile);
+    _LogStackTraceForPid(logfile);
 
     ifstream inFile(logfile);
     string line;
@@ -1068,7 +1068,7 @@ ArchPrintStackTrace(ostream& oss,
 
 #if defined(ARCH_OS_DARWIN)
 
-    ::_LogStackTraceToOutputIterator(ostream_iterator<string>(oss), numeric_limits<size_t>::max(), true);
+    _LogStackTraceToOutputIterator(ostream_iterator<string>(oss), numeric_limits<size_t>::max(), true);
 
 #else
 

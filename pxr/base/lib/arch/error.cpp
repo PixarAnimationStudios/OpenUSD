@@ -36,7 +36,7 @@ Arch_Error(const char* cond, const char* funcName, size_t lineNo, const char* fi
     fprintf(stderr, "      File: %s\n", fileName);
     fprintf(stderr, "      Line: %zu\n", lineNo);
     abort();
-    ::_exit(-1);
+    _exit(-1);
 }
 
 void
