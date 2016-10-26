@@ -2827,12 +2827,15 @@ _AddDependentPaths(const SdfLayerHandle &layer, const SdfPath &path,
     // We include virtual dependencies so that we can process
     // changes like adding missing defaultPrim metadata.
     const PcpDependencyFlags depTypes = PcpDependencyTypeAnyIncludingVirtual;
+    // Do not filter dependencies against the indexes cached in PcpCache,
+    // because Usd does not cache PcpPropertyIndex entries.
+    const bool filterForExistingCachesOnly = false;
 
     for (const PcpDependency& dep:
          cache.FindDependentPaths(layer, path, depTypes,
                                   /* recurseOnSite */ true,
                                   /* recurseOnIndex */ true,
-                                  /* filterForExistingCachesOnly */ false)) {
+                                  filterForExistingCachesOnly)) {
         output->insert(dep.indexPath);
     }
 
