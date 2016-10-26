@@ -399,7 +399,7 @@ public:
     /// \param filterForExistingCachesOnly filters the results to only
     ///        paths representing computed prim and property index caches;
     ///        otherwise a recursively-expanded result can include
-    //         un-computed paths that are expected to depend on the site
+    ///        un-computed paths that are expected to depend on the site
     PcpDependencyVector
     FindDependentPaths(const PcpLayerStackPtr& siteLayerStack,
                        const SdfPath& sitePath,
