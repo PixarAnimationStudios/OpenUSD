@@ -158,35 +158,6 @@ PcpPrimIndex::PrintStatistics() const
     Pcp_PrintPrimIndexStatistics(*this);
 }
 
-void PcpPrimIndex::Validate()
-{
-    // TODO validate graph structure:
-    // - children are correctly sorted
-    // - valid map functions
-    // - valid site paths
-    // - valid layer stacks
-    // - 'payload' flag only used on root nodes
-    // - small integer values within range (may need to do this as we go)
-    // - validate prim stack / node stack are consistent
-
-    // - validate consistent variant selections throughout the index
-    //
-    // This code taken from the old _GatherVariantSelections():
-    // XXX:
-    // This verify asserts that variant selections should be
-    // consistent throughout the prim index. Unfortunately, to match
-    // Csd's behavior, this is not always the case. We'd like it to
-    // be someday, though.
-    //
-    // TF_VERIFY(result->find(vsel.first)->second == vsel.second,
-    //           "Found conflicting variant selections: "
-    //           "{%s=%s} vs {%s=%s}",
-    //           vsel.first.c_str(),
-    //           result->find(vsel.first)->second.c_str(),
-    //           vsel.first.c_str(),
-    //           vsel.second.c_str());
-}
-
 std::string PcpPrimIndex::DumpToString(
     bool includeInheritOriginInfo,
     bool includeMaps) const

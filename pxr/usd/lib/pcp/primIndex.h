@@ -201,9 +201,6 @@ public:
         bool includeInheritOriginInfo = true,
         bool includeMaps = false) const;
 
-    /// Verify that this is index is well-formed.
-    void Validate();
-
     /// @}
 
 

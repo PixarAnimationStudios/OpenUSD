@@ -88,7 +88,6 @@ void wrapPrimIndex()
             &This::GetSelectionAppliedForVariantSet)
 
         .def("PrintStatistics", &This::PrintStatistics)
-        .def("Validate", &This::Validate)
         .def("DumpToString", &This::DumpToString,
              (args("includeInheritOriginInfo") = true,
               args("includeMaps") = true))
