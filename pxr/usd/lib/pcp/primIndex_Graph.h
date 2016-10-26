@@ -51,7 +51,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PcpPrimIndex_Graph);
 /// opinions in the prim index.
 ///
 class PcpPrimIndex_Graph 
-    : public TfRefBase
+    : public TfSimpleRefBase
     , public TfWeakBase
 {
 public:
