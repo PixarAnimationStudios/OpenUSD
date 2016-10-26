@@ -4128,9 +4128,6 @@ PcpComputePrimIndex(
             }
         }
     }
-
-    // Validate the result.
-    outputs->primIndex.Validate();
 }
 
 ////////////////////////////////////////////////////////////////////////
