@@ -242,7 +242,6 @@ function(pxr_shared_library LIBRARY_NAME)
                     PREFIX ""
                     SUFFIX ".pyd"
                     FOLDER "${PXR_PREFIX}/_python"
-                    INSTALL_RPATH ${rpath}
                     LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
             )
         else()
