@@ -26,6 +26,7 @@
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
+#include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/node_Iterator.h"
@@ -36,6 +37,7 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <boost/assign/list_of.hpp>
 #include <fstream>
@@ -71,6 +73,12 @@ std::string Pcp_Dump(
         : "NONE");
     s += TfStringPrintf("    Type:                     %s\n", 
         TfEnum::GetDisplayName(node.GetArcType()).c_str());
+
+    // Dependency info
+    s += "    DependencyType:           ";
+    const int depFlags = PcpClassifyNodeDependency(node);
+    s += PcpDependencyFlagsToString(depFlags) + "\n";
+
     s += TfStringPrintf("    Source path:              <%s>\n", 
         node.GetPath().GetText());
     s += TfStringPrintf("    Source layer stack:       %s\n", 
@@ -86,7 +94,7 @@ std::string Pcp_Dump(
 
     const PcpNodeRef originNode = node.GetOriginNode();
     if (originNode != parentNode) {
-        s += TfStringPrintf("    Inherit origin node:      %d\n",
+        s += TfStringPrintf("    Origin node:              %d\n",
             TfMapLookupByValue(nodeToStrengthOrder, originNode, 0));
         s += TfStringPrintf("    Sibling # at origin:      %d\n",
             node.GetSiblingNumAtOrigin());
@@ -112,11 +120,9 @@ std::string Pcp_Dump(
     s += TfStringPrintf("    Permission:               %s\n",
         TfEnum::GetDisplayName(node.GetPermission()).c_str());
     s += TfStringPrintf("    Is restricted:            %s\n", 
-        _GetString(node.IsInert()));
+        _GetString(node.IsRestricted()));
     s += TfStringPrintf("    Is inert:                 %s\n", 
         _GetString(node.IsInert()));
-    s += TfStringPrintf("    Contribute dependencies:  %s\n",
-        _GetString(node.ShouldContributeDependencies()));
     s += TfStringPrintf("    Contribute specs:         %s\n",
         _GetString(node.CanContributeSpecs()));
     s += TfStringPrintf("    Has specs:                %s\n",
@@ -129,11 +135,18 @@ std::string Pcp_Dump(
     const SdfPrimSpecHandleVector* specs =
         TfMapLookupPtr(nodeToPrimSpecs, node);
     if (specs) {
+        s += "    Prim stack:\n";
         TF_FOR_ALL(primIt, *specs) {
             const SdfPrimSpecHandle& primSpec = *primIt;
-            s += TfStringPrintf("        Prim: @%s@<%s>\n",
-                primSpec->GetLayer()->GetIdentifier().c_str(),
-                primSpec->GetPath().GetText());
+            std::string layerPath;
+            SdfLayer::FileFormatArguments args;
+            SdfLayer::SplitIdentifier( primSpec->GetLayer()->GetIdentifier(),
+                                       &layerPath, &args );
+            std::string basename = TfGetBaseName(layerPath);
+            s += TfStringPrintf("      <%s> %s - @%s@\n",
+                                primSpec->GetPath().GetText(),
+                                basename.c_str(),
+                                primSpec->GetLayer()->GetIdentifier().c_str());
         }
     }
 
@@ -142,6 +155,7 @@ std::string Pcp_Dump(
             *childIt, nodeToStrengthOrder, nodeToPrimSpecs,
             includeInheritOriginInfo, includeMaps);
     }
+    s += "\n";
     return s;
 }
 
@@ -251,12 +265,7 @@ _WriteGraph(
     }
 
     if (not node.CanContributeSpecs()) {
-        if (node.ShouldContributeDependencies()) {
-            nodeDesc += "\\nONLY contributes specs to dependencies";
-        }
-        else {
-            nodeDesc += "\\nCANNOT contribute specs";
-        }
+        nodeDesc += "\\nCANNOT contribute specs";
     }
     nodeDesc += TfStringPrintf("\\ndepth: %i", node.GetNamespaceDepth());
 

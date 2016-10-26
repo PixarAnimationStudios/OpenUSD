@@ -229,6 +229,7 @@ private:
 };
 
 std::ostream& operator<<(std::ostream&, const PcpLayerStackPtr&);
+std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 
 /// Compose the relocation arcs in the given stack of layers,
 /// putting the results into the given sourceToTarget and targetToSource

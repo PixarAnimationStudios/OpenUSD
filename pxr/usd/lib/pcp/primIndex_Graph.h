@@ -256,7 +256,6 @@ private:
             , inert(false)
             , culled(false)
             , permissionDenied(false)
-            , shouldContributeDependencies(false)
             , arcType(PcpArcTypeRoot)
             , arcSiblingNumAtOrigin(0)
             , arcNamespaceDepth(0)
@@ -289,7 +288,7 @@ private:
         //       out the data in memory as tightly as possible.
 
         // The layer stack for this node.
-        PcpLayerStackPtr layerStack;
+        PcpLayerStackRefPtr layerStack;
         // Mapping function used to translate from this node directly
         // to the root node. This is essentially the composition of the 
         // mapToParent for every arc between this node and the root.
@@ -328,11 +327,6 @@ private:
             // node that was marked \c SdfPermissionPrivate, or we arrive
             // at this node from  another node that was denied permission.
             bool permissionDenied:1;
-            // Whether this node should contribute specs for dependency
-            // tracking. This is set to true in cases where this node is
-            // not allowed to contribute opinions, but we still need to
-            // know about specs for  dependency tracking.
-            bool shouldContributeDependencies:1;
             // The type of the arc to the parent node.
             PcpArcType arcType:4;
             // Index among sibling arcs at origin; lower is stronger

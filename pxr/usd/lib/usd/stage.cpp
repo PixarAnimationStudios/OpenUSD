@@ -2824,31 +2824,23 @@ static void
 _AddDependentPaths(const SdfLayerHandle &layer, const SdfPath &path,
                    const PcpCache &cache, SdfPathSet *output)
 {
-    // Use Pcp's LayerStack dependency facilities.  We cannot use Pcp's spec
-    // dependency facilities, since we skip populating those in Usd mode.  We
-    // may need to revisit this when we decide to tackle namespace editing.
-    const PcpLayerStackPtrVector& layerStacks =
-        cache.FindAllLayerStacksUsingLayer(layer);
+    // We include virtual dependencies so that we can process
+    // changes like adding missing defaultPrim metadata.
+    const PcpDependencyFlags depTypes = PcpDependencyTypeAnyIncludingVirtual;
 
-    for (const auto& layerStack : layerStacks) {
-        // If this path is in the cache's LayerStack, we always add it.
-        if (layerStack == cache.GetLayerStack())
-            output->insert(path.StripAllVariantSelections());
-
-        // Ask the cache for further dependencies and add any to the output.
-        SdfPathVector deps = cache.GetPathsUsingSite(
-            layerStack, path, PcpDirect | PcpAncestral, /*recursive*/ true);
-        output->insert(deps.begin(), deps.end());
-
-        TF_DEBUG(USD_CHANGES).Msg(
-            "Adding paths that use <%s> in layer @%s@%s: %s\n",
-            path.GetText(), layer->GetIdentifier().c_str(),
-            layerStack->GetIdentifier().rootLayer != layer ?
-            TfStringPrintf(" (stack root: @%s@)",
-                           layerStack->GetIdentifier().rootLayer->
-                           GetIdentifier().c_str()).c_str() : "",
-            TfStringify(deps).c_str());
+    for (const PcpDependency& dep:
+         cache.FindDependentPaths(layer, path, depTypes,
+                                  /* recurseOnSite */ true,
+                                  /* recurseOnIndex */ true,
+                                  /* filterForExistingCachesOnly */ true)) {
+        output->insert(dep.indexPath);
     }
+
+    TF_DEBUG(USD_CHANGES).Msg(
+        "Adding paths that use <%s> in layer @%s@: %s\n",
+        path.GetText(),
+        layer->GetIdentifier().c_str(),
+        TfStringify(*output).c_str());
 }
 
 void

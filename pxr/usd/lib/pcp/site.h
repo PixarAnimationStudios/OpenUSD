@@ -32,7 +32,7 @@
 #include <boost/operators.hpp>
 #include <iosfwd>
 
-TF_DECLARE_WEAK_PTRS(PcpLayerStack);
+TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 class PcpLayerStackSite;
 
 /// \class PcpSite
@@ -68,12 +68,12 @@ public:
 class PcpLayerStackSite : boost::totally_ordered<PcpLayerStackSite> 
 {
 public:
-    PcpLayerStackPtr layerStack;
+    PcpLayerStackRefPtr layerStack;
     SdfPath path;
 
     PcpLayerStackSite();
 
-    PcpLayerStackSite( const PcpLayerStackPtr &, const SdfPath & path );
+    PcpLayerStackSite( const PcpLayerStackRefPtr &, const SdfPath & path );
 
     bool operator==(const PcpLayerStackSite &rhs) const;
     

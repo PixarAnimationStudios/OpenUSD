@@ -21,25 +21,45 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/pcp/dependency.h"
+#include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/makePyConstructor.h"
 
-TF_WRAP_MODULE
+#include <boost/python.hpp>
+
+using namespace boost::python;
+using std::string;
+
+static string
+_DependencyRepr(const PcpDependency &dep)
 {
-    TF_WRAP( PayloadDecorator );
-    TF_WRAP( Dependency );
-    TF_WRAP( Cache );
-    TF_WRAP( Errors );
-    TF_WRAP( InstanceKey );
-    TF_WRAP( LayerStackIdentifier );
-    TF_WRAP( LayerStack );
-    TF_WRAP( MapExpression );
-    TF_WRAP( MapFunction );
-    TF_WRAP( Node );
-    TF_WRAP( PathTranslation );
-    TF_WRAP( PrimIndex );
-    TF_WRAP( PropertyIndex );
-    TF_WRAP( PayloadContext );
-    TF_WRAP( Site );
-    TF_WRAP( TestChangeProcessor );
-    TF_WRAP( Types );
+     return TF_PY_REPR_PREFIX + "Cache.Dependency("
+        + TfPyRepr(dep.indexPath) + ", "
+        + TfPyRepr(dep.sitePath) + ", "
+        + TfPyRepr(dep.mapFunc) + ")";
+}
+
+static PcpDependency*
+_DependencyInit(
+    const SdfPath &indexPath,
+    const SdfPath &sitePath,
+    const PcpMapFunction &mapFunc)
+{
+    return new PcpDependency{indexPath, sitePath, mapFunc};
+}
+
+void 
+wrapDependency()
+{
+    class_<PcpDependency>("Dependency", no_init)
+        .def_readwrite("indexPath", &PcpDependency::indexPath)
+        .def_readwrite("sitePath", &PcpDependency::sitePath)
+        .def_readwrite("mapFunc", &PcpDependency::mapFunc)
+        .def("__repr__", &_DependencyRepr)
+        .def("__init__", make_constructor(_DependencyInit))
+        .def(self == self)
+        .def(self != self)
+        ;
+
+    TfPyWrapEnum<PcpDependencyType>();
 }
