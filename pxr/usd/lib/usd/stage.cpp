@@ -2832,7 +2832,7 @@ _AddDependentPaths(const SdfLayerHandle &layer, const SdfPath &path,
          cache.FindDependentPaths(layer, path, depTypes,
                                   /* recurseOnSite */ true,
                                   /* recurseOnIndex */ true,
-                                  /* filterForExistingCachesOnly */ true)) {
+                                  /* filterForExistingCachesOnly */ false)) {
         output->insert(dep.indexPath);
     }
 
