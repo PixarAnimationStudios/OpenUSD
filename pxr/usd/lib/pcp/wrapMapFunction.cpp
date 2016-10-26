@@ -36,6 +36,9 @@ using std::string;
 static string
 _Repr(const PcpMapFunction &f)
 {
+    if (f.IsIdentity()) {
+        return "Pcp.MapFunction.Identity()";
+    }
     string s = "Pcp.MapFunction(";
     if (not f.IsNull()) {
         const boost::python::dict sourceToTargetMap = 
