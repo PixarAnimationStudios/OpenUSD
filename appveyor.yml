@@ -12,7 +12,7 @@ configuration:
     - 14 2015
 
 build_script:
-    - cd c:\projects\OpenSubdiv
+    - cd c:\projects\USD
     - mkdir build
     - cd build
     - cmake --version
