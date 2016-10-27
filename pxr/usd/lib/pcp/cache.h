@@ -407,6 +407,7 @@ public:
     ///        paths representing computed prim and property index caches;
     ///        otherwise a recursively-expanded result can include
     ///        un-computed paths that are expected to depend on the site
+    PCP_API
     PcpDependencyVector
     FindDependentPaths(const PcpLayerStackPtr& siteLayerStack,
                        const SdfPath& sitePath,
