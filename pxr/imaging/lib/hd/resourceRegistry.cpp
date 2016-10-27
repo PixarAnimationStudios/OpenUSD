@@ -749,6 +749,11 @@ HdResourceRegistry::FindTextureResource(HdTextureResource::ID id,
 }
 
 
+void HdResourceRegistry::InvalidateGeometricShaderRegistry()
+{
+    _geometricShaderRegistry.Invalidate();
+}
+
 std::ostream &operator <<(std::ostream &out,
                           const HdResourceRegistry& self)
 {

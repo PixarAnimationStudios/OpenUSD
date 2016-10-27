@@ -217,7 +217,7 @@ int main(int argc, char const *argv[])
 
     std::cout << "checking converted values" << std::endl;
 
-    BOOST_FOREACH(const _Dictionary::value_type& p, aObject) {
+    for (const auto& p : aObject) {
         const std::type_info* ti = GetType(p.second);
         indent << "key " << p.first << " typeid is " <<
             (ti ? ArchGetDemangled(*ti) : "nil") << std::endl;

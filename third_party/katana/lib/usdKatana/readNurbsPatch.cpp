@@ -324,17 +324,15 @@ PxrUsdKatanaReadNurbsPatch(
     // Construct the 'geometry' attribute.
     //
 
-    FnKat::GroupBuilder geometryBuilder;
-
-    geometryBuilder.set("point.Pw", _GetPwAttr(
+    attrs.set("geometry.point.Pw", _GetPwAttr(
         nurbsPatch, currentTime, motionSampleTimes, data.GetUsdInArgs()->IsMotionBackward()));
-    geometryBuilder.set("u", _GetUAttr(nurbsPatch, currentTime));
-    geometryBuilder.set("v", _GetVAttr(nurbsPatch, currentTime));
-    geometryBuilder.set("uSize", _GetUSizeAttr(nurbsPatch, currentTime));       
-    geometryBuilder.set("vSize", _GetVSizeAttr(nurbsPatch, currentTime));
-    geometryBuilder.set("uClosed", _GetUClosedAttr(nurbsPatch, currentTime)); 
-    geometryBuilder.set("vClosed", _GetVClosedAttr(nurbsPatch, currentTime));
-    geometryBuilder.set("trimCurves", _GetTrimCurvesAttr(nurbsPatch, currentTime));
+    attrs.set("geometry.u", _GetUAttr(nurbsPatch, currentTime));
+    attrs.set("geometry.v", _GetVAttr(nurbsPatch, currentTime));
+    attrs.set("geometry.uSize", _GetUSizeAttr(nurbsPatch, currentTime));       
+    attrs.set("geometry.vSize", _GetVSizeAttr(nurbsPatch, currentTime));
+    attrs.set("geometry.uClosed", _GetUClosedAttr(nurbsPatch, currentTime)); 
+    attrs.set("geometry.vClosed", _GetVClosedAttr(nurbsPatch, currentTime));
+    attrs.set("geometry.trimCurves", _GetTrimCurvesAttr(nurbsPatch, currentTime));
 
     // normals
     FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(nurbsPatch, data);
@@ -344,7 +342,7 @@ PxrUsdKatanaReadNurbsPatch(
         // normals for nuPatches.
         TfToken interp = nurbsPatch.GetNormalsInterpolation();
         if (interp == UsdGeomTokens->vertex) {
-            geometryBuilder.set("point.N", normalsAttr);
+            attrs.set("geometry.point.N", normalsAttr);
         }
     }
     
@@ -352,20 +350,8 @@ PxrUsdKatanaReadNurbsPatch(
     FnKat::Attribute velocityAttr = PxrUsdKatanaGeomGetVelocityAttr(nurbsPatch, data);
     if (velocityAttr.isValid())
     {
-        geometryBuilder.set("point.v", velocityAttr);
+        attrs.set("geometry.point.v", velocityAttr);
     }
-
-    FnKat::GroupBuilder arbBuilder;
-
-    FnKat::GroupAttribute primvarGroup = PxrUsdKatanaGeomGetPrimvarGroup(nurbsPatch, data);
-
-    if (primvarGroup.isValid())
-    {
-        arbBuilder.update(primvarGroup);
-    }
-
-    geometryBuilder.set("arbitrary", arbBuilder.build());
-    attrs.set("geometry", geometryBuilder.build());
 
     //
     // Set the 'windingOrder' viewer attribute.

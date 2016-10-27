@@ -38,8 +38,10 @@
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/collectionAPI.h"
 
 #include "pxr/usd/usdShade/pShaderUtils.h"
 #include "pxr/usd/usdShade/look.h"
@@ -325,19 +327,55 @@ _BuildScopedCoordinateSystems(
     return foundCoordSys;
 }
 
+static bool
+_BuildCollections(
+        const UsdPrim& prim,
+        FnKat::GroupBuilder& collectionsBuilder)
+{
+    std::vector<UsdGeomCollectionAPI> collections = 
+        UsdGeomCollectionAPI::GetCollections(prim);
+
+    std::string prefix = prim.GetPath().GetString();
+    int prefixLength = prefix.length();
+    
+    SdfPathVector targets;
+    for (int iCollection = 0; iCollection < collections.size(); ++iCollection)
+    {
+        FnKat::StringBuilder collectionBuilder;
+        UsdGeomCollectionAPI &collection = collections[iCollection];
+        TfToken name = collection.GetCollectionName();
+        collection.GetTargets(&targets);
+        for (int iTarget = 0; iTarget < targets.size(); ++iTarget)
+        {
+            std::string relativePath = 
+                targets[iTarget].GetString().substr(prefixLength);
+
+            collectionBuilder.push_back(relativePath);
+        }
+
+        collectionsBuilder.set(name.GetString() + ".baked",
+            collectionBuilder.build());
+    }
+
+    return (collections.size() > 0);
+}
+
+
 static void
 _AddExtraAttributesOrNamespaces(
         const UsdPrim& prim,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs)
 {
-    const std::string& rootLocation = data.GetUsdInArgs()->GetRootLocationPath();
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
+    const std::string& rootLocation = 
+        data.GetUsdInArgs()->GetRootLocationPath();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
 
     const PxrUsdKatanaUsdInArgs::StringListMap& extraAttributesOrNamespaces =
         data.GetUsdInArgs()->GetExtraAttributesOrNamespaces();
 
-    PxrUsdKatanaUsdInArgs::StringListMap::const_iterator I = extraAttributesOrNamespaces.begin();
+    PxrUsdKatanaUsdInArgs::StringListMap::const_iterator I = 
+        extraAttributesOrNamespaces.begin();
     for (; I != extraAttributesOrNamespaces.end(); ++I)
     {
         const std::string& name = (*I).first;
@@ -504,6 +542,80 @@ _AddCustomProperties(
     return foundCustomProperties;
 }
 
+FnKat::Attribute
+PxrUsdKatanaGeomGetPrimvarGroup(
+        const UsdGeomImageable& imageable,
+        const PxrUsdKatanaUsdInPrivateData& data)
+{
+    // Usd primvars -> Primvar attributes
+    FnKat::GroupBuilder gdBuilder;
+
+    std::vector<UsdGeomPrimvar> primvarAttrs = imageable.GetPrimvars();
+    TF_FOR_ALL(primvar, primvarAttrs) {
+        TfToken          name, interpolation;
+        SdfValueTypeName typeName;
+        int              elementSize;
+
+        primvar->GetDeclarationInfo(&name, &typeName, 
+                                    &interpolation, &elementSize);
+
+        // Name: this will eventually want to be GetBaseName() to strip
+        // off prefixes
+        std::string gdName = name;
+
+        // Convert interpolation -> scope
+        FnKat::StringAttribute scopeAttr;
+        const bool isCurve = imageable.GetPrim().IsA<UsdGeomCurves>();
+        if (isCurve && interpolation == UsdGeomTokens->vertex) {
+            // it's a curve, so "vertex" == "vertex"
+            scopeAttr = FnKat::StringAttribute("vertex");
+        } else {
+            scopeAttr = FnKat::StringAttribute(
+                (interpolation == UsdGeomTokens->faceVarying)? "vertex" :
+                (interpolation == UsdGeomTokens->varying)    ? "point" :
+                (interpolation == UsdGeomTokens->vertex)     ? "point" /*see below*/ :
+                (interpolation == UsdGeomTokens->uniform)    ? "face" :
+                "primitive" );
+        }
+
+        // Resolve the value
+        VtValue vtValue;
+        if (not primvar->ComputeFlattened(
+                &vtValue, data.GetUsdInArgs()->GetCurrentTime()))
+        {
+            continue;
+        }
+
+        // Convert value to the required Katana attributes to describe it.
+        FnKat::Attribute valueAttr, inputTypeAttr, elementSizeAttr;
+        PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
+            vtValue, elementSize, typeName.GetRole(),
+            &valueAttr, &inputTypeAttr, &elementSizeAttr);
+
+        // Bundle them into a group attribute
+        FnKat::GroupBuilder attrBuilder;
+        attrBuilder.set("scope", scopeAttr);
+        attrBuilder.set("inputType", inputTypeAttr);
+        if (elementSizeAttr.isValid()) {
+            attrBuilder.set("elementSize", elementSizeAttr);
+        }
+        attrBuilder.set("value", valueAttr);
+        // Note that 'varying' vs 'vertex' require special handling, as in
+        // Katana they are both expressed as 'point' scope above. To get
+        // 'vertex' interpolation we must set an additional
+        // 'interpolationType' attribute.  So we will flag that here.
+        const bool vertexInterpolationType = 
+            (interpolation == UsdGeomTokens->vertex);
+        if (vertexInterpolationType) {
+            attrBuilder.set("interpolationType",
+                FnKat::StringAttribute("subdiv"));
+        }
+        gdBuilder.set(gdName, attrBuilder.build());
+    }
+
+    return gdBuilder.build();
+}
+
 void
 PxrUsdKatanaReadPrim(
         const UsdPrim& prim,
@@ -576,6 +688,22 @@ PxrUsdKatanaReadPrim(
     }
 
     //
+    // Set the primvar attributes
+    //
+
+    if (imageable)
+    {
+        FnKat::GroupAttribute primvarGroup = PxrUsdKatanaGeomGetPrimvarGroup(imageable, data);
+
+        if (primvarGroup.isValid())
+        {
+            FnKat::GroupBuilder arbBuilder;
+            arbBuilder.update(primvarGroup);
+            attrs.set("geometry.arbitrary", arbBuilder.build());
+        }
+    }
+
+    //
     // Set the 'relativeScopedCoordinateSystems' attribute if such coordinate
     // systems are found in the children of this prim.
     //
@@ -585,6 +713,17 @@ PxrUsdKatanaReadPrim(
     {
         attrs.set("relativeScopedCoordinateSystems", coordSysBuilder.build());
     }
+
+    //
+    // Set the 'collections' attribute if any found
+    //
+
+    FnKat::GroupBuilder collectionsBuilder;
+    if (_BuildCollections(prim, collectionsBuilder))
+    {
+        attrs.set("collections", collectionsBuilder.build());
+    }
+
 
     //
     // Set the 'customProperties' attribute (if enabled by env variable).

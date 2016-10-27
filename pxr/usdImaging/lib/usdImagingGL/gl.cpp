@@ -35,8 +35,6 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 
-#include <boost/foreach.hpp>
-
 namespace {
 
 static
@@ -223,6 +221,16 @@ UsdImagingGL::SetLightingStateFromOpenGL()
 {
     _engine->SetLightingStateFromOpenGL();
 }
+
+/* virtual */
+void
+UsdImagingGL::SetLightingState(GlfSimpleLightVector const &lights,
+                               GlfSimpleMaterial const &material,
+                               GfVec4f const &sceneAmbient)
+{
+    _engine->SetLightingState(lights, material, sceneAmbient);
+}
+
 
 /* virtual */
 void

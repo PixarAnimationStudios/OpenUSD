@@ -55,27 +55,6 @@ class PcpPrimIndexOutputs;
 class PcpPayloadDecorator;
 class SdfPath;
 
-// A set of sites that a given site depends on.  Also notes if the type of
-// dependency.  The sites use a layer stack ref ptr so PcpLayerStackSite
-// isn't used.
-class PcpPrimIndexDependencies {
-public:
-    typedef std::pair<PcpLayerStackRefPtr, SdfPath> Site;
-    struct Hash {
-        size_t operator()(const Site& site) const;
-    };
-
-    /// Swap contents with \p r.
-    inline void swap(PcpPrimIndexDependencies &r) { sites.swap(r.sites); }
-
-    typedef boost::unordered_map<Site, PcpDependencyType, Hash> Map;
-    Map sites;
-};
-
-/// Free function version for generic code and ADL.
-inline void
-swap(PcpPrimIndexDependencies &l, PcpPrimIndexDependencies &r) { l.swap(r); } 
-
 /// \class PcpPrimIndex
 ///
 /// PcpPrimIndex is an index of the all sites of scene description that
@@ -203,9 +182,6 @@ public:
         bool includeInheritOriginInfo = true,
         bool includeMaps = false) const;
 
-    /// Verify that this is index is well-formed.
-	PCP_API void Validate();
-
     /// @}
 
 
@@ -243,8 +219,8 @@ public:
 private:
     friend class PcpPrimIterator;
     friend struct Pcp_PrimIndexer;
-    friend void Pcp_BuildPrimStack(
-        PcpPrimIndex*, SdfSiteVector*, PcpNodeRefVector*);
+    friend void Pcp_RescanForSpecs(PcpPrimIndex*, bool usd,
+                                   bool updateHasSpecs);
 
     // The node graph representing the compositional structure of this prim.
     PcpPrimIndex_GraphRefPtr _graph;
@@ -272,20 +248,6 @@ public:
     /// prim.
     PcpPrimIndex primIndex;
 
-    /// Dependencies found during prim indexing. Note that these dependencies
-    /// may be keeping structures (e.g., layer stacks) in the above prim index 
-    /// alive and must live on at least as long as the prim index.
-    PcpPrimIndexDependencies dependencies;
-    SdfSiteVector dependencySites;
-    PcpNodeRefVector dependencyNodes;
-
-    /// Spooky dependency specs are those that were consulted in the process
-    /// of building this prim index, but which are not a namespace ancestor
-    /// of this prim due to relocations.
-    PcpPrimIndexDependencies spookyDependencies;
-    SdfSiteVector spookyDependencySites;
-    PcpNodeRefVector spookyDependencyNodes;
-
     /// List of all errors encountered during indexing.
     PcpErrorVector allErrors;
 
@@ -296,12 +258,6 @@ public:
     /// Swap content with \p r.
     inline void swap(PcpPrimIndexOutputs &r) {
         primIndex.swap(r.primIndex);
-        dependencies.swap(r.dependencies);
-        dependencySites.swap(r.dependencySites);
-        dependencyNodes.swap(r.dependencyNodes);
-        spookyDependencies.swap(r.spookyDependencies);
-        spookyDependencySites.swap(r.spookyDependencySites);
-        spookyDependencyNodes.swap(r.spookyDependencyNodes);
         allErrors.swap(r.allErrors);
         std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
     }
@@ -369,7 +325,7 @@ public:
     PcpPrimIndexInputs& Cull(bool doCulling = true)
     { cull = doCulling; return *this; }
 
-    /// Whether the prim stack and its dependencies should be computed, and
+    /// Whether the prim stack should be computed, and
     /// whether relocates, inherits, permissions, symmetry, or payloads should
     /// be considered during prim index computation,
     PcpPrimIndexInputs& USD(bool doUSD = true)
@@ -394,9 +350,7 @@ public:
 };
 
 /// Compute an index for the given path. \p errors will contain any errors
-/// encountered while performing this operation. Any encountered dependencies
-/// on remote layer stacks will be appended to \p dependencies;  it must not 
-/// be \c NULL because it's what keeps the layer stacks alive.
+/// encountered while performing this operation.
 void
 PcpComputePrimIndex(
     const SdfPath& primPath,
@@ -409,22 +363,8 @@ PcpComputePrimIndex(
 bool
 PcpIsNewDefaultStandinBehaviorEnabled();
 
-// Sets the prim stack in \p index and returns the sites of prims that
-// \p index depends on in \p dependencySites, as well as the nodes from which 
-// these prims originated in \p dependencyNodes.
+// Sets the prim stack in \p index.
 void
-Pcp_BuildPrimStack(
-    PcpPrimIndex* index,
-    SdfSiteVector* dependencySites,
-    PcpNodeRefVector* dependencyNodes);
-
-// Updates the prim stack and related flags in \p index,  and returns the sites 
-// of prims that \p index depends on in \p dependencySites, as well as the 
-// nodes from which these prims originated in \p dependencyNodes.
-void
-Pcp_UpdatePrimStack(
-    PcpPrimIndex* index,
-    SdfSiteVector* dependencySites,
-    PcpNodeRefVector* dependencyNodes);
+Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
 
 #endif

@@ -137,6 +137,8 @@ public:
     const_iterator begin() const { return _dictionary.begin(); }
     const_iterator end() const { return _dictionary.end(); }
 
+    void Invalidate();
+
 private:
     template <typename T>
     static bool _IsUnique(boost::shared_ptr<T> const &value) {
@@ -223,6 +225,16 @@ HdInstanceRegistry<INSTANCE>::GarbageCollect()
         }
     }
     return count;
+}
+
+template <typename INSTANCE>
+void
+HdInstanceRegistry<INSTANCE>::Invalidate()
+{
+    HD_TRACE_FUNCTION();
+    HD_MALLOC_TAG_FUNCTION();
+
+    _dictionary.clear();
 }
 
 #endif  // HD_INSTANCE_REGISTRY_H

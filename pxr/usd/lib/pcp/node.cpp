@@ -122,21 +122,15 @@ PCP_DEFINE_GET_API(const PcpMapExpression&, GetMapToParent, mapToParent);
 PCP_DEFINE_GET_API(const PcpMapExpression&, GetMapToRoot, mapToRoot);
 
 PCP_DEFINE_API(bool, HasSymmetry, SetHasSymmetry, smallInts.hasSymmetry);
-PCP_DEFINE_API(
-    bool, HasVariantSelections, SetHasVariantSelections, 
-    smallInts.hasVariantSelections);
 PCP_DEFINE_API(SdfPermission, GetPermission, SetPermission, smallInts.permission);
 PCP_DEFINE_API(bool, IsCulled, SetCulled, smallInts.culled);
 PCP_DEFINE_API(bool, IsRestricted, SetRestricted, smallInts.permissionDenied);
-PCP_DEFINE_API(
-    bool, ShouldContributeDependencies, SetShouldContributeDependencies,
-    smallInts.shouldContributeDependencies);
 
 PCP_DEFINE_SET_API(bool, SetInert, smallInts.inert);
 
 PCP_DEFINE_GET_NODE_API(size_t, _GetParentIndex, smallInts.arcParentIndex);
 PCP_DEFINE_GET_NODE_API(size_t, _GetOriginIndex, smallInts.arcOriginIndex);
-PCP_DEFINE_GET_API(const PcpLayerStackPtr&, GetLayerStack, layerStack);
+PCP_DEFINE_GET_API(const PcpLayerStackRefPtr&, GetLayerStack, layerStack);
 
 bool
 PcpNodeRef::HasSpecs() const

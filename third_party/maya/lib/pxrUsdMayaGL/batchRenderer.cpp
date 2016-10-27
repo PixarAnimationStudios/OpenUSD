@@ -26,6 +26,7 @@
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glut.h"
 
 #include "pxr/imaging/hd/version.h"
 #if defined(HD_API) && HD_API > 25
@@ -56,8 +57,6 @@
 #include <maya/MSceneMessage.h>
 
 #include <bitset>
-
-#include <GL/glut.h>
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

@@ -135,15 +135,6 @@ struct PcpSiteTrackerSegment {
 /// site that we've already visited, we've found a cycle.
 typedef std::vector<PcpSiteTrackerSegment> PcpSiteTracker;
 
-/// \enum PcpDependencyType
-///
-/// Defines the types of dependencies.
-///
-enum PcpDependencyType {
-    PcpDirect    = (1 << 0),
-    PcpAncestral = (1 << 1)
-};
-
 // Internal type for Sd sites.
 struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
     Pcp_SdSiteRef(const SdfLayerRefPtr& layer_, const SdfPath& path_) :

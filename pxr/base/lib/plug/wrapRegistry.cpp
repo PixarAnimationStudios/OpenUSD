@@ -191,34 +191,6 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
     }
 }
 
-PlugPluginPtr
-_ThisPlugin()
-{
-    object sys = import("sys");
-    if (sys) {
-        // The caller's frame.
-        object frame = sys.attr("_getframe")(0);
-        if (frame) {
-            // The caller's module name.
-            object name = frame.attr("f_locals")["__name__"];
-            if (name) {
-                // The caller's package path.
-                object path = sys.attr("modules")[name].attr("__path__")[0];
-                extract<std::string> e(path);
-                if (e.check()) {
-                    // XXX: This doesn't find a shared library plugin
-                    //      because the path is the Python package
-                    //      path and the plugin would be registered
-                    //      under the library's path.  PlugRegistry
-                    //      should support lookup given this path.
-                    return PlugRegistry::GetInstance().GetPluginWithPath(e());
-                }
-            }
-        }
-    }
-    return TfNullPtr;
-}
-
 } // anon
 
 void wrapRegistry()
@@ -234,7 +206,7 @@ void wrapRegistry()
         .def("RegisterPlugins", &::_RegisterPluginsList,
             return_value_policy<TfPySequenceToList>())
         .def("GetStringFromPluginMetaData", &::_GetStringFromPluginMetaData)
-        .def("GetPluginWithPath", &This::GetPluginWithPath)
+        .def("GetPluginWithName", &This::GetPluginWithName)
         .def("GetPluginForType", &::_GetPluginForType)
         .def("GetAllPlugins", &This::GetAllPlugins,
              return_value_policy<TfPySequenceToList>())
@@ -261,6 +233,4 @@ void wrapRegistry()
     def("_LoadPluginsConcurrently",
         _LoadPluginsConcurrently,
         (arg("predicate"), arg("numThreads")=0, arg("verbose")=false));
-
-    def("ThisPlugin", _ThisPlugin);
 }

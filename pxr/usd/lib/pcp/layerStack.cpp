@@ -749,3 +749,14 @@ operator<<(std::ostream& s, const PcpLayerStackPtr& x)
         return s << "@<expired>@";
     }
 }
+
+std::ostream&
+operator<<(std::ostream& s, const PcpLayerStackRefPtr& x)
+{
+    if (x) {
+        return s << x->GetIdentifier();
+    }
+    else {
+        return s << "@NULL@";
+    }
+}

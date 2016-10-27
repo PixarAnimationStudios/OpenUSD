@@ -24,8 +24,6 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/tracelite/trace.h"
 
-#include <boost/foreach.hpp>
-
 #include <iostream>
 #include <vector>
 #include <utility>

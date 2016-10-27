@@ -1234,7 +1234,6 @@
      <addaction name="actionHUD"/>
      <addaction name="separator"/>
      <addaction name="actionHUD_Info"/>
-     <addaction name="actionHUD_VBO"/>
      <addaction name="actionHUD_Complexity"/>
      <addaction name="actionHUD_Performance"/>
      <addaction name="actionHUD_GPUstats"/>

@@ -38,21 +38,6 @@
 ARCH_API
 std::string ArchGetCwd();
 
-/// Return user's home directory.
-///
-/// If \p login is not supplied, the home directory of the current user is
-/// returned.  Otherwise, the home directory of the user with the specified
-/// login is returned.  If the home directory cannot be determined, the empty
-/// string is returned.
-ARCH_API
-std::string ArchGetHomeDirectory(const std::string &login = std::string());
-
-/// Return user name.
-///
-/// If the user name cannot determined, the empty string is returned.
-ARCH_API
-std::string ArchGetUserName();
-
 /// Return the path to the program's executable.
 ARCH_API
 std::string ArchGetExecutablePath();

@@ -47,8 +47,6 @@
 
 #include <tbb/parallel_reduce.h>
 
-#include <boost/foreach.hpp>
-
 #include <set>
 #include <string>
 #include <limits>

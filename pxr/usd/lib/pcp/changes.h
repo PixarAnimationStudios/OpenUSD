@@ -117,6 +117,8 @@ public:
     PathEditMap didChangePath;
 };
 
+/// Structure used to temporarily retain layers and layerStacks within
+/// a code block.  Analogous to the autorelease pool in obj-c.
 class PcpLifeboat {
 public:
     PcpLifeboat();
@@ -315,7 +317,7 @@ private:
                               PcpCache* cache,
                               const SdfLayerHandle& layer,
                               const SdfPath& path,
-                              const SdfPath& fallbackAncestor,
+                              bool onlyExistingDependentPaths,
                               std::string* debugSummary);
 
     // Sublayer change type for _DidChangeSublayer.

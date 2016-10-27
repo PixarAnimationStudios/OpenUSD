@@ -23,8 +23,10 @@
 //
 #include "pxr/usd/usd/clip.h"
 
-#include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/path.h"
@@ -144,16 +146,172 @@ _ApplyLayerOffsetToExternalTimes(
 static void
 _ClipDebugMsg(const PcpNodeRef& node,
               const SdfLayerRefPtr& layer,
-              const TfToken& metadataName) 
+              const TfToken& metadataName,
+              const bool derived=false) 
 {
     TF_DEBUG(USD_CLIPS).Msg(
-        "%s for prim <%s> found in LayerStack %s "
+        "%s for prim <%s> %s in LayerStack %s "
         "at spec @%s@<%s>\n",
         metadataName.GetText(),
         node.GetRootNode().GetPath().GetString().c_str(),
+        (derived? "derived" : "found"),
         TfStringify(node.GetLayerStack()).c_str(),
         layer->GetIdentifier().c_str(), 
         node.GetPath().GetString().c_str());
+}
+
+template <typename V>
+static void
+_ClipDerivationMsg(const TfToken& metadataName,
+                   const PcpNodeRef& node,
+                   const V& v)
+{
+    TF_DEBUG(USD_CLIPS).Msg(
+        "%s for prim <%s> derived: %s",
+        metadataName.GetText(),
+        node.GetRootNode().GetPath().GetText(),
+        TfStringify(v).c_str());
+}
+
+namespace {
+    struct _ClipTimeString {
+        std::string integerPortion;
+        std::string decimalPortion;
+    };
+}
+
+_ClipTimeString
+_DeriveClipTimeString(const double currentClipTime,
+                      const size_t numIntegerHashes,
+                      const size_t numDecimalHashes) 
+{
+    std::string integerPortion = "";
+    std::string decimalPortion = "";
+       
+    auto integerSpec = "%0" + TfStringify(numIntegerHashes) + "d";
+    integerPortion = TfStringPrintf(integerSpec.c_str(), int(currentClipTime));
+
+    // If we are dealing with a subframe integer
+    // specification, such as foo.###.###.usd
+    if (numDecimalHashes != 0) {
+        auto decimalSpec = "%.0" + TfStringify(numDecimalHashes) + "f";
+        std::string stringRep = TfStringPrintf(decimalSpec.c_str(), 
+                                               currentClipTime);
+        auto splitAt = stringRep.find('.');
+ 
+        // We trim anything larger that the specified number of values
+        decimalPortion = stringRep.substr(splitAt+1);
+    } 
+
+    return { integerPortion, decimalPortion };
+} 
+
+void
+_DeriveClipInfo(const std::string& templateAssetPath,
+                const double stride,
+                const double startTimeCode,
+                const double endTimeCode,
+                boost::optional<VtVec2dArray>* clipTimes,
+                boost::optional<VtVec2dArray>* clipActive,
+                boost::optional<VtArray<SdfAssetPath>>* clipAssetPaths,
+                const PcpNodeRef& node,
+                const SdfLayerHandle& layer,
+                const PcpLayerStackPtr& layerStack)
+{
+    auto path = TfGetPathName(templateAssetPath);
+    auto basename = TfGetBaseName(templateAssetPath);
+    auto tokenizedBasename = TfStringTokenize(basename, ".");
+
+    size_t integerHashSectionIndex = std::numeric_limits<size_t>::max();
+    size_t decimalHashSectionIndex = std::numeric_limits<size_t>::max();
+
+    size_t numIntegerHashes = 0;
+    size_t numDecimalHashes = 0;
+
+    size_t matchingGroups = 0;
+    size_t tokenIndex = 0;
+
+    // obtain our 'groups', meaning the hash sequences denoting
+    // how much padding the user is requesting in their template string
+    for (const auto& token : tokenizedBasename) {
+        if (std::all_of(token.begin(), token.end(), 
+                        [](const char& c) { return c == '#'; })) {
+            if (integerHashSectionIndex == std::numeric_limits<size_t>::max()) {
+                numIntegerHashes = token.size();
+                integerHashSectionIndex = tokenIndex;
+            } else {
+                numDecimalHashes = token.size();
+                decimalHashSectionIndex = tokenIndex;
+            }
+            matchingGroups++;
+        }
+        tokenIndex++;
+    }
+
+    if ((matchingGroups != 1 && matchingGroups != 2)
+        || (matchingGroups == 2 
+            && (integerHashSectionIndex != decimalHashSectionIndex - 1))) {
+        TF_WARN("Invalid template string specified %s, must be "
+                "of the form path/basename.###.usd or "
+                "path/basename.###.###.usd. Note that the number "
+                "of hash marks is variable in each group.", 
+                templateAssetPath.c_str());
+        return;
+    }
+
+    if (startTimeCode > endTimeCode) {
+        TF_WARN("Invalid range specified in template clip metadata. "
+                "clipTemplateEndTime (%f) cannot be greater than "
+                "clipTemplateStartTime (%f).", 
+                endTimeCode, 
+                startTimeCode);
+        return;
+    }
+
+    *clipTimes = VtVec2dArray();
+    *clipActive = VtVec2dArray();
+    *clipAssetPaths = VtArray<SdfAssetPath>();
+
+    const ArResolverContextBinder binder(
+        layerStack->GetIdentifier().pathResolverContext);
+    ArResolverScopedCache resolverScopedCache;
+    auto& resolver = ArGetResolver();
+
+    // XXX: We shift the value here into the integer range 
+    // to ensure consistency when incrementing by a stride
+    // that is fractional. This does have the possibility of 
+    // chopping of large values with fractional components.
+    const size_t promotion = 10000;
+    size_t clipActiveIndex = 0; 
+    
+    for (double t = startTimeCode * promotion;
+         t <= endTimeCode*promotion; 
+         t += stride*promotion) 
+    {
+        double clipTime = t/(double)promotion; 
+        auto timeString = _DeriveClipTimeString(clipTime, numIntegerHashes,
+                                                numDecimalHashes);
+
+        tokenizedBasename[integerHashSectionIndex] = timeString.integerPortion;
+
+        if (!timeString.decimalPortion.empty()) {
+            tokenizedBasename[decimalHashSectionIndex] = timeString.decimalPortion;
+        }
+
+        auto filePath = SdfComputeAssetPathRelativeToLayer(layer, 
+            path + TfStringJoin(tokenizedBasename, "."));
+
+        if (!resolver.Resolve(filePath).empty()) {
+            (*clipAssetPaths)->push_back(SdfAssetPath(filePath));
+            (*clipTimes)->push_back(GfVec2d(clipTime, clipTime));
+            (*clipActive)->push_back(GfVec2d(clipTime, clipActiveIndex));
+            clipActiveIndex++;
+        }
+    }
+
+    _ClipDerivationMsg(UsdTokens->clipAssetPaths, node, **clipAssetPaths);
+    _ClipDerivationMsg(UsdTokens->clipTimes, node, **clipTimes);
+    _ClipDerivationMsg(UsdTokens->clipActive, node, **clipActive);
 }
 
 void
@@ -165,31 +323,60 @@ Usd_ResolveClipInfo(
     const PcpLayerStackPtr& layerStack = node.GetLayerStack();
     const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
 
+    bool nontemplateMetadataSeen = false;
+    bool templateMetadataSeen    = false;
+
+    boost::optional<double> templateStartTime;
+    boost::optional<double> templateEndTime;
+    boost::optional<double> templateStride;
+    boost::optional<std::string> templateAssetPath;
+
     for (size_t i = 0, j = layers.size(); i != j; ++i) {
         const SdfLayerRefPtr& layer = layers[i];
         VtArray<SdfAssetPath> clipAssetPaths;
         if (layer->HasField(primPath, UsdTokens->clipAssetPaths, 
                             &clipAssetPaths)){
+            nontemplateMetadataSeen = true;
             _ClipDebugMsg(node, layer, UsdTokens->clipAssetPaths);
             clipInfo->indexOfLayerWhereAssetPathsFound = i;
             clipInfo->clipAssetPaths = boost::in_place();
             clipInfo->clipAssetPaths->swap(clipAssetPaths);
             break;
         }
+
+        std::string clipTemplateAssetPath;
+        if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
+                            &clipTemplateAssetPath)) {
+            templateMetadataSeen = true;
+            clipInfo->indexOfLayerWhereAssetPathsFound = i;
+            templateAssetPath = clipTemplateAssetPath;
+            break;
+        }
+
+        if (templateMetadataSeen && nontemplateMetadataSeen) {
+            TF_WARN("Both template and non-template clip metadata are "
+                    "authored for prim <%s> in layerStack %s "
+                    "at spec @%s@<%s>",
+                    primPath.GetText(),
+                    TfStringify(layerStack).c_str(),
+                    layer->GetIdentifier().c_str(),
+                    node.GetPath().GetString().c_str());
+        }
     }
 
     // we need not complete resolution if there are no clip
     // asset paths available, as they are a necessary component for clips.
-    if (not clipInfo->clipAssetPaths) {
+    if (!templateMetadataSeen && !nontemplateMetadataSeen) {
         return;
     }
+
 
     // Compose the various pieces of clip metadata; iterate the LayerStack
     // from strong-to-weak and save the strongest opinion.
     for (size_t i = 0, j = layers.size(); i != j; ++i) {
         const SdfLayerRefPtr& layer = layers[i];
 
-        if (not clipInfo->clipManifestAssetPath) {
+        if (!clipInfo->clipManifestAssetPath) {
             SdfAssetPath clipManifestAssetPath;
             if (layer->HasField(primPath, UsdTokens->clipManifestAssetPath, 
                                 &clipManifestAssetPath)) {
@@ -198,7 +385,7 @@ Usd_ResolveClipInfo(
             }
         }
 
-        if (not clipInfo->clipPrimPath) {
+        if (!clipInfo->clipPrimPath) {
             std::string clipPrimPath;
             if (layer->HasField(primPath, UsdTokens->clipPrimPath, 
                                 &clipPrimPath)) {
@@ -208,25 +395,70 @@ Usd_ResolveClipInfo(
             }
         }
 
-        if (not clipInfo->clipActive) {
-            VtVec2dArray clipActive;
-            if (layer->HasField(primPath, UsdTokens->clipActive, &clipActive)) {
-                _ClipDebugMsg(node, layer, UsdTokens->clipActive);
-                _ApplyLayerOffsetToExternalTimes(
-                    _GetLayerOffsetToRoot(node, layer), &clipActive);
-                clipInfo->clipActive = boost::in_place();
-                clipInfo->clipActive->swap(clipActive);
+        if (nontemplateMetadataSeen) {
+            if (!clipInfo->clipActive) {
+                VtVec2dArray clipActive;
+                if (layer->HasField(primPath, UsdTokens->clipActive, 
+                                    &clipActive)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipActive);
+                    _ApplyLayerOffsetToExternalTimes(
+                        _GetLayerOffsetToRoot(node, layer), &clipActive);
+                    clipInfo->clipActive = boost::in_place();
+                    clipInfo->clipActive->swap(clipActive);
+                }
             }
-        }
 
-        if (not clipInfo->clipTimes) {
-            VtVec2dArray clipTimes;
-            if (layer->HasField(primPath, UsdTokens->clipTimes, &clipTimes)) {
-                _ClipDebugMsg(node, layer, UsdTokens->clipTimes);
-                _ApplyLayerOffsetToExternalTimes(
-                    _GetLayerOffsetToRoot(node, layer), &clipTimes);
-                clipInfo->clipTimes = boost::in_place();
-                clipInfo->clipTimes->swap(clipTimes);
+            if (!clipInfo->clipTimes) {
+                VtVec2dArray clipTimes;
+                if (layer->HasField(primPath, UsdTokens->clipTimes, 
+                                    &clipTimes)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTimes);
+                    _ApplyLayerOffsetToExternalTimes(
+                        _GetLayerOffsetToRoot(node, layer), &clipTimes);
+                    clipInfo->clipTimes = boost::in_place();
+                    clipInfo->clipTimes->swap(clipTimes);
+                }
+            }
+        } else {
+            if (!templateStride) {
+                double clipTemplateStride;
+                if (layer->HasField(primPath, UsdTokens->clipTemplateStride,
+                                    &clipTemplateStride)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStride); 
+                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
+                    layerOffset.SetOffset(0);
+                    templateStride = layerOffset * clipTemplateStride;
+                }
+            }
+
+            if (!templateStartTime) {
+                double clipTemplateStartTime;
+                if (layer->HasField(primPath, UsdTokens->clipTemplateStartTime,
+                                    &clipTemplateStartTime)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStartTime); 
+                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
+                    templateStartTime = layerOffset * clipTemplateStartTime;
+                }
+            }
+
+            if (!templateEndTime) {
+                double clipTemplateEndTime;
+                if (layer->HasField(primPath, UsdTokens->clipTemplateEndTime,
+                                    &clipTemplateEndTime)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateEndTime); 
+                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
+                    templateEndTime  = layerOffset * clipTemplateEndTime;
+                }
+            }
+
+            if (templateStride && templateStartTime && templateEndTime) {
+                _DeriveClipInfo(*templateAssetPath, *templateStride,
+                                *templateStartTime, *templateEndTime,
+                                &clipInfo->clipTimes, &clipInfo->clipActive,
+                                &clipInfo->clipAssetPaths, node, 
+                                layers[clipInfo->indexOfLayerWhereAssetPathsFound],
+                                layerStack);
+                break;
             }
         }
     }

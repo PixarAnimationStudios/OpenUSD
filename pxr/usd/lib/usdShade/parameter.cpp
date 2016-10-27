@@ -29,7 +29,6 @@
 
 #include <stdlib.h>
 #include <algorithm>
-#include <boost/foreach.hpp>
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -361,7 +360,7 @@ UsdShadeParameter::ClearSources() const
         success = rel.ClearTargets(/* removeSpec = */ true);
     }
 
-    BOOST_FOREACH(UsdRelationship elt, _GetElementConnections(_attr)){
+    for (auto elt : _GetElementConnections(_attr)) {
         success = elt.ClearTargets(/* removeSpec = */ true) and success;
     }
 

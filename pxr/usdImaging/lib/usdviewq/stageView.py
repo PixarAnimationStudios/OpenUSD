@@ -491,6 +491,211 @@ class FreeCamera(QtCore.QObject):
         """To remove the override, set to None"""
         self._overrideFar = value
 
+class GLSLProgram():
+    def __init__(self, VS3, FS3, VS2, FS2, uniformDict):
+        from OpenGL import GL
+        self._glMajorVersion = int(GL.glGetString(GL.GL_VERSION)[0])
+
+        self.program   = GL.glCreateProgram()
+        vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
+        fragmentShader = GL.glCreateShader(GL.GL_FRAGMENT_SHADER)
+
+        if (self._glMajorVersion >= 3):
+            vsSource = VS3
+            fsSource = FS3
+        else:
+            vsSource = VS2
+            fsSource = FS2
+
+        GL.glShaderSource(vertexShader, vsSource)
+        GL.glCompileShader(vertexShader)
+        GL.glShaderSource(fragmentShader, fsSource)
+        GL.glCompileShader(fragmentShader)
+        GL.glAttachShader(self.program, vertexShader)
+        GL.glAttachShader(self.program, fragmentShader)
+        GL.glLinkProgram(self.program)
+
+        if GL.glGetProgramiv(self.program, GL.GL_LINK_STATUS) == GL.GL_FALSE:
+            print GL.glGetShaderInfoLog(vertexShader)
+            print GL.glGetShaderInfoLog(fragmentShader)
+            print GL.glGetProgramInfoLog(self.program)
+            GL.glDeleteShader(vertexShader)
+            GL.glDeleteShader(fragmentShader)
+            GL.glDeleteProgram(self.program)
+            self.program = 0
+
+        GL.glDeleteShader(vertexShader)
+        GL.glDeleteShader(fragmentShader)
+
+        self.uniformLocations = {}
+        for param in uniformDict:
+            self.uniformLocations[param] = GL.glGetUniformLocation(self.program, param)
+
+class HUD():
+    class Group():
+        def __init__(self, name, w, h):
+            self.x = 0
+            self.y = 0
+            self.w = w
+            self.h = h
+            self.qimage = QtGui.QImage(w, h, QtGui.QImage.Format_ARGB32)
+            self.qimage.fill(QtGui.QColor(0, 0, 0, 0))
+            self.painter = QtGui.QPainter()
+
+    def __init__(self):
+        self._HUDLineSpacing = 15
+        self._HUDFont = QtGui.QFont("Menv Mono Numeric", 9)
+        self._groups = {}
+        self._glslProgram = None
+        self._glMajorVersion = 0
+        self._vao = 0
+
+    def compileProgram(self):
+        from OpenGL import GL
+        import ctypes
+
+        # prep a quad vbo
+        self._vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
+        st = [0, 0, 1, 0, 0, 1, 1, 1]
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
+                        (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        self._glslProgram = GLSLProgram(
+            # for OpenGL 3.1 or later
+            """#version 140
+               uniform vec4 rect;
+               in vec2 st;
+               out vec2 uv;
+               void main() {
+                 gl_Position = vec4(rect.x + rect.z*st.x,
+                                    rect.y + rect.w*st.y, 0, 1);
+                 uv          = vec2(st.x, 1 - st.y); }""",
+            """#version 140
+               in vec2 uv;
+               out vec4 color;
+               uniform sampler2D tex;
+              void main() { color = texture(tex, uv); }""",
+            # for OpenGL 2.1 (osx compatibility profile)
+            """#version 120
+               uniform vec4 rect;
+               attribute vec2 st;
+               varying vec2 uv;
+               void main() {
+                 gl_Position = vec4(rect.x + rect.z*st.x,
+                                    rect.y + rect.w*st.y, 0, 1);
+                 uv          = vec2(st.x, 1 - st.y); }""",
+            """#version 120
+               varying vec2 uv;
+               uniform sampler2D tex;
+               void main() { gl_FragColor = texture2D(tex, uv); }""",
+            ["rect", "tex"])
+
+        return True
+
+    def addGroup(self, name, w, h):
+        self._groups[name] = self.Group(name, w, h)
+
+    def updateGroup(self, name, x, y, col, dic, keys = None):
+        group = self._groups[name]
+        group.qimage.fill(QtGui.QColor(0, 0, 0, 0))
+        group.x = x
+        group.y = y
+        painter = group.painter
+        painter.begin(group.qimage)
+
+        from prettyPrint import prettyPrint
+        if keys is None:
+            keys = sorted(dic.keys())
+
+        # find the longest key so we know how far from the edge to print
+        # add [0] at the end so that max() never gets an empty sequence
+        longestKeyLen = max([len(k) for k in dic.iterkeys()]+[0])
+        margin = int(longestKeyLen*1.4)
+
+        painter.setFont(self._HUDFont)
+        color = QtGui.QColor()
+        yy = 10
+        for key in keys:
+            if not dic.has_key(key):
+                continue
+            line = key.rjust(margin) + ": " + str(prettyPrint(dic[key]))
+            # Shadow of text
+            shadow = Gf.ConvertDisplayToLinear(Gf.Vec3f(.2, .2, .2))
+            color.setRgbF(shadow[0], shadow[1], shadow[2])
+            painter.setPen(color)
+            painter.drawText(1, yy+1, line)
+
+            # Colored text
+            color.setRgbF(col[0], col[1], col[2])
+            painter.setPen(color)
+            painter.drawText(0, yy, line)
+
+            yy += self._HUDLineSpacing
+
+        painter.end()
+        return y + self._HUDLineSpacing
+
+    def draw(self, qglwidget):
+        from OpenGL import GL
+
+        if (self._glslProgram == None):
+            self.compileProgram()
+
+        if (self._glslProgram.program == 0):
+            return
+
+        GL.glUseProgram(self._glslProgram.program)
+
+        width = float(qglwidget.width())
+        height = float(qglwidget.height())
+
+        if (self._glslProgram._glMajorVersion >= 4):
+            GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
+        GL.glDisable(GL.GL_DEPTH_TEST)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        GL.glEnable(GL.GL_BLEND)
+
+        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
+        if (self._glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+            if (self._vao == 0):
+                self._vao = GL.glGenVertexArrays(1)
+            GL.glBindVertexArray(self._vao)
+
+        # for some reason, we need to bind at least 1 vertex attrib (is OSX)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, False, 0, None)
+
+        # seems like a bug in Qt4.8/CoreProfile on OSX that GL_UNPACK_ROW_LENGTH has changed.
+        GL.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0)
+
+        for name in self._groups:
+            group = self._groups[name]
+
+            tex = qglwidget.bindTexture(group.qimage, GL.GL_TEXTURE_2D, GL.GL_RGBA,
+                                        QtOpenGL.QGLContext.NoBindOption)
+            GL.glUniform4f(self._glslProgram.uniformLocations["rect"],
+                           2*group.x/width - 1,
+                           1 - 2*group.y/height - 2*group.h/height,
+                           2*group.w/width,
+                           2*group.h/height)
+            GL.glUniform1i(self._glslProgram.uniformLocations["tex"], 0)
+            GL.glActiveTexture(GL.GL_TEXTURE0)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+            GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
+
+            GL.glDeleteTextures(tex)
+
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glDisableVertexAttribArray(0)
+
+        if (self._vao != 0):
+            GL.glBindVertexArray(0)
+
+        GL.glUseProgram(0)
 
 class StageView(QtOpenGL.QGLWidget):
     '''
@@ -767,15 +972,22 @@ class StageView(QtOpenGL.QGLWidget):
         if msaa == "1":
             glFormat.setSampleBuffers(True)
             glFormat.setSamples(4)
+        # XXX: for OSX (QT5 required)
+        # glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
         super(StageView, self).__init__(glFormat, parent)
-                                    
+
         self._freeCamera = FreeCamera(True)
         self._lastComputedGfCamera = None
 
         self._complexity = 1.0
-        
-        self._renderStats = {}
-                                    
+
+        # prep HUD regions
+        self._hud = HUD()
+        self._hud.addGroup("TopLeft",     250, 160)  # subtree
+        self._hud.addGroup("TopRight",    120, 16)   # Hydra: Enabled
+        self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
+        self._hud.addGroup("BottomRight", 200, 32)   # Camera, Complexity
+
         self._stage = None
         self._stageIsZup = True
         self._cameraIsZup = True
@@ -846,12 +1058,9 @@ class StageView(QtOpenGL.QGLWidget):
         # HUD properties
         self._showHUD = False
         self.showHUD_Info = False
-        self.showHUD_VBO = False
         self.showHUD_Complexity = False
         self.showHUD_Performance = False
         self.showHUD_GPUstats = False
-        self._HUDFont = QtGui.QFont("Menv Mono Numeric", 9)
-        self._HUDLineSpacing = 15
         self._fpsHUDInfo = dict()
         self._fpsHUDKeys = []
         self._upperHUDInfo = dict()
@@ -872,6 +1081,12 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._glPrimitiveGeneratedQuery = None
         self._glTimeElapsedQuery = None
+
+        self._simpleGLSLProgram = None
+        self._axisVBO = None
+        self._bboxVBO = None
+        self._cameraGuidesVBO = None
+        self._vao = 0
 
     def InitRenderer(self):
         '''Create (or re-create) the imager.   If you intend to
@@ -913,13 +1128,123 @@ class StageView(QtOpenGL.QGLWidget):
         self._cameraIsZup = UsdUtils.GetCamerasAreZup(stage)
         self.allSceneCameras = None
 
+    # simple GLSL program for axis/bbox drawings
+    def GetSimpleGLSLProgram(self):
+        if self._simpleGLSLProgram == None:
+            self._simpleGLSLProgram = GLSLProgram(
+            """#version 140
+               uniform mat4 mvpMatrix;
+               in vec3 position;
+               void main() { gl_Position = vec4(position, 1)*mvpMatrix; }""",
+            """#version 140
+               out vec4 outColor;
+               uniform vec4 color;
+               void main() { outColor = color; }""",
+            """#version 120
+               uniform mat4 mvpMatrix;
+               attribute vec3 position;
+               void main() { gl_Position = vec4(position, 1)*mvpMatrix; }""",
+            """#version 120
+               uniform vec4 color;
+               void main() { gl_FragColor = color; }""",
+            ["mvpMatrix", "color"])
+        return self._simpleGLSLProgram
+
+    def DrawAxis(self, viewProjectionMatrix):
+        from OpenGL import GL
+        import ctypes
+
+        # grab the simple shader
+        glslProgram = self.GetSimpleGLSLProgram()
+        if (glslProgram.program == 0):
+            return
+
+        # vao
+        if (glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+            if (self._vao == 0):
+                self._vao = GL.glGenVertexArrays(1)
+            GL.glBindVertexArray(self._vao)
+
+        # prep a vbo for axis
+        if (self._axisVBO is None):
+            self._axisVBO = GL.glGenBuffers(1)
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._axisVBO)
+            data = [1, 0, 0, 0, 0, 0,
+                    0, 1, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0]
+            GL.glBufferData(GL.GL_ARRAY_BUFFER, len(data)*4,
+                            (ctypes.c_float*len(data))(*data), GL.GL_STATIC_DRAW)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._axisVBO)
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
+
+        GL.glUseProgram(glslProgram.program)
+        mvpMatrix = Gf.Matrix4f().SetScale(self._dist/20.0) * viewProjectionMatrix
+        matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
+        GL.glUniformMatrix4fv(glslProgram.uniformLocations["mvpMatrix"],
+                              1, GL.GL_TRUE, matrix)
+
+        GL.glUniform4f(glslProgram.uniformLocations["color"], 1, 0, 0, 1)
+        GL.glDrawArrays(GL.GL_LINES, 0, 2)
+        GL.glUniform4f(glslProgram.uniformLocations["color"], 0, 1, 0, 1)
+        GL.glDrawArrays(GL.GL_LINES, 2, 2)
+        GL.glUniform4f(glslProgram.uniformLocations["color"], 0, 0, 1, 1)
+        GL.glDrawArrays(GL.GL_LINES, 4, 2)
+
+        GL.glDisableVertexAttribArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glUseProgram(0)
+
+        if (self._vao != 0):
+            GL.glBindVertexArray(0)
+
+    def DrawBBox(self, viewProjectionMatrix):
+        from OpenGL import GL
+        col = self._clearColor
+        color = Gf.Vec3f(col[0]-.5 if col[0]>0.5 else col[0]+.5,
+                         col[1]-.5 if col[1]>0.5 else col[1]+.5,
+                         col[2]-.5 if col[2]>0.5 else col[2]+.5)
+
+        # Draw axis-aligned bounding box
+        if self._showAABBox:
+            bsize = self._selectionBrange.max - self._selectionBrange.min
+
+            trans = Gf.Transform()
+            trans.SetScale(0.5*bsize)
+            trans.SetTranslation(self._bbcenterForBoxDraw)
+
+            self.drawWireframeCube(color,
+                                   Gf.Matrix4f(trans.GetMatrix()) * viewProjectionMatrix)
+
+        # Draw oriented bounding box
+        if self._showOBBox:
+            bsize = self._selectionOrientedRange.max - self._selectionOrientedRange.min
+            center = bsize / 2. + self._selectionOrientedRange.min
+            trans = Gf.Transform()
+            trans.SetScale(0.5*bsize)
+            trans.SetTranslation(center)
+
+            self.drawWireframeCube(color,
+                                   Gf.Matrix4f(trans.GetMatrix()) *
+                                   Gf.Matrix4f(self._selectionBBox.matrix) *
+                                   viewProjectionMatrix)
+
     # XXX:
     # First pass at visualizing cameras in usdview-- just oracles for
     # now. Eventually the logic should live in usdImaging, where the delegate
     # would add the camera guide geometry to the GL buffers over the course over
     # its stage traversal, and get time samples accordingly.
-    def DrawCameraGuides(self):
+    def DrawCameraGuides(self, mvpMatrix):
         from OpenGL import GL
+        import ctypes
+
+        # prep a vbo for camera guides
+        if (self._cameraGuidesVBO is None):
+            self._cameraGuidesVBO = GL.glGenBuffers(1)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._cameraGuidesVBO)
+        data = []
         for camera in self._allSceneCameras:
             # Don't draw guides for the active camera.
             if camera == self._cameraPrim or not (camera and camera.IsActive()):
@@ -940,43 +1265,36 @@ class StageView(QtOpenGL.QGLWidget):
             # 7: right top far
             oraclePoints = frustum.ComputeCorners()
 
-            # XXX:
-            # Grabbed fallback oracleColor from CamCamera.
-            GL.glColor3f(0.82745, 0.39608, 0.1647)
-
             # Near plane
-            GL.glBegin(GL.GL_LINE_LOOP)
-            GL.glVertex3f(*oraclePoints[0])
-            GL.glVertex3f(*oraclePoints[1])
-            GL.glVertex3f(*oraclePoints[3])
-            GL.glVertex3f(*oraclePoints[2])
-            GL.glEnd()
+            indices = [0,1,1,3,3,2,2,0, # Near plane
+                       4,5,5,7,7,6,6,4, # Far plane
+                       3,7,0,4,1,5,2,6] # Lines between near and far planes.
+            data.extend([oraclePoints[i][j] for i in indices for j in range(3)])
 
-            # Far plane
-            GL.glBegin(GL.GL_LINE_LOOP)
-            GL.glVertex3f(*oraclePoints[4])
-            GL.glVertex3f(*oraclePoints[5])
-            GL.glVertex3f(*oraclePoints[7])
-            GL.glVertex3f(*oraclePoints[6])
-            GL.glEnd()
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(data)*4,
+                        (ctypes.c_float*len(data))(*data), GL.GL_STATIC_DRAW)
 
-            # Lines between near and far planes.
-            GL.glBegin(GL.GL_LINES)
-            GL.glVertex3f(*oraclePoints[3])
-            GL.glVertex3f(*oraclePoints[7])
-            GL.glEnd()
-            GL.glBegin(GL.GL_LINES)
-            GL.glVertex3f(*oraclePoints[0])
-            GL.glVertex3f(*oraclePoints[4])
-            GL.glEnd()
-            GL.glBegin(GL.GL_LINES)
-            GL.glVertex3f(*oraclePoints[1])
-            GL.glVertex3f(*oraclePoints[5])
-            GL.glEnd()
-            GL.glBegin(GL.GL_LINES)
-            GL.glVertex3f(*oraclePoints[2])
-            GL.glVertex3f(*oraclePoints[6])
-            GL.glEnd()
+        # grab the simple shader
+        glslProgram = self.GetSimpleGLSLProgram()
+        if (glslProgram.program == 0):
+            return
+
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
+
+        GL.glUseProgram(glslProgram.program)
+        matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
+        GL.glUniformMatrix4fv(glslProgram.uniformLocations["mvpMatrix"],
+                              1, GL.GL_TRUE, matrix)
+        # Grabbed fallback oracleColor from CamCamera.
+        GL.glUniform4f(glslProgram.uniformLocations["color"],
+                       0.82745, 0.39608, 0.1647, 1)
+
+        GL.glDrawArrays(GL.GL_LINES, 0, len(data)/3)
+
+        GL.glDisableVertexAttribArray(0)
+        GL.glUseProgram(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def _updateBboxGuides(self):
         includedPurposes =  set(self._bboxCache.GetIncludedPurposes())
@@ -1133,9 +1451,6 @@ class StageView(QtOpenGL.QGLWidget):
         if not self._stage or not self._renderer:
             return
 
-        # delete old render stats
-        self._renderStats = {}
-
         # update rendering parameters
         self._renderParams.frame = self._currentFrame
         self._renderParams.complexity = self.complexity
@@ -1232,47 +1547,65 @@ class StageView(QtOpenGL.QGLWidget):
             self._freeCamera = self._freeCamera.clone()
         self.update()
 
-
-    def setupOpenGLViewMatricesForFrustum(self, frustum):
+    def drawWireframeCube(self, col, mvpMatrix):
         from OpenGL import GL
-        import ctypes
-        GLMtx = ctypes.c_double * 16
-        MakeGLMtx = lambda m: GLMtx.from_buffer_copy(m)
+        import ctypes, itertools
 
-        GL.glMatrixMode(GL.GL_PROJECTION)
-        GL.glLoadIdentity()
-        GL.glMultMatrixd(MakeGLMtx(frustum.ComputeProjectionMatrix()))
+        # grab the simple shader
+        glslProgram = self.GetSimpleGLSLProgram()
+        if (glslProgram.program == 0):
+            return
+        # vao
+        if (glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+            if (self._vao == 0):
+                self._vao = GL.glGenVertexArrays(1)
+            GL.glBindVertexArray(self._vao)
 
-        GL.glMatrixMode(GL.GL_MODELVIEW)
-        GL.glLoadIdentity()
-        GL.glMultMatrixd(MakeGLMtx(frustum.ComputeViewMatrix()))
+        # prep a vbo for bbox
+        if (self._bboxVBO is None):
+            self._bboxVBO = GL.glGenBuffers(1)
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._bboxVBO)
+            # create 12 edges
+            data = []
+            p = list(itertools.product([-1,1],[-1,1],[-1,1]))
+            for i in p:
+                data.extend([i[0], i[1], i[2]])
+            for i in p:
+                data.extend([i[1], i[2], i[0]])
+            for i in p:
+                data.extend([i[2], i[0], i[1]])
 
-    def drawWireframeCube(self, size):
-        from OpenGL import GL
+            GL.glBufferData(GL.GL_ARRAY_BUFFER, len(data)*4,
+                            (ctypes.c_float*len(data))(*data), GL.GL_STATIC_DRAW)
 
-        s = 0.5 * size
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._bboxVBO)
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
 
-        GL.glBegin(GL.GL_LINES)
-        GL.glVertex3f( s, s, s); GL.glVertex3f(-s, s, s)
-        GL.glVertex3f(-s, s, s); GL.glVertex3f(-s,-s, s)
-        GL.glVertex3f(-s,-s, s); GL.glVertex3f( s,-s, s)
-        GL.glVertex3f( s,-s, s); GL.glVertex3f( s, s, s)
+        GL.glEnable(GL.GL_LINE_STIPPLE)
+        GL.glLineStipple(2,0xAAAA)
 
-        GL.glVertex3f(-s,-s,-s); GL.glVertex3f(-s, s,-s)
-        GL.glVertex3f(-s, s,-s); GL.glVertex3f( s, s,-s)
-        GL.glVertex3f( s, s,-s); GL.glVertex3f( s,-s,-s)
-        GL.glVertex3f( s,-s,-s); GL.glVertex3f(-s,-s,-s)
+        GL.glUseProgram(glslProgram.program)
+        matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
+        GL.glUniformMatrix4fv(glslProgram.uniformLocations["mvpMatrix"],
+                              1, GL.GL_TRUE, matrix)
+        GL.glUniform4f(glslProgram.uniformLocations["color"],
+                       col[0], col[1], col[2], 1)
 
-        GL.glVertex3f( s, s, s); GL.glVertex3f( s, s,-s)
-        GL.glVertex3f(-s, s, s); GL.glVertex3f(-s, s,-s)
-        GL.glVertex3f(-s,-s, s); GL.glVertex3f(-s,-s,-s)
-        GL.glVertex3f( s,-s, s); GL.glVertex3f( s,-s,-s)
-        GL.glEnd()
+        GL.glDrawArrays(GL.GL_LINES, 0, 24)
+
+        GL.glDisableVertexAttribArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glUseProgram(0)
+
+        GL.glDisable(GL.GL_LINE_STIPPLE)
+        if (self._vao != 0):
+            GL.glBindVertexArray(0)
 
     def paintGL(self):
         if not self._stage or not self._renderer:
             return
-        
+
         from OpenGL import GL
         from OpenGL import GLU
 
@@ -1290,7 +1623,6 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
         GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._clearColor))))
-        GL.glShadeModel(GL.GL_SMOOTH)
 
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glDepthFunc(GL.GL_LESS)
@@ -1310,6 +1642,9 @@ class StageView(QtOpenGL.QGLWidget):
             frustum.ComputeProjectionMatrix(),
             Gf.Vec4d(0, 0, self.size().width(), self.size().height()))
 
+        viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
+                                           * frustum.ComputeProjectionMatrix())
+
         # XXX: this is redundant for refEngine, but currently hdEngine
         #      doesn't call glViewport.
         GL.glViewport(0, 0, self.size().width(), self.size().height())
@@ -1321,58 +1656,54 @@ class StageView(QtOpenGL.QGLWidget):
                                          gfCamera.clippingPlanes]
 
         if self._nodes:
-            self.setupOpenGLViewMatricesForFrustum(frustum)
-
-            GL.glColor3f(1.0,1.0,1.0)
-
             # for renderModes that need lights 
             if self.renderMode in ("Flat Shaded",
                                    "Smooth Shaded",
                                    "WireframeOnSurface",
                                    "Geom Smooth",
                                    "Geom Flat"):
-                GL.glEnable(GL.GL_LIGHTING)
+
                 stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
                                     self._bbcenter[2])
                 stageDir = (stagePos - cam_pos).GetNormalized()
+                lights = []
 
                 # ambient light located at the camera
                 if self.ambientLightOnly:
-                    GL.glEnable(GL.GL_LIGHT0)
-                    GL.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION,
-                                 (cam_pos[0], cam_pos[1], cam_pos[2], 1))
+                    l = Glf.SimpleLight()
+                    l.ambient = (0, 0, 0, 0)
+                    l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
+                    lights.append(l)
                 # three-point lighting
                 else:
-                    GL.glDisable(GL.GL_LIGHT0)
-
                     if self.keyLightEnabled:
                         # 45 degree horizontal viewing angle, 20 degree vertical
                         keyHorz = -1 / tan(rad(45)) * cam_right
                         keyVert = 1 / tan(rad(70)) * cam_up
                         keyPos = cam_pos + (keyVert + keyHorz) * self._dist
                         keyColor = (.8, .8, .8, 1.0)
-                        
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_AMBIENT,(0,0,0,0))
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_DIFFUSE, keyColor)
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, keyColor)
-                        GL.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, 
-                                    (keyPos[0], keyPos[1], keyPos[2], 1))
-                        GL.glEnable(GL.GL_LIGHT1)
-                
+
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.diffuse = keyColor
+                        l.specular = keyColor
+                        l.position = (keyPos[0], keyPos[1], keyPos[2], 1)
+                        lights.append(l)
+
                     if self.fillLightEnabled:
                         # 60 degree horizontal viewing angle, 45 degree vertical
                         fillHorz = 1 / tan(rad(30)) * cam_right
                         fillVert = 1 / tan(rad(45)) * cam_up
                         fillPos = cam_pos + (fillVert + fillHorz) * self._dist
                         fillColor = (.6, .6, .6, 1.0)
-                        
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, (0,0,0,0))
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, fillColor)
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, fillColor) 
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION,
-                                     (fillPos[0], fillPos[1], fillPos[2], 1))
-                        GL.glEnable(GL.GL_LIGHT2)
-                        
+
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.diffuse = fillColor
+                        l.specular = fillColor
+                        l.position = (fillPos[0], fillPos[1], fillPos[2], 1)
+                        lights.append(l)
+
                     if self.backLightEnabled:
                         # back light base is camera position refelcted over origin
                         # 30 degree horizontal viewing angle, 30 degree vertical
@@ -1381,23 +1712,21 @@ class StageView(QtOpenGL.QGLWidget):
                         backVert = -1 / tan(rad(60)) * cam_up
                         backPos += (backHorz + backVert) * self._dist
                         backColor = (.6, .6, .6, 1.0)
-                        
-                        GL.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, (0,0,0,0))
-                        GL.glLightfv(GL.GL_LIGHT3, GL.GL_DIFFUSE, backColor)
-                        GL.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, backColor)
-                        GL.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, 
-                                     (backPos[0], backPos[1], backPos[2], 1))
-                        GL.glEnable(GL.GL_LIGHT3)
-                        
-                GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_AMBIENT,
-                                (0.2, 0.2, 0.2, 1.0))
-                GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_SPECULAR,
-                                (0.5, 0.5, 0.5, 1.0))
-                GL.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_SHININESS, 32.0)
 
-                # XXX continue to set lighting state via OpenGL
-                # for compatibility w/ and w/o hydra enabled
-                self._renderer.SetLightingStateFromOpenGL()
+                        l = Glf.SimpleLight()
+                        l.ambient = (0, 0, 0, 0)
+                        l.diffuse = backColor
+                        l.specular = backColor
+                        l.position = (backPos[0], backPos[1], backPos[2], 1)
+                        lights.append(l)
+
+                material = Glf.SimpleMaterial()
+                material.ambient = (0.2, 0.2, 0.2, 1.0)
+                material.specular = (0.5, 0.5, 0.5, 1.0)
+                material.shininess = 32.0
+                sceneAmbient = (0.2, 0.2, 0.2, 1.0)
+
+                self._renderer.SetLightingState(lights, material, sceneAmbient)
 
             if self.renderMode == "Hidden Surface Wireframe":
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
@@ -1414,89 +1743,17 @@ class StageView(QtOpenGL.QGLWidget):
             self.renderSinglePass(self._renderModeDict[self.renderMode],
                                   self.drawSelHighlights)
 
-            # lights interfere with the correct coloring of bbox and axes
-            GL.glDisable(GL.GL_LIGHTING)
-            GL.glDisable(GL.GL_LIGHT0)
-            GL.glDisable(GL.GL_LIGHT1)
-            GL.glDisable(GL.GL_LIGHT2)
-            GL.glDisable(GL.GL_LIGHT3)
-
-            GL.glBegin(GL.GL_LINES)
-
-            GL.glColor3f(1.0,0.0,0.0)
-            GL.glVertex3f(0.0,0.0,0.0)
-            GL.glVertex3f(self._dist/20.0,0.0,0.0)
-
-            GL.glColor3f(0.0,1.0,0.0)
-            GL.glVertex3f(0.0,0.0,0.0)
-            GL.glVertex3f(0.0,self._dist/20.0,0.0)
-
-            GL.glColor3f(0.0,0.0,1.0)
-            GL.glVertex3f(0.0,0.0,0.0)
-            GL.glVertex3f(0.0,0.0,self._dist/20.0)
-
-            GL.glEnd()
+            self.DrawAxis(viewProjectionMatrix)
 
             # XXX:
             # Draw camera guides-- no support for toggling guide visibility on
             # individual cameras until we move this logic directly into
             # usdImaging.
             if self._displayCameraOracles:
-                self.DrawCameraGuides()
+                self.DrawCameraGuides(viewProjectionMatrix)
 
             if self._showBBoxes:
-                col = self._clearColor
-
-                # Draw axis-aligned bounding box
-                if self._showAABBox:
-                    bsize = self._selectionBrange.max - self._selectionBrange.min
-
-                    GL.glPushAttrib(GL.GL_LINE_BIT)
-                    GL.glEnable(GL.GL_LINE_STIPPLE)
-                    GL.glLineStipple(2,0xAAAA)
-                    GL.glColor3f(col[0]-.5 if col[0]>0.5 else col[0]+.5,
-                                 col[1]-.5 if col[1]>0.5 else col[1]+.5,
-                                 col[2]-.5 if col[2]>0.5 else col[2]+.5)
-
-                    GL.glPushMatrix()
-
-                    GL.glTranslatef(self._bbcenterForBoxDraw[0],
-                                    self._bbcenterForBoxDraw[1],
-                                    self._bbcenterForBoxDraw[2])
-                    GL.glScalef( bsize[0], bsize[1], bsize[2] )
-
-                    self.drawWireframeCube(1.0)
-
-                    GL.glPopMatrix()
-                    GL.glPopAttrib()
-
-                # Draw oriented bounding box
-                if self._showOBBox:
-                    import ctypes
-                    GLMtx = ctypes.c_double * 16
-                    MakeGLMtx = lambda m: GLMtx.from_buffer_copy(m)
-
-                    bsize = self._selectionOrientedRange.max - self._selectionOrientedRange.min
-                    center = bsize / 2. + self._selectionOrientedRange.min
-
-                    GL.glPushAttrib(GL.GL_LINE_BIT)
-                    GL.glEnable(GL.GL_LINE_STIPPLE)
-                    GL.glLineStipple(2,0xAAAA)
-                    GL.glColor3f(col[0]-.2 if col[0]>0.5 else col[0]+.2,
-                                 col[1]-.2 if col[1]>0.5 else col[1]+.2,
-                                 col[2]-.2 if col[2]>0.5 else col[2]+.2)
-
-                    GL.glPushMatrix()
-                    GL.glMultMatrixd(MakeGLMtx(self._selectionBBox.matrix))
-
-                    GL.glTranslatef(center[0], center[1], center[2])
-                    GL.glScalef( bsize[0], bsize[1], bsize[2] )
-
-                    self.drawWireframeCube(1.0)
-
-                    GL.glPopMatrix()
-                    GL.glPopAttrib()
-
+                self.DrawBBox(viewProjectionMatrix)
         else:
             GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
@@ -1506,113 +1763,94 @@ class StageView(QtOpenGL.QGLWidget):
 
         # ### DRAW HUD ### #
         if self.showHUD:
-            # compute the time it took to render this frame,
-            # so we can display it in the HUD
-            ms = self._renderTime * 1000.
-            fps = float("inf")
-            if not self._renderTime == 0:
-                fps = 1./self._renderTime
-            # put the result in the HUD string
-            self.fpsHUDInfo['Render'] = "%.2f ms (%.2f FPS)" % (ms, fps)
-            
-            GL.glPushMatrix()
-            GL.glLoadIdentity()
-            
-            yPos = 14
-            col = Gf.ConvertDisplayToLinear(Gf.Vec3f(.733,.604,.333))
-
-            # the subtree info does not update while animating, grey it out
-            if not self.playing:
-                subtreeCol = col
-            else:
-                subtreeCol = Gf.ConvertDisplayToLinear(Gf.Vec3f(.6,.6,.6))
-
-            # Subtree Info
-            if self.showHUD_Info:
-                yPos = self.printDict(-10, yPos, subtreeCol,
-                                      self.upperHUDInfo,
-                                      self.HUDStatKeys)
-
-            # VBO Info
-            if self.showHUD_VBO:
-                self.printDict(-10, yPos, col, self._renderStats)
-
-            # Complexity
-            if self.showHUD_Complexity:
-                # Camera name
-                camName = "Free"
-                if self._cameraPrim:
-                    camName = self._cameraPrim.GetName()
-
-                toPrint = {"Complexity" : self.complexity,
-                           "Camera" : camName}
-                self.printDict(self.width()-200, self.height()-21, col, toPrint)
-
-            # Hydra Enabled
-            toPrint = {"Hydra":
-                         "Enabled" if UsdImagingGL.GL.IsEnabledHydra() 
-                         else "Disabled"}
-            self.printDict(self.width()-140, 14, col, toPrint)
-
-            # Playback Rate
-            if self.showHUD_Performance:
-                self.printDict(-10, self.height()-24, col,
-                               self.fpsHUDInfo,
-                               self.fpsHUDKeys)
-            # GPU stats (TimeElapsed is in nano seconds)
-            if self.showHUD_GPUstats:
-                allocInfo = self._renderer.GetResourceAllocation()
-                gpuMemTotal = 0
-                texMem = 0
-                if "gpuMemoryUsed" in allocInfo:
-                    gpuMemTotal = allocInfo["gpuMemoryUsed"]
-                if "textureMemoryUsed" in allocInfo:
-                    texMem = allocInfo["textureMemoryUsed"]
-                    gpuMemTotal += texMem
-
-                from collections import OrderedDict
-                toPrint = OrderedDict()
-                toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
-                toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
-                toPrint["GPU mem  "] = gpuMemTotal
-                toPrint[" primvar "] = allocInfo["primVar"] if "primVar" in allocInfo else "N/A"
-                toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
-                toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
-                toPrint[" texture "] = texMem
-
-                self.printDict(-10, self.height()-30-(15*len(toPrint)), col, toPrint, toPrint.keys())
-
-            GL.glPopMatrix()
+            self.drawHUD()
 
         GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
         if (not self.playing) & (not self._renderer.IsConverged()):
             QtCore.QTimer.singleShot(5, self.update)
-      
-    def printDict(self, x, y, col, dic, keys = None):
-        from prettyPrint import prettyPrint
-        from OpenGL import GL
-        if keys is None:
-            keys = sorted(dic.keys())
 
-        # find the longest key so we know how far from the edge to print
-        # add [0] at the end so that max() never gets an empty sequence
-        longestKeyLen = max([len(k) for k in dic.iterkeys()]+[0])
-        margin = int(longestKeyLen*1.4)
+    def drawHUD(self):
+        # compute the time it took to render this frame,
+        # so we can display it in the HUD
+        ms = self._renderTime * 1000.
+        fps = float("inf")
+        if not self._renderTime == 0:
+            fps = 1./self._renderTime
+        # put the result in the HUD string
+        self.fpsHUDInfo['Render'] = "%.2f ms (%.2f FPS)" % (ms, fps)
 
-        for key in keys:
-            if not dic.has_key(key):
-                continue
-            line = key.rjust(margin) + ": " + str(prettyPrint(dic[key]))
-            # Shadow of text
-            GL.glColor3f(*(Gf.ConvertDisplayToLinear(Gf.Vec3f(.2, .2, .2))))
-            self.renderText(x+1, y+1, line, self._HUDFont)
-            # Colored text
-            GL.glColor3f(*col)
-            self.renderText(x, y, line, self._HUDFont)
+        col = Gf.ConvertDisplayToLinear(Gf.Vec3f(.733,.604,.333))
 
-            y += self._HUDLineSpacing
-        return y + self._HUDLineSpacing
+        # the subtree info does not update while animating, grey it out
+        if not self.playing:
+            subtreeCol = col
+        else:
+            subtreeCol = Gf.ConvertDisplayToLinear(Gf.Vec3f(.6,.6,.6))
+
+        # Subtree Info
+        if self.showHUD_Info:
+            self._hud.updateGroup("TopLeft", 0, 14, subtreeCol,
+                                 self.upperHUDInfo,
+                                 self.HUDStatKeys)
+        else:
+            self._hud.updateGroup("TopLeft", 0, 0, subtreeCol, {})
+
+        # Complexity
+        if self.showHUD_Complexity:
+            # Camera name
+            camName = "Free"
+            if self._cameraPrim:
+                camName = self._cameraPrim.GetName()
+
+            toPrint = {"Complexity" : self.complexity,
+                       "Camera" : camName}
+            self._hud.updateGroup("BottomRight",
+                                  self.width()-200, self.height()-self._hud._HUDLineSpacing*2,
+                                  col, toPrint)
+        else:
+            self._hud.updateGroup("BottomRight", 0, 0, col, {})
+
+        # Hydra Enabled (Top Right)
+        toPrint = {"Hydra":
+                     "Enabled" if UsdImagingGL.GL.IsEnabledHydra() 
+                     else "Disabled"}
+        self._hud.updateGroup("TopRight", self.width()-140, 14, col, toPrint)
+
+        # bottom left
+        from collections import OrderedDict
+        toPrint = OrderedDict()
+
+        # GPU stats (TimeElapsed is in nano seconds)
+        if self.showHUD_GPUstats:
+            allocInfo = self._renderer.GetResourceAllocation()
+            gpuMemTotal = 0
+            texMem = 0
+            if "gpuMemoryUsed" in allocInfo:
+                gpuMemTotal = allocInfo["gpuMemoryUsed"]
+            if "textureMemoryUsed" in allocInfo:
+                texMem = allocInfo["textureMemoryUsed"]
+                gpuMemTotal += texMem
+
+            toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
+            toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
+            toPrint["GPU mem  "] = gpuMemTotal
+            toPrint[" primvar "] = allocInfo["primVar"] if "primVar" in allocInfo else "N/A"
+            toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
+            toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
+            toPrint[" texture "] = texMem
+
+        # Playback Rate
+        if self.showHUD_Performance:
+            for key in self.fpsHUDKeys:
+                toPrint[key] = self.fpsHUDInfo[key]
+        if len(toPrint) > 0:
+            self._hud.updateGroup("BottomLeft",
+                                  0, self.height()-len(toPrint)*self._hud._HUDLineSpacing,
+                                  col, toPrint, toPrint.keys())
+
+        # draw HUD
+        self._hud.draw(self)
 
     def sizeHint(self):
         return QtCore.QSize(460, 460)
@@ -1770,9 +2008,6 @@ class StageView(QtOpenGL.QGLWidget):
         # Need a correct OpenGL Rendering context for FBOs
         self.makeCurrent()
 
-        # delete old render stats
-        self._renderStats = {}
-        
         # update rendering parameters
         self._renderParams.frame = self._currentFrame
         self._renderParams.complexity = self.complexity
@@ -1936,3 +2171,4 @@ class StageView(QtOpenGL.QGLWidget):
             sdfLayer.subLayerPaths.append(
                 os.path.abspath(self._stage.GetRootLayer().realPath))
             sdfLayer.Save()
+

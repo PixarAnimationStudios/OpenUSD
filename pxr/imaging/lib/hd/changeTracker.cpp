@@ -247,6 +247,16 @@ HdChangeTracker::MarkShaderClean(SdfPath const& id, DirtyBits newBits)
     it->second = (it->second & Varying) | newBits;
 }
 
+void HdChangeTracker::MarkAllShadersDirty(DirtyBits bits)
+{
+    HD_TRACE_FUNCTION();
+
+    for (_IDStateMap::iterator it  = _shaderState.begin();
+                               it != _shaderState.end(); ++it) {
+        it->second |= bits;
+    }
+}
+
 // -------------------------------------------------------------------------- //
 /// \name Task Object Tracking
 // -------------------------------------------------------------------------- //
@@ -655,6 +665,27 @@ HdChangeTracker::MarkPrimVarDirty(SdfPath const& id, TfToken const& name)
     MarkPrimVarDirty(&flag, name);
     MarkRprimDirty(id, flag);
 }
+
+
+void
+HdChangeTracker::MarkAllRprimsDirty(DirtyBits bits)
+{
+    HD_TRACE_FUNCTION();
+
+    bits = _PropagateDirtyBits(bits);
+
+    for (_IDStateMap::iterator it  = _rprimState.begin();
+                               it != _rprimState.end(); ++it) {
+        it->second |= bits;
+    }
+
+    ++_changeCount;
+
+    if (bits & DirtyVisibility) {
+        ++_visChangeCount;
+    }
+}
+
 
 /*static*/
 void

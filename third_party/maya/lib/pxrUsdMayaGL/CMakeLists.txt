@@ -7,6 +7,7 @@ add_definitions(
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         arch
+        garch
         gf
         tf
         plug

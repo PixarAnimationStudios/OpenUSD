@@ -187,3 +187,29 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
         (*it)->Execute(&_context);
     }
 }
+
+
+void
+HdEngine::ReloadAllShaders(HdRenderIndex& index)
+{
+    HdChangeTracker &tracker = index.GetChangeTracker();
+
+    // 1st dirty all rprims, so they will trigger shader reload
+    tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
+
+    // Dirty all surface shaders
+    tracker.MarkAllShadersDirty(HdChangeTracker::AllDirty);
+
+    // Invalidate Geometry shader cache in Resource Registry.
+    _resourceRegistry->InvalidateGeometricShaderRegistry();
+
+    // Fallback Shader
+    index.ReloadFallbackShader();
+
+
+    // Note: Several Shaders are not currently captured in this
+    // - Lighting Shaders
+    // - Render Pass Shaders
+    // - Culling Shader
+
+}

@@ -131,6 +131,8 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/symbols.h"
 
+#include <boost/function.hpp>
+
 #include <tbb/enumerable_thread_specific.h>
 
 #include <cstdlib>
@@ -445,7 +447,7 @@ Tf_RegistryManagerImpl::_ProcessLibraryNoLock()
 void
 Tf_RegistryManagerImpl::_UpdateSubscribersNoLock()
 {
-    BOOST_FOREACH(const TypeName& typeName, _orderedSubscriptions) {
+    for (const auto& typeName : _orderedSubscriptions) {
         _RunRegistrationFunctionsNoLock(typeName);
     }
 }
@@ -457,8 +459,7 @@ Tf_RegistryManagerImpl::_TransferActiveLibraryNoLock()
 
     // Move active library functions to non-thread local storage type by type.
     _ActiveLibraryState& active = _active.local();
-    BOOST_FOREACH(_RegistrationFunctionMap::value_type& v,
-                  active.registrationFunctions) {
+    for(auto& v : active.registrationFunctions) {
         if (not movedAny and not v.second.empty()) {
             movedAny = (_subscriptions.count(v.first) != 0);
         }
@@ -534,7 +535,7 @@ Tf_RegistryManagerImpl::_UnloadNoLock(const char* libraryName)
         TF_AXIOM(i->second.empty());
 
         // Run the unload functions
-        BOOST_FOREACH(const UnloadFunction& func, unloadFunctions) {
+        for (const auto& func : unloadFunctions) {
             func();
         }
     }
@@ -544,8 +545,7 @@ Tf_RegistryManagerImpl::_UnloadNoLock(const char* libraryName)
      * crashes where the registry manager could attempt to execute a
      * registry function from the unloaded library.
      */
-    BOOST_FOREACH(_RegistrationFunctionMap::value_type& k,
-                  _registrationFunctions) {
+    for (auto& k : _registrationFunctions) {
         _RegistrationValueList& regValues = k.second;
         _RegistrationValueList::iterator regValueIt = regValues.begin();
         while (regValueIt != regValues.end()) {

@@ -26,8 +26,6 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/foreach.hpp>
-
 using namespace std;
 
 
@@ -66,7 +64,7 @@ _Glf_GetDictionaryFromJSON(
     // XXX: This may not be worth the cost.
     //
     std::vector<std::string> filtered = TfStringSplit(input, "\n");
-    BOOST_FOREACH(std::string &line, filtered) {
+    for (auto & line : filtered) {
         // Clear comment lines but keep them to maintain line numbers for errors
         if (line.find('#') < line.find_first_not_of(" \t#"))
             line.clear();

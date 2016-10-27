@@ -95,6 +95,8 @@ pxr_shared_library(glf
         wrapDiagnostic.cpp
         wrapDrawTarget.cpp
         wrapGlew.cpp
+        wrapSimpleLight.cpp
+        wrapSimpleMaterial.cpp
         wrapTexture.cpp
         wrapTextureRegistry.cpp
         wrapUVTexture.cpp

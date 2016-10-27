@@ -64,7 +64,6 @@
 #include "pxr/base/tf/stackTrace.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include <atomic>
 #include <fstream>
@@ -1937,7 +1936,7 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     }
 
     SdfChangeBlock block;
-    BOOST_FOREACH(const SdfNamespaceEdit& edit, final) {
+    for (const auto& edit : final) {
         _DoEdit(self, edit);
     }
 

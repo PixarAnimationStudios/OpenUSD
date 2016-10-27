@@ -37,7 +37,6 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 

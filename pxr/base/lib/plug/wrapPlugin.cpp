@@ -75,7 +75,7 @@ void wrapPlugin()
         .add_property("isPythonModule", &This::IsPythonModule)
         .add_property("isResource", &This::IsResource)
 
-        .add_property("metadata", ::_GetMetadata)
+        .add_property("metadata", _GetMetadata)
 
         .add_property("name",
                       make_function(&This::GetName,
@@ -87,7 +87,7 @@ void wrapPlugin()
                       make_function(&This::GetResourcePath,
                                     return_value_policy<return_by_value>()))
 
-        .def("GetMetadataForType", ::_GetMetadataForType)
+        .def("GetMetadataForType", _GetMetadataForType)
         .def("DeclaresType", &This::DeclaresType,
              (arg("type"), 
               arg("includeSubclasses") = false))

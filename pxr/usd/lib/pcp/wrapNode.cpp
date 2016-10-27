@@ -88,8 +88,6 @@ wrapNode()
         .add_property("isCulled", &This::IsCulled)
         .add_property("isRestricted", &This::IsRestricted)
         .add_property("permission", &This::GetPermission)
-        .add_property("shouldContributeDependencies", 
-                      &This::ShouldContributeDependencies)
 
         .def("GetRootNode", &::_GetRootNode)
         .def("GetOriginRootNode", &::_GetOriginRootNode)

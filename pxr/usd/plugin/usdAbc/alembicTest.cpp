@@ -27,7 +27,6 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/tf/ostreamMethods.h"
-#include <boost/foreach.hpp>
 #include <algorithm>
 #include <vector>
 
@@ -67,7 +66,7 @@ public:
             std::sort(_ids.begin(), _ids.end());
             
             // Pass ids to the wrapped visitor.
-            BOOST_FOREACH(const _SpecId& id, _ids) {
+            for (const auto& id : _ids) {
                 if (_Pass(data, id)) {
                     if (not _visitor->VisitSpec(data, id)) {
                         break;
@@ -231,7 +230,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                         fprintf(stdout, "%*s",
                                 2*int(path.GetPathElementCount()-1), "");
                         fprintf(stdout, "samples_at=[ ");
-                        BOOST_FOREACH(double t, times) {
+                        for (double t : times) {
                             fprintf(stdout, "%g ", t);
                         }
                         fprintf(stdout, "]\n");
@@ -251,7 +250,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                 tokens.erase(SdfFieldKeys->Default);
                 tokens.erase(SdfFieldKeys->TimeSamples);
                 const SdfSchema& schema = SdfSchema::GetInstance();
-                BOOST_FOREACH(const TfToken& field, tokens) {
+                for (const auto& field : tokens) {
                     const VtValue value = data.Get(id, field);
                     if (value != schema.GetFallback(field)) {
                         fprintf(stdout, "%*s# %s = %s\n",
@@ -295,7 +294,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
 static void UsdAbc_PrintTimes(const char* msg, const std::set<double>& times)
 {
     fprintf(stdout, "%s: [", msg);
-    BOOST_FOREACH(double t, times) {
+    for (double t : times) {
         fprintf(stdout, " %f", t);
     }
     fprintf(stdout, " ]\n");
@@ -345,7 +344,7 @@ UsdAbc_TestAlembic(const std::string& pathname)
             std::set<double> times = data->ListTimeSamplesForPath(id);
             if (not times.empty()) {
                 fprintf(stdout, "\nExtent samples:\n");
-                BOOST_FOREACH(double t, times) {
+                for (double t : times) {
                     VtValue value;
                     if (data->QueryTimeSample(id, t, &value)) {
                         fprintf(stdout, "  %f: %s\n",

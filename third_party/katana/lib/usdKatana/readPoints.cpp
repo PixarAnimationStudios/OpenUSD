@@ -69,17 +69,15 @@ PxrUsdKatanaReadPoints(
     // Construct the 'geometry' attribute.
     //
 
-    FnKat::GroupBuilder geometryBuilder;
-
     // position
-    geometryBuilder.set("point.P", PxrUsdKatanaGeomGetPAttr(points, data));
+    attrs.set("geometry.point.P", PxrUsdKatanaGeomGetPAttr(points, data));
 
     // velocity
     FnKat::Attribute velocitiesAttr =
         PxrUsdKatanaGeomGetVelocityAttr(points, data);
     if (velocitiesAttr.isValid())
     {
-        geometryBuilder.set("point.v", velocitiesAttr);
+        attrs.set("geometry.point.v", velocitiesAttr);
     }
 
     // normals
@@ -91,7 +89,7 @@ PxrUsdKatanaReadPoints(
         if (interp == UsdGeomTokens->faceVarying
          || interp == UsdGeomTokens->varying
          || interp == UsdGeomTokens->vertex) {
-            geometryBuilder.set("point.N", normalsAttr);
+            attrs.set("geometry.point.N", normalsAttr);
         }
     }
 
@@ -99,19 +97,6 @@ PxrUsdKatanaReadPoints(
     FnKat::Attribute widthsAttr = _GetWidthAttr(points, currentTime);
     if (widthsAttr.isValid())
     {
-        geometryBuilder.set("point.width", widthsAttr);
+        attrs.set("geometry.point.width", widthsAttr);
     }
-
-    
-    FnKat::GroupBuilder arbBuilder;
-
-    // other primvars
-    FnKat::Attribute primvarGroup = PxrUsdKatanaGeomGetPrimvarGroup(points, data);
-    if (primvarGroup.isValid())
-    {
-        arbBuilder.update(primvarGroup);
-    }
-
-    geometryBuilder.set("arbitrary", arbBuilder.build());
-    attrs.set("geometry", geometryBuilder.build());
 }

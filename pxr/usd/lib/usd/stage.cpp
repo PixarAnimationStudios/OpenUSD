@@ -371,8 +371,8 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
 
     _mallocTagID = TfMallocTag::IsInitialized() ?
-        ::_StageTag(rootLayer->GetIdentifier()).c_str() :
-        ::_dormantMallocTagID;
+        strdup(::_StageTag(rootLayer->GetIdentifier()).c_str()) :
+        _dormantMallocTagID;
 
     _cache->SetVariantFallbacks(GetGlobalVariantFallbacks());
 }
@@ -384,6 +384,10 @@ UsdStage::~UsdStage()
         _rootLayer ? _rootLayer->GetIdentifier().c_str() : "<null>",
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
     Close();
+
+    if (_mallocTagID != _dormantMallocTagID){
+        free(const_cast<char*>(_mallocTagID));
+    }
 }
 
 void
@@ -495,7 +499,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
     boost::optional<TfAutoMallocTag2> tag;
 
     if (TfMallocTag::IsInitialized()){
-        tag = boost::in_place("Usd", ::_StageTag(rootLayer->GetIdentifier()));
+        tag = boost::in_place("Usd", _StageTag(rootLayer->GetIdentifier()));
     }
 
     // Debug timing info
@@ -564,7 +568,7 @@ _CreateNewLayer(const std::string &identifier)
 UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, _CreateAnonymousSessionLayer(layer));
@@ -576,7 +580,7 @@ UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier,
                     const SdfLayerHandle& sessionLayer)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, sessionLayer);
@@ -588,7 +592,7 @@ UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier,
                     const ArResolverContext& pathResolverContext)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, pathResolverContext);
@@ -601,7 +605,7 @@ UsdStage::CreateNew(const std::string& identifier,
                     const SdfLayerHandle& sessionLayer,
                     const ArResolverContext& pathResolverContext)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(identifier));
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, sessionLayer, pathResolverContext);
@@ -688,7 +692,7 @@ _OpenLayer(
 UsdStageRefPtr
 UsdStage::Open(const std::string& filePath, InitialLoadSet load)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(filePath));
+    TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath);
     if (not rootLayer) {
@@ -704,7 +708,7 @@ UsdStage::Open(const std::string& filePath,
                const ArResolverContext& pathResolverContext,
                InitialLoadSet load)
 {
-    TfAutoMallocTag2 tag("Usd", ::_StageTag(filePath));
+    TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath, pathResolverContext);
     if (not rootLayer) {
@@ -1826,9 +1830,23 @@ UsdStage::GetLoadSet()
 {
     SdfPathSet loadSet;
     for (const auto& primIndexPath : _cache->GetIncludedPayloads()) {
-        const SdfPath primPath = _GetPrimPathUsingPrimIndexAtPath(primIndexPath);
-        if (TF_VERIFY(not primPath.IsEmpty(), "Unable to get prim path using "
-            "prim index at path <%s>.", primIndexPath.GetText())) {
+        // Get the path of the Usd prim using this prim index path.
+        // This ensures we return the appropriate path if this prim index
+        // is being used by a prim within a master.
+        //
+        // If there is no Usd prim using this prim index, we return the
+        // prim index path anyway. This could happen if the ancestor of
+        // a previously-loaded prim is deactivated, for instance. 
+        // Including this path in the returned set reflects what's loaded
+        // in the underlying PcpCache and ensures users can still unload
+        // the payloads for those prims by calling 
+        // LoadAndUnload([], GetLoadSet()).
+        const SdfPath primPath = 
+            _GetPrimPathUsingPrimIndexAtPath(primIndexPath);
+        if (primPath.IsEmpty()) {
+            loadSet.insert(primIndexPath);
+        }
+        else {
             loadSet.insert(primPath);
         }
     }
@@ -2811,31 +2829,26 @@ static void
 _AddDependentPaths(const SdfLayerHandle &layer, const SdfPath &path,
                    const PcpCache &cache, SdfPathSet *output)
 {
-    // Use Pcp's LayerStack dependency facilities.  We cannot use Pcp's spec
-    // dependency facilities, since we skip populating those in Usd mode.  We
-    // may need to revisit this when we decide to tackle namespace editing.
-    const PcpLayerStackPtrVector& layerStacks =
-        cache.FindAllLayerStacksUsingLayer(layer);
+    // We include virtual dependencies so that we can process
+    // changes like adding missing defaultPrim metadata.
+    const PcpDependencyFlags depTypes = PcpDependencyTypeAnyIncludingVirtual;
+    // Do not filter dependencies against the indexes cached in PcpCache,
+    // because Usd does not cache PcpPropertyIndex entries.
+    const bool filterForExistingCachesOnly = false;
 
-    for (const auto& layerStack : layerStacks) {
-        // If this path is in the cache's LayerStack, we always add it.
-        if (layerStack == cache.GetLayerStack())
-            output->insert(path.StripAllVariantSelections());
-
-        // Ask the cache for further dependencies and add any to the output.
-        SdfPathVector deps = cache.GetPathsUsingSite(
-            layerStack, path, PcpDirect | PcpAncestral, /*recursive*/ true);
-        output->insert(deps.begin(), deps.end());
-
-        TF_DEBUG(USD_CHANGES).Msg(
-            "Adding paths that use <%s> in layer @%s@%s: %s\n",
-            path.GetText(), layer->GetIdentifier().c_str(),
-            layerStack->GetIdentifier().rootLayer != layer ?
-            TfStringPrintf(" (stack root: @%s@)",
-                           layerStack->GetIdentifier().rootLayer->
-                           GetIdentifier().c_str()).c_str() : "",
-            TfStringify(deps).c_str());
+    for (const PcpDependency& dep:
+         cache.FindDependentPaths(layer, path, depTypes,
+                                  /* recurseOnSite */ true,
+                                  /* recurseOnIndex */ true,
+                                  filterForExistingCachesOnly)) {
+        output->insert(dep.indexPath);
     }
+
+    TF_DEBUG(USD_CHANGES).Msg(
+        "Adding paths that use <%s> in layer @%s@: %s\n",
+        path.GetText(),
+        layer->GetIdentifier().c_str(),
+        TfStringify(*output).c_str());
 }
 
 void

@@ -79,6 +79,8 @@ pxr_shared_library(${PXR_PACKAGE}
         AttributeConverter
         AttributeConverterRegistry
 
+        UserTaggedAttribute
+
     PRIVATE_CLASSES
         registryHelper
         MayaCameraWriter
@@ -114,6 +116,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapEditUtil.cpp 
         wrapQuery.cpp 
         wrapStageCache.cpp 
+        wrapUserTaggedAttribute.cpp 
 
     PYTHON_FILES
         __init__.py 

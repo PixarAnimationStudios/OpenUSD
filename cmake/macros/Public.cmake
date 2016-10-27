@@ -198,6 +198,9 @@ function(pxr_shared_library LIBRARY_NAME)
         endif()
     endif()
 
+    # Set prefix  here after the library add; ahead of python so that python lib prefix is reset to correct
+    set_target_properties(${LIBRARY_NAME} PROPERTIES PREFIX "${PXR_LIB_PREFIX}")
+
     if(sl_PYTHON_FILES)
         _install_python(${LIBRARY_NAME}
             FILES ${sl_PYTHON_FILES}

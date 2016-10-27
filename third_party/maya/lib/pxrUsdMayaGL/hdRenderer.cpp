@@ -28,6 +28,8 @@
 // Make sure to include glew first before any header that might include
 // gl.h
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glut.h"
+
 #include "pxrUsdMayaGL/hdRenderer.h"
 #include "px_vp20/utils.h"
 #include "px_vp20/utils_legacy.h"
@@ -42,8 +44,6 @@
 #include <maya/MStateManager.h>
 #include <maya/MViewport2Renderer.h>
 #include <maya/MHWGeometryUtilities.h>
-
-#include <GL/glut.h>
 
 void
 UsdMayaGLHdRenderer::CheckRendererSetup(

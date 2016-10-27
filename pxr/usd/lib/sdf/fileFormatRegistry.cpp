@@ -35,7 +35,6 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticTokens.h"
-#include <boost/foreach.hpp>
 
 using std::string;
 using std::vector;
@@ -176,7 +175,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
     if (TF_VERIFY(not formatBaseType.IsUnknown()))
         PlugRegistry::GetAllDerivedTypes(formatBaseType, &formatTypes);
 
-    BOOST_FOREACH(TfType formatType, formatTypes) {
+    for (auto formatType : formatTypes) {
 
         TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
             "Type '%s'\n", formatType.GetTypeName().c_str());
@@ -301,7 +300,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         // Record the extensions that this file format plugin can handle.
         // Note that an extension may be supported by multiple file format
         // plugins.
-        BOOST_FOREACH(string ext, extensions) {
+        for (auto ext : extensions) {
             if (ext.empty())
                 continue;
 

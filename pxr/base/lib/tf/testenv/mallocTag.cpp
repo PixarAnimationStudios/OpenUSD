@@ -52,8 +52,8 @@ static void
 MyMalloc(size_t n) {
     void* ptr = malloc(n);
     std::lock_guard<std::mutex> lock(_mutex);
-    ::_requests.push_back(ptr);
-    ::_total += n;
+    _requests.push_back(ptr);
+    _total += n;
     if (_total > _maxTotal) {
         _maxTotal = _total;
     }
@@ -61,10 +61,10 @@ MyMalloc(size_t n) {
 
 static void
 FreeAll() {
-    for (size_t i = 0; i < ::_requests.size(); i++)
+    for (size_t i = 0; i < _requests.size(); i++)
         free(::_requests[i]);
-    ::_requests.clear();
-    ::_total = 0;
+    _requests.clear();
+    _total = 0;
 }
 
 
@@ -120,7 +120,7 @@ static bool CloseEnough(int64_t a1, int64_t a2) {
 static bool
 MemCheck()
 {
-    int64_t m = ::_total,
+    int64_t m = _total,
             current = TfMallocTag::GetTotalBytes();
     bool ok = CloseEnough(m, current);
 
@@ -278,7 +278,7 @@ Test_TfMallocTag()
     if (!runme)
         return true;
 
-    ::_requests.reserve(1024);
+    _requests.reserve(1024);
     TF_AXIOM(TfMallocTag::GetTotalBytes() == 0);
     TF_AXIOM(MemCheck());
 

@@ -875,10 +875,6 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self._updateHUDMenu)
 
-        QtCore.QObject.connect(self._ui.actionHUD_VBO,
-                               QtCore.SIGNAL('triggered()'),
-                               self._HUDMenuChanged)
-
         QtCore.QObject.connect(self._ui.actionHUD_Complexity,
                                QtCore.SIGNAL('triggered()'),
                                self._HUDMenuChanged)
@@ -1891,8 +1887,6 @@ class MainWindow(QtGui.QMainWindow):
         #     self._settings.get("actionHUD_Info", False)
         self._stageView.showHUD_Info = False
         self._ui.actionHUD_Info.setChecked(self._stageView.showHUD_Info)
-        self._stageView.showHUD_VBO = self._settings.get("actionHUD_VBO", True)
-        self._ui.actionHUD_VBO.setChecked(self._stageView.showHUD_VBO)
         self._stageView.showHUD_Complexity = \
             self._settings.get("actionHUD_Complexity", True)
         self._ui.actionHUD_Complexity.setChecked(
@@ -3448,7 +3442,6 @@ class MainWindow(QtGui.QMainWindow):
         """called when a HUD menu item has changed that does not require info refresh"""
         self._stageView.showHUD = self._ui.actionHUD.isChecked()
         self._stageView.showHUD_Info = self._ui.actionHUD_Info.isChecked()
-        self._stageView.showHUD_VBO = self._ui.actionHUD_VBO.isChecked()
         self._stageView.showHUD_Complexity = \
             self._ui.actionHUD_Complexity.isChecked()
         self._stageView.showHUD_Performance = \
@@ -3459,7 +3452,6 @@ class MainWindow(QtGui.QMainWindow):
 
         self._settings.setAndSave(actionHUD=self._ui.actionHUD.isChecked())
         self._settings.setAndSave(actionHUD_Info=self._ui.actionHUD_Info.isChecked())
-        self._settings.setAndSave(actionHUD_VBO=self._ui.actionHUD_VBO.isChecked())
         self._settings.setAndSave(actionHUD_Complexity=\
                                         self._ui.actionHUD_Complexity.isChecked())
         self._settings.setAndSave(actionHUD_Performance=\

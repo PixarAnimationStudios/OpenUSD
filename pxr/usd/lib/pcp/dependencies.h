@@ -27,11 +27,18 @@
 /// \file pcp/dependencies.h
 
 #include "pxr/usd/pcp/node.h"
+#include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
+#include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/pcp/layerStackRegistry.h"
+#include "pxr/usd/pcp/primIndex.h"
+#include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/site.h"
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/unordered_map.hpp>
 #include <iosfwd>
 #include <set>
 
@@ -42,127 +49,80 @@ TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 /// \class Pcp_Dependencies
 ///
-/// Track dependencies between Sdf sites and Pcp sites.
-///
-/// This object keeps track of which Pcp sites depend on which Sdf sites.
-/// Clients can provide a collection of Sdf sites and get back a collection
-/// of Pcp sites that use those Sdf sites.
-///
-/// Relocations can introduce dependencies on prims which are not namespace
-/// ancestors.  These are known as "spooky" dependencies because of their
-/// non-local effect.  For an example, see the TrickySpookyVariantSelection
-/// museum case: the relocated anim scopes have a spooky dependency on the
-/// rig scope from under which they were relocated.  We track spooky
-/// dependencies separately because they do not contribute directly to
-/// a computed prim index the way normal dependencies do, so they
-/// require special handling.
+/// Tracks the dependencies of PcpPrimIndex entries in a PcpCache.
+/// This is an internal class only meant for use by PcpCache.
 ///
 class Pcp_Dependencies : boost::noncopyable {
 public:
     /// Construct with no dependencies.
     Pcp_Dependencies();
-    Pcp_Dependencies(const Pcp_Dependencies&);
-
     ~Pcp_Dependencies();
 
-    /// \name Adding
+    /// \name Registration
     /// @{
 
-    /// Records dependencies between \p pcpSitePath and the sites \p sdfSites.
-    /// For each site in \p sdfSites, the corresponding node in \p nodes 
-    /// indicates the node in the prim index for \p pcpSitePath from which 
-    /// the spec originated.
-    void Add(const SdfPath& pcpSitePath, 
-             const SdfSiteVector& sdfSites, const PcpNodeRefVector& nodes);
-
-    /// Records dependencies between \p pcpSitePath and the sites in
-    /// \p dependencies.
-    void Add(const SdfPath& pcpSitePath,
-             const PcpPrimIndexDependencies& dependencies);
-
-    /// Records spooky dependencies between \p pcpSitePath and the
-    /// collection of specs in \p spookySpecs. For each spec in \p spookySpecs,
-    /// the corresponding node in \p nodes indicates the node in the prim index
-    /// for \p pcpSitePath from which the spec originated.
-    void AddSpookySitesUsedByPrim(const SdfPath& pcpSitePath,
-                                  const SdfSiteVector& spookySites,
-                                  const PcpNodeRefVector& spookyNodes);
-
-    /// Records spooky dependencies between \p pcpSitePath and the sites in
-    /// \p deps.
-    void AddSpookySitesUsedByPrim(const SdfPath& pcpSitePath,
-                                  const PcpPrimIndexDependencies& deps);
-
-    /// @}
-    /// \name Removing
-    /// @{
-
-    /// Remove all recorded dependencies (including spooky dependencies)
-    /// for the site at \p pcpSitePath and all descendant sites.  This is
-    /// used when the Pcp graph may have changed for \p pcpSitePath.  That
-    /// implies that the graph may have changed for any descendant.  Any
-    /// layer stacks used by the site are added to \p lifeboat, if not
-    /// \c NULL.
+    /// Add dependency information for the given PcpPrimIndex.
     ///
-    /// If \p specsAtPathOnly is \c true then this only removes
-    /// non-spooky dependencies due to specs and only those at
-    /// \p pcpSitePath (not descendants).
-    void Remove(const SdfPath& pcpSitePath, PcpLifeboat* lifeboat,
-                bool specsAtPathOnly = false);
+    /// Assumptions:
+    /// - A computed prim index will be added exactly once
+    /// - Parent indices will be added before children
+    void Add(const PcpPrimIndex &primIndex);
+
+    /// Remove dependency information for the given PcpPrimIndex.
+    /// Any layer stacks in use by any site are added to \p lifeboat,
+    /// if not \c NULL.
+    ///
+    /// Assumptions:
+    /// - The prim index has previously been added exactly once
+    void Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat);
 
     /// Remove all dependencies.  Any layer stacks in use by any site are
-    /// added to \p lifeboat, if not \c NULL.  This method implicitly calls
-    /// \c Flush().
+    /// added to \p lifeboat, if not \c NULL.
     void RemoveAll(PcpLifeboat* lifeboat);
-
-    /// Releases any layer stacks that no longer have any dependencies.
-    void Flush();
 
     /// @}
     /// \name Queries
     /// @{
 
-    /// Returns the path of every \c PcpSite that uses the spec in \p layer
-    /// at \p path.  If \p recursive is \c true then also returns the path
-    /// of every \c PcpSite that uses any descendant of \p path.  If
-    /// \p primsOnly is \c true then recursion is limited to prim descendants.
-    /// If \p spooky is \c true then spooky dependencies will be returned
-    /// instead of normal dependencies.
+    /// Invokes \p fn for every \c PcpPrimIndex that uses
+    /// the site represented by (siteLayerStack, sitePath).
     ///
-    /// If \p sourceNodes is not \c NULL then it has elements corresponding
-    /// to the elements in the returned vector. If the vector returned from
-    /// this function is called pcpSites, then sourceNodes[i] is the node
-    /// in the prim index for pcpSites[i] that introduced the dependency
-    /// on the spec at \p layer and \p path.
+    /// The arguments to \p fn are: (depIndexPath, depSitePath).
+    /// 
+    /// If \p recurse is \c true, then also runs the callback
+    /// of every \c PcpSite that uses any descendant of \p path.
+    /// depSitePath provides the descendent dependency path.
     ///
-    /// If \p spooky is \c true then spooky dependencies will be returned
-    /// instead of normal dependencies.
-    SdfPathVector Get(const SdfLayerHandle& layer,
-                      const SdfPath& path,
-                      bool recursive = false,
-                      bool primsOnly = false,
-                      bool spooky = false,
-                      PcpNodeRefVector* sourceNodes = NULL) const;
-
-    /// Returns the path of every \c PcpSite that uses the site given by
-    /// \p layerStack and \p path, via a dependency specified by
-    /// \p dependencyType. \p dependencyType is a bitwise-OR of
-    /// \c PcpDependencyType enum values. If \p recursive is \c true,
-    /// then we return the path of every \c PcpSite that uses any descendant 
-    /// of \p path, via a dependency specified by \p dependencyType.
-    /// If \p spooky is \c true then spooky dependencies will be returned
-    /// instead of normal dependencies.
-    SdfPathVector Get(const PcpLayerStackPtr& layerStack,
-                      const SdfPath& path,
-                      unsigned int dependencyType,
-                      bool recursive = false,
-                      bool spooky = false) const;
-
-    /// Returns every layer that the prim at \p path depends on.  
-    /// If \p recursive is \c true then also returns every layer that any 
-    /// descendant of \p path depends on.
-    SdfLayerHandleSet GetLayersUsedByPrim(const SdfPath& path,
-                                          bool recursive = false) const;
+    /// If \p recurse is \c false, depSitePath is always
+    /// the sitePath supplied and can be ignored.
+    template <typename FN>
+    void
+    ForEachDependencyOnSite( const PcpLayerStackPtr &siteLayerStack,
+                             const SdfPath &sitePath,
+                             bool recurse,
+                             const FN &fn ) const
+    {
+        _LayerStackDepMap::const_iterator i = _deps.find(siteLayerStack); 
+        if (i == _deps.end()) {
+            return;
+        }
+        const _SiteDepMap & siteDepMap = i->second;
+        if (recurse) {
+            BOOST_FOREACH(const _SiteDepMap::value_type& entry,
+                          siteDepMap.FindSubtreeRange(sitePath)) {
+                for(const SdfPath &primIndexPath: entry.second) {
+                    fn(primIndexPath, entry.first);
+                }
+            }
+        } else {
+            _SiteDepMap::const_iterator j = siteDepMap.find(sitePath);
+            if (j != siteDepMap.end()) {
+                for(const SdfPath &primIndexPath: j->second) {
+                    fn(primIndexPath, sitePath);
+                }
+            }
+        }
+    }
 
     /// Returns all layers from all layer stacks with dependencies recorded
     /// against them.
@@ -177,27 +137,112 @@ public:
     bool UsesLayerStack(const PcpLayerStackPtr& layerStack) const;
 
     /// @}
-    /// \name Debugging
-    /// @{
-
-    /// Write the dependencies to \p s.
-    void DumpDependencies(std::ostream& s) const;
-
-    /// Returns a string containing the dependencies.
-    std::string DumpDependencies() const;
-
-    /// Verify that the internal data structures are consistent.
-    void CheckInvariants() const;
-
-    /// @}
 
 private:
-    void _Add(
-        const SdfPath& pcpSitePath, SdfSite sdSite, const PcpNodeRef& node,
-        bool spooky);
+    // Map of site paths to dependencies, as cache paths.  Stores cache
+    // paths as an unordered vector: for our datasets this is both more
+    // compact and faster than std::set.
+    typedef SdfPathTable<SdfPathVector> _SiteDepMap;
 
-private:
-    boost::scoped_ptr<struct Pcp_DependenciesData> _data;
+    // Map of layery stacks to dependencies on that layerStack.
+    // Retains references to those layer stacks, which in turn
+    // retain references to their constituent layers.
+    typedef boost::unordered_map<PcpLayerStackRefPtr, _SiteDepMap>
+        _LayerStackDepMap;
+
+    _LayerStackDepMap _deps;
 };
+
+template <typename FN>
+static void
+Pcp_ForEachDependentNode( const SdfPath &sitePath,
+                          const SdfLayerHandle &layer,
+                          const SdfPath &depIndexPath,
+                          const PcpCache &cache,
+                          const FN &fn )
+{
+    PcpNodeRef nodeUsingSite;
+
+    // Walk up as needed to find a containing prim index.
+    SdfPath indexPath;
+    const PcpPrimIndex *primIndex = nullptr;
+    for (indexPath = depIndexPath.GetAbsoluteRootOrPrimPath();
+         indexPath != SdfPath();
+         indexPath = indexPath.GetParentPath())
+    {
+        primIndex = cache.FindPrimIndex(indexPath);
+        if (primIndex) {
+            break;
+        }
+    }
+    if (primIndex) {
+        // Find which node corresponds to (layer, oldPath).
+        TF_FOR_ALL(node, primIndex->GetNodeRange()) {
+            const PcpDependencyFlags flags = PcpClassifyNodeDependency(*node);
+            if (flags != PcpDependencyTypeNone &&
+                node->GetLayerStack()->HasLayer(layer) &&
+                sitePath.HasPrefix(node->GetPath()))
+            {
+                nodeUsingSite = *node;
+                fn(depIndexPath, nodeUsingSite, flags);
+            }
+        }
+    }
+
+    TF_VERIFY(
+            nodeUsingSite, 
+            "Unable to find node that introduced dependency on site "
+            "<%s>@%s@ for prim <%s>", 
+            sitePath.GetText(),
+            layer->GetIdentifier().c_str(),
+            depIndexPath.GetText());
+}
+
+template <typename FN>
+static void
+Pcp_ForEachDependentNode( const SdfPath &sitePath,
+                          const PcpLayerStackPtr &layerStack,
+                          const SdfPath &depIndexPath,
+                          const PcpCache &cache,
+                          const FN &fn )
+{
+    PcpNodeRef nodeUsingSite;
+
+    // Walk up as needed to find a containing prim index.
+    SdfPath indexPath;
+    const PcpPrimIndex *primIndex = nullptr;
+    for (indexPath = depIndexPath.GetAbsoluteRootOrPrimPath();
+         indexPath != SdfPath();
+         indexPath = indexPath.GetParentPath())
+    {
+        primIndex = cache.FindPrimIndex(indexPath);
+        if (primIndex) {
+            break;
+        }
+    }
+    if (primIndex) {
+        // Find which node corresponds to (layerStack, oldPath).
+        TF_FOR_ALL(node, primIndex->GetNodeRange()) {
+            const PcpDependencyFlags flags = PcpClassifyNodeDependency(*node);
+            if (flags != PcpDependencyTypeNone &&
+                node->GetLayerStack() == layerStack &&
+                sitePath.HasPrefix(node->GetPath()))
+            {
+                nodeUsingSite = *node;
+                fn(depIndexPath, nodeUsingSite, flags);
+            }
+        }
+    }
+
+    TF_VERIFY(
+            nodeUsingSite, 
+            "Unable to find node that introduced dependency on site "
+            "<%s>%s for prim <%s> in %s", 
+            sitePath.GetText(),
+            TfStringify(layerStack->GetIdentifier()).c_str(),
+            depIndexPath.GetText(),
+            TfStringify(cache.GetLayerStack()->GetIdentifier()).c_str()
+            );
+}
 
 #endif

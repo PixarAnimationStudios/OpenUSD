@@ -87,6 +87,23 @@ properly based on the install location of the build. However, if you plan to rel
 the build, you must inform the build by setting the cmake variable ```PXR_INSTALL_LOCATION``` to the intended final
 directory where these files will be located. This variable may be a ':'-delimited list of paths.
 
+##### Shared library prefix
+
+By default shared libraries will have the prefix 'lib'. This means, for a given
+component such as [usdGeom](pxr/usd/lib/usdGeom), the build will generate a corresponding 
+libusdGeom object (libusdGeom.so on Linux, libusdGeom.dll on Windows 
+and libusdGeom.dylib on Mac). You can change the prefix (or remove it) through 
+```PXR_LIB_PREFIX```. For example,
+
+```
+-DPXR_LIB_PREFIX=pxr
+```
+
+Will generate pxrusdGeom.so on Linux, pxrusdGeom.dll on Windows and 
+pxrusdGeom.dylib on Mac for the usdGeom component.
+
+> Note: This prefix does not apply to shared objects used for Python bindings.
+
 ## USD Developer Options
 
 ##### ASCII Parser Editing/Validation

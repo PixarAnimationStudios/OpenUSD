@@ -32,8 +32,6 @@
 
 #include "pxr/base/gf/range3f.h"
 
-#include <boost/foreach.hpp>
-
 SdfLayerRefPtr
 UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
 {
@@ -65,15 +63,15 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
 
     // Usd currently requires an extent, somewhat unfortunately.
     GfRange3f extent;
-    BOOST_FOREACH(const GfVec3f &pt, usdPoints)
+    for (const auto& pt : usdPoints) {
         extent.UnionWith(pt);
+    }
     VtVec3fArray extentArray(2);
     extentArray[0] = extent.GetMin();
     extentArray[1] = extent.GetMax();
 
     // Make a poly mesh for each group in the obj.
-    BOOST_FOREACH(const UsdObjStream::Group &group, objStream.GetGroups()) {
-
+    for (const auto& group : objStream.GetGroups()) {
         if (not TfIsValidIdentifier(group.name)) {
             TF_WARN("Omitting OBJ group with invalid name '%s'",
                     group.name.c_str());
@@ -96,7 +94,7 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
         mesh.GetPointsAttr().Set(usdPoints);
 
         VtArray<int> faceVertexCounts, faceVertexIndices;
-        BOOST_FOREACH(const UsdObjStream::Face &face, group.faces) {
+        for (const auto& face : group.faces) {
             faceVertexCounts.push_back(face.size());
             for (int p = face.pointsBegin; p != face.pointsEnd; ++p) {
                 faceVertexIndices.push_back(objPoints[p].vertIndex);

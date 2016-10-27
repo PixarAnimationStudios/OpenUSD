@@ -224,6 +224,7 @@ void
 GarchGLPlatformDebugContext::makeCurrent()
 {
 #if !defined(ARCH_OS_WINDOWS)
+    // note: if not enabled, returns without making context current.
     if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }

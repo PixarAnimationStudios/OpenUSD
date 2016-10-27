@@ -232,7 +232,7 @@ private:
         set<string> debugTokenSet(_debugTokens.begin(), _debugTokens.end());
 
         if (debugTokenSet.count("help")) {
-            printf("%s", ::_helpMsg);
+            printf("%s", _helpMsg);
             exit(0);
         }
 

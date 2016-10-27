@@ -36,8 +36,6 @@
 
 #include <tbb/concurrent_hash_map.h>
 
-#include <boost/foreach.hpp>
-
 static bool
 _IsFileRelative(const std::string& path) {
     return path.find("./") == 0 or path.find("../") == 0;
@@ -57,7 +55,7 @@ Ar_DefaultResolver::Ar_DefaultResolver()
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (not envPath.empty()) {
-        BOOST_FOREACH(const std::string& p, TfStringTokenize(envPath, ":")) {
+        for (const auto& p : TfStringTokenize(envPath, ":")) {
             _searchPath.push_back(TfAbsPath(p));
         }
     }
@@ -168,7 +166,7 @@ Ar_DefaultResolver::_ResolveNoCache(const std::string& path)
         // If that fails and the path is a search path, try to resolve
         // against each directory in the specified search paths.
         if (IsSearchPath(path)) {
-            BOOST_FOREACH(const std::string& searchPath, _searchPath) {
+            for (const auto& searchPath : _searchPath) {
                 resolvedPath = _Resolve(searchPath, path);
                 if (not resolvedPath.empty()) {
                     return resolvedPath;

@@ -41,7 +41,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <set>
 #include <string>
@@ -72,7 +71,7 @@ _GetTypeNames(const std::set<TfType>& types)
 {
     std::vector<std::string> typeNames;
     typeNames.reserve(types.size());
-    BOOST_FOREACH(const TfType& type, types) {
+    for (const auto& type : types) {
         typeNames.push_back(type.GetTypeName());
     }
     return TfStringJoin(typeNames);

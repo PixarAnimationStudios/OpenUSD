@@ -32,6 +32,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/usd/usd/prim.h"
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -80,6 +81,13 @@ _GetPrimPathFromInstanceIndex(
     return boost::python::make_tuple(path, absoluteInstanceIndex);
 }
 
+static void
+_SetLightingState(UsdImagingGL &self, GlfSimpleLightVector const &lights,
+                  GlfSimpleMaterial const &material, GfVec4f const &sceneAmbient)
+{
+    self.SetLightingState(lights, material, sceneAmbient);
+}
+
 void wrapGL()
 {
     { 
@@ -92,6 +100,7 @@ void wrapGL()
             .def("SetCameraState", &UsdImagingGL::SetCameraState)
             .def("SetLightingStateFromOpenGL",
                  &UsdImagingGL::SetLightingStateFromOpenGL)
+            .def("SetLightingState", &_SetLightingState)
             .def("SetCameraStateFromOpenGL", &UsdImagingGL::SetCameraStateFromOpenGL)
             .def("SetSelected", &UsdImagingGL::SetSelected)
             .def("ClearSelected", &UsdImagingGL::ClearSelected)
@@ -155,5 +164,8 @@ void wrapGL()
             .def_readwrite("enableHardwareShading", &Params::enableHardwareShading)
         ;
 
+        TfPyContainerConversions::from_python_sequence<
+            std::vector<GlfSimpleLight>,
+                TfPyContainerConversions::variable_capacity_policy>();
     }
 }

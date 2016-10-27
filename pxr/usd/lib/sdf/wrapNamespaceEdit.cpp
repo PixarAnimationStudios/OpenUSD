@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file wrapNamespaceEdit.cpp
-#include <boost/foreach.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/init.hpp>
@@ -91,7 +90,7 @@ std::string
 _StringifyBatchEdit(const SdfBatchNamespaceEdit& x)
 {
     std::vector<std::string> edits;
-    BOOST_FOREACH(const SdfNamespaceEdit& edit, x.GetEdits()) {
+    for (const auto& edit : x.GetEdits()) {
         edits.push_back(_StringifyEdit(edit));
     }
     if (edits.empty()) {

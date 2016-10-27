@@ -29,6 +29,7 @@
 #include "pxr/imaging/garch/glext.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/glf/texture.h"
@@ -93,6 +94,8 @@ public:
 private:
     GlfTextureHandleRefPtr _textureHandle;
     GlfTextureRefPtr _texture;
+    GfVec4f _borderColor;
+    float _maxAnisotropy;
     GLuint _sampler;
     bool _isPtex;
 };

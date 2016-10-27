@@ -38,7 +38,6 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/threads.h"
 
-#include <boost/foreach.hpp>
 #include <boost/utility.hpp>
 
 #include <signal.h>
@@ -161,7 +160,7 @@ TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
     } else {
         // Reassign new serial numbers to the errors.
         size_t serial = _nextSerial.fetch_and_add(src.size());
-        BOOST_FOREACH(TfError &error, src) {
+        for (auto& error : src) {
             error._data->_serial = serial++;
         }
         // Now splice them into the main list.

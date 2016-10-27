@@ -26,6 +26,7 @@
 TF_WRAP_MODULE
 {
     TF_WRAP( PayloadDecorator );
+    TF_WRAP( Dependency );
     TF_WRAP( Cache );
     TF_WRAP( Errors );
     TF_WRAP( InstanceKey );

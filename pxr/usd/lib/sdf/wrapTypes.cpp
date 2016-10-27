@@ -417,8 +417,8 @@ void wrapTypes()
         .def(self == self)
         .def(self != self)
 
-        .def("__repr__", ::_UnregisteredValueRepr)
-        .def("__hash__", ::_UnregisteredValueHash)
+        .def("__repr__", _UnregisteredValueRepr)
+        .def("__hash__", _UnregisteredValueHash)
         ;
 
     VtValueFromPython<SdfUnregisteredValue>();
@@ -525,7 +525,7 @@ void wrapTypes()
     class_<SdfValueBlock>("ValueBlock")
         .def(self == self)
         .def(self != self)
-        .def("__repr__", ::_SdfValueBlockRepr)
-        .def("__hash__", ::_SdfValueBlockHash);
+        .def("__repr__", _SdfValueBlockRepr)
+        .def("__hash__", _SdfValueBlockHash);
     VtValueFromPython<SdfValueBlock>();
 }

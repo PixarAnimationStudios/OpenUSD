@@ -58,6 +58,12 @@ public:
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
+    /// Set lighting state
+    USDIMAGINGGL_API
+    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+                                  GlfSimpleMaterial const &material,
+                                  GfVec4f const &sceneAmbient);
+
     USDIMAGINGGL_API
     virtual void InvalidateBuffers();
 

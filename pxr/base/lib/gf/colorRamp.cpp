@@ -148,18 +148,18 @@ _ShapeColorInterpExperiment(
          * target slope.
          */
         if (alpha < slide) {
-            Cret[i] = ::_Stramp(alpha,
-                                0.,slide,
-                                c0,cMid,
-                                0.,slope,
-                                width0,widthMid0);
+            Cret[i] = _Stramp(alpha,
+                              0.,slide,
+                              c0,cMid,
+                              0.,slope,
+                              width0,widthMid0);
         }
         else {
-            Cret[i] = ::_Stramp(alpha,
-                                slide,1.,
-                                cMid,c1,
-                                slope,0.,
-                                widthMid1,width1);
+            Cret[i] = _Stramp(alpha,
+                              slide,1.,
+                              cMid,c1,
+                              slope,0.,
+                              widthMid1,width1);
         }
     }
 

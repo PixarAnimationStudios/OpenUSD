@@ -38,13 +38,13 @@ static bool _opening = false,
 bool
 Tf_DlOpenIsActive()
 {
-    return ::_opening;
+    return _opening;
 }
 
 bool
 Tf_DlCloseIsActive()
 {
-    return ::_closing;
+    return _closing;
 }
 
 void*
@@ -62,9 +62,9 @@ TfDlopen(
 
     // try to dlopen the dynamic library
     bool state = ::_opening;
-    ::_opening = true;
+    _opening = true;
     void* handle = ArchLibraryOpen(filename.c_str(), flag);
-    ::_opening = state;
+    _opening = state;
 
     TF_DEBUG(TF_DLOPEN).Msg("TfDlopen: [opened] '%s' (handle=%p)\n",
                             filename.c_str(), handle);
@@ -98,14 +98,14 @@ TfDlopen(
 int
 TfDlclose(void* handle)
 {
-    bool state = ::_closing;
-    ::_closing = true;
+    bool state = _closing;
+    _closing = true;
 
     TF_DEBUG(TF_DLCLOSE).Msg("TfDlclose: handle = %p\n", handle);
 
 	int status = ArchLibraryClose(handle);
 
-    ::_closing = state;
+    _closing = state;
 
     return status;
 }

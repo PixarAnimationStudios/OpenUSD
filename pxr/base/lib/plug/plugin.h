@@ -126,9 +126,7 @@ private:
     PLUG_LOCAL
     static void _RegisterAllPlugins();
     PLUG_LOCAL
-    static PlugPluginPtr _GetPluginWithAddress(void* address);
-    PLUG_LOCAL
-    static PlugPluginPtr _GetPluginWithPath(const std::string& path);
+    static PlugPluginPtr _GetPluginWithName(const std::string& name);
     PLUG_LOCAL
     static PlugPluginPtrVector _GetAllPlugins();
 
@@ -183,33 +181,6 @@ private:
     _Type _type;
 
     friend class PlugRegistry;
-    friend class PlugThisPlugin;
-};
-
-/// \class PlugThisPlugin
-///
-/// An object that refers to the plugin it's in.
-///
-/// If you have a plugin that wants access to its own plugInfo metadata
-/// (especially its resources) then make a \b static instance of this
-/// variable somewhere in the plugin's code.  It can be a static global,
-/// a static variable in a function, a static member of a class defined
-/// in the plugin, or a member of any of those.  It must not be allocated
-/// on the stack or the heap or \c Get() will return \c NULL.
-///
-class PlugThisPlugin : boost::noncopyable {
-public:
-    PLUG_API PlugThisPlugin();
-    PLUG_API ~PlugThisPlugin();
-
-    /// Returns the plugin or \c NULL if not found.
-    const PlugPluginPtr& Get() const
-    {
-        return _plugin;
-    }
-
-private:
-    PlugPluginPtr _plugin;
 };
 
 /// Find a plugin's resource by absolute or relative path optionally
@@ -219,15 +190,6 @@ private:
 PLUG_API
 std::string
 PlugFindPluginResource(const PlugPluginPtr& plugin,
-                       const std::string& path, bool verify = true);
-
-/// Find a plugin's resource by absolute or relative path optionally
-/// verifying that file exists.  If \c plugin.Get() is \c NULL or
-/// verification fails an empty path is returned.  Relative paths are
-/// relative to the plugin's resource path.
-PLUG_API
-std::string
-PlugFindPluginResource(const PlugThisPlugin& plugin,
                        const std::string& path, bool verify = true);
 
 #endif // PLUG_PLUGIN_H

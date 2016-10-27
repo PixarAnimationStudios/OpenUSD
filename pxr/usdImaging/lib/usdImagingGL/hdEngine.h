@@ -102,6 +102,11 @@ public:
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     USDIMAGINGGL_API
+    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+                                  GlfSimpleMaterial const &material,
+                                  GfVec4f const &sceneAmbient);
+
+    USDIMAGINGGL_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
     USDIMAGINGGL_API

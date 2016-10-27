@@ -225,10 +225,6 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   and glslfx files.  It also provides some basic glsl shaders upon which Hd
   behaviors are built.
 
-- \b Glfq : The Gl Qt Foundations module makes it easy to instrument your
-  QglWidget classes so that your application can be configured at runtime to
-  emit detailed OpenGL debugging output.
-
 - \b CameraUtil The Camera Utilities module provides a small but important set of 
   common camera-related computations that don't really belong in the core
   GfCamera class.

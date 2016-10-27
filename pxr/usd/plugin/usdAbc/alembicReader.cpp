@@ -34,7 +34,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <Alembic/Abc/ArchiveInfo.h>
@@ -1175,7 +1174,7 @@ _ReaderContext::VisitSpecs(
     SdfAbstractDataSpecVisitor* visitor) const
 {
     // Visit prims in path sorted order.
-    BOOST_FOREACH(const _PrimMap::value_type& v, _prims) {
+    for (const auto& v : _prims) {
         // Visit the prim.
         const SdfPath& primPath = v.first;
         if (not visitor->VisitSpec(owner, SdfAbstractDataSpecId(&primPath))) {
@@ -1185,8 +1184,7 @@ _ReaderContext::VisitSpecs(
         // Visit the prim's properties in lexicographical sorted order.
         const Prim& prim = v.second;
         if (&prim != _pseudoRoot) {
-            BOOST_FOREACH(const PropertyMap::value_type& w,
-                          prim.propertiesCache) {
+            for (const auto& w : prim.propertiesCache) {
                 if (not visitor->VisitSpec(owner,
                             SdfAbstractDataSpecId(&primPath, &w.first))) {
                     return;
@@ -1217,8 +1215,7 @@ _ReaderContext::List(const SdfAbstractDataSpecId& id) const
                 }
 
                 // Add metadata.
-                BOOST_FOREACH(const MetadataMap::value_type& v,
-                              property->metadata) {
+                for (const auto& v : property->metadata) {
                     result.push_back(v.first);
                 }
             }
@@ -1251,7 +1248,7 @@ _ReaderContext::List(const SdfAbstractDataSpecId& id) const
             if (not prim->children.empty()) {
                 result.push_back(SdfChildrenKeys->PrimChildren);
             }
-            BOOST_FOREACH(const MetadataMap::value_type& v, prim->metadata) {
+            for (const auto& v : prim->metadata) {
                 result.push_back(v.first);
             }
         }
@@ -2784,7 +2781,7 @@ _ReadOther(_PrimReaderContext* context)
 {
     // Read every unextracted property to Usd using default converters.
     // This handles any property we don't have specific rules for.
-    BOOST_FOREACH(const std::string& name, context->GetUnextractedNames()) {
+    for (const auto& name : context->GetUnextractedNames()) {
         context->AddOutOfSchemaProperty(
             context->GetUsdName(name), context->Extract(name));
     }
@@ -2797,8 +2794,7 @@ _ReadOtherSchema(_PrimReaderContext* context)
 {
     // Read every unextracted property to Usd using default converters.
     // This handles any property we don't have specific rules for.
-    BOOST_FOREACH(const std::string& name,
-                  context->GetUnextractedSchemaNames()) {
+    for (const auto& name : context->GetUnextractedSchemaNames()) {
         context->AddOutOfSchemaProperty(
             context->GetUsdName(name), context->ExtractSchema(name));
     }
@@ -3440,8 +3436,7 @@ _ReadPrim(
         // changed path to point at the master.
         const SdfPath instancePath = parentPath.AppendChild(TfToken(name));
         _PrimReaderContext primContext(context, object, instancePath);
-        BOOST_FOREACH(const _ReaderSchema::PrimReader& reader,
-                      context.GetSchema().GetPrimReaders(schemaName)) {
+        for (const auto& reader : context.GetSchema().GetPrimReaders(schemaName)) {
             TRACE_SCOPE("UsdAbc_AlembicDataReader:_ReadPrim");
             reader(&primContext);
         }
@@ -3476,8 +3471,7 @@ _ReadPrim(
         if (path != SdfPath::AbsoluteRootPath()) {
             // Read the properties.
             _PrimReaderContext primContext(context, object, path);
-            BOOST_FOREACH(const _ReaderSchema::PrimReader& reader,
-                          context.GetSchema().GetPrimReaders(schemaName)) {
+            for (const auto& reader : context.GetSchema().GetPrimReaders(schemaName)) {
                 TRACE_SCOPE("UsdAbc_AlembicDataReader:_ReadPrim");
                 reader(&primContext);
             }
