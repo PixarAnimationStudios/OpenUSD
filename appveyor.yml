@@ -44,8 +44,8 @@ build_script:
             -D "Boost_USE_STATIC_LIBS:INT=0" \
             -D "DOUBLE_CONVERSION_LIBRARY:string=c:/projects/double-conversion/bld/double-conversion/Release/double-conversion.lib" \
             -D "DOUBLE_CONVERSION_INCLUDE_DIR:string=c:/projects/double-conversion" \
-            -D "TBB_LIBRARY:string=c:/projects/tbb44_20160526oss/lib/intel64/vc14/" \
-            -D "TBB_LIBRARIES:string=c:/projects/tbb44_20160526oss/lib/intel64/vc14/tbb.lib" \
-            -D "TBB_INCLUDE_DIRS:string=c:/projects/tbb44_20160526oss/include" \
+            -D "TBB_LIBRARY:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/" \
+            -D "TBB_LIBRARIES:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/tbb.lib" \
+            -D "TBB_INCLUDE_DIRS:string=c:/projects/tbb/tbb44_20160526oss/include" \
             ..
     - cmake --build . --config Release
