@@ -384,10 +384,6 @@ UsdStage::~UsdStage()
         _rootLayer ? _rootLayer->GetIdentifier().c_str() : "<null>",
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
     Close();
-
-    if (_mallocTagID != _dormantMallocTagID){
-        free(const_cast<char*>(_mallocTagID));
-    }
 }
 
 void
