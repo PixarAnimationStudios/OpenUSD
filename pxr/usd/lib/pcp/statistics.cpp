@@ -352,9 +352,9 @@ public:
                       sizeof(PcpPrimIndex_Graph) == 88,
                       "PcpPrimIndex_Graph must be of size 88 or 104");
 
-#endif
         static_assert(sizeof(PcpPrimIndex_Graph::_Node) == 40,
                       "PcpPrimIndex_Graph::_Node must be of size 40");
+#endif
 
         static_assert(sizeof(PcpPrimIndex_Graph::_SharedData) == 32,
                       "PcpPrimIndex_Graph::_SharedData must be of size 32");
