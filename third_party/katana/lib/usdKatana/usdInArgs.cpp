@@ -38,6 +38,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
         double shutterOpen,
         double shutterClose,
         const std::vector<double>& motionSampleTimes,
+        const std::set<std::string>& defaultMotionPaths,
         const StringListMap& extraAttributesOrNamespaces,
         bool verbose,
         const char * errorMessage) :
@@ -50,6 +51,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _shutterOpen(shutterOpen),
     _shutterClose(shutterClose),
     _motionSampleTimes(motionSampleTimes),
+    _defaultMotionPaths(defaultMotionPaths),
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
     _verbose(verbose)
 {

@@ -492,6 +492,7 @@ public:
         double shutterOpen;
         double shutterClose;
         std::vector<double> motionSampleTimes;
+        std::set<std::string> defaultMotionPaths;
         PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
         bool verbose;
         const char * errorMessage;
@@ -518,6 +519,7 @@ public:
                 shutterOpen,
                 shutterClose,
                 motionSampleTimes,
+                defaultMotionPaths,
                 extraAttributesOrNamespaces,
                 verbose,
                 errorMessage);
@@ -559,10 +561,10 @@ public:
             sessionLocation = sessionLocationAttr.getValue();
         }
         
-        variants += GetVariantStringFromSession(
-                interface.getOpArg("session"), sessionLocation);
+        FnAttribute::GroupAttribute sessionAttr = interface.getOpArg("session");
 
-        
+        variants += GetVariantStringFromSession(sessionAttr, sessionLocation);
+
         std::set<std::string> selStrings = TfStringTokenizeToSet(variants);
         TF_FOR_ALL(selString, selStrings) {
             std::string errMsg;
@@ -624,6 +626,21 @@ public:
             }
         }
 
+        // Build the set of paths which should use default motion sample times.
+        //
+        FnAttribute::GroupAttribute defaultMotionPathsAttr =
+                sessionAttr.getChildByName("defaultMotionPaths");
+        if (defaultMotionPathsAttr.isValid())
+        {
+            for (size_t i = 0, e = defaultMotionPathsAttr.getNumberOfChildren();
+                    i != e; ++i)
+            {
+                ab.defaultMotionPaths.insert(pystring::replace(
+                    FnAttribute::DelimiterDecode(defaultMotionPathsAttr.getChildName(i)),
+                        ab.rootLocation, "", 1));
+            }
+        }
+
         ab.stage = 
             UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
@@ -643,9 +660,6 @@ public:
                     PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage), true);
         }
         
-        
-        
-
         ab.isolatePath = FnKat::StringAttribute(
             interface.getOpArg("isolatePath")).getValue("", false);
 
@@ -659,8 +673,6 @@ public:
 
         // get extra attributes or namespaces if they exist
         //
-        
-
         FnKat::StringAttribute extraAttributesOrNamespacesAttr = 
             interface.getOpArg("extraAttributesOrNamespaces");
 
