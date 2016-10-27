@@ -23,6 +23,9 @@
 //
 #include <boost/python/def.hpp>
 
+// XXX: issue #28
+// Violating conventional include order, to work around
+// https://bugs.python.org/issue10910 on OSX.
 #include "pxr/usd/usdAbc/alembicTest.h"
 
 using namespace boost::python;

@@ -28,8 +28,11 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/move.h"
 #include "pxr/base/tf/pointerAndBits.h"
-#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
+// XXX: issue 89
+// Including pyLock after pyObjWrapper to work around
+// https://bugs.python.org/issue10910 on OSX.
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
