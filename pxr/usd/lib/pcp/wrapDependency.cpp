@@ -23,10 +23,10 @@
 //
 #include <boost/python.hpp>
 
-#include "pxr/usd/pcp/dependency.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
+#include "pxr/usd/pcp/dependency.h"
 
 using namespace boost::python;
 using std::string;

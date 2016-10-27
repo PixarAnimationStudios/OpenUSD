@@ -254,6 +254,7 @@ public:
 
     /// Get all terminals of a subgraph
     /// 
+    USDSHADE_API
     UsdRelationshipVector GetTerminals() const;
 };
 
