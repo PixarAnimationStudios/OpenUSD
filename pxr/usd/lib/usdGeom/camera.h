@@ -393,7 +393,7 @@ public:
     // SHUTTEROPEN 
     // --------------------------------------------------------------------- //
     /// Frame relative shutter open time in UsdTimeCode units (negative
-    /// value indicates that the shutter opens before the current's
+    /// value indicates that the shutter opens before the current
     /// frame time). Used for motion blur.
     ///
     /// \n  C++ Type: double
