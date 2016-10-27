@@ -21,11 +21,17 @@ build_script:
     - cmake -G "Visual Studio %Configuration%" ..
     - cmake --build . --config Release
 
+    # TBB
+    - cd c:\projects
+    - mkdir tbb44
+    - appveyor DownloadFile https://www.threadingbuildingblocks.org/sites/default/files/software_releases/windows/tbb44_20160526oss_win_0.zip -FileName tbb.zip
+    - 7z x tbb.zip
+    - dir 
+
 
     # USD
     - cd c:\projects\USD
     - mkdir build
-    - dir c:\Libraries\boost_1_59_0
     - cd build
     - cmake --version
     - cmake -G "Visual Studio %Configuration%" \
