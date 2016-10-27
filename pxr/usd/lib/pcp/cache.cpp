@@ -1688,9 +1688,17 @@ PcpCache::ComputeNamespaceEdits(
                     }
                 };
                 for(const PcpDependency &dep: deps) {
-                    Pcp_ForEachDependentNode(dep.sitePath, layerStack,
-                                             dep.indexPath,
-                                             *cache, visitNodeFn);
+                    // Check that specs exist at this site.  There may
+                    // not be any, because we synthesized dependent paths
+                    // with recurseOnIndex, which may not actually
+                    // have depended on this site (and exist for other
+                    // reasons).
+                    if (PcpComposeSiteHasPrimSpecs(
+                            PcpLayerStackSite(layerStack, dep.sitePath))) {
+                        Pcp_ForEachDependentNode(dep.sitePath, layerStack,
+                                                 dep.indexPath,
+                                                 *cache, visitNodeFn);
+                    }
                 }
             }
 
