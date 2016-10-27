@@ -24,6 +24,7 @@ build_script:
     # TBB
     - cd c:\projects
     - mkdir tbb44
+    - cd tbb44
     - appveyor DownloadFile https://www.threadingbuildingblocks.org/sites/default/files/software_releases/windows/tbb44_20160526oss_win_0.zip -FileName tbb.zip
     - 7z x tbb.zip
     - dir 
