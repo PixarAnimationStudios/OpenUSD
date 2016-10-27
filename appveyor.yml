@@ -1,0 +1,24 @@
+
+clone_folder: c:\projects\USD
+
+branches:
+    only:
+        - dev_win_ip_g
+
+platform:
+    - x64
+
+configuration:
+    - 14 2015
+
+build_script:
+    - cd c:\projects\OpenSubdiv
+    - mkdir build
+    - cd build
+    - cmake --version
+    - cmake -G "Visual Studio %Configuration%" \
+            -D "PXR_BUILD_ALEMBIC_PLUGIN:bool=FALSE" \
+            -D "PXR_BUILD_KATANA_PLUGIN:bool=FALSE" \
+            -D "PXR_BUILD_MAYA_PLUGIN:bool=FALSE" \
+            ..
+    - cmake --build . --config Release
