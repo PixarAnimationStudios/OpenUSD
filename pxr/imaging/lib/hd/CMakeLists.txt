@@ -73,6 +73,8 @@ pxr_shared_library(hd
         persistentBuffer
         points
         renderContextCaps
+        renderDelegate
+        renderDelegateRegistry
         renderIndex
         renderPass
         renderPassShader
