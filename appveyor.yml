@@ -9,7 +9,7 @@ platform:
     - x64
 
 configuration:
-    - 14 2015
+    - 14 2015 Win64
 
 build_script:
 
