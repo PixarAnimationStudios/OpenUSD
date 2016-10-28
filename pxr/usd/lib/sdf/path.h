@@ -626,16 +626,17 @@ public:
         return _LessThanInternal(_pathNode, rhs._pathNode);
     }
 
-    inline size_t GetHash() const {
-        return TfHash()(_pathNode.get());
-    }
-
     // For hash maps and sets
     struct Hash {
         inline size_t operator()(const SdfPath& path) const {
-            return path.GetHash();
+            // Assumption: heap allocated path nodes are aligned on 32b.
+            return size_t(path._pathNode.get()) >> 5;
         }
     };
+
+    inline size_t GetHash() const {
+        return Hash()(*this);
+    }
 
     // For ordered maps
     struct FastLessThan {

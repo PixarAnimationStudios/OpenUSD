@@ -494,6 +494,17 @@ public:
         std::swap(_mask, other._mask);
     }
 
+    /// Return a vector of the count of elements in each bucket.
+    std::vector<size_t> GetBucketSizes() const {
+        std::vector<size_t> sizes(_buckets.size(), 0u);;
+        for (size_t i = 0, n = _buckets.size(); i != n; ++i) {
+            for (_Entry *entry = _buckets[i]; entry; entry = entry->next) {
+                sizes[i]++;
+            }
+        }
+        return sizes;
+    }
+
     /// @}
 
 private:
