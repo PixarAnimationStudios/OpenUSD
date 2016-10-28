@@ -26,7 +26,9 @@ build_script:
     - dir
     - cd c:\packages\double-conversion\include
     - dir
-    - asdfafsd
+    - cd c:\packages\double-conversion\lib
+    - dir
+    - sdfadf
 
     # TBB
     - cd c:\projects
@@ -63,7 +65,7 @@ build_script:
             -D "BOOST_LIBRARYDIR:string=c:/Libraries/boost_1_60_0/lib64-msvc-14.0" \
             -D "Boost_USE_STATIC_LIBS:INT=0" \
             -D "DOUBLE_CONVERSION_LIBRARY:string=c:/packages/double-conversion/lib/double-conversion.lib" \
-            -D "DOUBLE_CONVERSION_INCLUDE_DIR:string=c:/packages" \
+            -D "DOUBLE_CONVERSION_INCLUDE_DIR:string=c:/packages/double-conversion/include" \
             -D "TBB_LIBRARY:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/" \
             -D "TBB_LIBRARIES:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/tbb.lib" \
             -D "TBB_INCLUDE_DIRS:string=c:/projects/tbb/tbb44_20160526oss/include" \
