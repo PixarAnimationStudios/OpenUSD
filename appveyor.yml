@@ -22,8 +22,6 @@ build_script:
             -DCMAKE_INSTALL_PREFIX="c:/packages/double-conversion" \
             ..
     - cmake --build . --target install --config Release
-    - cd c:\packages\double-conversion
-    - dir
 
     # TBB
     - cd c:\projects
@@ -31,6 +29,7 @@ build_script:
     - cd tbb
     - appveyor DownloadFile https://www.threadingbuildingblocks.org/sites/default/files/software_releases/windows/tbb44_20160526oss_win_0.zip -FileName tbb.zip
     - 7z x tbb.zip
+    - 
 
     # IlmBase
     - git clone https://github.com/openexr/openexr.git c:/projects/openexr
@@ -41,7 +40,7 @@ build_script:
             -DCMAKE_INSTALL_PREFIX="c:/packages/openexr" \
             ..
     - cmake --build . --target install --config Release
-    - cd c:\packages\openexr
+    - cd c:\packages\openexr\include
     - dir
 
 
@@ -54,7 +53,7 @@ build_script:
             -D "PXR_BUILD_ALEMBIC_PLUGIN:bool=FALSE" \
             -D "PXR_BUILD_KATANA_PLUGIN:bool=FALSE" \
             -D "PXR_BUILD_MAYA_PLUGIN:bool=FALSE" \
-            -D "PXR_BUILD_IMAGING:bool=FASLE" \
+            -D "PXR_BUILD_IMAGING:bool=FALSE" \
             -D "BOOST_ROOT:string=c:/Libraries/boost_1_59_0" \
             -D "BOOST_LIBRARYDIR:string=c:/Libraries/boost_1_59_0/lib64-msvc-14.0" \
             -D "Boost_USE_STATIC_LIBS:INT=0" \
