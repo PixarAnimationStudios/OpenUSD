@@ -338,9 +338,9 @@ _BuildCollections(
     std::string prefix = prim.GetPath().GetString();
     int prefixLength = prefix.length();
     
-    SdfPathVector targets;
     for (int iCollection = 0; iCollection < collections.size(); ++iCollection)
     {
+        SdfPathVector targets;
         FnKat::StringBuilder collectionBuilder;
         UsdGeomCollectionAPI &collection = collections[iCollection];
         TfToken name = collection.GetCollectionName();
