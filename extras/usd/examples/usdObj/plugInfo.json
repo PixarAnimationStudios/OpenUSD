@@ -17,10 +17,10 @@
                     }
                 }
             },
-            "LibraryPath": "usdObj",
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
             "Name": "usdObj",
-            "ResourcePath": "Resources",
-            "Root": "..",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
             "Type": "library"
         }
     ]
