@@ -88,18 +88,22 @@ public:
     /// the site represented by (siteLayerStack, sitePath).
     ///
     /// The arguments to \p fn are: (depIndexPath, depSitePath).
+    ///
+    /// If \p includeAncestral is \c true, this will also walk up
+    /// ancestral dependencies introduced by parent prims.
     /// 
-    /// If \p recurse is \c true, then also runs the callback
+    /// If \p recurseBelowSite is \c true, then also runs the callback
     /// of every \c PcpSite that uses any descendant of \p path.
     /// depSitePath provides the descendent dependency path.
     ///
-    /// If \p recurse is \c false, depSitePath is always
+    /// If \p recurseBelowSite is \c false, depSitePath is always
     /// the sitePath supplied and can be ignored.
     template <typename FN>
     void
     ForEachDependencyOnSite( const PcpLayerStackPtr &siteLayerStack,
                              const SdfPath &sitePath,
-                             bool recurse,
+                             bool includeAncestral,
+                             bool recurseBelowSite,
                              const FN &fn ) const
     {
         _LayerStackDepMap::const_iterator i = _deps.find(siteLayerStack); 
@@ -107,7 +111,7 @@ public:
             return;
         }
         const _SiteDepMap & siteDepMap = i->second;
-        if (recurse) {
+        if (recurseBelowSite) {
             BOOST_FOREACH(const _SiteDepMap::value_type& entry,
                           siteDepMap.FindSubtreeRange(sitePath)) {
                 for(const SdfPath &primIndexPath: entry.second) {
@@ -119,6 +123,20 @@ public:
             if (j != siteDepMap.end()) {
                 for(const SdfPath &primIndexPath: j->second) {
                     fn(primIndexPath, sitePath);
+                }
+            }
+        }
+        if (includeAncestral) {
+            for (SdfPath ancestorSitePath = sitePath.GetParentPath();
+                 !ancestorSitePath.IsEmpty();
+                 ancestorSitePath = ancestorSitePath.GetParentPath())
+            {
+                _SiteDepMap::const_iterator j =
+                    siteDepMap.find(ancestorSitePath);
+                if (j != siteDepMap.end()) {
+                    for(const SdfPath &ancestorPrimIndexPath: j->second) {
+                        fn(ancestorPrimIndexPath, ancestorSitePath);
+                    }
                 }
             }
         }

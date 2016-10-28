@@ -602,96 +602,63 @@ PcpCache::FindDependentPaths(
             sitePath, sitePath, PcpMapFunction::Identity()});
     }
 
-    // Handle dependencies stored at this level of namespace.
-    // These may include ancestral and direct deps.
-    if (depMask & (PcpDependencyTypeDirect | PcpDependencyTypeAncestral)) {
-        auto visitPrimDepFn = [&](const SdfPath &depPrimIndexPath,
-                                  const SdfPath &depPrimSitePath) {
-            // Find the actual dependency site, which may be a property,
-            // etc.
-            const SdfPath depSitePath =
-                (sitePrimPath == sitePath) ? depPrimSitePath :
-                sitePath.ReplacePrefix(sitePrimPath, depPrimSitePath);
-            auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
-                                   const PcpNodeRef &node,
-                                   PcpDependencyFlags flags) {
-                if ((flags & depMask) == flags) {
-                    bool valid = false;
-                    // Now that we have found a dependency on sitePrimPath,
-                    // use path translation to find the corresponding
-                    // dependency on the (possibly descendent) sitePath.
-                    SdfPath indexPath;
-                    if (node.GetArcType() == PcpArcTypeRelocate) {
-                        // Relocates require special handling.  Because
-                        // a relocate node's map function is always
-                        // identity, we must do our own prefix replacement
-                        // to step out of the relocate, then continue
-                        // with regular path translation.
-                        const PcpNodeRef parent = node.GetParentNode(); 
-                        indexPath = PcpTranslatePathFromNodeToRoot(
-                            parent,
-                            depSitePath.ReplacePrefix( node.GetPath(),
-                                                       parent.GetPath() ),
-                            &valid );
-                    } else {
-                        indexPath = PcpTranslatePathFromNodeToRoot(
-                            node, depSitePath, &valid);
-                    }
-                    if (valid && TF_VERIFY(!indexPath.IsEmpty())) {
-                        deps.push_back(PcpDependency{
-                            indexPath, depSitePath,
-                            node.GetMapToRoot().Evaluate() });
-                    }
-                }
-            };
-            Pcp_ForEachDependentNode(depPrimSitePath, siteLayerStack,
-                                     depPrimIndexPath, *this, visitNodeFn);
-        };
-        _primDependencies->ForEachDependencyOnSite(
-            siteLayerStack, sitePrimPath, recurseOnSite, visitPrimDepFn);
-    }
+    // Handle dependencies stored in _primDependencies.
+    auto visitSiteFn = [&](const SdfPath &depPrimIndexPath,
+                              const SdfPath &depPrimSitePath)
+    {
+        // If we have recursed above to an ancestor, include its direct
+        // dependencies, since they are considered ancestral by descendants.
+        const PcpDependencyFlags localMask =
+            (depPrimSitePath != sitePrimPath &&
+             sitePrimPath.HasPrefix(depPrimSitePath))
+            ? (depMask | PcpDependencyTypeDirect) : depMask;
 
-    // Handle dependencies stored at ancestral levels of namespace.
-    if (depMask & PcpDependencyTypeAncestral) {
-        // Direct dependencies from ancestors are considered ancestral
-        // as inherited by descendents, so gather both here.
-        PcpDependencyFlags ancestorMask = depMask | PcpDependencyTypeDirect;
-        // Walk up ancestors.
-        for (SdfPath ancestorPrimPath = sitePrimPath.GetParentPath();
-             !ancestorPrimPath.IsEmpty();
-             ancestorPrimPath = ancestorPrimPath.GetParentPath())
+        // If we have recursed below sitePrimPath, use the that site;
+        // otherwise use the site the caller requested.
+        const SdfPath localSitePath =
+            (depPrimSitePath != sitePrimPath &&
+             depPrimSitePath.HasPrefix(sitePrimPath))
+            ? depPrimSitePath : sitePath;
+
+        auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
+                               const PcpNodeRef &node,
+                               PcpDependencyFlags flags)
         {
-            auto visitPrimDepFn = [&](const SdfPath &ancestorDepIndexPath,
-                                      const SdfPath &ancestorDepPrimSitePath) {
-                auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
-                                       const PcpNodeRef &node,
-                                       PcpDependencyFlags flags) {
-                    if ((flags & ancestorMask) == flags) {
-                        bool valid = false;
-                        // Just as with direct dependencies, we must use
-                        // path translation here to find sitePath.
-                        SdfPath indexPath =
-                            PcpTranslatePathFromNodeToRoot(node, sitePath,
-                                                           &valid);
-                        if (valid && TF_VERIFY(!indexPath.IsEmpty())) {
-                            deps.push_back(PcpDependency{
-                                indexPath, sitePath /* original query site */,
-                                node.GetMapToRoot().Evaluate() });
-                        }
-                    }
-                };
-                Pcp_ForEachDependentNode(sitePath, siteLayerStack,
-                                         ancestorDepIndexPath, *this,
-                                         visitNodeFn);
-            };
-            _primDependencies->ForEachDependencyOnSite(
-                siteLayerStack, ancestorPrimPath,
-                // We don't need to recurse since we are walking up
-                // namespace and will encounter everything along the way.
-                /* recurseOnSite */ false,
-                visitPrimDepFn);
-        }
-    }
+            if ((flags & localMask) == flags) {
+                // Now that we have found a dependency on depPrimSitePath,
+                // use path translation to get the corresponding depIndexPath.
+                SdfPath depIndexPath;
+                bool valid = false;
+                if (node.GetArcType() == PcpArcTypeRelocate) {
+                    // Relocates require special handling.  Because
+                    // a relocate node's map function is always
+                    // identity, we must do our own prefix replacement
+                    // to step out of the relocate, then continue
+                    // with regular path translation.
+                    const PcpNodeRef parent = node.GetParentNode(); 
+                    depIndexPath = PcpTranslatePathFromNodeToRoot(
+                        parent,
+                        localSitePath.ReplacePrefix( node.GetPath(),
+                                                       parent.GetPath() ),
+                        &valid );
+                } else {
+                    depIndexPath = PcpTranslatePathFromNodeToRoot(
+                        node, localSitePath, &valid);
+                }
+                if (valid && TF_VERIFY(!depIndexPath.IsEmpty())) {
+                    deps.push_back(PcpDependency{
+                        depIndexPath, localSitePath,
+                        node.GetMapToRoot().Evaluate() });
+                }
+            }
+        };
+        Pcp_ForEachDependentNode(depPrimSitePath, siteLayerStack,
+                                 depPrimIndexPath, *this, visitNodeFn);
+    };
+    _primDependencies->ForEachDependencyOnSite(
+        siteLayerStack, sitePrimPath,
+        /* includeAncestral = */ depMask & PcpDependencyTypeAncestral,
+        recurseOnSite, visitSiteFn);
 
     // If recursing down namespace, we may have cache entries for
     // descendants that did not introduce new dependency arcs, and
@@ -700,7 +667,7 @@ PcpCache::FindDependentPaths(
     if (recurseOnIndex) {
         SdfPathSet seenDeps;
         PcpDependencyVector expandedDeps;
-        for(PcpDependency &dep: deps) {
+        for(const PcpDependency &dep: deps) {
             const SdfPath & indexPath = dep.indexPath;
             if (seenDeps.find(indexPath) != seenDeps.end()) {
                 // Short circuit further expansion; expect we
