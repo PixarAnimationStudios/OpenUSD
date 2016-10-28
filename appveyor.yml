@@ -28,13 +28,15 @@ build_script:
     - appveyor DownloadFile https://www.threadingbuildingblocks.org/sites/default/files/software_releases/windows/tbb44_20160526oss_win_0.zip -FileName tbb.zip
     - 7z x tbb.zip
 
-    # OpenEXR
+    # IlmBase
     - git clone https://github.com/openexr/openexr.git c:/projects/openexr
     - cd c:\projects\openexr\IlmBase
     - mkdir build
     - cd build
-    - cmake -G "Visual Studio %Configuration%" ..
-    - cmake --build . --config Release
+    - cmake -G "Visual Studio %Configuration%" -DCMAKE_INSTALL_PREFIX="c:/projects/openexr"
+    - cmake --build . --target install --config Release
+    - cd c:\projects/openexr
+    - dir
 
 
     # USD
@@ -55,5 +57,8 @@ build_script:
             -D "TBB_LIBRARY:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/" \
             -D "TBB_LIBRARIES:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/tbb.lib" \
             -D "TBB_INCLUDE_DIRS:string=c:/projects/tbb/tbb44_20160526oss/include" \
+            -D "OPENEXR_LIBRARY_DIR:string=c:/OpenEXR" \
+            -D "OPENEXR_INCLUDE_DIR:string=c:/IlmBase/include" \
+            -D "OPENEXR_Half_LIBRARY:string=c:/IlmBase/lib/Half.lib" \
             ..
     - cmake --build . --config Release
