@@ -22,13 +22,6 @@ build_script:
             -DCMAKE_INSTALL_PREFIX="c:/packages/double-conversion" \
             ..
     - cmake --build . --target install --config Release
-    - cd c:\packages\double-conversion
-    - dir
-    - cd c:\packages\double-conversion\include
-    - dir
-    - cd c:\packages\double-conversion\lib
-    - dir
-    - sdfadf
 
     # TBB
     - cd c:\projects
@@ -49,6 +42,9 @@ build_script:
     - cmake --build . --target install --config Release
     - cd c:\packages\openexr\include
     - dir
+    - cd c:\packages\openexr\lib
+    - dir
+    -sdfadsf
 
 
     # USD
@@ -69,8 +65,8 @@ build_script:
             -D "TBB_LIBRARY:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/" \
             -D "TBB_LIBRARIES:string=c:/projects/tbb/tbb44_20160526oss/lib/intel64/vc14/tbb.lib" \
             -D "TBB_INCLUDE_DIRS:string=c:/projects/tbb/tbb44_20160526oss/include" \
-            -D "OPENEXR_LIBRARY_DIR:string=c:/OpenEXR" \
-            -D "OPENEXR_INCLUDE_DIR:string=c:/IlmBase/include" \
+            -D "OPENEXR_LIBRARY_DIR:string=c:/packages/openexr" \
+            -D "OPENEXR_INCLUDE_DIR:string=c:/packages/openexr/include" \
             -D "OPENEXR_Half_LIBRARY:string=c:/IlmBase/lib/Half.lib" \
             ..
     - cmake --build . --config Release
