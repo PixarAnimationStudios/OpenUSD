@@ -44,7 +44,7 @@ build_script:
     - dir
     - cd c:\packages\openexr\lib
     - dir
-    -sdfadsf
+    - sdfadsf
 
 
     # USD
