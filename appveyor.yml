@@ -28,6 +28,15 @@ build_script:
     - appveyor DownloadFile https://www.threadingbuildingblocks.org/sites/default/files/software_releases/windows/tbb44_20160526oss_win_0.zip -FileName tbb.zip
     - 7z x tbb.zip
 
+    # OpenEXR
+    - git clone https://github.com/openexr/openexr.git c:/projects/openexr
+    - cd c:\projects\openexr\IlmBase
+    - mkdir build
+    - cd build
+    - cmake -G "Visual Studio %Configuration%" ..
+    - cmake --build . --config Release
+
+
     # USD
     - cd c:\projects\USD
     - mkdir build
