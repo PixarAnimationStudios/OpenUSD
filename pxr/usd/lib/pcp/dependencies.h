@@ -27,7 +27,6 @@
 /// \file pcp/dependencies.h
 
 #include "pxr/usd/pcp/node.h"
-#include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
