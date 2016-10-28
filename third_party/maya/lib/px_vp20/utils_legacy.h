@@ -25,7 +25,7 @@
 #define __PX_VP20_UTILS_LEGACY_H__
 
 /// \file utils_legacy.h
-
+#include "px_vp20/api.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <maya/M3dView.h>
@@ -37,6 +37,7 @@ class px_LegacyViewportUtils
 public:
     /// Get the view and projection matrices used for selection from the given
     /// M3dView \p view.
+	PX_VP20_API
     static void GetViewSelectionMatrices(M3dView& view,
                                          GfMatrix4d* viewMatrix,
                                          GfMatrix4d* projectionMatrix);
@@ -44,7 +45,9 @@ public:
 private:
     /// Creating instances of this class is disallowed by making the
     /// constructor private.
+	PX_VP20_API
     px_LegacyViewportUtils();
+	PX_VP20_API
     ~px_LegacyViewportUtils();
 };
 

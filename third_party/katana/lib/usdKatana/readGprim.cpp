@@ -122,7 +122,7 @@ _ConvertGeomAttr(
         return FnKat::Attribute();
     }
 
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
     const std::vector<double>& motionSampleTimes = data.GetMotionSampleTimes(usdAttr);
 
     // Flag to check if we discovered the topology is varying, in

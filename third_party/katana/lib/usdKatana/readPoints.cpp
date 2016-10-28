@@ -81,7 +81,7 @@ PxrUsdKatanaReadPoints(
     }
 
     // normals
-    FnKat::Attribute normalsAttr = _GetNormalsAttr(points, currentTime);
+    FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(points, data);
     if (normalsAttr.isValid())
     {
         // XXX RfK doesn't support uniform curve normals.

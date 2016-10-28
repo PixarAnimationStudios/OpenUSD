@@ -28,6 +28,7 @@
 #ifndef PXRUSDMAYAGL_BATCHRENDERER_H
 #define PXRUSDMAYAGL_BATCHRENDERER_H
 
+#include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/arch/hash.h"

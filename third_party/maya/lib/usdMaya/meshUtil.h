@@ -27,6 +27,7 @@
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
+#include "usdMaya/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
@@ -41,6 +42,7 @@ class UsdGeomMesh;
     ((DisplayOpacityColorSetName, "displayOpacity"))
 
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+	USDMAYA_API,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
 
