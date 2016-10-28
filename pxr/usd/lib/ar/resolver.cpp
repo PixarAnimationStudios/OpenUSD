@@ -88,7 +88,7 @@ namespace
 struct _ResolverHolder
 {
     _ResolverHolder()
-        : resolver(new Ar_DefaultResolver)
+        : resolver(new ArDefaultResolver)
     {
         if (TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_RESOLVER)) {
             TF_DEBUG(AR_RESOLVER_INIT).Msg(
