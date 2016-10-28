@@ -347,10 +347,13 @@ _BuildCollections(
         collection.GetTargets(&targets);
         for (int iTarget = 0; iTarget < targets.size(); ++iTarget)
         {
-            std::string relativePath = 
-                targets[iTarget].GetString().substr(prefixLength);
-
-            collectionBuilder.push_back(relativePath);
+            std::string targetPath = targets[iTarget].GetString();
+            
+            if (targetPath.size() >= prefixLength)
+            {
+                std::string relativePath = targetPath.substr(prefixLength);
+                collectionBuilder.push_back(relativePath);
+            }
         }
 
         collectionsBuilder.set(name.GetString() + ".baked",
