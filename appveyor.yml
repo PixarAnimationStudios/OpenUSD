@@ -18,8 +18,12 @@ build_script:
     - cd c:\projects\double-conversion
     - mkdir bld
     - cd bld
-    - cmake -G "Visual Studio %Configuration%" ..
-    - cmake --build . --config Release
+    - cmake -G "Visual Studio %Configuration%" \
+            -DCMAKE_INSTALL_PREFIX="c:/packages/double-conversion" \
+            ..
+    - cmake --build . --target install --config Release
+    - cd c:\packages\double-conversion
+    - dir
 
     # TBB
     - cd c:\projects
@@ -33,7 +37,9 @@ build_script:
     - cd c:\projects\openexr\IlmBase
     - mkdir build
     - cd build
-    - cmake -G "Visual Studio %Configuration%" -DCMAKE_INSTALL_PREFIX="c:/projects/openexr"
+    - cmake -G "Visual Studio %Configuration%" \
+            -DCMAKE_INSTALL_PREFIX="c:/packages/openexr" \
+            ..
     - cmake --build . --target install --config Release
     - cd c:\projects/openexr
     - dir
