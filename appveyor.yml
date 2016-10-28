@@ -22,6 +22,11 @@ build_script:
             -DCMAKE_INSTALL_PREFIX="c:/packages/double-conversion" \
             ..
     - cmake --build . --target install --config Release
+    - cd c:\packages\double-conversion
+    - dir
+    - cd c:\packages\double-conversion\include
+    - dir
+    - asdfafsd
 
     # TBB
     - cd c:\projects
