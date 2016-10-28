@@ -27,6 +27,7 @@
 #ifndef PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
 #define PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
 
+#include "usdMaya/api.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -42,7 +43,7 @@
     ((USDAttrTypePrimvar, "primvar")) \
     ((USDAttrTypeUsdRi, "usdRi"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaUserTaggedAttributeTokens,
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaUserTaggedAttributeTokens, USDMAYA_API,
     PXRUSDMAYA_ATTR_TOKENS);
 
 /// \brief Represents a single attribute tagged for USD export, and describes
@@ -55,6 +56,7 @@ private:
     const TfToken _interpolation;
 
 public:
+    USDMAYA_API
     PxrUsdMayaUserTaggedAttribute(
             MPlug plug,
             const std::string& name,
@@ -62,25 +64,31 @@ public:
             const TfToken& interpolation);
 
     /// \brief Gets all of the exported attributes for the given node.
+    USDMAYA_API
     static std::vector<PxrUsdMayaUserTaggedAttribute>
             GetUserTaggedAttributesForNode(const MDagPath& dagPath);
 
     /// \brief Gets the plug for the Maya attribute to be exported.
+    USDMAYA_API
     MPlug GetMayaPlug() const;
 
     /// \brief Gets the name of the Maya attribute that will be exported;
     /// the name will not contain the name of the node.
+    USDMAYA_API
     std::string GetMayaName() const;
 
     /// \brief Gets the name of the USD attribute to which the Maya attribute
     /// will be exported.
+    USDMAYA_API
     std::string GetUsdName() const;
 
     /// \brief Gets the type of the USD attribute to export: whether it is a
     /// regular attribute, primvar, etc.
+    USDMAYA_API
     TfToken GetUsdType() const;
 
     /// \brief Gets the interpolation for primvars.
+    USDMAYA_API
     TfToken GetUsdInterpolation() const;
 };
 

@@ -137,7 +137,7 @@ PxrUsdKatanaReadBasisCurves(
     // Construct the 'geometry' attribute.
     //
 
-    _SetCurveAttrs(attrs, basisCurves, data.GetUsdInArgs()->GetCurrentTime());
+    _SetCurveAttrs(attrs, basisCurves, data.GetUsdInArgs()->GetCurrentTimeD());
     
     // position
     attrs.set("geometry.point.P",

@@ -369,7 +369,7 @@ _AddExtraAttributesOrNamespaces(
 {
     const std::string& rootLocation = 
         data.GetUsdInArgs()->GetRootLocationPath();
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetUsdInArgs()->GetCurrentTimeD();
 
     const PxrUsdKatanaUsdInArgs::StringListMap& extraAttributesOrNamespaces =
         data.GetUsdInArgs()->GetExtraAttributesOrNamespaces();
@@ -581,7 +581,7 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         // Resolve the value
         VtValue vtValue;
         if (not primvar->ComputeFlattened(
-                &vtValue, data.GetUsdInArgs()->GetCurrentTime()))
+                &vtValue, data.GetUsdInArgs()->GetCurrentTimeD()))
         {
             continue;
         }
