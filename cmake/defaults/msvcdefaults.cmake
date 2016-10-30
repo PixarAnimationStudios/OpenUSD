@@ -92,8 +92,7 @@ if (${PXR_HYBRID_BUILD_MODE})
     add_definitions("/Ob0")
 
     # Enable minimum builds
-    #add_definitions("/Gm")
-    add_definitions("/MP")
+    add_definitions("/Gm")
 else()
     # Enable multi-processor compilation
     add_definitions("/MP")
