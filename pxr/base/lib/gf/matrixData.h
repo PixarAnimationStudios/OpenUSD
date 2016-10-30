@@ -25,6 +25,7 @@
 #define GF_MATRIX_DATA_H
 
 #include "pxr/base/gf/api.h"
+#include <stddef.h>
 
 /// \class GfMatrixData
 ///
