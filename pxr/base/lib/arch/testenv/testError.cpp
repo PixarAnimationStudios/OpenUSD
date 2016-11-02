@@ -29,9 +29,9 @@
 #include <cstdio>
 #include <stdlib.h>
 #include <sys/types.h>
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <sys/wait.h>
-##include <unistd.h>
+#include <unistd.h>
 #endif
 #include <assert.h>
 #include <csignal>
@@ -43,7 +43,7 @@ crash(int sig) {
 }
 
 int main()
-{   
+{
     (void) signal(SIGABRT,crash);
 
 #if !defined(ARCH_OS_WINDOWS)

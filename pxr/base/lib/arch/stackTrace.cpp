@@ -45,6 +45,7 @@
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/error.h"
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/symbols.h"
@@ -1049,6 +1050,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
     }
 
     if (fd != -1) {
+#ifdef ARCH_OS_WINDOWS
 		FILE* fout = ArchFdOpen(fd, "w");
         fprintf(stderr, "The stack can be found in %s:%s\n"
                 "--------------------------------------------------------------"
@@ -1063,6 +1065,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
                                           NULL : sessionLog.c_str(),
                                           false /* crashing hard? */);
         }
+#endif
     }
     else {
 	/* we couldn't open the tmp file, so write the stack trace to stderr */

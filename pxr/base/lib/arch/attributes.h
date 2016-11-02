@@ -30,6 +30,7 @@
 /// This file allows you to define architecture-specific or compiler-specific
 /// options to be used outside lib/arch.
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/export.h"
 
 /*!
@@ -129,7 +130,7 @@
     __attribute__((constructor(_priority)))                                 \
     static void _name(__VA_ARGS__)
 
-#   define ARCH_CONSTRUCTOR(_priority, tag, name) __attribute__((constructor(_priority)))
+#   define ARCH_CONSTRUCTOR(_priority) __attribute__((constructor(_priority)))
 
 /// Macro to indicate a function should be executed by the dynamic loader when
 /// the dynamic object (library or program) is unloaded.
@@ -139,9 +140,7 @@
 /// run first.
 ///
 /// \hideinitializer
-#   define ARCH_DESTRUCTOR(_priority, _name, ...)                           \
-    __attribute__((destructor(_priority)))                                  \
-    static void _name(__VA_ARGS__)
+#   define ARCH_DESTRUCTOR(_priority) __attribute__((destructor(_priority)))
 
 #elif defined(ARCH_COMPILER_MSVC)
 
@@ -241,4 +240,4 @@
 // ARCH_DESTRUCTOR.
 #endif // defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 
-#endif // ARCH_ATTRIBUTES_H 
+#endif // ARCH_ATTRIBUTES_H

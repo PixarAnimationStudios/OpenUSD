@@ -50,7 +50,7 @@ ArchNap(size_t hundredths)
     // Note: neither tv_sec and tv_nsec can be negative,
     // because hundredths is unsigned and tv_nsec is big enough to avoid
     // overflow if hundredths == 99.
-    
+
     if (rec.tv_sec == 0 && rec.tv_nsec == 0) {
 	rec.tv_sec = 0;
 	rec.tv_nsec = 1;
@@ -89,7 +89,7 @@ int ArchNanoSleep(const struct timespec *req, struct timespec *rem)
     CloseHandle(timer);
     return 0;
 #else
-    return nanosleep(usec);
+    return nanosleep(req, 0);
 #endif
 }
 

@@ -37,10 +37,11 @@
 #  include <sys/malloc.h>
 #else
 #  include <malloc.h>
+#endif /* defined ARCH_OS_DARWIN */
+
 #if not defined(__MALLOC_HOOK_VOLATILE)
 #define __MALLOC_HOOK_VOLATILE
 #endif /* not defined __MALLOC_HOOK_VOLATILE */
-#endif /* defined(ARCH_OS_LINUX) */
 
 using std::string;
 

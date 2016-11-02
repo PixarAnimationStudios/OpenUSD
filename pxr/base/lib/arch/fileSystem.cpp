@@ -289,7 +289,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
 		ARCH_ERROR(errorMsg.c_str());
 		return -1;
 	}
-	
+
 	// Close the file
 	::CloseHandle(fileHandle);
 
@@ -347,7 +347,7 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 		retstr = sTemplate;
 	}
 #else
-    strcpy(cTemplate, sTemplate.size() + 1, sTemplate.c_str());
+    strncpy(cTemplate, sTemplate.c_str(), sTemplate.size() + 1);
     // Open the tmpdir.
     char *tmpSubdir = mkdtemp(cTemplate);
 
