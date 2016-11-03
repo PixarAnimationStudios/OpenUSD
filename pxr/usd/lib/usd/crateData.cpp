@@ -36,6 +36,8 @@
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/loops.h"
 
+#include "pxr/usd/sdf/schema.h"
+
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_sort.h>
 
@@ -150,14 +152,47 @@ public:
         return false;
     }
 
+    inline bool _HasTargetSpec(SdfPath const &path) const {
+        // We don't store target specs to save space, since in Usd we don't have
+        // any fields that may be set on them.  Their presence is determined by
+        // whether or not they appear in their owning relationship's Added or
+        // Explicit items.
+        SdfPath parentPath = path.GetParentPath();
+        if (parentPath.IsPrimPropertyPath()) {
+            VtValue targetPaths;
+            if (Has(SdfAbstractDataSpecId(&parentPath),
+                    SdfFieldKeys->TargetPaths, &targetPaths) and
+                targetPaths.IsHolding<SdfPathListOp>()) {
+                auto const &listOp = targetPaths.UncheckedGet<SdfPathListOp>();
+                if (listOp.IsExplicit()) {
+                    auto const &items = listOp.GetExplicitItems();
+                    return std::find(
+                        items.begin(), items.end(), path) != items.end();
+                } else {
+                    auto const &items = listOp.GetAddedItems();
+                    return std::find(
+                        items.begin(), items.end(), path) != items.end();
+                }
+            }
+        }
+        return false;
+    }
+
     inline bool HasSpec(const SdfAbstractDataSpecId &id) const {
         const SdfPath &path = id.GetFullSpecPath();
+        if (ARCH_UNLIKELY(path.IsTargetPath())) {
+            return _HasTargetSpec(path);
+        }
         return _hashData ?
             _hashData->find(path) != _hashData->end() :
             _flatData.find(path) != _flatData.end();
     }
 
     inline void EraseSpec(const SdfAbstractDataSpecId &id) {
+        if (ARCH_UNLIKELY(id.GetFullSpecPath().IsTargetPath())) {
+            // Do nothing, we do not store target specs.
+            return;
+        }
         if (_MaybeMoveToHashTable()) {
             _hashLastSet = nullptr;
             TF_VERIFY(_hashData->erase(id.GetFullSpecPath()),
@@ -175,6 +210,11 @@ public:
 
     inline void MoveSpec(const SdfAbstractDataSpecId& oldId,
                          const SdfAbstractDataSpecId& newId) {
+        if (ARCH_UNLIKELY(oldId.GetFullSpecPath().IsTargetPath())) {
+            // Do nothing, we do not store target specs.
+            return;
+        }
+
         SdfPath const &oldPath = oldId.GetFullSpecPath();
         SdfPath const &newPath = newId.GetFullSpecPath();
 
@@ -211,8 +251,13 @@ public:
 
     inline SdfSpecType GetSpecType(const SdfAbstractDataSpecId &id) const {
         SdfPath const &path = id.GetFullSpecPath();
-        if (path == SdfPath::AbsoluteRootPath())
+        if (path == SdfPath::AbsoluteRootPath()) {
             return SdfSpecTypePseudoRoot;
+        }
+        if (path.IsTargetPath()) {
+            return _HasTargetSpec(path) ?
+                SdfSpecTypeRelationshipTarget : SdfSpecTypeUnknown;
+        }
         if (_hashData) {
             auto i = _hashData->find(path);
             return i == _hashData->end() ?
@@ -222,19 +267,18 @@ public:
         if (i == _flatData.end())
             return SdfSpecTypeUnknown;
         // Don't look up in the table if we can tell the type from the path.
-        if (path.IsPrimPath())
-            return SdfSpecTypePrim;
-        // In Usd, target paths may only ever identify relationship targets,
-        // since Usd does not have support for attribute connections.
-        if (path.IsTargetPath())
-            return SdfSpecTypeRelationshipTarget;
-        return _flatTypes[i - _flatData.begin()].type;
+        return path.IsPrimPath() ? SdfSpecTypePrim :
+            _flatTypes[i - _flatData.begin()].type;
     }
 
     inline void
     CreateSpec(const SdfAbstractDataSpecId &id, SdfSpecType specType) {
         if (not TF_VERIFY(specType != SdfSpecTypeUnknown))
             return;
+        if (id.GetFullSpecPath().IsTargetPath()) {
+            // Do nothing, we do not store relationship target specs in usd.
+            return;
+        }
         if (_MaybeMoveToHashTable()) {
             // No need to blow the _hashLastSet cache here, since inserting into
             // the table won't invalidate existing references.
@@ -255,6 +299,7 @@ public:
 
     inline void _VisitSpecs(SdfAbstractData const &data,
                             SdfAbstractDataSpecVisitor* visitor) const {
+        // XXX: Is it important to present relationship target specs here?
         if (_hashData) {
             for (auto const &p: *_hashData) {
                 if (not visitor->VisitSpec(
@@ -381,6 +426,12 @@ public:
                     const VtValue& value) {
         if (ARCH_UNLIKELY(value.IsEmpty())) {
             Erase(id, fieldName);
+            return;
+        }
+        if (id.GetFullSpecPath().IsTargetPath()) {
+            TF_CODING_ERROR("Cannot set fields on relationship target specs: "
+                            "<%s>:%s = %s", id.GetFullSpecPath().GetText(),
+                            fieldName.GetText(), TfStringify(value).c_str());
             return;
         }
         _hashData ?
@@ -563,10 +614,16 @@ private:
         vector<CrateFile::Field> fields;
         vector<Usd_CrateFile::FieldIndex> fieldSets;
         _crateFile->RemoveStructuralData(specs, fields, fieldSets);
-
-        // Allocate all the spec data structures in the hashtable first, so we
-        // can populate fields in parallel without locking.
-        vector<_FlatSpecData *> specDataPtrs;
+        
+        // Remove any target specs, we do not store target specs in Usd, but old
+        // files could contain them.
+        specs.erase(
+            remove_if(
+                specs.begin(), specs.end(),
+                [this](CrateFile::Spec const &spec) {
+                    return _crateFile->GetPath(spec.pathIndex).IsTargetPath();
+                }),
+            specs.end());
 
         // Sort by path fast-less-than, need same order that _Table will
         // store.
@@ -589,8 +646,9 @@ private:
             using result_type = _FlatMap::value_type;
             explicit _SpecToPair(CrateFile *crateFile) : crateFile(crateFile) {}
             result_type operator()(CrateFile::Spec const &spec) const {
-                result_type r;
-                r.first = crateFile->GetPath(spec.pathIndex);
+                result_type r(crateFile->GetPath(spec.pathIndex),
+                              _FlatSpecData(Usd_EmptySharedTag));
+                TF_AXIOM(!r.first.IsTargetPath());
                 return r;
             }
             CrateFile *crateFile;
@@ -606,6 +664,10 @@ private:
                     _flatData);
         }
 
+        // Allocate all the spec data structures in the hashtable first, so we
+        // can populate fields in parallel without locking.
+        vector<_FlatSpecData *> specDataPtrs;
+
         // Create all the specData entries and store pointers to them.
         dispatcher.Run([this, &specs, &specDataPtrs]() {
                 // XXX Won't need first two tags when bug #132031 is addressed
@@ -613,9 +675,7 @@ private:
                 TfAutoMallocTag tag2("Usd_CrateDataImpl main hash table");
                 specDataPtrs.resize(specs.size());
                 for (size_t i = 0; i != specs.size(); ++i) {
-                    auto const &s = specs[i];
-                    specDataPtrs[i] =
-                        &_flatData.at(_crateFile->GetPath(s.pathIndex));
+                    specDataPtrs[i] = &(_flatData.begin()[i].second);
                 }
             });
 
@@ -846,6 +906,9 @@ private:
 
     struct _FlatSpecData {
         inline void DetachIfNotUnique() { fields.MakeUnique(); }
+        _FlatSpecData() = default;
+        explicit _FlatSpecData(Usd_EmptySharedTagType)
+            : fields(Usd_EmptySharedTag) {}
         Usd_Shared<_FieldValuePairVector> fields;
     };
 

@@ -52,6 +52,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SMOOTH_NORMALS, "CPU",
 TF_DEFINE_ENV_SETTING(HD_ENABLE_QUADRANGULATE, "0",
                       "Enable quadrangulation (0/CPU/GPU)");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINE_GPU, 0, "GPU refinement");
+TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
+                      "Use packed normals");
 
 // static repr configuration
 HdMesh::_MeshReprConfig HdMesh::_reprDescConfig;
@@ -62,6 +64,7 @@ HdMesh::HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)
+    , _packedNormals(IsEnabledPackedNormals())
     , _cullStyle(HdCullStyleDontCare)
 {
     /*NOTHING*/
@@ -71,25 +74,40 @@ HdMesh::HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
 bool
 HdMesh::IsEnabledSmoothNormalsGPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_SMOOTH_NORMALS) == "GPU";
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_SMOOTH_NORMALS) == "GPU");
+    return enabled;
 }
 
+/* static */
 bool
 HdMesh::IsEnabledQuadrangulationCPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "CPU";
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "CPU");
+    return enabled;
 }
 
+/* static */
 bool
 HdMesh::IsEnabledQuadrangulationGPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "GPU";
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "GPU");
+    return enabled;
 }
 
+/* static */
 bool
 HdMesh::IsEnabledRefineGPU()
 {
-    return TfGetEnvSetting(HD_ENABLE_REFINE_GPU) == 1;
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_REFINE_GPU) == 1);
+    return enabled;
+}
+
+/* static */
+bool
+HdMesh::IsEnabledPackedNormals()
+{
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_PACKED_NORMALS) == 1);
+    return enabled;
 }
 
 int
@@ -437,7 +455,8 @@ void
 HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                                 HdChangeTracker::DirtyBits *dirtyBits,
                                 bool isNew,
-                                HdMeshReprDesc desc)
+                                HdMeshReprDesc desc,
+                                bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
@@ -465,7 +484,7 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     HdBufferSourceSharedPtr points;
 
     bool cpuSmoothNormals =
-        desc.smoothNormals and (not IsEnabledSmoothNormalsGPU());
+        requireSmoothNormals and (not IsEnabledSmoothNormalsGPU());
 
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
     // Don't call _GetRefineLevelForDesc(desc) instead of GetRefineLevel(). Why?
@@ -534,14 +553,14 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
             sources.push_back(source);
 
             // save the point buffer source for smooth normal computation.
-            if (desc.smoothNormals
+            if (requireSmoothNormals
                 and *nameIt == HdTokens->points) {
                 points = source;
             }
         }
     }
 
-    if (desc.smoothNormals and
+    if (requireSmoothNormals and
         HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->normals)) {
         // note: normals gets dirty when points are marked as dirty,
         // at changetracker.
@@ -554,16 +573,37 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
         if (cpuSmoothNormals) {
             if (points) {
                 // CPU smooth normals depends on CPU adjacency.
-                HdBufferSourceSharedPtr normal =
-                    _vertexAdjacency->GetSmoothNormalsComputation(
-                        points, HdTokens->normals);
+                //
+                HdBufferSourceSharedPtr normal;
+                bool doRefine = (refineLevel > 0);
+                bool doQuadrangulate = _UsePtexIndices();
 
-                if (refineLevel > 0) {
-                    normal = _RefinePrimVar(normal, /*varying=*/false,
-                                            &computations, _topology);
-                } else if (_UsePtexIndices()) {
-                    normal = _QuadrangulatePrimVar(
-                        normal, &computations, _topology, GetId());
+                if (doRefine or doQuadrangulate) {
+                    if (_packedNormals) {
+                        // we can't use packed normals for refined/quad,
+                        // let's migrate the buffer to full precision
+                        isNew = true;
+                        _packedNormals = false;
+                    }
+                    normal = _vertexAdjacency->GetSmoothNormalsComputation(
+                            points, HdTokens->normals);
+                    if (doRefine) {
+                        normal = _RefinePrimVar(normal, /*varying=*/false,
+                                                &computations, _topology);
+                    } else if (doQuadrangulate) {
+                        normal = _QuadrangulatePrimVar(
+                            normal, &computations, _topology, GetId());
+                    }
+                } else {
+                    // if we haven't refined or quadrangulated normals,
+                    // may use packed format if enabled.
+                    if (_packedNormals) {
+                        normal = _vertexAdjacency->GetSmoothNormalsComputation(
+                            points, HdTokens->packedNormals, true);
+                    } else {
+                        normal = _vertexAdjacency->GetSmoothNormalsComputation(
+                            points, HdTokens->normals, false);
+                    }
                 }
                 sources.push_back(normal);
             }
@@ -830,7 +870,8 @@ void
 HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
                         HdChangeTracker::DirtyBits *dirtyBits,
                         bool isNew,
-                        HdMeshReprDesc desc)
+                        HdMeshReprDesc desc,
+                        bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
@@ -869,10 +910,10 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
     // normal dirtiness will be cleared without computing/populating normals.
     TfToken scheme = _topology->GetScheme();
     if (scheme == PxOsdOpenSubdivTokens->bilinear) {
-        desc.smoothNormals = false;
+        requireSmoothNormals = false;
     }
 
-    if (desc.smoothNormals and not _vertexAdjacency) {
+    if (requireSmoothNormals and not _vertexAdjacency) {
         _PopulateAdjacency();
     }
 
@@ -883,7 +924,7 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
 
     /* VERTEX PRIMVARS */
     if (isNew or HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
-        _PopulateVertexPrimVars(drawItem, dirtyBits, isNew, desc);
+        _PopulateVertexPrimVars(drawItem, dirtyBits, isNew, desc, requireSmoothNormals);
     }
 
     /* ELEMENT PRIMVARS */
@@ -897,6 +938,12 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
             _PopulateElementPrimVars(drawItem, dirtyBits, uniformPrimVarNames);
         }
     }
+
+    // When we have multiple drawitems for the same mesh we need to clean the
+    // bits for all the data fields touched in this function, otherwise it
+    // will try to extract topology (for instance) twice, and this won't 
+    // work with delegates that don't keep information around once extracted.
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 
     TF_VERIFY(drawItem->GetConstantPrimVarRange());
     // Topology and VertexPrimVar may be null, if the mesh has zero faces.
@@ -943,9 +990,13 @@ HdMesh::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem, HdMeshReprDesc desc
 
     // resolve geom style, cull style
     HdCullStyle cullStyle = _cullStyle;
+    HdMeshGeomStyle geomStyle = desc.geomStyle;
+
+    // We need to use smoothNormals flag per repr (and not requireSmoothNormals)
+    // here since the geometric shader needs to know if we are actually
+    // using normals or not.
     bool smoothNormals = desc.smoothNormals and
         _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear;
-    HdMeshGeomStyle geomStyle = desc.geomStyle;
 
     // if the prim doesn't have an opinion about cullstyle,
     // use repr's default (it could also be DontCare, then renderPass's
@@ -958,12 +1009,15 @@ HdMesh::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem, HdMeshReprDesc desc
         cullStyle = desc.cullStyle;
     }
 
+    bool blendWireframeColor = desc.blendWireframeColor;
+
     // create a shaderKey and set to the geometric shader.
     Hd_MeshShaderKey shaderKey(primType,
                                desc.lit,
                                smoothNormals,
                                _doubleSided,
                                hasFaceVaryingPrimVars,
+                               blendWireframeColor,
                                cullStyle,
                                geomStyle);
 
@@ -1062,12 +1116,29 @@ HdMesh::_GetRepr(TfToken const &reprName,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // for the bits geometric shader depends on, reset all geometric shaders.
+    bool needsSetGeometricShader = false;
+    // For the bits geometric shader depends on, reset all geometric shaders.
     // they are populated again at the end of _GetRepr.
+    // Since the dirty bits are cleaned by UpdateDrawItem (because certain
+    // reprs have multiple draw items) we need to remember if we need to set 
+    // the geometric shader again
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided)) {
         _ResetGeometricShaders();
+        needsSetGeometricShader = true;
+    }
+
+    // iterate through all reprs to figure out if any requires smoothnormals
+    // if so we will calculate the normals once (clean the bits) and reuse them.
+    // This is important for modes like FeyRay which requires 2 draw items 
+    // and one requires smooth normals but the other doesn't.
+    bool requireSmoothNormals = false;
+    for (auto desc : descs) {
+        if (desc.smoothNormals) {
+            requireSmoothNormals = true;
+            break;
+        }
     }
 
     // iterate and update all draw items
@@ -1077,7 +1148,7 @@ HdMesh::_GetRepr(TfToken const &reprName,
 
         if (isNew or HdChangeTracker::IsDirty(*dirtyBits)) {
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
-            _UpdateDrawItem(drawItem, dirtyBits, isNew, desc);
+            _UpdateDrawItem(drawItem, dirtyBits, isNew, desc, requireSmoothNormals);
             _UpdateDrawItemGeometricShader(drawItem, desc);
         }
         ++drawItemIndex;
@@ -1085,9 +1156,7 @@ HdMesh::_GetRepr(TfToken const &reprName,
 
     // if we need to rebuild geometric shader, make sure all reprs to have
     // their geometric shader up-to-date.
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
-                      HdChangeTracker::DirtyCullStyle|
-                      HdChangeTracker::DirtyDoubleSided)) {
+    if (needsSetGeometricShader) {
         _SetGeometricShaders();
     }
 

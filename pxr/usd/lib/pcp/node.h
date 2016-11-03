@@ -188,7 +188,7 @@ public:
 	PCP_API const SdfPath& GetPath() const;
 
     /// Returns the layer stack for the site this node represents.
-	PCP_API const PcpLayerStackPtr& GetLayerStack() const;
+    PCP_API const PcpLayerStackRefPtr& GetLayerStack() const;
 
     /// Returns true if this node is a source of direct opinions.
     /// There should only be one direct node per prim index.
@@ -201,11 +201,6 @@ public:
     /// directly or from a namespace ancestor.
 	PCP_API void SetHasSymmetry(bool hasSymmetry);
 	PCP_API bool HasSymmetry() const;
-
-    /// Get/set whether this node provides any variant selection opinions,
-    /// either directly or from a namespace ancestor.
-	PCP_API void SetHasVariantSelections(bool hasVariantSelections);
-	PCP_API bool HasVariantSelections() const;
 
     /// Get/set the permission for this node. This indicates whether specs
     /// on this node can be accessed from other nodes.
@@ -229,11 +224,6 @@ public:
     /// node that cannot contribute opinions to the index due to permissions.
 	PCP_API void SetRestricted(bool restricted);
 	PCP_API bool IsRestricted() const;
-
-    /// Get/set whether this node should contribute specs for dependency
-    /// tracking even if it is not allowed to contribute opinions.
-	PCP_API void SetShouldContributeDependencies(bool shouldContribute);
-	PCP_API bool ShouldContributeDependencies() const;
 
     /// Returns true if this node is allowed to contribute opinions
     /// for composition, false otherwise.

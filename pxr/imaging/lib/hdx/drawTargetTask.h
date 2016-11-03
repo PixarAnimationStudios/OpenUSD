@@ -25,14 +25,16 @@
 #define HDX_DRAW_TARGET_TASK_H
 
 #include "pxr/imaging/hdx/version.h"
+#include "pxr/imaging/hdx/drawTargetRenderPass.h"
+
 #include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/drawTargetRenderPass.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
 
-typedef boost::weak_ptr<class HdDrawTarget> HdDrawTargetWeakPtr;
-typedef std::unique_ptr<HdDrawTargetRenderPass> HdDrawTargetRenderPassUniquePtr;
+typedef boost::weak_ptr<class HdxDrawTarget> HdxDrawTargetWeakPtr;
+typedef std::unique_ptr<HdxDrawTargetRenderPass> HdxDrawTargetRenderPassUniquePtr;
+typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
@@ -54,12 +56,12 @@ private:
     // use by std::vector::reserve().
 
     struct RenderPassInfo {
-        HdDrawTargetRenderPassUniquePtr pass;
-        HdDrawTargetWeakPtr             target;
-        unsigned int                    version;
+        HdxDrawTargetRenderPassUniquePtr  pass;
+        HdRenderPassStateSharedPtr        renderPassState;
+        HdxSimpleLightingShaderSharedPtr  simpleLightingShader;
+        HdxDrawTargetWeakPtr              target;
+        unsigned int                      version;
     };
-
-    bool     _enableDrawTargets;
     unsigned _currentDrawTargetSetVersion;
 
 
@@ -103,13 +105,12 @@ private:
 struct HdxDrawTargetTaskParams
 {
     HdxDrawTargetTaskParams()
-        : enableDrawTargets(false)
-        , overrideColor(0.0)
+        : overrideColor(0.0)
         , wireframeColor(0.0)
         , enableLighting(false)
         , alphaThreshold(0.0)
         , tessLevel(1.0)
-        , drawingRange(0.0)
+        , drawingRange(0.9, -1.0)
         , depthBiasUseDefault(true)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
@@ -121,8 +122,6 @@ struct HdxDrawTargetTaskParams
         , hullVisibility(false)
         , surfaceVisibility(true)
         {}
-
-    bool enableDrawTargets;
 
 //    ClipPlanesVector clipPlanes;
     GfVec4f overrideColor;

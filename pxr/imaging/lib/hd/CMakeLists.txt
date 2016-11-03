@@ -2,15 +2,12 @@ set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hd)
 
 set(optionalPublicClasses "")
-if (QT4_FOUND)
-    list(APPEND optionalPrivateClasses unitTestHelper)
-endif()
 
 if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-    _add_define(OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
+    add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
 endif()
 if (OPENSUBDIV_HAS_GLSL_COMPUTE)
-    _add_define(OPENSUBDIV_HAS_GLSL_COMPUTE)
+    add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
 pxr_shared_library(hd
@@ -21,7 +18,6 @@ pxr_shared_library(hd
         vt
         work
         sdf
-        cameraUtil
         glf
         garch
         pxOsd
@@ -45,7 +41,6 @@ pxr_shared_library(hd
         bufferResource
         bufferSource
         bufferSpec
-        camera
         changeTracker
         codeGen
         commandBuffer
@@ -53,11 +48,6 @@ pxr_shared_library(hd
         conversions
         copyComputation
         debugCodes
-        drawTarget
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
-        drawTargetRenderPass
-        drawTargetRenderPassState
         dirtyList
         dispatchBuffer
         drawingCoord
@@ -74,7 +64,6 @@ pxr_shared_library(hd
         instancer
         instanceRegistry
         interleavedMemoryManager
-        light
         lightingShader
         mesh
         meshTopology
@@ -99,7 +88,7 @@ pxr_shared_library(hd
         shader
         shaderKey
         shaderParam
-        simpleLightingShader
+        sprim
         surfaceShader
         strategyBase
         task
@@ -121,7 +110,7 @@ pxr_shared_library(hd
         basisCurvesComputations
         basisCurvesShaderKey
         cullingShaderKey
-        defaultLightingShader
+        fallbackLightingShader
         geometricShader
         meshShaderKey
         pointsShaderKey
@@ -130,6 +119,7 @@ pxr_shared_library(hd
         subdivision
         subdivision3
         unitTestDelegate
+        unitTestHelper
         vertexAdjacency
         ${optionalPrivateClasses}
 
@@ -140,7 +130,8 @@ pxr_shared_library(hd
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
-        shaders/defaultLightingShader.glslfx
+        shaders/fallbackLighting.glslfx
+        shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
         shaders/frustumCull.glslfx
         shaders/instancing.glslfx
@@ -151,20 +142,16 @@ pxr_shared_library(hd
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
-        shaders/simpleLighting.glslfx
-        shaders/simpleLightingShader.glslfx
 )
 
-if (QT4_FOUND)
-    pxr_build_test(testHdBasicDrawing
-        LIBRARIES
-            hd
-            glf
-            glfq
-            Qt4::QtCore
-            Qt4::QtOpenGL
-        CPPFILES
-            unitTestGLDrawing.cpp
-            testenv/testHdBasicDrawing.cpp
-    )
+if (X11_FOUND OR APPLE)
+pxr_build_test(testHdBasicDrawing
+    LIBRARIES
+        hd
+        garch
+        glf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testHdBasicDrawing.cpp
+)
 endif()

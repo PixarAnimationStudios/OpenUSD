@@ -585,12 +585,14 @@ HdResourceRegistry::GetResourceAllocation() const
 
     // glsl program & ubo allocation
     TF_FOR_ALL (progIt, _glslProgramRegistry) {
+        HdGLSLProgramSharedPtr const &program = progIt->second;
+        if (not program) continue;
         size_t size =
-            progIt->second->GetProgram().GetSize() +
-            progIt->second->GetGlobalUniformBuffer().GetSize();
+            program->GetProgram().GetSize() +
+            program->GetGlobalUniformBuffer().GetSize();
 
         // the role of program and global uniform buffer is always same.
-        std::string const &role = progIt->second->GetProgram().GetRole().GetString();
+        std::string const &role = program->GetProgram().GetRole().GetString();
         if (result.count(role)) {
             size_t currentSize = result[role].Get<size_t>();
             result[role] = VtValue(currentSize + size);
@@ -736,6 +738,20 @@ HdResourceRegistry::RegisterTextureResource(HdTextureResource::ID id,
                         HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance)
 {
     return _textureResourceRegistry.GetInstance(id, instance);
+}
+
+std::unique_lock<std::mutex>
+HdResourceRegistry::FindTextureResource(HdTextureResource::ID id,
+                        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance, 
+                        bool *found)
+{
+    return _textureResourceRegistry.FindInstance(id, instance, found);
+}
+
+
+void HdResourceRegistry::InvalidateGeometricShaderRegistry()
+{
+    _geometricShaderRegistry.Invalidate();
 }
 
 std::ostream &operator <<(std::ostream &out,

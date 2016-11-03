@@ -416,16 +416,9 @@ public:
     PLUG_API
     PlugPluginPtrVector GetAllPlugins() const;
 
-    /// Returns the plugin that contains the given address if any,
-    /// otherwise returns \c NULL.  Naturally, this only works for
-    /// shared library plugins.
+    /// Returns a plugin with the specified library name.
     PLUG_API
-    PlugPluginPtr GetPluginWithAddress(void* address) const;
-
-    /// Returns the plugin at the given filesystem path if any,
-    /// otherwise returns \c NULL.
-    PLUG_API
-    PlugPluginPtr GetPluginWithPath(const std::string& path) const;
+    PlugPluginPtr GetPluginWithName(const std::string& name) const;
 
     /// Looks for a string associated with \a type and \a key and returns it, or
     /// an empty string if \a type or \a key are not found.

@@ -26,7 +26,6 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/diagnostic.h"
 
 UsdTreeIterator

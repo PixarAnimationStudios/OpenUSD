@@ -33,6 +33,7 @@
 
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
+#include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/parameter.h"
 
@@ -250,6 +251,11 @@ public:
     USDSHADE_API
     UsdRelationship GetTerminal(
         const TfToken& terminalName) const;
+
+    /// Get all terminals of a subgraph
+    /// 
+    USDSHADE_API
+    UsdRelationshipVector GetTerminals() const;
 };
 
 #endif

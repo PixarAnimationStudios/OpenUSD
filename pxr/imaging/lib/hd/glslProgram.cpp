@@ -129,8 +129,9 @@ HdGLSLProgram::CompileShader(GLenum type,
 
     std::string logString;
     if (not HdGLUtils::GetShaderCompileStatus(shader, &logString)) {
-        TF_CODING_ERROR("Failed to compile shader (%s): \n%s",
-                        shaderType, logString.c_str());
+        // XXX:validation
+        TF_WARN("Failed to compile shader (%s): \n%s",
+                shaderType, logString.c_str());
     }
 
     // attach the shader to the program
@@ -167,7 +168,8 @@ HdGLSLProgram::Link()
     std::string logString;
     bool success = true;
     if (not HdGLUtils::GetProgramLinkStatus(program, &logString)) {
-        TF_CODING_ERROR("Failed to link shader: \n%s", logString.c_str());
+        // XXX:validation
+        TF_WARN("Failed to link shader: \n%s", logString.c_str());
         success = false;
     }
 

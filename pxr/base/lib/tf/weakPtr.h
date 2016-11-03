@@ -42,6 +42,7 @@
 #include <boost/utility/enable_if.hpp>
 
 #include <cstddef>
+#include <type_traits>
 
 class TfHash;
 template <class U> class TfRefPtr;
@@ -388,52 +389,40 @@ private:
 // A mechanism to determine whether a class type has a method
 // __GetTfWeakBase__ with the correct signature.
 //
-// The main idea is as follows.  Given a type T to test, we derive a new type
-// _Base that inherits T and a _BaseMixin class.  The _BaseMixin class
-// provides an implementation of __GetTfWeakBase__.  Then we use sizeof() on a
-// call expression to the function _Deduce with a single _Base* argument.
-// _Deduce has two possible overloads; one for an affirmative answer
-// (returning _YesType) and one for a negative answer (returning _NoType).
-// The overloads are chosen by SFINAE.  In the _NoType case, there is an extra
-// parameter of type _Helper<TfWeakBase const & (_BaseMixin::*)() const,
-// &V::__GetTfWeakBase__> * with a default argument NULL.  This overload is
-// only chosen when Base's __GetTfWeakBase__ method comes from _BaseMixin,
-// which means that there was no other __GetTfWeakBase__ in the method
-// resolution order.  If there was a __GetTfWeakBase__ from another class in
-// the method resolution order, the _YesType overload of _Deduce would be
-// preferred.  Since the call expression's result type's size depends on which
-// overload was chosen, we can use this to answer the question of whether the
-// query type T has a __GetTfWeakBase__ or not.
+// _HasSig can only be called with a pointer-to-member-function that matches
+// the desired signature of __GetTfWeakBase__.
 //
-template <class T, class Enable = void>
-struct Tf_HasGetWeakBase : public boost::mpl::false_
-{
-};
-
+// _Deduce has two possible overloads.  The first overload's return value uses
+// expression SFINAE to detect if a call to _HasSig(&T::__GetTfWeakBase__) is
+// well-formed.  If so, the overload's return type is the return type of
+// _HasSig, specifically std::true_type.  The second _Deduce overload returns
+// std::false_type and is viable for all types.
+//
 template <class T>
-struct Tf_HasGetWeakBase<
-    T, typename boost::enable_if<boost::is_class<T> >::type>
+struct Tf_HasGetWeakBase
 {
 private:
-    struct _YesType { char m; }; 
-    struct _NoType { _YesType m[2];}; 
-    struct _BaseMixin { 
-        TfWeakBase const &__GetTfWeakBase__() const {
-            return *((TfWeakBase *)(0));
-        }
-    };
-    struct _Base : public T, public _BaseMixin { ~_Base(); };
-    template <class U, U u>  class _Helper{}; 
-    template <class V> 
-    static _NoType
-    _Deduce(V*, _Helper<TfWeakBase const & (_BaseMixin::*)() const,
-                        &V::__GetTfWeakBase__>* = 0);
-    static _YesType _Deduce(...);
+
+    // The required method signature of __GetTfWeakBase__ for implementations
+    // of the weak pointable interface.
+    template <class U>
+    using _SignatureOf__GetTfWeakBase__ = TfWeakBase const & (U::*)() const;
+
+    template <class U>
+    static std::true_type
+    _HasSig(_SignatureOf__GetTfWeakBase__<U>);
+
+    template <class U>
+    static decltype(_HasSig(&U::__GetTfWeakBase__))
+    _Deduce(U*);
+
+    static std::false_type
+    _Deduce(...);
+
 public:
-    typedef Tf_HasGetWeakBase type;
-    typedef bool value_type;
-    BOOST_STATIC_CONSTANT(bool,
-        value = sizeof(_YesType) == sizeof(_Deduce((_Base*)(0))));
+    using type = decltype(_Deduce(static_cast<T*>(nullptr)));
+    using value_type = bool;
+    static const bool value = type::value;
 };
 
 template <class T>

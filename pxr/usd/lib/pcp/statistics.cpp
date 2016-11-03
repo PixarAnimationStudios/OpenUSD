@@ -24,12 +24,11 @@
 #include "pxr/usd/pcp/statistics.h"
 
 #include "pxr/usd/pcp/cache.h"
+#include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 
 #include "pxr/base/arch/defines.h"
-
-#include <boost/static_assert.hpp>
 
 struct Pcp_GraphStats
 {
@@ -65,6 +64,7 @@ public:
     Pcp_GraphStats sharedAllGraphStats;
     Pcp_GraphStats sharedCulledGraphStats;
     std::map<size_t, size_t> mapFunctionSizeDistribution;
+    std::map<size_t, size_t> layerStackRelocationsSizeDistribution;
 };
 
 class Pcp_Statistics
@@ -153,6 +153,13 @@ public:
         TF_FOR_ALL(i, allMapFuncs) {
             size_t size = i->GetSourceToTargetMap().size();
             stats->mapFunctionSizeDistribution[size] += 1;
+        }
+
+        // PcpLayerStack _relocatesPrimPaths size distribution
+        for(const PcpLayerStackPtr &layerStack:
+            cache->_layerStackCache->GetAllLayerStacks()) {
+            size_t size = layerStack->GetPathsToPrimsWithRelocates().size();
+            stats->layerStackRelocationsSizeDistribution[size] += 1;
         }
     }
 
@@ -309,29 +316,48 @@ public:
             printf("%zu   %zu\n", i->first, i->second);
         }
 
-        // Assert sizes of structs we want to keep a close eye on.
-#if defined(ARCH_COMPILER_HAS_STATIC_ASSERT)
-        BOOST_STATIC_ASSERT(sizeof(PcpMapFunction) == 8);
-        BOOST_STATIC_ASSERT(sizeof(PcpMapExpression) == 8);
+        out << "PcpLayerStack pathsWithRelocates size histogram: " << endl;
+        out << "SIZE    COUNT" << endl;
+        TF_FOR_ALL(i, stats.layerStackRelocationsSizeDistribution) {
+            printf("%zu   %zu\n", i->first, i->second);
+        }
 
+        // Assert sizes of structs we want to keep a close eye on.
+        static_assert(sizeof(PcpMapFunction) == 8,
+                      "PcpMapFunction must be of size 8");
+        static_assert(sizeof(PcpMapExpression) == 8,
+                      "PcpMapExpression must be of size 8");
+
+#if !defined(ARCH_OS_WINDOWS)
         // This object is 120 bytes when building against libstdc++
         // and 96 for libc++ because std::set is 48 bytes in the
         // former case and 24 bytes in the latter.
-        BOOST_STATIC_ASSERT(sizeof(PcpMapExpression::_Node) == 120 or
-                            sizeof(PcpMapExpression::_Node) == 96);
+        static_assert(sizeof(PcpMapExpression::_Node) == 120 ||
+                      sizeof(PcpMapExpression::_Node) == 96,
+                      "PcpMapExpression::_Node must be of size 96 or 120");
+#endif
 
-        BOOST_STATIC_ASSERT(sizeof(PcpLayerStackPtr) == 16);
-        BOOST_STATIC_ASSERT(sizeof(PcpLayerStackSite) == 24);
+        static_assert(sizeof(PcpLayerStackPtr) == 16,
+                      "PcpLayerStackPtr must be of size 16");
+        static_assert(sizeof(PcpLayerStackSite) == 16,
+                      "PcpLayerStackSite must be of size 16");
+        static_assert(sizeof(PcpPrimIndex) == 40,
+                      "PcpPrimIndex must be of size 40");
 
+#if !defined(ARCH_OS_WINDOWS)
         // This object is 104 bytes when building against libstdc++
         // and 88 for libc++ because std::vector<bool> is 40 bytes
         // in the former case and 24 bytes in the latter.
-        BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph) == 104 or
-                            sizeof(PcpPrimIndex_Graph) == 88);
+        static_assert(sizeof(PcpPrimIndex_Graph) == 104 ||
+                      sizeof(PcpPrimIndex_Graph) == 88,
+                      "PcpPrimIndex_Graph must be of size 88 or 104");
 
-        BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph::_Node) == 48);
-        BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph::_SharedData) == 32);
+        static_assert(sizeof(PcpPrimIndex_Graph::_Node) == 40,
+                      "PcpPrimIndex_Graph::_Node must be of size 40");
 #endif
+
+        static_assert(sizeof(PcpPrimIndex_Graph::_SharedData) == 32,
+                      "PcpPrimIndex_Graph::_SharedData must be of size 32");
     }
 
     static void PrintPrimIndexStats(

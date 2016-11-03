@@ -26,8 +26,8 @@
 #if defined(_WIN32)
 #include <Windows.h>
 #endif
-#include <GL/gl.h>
 #include <algorithm>
+#include "pxr/imaging/garch/gl.h"
 
 bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
 {

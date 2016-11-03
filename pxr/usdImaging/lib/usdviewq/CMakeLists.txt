@@ -1,8 +1,8 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdviewq)
 
-if (NOT QT4_FOUND)
-    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: Qt4")
+if (NOT PYSIDE_FOUND)
+    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
     return()
 endif()
 
@@ -68,7 +68,8 @@ pxr_shared_library(usdviewq
         referenceEditorUI.ui
 )
 
+_get_install_dir(lib/python/pxr/Usdviewq destDir)
 install(DIRECTORY
     icons
-    DESTINATION lib/python/pxr/Usdviewq
+    DESTINATION ${destDir}
 )

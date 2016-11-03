@@ -57,6 +57,9 @@ public:
     HDLIB_API
     bool SupportsHydra() const;
 
+    // GL version
+    int glVersion;                    // 400 (4.0), 410 (4.1), ...
+
     // Max constants
     int maxUniformBlockSize;
     int maxShaderStorageBlockSize;
@@ -73,9 +76,12 @@ public:
     bool bindlessBufferEnabled;       // NV_shader_buffer_load
 
     // GLSL version and extensions
-    int glslVersion;
+    int glslVersion;                  // 400, 410, ...
     bool explicitUniformLocation;     // ARB_explicit_uniform_location    (4.3)
     bool shadingLanguage420pack;      // ARB_shading_language_420pack     (4.2)
+
+    // workarounds for driver issues
+    bool copyBufferEnabled;
 
 private:
     void _LoadCaps();

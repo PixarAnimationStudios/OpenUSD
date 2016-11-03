@@ -58,6 +58,7 @@ public:
     virtual GLenum GetFormat() const;
     virtual GLenum GetType() const;
     virtual int GetBytesPerPixel() const;
+    virtual int GetNumMipLevels() const;
 
     virtual bool IsColorSpaceSRGB() const;
 
@@ -375,6 +376,14 @@ Glf_OIIOImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
 }
 
 /* virtual */
+int
+Glf_OIIOImage::GetNumMipLevels() const
+{
+    // XXX Add support for mip counting
+    return 1;
+}
+
+/* virtual */
 bool
 Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage)
 {
@@ -437,6 +446,10 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
                 ROI(0, storage.width, 0, storage.height));
         image = &scaled;
     }
+
+//XXX:
+//'OpenImageIO::v1_7::ImageBuf::get_pixels': Use get_pixels(ROI, ...) instead. [1.6] 
+#pragma warning(disable:4996)
 
     // Read pixel data
     TypeDesc type = _GetOIIOBaseType(storage.type);

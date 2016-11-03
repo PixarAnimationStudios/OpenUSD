@@ -116,6 +116,7 @@ void wrapUsdGeomPrimvar()
         .def("SetIndices", &Primvar::SetIndices, 
             (arg("indices"),
              arg("time")=UsdTimeCode::Default()))
+        .def("BlockIndices", &Primvar::BlockIndices)
         .def("GetIndices", _GetIndices, 
             (arg("time")=UsdTimeCode::Default()))
         .def("IsIndexed", &Primvar::IsIndexed)

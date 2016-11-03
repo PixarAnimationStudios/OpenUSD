@@ -27,6 +27,7 @@
 /// \file arch/hash.h
 /// Hash functions.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/api.h"
 

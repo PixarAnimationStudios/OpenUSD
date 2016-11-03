@@ -28,7 +28,6 @@
 #include "pxr/imaging/garch/glPlatformContext.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/weak_ptr.hpp>
 #include <map>
@@ -95,7 +94,7 @@ GlfGLContextRegistry::GetShared()
         _shared = GlfGLContextSharedPtr();
 
         // Find the first interface with a shared context.
-        BOOST_FOREACH(GlfGLContextRegistrationInterface& iface, _interfaces) {
+        for (auto& iface : _interfaces) {
             if (GlfGLContextSharedPtr shared = iface.GetShared()) {
                 _shared = shared;
                 return _shared.get();
@@ -123,7 +122,7 @@ GlfGLContextRegistry::GetCurrent()
 
     // We don't know this raw state.  Try syncing each interface to see
     // if any system thinks this state is current.
-    BOOST_FOREACH(GlfGLContextRegistrationInterface& iface, _interfaces) {
+    for (auto& iface : _interfaces) {
         if (GlfGLContextSharedPtr currentContext = iface.GetCurrent()) {
             if (currentContext->IsValid()) {
                 GlfGLContext::MakeCurrent(currentContext);

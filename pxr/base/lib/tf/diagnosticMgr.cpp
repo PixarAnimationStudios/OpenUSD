@@ -38,7 +38,6 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/threads.h"
 
-#include <boost/foreach.hpp>
 #include <boost/utility.hpp>
 
 #include <signal.h>
@@ -75,6 +74,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
         TF_ERROR_MARK_TRACKING,
         "capture stack traces at TfErrorMark ctor/dtor, enable "
         "TfReportActiveMarks debugging API.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR,
+        "print all posted errors immediately, meaning that even errors that "
+        "are expected and handled will be printed, producing possibly "
+        "confusing output");
 }
 
 
@@ -157,7 +160,7 @@ TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
     } else {
         // Reassign new serial numbers to the errors.
         size_t serial = _nextSerial.fetch_and_add(src.size());
-        BOOST_FOREACH(TfError &error, src) {
+        for (auto& error : src) {
             error._data->_serial = serial++;
         }
         // Now splice them into the main list.
@@ -180,8 +183,16 @@ TfDiagnosticMgr::PostError(TfEnum errorCode, const char* errorCodeString,
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR))
         ArchDebuggerTrap();
 
-    if (TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR)) {
+    const bool logStackTraceOnError =
+        TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR);
+
+    if (logStackTraceOnError or
+        TfDebug::IsEnabled(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR)) {
+    
         _PrintDiagnostic(stderr, errorCode, context, commentary, info);
+    }
+
+    if (logStackTraceOnError) {
         TfLogStackTrace("ERROR", /* logToDb */ false);
     }
 

@@ -122,6 +122,20 @@ _CreateStereoRoleAttr(UsdGeomCamera &self,
     return self.CreateStereoRoleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateShutterOpenAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShutterOpenAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateShutterCloseAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShutterCloseAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
+}
 
 void wrapUsdGeomCamera()
 {
@@ -228,6 +242,20 @@ void wrapUsdGeomCamera()
              &This::GetStereoRoleAttr)
         .def("CreateStereoRoleAttr",
              &_CreateStereoRoleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetShutterOpenAttr",
+             &This::GetShutterOpenAttr)
+        .def("CreateShutterOpenAttr",
+             &_CreateShutterOpenAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetShutterCloseAttr",
+             &This::GetShutterCloseAttr)
+        .def("CreateShutterCloseAttr",
+             &_CreateShutterCloseAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

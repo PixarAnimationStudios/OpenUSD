@@ -1,5 +1,10 @@
 project(usd)
-cmake_minimum_required(VERSION 2.8.8)
+
+if (WIN32)
+    cmake_minimum_required(VERSION 3.1.1)
+else()
+    cmake_minimum_required(VERSION 2.8.8)
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/defaults
                       ${CMAKE_SOURCE_DIR}/cmake/modules

@@ -101,11 +101,8 @@ if (PXR_BUILD_IMAGING)
         # --X11
         find_package(X11)
     endif()
-    # --Qt
-    find_package(Qt4)
-    if (QT4_FOUND)
-        find_package(PySide REQUIRED)
-    endif()
+    # --PySide
+    find_package(PySide)
     # --Zlib
     find_package(ZLIB REQUIRED)
 endif()

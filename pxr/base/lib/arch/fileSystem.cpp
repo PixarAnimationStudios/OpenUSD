@@ -289,7 +289,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
 		ARCH_ERROR(errorMsg.c_str());
 		return -1;
 	}
-	
+
 	// Close the file
 	::CloseHandle(fileHandle);
 
@@ -347,7 +347,7 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 		retstr = sTemplate;
 	}
 #else
-    strcpy(cTemplate, sTemplate.size() + 1, sTemplate.c_str());
+    strncpy(cTemplate, sTemplate.c_str(), sTemplate.size() + 1);
     // Open the tmpdir.
     char *tmpSubdir = mkdtemp(cTemplate);
 
@@ -403,51 +403,6 @@ ArchGetTmpDir()
 {
     return _TmpDir;
 }
-
-set<string>
-ArchGetAutomountDirectories()
-{
-    set<string> result;
-
-#if !defined(ARCH_OS_LINUX)
-    ARCH_ERROR("unimplemented function");
-#else
-    if (FILE *in = fopen("/proc/mounts","r")) {
-	char linebuffer[1024];
-	
-	while (fgets(linebuffer, 1024, in)) {
-	    char name[1024], dir[1024], type[1024], opts[1024];
-        if (sscanf(linebuffer, "%s %s %s %s", name, dir, type, opts) == 4 &&
-            strcmp(type, "autofs") == 0) {
-
-            // Omit mounts with the 'direct' option set.
-            bool direct = false;
-
-            char* saveptr;
-            char* token = strtok_r(opts, ",", &saveptr);
-            while (token) {
-                if (strcmp(token, "direct") == 0) {
-                    direct = true;
-                    break;
-                }
-                token = strtok_r(NULL, ",", &saveptr);
-            }
-
-            if (not direct)
-                result.insert(dir);
-	    }
-	}
-
-	fclose(in);
-    }
-    else {
-        ARCH_ERROR("Cannot open /proc/mounts");
-    }
-#endif
-    
-    return result;
-}
-
 
 void
 Arch_Unmapper::operator()(char const *mapStart) const
@@ -514,6 +469,19 @@ ArchMutableFileMapping
 ArchMapFileReadWrite(FILE *file)
 {
     return Arch_MapFileImpl<ArchMutableFileMapping>(file);
+}
+
+ARCH_API
+void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // No windows implementation yet.  Look at
+    // PrefetchVirtualMemory()/OfferVirtualMemory() in future.
+#else // assume POSIX
+    posix_madvise(const_cast<void *>(addr), len,
+                  adv == ArchMemAdviceWillNeed ?
+                  POSIX_MADV_WILLNEED : POSIX_MADV_DONTNEED);
+#endif
 }
 
 int64_t
@@ -779,3 +747,18 @@ std::string ArchResolveSymlink(const char* path)
     return std::string(path);
 }
 #endif
+
+ARCH_API
+void ArchFileAdvise(
+    FILE *file, int64_t offset, size_t count, ArchFileAdvice adv)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // No windows implementation yet.  Not clear what's equivalent.
+#elif defined(ARCH_OS_DARWIN)
+    // No OSX implementation; posix_fadvise does not exist on that platform.
+#else // assume POSIX
+    posix_fadvise(fileno(file), offset, static_cast<off_t>(count),
+                  adv == ArchFileAdviceWillNeed ?
+                  POSIX_FADV_WILLNEED : POSIX_FADV_DONTNEED);
+#endif
+}

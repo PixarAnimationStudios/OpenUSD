@@ -24,7 +24,6 @@
 #include "streamIO.h"
 #include "stream.h"
 
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/iterator.hpp>
 

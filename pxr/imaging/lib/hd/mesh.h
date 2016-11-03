@@ -51,17 +51,20 @@ struct HdMeshReprDesc {
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    bool lit = false,
-                   bool smoothNormals = false)
+                   bool smoothNormals = false,
+                   bool blendWireframeColor = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , lit(lit)
         , smoothNormals(smoothNormals)
+        , blendWireframeColor(blendWireframeColor)
         {}
 
     HdMeshGeomStyle geomStyle:3;
     HdCullStyle     cullStyle:3;
     bool            lit:1;
     bool            smoothNormals:1;
+    bool            blendWireframeColor:1;
 };
 
 /// A subdivision surface or poly-mesh object.
@@ -96,6 +99,9 @@ public:
     /// Returns whether GPU refinement is enabled or not.
     static bool IsEnabledRefineGPU();
 
+    /// Returns whether packed (10_10_10 bits) normals to be used
+    static bool IsEnabledPackedNormals();
+
     /// Configure geometric style of drawItems for \p reprName
     /// HdMesh can have up to 2 descriptors for some complex styling
     /// (FeyRay, Outline)
@@ -118,7 +124,8 @@ protected:
     void _UpdateDrawItem(HdDrawItem *drawItem,
                          HdChangeTracker::DirtyBits *dirtyBits,
                          bool isNew,
-                         HdMeshReprDesc desc);
+                         HdMeshReprDesc desc,
+                         bool requireSmoothNormals);
 
     void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
                                         HdMeshReprDesc desc);
@@ -136,7 +143,8 @@ protected:
     void _PopulateVertexPrimVars(HdDrawItem *drawItem,
                                  HdChangeTracker::DirtyBits *dirtyBits,
                                  bool isNew,
-                                 HdMeshReprDesc desc);
+                                 HdMeshReprDesc desc,
+                                 bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
                                       HdChangeTracker::DirtyBits *dirtyBits,
@@ -170,6 +178,7 @@ private:
     HdTopology::ID _topologyId;
     int _customDirtyBitsInUse;
     bool _doubleSided;
+    bool _packedNormals;
     HdCullStyle _cullStyle;
 
     typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;

@@ -391,3 +391,52 @@ Test_TfWeakPtrConversion() {
 TF_ADD_REGTEST(TfWeakPtr);
 TF_ADD_REGTEST(TfCreateRefPtrFromProtectedWeakPtr);
 TF_ADD_REGTEST(TfWeakPtrConversion);
+
+////////////////////////////////////////////////////////////////////////
+
+// Compile-time testing of the Tf_SUPPORTS_WEAKPTR mechanism.
+namespace
+{
+    struct Tf_TestHasGetWeakBase
+    {
+        TfWeakBase const &__GetTfWeakBase__() const;
+    };
+
+    struct Tf_TestHasGetWeakBaseDerived : public Tf_TestHasGetWeakBase
+    {
+    };
+
+    struct Tf_TestHasGetWeakBaseNot
+    {
+    };
+
+    struct Tf_TestIsWeakBase : public TfWeakBase
+    {
+    };
+
+    struct Tf_TestGetWeakBaseWrongSignature
+    {
+        void __GetTfWeakBase__() const;
+    };
+
+    class Tf_TestGetWeakBasePrivate
+    {
+    private:
+        const TfWeakBase& __GetTfWeakBase__() const;
+    };
+
+    class Tf_TestGetWeakBaseProtected
+    {
+    protected:
+        const TfWeakBase& __GetTfWeakBase__() const;
+    };
+
+    static_assert(TF_SUPPORTS_WEAKPTR(Tf_TestHasGetWeakBase), "");
+    static_assert(TF_SUPPORTS_WEAKPTR(Tf_TestHasGetWeakBaseDerived), "");
+    static_assert(!TF_SUPPORTS_WEAKPTR(Tf_TestHasGetWeakBaseNot), "");
+    static_assert(!TF_SUPPORTS_WEAKPTR(TfWeakPtr<Tf_TestIsWeakBase>), "");
+    static_assert(!TF_SUPPORTS_WEAKPTR(Tf_TestGetWeakBaseWrongSignature), "");
+    static_assert(!TF_SUPPORTS_WEAKPTR(Tf_TestGetWeakBasePrivate), "");
+    static_assert(!TF_SUPPORTS_WEAKPTR(Tf_TestGetWeakBaseProtected), "");
+    static_assert(!TF_SUPPORTS_WEAKPTR(int), "");
+}

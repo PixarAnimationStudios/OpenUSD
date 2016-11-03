@@ -109,10 +109,13 @@ UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 
 /*virtual*/
 SdfPath 
-UsdImagingPrimAdapter::GetPathForInstanceIndex(SdfPath const &path,
-                                               int instanceIndex,
-                                               int *instanceCount,
-                                               int *absoluteInstanceIndex)
+UsdImagingPrimAdapter::GetPathForInstanceIndex(
+    SdfPath const &path,
+    int instanceIndex,
+    int *instanceCount,
+    int *absoluteInstanceIndex,
+    SdfPath * rprimPath,
+    SdfPathVector *instanceContext)
 {
     if (absoluteInstanceIndex) {
         *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
@@ -307,10 +310,10 @@ UsdImagingPrimAdapter::GetShaderBinding(UsdPrim const& prim)
     // samples.
     
     if (_IsEnabledBindingCache()) {
-        SdfPath binding = _delegate->_lookBindingCache.GetValue(prim);
+        SdfPath binding = _delegate->_materialBindingCache.GetValue(prim);
         return binding;
     } else {
-        return UsdImaging_LookStrategy::ComputeShaderPath(prim);
+        return UsdImaging_MaterialStrategy::ComputeShaderPath(prim);
     }
 }
 

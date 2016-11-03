@@ -69,12 +69,11 @@ _GetPolyAttr(const UsdGeomMesh &mesh, double time)
     return polyBuilder.build();
 }
 
-static FnKat::Attribute
-_GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
+static void
+_SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
+                    const UsdGeomMesh &mesh, bool hierarchical, double time)
 {
     std::string err;
-
-    FnKat::GroupBuilder builder;
 
     TfToken interpolateBoundary; 
     if (mesh.GetInterpolateBoundaryAttr().Get(&interpolateBoundary, time)){
@@ -84,7 +83,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
                 Msg("\tinterpolateBoundary = %s (%d)\n",
                     interpolateBoundary.GetText(),
                     UsdRiConvertToRManInterpolateBoundary(interpolateBoundary));
-            builder.set("interpolateBoundary",
+            attrs.set("geometry.interpolateBoundary",
                   FnKat::IntAttribute(
                   UsdRiConvertToRManInterpolateBoundary(interpolateBoundary)));
         }
@@ -113,7 +112,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
                 fvInterpolateBoundary.GetText(),
                 UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterpolateBoundary));
         
-        builder.set("facevaryinginterpolateboundary",
+        attrs.set("geometry.facevaryinginterpolateboundary",
             FnKat::IntAttribute(
                 UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterpolateBoundary)));
     }
@@ -130,7 +129,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::IntBuilder holeIndicesBuilder(1);
         holeIndicesBuilder.set(std::vector<int>(holeIndices.begin(),
                                                 holeIndices.end()));
-        builder.set("holePolyIndices", holeIndicesBuilder.build());
+        attrs.set("geometry.holePolyIndices", holeIndicesBuilder.build());
     }
 
     // Creases
@@ -140,7 +139,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::IntBuilder creasesBuilder(1);
         creasesBuilder.set(std::vector<int>(creaseIndices.begin(),
                                             creaseIndices.end()));
-        builder.set("creaseIndices", creasesBuilder.build());
+        attrs.set("geometry.creaseIndices", creasesBuilder.build());
 
         VtIntArray creaseLengths;
         if (mesh.GetCreaseLengthsAttr().Get(&creaseLengths, time)
@@ -148,7 +147,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
             FnKat::IntBuilder creaseLengthsBuilder(1);
             creaseLengthsBuilder.set(std::vector<int>(creaseLengths.begin(),
                                                       creaseLengths.end()));
-            builder.set("creaseLengths", creaseLengthsBuilder.build());
+            attrs.set("geometry.creaseLengths", creaseLengthsBuilder.build());
         }
         VtFloatArray creaseSharpness;
         if (mesh.GetCreaseSharpnessesAttr().Get(&creaseSharpness, time)
@@ -171,8 +170,8 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
             }
             creaseSharpnessLengthsBuilder.set(numSharpnesses);
 
-            builder.set("creaseSharpness", creaseSharpnessBuilder.build());
-            builder.set("creaseSharpnessLengths",
+            attrs.set("geometry.creaseSharpness", creaseSharpnessBuilder.build());
+            attrs.set("geometry.creaseSharpnessLengths",
                         creaseSharpnessLengthsBuilder.build());
         }
     }
@@ -184,7 +183,7 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::IntBuilder cornersBuilder(1);
         cornersBuilder.set(std::vector<int>(cornerIndices.begin(),
                                             cornerIndices.end()));
-        builder.set("cornerIndices", cornersBuilder.build());
+        attrs.set("geometry.cornerIndices", cornersBuilder.build());
     }
     VtFloatArray cornerSharpness;
     if (mesh.GetCornerSharpnessesAttr().Get(&cornerSharpness, time)
@@ -192,10 +191,8 @@ _GetSubdivTagsGroup(const UsdGeomMesh &mesh, bool hierarchical, double time)
         FnKat::FloatBuilder cornerSharpnessBuilder(1);
         cornerSharpnessBuilder.set(std::vector<float>(cornerSharpness.begin(),
                                                       cornerSharpness.end()));
-        builder.set("cornerSharpness", cornerSharpnessBuilder.build());
+        attrs.set("geometry.cornerSharpness", cornerSharpnessBuilder.build());
     }
-
-    return builder.build();
 }
 
 
@@ -246,126 +243,6 @@ _promoteToVertex(
 }
 
 
-// Infer ST (if it doesn't exist) from u_map1 and v_map1
-FnKat::GroupAttribute _inferSt(
-        FnKat::GroupAttribute& primvarGroup,
-        FnKat::GroupAttribute& polyAttr,
-        double currentTime) 
-{
-    FnKat::GroupBuilder arbBuilder;
-
-    // Grab relevant attributes
-    FnKat::Attribute st = primvarGroup.getChildByName("st");
-    FnKat::Attribute s = primvarGroup.getChildByName("s");
-    FnKat::Attribute t = primvarGroup.getChildByName("t");
-    FnKat::GroupAttribute u = primvarGroup.getChildByName("u_map1");
-    FnKat::GroupAttribute v = primvarGroup.getChildByName("v_map1");
-
-    // If we don't have u_map1 and v_map1, don't do anything
-    // If st or s,t exist, don't override what is already there
-    if (!u.isValid()
-            || !v.isValid()
-            || st.isValid()
-            || s.isValid()
-            || t.isValid()) {
-        return FnKat::GroupAttribute();
-    }
-
-    // Check attribute scope
-    FnKat::StringAttribute uScopeAttr = u.getChildByName("scope");
-    FnKat::StringAttribute vScopeAttr = v.getChildByName("scope");
-    std::string uScope = uScopeAttr.getValue();
-    std::string vScope = vScopeAttr.getValue();
-
-    // Things we'll use to build st
-    std::string scope;
-    FnKat::StringAttribute interpolationType;
-    FnKat::FloatAttribute uAttrMatched, vAttrMatched;
-
-    // Grab the u_map1 and v_map1 values
-    FnKat::FloatAttribute uAttr = u.getChildByName("value");
-    FnKat::FloatAttribute vAttr = v.getChildByName("value");
-
-    // Don't do anything for matching face or primitive scopes
-    // (uniform or constant details in usd/rib)
-    if ((uScope == "face" || uScope == "primitive")
-            && (vScope == "face" || vScope == "primitive")) {
-        return FnKat::GroupAttribute();
-    }
-
-    if (uScope == vScope) {
-        // Scopes match - interleave without promoting to vertex/facevarying
-        scope = uScope;
-        uAttrMatched = uAttr;
-        vAttrMatched = vAttr;
-
-        // If the interpolationTypes exist and match, use those as well
-        FnKat::StringAttribute uInterpAttr = u.getChildByName(
-                "interpolationType");
-        FnKat::StringAttribute vInterpAttr = v.getChildByName(
-                "interpolationType");
-        if (uInterpAttr.isValid() && vInterpAttr.isValid()
-                && uInterpAttr.getValue() == vInterpAttr.getValue()) {
-            interpolationType = uInterpAttr;
-        }
-    } else {
-        // If the scopes don't match, promote everything to vertex/facevarying
-        scope = "vertex";
-        // This could be optimized by not creating an intermediate array,
-        // but I feel that this is a little cleaner
-        uAttrMatched = _promoteToVertex(uAttr, uScope, polyAttr, currentTime);
-        vAttrMatched = _promoteToVertex(vAttr, vScope, polyAttr, currentTime);
-    }
-
-    bool stBuilt = false;
-    if (uAttrMatched.isValid() && vAttrMatched.isValid()) {
-        // If we have valid matched arrays, then interleave them
-        FnKat::FloatConstVector uArray = uAttrMatched.getNearestSample(
-                currentTime);
-        FnKat::FloatConstVector vArray = vAttrMatched.getNearestSample(
-                currentTime);
-        if (uArray.size() == vArray.size()) {
-            std::vector<float> stArray;
-            stArray.reserve(uArray.size()*2);
-            for (size_t i = 0; i < uArray.size(); ++i) {
-                stArray.push_back(uArray[i]);
-                stArray.push_back(vArray[i]);
-            }
-
-            // Build into ST
-            FnKat::GroupBuilder attrBuilder;
-            FnKat::FloatBuilder vecBuilder(/* tupleSize = */ 2);
-            vecBuilder.set(stArray);
-            attrBuilder.set("scope", FnKat::StringAttribute(scope));
-            attrBuilder.set("inputType",
-                    FnKat::StringAttribute("point2"));
-            attrBuilder.set("value", vecBuilder.build());
-            if (interpolationType.isValid()) {
-                attrBuilder.set("interpolationType", interpolationType);
-            }
-            arbBuilder.set("st", attrBuilder.build());
-            stBuilt = true;
-        } else {
-            FnLogWarn("u_map1 and v_map1 promoted to vertex, but are"
-                    << "different sizes.");
-        }
-    }
-
-    if (!stBuilt && u.isValid() && v.isValid()) {
-        // If we couldn't promote the arrays to vertex, store S,T separately
-        // as a fallback. RenderMan will combine s,t into st at render time.
-        FnLogDebug("Unablo to interleave/promote to vertex: "
-                << "u_map1 scope (" << uScope << ") "
-                << "v_map1 scope (" << vScope << "). "
-                << "Storing S, T separately.");
-        arbBuilder.set("s", u);
-        arbBuilder.set("t", v);
-    }
-
-    return arbBuilder.build();
-}
-
-
 void
 PxrUsdKatanaReadMesh(
         const UsdGeomMesh& mesh,
@@ -394,9 +271,8 @@ PxrUsdKatanaReadMesh(
     // Construct the 'geometry' attribute.
     //
 
-    FnKat::GroupBuilder geometryBuilder;
-
-    geometryBuilder.set("point.P", PxrUsdKatanaGeomGetPAttr(mesh, data));
+    // position
+    attrs.set("geometry.point.P", PxrUsdKatanaGeomGetPAttr(mesh, data));
 
     /// Only use custom normals if the object is a polymesh.
     if (not isSubd){
@@ -404,48 +280,37 @@ PxrUsdKatanaReadMesh(
         FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(mesh, data);
         if (normalsAttr.isValid())
         {
-            geometryBuilder.set("point.N", normalsAttr);
+            // XXX RfK currently doesn't support uniform normals for polymeshes.
+            TfToken interp = mesh.GetNormalsInterpolation();
+            if (interp == UsdGeomTokens->varying
+             || interp == UsdGeomTokens->vertex) {
+                attrs.set("geometry.point.N", normalsAttr);
+            }
+            else if (interp == UsdGeomTokens->faceVarying) {
+                attrs.set("geometry.vertex.N", normalsAttr);
+            }
         }
+    }
+
+    // velocity
+    FnKat::Attribute velocityAttr = PxrUsdKatanaGeomGetVelocityAttr(mesh, data);
+    if (velocityAttr.isValid())
+    {
+        attrs.set("geometry.point.v", velocityAttr);
     }
 
     FnKat::GroupAttribute polyAttr = _GetPolyAttr(mesh, currentTime);
     
-    geometryBuilder.set("poly", polyAttr);
+    attrs.set("geometry.poly", polyAttr);
 
     if (isSubd)
     {
-        FnKat::Attribute subdivTagsGroup =
-            _GetSubdivTagsGroup(mesh, /* hierarchical=*/ false, currentTime);
-
-        if (subdivTagsGroup.isValid())
-        {
-            geometryBuilder.update( subdivTagsGroup );
-        }
+        _SetSubdivTagsGroup(attrs, mesh, /* hierarchical=*/ false, currentTime);
     }
 
-    FnKat::GroupBuilder arbBuilder;
-
-    arbBuilder.set("SPT_HwColor", 
-        PxrUsdKatanaGeomGetDisplayColorAttr(mesh, data));
-
-    FnKat::GroupAttribute primvarGroup =
-        PxrUsdKatanaGeomGetPrimvarGroup(mesh, data);
-
-    if (primvarGroup.isValid())
-    {
-        // Infer ST if it doesn't exist.
-        // Remove this later when ST is built through in USD.
-        FnKat::Attribute stAttrib = _inferSt(primvarGroup, polyAttr, currentTime);
-        if (stAttrib.isValid())
-        {
-            arbBuilder.update(stAttrib);
-        }
-
-        arbBuilder.update(primvarGroup);
-    }
-
-    geometryBuilder.set("arbitrary", arbBuilder.build());
-    attrs.set("geometry", geometryBuilder.build());
+    // SPT_HwColor primvar
+    attrs.set("geometry.arbitrary.SPT_HwColor", 
+              PxrUsdKatanaGeomGetDisplayColorAttr(mesh, data));
 
     attrs.set(
         "viewer.default.drawOptions.windingOrder",

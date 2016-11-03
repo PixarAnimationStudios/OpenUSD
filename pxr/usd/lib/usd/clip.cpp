@@ -23,8 +23,10 @@
 //
 #include "pxr/usd/usd/clip.h"
 
-#include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/path.h"
@@ -34,7 +36,6 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -59,13 +60,19 @@ UsdIsClipRelatedField(const TfToken& fieldName)
 
 struct Usd_SortByExternalTime
 {
-    bool operator()(
-        const Usd_Clip::TimeMapping& x, Usd_Clip::ExternalTime y) const
-    { return x.first < y; }
+    bool 
+    operator()(const Usd_Clip::TimeMapping& x, 
+               const Usd_Clip::ExternalTime y) const
+    { 
+        return x.externalTime < y; 
+    }
 
-    bool operator()(
-        const Usd_Clip::TimeMapping& x, const Usd_Clip::TimeMapping& y) const
-    { return x.first < y.first; }
+    bool 
+    operator()(const Usd_Clip::TimeMapping& x, 
+               const Usd_Clip::TimeMapping& y) const
+    { 
+        return x.externalTime < y.externalTime; 
+    }
 };
 
 std::ostream&
@@ -75,11 +82,9 @@ operator<<(std::ostream& out, const Usd_ClipRefPtr& clip)
         "%s<%s> (start: %s end: %s)",
         TfStringify(clip->assetPath).c_str(),
         clip->primPath.GetString().c_str(),
-
-        (clip->startTime == -std::numeric_limits<double>::max() ?
+        (clip->startTime == Usd_ClipTimesEarliest ?
             "-inf" : TfStringPrintf("%.3f", clip->startTime).c_str()),
-
-        (clip->endTime == std::numeric_limits<double>::max() ? 
+        (clip->endTime == Usd_ClipTimesLatest ? 
             "inf" : TfStringPrintf("%.3f", clip->endTime).c_str()));
     return out;
 }
@@ -133,9 +138,180 @@ _ApplyLayerOffsetToExternalTimes(
     }
 
     const SdfLayerOffset inverse = layerOffset.GetInverse();
-    TF_FOR_ALL(it, *array) {
-        (*it)[0] = inverse * (*it)[0];
+    for (auto& time : *array) {
+        time[0] = inverse * time[0]; 
     }
+}
+
+static void
+_ClipDebugMsg(const PcpNodeRef& node,
+              const SdfLayerRefPtr& layer,
+              const TfToken& metadataName,
+              const bool derived=false) 
+{
+    TF_DEBUG(USD_CLIPS).Msg(
+        "%s for prim <%s> %s in LayerStack %s "
+        "at spec @%s@<%s>\n",
+        metadataName.GetText(),
+        node.GetRootNode().GetPath().GetString().c_str(),
+        (derived? "derived" : "found"),
+        TfStringify(node.GetLayerStack()).c_str(),
+        layer->GetIdentifier().c_str(), 
+        node.GetPath().GetString().c_str());
+}
+
+template <typename V>
+static void
+_ClipDerivationMsg(const TfToken& metadataName,
+                   const PcpNodeRef& node,
+                   const V& v)
+{
+    TF_DEBUG(USD_CLIPS).Msg(
+        "%s for prim <%s> derived: %s",
+        metadataName.GetText(),
+        node.GetRootNode().GetPath().GetText(),
+        TfStringify(v).c_str());
+}
+
+namespace {
+    struct _ClipTimeString {
+        std::string integerPortion;
+        std::string decimalPortion;
+    };
+}
+
+_ClipTimeString
+_DeriveClipTimeString(const double currentClipTime,
+                      const size_t numIntegerHashes,
+                      const size_t numDecimalHashes) 
+{
+    std::string integerPortion = "";
+    std::string decimalPortion = "";
+       
+    auto integerSpec = "%0" + TfStringify(numIntegerHashes) + "d";
+    integerPortion = TfStringPrintf(integerSpec.c_str(), int(currentClipTime));
+
+    // If we are dealing with a subframe integer
+    // specification, such as foo.###.###.usd
+    if (numDecimalHashes != 0) {
+        auto decimalSpec = "%.0" + TfStringify(numDecimalHashes) + "f";
+        std::string stringRep = TfStringPrintf(decimalSpec.c_str(), 
+                                               currentClipTime);
+        auto splitAt = stringRep.find('.');
+ 
+        // We trim anything larger that the specified number of values
+        decimalPortion = stringRep.substr(splitAt+1);
+    } 
+
+    return { integerPortion, decimalPortion };
+} 
+
+void
+_DeriveClipInfo(const std::string& templateAssetPath,
+                const double stride,
+                const double startTimeCode,
+                const double endTimeCode,
+                boost::optional<VtVec2dArray>* clipTimes,
+                boost::optional<VtVec2dArray>* clipActive,
+                boost::optional<VtArray<SdfAssetPath>>* clipAssetPaths,
+                const PcpNodeRef& node,
+                const SdfLayerHandle& layer,
+                const PcpLayerStackPtr& layerStack)
+{
+    auto path = TfGetPathName(templateAssetPath);
+    auto basename = TfGetBaseName(templateAssetPath);
+    auto tokenizedBasename = TfStringTokenize(basename, ".");
+
+    size_t integerHashSectionIndex = std::numeric_limits<size_t>::max();
+    size_t decimalHashSectionIndex = std::numeric_limits<size_t>::max();
+
+    size_t numIntegerHashes = 0;
+    size_t numDecimalHashes = 0;
+
+    size_t matchingGroups = 0;
+    size_t tokenIndex = 0;
+
+    // obtain our 'groups', meaning the hash sequences denoting
+    // how much padding the user is requesting in their template string
+    for (const auto& token : tokenizedBasename) {
+        if (std::all_of(token.begin(), token.end(), 
+                        [](const char& c) { return c == '#'; })) {
+            if (integerHashSectionIndex == std::numeric_limits<size_t>::max()) {
+                numIntegerHashes = token.size();
+                integerHashSectionIndex = tokenIndex;
+            } else {
+                numDecimalHashes = token.size();
+                decimalHashSectionIndex = tokenIndex;
+            }
+            matchingGroups++;
+        }
+        tokenIndex++;
+    }
+
+    if ((matchingGroups != 1 && matchingGroups != 2)
+        || (matchingGroups == 2 
+            && (integerHashSectionIndex != decimalHashSectionIndex - 1))) {
+        TF_WARN("Invalid template string specified %s, must be "
+                "of the form path/basename.###.usd or "
+                "path/basename.###.###.usd. Note that the number "
+                "of hash marks is variable in each group.", 
+                templateAssetPath.c_str());
+        return;
+    }
+
+    if (startTimeCode > endTimeCode) {
+        TF_WARN("Invalid range specified in template clip metadata. "
+                "clipTemplateEndTime (%f) cannot be greater than "
+                "clipTemplateStartTime (%f).", 
+                endTimeCode, 
+                startTimeCode);
+        return;
+    }
+
+    *clipTimes = VtVec2dArray();
+    *clipActive = VtVec2dArray();
+    *clipAssetPaths = VtArray<SdfAssetPath>();
+
+    const ArResolverContextBinder binder(
+        layerStack->GetIdentifier().pathResolverContext);
+    ArResolverScopedCache resolverScopedCache;
+    auto& resolver = ArGetResolver();
+
+    // XXX: We shift the value here into the integer range 
+    // to ensure consistency when incrementing by a stride
+    // that is fractional. This does have the possibility of 
+    // chopping of large values with fractional components.
+    const size_t promotion = 10000;
+    size_t clipActiveIndex = 0; 
+    
+    for (double t = startTimeCode * promotion;
+         t <= endTimeCode*promotion; 
+         t += stride*promotion) 
+    {
+        double clipTime = t/(double)promotion; 
+        auto timeString = _DeriveClipTimeString(clipTime, numIntegerHashes,
+                                                numDecimalHashes);
+
+        tokenizedBasename[integerHashSectionIndex] = timeString.integerPortion;
+
+        if (!timeString.decimalPortion.empty()) {
+            tokenizedBasename[decimalHashSectionIndex] = timeString.decimalPortion;
+        }
+
+        auto filePath = SdfComputeAssetPathRelativeToLayer(layer, 
+            path + TfStringJoin(tokenizedBasename, "."));
+
+        if (!resolver.Resolve(filePath).empty()) {
+            (*clipAssetPaths)->push_back(SdfAssetPath(filePath));
+            (*clipTimes)->push_back(GfVec2d(clipTime, clipTime));
+            (*clipActive)->push_back(GfVec2d(clipTime, clipActiveIndex));
+            clipActiveIndex++;
+        }
+    }
+
+    _ClipDerivationMsg(UsdTokens->clipAssetPaths, node, **clipAssetPaths);
+    _ClipDerivationMsg(UsdTokens->clipTimes, node, **clipTimes);
+    _ClipDerivationMsg(UsdTokens->clipActive, node, **clipActive);
 }
 
 void
@@ -147,114 +323,142 @@ Usd_ResolveClipInfo(
     const PcpLayerStackPtr& layerStack = node.GetLayerStack();
     const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
 
+    bool nontemplateMetadataSeen = false;
+    bool templateMetadataSeen    = false;
+
+    boost::optional<double> templateStartTime;
+    boost::optional<double> templateEndTime;
+    boost::optional<double> templateStride;
+    boost::optional<std::string> templateAssetPath;
+
     for (size_t i = 0, j = layers.size(); i != j; ++i) {
         const SdfLayerRefPtr& layer = layers[i];
         VtArray<SdfAssetPath> clipAssetPaths;
-        if (layer->HasField(
-                primPath, UsdTokens->clipAssetPaths, &clipAssetPaths)){
-
-            TF_DEBUG(USD_CLIPS).Msg(
-                "clipAssetPaths for prim <%s> found in LayerStack %s "
-                "at spec @%s@<%s>\n",
-                node.GetRootNode().GetPath().GetString().c_str(),
-                TfStringify(layerStack).c_str(),
-                layer->GetIdentifier().c_str(), 
-                primPath.GetString().c_str());
-
+        if (layer->HasField(primPath, UsdTokens->clipAssetPaths, 
+                            &clipAssetPaths)){
+            nontemplateMetadataSeen = true;
+            _ClipDebugMsg(node, layer, UsdTokens->clipAssetPaths);
             clipInfo->indexOfLayerWhereAssetPathsFound = i;
             clipInfo->clipAssetPaths = boost::in_place();
             clipInfo->clipAssetPaths->swap(clipAssetPaths);
             break;
         }
+
+        std::string clipTemplateAssetPath;
+        if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
+                            &clipTemplateAssetPath)) {
+            templateMetadataSeen = true;
+            clipInfo->indexOfLayerWhereAssetPathsFound = i;
+            templateAssetPath = clipTemplateAssetPath;
+            break;
+        }
+
+        if (templateMetadataSeen && nontemplateMetadataSeen) {
+            TF_WARN("Both template and non-template clip metadata are "
+                    "authored for prim <%s> in layerStack %s "
+                    "at spec @%s@<%s>",
+                    primPath.GetText(),
+                    TfStringify(layerStack).c_str(),
+                    layer->GetIdentifier().c_str(),
+                    node.GetPath().GetString().c_str());
+        }
     }
 
     // we need not complete resolution if there are no clip
     // asset paths available, as they are a necessary component for clips.
-    if (not clipInfo->clipAssetPaths) {
+    if (!templateMetadataSeen && !nontemplateMetadataSeen) {
         return;
     }
+
 
     // Compose the various pieces of clip metadata; iterate the LayerStack
     // from strong-to-weak and save the strongest opinion.
     for (size_t i = 0, j = layers.size(); i != j; ++i) {
         const SdfLayerRefPtr& layer = layers[i];
 
-        if (not clipInfo->clipManifestAssetPath) {
+        if (!clipInfo->clipManifestAssetPath) {
             SdfAssetPath clipManifestAssetPath;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipManifestAssetPath, 
-                    &clipManifestAssetPath)) {
-
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipManifestAssetPath for prim <%s> found in LayerStack "
-                    "%s at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-                
+            if (layer->HasField(primPath, UsdTokens->clipManifestAssetPath, 
+                                &clipManifestAssetPath)) {
+                _ClipDebugMsg(node, layer, UsdTokens->clipManifestAssetPath);
                 clipInfo->clipManifestAssetPath = clipManifestAssetPath;
             }
         }
 
-
-        if (not clipInfo->clipPrimPath) {
+        if (!clipInfo->clipPrimPath) {
             std::string clipPrimPath;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipPrimPath, &clipPrimPath)) {
-                
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipPrimPath for prim <%s> found in LayerStack %s "
-                    "at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-
+            if (layer->HasField(primPath, UsdTokens->clipPrimPath, 
+                                &clipPrimPath)) {
+                _ClipDebugMsg(node, layer, UsdTokens->clipPrimPath);
                 clipInfo->clipPrimPath = boost::in_place();
                 clipInfo->clipPrimPath->swap(clipPrimPath);
             }
         }
 
-        if (not clipInfo->clipActive) {
-            VtVec2dArray clipActive;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipActive, &clipActive)) {
-
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipActive for prim <%s> found in LayerStack %s "
-                    "at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
-
-                _ApplyLayerOffsetToExternalTimes(
-                    _GetLayerOffsetToRoot(node, layer), &clipActive);
-                
-                clipInfo->clipActive = boost::in_place();
-                clipInfo->clipActive->swap(clipActive);
+        if (nontemplateMetadataSeen) {
+            if (!clipInfo->clipActive) {
+                VtVec2dArray clipActive;
+                if (layer->HasField(primPath, UsdTokens->clipActive, 
+                                    &clipActive)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipActive);
+                    _ApplyLayerOffsetToExternalTimes(
+                        _GetLayerOffsetToRoot(node, layer), &clipActive);
+                    clipInfo->clipActive = boost::in_place();
+                    clipInfo->clipActive->swap(clipActive);
+                }
             }
-        }
 
-        if (not clipInfo->clipTimes) {
-            VtVec2dArray clipTimes;
-            if (layer->HasField(
-                    primPath, UsdTokens->clipTimes, &clipTimes)) {
+            if (!clipInfo->clipTimes) {
+                VtVec2dArray clipTimes;
+                if (layer->HasField(primPath, UsdTokens->clipTimes, 
+                                    &clipTimes)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTimes);
+                    _ApplyLayerOffsetToExternalTimes(
+                        _GetLayerOffsetToRoot(node, layer), &clipTimes);
+                    clipInfo->clipTimes = boost::in_place();
+                    clipInfo->clipTimes->swap(clipTimes);
+                }
+            }
+        } else {
+            if (!templateStride) {
+                double clipTemplateStride;
+                if (layer->HasField(primPath, UsdTokens->clipTemplateStride,
+                                    &clipTemplateStride)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStride); 
+                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
+                    layerOffset.SetOffset(0);
+                    templateStride = layerOffset * clipTemplateStride;
+                }
+            }
 
-                TF_DEBUG(USD_CLIPS).Msg(
-                    "clipTimes for prim <%s> found in LayerStack %s "
-                    "at spec @%s@<%s>\n",
-                    node.GetRootNode().GetPath().GetString().c_str(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(), 
-                    primPath.GetString().c_str());
+            if (!templateStartTime) {
+                double clipTemplateStartTime;
+                if (layer->HasField(primPath, UsdTokens->clipTemplateStartTime,
+                                    &clipTemplateStartTime)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStartTime); 
+                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
+                    templateStartTime = layerOffset * clipTemplateStartTime;
+                }
+            }
 
-                _ApplyLayerOffsetToExternalTimes(
-                    _GetLayerOffsetToRoot(node, layer), &clipTimes);
+            if (!templateEndTime) {
+                double clipTemplateEndTime;
+                if (layer->HasField(primPath, UsdTokens->clipTemplateEndTime,
+                                    &clipTemplateEndTime)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateEndTime); 
+                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
+                    templateEndTime  = layerOffset * clipTemplateEndTime;
+                }
+            }
 
-                clipInfo->clipTimes = boost::in_place();
-                clipInfo->clipTimes->swap(clipTimes);
+            if (templateStride && templateStartTime && templateEndTime) {
+                _DeriveClipInfo(*templateAssetPath, *templateStride,
+                                *templateStartTime, *templateEndTime,
+                                &clipInfo->clipTimes, &clipInfo->clipActive,
+                                &clipInfo->clipAssetPaths, node, 
+                                layers[clipInfo->indexOfLayerWhereAssetPathsFound],
+                                layerStack);
+                break;
             }
         }
     }
@@ -327,11 +531,11 @@ _GetBracketingTimeSegment(
     // This relies on the Usd_Clip c'tor inserting sentinel values at the
     // beginning and end of the TimeMappings object. Consumers rely on this
     // function never returning m1 == m2.
-    if (time <= times.front().first) {
+    if (time <= times.front().externalTime) {
         *m1 = 0;
         *m2 = 1;
     }
-    else if (time >= times.back().first) {
+    else if (time >= times.back().externalTime) {
         *m1 = times.size() - 2;
         *m2 = times.size() - 1;
     }
@@ -425,34 +629,45 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     }
 
     boost::optional<ExternalTime> translatedLower, translatedUpper;
+    auto _CanTranslate = [&time, &upperInClip, &lowerInClip, this, 
+                          &translatedLower, &translatedUpper](
+                                            const TimeMapping& map1, 
+                                            const TimeMapping& map2, 
+                                            const bool translatingLower) {
+        const double timeInClip = translatingLower ? lowerInClip : upperInClip;
+        auto& translated = translatingLower ? translatedLower : translatedUpper;
 
-    for (int i1 = static_cast<int>(m1), i2 = static_cast<int>(m2); i1 >= 0 and i2 >= 0; --i1, --i2) {
-        const TimeMapping& map1 = times[i1];
-        const TimeMapping& map2 = times[i2];
+        const double lower = std::min(map1.internalTime, map2.internalTime);
+        const double upper = std::max(map1.internalTime, map2.internalTime);
 
-        const double lower = std::min(map1.second, map2.second);
-        const double upper = std::max(map1.second, map2.second);
-
-        if (lower <= lowerInClip and lowerInClip <= upper) {
-            translatedLower.reset(
-                _TranslateTimeToExternal(lowerInClip, map1, map2));
-            break;
+        if (lower <= timeInClip and timeInClip <= upper) {
+            if (map1.internalTime != map2.internalTime) {
+                translated.reset(
+                    this->_TranslateTimeToExternal(timeInClip, map1, map2));
+            } else {
+                const bool lowerUpperMatch = (lowerInClip == upperInClip);
+                if (lowerUpperMatch && time == map1.externalTime) {
+                    translated.reset(map1.externalTime);
+                } else if (lowerUpperMatch && time == map2.externalTime) {
+                    translated.reset(map2.externalTime);
+                } else {
+                    if (translatingLower) {
+                        translated.reset(map1.externalTime);
+                    } else {
+                        translated.reset(map2.externalTime);
+                    }
+                }
+            }
         }
+        return static_cast<bool>(translated);
+    };
+
+    for (int i1 = m1, i2 = m2; i1 >= 0 and i2 >= 0; --i1, --i2) {
+         if (_CanTranslate(times[i1], times[i2], /*lower=*/true)) { break; }
     }
         
-    for (size_t i1 = m1, i2 = m2; 
-         i1 < times.size() and i2 < times.size(); ++i1, ++i2) {
-        const TimeMapping& map1 = times[i1];
-        const TimeMapping& map2 = times[i2];
-
-        const double lower = std::min(map1.second, map2.second);
-        const double upper = std::max(map1.second, map2.second);
-
-        if (lower <= upperInClip and upperInClip <= upper) {
-            translatedUpper.reset(
-                _TranslateTimeToExternal(upperInClip, map1, map2));
-            break;
-        }
+    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz and i2 < sz; ++i1, ++i2) {
+         if (_CanTranslate(times[i1], times[i2], /*lower=*/false)) { break; }
     }
 
     if (translatedLower and not translatedUpper) {
@@ -473,18 +688,18 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         //
         // The 'timingOutsideClip' test case in testUsdModelClips exercises
         // this behavior.
-        if (lowerInClip < times.front().second) {
-            translatedLower.reset(times.front().first);
+        if (lowerInClip < times.front().internalTime) {
+            translatedLower.reset(times.front().externalTime);
         }
-        else if (lowerInClip > times.back().second) {
-            translatedLower.reset(times.back().first);
+        else if (lowerInClip > times.back().internalTime) {
+            translatedLower.reset(times.back().externalTime);
         }
 
-        if (upperInClip < times.front().second) {
-            translatedUpper.reset(times.front().first);
+        if (upperInClip < times.front().internalTime) {
+            translatedUpper.reset(times.front().externalTime);
         }
-        else if (upperInClip > times.back().second) {
-            translatedUpper.reset(times.back().first);
+        else if (upperInClip > times.back().internalTime) {
+            translatedUpper.reset(times.back().externalTime);
         }
     }
             
@@ -523,8 +738,14 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
 
-            if (m1.second <= t and t <= m2.second) {
-                timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
+            if (m1.internalTime <= t and t <= m2.internalTime) {
+                if (m1.internalTime == m2.internalTime) {
+                    timeSamples.insert(m1.externalTime);
+                    timeSamples.insert(m2.externalTime);
+                }
+                else {
+                    timeSamples.insert(_TranslateTimeToExternal(t, m1, m2));
+                }
             }
         }
     }
@@ -535,11 +756,11 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
     // maintain consistency.
     if (timeSamples.empty()) {
         for (InternalTime t: timeSamplesInClip) {
-            if (t < times.front().second) {
-                timeSamples.insert(times.front().first);
+            if (t < times.front().internalTime) {
+                timeSamples.insert(times.front().externalTime);
             }
-            else if (t > times.back().second) {
-                timeSamples.insert(times.back().first);
+            else if (t > times.back().internalTime) {
+                timeSamples.insert(times.back().externalTime);
             }
         }
     }
@@ -572,26 +793,44 @@ Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
     TimeMapping m1, m2;
     _GetBracketingTimeSegment(times, extTime, &m1, &m2);
 
-    if (m1.first == m2.first) {
-        return m1.second;
+    // Early out in some special cases to avoid unnecessary
+    // math operations that could introduce precision issues.
+    if (m1.externalTime == m2.externalTime) {
+        return m1.internalTime;
+    }
+    else if (extTime == m1.externalTime) {
+        return m1.internalTime;
+    }
+    else if (extTime == m2.externalTime) {
+        return m2.internalTime;
     }
 
-    return (m2.second - m1.second) / (m2.first - m1.first)
-        * (extTime - m1.first)
-        + m1.second;
+    return (m2.internalTime - m1.internalTime) /
+           (m2.externalTime - m1.externalTime)
+        * (extTime - m1.externalTime)
+        + m1.internalTime;
 }
 
 Usd_Clip::ExternalTime
 Usd_Clip::_TranslateTimeToExternal(
     InternalTime intTime, TimeMapping m1, TimeMapping m2) const
 {
-    if (m1.second == m2.second) {
-        return m1.first;
+    // Early out in some special cases to avoid unnecessary
+    // math operations that could introduce precision issues.
+    if (m1.internalTime == m2.internalTime) {
+        return m1.externalTime;
+    }
+    else if (intTime == m1.internalTime) {
+        return m1.externalTime;
+    }
+    else if (intTime == m2.internalTime) {
+        return m2.externalTime;
     }
 
-    return (m2.first - m1.first) / (m2.second - m1.second)
-        * (intTime - m1.second)
-        + m1.first;
+    return (m2.externalTime - m1.externalTime) / 
+           (m2.internalTime - m1.internalTime)
+        * (intTime - m1.internalTime)
+        + m1.externalTime;
 }
 
 SdfPropertySpecHandle

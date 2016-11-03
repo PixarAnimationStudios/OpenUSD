@@ -1,4 +1,7 @@
 #usda 1.0
+(
+    defaultPrim = "Ball"
+)
 
 over "Ball" (
     variants = {

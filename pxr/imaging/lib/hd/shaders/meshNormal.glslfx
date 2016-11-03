@@ -67,7 +67,13 @@ vec3 GetQuadGeometryNormal(vec3 vertexNormal,
 vec3 GetVertexNormal()
 {
     // get normal from vertex attribute
+#if defined(HD_HAS_normals)
     return vec3(HdGet_normals().xyz);
+#elif defined(HD_HAS_packedNormals)
+    return vec3(HdGet_packedNormals().xyz);
+#else
+    return vec3(0);
+#endif
 }
 
 vec3 GetTriGeometryNormal(vec3 vertexNormal,

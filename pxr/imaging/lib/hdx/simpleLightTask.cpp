@@ -24,16 +24,16 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 
-#include "pxr/imaging/hdx/tokens.h"
+#include "pxr/imaging/hdx/camera.h"
+#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
+#include "pxr/imaging/hdx/simpleLightingShader.h"
+#include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/simpleLightingShader.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 
@@ -49,7 +49,7 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     : HdSceneTask(delegate, id) 
     , _camera()
     , _lights()
-    , _lightingShader(new HdSimpleLightingShader())
+    , _lightingShader(new HdxSimpleLightingShader())
     , _collectionVersion(0)
     , _enableShadows(false)
     , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
@@ -76,7 +76,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // Store the lighting context in the task context 
     // so later on other tasks can use this information 
     // draw shadows or other purposes
-    (*ctx)[HdTokens->lightingShader] =
+    (*ctx)[HdxTokens->lightingShader] =
         boost::dynamic_pointer_cast<HdLightingShader>(_lightingShader);
 
     _TaskDirtyState dirtyState;
@@ -99,10 +99,25 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         }
 
         HdSceneDelegate* delegate = GetDelegate();
-        _camera = delegate->GetRenderIndex().GetCamera(params.cameraPath);
-        _lights = _ComputeIncludedLights(delegate->GetRenderIndex().GetLights(),
-                                         params.lightIncludePaths,
-                                         params.lightExcludePaths);
+        _camera = delegate->GetRenderIndex().GetSprim(params.cameraPath);
+
+        // XXX: This is inefficient, need to be optimized
+        SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
+            SdfPath::AbsoluteRootPath());
+        SdfPathVector lights = ComputeIncludedLights(sprimPaths,
+                                                     params.lightIncludePaths,
+                                                     params.lightExcludePaths);
+        _lights.clear();
+        _lights.reserve(lights.size());
+        TF_FOR_ALL (it, lights) {
+            HdSprimSharedPtr const &sprim = delegate->GetRenderIndex().GetSprim(*it);
+            // XXX: or we could say instead of downcast,
+            //      if sprim->Has(HdxLightInterface) ?
+            if (boost::dynamic_pointer_cast<HdxLight>(sprim)) {
+                _lights.push_back(sprim);
+            }
+        }
+
         _enableShadows = params.enableShadows;
 
         // XXX: compatibility hack for passing some unit tests until we have
@@ -124,7 +139,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     }
 
     // Place lighting context in task context
-    (*ctx)[HdTokens->lightingContext] = lightingContext;
+    (*ctx)[HdxTokens->lightingContext] = lightingContext;
 
     VtValue modelViewMatrix = _camera->Get(HdShaderTokens->worldToViewMatrix);
     TF_VERIFY(modelViewMatrix.IsHolding<GfMatrix4d>());
@@ -159,7 +174,14 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     for (size_t lightId = 0; lightId < numLights; ++lightId) {
         // Take a copy of the simple light into our temporary array and
         // update it with viewer-dependant values.
-        _glfSimpleLights.push_back(_lights[lightId]->GetParams());
+        VtValue vtLightParams = _lights[lightId]->Get(HdxLightTokens->params);
+
+        if (TF_VERIFY(vtLightParams.IsHolding<GlfSimpleLight>())) {
+            _glfSimpleLights.push_back(
+                vtLightParams.UncheckedGet<GlfSimpleLight>());
+        } else {
+            _glfSimpleLights.push_back(GlfSimpleLight());
+        }
 
         // Get a reference to the light, so we can patch it.
         GlfSimpleLight &glfl = _glfSimpleLights.back();
@@ -172,7 +194,9 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         // the position and spot direction to the right
         // space
         if (glfl.IsCameraSpaceLight()) {
-            const GfMatrix4d &lightXform = _lights[lightId]->GetTransform();
+            VtValue vtXform = _lights[lightId]->Get(HdxLightTokens->transform);
+            const GfMatrix4d &lightXform =
+                vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>() : GfMatrix4d(1);
 
             GfVec4f lightPos(lightXform.GetRow(2));
             lightPos[3] = 0.0f;
@@ -180,8 +204,8 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             glfl.SetPosition(lightPos * invCamXform);
             glfl.SetSpotDirection(GfVec3f(invCamXform.TransformDir(lightDir)));
         }
-         
-        VtValue vLightShadowParams =  _lights[lightId]->GetShadowParams();
+
+        VtValue vLightShadowParams =  _lights[lightId]->Get(HdxLightTokens->shadowParams);
         TF_VERIFY(vLightShadowParams.IsHolding<HdxShadowParams>());
         HdxShadowParams lightShadowParams = 
             vLightShadowParams.GetWithDefault<HdxShadowParams>(HdxShadowParams());
@@ -198,7 +222,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         // to calculate shadows
         if (glfl.HasShadow()) {
             // Extract the window policy to adjust the frustum correctly
-            VtValue windowPolicy = _camera->Get(HdTokens->windowPolicy);
+            VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
             if (not TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
                 return;
             }
@@ -241,7 +265,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
                 continue;
             }
 
-            VtValue vLightShadowParams =  _lights[lightId]->GetShadowParams();
+            VtValue vLightShadowParams =  _lights[lightId]->Get(HdxLightTokens->shadowParams);
             TF_VERIFY(vLightShadowParams.IsHolding<HdxShadowParams>());
             HdxShadowParams lightShadowParams = 
                 vLightShadowParams.GetWithDefault<HdxShadowParams>(
@@ -258,25 +282,26 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     lightingContext->SetShadows(_shadows);
 }
 
-HdLightSharedPtrVector
-_ComputeIncludedLights(
-    HdLightSharedPtrVector const & allLights,
+/* static */
+SdfPathVector
+HdxSimpleLightTask::ComputeIncludedLights(
+    SdfPathVector const & allLightPaths,
     SdfPathVector const & includedPaths,
     SdfPathVector const & excludedPaths)
 {
     HD_TRACE_FUNCTION();
 
-    HdLightSharedPtrVector result;
+    SdfPathVector result;
 
     // In practice, the include and exclude containers will either
     // be empty or have just one element. So, the complexity of this method
     // should be dominated by the number of lights, which should also
     // be small. The TRACE_FUNCTION above will help catch when this is
     // no longer the case.
-    TF_FOR_ALL(lightIt, allLights) {
+    TF_FOR_ALL(lightPathIt, allLightPaths) {
         bool included = false;
         TF_FOR_ALL(includePathIt, includedPaths) {
-            if ((*lightIt)->GetID().HasPrefix(*includePathIt)) {
+            if (lightPathIt->HasPrefix(*includePathIt)) {
                 included = true;
                 break;
             }
@@ -285,13 +310,13 @@ _ComputeIncludedLights(
             continue;
         }
         TF_FOR_ALL(excludePathIt, excludedPaths) {
-            if ((*lightIt)->GetID().HasPrefix(*excludePathIt)) {
+            if (lightPathIt->HasPrefix(*excludePathIt)) {
                 included = false;
                 break;
             }
         }
         if (included) {
-            result.push_back(*lightIt);
+            result.push_back(*lightPathIt);
         }
     }
 

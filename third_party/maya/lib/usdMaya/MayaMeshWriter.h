@@ -21,18 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdExport_MayaMeshWriter_h_
-#define _usdExport_MayaMeshWriter_h_
+#ifndef PXRUSDMAYA_MAYAMESHWRITER_H
+#define PXRUSDMAYA_MAYAMESHWRITER_H
 
 #include "usdMaya/MayaTransformWriter.h"
+
+#include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
+#include <maya/MString.h>
 
 class UsdGeomMesh;
 class UsdGeomGprim;
-class MFnLambertShader;
-class MFnMesh;
 class MString;
-class MColorArray;
+
 
 // Writes an MFnMesh as a poly mesh OR a subd mesh
 class MayaMeshWriter : public MayaTransformWriter
@@ -54,54 +55,89 @@ class MayaMeshWriter : public MayaTransformWriter
   private:
     bool isMeshValid();
     void assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &primSchema);
-    MStatus _GetMeshUVSetData( MFnMesh& m,  MString uvSetName,
-               VtArray<GfVec2f> *uvArray,
-               TfToken *interpolation);
-                    
+
+    bool _GetMeshUVSetData(
+        const MFnMesh& mesh,
+        const MString& uvSetName,
+        VtArray<GfVec2f>* uvArray,
+        TfToken* interpolation,
+        VtArray<int>* assignmentIndices);
+
     bool _GetMeshColorSetData(
-        MFnMesh& m,
-        MString colorSet,
+        MFnMesh& mesh,
+        const MString& colorSet,
         bool isDisplayColor,
         const VtArray<GfVec3f>& shadersRGBData,
         const VtArray<float>& shadersAlphaData,
-        VtArray<GfVec3f> *RGBData, TfToken *RGBInterp,
-        VtArray<GfVec4f> *RGBAData, TfToken *RGBAInterp,
-        VtArray<float> *AlphaData, TfToken *AlphaInterp,
-        MFnMesh::MColorRepresentation *colorSetRep,
-        bool *clamped);
+        const VtArray<int>& shadersAssignmentIndices,
+        VtArray<GfVec3f>* colorSetRGBData,
+        VtArray<float>* colorSetAlphaData,
+        TfToken* interpolation,
+        VtArray<int>* colorSetAssignmentIndices,
+        MFnMesh::MColorRepresentation* colorSetRep,
+        bool* clamped);
 
-    static MStatus
-    _CompressUVs(const MFnMesh& m,
-                 const MIntArray& uvIds,
-                 const MFloatArray& uArray, const MFloatArray& vArray,
-                 VtArray<GfVec2f> *uvArray,
-                 TfToken *interpolation);
+    bool _createAlphaPrimVar(UsdGeomGprim &primSchema,
+                             const TfToken& name,
+                             const VtArray<float>& data,
+                             const TfToken& interpolation,
+                             const VtArray<int>& assignmentIndices,
+                             const int unassignedValueIndex,
+                             bool clamped);
 
-    static MStatus
-    _FullUVsFromSparse(const MFnMesh& m,
-                       const MIntArray& uvCounts, const MIntArray& uvIds,
-                       const MFloatArray& uArray, const MFloatArray& vArray,
-                       VtArray<GfVec2f> *uvArray);
+    bool _createRGBPrimVar(UsdGeomGprim &primSchema,
+                           const TfToken& name,
+                           const VtArray<GfVec3f>& data,
+                           const TfToken& interpolation,
+                           const VtArray<int>& assignmentIndices,
+                           const int unassignedValueIndex,
+                           bool clamped);
 
-    bool _createAlphaPrimVar(  UsdGeomGprim &primSchema, const TfToken name,
-                                const VtArray<float>& data, TfToken interpolation,
-                                bool clamped);
-
-    bool _createRGBPrimVar(  UsdGeomGprim &primSchema, const TfToken name,
-                            const VtArray<GfVec3f>& data, TfToken interpolation,
+    bool _createRGBAPrimVar(UsdGeomGprim &primSchema,
+                            const TfToken& name,
+                            const VtArray<GfVec3f>& rgbData,
+                            const VtArray<float>& alphaData,
+                            const TfToken& interpolation,
+                            const VtArray<int>& assignmentIndices,
+                            const int unassignedValueIndex,
                             bool clamped);
 
-    bool _createRGBAPrimVar(  UsdGeomGprim &primSchema, const TfToken name,
-                            const VtArray<GfVec4f>& RGBAData, TfToken RGBAInterp,
-                                bool clamped);
+    bool _createUVPrimVar(UsdGeomGprim &primSchema,
+                          const TfToken& name,
+                          const VtArray<GfVec2f>& data,
+                          const TfToken& interpolation,
+                          const VtArray<int>& assignmentIndices,
+                          const int unassignedValueIndex);
 
-    bool _setDisplayPrimVar( UsdGeomGprim &primSchema,
-                            MFnMesh::MColorRepresentation colorRep,
-                            VtArray<GfVec3f> RGBData, TfToken RGBInterp,
-                            VtArray<float> AlphaData, TfToken AlphaInterp,
-                            bool clamped, bool authored);
+    /// Adds displayColor and displayOpacity primvars using the given color,
+    /// alpha, and assignment data if the \p primSchema does not already have
+    /// authored opinions for them.
+    bool _addDisplayPrimvars(
+        UsdGeomGprim &primSchema,
+        const MFnMesh::MColorRepresentation colorRep,
+        const VtArray<GfVec3f>& RGBData,
+        const VtArray<float>& AlphaData,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex,
+        const bool clamped,
+        const bool authored);
+
+    /// Default value to use when collecting UVs from a UV set and a component
+    /// has no authored value.
+    static const GfVec2f _DefaultUV;
+
+    /// Default values to use when collecting colors based on shader values
+    /// and an object or component has no assigned shader.
+    static const GfVec3f _ShaderDefaultRGB;
+    static const float _ShaderDefaultAlpha;
+
+    /// Default values to use when collecting colors from a color set and a
+    /// component has no authored value.
+    static const GfVec3f _ColorSetDefaultRGB;
+    static const float _ColorSetDefaultAlpha;
 };
 
 typedef shared_ptr < MayaMeshWriter > MayaMeshWriterPtr;
 
-#endif  // _usdExport_MayaMeshWriter_h_
+#endif  // PXRUSDMAYA_MAYAMESHWRITER_H

@@ -112,12 +112,15 @@
     ((primvarsDisplayOpacity, "primvars:displayOpacity")) \
     (projection) \
     (proxy) \
+    (proxyPrim) \
     (purpose) \
     (radius) \
     (ranges) \
     (render) \
     (right) \
     (rightHanded) \
+    ((shutterClose, "shutter:close")) \
+    ((shutterOpen, "shutter:open")) \
     (size) \
     (stereoRole) \
     (subdivisionScheme) \
@@ -248,12 +251,15 @@
 /// \li <b>primvarsDisplayOpacity</b> - UsdGeomGprim
 /// \li <b>projection</b> - UsdGeomCamera
 /// \li <b>proxy</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
+/// \li <b>proxyPrim</b> - UsdGeomImageable
 /// \li <b>purpose</b> - UsdGeomImageable
 /// \li <b>radius</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere
 /// \li <b>ranges</b> - UsdGeomNurbsCurves
 /// \li <b>render</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
 /// \li <b>right</b> - Possible value for UsdGeomCamera::GetStereoRoleAttr()
 /// \li <b>rightHanded</b> - Possible value for UsdGeomGprim::GetOrientationAttr(), Default value for UsdGeomGprim::GetOrientationAttr()
+/// \li <b>shutterClose</b> - UsdGeomCamera
+/// \li <b>shutterOpen</b> - UsdGeomCamera
 /// \li <b>size</b> - UsdGeomCube
 /// \li <b>stereoRole</b> - UsdGeomCamera
 /// \li <b>subdivisionScheme</b> - UsdGeomMesh

@@ -280,6 +280,40 @@ UsdGeomCamera::CreateStereoRoleAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
+UsdAttribute
+UsdGeomCamera::GetShutterOpenAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->shutterOpen);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateShutterOpenAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->shutterOpen,
+                       SdfValueTypeNames->Double,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetShutterCloseAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->shutterClose);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateShutterCloseAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->shutterClose,
+                       SdfValueTypeNames->Double,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -308,6 +342,8 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->fStop,
         UsdGeomTokens->focusDistance,
         UsdGeomTokens->stereoRole,
+        UsdGeomTokens->shutterOpen,
+        UsdGeomTokens->shutterClose,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -4,7 +4,6 @@ set(DIRS
     glf
     pxOsd
     hd
-    glfq
     hdx
 )
 

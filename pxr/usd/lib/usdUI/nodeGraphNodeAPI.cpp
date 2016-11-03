@@ -127,6 +127,40 @@ UsdUINodeGraphNodeAPI::CreateDisplayColorAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
+UsdAttribute
+UsdUINodeGraphNodeAPI::GetIconAttr() const
+{
+    return GetPrim().GetAttribute(UsdUITokens->uiNodegraphNodeIcon);
+}
+
+UsdAttribute
+UsdUINodeGraphNodeAPI::CreateIconAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdUITokens->uiNodegraphNodeIcon,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdUINodeGraphNodeAPI::GetExpansionStateAttr() const
+{
+    return GetPrim().GetAttribute(UsdUITokens->uiNodegraphNodeExpansionState);
+}
+
+UsdAttribute
+UsdUINodeGraphNodeAPI::CreateExpansionStateAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdUITokens->uiNodegraphNodeExpansionState,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -147,6 +181,8 @@ UsdUINodeGraphNodeAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdUITokens->uiNodegraphNodePos,
         UsdUITokens->uiNodegraphNodeStackingOrder,
         UsdUITokens->uiNodegraphNodeDisplayColor,
+        UsdUITokens->uiNodegraphNodeIcon,
+        UsdUITokens->uiNodegraphNodeExpansionState,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

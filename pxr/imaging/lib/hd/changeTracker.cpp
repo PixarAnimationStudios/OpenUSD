@@ -42,7 +42,6 @@ HdChangeTracker::HdChangeTracker()
     , _changeCount(1)       // changeCount in DirtyList starts from 0.
     , _visChangeCount(1)    // Clients (commandBuffer) start from 0.
     , _shaderBindingsVersion(1)
-    , _drawTargetSetVersion(1) // Clients (draw target task) start from 0.
 {
     /*NOTHING*/
 }
@@ -248,6 +247,16 @@ HdChangeTracker::MarkShaderClean(SdfPath const& id, DirtyBits newBits)
     it->second = (it->second & Varying) | newBits;
 }
 
+void HdChangeTracker::MarkAllShadersDirty(DirtyBits bits)
+{
+    HD_TRACE_FUNCTION();
+
+    for (_IDStateMap::iterator it  = _shaderState.begin();
+                               it != _shaderState.end(); ++it) {
+        it->second |= bits;
+    }
+}
+
 // -------------------------------------------------------------------------- //
 /// \name Task Object Tracking
 // -------------------------------------------------------------------------- //
@@ -390,153 +399,48 @@ HdChangeTracker::MarkInstancerClean(SdfPath const& id, DirtyBits newBits)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Camera Object Tracking
+/// \name Sprim Tracking (camera, light...)
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::CameraInserted(SdfPath const& id)
+HdChangeTracker::SprimInserted(SdfPath const& id, int initialDirtyState)
 {
-    TF_DEBUG(HD_CAMERA_ADDED).Msg("Camera Added: %s\n", id.GetText());
-    _cameraState[id] = AllDirty;
+    TF_DEBUG(HD_SPRIM_ADDED).Msg("Sprim Added: %s\n", id.GetText());
+    _sprimState[id] = initialDirtyState;
 }
 
 void
-HdChangeTracker::CameraRemoved(SdfPath const& id)
+HdChangeTracker::SprimRemoved(SdfPath const& id)
 {
-    TF_DEBUG(HD_CAMERA_REMOVED).Msg("Camera Removed: %s\n", id.GetText());
-    _cameraState.erase(id);
+    TF_DEBUG(HD_SPRIM_REMOVED).Msg("Sprim Removed: %s\n", id.GetText());
+    _sprimState.erase(id);
 }
 
 HdChangeTracker::DirtyBits
-HdChangeTracker::GetCameraDirtyBits(SdfPath const& id)
+HdChangeTracker::GetSprimDirtyBits(SdfPath const& id)
 {
-    _IDStateMap::iterator it = _cameraState.find(id);
-    if (not TF_VERIFY(it != _cameraState.end()))
+    _IDStateMap::iterator it = _sprimState.find(id);
+    if (not TF_VERIFY(it != _sprimState.end()))
         return Clean;
     return it->second;
 }
 
 void
-HdChangeTracker::MarkCameraDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkSprimDirty(SdfPath const& id, DirtyBits bits)
 {
-    _IDStateMap::iterator it = _cameraState.find(id);
-    if (not TF_VERIFY(it != _cameraState.end()))
+    _IDStateMap::iterator it = _sprimState.find(id);
+    if (not TF_VERIFY(it != _sprimState.end()))
         return;
     it->second = it->second | bits;
 }
 
 void
-HdChangeTracker::MarkCameraClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkSprimClean(SdfPath const& id, DirtyBits newBits)
 {
-    _IDStateMap::iterator it = _cameraState.find(id);
-    if (not TF_VERIFY(it != _cameraState.end()))
+    _IDStateMap::iterator it = _sprimState.find(id);
+    if (not TF_VERIFY(it != _sprimState.end()))
         return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
-}
-
-// -------------------------------------------------------------------------- //
-/// \name Light Object Tracking
-// -------------------------------------------------------------------------- //
-
-void
-HdChangeTracker::LightInserted(SdfPath const& id)
-{
-    TF_DEBUG(HD_LIGHT_ADDED).Msg("Light Added: %s\n", id.GetText());
-    _lightState[id] = AllDirty;
-}
-
-void
-HdChangeTracker::LightRemoved(SdfPath const& id)
-{
-    TF_DEBUG(HD_LIGHT_REMOVED).Msg("Light Removed: %s\n", id.GetText());
-    _lightState.erase(id);
-}
-
-HdChangeTracker::DirtyBits
-HdChangeTracker::GetLightDirtyBits(SdfPath const& id)
-{
-    _IDStateMap::iterator it = _lightState.find(id);
-    if (not TF_VERIFY(it != _lightState.end()))
-        return Clean;
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkLightDirty(SdfPath const& id, DirtyBits bits)
-{
-    _IDStateMap::iterator it = _lightState.find(id);
-    if (not TF_VERIFY(it != _lightState.end()))
-        return;
-    it->second = it->second | bits;
-}
-
-void
-HdChangeTracker::MarkLightClean(SdfPath const& id, DirtyBits newBits)
-{
-    _IDStateMap::iterator it = _lightState.find(id);
-    if (not TF_VERIFY(it != _lightState.end()))
-        return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
-}
-
-// -------------------------------------------------------------------------- //
-/// \name Draw Target Object Tracking
-// -------------------------------------------------------------------------- //
-
-void
-HdChangeTracker::DrawTargetInserted(SdfPath const& id)
-{
-    _drawTargetState[id] = AllDirty;
-    ++_drawTargetSetVersion;
-}
-
-void
-HdChangeTracker::DrawTargetRemoved(SdfPath const& id)
-{
-    _drawTargetState.erase(id);
-    ++_drawTargetSetVersion;
-}
-
-HdChangeTracker::DirtyBits
-HdChangeTracker::GetDrawTargetDirtyBits(SdfPath const& id)
-{
-    _IDStateMap::iterator it = _drawTargetState.find(id);
-    if (not TF_VERIFY(it != _drawTargetState.end())) {
-        return Clean;
-    }
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkDrawTargetDirty(SdfPath const& id, DirtyBits bits)
-{
-    _IDStateMap::iterator it = _drawTargetState.find(id);
-    if (not TF_VERIFY(it != _drawTargetState.end())) {
-        return;
-    }
-    it->second = it->second | bits;
-
-    if (bits & DirtyDTEnable) {
-        ++_drawTargetSetVersion;
-    }
-}
-
-unsigned
-HdChangeTracker::GetDrawTargetSetVersion()
-{
-    return _drawTargetSetVersion;
-}
-
-void
-HdChangeTracker::MarkDrawTargetClean(SdfPath const& id, DirtyBits newBits)
-{
-    _IDStateMap::iterator it = _drawTargetState.find(id);
-    if (not TF_VERIFY(it != _drawTargetState.end()))
-        return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
+    it->second = newBits;
 }
 
 // -------------------------------------------------------------------------- //
@@ -762,6 +666,27 @@ HdChangeTracker::MarkPrimVarDirty(SdfPath const& id, TfToken const& name)
     MarkRprimDirty(id, flag);
 }
 
+
+void
+HdChangeTracker::MarkAllRprimsDirty(DirtyBits bits)
+{
+    HD_TRACE_FUNCTION();
+
+    bits = _PropagateDirtyBits(bits);
+
+    for (_IDStateMap::iterator it  = _rprimState.begin();
+                               it != _rprimState.end(); ++it) {
+        it->second |= bits;
+    }
+
+    ++_changeCount;
+
+    if (bits & DirtyVisibility) {
+        ++_visChangeCount;
+    }
+}
+
+
 /*static*/
 void
 HdChangeTracker::MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name)
@@ -795,6 +720,8 @@ HdChangeTracker::GetRprimDirtyBits(SdfPath const& id) const
 void 
 HdChangeTracker::AddCollection(TfToken const& collectionName)
 {
+    HD_TRACE_FUNCTION();
+
     _CollectionStateMap::iterator it = _collectionState.find(collectionName);
     // if it already exists, just return.
     if (it != _collectionState.end()) {
@@ -806,6 +733,8 @@ HdChangeTracker::AddCollection(TfToken const& collectionName)
 void 
 HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
 {
+    HD_TRACE_FUNCTION();
+
     _CollectionStateMap::iterator it = _collectionState.find(collectionName);
     if (not TF_VERIFY(it != _collectionState.end(),
                       "Collection %s not found\n", collectionName.GetText())) {
@@ -824,6 +753,8 @@ HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
 void 
 HdChangeTracker::MarkAllCollectionsDirty()
 {
+    HD_TRACE_FUNCTION();
+
     ++_indexVersion;
     ++_varyingStateVersion;
 
@@ -862,6 +793,43 @@ unsigned
 HdChangeTracker::GetShaderBindingsVersion() const
 {
     return _shaderBindingsVersion;
+}
+
+void
+HdChangeTracker::AddState(TfToken const& name)
+{
+    _GeneralStateMap::iterator it = _generalState.find(name);
+    if (it != _generalState.end()) {
+        // mark state dirty
+        ++it->second;
+    } else {
+        _generalState[name] = 1;
+    }
+}
+
+void
+HdChangeTracker::MarkStateDirty(TfToken const& name)
+{
+    _GeneralStateMap::iterator it = _generalState.find(name);
+    if (it != _generalState.end()) {
+        ++it->second;
+    } else {
+        TF_CODING_ERROR("Change Tracker unable to find state %s",
+                        name.GetText());
+    }
+}
+
+unsigned
+HdChangeTracker::GetStateVersion(TfToken const &name) const
+{
+    _GeneralStateMap::const_iterator it = _generalState.find(name);
+    if (it != _generalState.end()) {
+        return it->second;
+    } else {
+        TF_CODING_ERROR("Change Tracker unable to find state %s",
+                        name.GetText());
+        return 0;
+    }
 }
 
 /*static*/

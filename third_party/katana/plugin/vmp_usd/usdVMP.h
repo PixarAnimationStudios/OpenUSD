@@ -39,7 +39,7 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usdImaging/usdImaging/gl.h"
+#include "pxr/usdImaging/usdImagingGL/gl.h"
 
 #include "katanaPluginApi/FnViewerModifier.h"
 #include <FnAttribute/FnGroupBuilder.h>
@@ -100,6 +100,8 @@ private:
     UsdImagingGLSharedPtr _renderer;
     UsdImagingGL::RenderParams _params;
     UsdPrim _prim;
+
+    GfMatrix4d _viewMatrix;
 };
 
 #endif 

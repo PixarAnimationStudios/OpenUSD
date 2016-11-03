@@ -146,18 +146,23 @@ HdSurfaceShader::Sync()
 
                 HdTextureResourceSharedPtr texResource;
                 {
-                    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> texInstance;
+                    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
+                        texInstance;
 
+                    bool textureResourceFound = false;
                     std::unique_lock<std::mutex> regLock =
-                        resourceRegistry->RegisterTextureResource(texID, &texInstance);
-
-                    if (not TF_VERIFY(not texInstance.IsFirstInstance(), "%s",
-                                      paramIt->GetConnection().GetText())) {
+                        resourceRegistry->FindTextureResource
+                        (texID, &texInstance, &textureResourceFound);
+                    if (not TF_VERIFY(textureResourceFound, 
+                            "No texture resource found with path %s",
+                            paramIt->GetConnection().GetText())) {
                         continue;
                     }
 
                     texResource = texInstance.GetValue();
-                    if (not TF_VERIFY(texResource)) {
+                    if (not TF_VERIFY(texResource, 
+                            "Incorrect texture resource with path %s",
+                            paramIt->GetConnection().GetText())) {
                         continue;
                     }
                 }
@@ -194,7 +199,6 @@ HdSurfaceShader::Sync()
                                                            tex.handle));
                         sources.push_back(source);
                     }
-
                 } else {
                     tex.type = TextureDescriptor::TEXTURE_2D;
                     tex.handle = bindless ? texResource->GetTexelsTextureHandle()

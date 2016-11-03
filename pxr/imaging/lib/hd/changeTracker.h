@@ -80,27 +80,14 @@ public:
         CustomBitsEnd         = 1 << 30,
     };
 
+    // Dirty bits for Tasks, Textures
     enum NonRprimDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
         DirtyChildren         = 1 << 2,
         DirtyParams           = 1 << 3,
-        DirtyShadowParams     = 1 << 4,
-        DirtyCollection       = 1 << 5,
-        DirtyWindowPolicy     = 1 << 6,
-        DirtyTexture          = 1 << 7,
-        DirtyClipPlanes       = 1 << 8,
-    };
-
-
-    /// Dirty bits for the HdDrawTarget object
-    enum DrawTargetDirtyBits {
-        DirtyDTEnable           = 1 <<  0,
-        DirtyDTCamera           = 1 <<  1,
-        DirtyDTResolution       = 1 <<  2,
-        DirtyDTAttachment       = 1 <<  3,
-        DirtyDTDepthClearValue  = 1 <<  4,
-        DirtyDTCollection       = 1 <<  5,
+        DirtyCollection       = 1 << 4,
+        DirtyTexture          = 1 << 5,
     };
 
     typedef int DirtyBits;
@@ -146,7 +133,12 @@ public:
 	HDLIB_API
     void MarkPrimVarDirty(SdfPath const& id, TfToken const& name);
 
-    /// Clear Varying bit of all prims.
+    /// Flag all the Rprim with the given \p id as being dirty. Multiple calls
+    /// with different dirty bits accumulate.
+    /// Doesn't touch varying state.
+    void MarkAllRprimsDirty(DirtyBits bits);
+
+    // Clear Varying bit of all prims.
     ///
     /// The idea is that from frame to frame (update iteration), the set of
     /// dirty rprims and their dirty bits do not change; that is, the same
@@ -330,6 +322,9 @@ public:
 	HDLIB_API
     void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
 
+    /// Sets all shaders to the given dirty \p bits
+    void MarkAllShadersDirty(DirtyBits bits);
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Task Object Tracking
@@ -403,86 +398,30 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name Camera Object Tracking
+
+    /// \name Sprim (scene state prim: camera, light, ...) state Tracking
     /// @{
     // ---------------------------------------------------------------------- //
 
-    /// Start tracking Camera with the given \p id.
-	HDLIB_API
-    void CameraInserted(SdfPath const& id);
+    /// Start tracking sprim with the given \p id.
+    HDLIB_API
+    void SprimInserted(SdfPath const& id, int initialDirtyState);
 
-    /// Stop tracking Camera with the given \p id.
-	HDLIB_API
-    void CameraRemoved(SdfPath const& id);
+    /// Stop tracking sprim with the given \p id.
+    HDLIB_API
+    void SprimRemoved(SdfPath const& id);
 
-    /// Get the dirty bits for Camera with the given \p id.
-	HDLIB_API
-    DirtyBits GetCameraDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-	HDLIB_API
-    void MarkCameraDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Set the dirty flags to \p newBits.
-	HDLIB_API
-    void MarkCameraClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    // ---------------------------------------------------------------------- //
-    /// @}
-    /// \name Light Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Light with the given \p id.
-	HDLIB_API
-    void LightInserted(SdfPath const& id);
-
-    /// Stop tracking Light with the given \p id.
-	HDLIB_API
-    void LightRemoved(SdfPath const& id);
-
-    /// Get the dirty bits for Light with the given \p id.
-	HDLIB_API
-    DirtyBits GetLightDirtyBits(SdfPath const& id);
+    /// Get the dirty bits for sprim with the given \p id.
+    HDLIB_API
+    DirtyBits GetSprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
-	HDLIB_API
-    void MarkLightDirty(SdfPath const& id, DirtyBits bits=AllDirty);
+    HDLIB_API
+    void MarkSprimDirty(SdfPath const& id, DirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
-	HDLIB_API
-    void MarkLightClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    // ---------------------------------------------------------------------- //
-    /// @}
-    /// \name Draw Target Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Draw Target with the given \p id.
-	HDLIB_API
-    void DrawTargetInserted(SdfPath const& id);
-
-    /// Stop tracking Draw Target with the given \p id.
-	HDLIB_API
-    void DrawTargetRemoved(SdfPath const& id);
-
-    /// Get the dirty bits for Draw Target with the given \p id.
-	HDLIB_API
-    DirtyBits GetDrawTargetDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-	HDLIB_API
-    void MarkDrawTargetDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Set the dirty flags to \p newBits.
-	HDLIB_API
-    void MarkDrawTargetClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    /// Return an version number indicating if the set of
-    /// draw targets has changed.
-	HDLIB_API
-    unsigned GetDrawTargetSetVersion();
+    HDLIB_API
+    void MarkSprimClean(SdfPath const& id, DirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -555,6 +494,25 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
+    /// \name General state tracking
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Adds a named state for tracking.
+    HDLIB_API
+    void AddState(TfToken const& name);
+
+    /// Marks a named state as being dirty., this bumps the version of the
+    /// state.
+    HDLIB_API
+    void MarkStateDirty(TfToken const& name);
+
+    /// Returns the current version of the named state.
+    HDLIB_API
+    unsigned GetStateVersion(TfToken const &name) const;
+
+    // ---------------------------------------------------------------------- //
+    /// @}
     /// \name Debug
     /// @{
     // ---------------------------------------------------------------------- //
@@ -576,6 +534,7 @@ private:
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
     typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
+    typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;
@@ -583,9 +542,8 @@ private:
     _IDStateMap _shaderState;
     _IDStateMap _taskState;
     _IDStateMap _textureState;
-    _IDStateMap _cameraState;
-    _IDStateMap _lightState;
-    _IDStateMap _drawTargetState;
+    _IDStateMap _sprimState;
+    _GeneralStateMap _generalState;
 
     // Collection versions / state.
     _CollectionStateMap _collectionState;
@@ -612,9 +570,6 @@ private:
 
     // Used to validate shader bindings (to validate draw batches)
     std::atomic_uint _shaderBindingsVersion;
-
-    // Used to detect changes in which set of draw targets are enabled.
-    unsigned _drawTargetSetVersion;
 };
 
 #endif //HD_CHANGE_TRACKER_H

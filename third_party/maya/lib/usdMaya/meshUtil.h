@@ -21,19 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file meshUtil.h
+
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
+#include "usdMaya/api.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
 class MFnMesh;
 class MString;
 class UsdGeomMesh;
 
+#define PXRUSDMAYA_MESH_COLOR_SET_TOKENS \
+    (Authored) \
+    (Clamped) \
+    ((DisplayColorColorSetName, "displayColor")) \
+    ((DisplayOpacityColorSetName, "displayOpacity"))
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
+	USDMAYA_API,
+    PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
+
+
 namespace PxrUsdMayaMeshUtil
 {
 
-    TfToken getEmitNormals(const MFnMesh &mesh, TfToken defaultValue);
+    bool getEmitNormals(const MFnMesh &mesh);
     TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
     
     TfToken getSubdivScheme(const MFnMesh &mesh, TfToken defaultValue);
@@ -42,8 +58,8 @@ namespace PxrUsdMayaMeshUtil
     TfToken getSubdivInterpBoundary(const MFnMesh &mesh,  TfToken defaultValue);
     TfToken setSubdivInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
-    TfToken getSubdivFVInterpBoundary(const MFnMesh &mesh);
-    TfToken setSubdivFVInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn);
+    TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
+    TfToken setSubdivFVLinearInterpolation(const UsdGeomMesh& primSchema, MFnMesh& meshFn);
 
 } // namespace PxrUsdMayaMeshUtil
 

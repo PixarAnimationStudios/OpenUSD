@@ -190,10 +190,11 @@ public:
     /// \em proxy can be used together to partition a complicated model
     /// into a lightweight proxy representation for interactive use, and a
     /// fully realized, potentially quite heavy, representation for rendering.
-    /// One can also use UsdVariantSets to create proxy representations, but
-    /// this can potentially lead to an explosion in variants for models that
-    /// already have several axes of variation.  Purpose provides us with
-    /// another tool for interactive complexity management.
+    /// One can use UsdVariantSets to create proxy representations, but doing
+    /// so requires that we recompose parts of the UsdStage in order to change
+    /// to a different runtime level of detail, and that does not interact
+    /// well with the needs of multithreaded rendering. Purpose provides us with
+    /// a better tool for dynamic, interactive complexity management.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
@@ -210,6 +211,39 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreatePurposeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // PROXYPRIM 
+    // --------------------------------------------------------------------- //
+    /// The \em proxyPrim relationship allows us to link a
+    /// prim whose \em purpose is "render" to its (single target)
+    /// purpose="proxy" prim.  This is entirely optional, but can be
+    /// useful in several scenarios:
+    /// 
+    /// \li In a pipeline that does pruning (for complexity management)
+    /// by deactivating prims composed from asset references, when we
+    /// deactivate a purpose="render" prim, we will be able to discover
+    /// and additionally deactivate its associated purpose="proxy" prim,
+    /// so that preview renders reflect the pruning accurately.
+    /// 
+    /// \li DCC importers may be able to make more aggressive optimizations
+    /// for interactive processing and display if they can discover the proxy
+    /// for a given render prim.
+    /// 
+    /// \li With a little more work, a Hydra-based application will be able
+    /// to map a picked proxy prim back to its render geometry for selection.
+    /// 
+    /// \note It is only valid to author the proxyPrim relationship on
+    /// prims whose purpose is "render".
+    ///
+    USDGEOM_API
+    UsdRelationship GetProxyPrimRel() const;
+
+    /// See GetProxyPrimRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDGEOM_API
+    UsdRelationship CreateProxyPrimRel() const;
 
 public:
     // ===================================================================== //
@@ -431,6 +465,52 @@ public:
     USDGEOM_API
     TfToken ComputePurpose() const;
 
+    /// Find the prim whose purpose is \em proxy that serves as the proxy
+    /// for this prim, as established by the GetProxyPrimRel(), or an
+    /// invalid UsdPrim if this prim has no proxy.
+    ///
+    /// This method will find the proxy for \em any prim whose computed
+    /// purpose (see ComputePurpose()) is \em render.  If provided and a proxy 
+    /// was found, we will set *renderPrim to the root of the \em render
+    /// subtree upon which the renderProxy relationship was authored.
+    ///
+    /// If the renderProxy relationship has more than one target, we will
+    /// issue a warning and return an invalid UsdPrim.  If the targeted prim
+    /// does not have a resolved purpose of \em proxy, we will warn and
+    /// return an invalid prim.
+    ///
+    /// This function should be considered a reference implementation for
+    /// correctness. <b>If called on each prim in the context of a traversal
+    /// we will perform massive overcomputation, because sibling prims share
+    /// sub-problems in the query that can be efficiently cached, but are not
+    /// (cannot be) by this simple implementation.</b> If you have control of
+    /// your traversal, it will be far more efficient to compute proxy-prims
+    /// on a stack as you traverse.
+    ///
+    /// \note Currently the returned prim will not contain any instancing
+    /// context if it is inside a master - its path will be relative to the
+    /// master's root.  Once UsdPrim is instancing-aware in the core, we can
+    /// change this method to return a context-aware result.
+    ///
+    /// \sa SetProxyPrim(), GetProxyPrimRel()
+    USDGEOM_API
+    UsdPrim ComputeProxyPrim(UsdPrim *renderPrim=NULL) const;
+
+    /// Convenience function for authoring the \em renderProxy rel on this
+    /// prim to target the given \p proxy prim.
+    ///
+    /// To facilitate authoring on sparse or unloaded stages, we do not
+    /// perform any validation of this prim's purpose or the type or
+    /// purpoes of the specified prim.
+    ///
+    /// \sa ComputeProxyPrim(), GetProxyPrimRel()
+    USDGEOM_API
+    bool SetProxyPrim(const UsdPrim &proxy) const;
+    
+    /// \overload that takes any UsdSchemaBase-derived object
+    USDGEOM_API
+    bool SetProxyPrim(const UsdSchemaBase &proxy) const;
+    
     /// Compute the bound of this prim in world space, at the specified
     /// \p time, and for the specified purposes.
     ///

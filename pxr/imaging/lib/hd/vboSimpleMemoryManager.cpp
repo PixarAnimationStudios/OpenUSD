@@ -240,15 +240,25 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
             if (copySize > 0) {
                 HD_PERF_COUNTER_INCR(HdPerfTokens->glCopyBufferSubData);
 
-                if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                    glNamedCopyBufferSubDataEXT(oldId, newId, 0, 0, copySize);
+                if (caps.copyBufferEnabled) {
+                    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
+                        glNamedCopyBufferSubDataEXT(oldId, newId, 0, 0, copySize);
+                    } else {
+                        glBindBuffer(GL_COPY_READ_BUFFER, oldId);
+                        glBindBuffer(GL_COPY_WRITE_BUFFER, newId);
+                        glCopyBufferSubData(GL_COPY_READ_BUFFER,
+                                            GL_COPY_WRITE_BUFFER, 0, 0, copySize);
+                        glBindBuffer(GL_COPY_READ_BUFFER, 0);
+                        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+                    }
                 } else {
-                    glBindBuffer(GL_COPY_READ_BUFFER, oldId);
-                    glBindBuffer(GL_COPY_WRITE_BUFFER, newId);
-                    glCopyBufferSubData(GL_COPY_READ_BUFFER,
-                                        GL_COPY_WRITE_BUFFER, 0, 0, copySize);
-                    glBindBuffer(GL_COPY_READ_BUFFER, 0);
-                    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+                    // driver issues workaround
+                    std::vector<char> data(copySize);
+                    glBindBuffer(GL_ARRAY_BUFFER, oldId);
+                    glGetBufferSubData(GL_ARRAY_BUFFER, 0, copySize, &data[0]);
+                    glBindBuffer(GL_ARRAY_BUFFER, newId);
+                    glBufferSubData(GL_ARRAY_BUFFER, 0, copySize, &data[0]);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
                 }
             }
 
@@ -377,6 +387,12 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name)
                                  /*offset=*/0,
                                  /*stride=*/0,  // not interleaved.
                                  _numElements);
+}
+
+size_t
+HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetMaxNumElements() const
+{
+    return _bufferArray->GetMaxNumElements();
 }
 
 HdBufferResourceSharedPtr

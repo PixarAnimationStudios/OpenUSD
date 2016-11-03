@@ -2,7 +2,7 @@ set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glf)
 
 set(optionalPublicClasses "")
-if (X11_FOUND)
+if (X11_FOUND AND NOT APPLE)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 
@@ -95,6 +95,8 @@ pxr_shared_library(glf
         wrapDiagnostic.cpp
         wrapDrawTarget.cpp
         wrapGlew.cpp
+        wrapSimpleLight.cpp
+        wrapSimpleMaterial.cpp
         wrapTexture.cpp
         wrapTextureRegistry.cpp
         wrapUVTexture.cpp

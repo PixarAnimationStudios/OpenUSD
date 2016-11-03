@@ -92,18 +92,27 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         return SdfPath();
     }
 
-    // Store away the path of the given instance prim to use as the
-    // instancer for Hydra if this is the first time we've seen this 
-    // (master, shader binding) pair.
-    const SdfPath& instanceShaderBinding = GetShaderBinding(prim);
-    const SdfPath& instancerPath = 
-        _masterToInstancerMap[masterPrim.GetPath()].insert(
-            std::make_pair(instanceShaderBinding, instancePath)).first->second;
+    // This is a shared_ptr to the prim adapter for the current instancePrim.
+    const UsdImagingPrimAdapterSharedPtr instancedPrimAdapter = 
+        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
 
     // This is a shared_ptr to ourself. The InstancerContext requires the
     // adapter shared_ptr.
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter = 
                         _GetSharedFromThis();
+
+    // If the current prim is drawable (instancedPrimAdapter is non-NULL), we
+    // ask it to give us the shader binding.  Otherwise, this
+    // (instancerAdapter) will provide the shader binding.
+    const SdfPath& instanceShaderBinding = (instancedPrimAdapter
+            ? instancedPrimAdapter : instancerAdapter)->GetShaderBinding(prim);
+
+    // Store away the path of the given instance prim to use as the
+    // instancer for Hydra if this is the first time we've seen this 
+    // (master, shader binding) pair.
+    const SdfPath& instancerPath = 
+        _masterToInstancerMap[masterPrim.GetPath()].insert(
+            std::make_pair(instanceShaderBinding, instancePath)).first->second;
 
     _InstancerData& instancerData = _instancerData[instancerPath];
     instancerData.dirtyBits = HdChangeTracker::AllDirty;
@@ -203,14 +212,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     //
     // In this case, we dispatch to the underlying PrimAdapter and disable
     // instancing.
-    if (const UsdImagingPrimAdapterSharedPtr instanceAdapter = 
-        _GetPrimAdapter(prim, /* ignoreInstancing = */ true)) {
-
+    if (instancedPrimAdapter) {
         UsdTreeIterator treeIt(prim);
         const SdfPath protoPath = 
             _InsertProtoRprim(&treeIt, TfToken(),
                               instanceShaderBinding,
-                              SdfPath(), instanceAdapter, index);
+                              SdfPath(), instancedPrimAdapter, index);
         instancePath = SdfPath();
     }
 
@@ -275,15 +282,20 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
     UsdPrim const& prim = **it;
     SdfPath protoPath;
 
-    // If this prim is an instance, we can use the given instanceShaderBinding.
+    // Talk to the prim's native adapter to do population and ShaderBinding
+    // queries on our behalf.
+    UsdImagingPrimAdapterSharedPtr const& adapter = 
+                        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
+
+    // If this prim is an instance, we can use the given instanceShaderBinding
     // Otherwise, this is a prim in a master; we need to see if there's any
     // applicable bindings authored and only fallback to the instance binding
     // if there isn't one.
-    auto getShaderForPrim = [this, instanceShaderBinding](UsdPrim const& prim) {
+    auto getShaderForPrim = [adapter, instanceShaderBinding](UsdPrim const& prim) {
         if (prim.IsInstance()) { 
             return instanceShaderBinding;
         }
-        SdfPath shaderId = this->GetShaderBinding(prim);
+        SdfPath shaderId = adapter->GetShaderBinding(prim);
         return shaderId.IsEmpty() ? instanceShaderBinding : shaderId;
     };
 
@@ -301,10 +313,6 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
                                        protoName,
                                        getShaderForPrim(prim),
                                        instancerAdapter };
-
-    // Talk to the prim's native adapter to do population on our behalf.
-    UsdImagingPrimAdapterSharedPtr const& adapter = 
-                        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
 
     // There is no need to call AddDependency, as it will be picked up via the
     // instancer context.
@@ -762,6 +770,8 @@ UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
             valueCache->GetInstanceIndices(cachePath);
         if (requestedBits & HdChangeTracker::DirtyTransform)
             valueCache->GetInstancerTransform(cachePath);
+        if (requestedBits & HdChangeTracker::DirtySurfaceShader)
+            valueCache->GetSurfaceShader(cachePath);
 
         rproto.adapter->UpdateForTimePrep(
             _GetPrim(rproto.path), cachePath, time, requestedBits,
@@ -851,6 +861,16 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             // when applying the instancer transform.
             GfMatrix4d& childXf = _GetValueCache()->GetTransform(cachePath);
             childXf = childXf * GetRootTransform().GetInverse();
+        }
+
+        if (requestedBits & HdChangeTracker::DirtySurfaceShader) {
+            // First try to get the shader binded in the instance, if no shader
+            // is bound then access the shader bound to the master prim.
+            SdfPath p = GetShaderBinding(prim);
+            if (p.IsEmpty()) {
+                p = GetShaderBinding(_GetPrim(rproto.path));
+            }
+            valueCache->GetSurfaceShader(cachePath) = p;
         }
 
     } else {
@@ -1255,8 +1275,10 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     _GetPathForInstanceIndexFn(
         UsdImagingInstanceAdapter* adapter_,
         SdfPath const &usdPath_,
-        int instanceIndex_)
-        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_)
+        int instanceIndex_,
+        SdfPathVector *instanceContextPaths_)
+        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_),
+          instanceContextPaths(instanceContextPaths_)
     { }
 
     void Initialize(size_t numInstances)
@@ -1268,9 +1290,15 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     {
         if (instanceIdx == static_cast<size_t>(instanceIndex) && instanceContext.size() > 0) {
             instancePath = instanceContext.back().GetPath();
+
+            if (instanceContextPaths) {
+                for (const UsdPrim &p: instanceContext) {
+                    instanceContextPaths->push_back(p.GetPath());
+                }
+            }
+
             return false;
         }
-
         return true;
     }
 
@@ -1278,13 +1306,16 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     SdfPath usdPath;
     SdfPath instancePath;
     int instanceIndex;
+    SdfPathVector *instanceContextPaths;
 };
 
 /*virtual*/
 SdfPath 
 UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     SdfPath const &path, int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex)
+    int *absoluteInstanceIndex,
+    SdfPath * rprimPath,
+    SdfPathVector *instanceContext)
 {
     UsdPrim const &prim = _GetPrim(path.GetAbsoluteRootOrPrimPath());
     if (not prim) {
@@ -1313,7 +1344,9 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
                     return GetPathForInstanceIndex(instIt->first,
                                                    instanceIndex,
                                                    instanceCount,
-                                                   absoluteInstanceIndex);
+                                                   absoluteInstanceIndex,
+                                                   rprimPath,
+                                                   instanceContext);
                 }
             }
         }
@@ -1347,9 +1380,9 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         instanceIndex = instanceIndices[instanceIndex];
         break;
     }
-
+        
     _GetPathForInstanceIndexFn getPathForInstanceIndexFn(
-        this, instancerPath, instanceIndex);
+        this, instancerPath, instanceIndex, instanceContext);
 
     _RunForAllInstancesToDraw(prim, &getPathForInstanceIndexFn);
 
@@ -1363,6 +1396,17 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     if (instanceCount) {
         *instanceCount = 0;
     }
+
+    if (rprimPath) {
+        const auto rprimPathIt = instIt->second.primMap.find(path);
+        if (rprimPathIt != instIt->second.primMap.end()) {
+            *rprimPath = rprimPathIt->second.path;
+
+            TF_DEBUG(USDIMAGING_SELECTION).Msg(
+                "NI: rprimPath %s\n", rprimPath->GetText());
+        }
+    }
+
     // intentionally leave absoluteInstanceIndex as it is, so that
     // partial selection of point instancer can be passed through.
 
@@ -1473,3 +1517,30 @@ UsdImagingInstanceAdapter::PopulateSelection(
 
     return found;
 }
+
+/*virtual*/
+SdfPathVector
+UsdImagingInstanceAdapter::GetDependPaths(SdfPath const &instancerPath) const
+{
+    _InstancerDataMap::const_iterator it = _instancerData.find(instancerPath);
+
+    SdfPathVector result;
+    if (it != _instancerData.end()) {
+        _InstancerData const & instancerData = it->second;
+
+        // if the proto path is property path, that should be in the subtree
+        // and no need to return.
+        TF_FOR_ALL (protoIt, instancerData.primMap) {
+            SdfPath const &protoPath = protoIt->first;
+            if (protoPath.IsPrimOrPrimVariantSelectionPath()) {
+                if (not protoPath.HasPrefix(instancerPath)) {
+                    result.push_back(protoPath);
+                }
+            }
+        }
+    }
+    // XXX: we may want to cache this result in _instancerData.
+    return result;
+}
+
+

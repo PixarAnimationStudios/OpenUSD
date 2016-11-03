@@ -28,8 +28,10 @@
 /// \ingroup group_arch_Multithreading
 /// Routines for very brief pauses in execution.
 
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/api.h"
+
 
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
@@ -43,7 +45,8 @@
 /// Sleep for \c n/100 seconds.  Note: if your intent is to simply yield the
 /// processors, DO NOT call this with a value of zero (as one can do with
 /// sginap()). Call \c ArchThreadYield() instead.
-ARCH_API void ArchNap(size_t nhundredths);
+ARCH_API
+void ArchNap(size_t nhundredths);
 
 /// Suspends the execution of the current thread until the time-out interval
 /// elapses.

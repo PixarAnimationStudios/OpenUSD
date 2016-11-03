@@ -9,13 +9,20 @@ interchange between graphics applications.
 
 For more details, please visit the web site [here](http://openusd.org).
 
+Build Status
+------------
+
+|       | master | dev |
+| ----- | ------ | --- |
+| Linux | [![Build Status](https://travis-ci.org/PixarAnimationStudios/USD.svg?branch=master)](https://travis-ci.org/PixarAnimationStudios/USD) | [![Build Status](https://travis-ci.org/PixarAnimationStudios/USD.svg?branch=dev)](https://travis-ci.org/PixarAnimationStudios/USD) |
+| Windows | N/A | [![Build status](https://ci.appveyor.com/api/projects/status/knuwy0hfhewn1o34/branch/dev_win_ip_g?svg=true)](https://ci.appveyor.com/project/c64kernal/usd/branch/dev_win_ip_g) |
+
 Additional Documentation
 ------------------------
 
 * [User Documentation and Tutorials](http://openusd.org/docs/index.html)
 * [API Documentation](http://openusd.org/docs/api/index.html)
 * [Advanced Build Configuration](BUILDING.md)
-
 
 Getting Help
 ------------
@@ -44,18 +51,18 @@ Dependencies
 | ---- | --------- |
 | C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |
-| [CMake](https://cmake.org/documentation/)                         | 2.8.8              |
+| [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows)    |
 | [Python](https://python.org)                                      | 2.7.5              |
-| [Boost](https://boost.org)                                        | 1.55               |
-| [OpenEXR](https://openexr.org)                                    | 2.2.0              |
+| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows)    |
+| [OpenEXR](http://www.openexr.com)                                 | 2.2.0              |
 | [DoubleConversion](https://github.com/google/double-conversion)   | 1.1.1              |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.3.1              |
 | [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5              |
 | [GLEW](http://glew.sourceforge.net/)                              | 1.10.0             |
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11             |
 | [Ptex](http://ptex.us/)                                           | 2.0.30             |
-| [Qt](http://doc.qt.io/qt-4.8)                                     | 4.8.0              |
 | [Pyside](http://wiki.qt.io/PySide)                                | 1.2.2              |
+| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0              |
 
 
 Getting and Building the Code
@@ -86,7 +93,6 @@ cmake                                       \
 -DPTEX_INCLUDE_DIR=/path/to/ptex            \
 -DOIIO_BASE_DIR=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost                 \
--DQT_QMAKE_EXECUTABLE=/path/to/qmake        \
 ..
 
 make -j <NUM_CORES> install
@@ -95,7 +101,7 @@ make -j <NUM_CORES> install
 #### On OS X (experimental)
 
 The following will generate an Xcode project that can be used to build USD.
-See notes in the [Supported Platforms](#Supported-Platforms) section
+See notes in the [Supported Platforms](#supported-platforms) section
 for more information.
 
 ```bash
@@ -107,7 +113,6 @@ cmake                                       \
 -DPTEX_INCLUDE_DIR=/path/to/ptex            \
 -DOIIO_BASE_DIR=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost/include         \
--DQT_QMAKE_EXECUTABLE=/path/to/qmake        \
 ..
 
 make -j <NUM_CORES> install
@@ -117,7 +122,7 @@ make -j <NUM_CORES> install
 
 The following will generate a Visual Studio 2015 (the minimum required version)
 sln file which can be used to build USD. See notes in the 
-[Supported Platforms](#Supported-Platforms) section for more information.
+[Supported Platforms](#supported-platforms) section for more information.
 
 ```powershell
 C:\Program Files\CMake\bin\cmake.exe             ^
@@ -128,7 +133,6 @@ C:\Program Files\CMake\bin\cmake.exe             ^
     -DPTEX_INCLUDE_DIR=C:\path\to\ptex           ^ 
     -DOIIO_BASE_DIR=C:\path\to\openimageio       ^ 
     -DBOOST_ROOT=C:\path\to\boost                ^ 
-    -DQT_QMAKE_EXECUTABLE=C:\path\to\qmak        ^
     --build .. --config Release --target install
 
 ```  
@@ -149,8 +153,11 @@ Launch usdview with a sample asset.
 
 ```bash
 $ export PYTHONPATH=$PYTHONPATH:USD_INSTALL_ROOT/lib/python
-$ usdview extras/usd/tutorials/convertingLayerFormats/sphere.usda
+$ usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
+
+> Note: Replace ```USD_INSTALL_ROOT``` with the location set in your build,
+> usually via ```CMAKE_INSTALL_PREFIX```.
 
 Contributing
 ------------

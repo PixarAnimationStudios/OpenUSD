@@ -23,13 +23,8 @@
 //
 #include "pxr/base/tf/flyweight.h"
 
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/hashmap.h"
 #include <string>
 #include <utility>
-
-using std::string;
-using std::make_pair;
 
 // Flyweight pools must be globally unique across the whole system.  We can't
 // just put static data members in the template, since there may be one instance
@@ -37,20 +32,17 @@ using std::make_pair;
 // translation unit, which ensures that there will be one unique pool for each
 // flyweight type.
 
-typedef TfHashMap<string, Tf_FlyweightDataBase *, TfHash> DataHashMap;
-
 Tf_FlyweightDataBase *
-Tf_TrySetFlyweightData(string const &poolName, Tf_FlyweightDataBase *data)
+Tf_TrySetFlyweightData(std::string const &poolName, Tf_FlyweightDataBase *data)
 {
-    static tbb::spin_mutex _globalDataMutex;
+    using std::string;
+    using std::make_pair;
+    using DataHashMap = tbb::concurrent_hash_map<
+        string, Tf_FlyweightDataBase *>;
+
     static DataHashMap _globalDataMap;
 
-    tbb::spin_mutex::scoped_lock lock(_globalDataMutex);
-    DataHashMap::iterator i = _globalDataMap.find(poolName);
-    if (i != _globalDataMap.end())
-        return i->second;
-    _globalDataMap.insert(make_pair(poolName, data));
-    return data;
+    DataHashMap::accessor acc;
+    _globalDataMap.insert(acc, make_pair(poolName, data));
+    return acc->second;
 }
-
-    

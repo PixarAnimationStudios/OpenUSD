@@ -75,11 +75,11 @@ protected:
 
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
     void _CreateTexture(GlfBaseTextureDataConstPtr texData,
-                        bool const generateMipmap,
-			int const unpackCropTop = 0,
-			int const unpackCropBottom = 0,
-			int const unpackCropLeft = 0,
-			int const unpackCropRight = 0);
+                        bool const useMipmaps,
+                        int const unpackCropTop = 0,
+                        int const unpackCropBottom = 0,
+                        int const unpackCropLeft = 0,
+                        int const unpackCropRight = 0);
 
 private:
 

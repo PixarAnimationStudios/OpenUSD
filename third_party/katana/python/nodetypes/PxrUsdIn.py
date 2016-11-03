@@ -55,7 +55,14 @@ nb.setHintsForParameter('isolatePath', {
 
 gb.set('variants', '')
 nb.setHintsForParameter('variants', {
-    'help' : 'Specify variant selections. Variant selections are specified via whitespace-separated variant selection paths. Example: /Foo{X=Y} /Bar{Z=w}',
+    # 'conditionalVisOp': 'notEqualTo',
+    # 'conditionalVisPath': '../variants', # can't really point to self... :(
+    # 'conditionalVisValue': '',
+    'helpAlert': 'warning',
+    'help' : 'DEPRECATED! Use PxrUsdInVariantSelect instead.'\
+        ' Specify variant '\
+        'selections. Variant selections are specified via whitespace-separated'\
+        ' variant selection paths. Example: /Foo{X=Y} /Bar{Z=w}',
 })
 
 gb.set('ignoreLayerRegex', '')

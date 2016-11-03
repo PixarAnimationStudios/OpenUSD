@@ -43,11 +43,11 @@ public:
     virtual ~GlfUVTextureStorageData();
 
    // GlfBaseTextureData overrides
-    virtual int ResizedWidth() const {
+    virtual int ResizedWidth(int mipLevel = 0) const {
         return _resizedWidth;
     };
 
-    virtual int ResizedHeight() const {
+    virtual int ResizedHeight(int mipLevel = 0) const {
         return _resizedHeight;
     };
 
@@ -71,15 +71,21 @@ public:
         return _wrapInfo;
     };
 
-    virtual int ComputeBytesUsed() const;
+    virtual size_t ComputeBytesUsed() const;
 
-    virtual bool HasRawBuffer() const;
+    virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const {
+        return ComputeBytesUsed();
+    }
 
-    virtual unsigned char * GetRawBuffer() const;
+    virtual bool HasRawBuffer(int mipLevel = 0) const;
+
+    virtual unsigned char * GetRawBuffer(int mipLevel = 0) const;
 
     virtual bool Read(int degradeLevel, bool generateMipmap);
 
     virtual bool IsCompressed() const;
+
+    virtual int GetNumMipLevels() const;
 
 private:
 
@@ -104,6 +110,5 @@ private:
     int _size;
 
     unsigned char *_rawBuffer;
-
 };
 #endif // GLF_UVTEXTURESTORAGE_DATA_H

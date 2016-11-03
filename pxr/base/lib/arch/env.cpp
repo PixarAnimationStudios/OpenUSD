@@ -26,6 +26,8 @@
 
 #include <regex>
 
+#include <stdlib.h>
+
 std::string ArchGetEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)

@@ -132,7 +132,6 @@ _GatherShadingParameters(
         // only material interface attributes should bother recording such.
         
         if (shaderParam.IsConnected()) {
-            TfToken channel;
 
             std::vector<UsdShadeShader> sources;
             std::vector<TfToken> outputNames;
@@ -170,20 +169,17 @@ _GatherShadingParameters(
                 }
             }
         }
-        else {
 
-            // XXX: maybe the right thing is actually to just produce
-            // the value here and let katana handle the connection part
-            // correctly..
-            UsdAttribute attr = shaderParam.GetAttr();
-            VtValue vtValue;
-            if (not attr.Get(&vtValue, currentTime)) {
-                continue;
-            }
-            
-            paramsBuilder.set(inputParamId,
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
+        // produce the value here and let katana handle the connection part
+        // correctly..
+        UsdAttribute attr = shaderParam.GetAttr();
+        VtValue vtValue;
+        if (not attr.Get(&vtValue, currentTime)) {
+            continue;
         }
+        
+        paramsBuilder.set(inputParamId,
+                PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
     }
     
     // XXX check for info attrs as they're not strictly parameters but
@@ -265,8 +261,15 @@ _CreateShadingNode(
             nodesBuilder, paramsBuilder, 
             interfaceBuilder, connectionsBuilder, targetName);
 
-        shdNodeAttr.set("parameters", paramsBuilder.build());
-        shdNodeAttr.set("connections", connectionsBuilder.build());
+        // if no content, don't bother creating the group.
+        FnKat::GroupAttribute paramsAttr = paramsBuilder.build();
+        if (paramsAttr.getNumberOfChildren() > 0) {
+            shdNodeAttr.set("parameters", paramsAttr);
+        }
+        FnKat::GroupAttribute connectionsAttr = connectionsBuilder.build();
+        if (connectionsAttr.getNumberOfChildren() > 0) {
+            shdNodeAttr.set("connections", connectionsAttr);
+        }
     }
     else if (UsdShadeShader shaderSchema = UsdShadeShader(shadingNode)) {
         validData = true;
@@ -325,8 +328,15 @@ _CreateShadingNode(
             nodesBuilder, paramsBuilder, 
             interfaceBuilder, connectionsBuilder, targetName);
 
-        shdNodeAttr.set("parameters", paramsBuilder.build());
-        shdNodeAttr.set("connections", connectionsBuilder.build());
+
+        FnKat::GroupAttribute paramsAttr = paramsBuilder.build();
+        if (paramsAttr.getNumberOfChildren() > 0) {
+            shdNodeAttr.set("parameters", paramsAttr);
+        }
+        FnKat::GroupAttribute connectionsAttr = connectionsBuilder.build();
+        if (connectionsAttr.getNumberOfChildren() > 0) {
+            shdNodeAttr.set("connections", connectionsAttr);
+        }
 
         // read position
         UsdUINodeGraphNodeAPI nodeApi(shadingNode);
@@ -430,10 +440,6 @@ _GetMaterialAttr(
                     nodesBuilder, interfaceBuilder, "prman");
                 terminalsBuilder.set("prmanDisplacement",
                                      FnKat::StringAttribute(handle));
-                // XXX: what's the right way to get the port name?
-                // see bug 108308
-                terminalsBuilder.set("prmanDisplacementPort",
-                                     FnKat::StringAttribute("out"));
             } else {
                 FnLogWarn("Displacement shader does not exist at:" << 
                           targetPath.GetString());
@@ -494,10 +500,6 @@ _GetMaterialAttr(
 
                 terminalsBuilder.set("prmanBxdf",
                                         FnKat::StringAttribute(handle));
-                // XXX: what's the right way to get the port name?
-                // see bug 108308
-                terminalsBuilder.set("prmanBxdfPort",
-                                        FnKat::StringAttribute("out"));
             } else {
                 FnLogWarn("Bxdf does not exist at "
                             << targetPath.GetString());
@@ -607,6 +609,14 @@ _GetMaterialAttr(
         // Eventually, this "derivesFrom" relationship will be
         // a "derives" composition in usd, in which case we'll have to
         // rewrite this to use partial usd composition
+        //
+        // Note that there are additional workarounds in using the
+        // "derivesFrom"/BaseMaterial relationship in the non-op SGG that
+        // would need to be replicated here if the USD Material AttributeFn
+        // were to use the PxrUsdIn op instead, particularly with respect to
+        // the tree structure that the non-op the SGG creates
+        // See _ConvertUsdMAterialPathToKatLocation in
+        // katanapkg/plugin/sgg/usd/utils.cpp
         UsdShadeMaterial materialSchema(materialPrim);
         if (materialSchema.HasBaseMaterial()) {
             SdfPath baseMaterialPath = UsdShadeMaterial(

@@ -73,7 +73,7 @@ HdRenderPassShader::ComputeHash() const
     // if nothing changed, returns the cached hash value
     if (_hashValid) return _hash;
 
-    _hash = _glslfxFile.Hash();
+    _hash = _glslfx->GetHash();
 
     // cullFaces are dynamic, no need to put in the hash.
 

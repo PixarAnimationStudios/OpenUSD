@@ -51,7 +51,4 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(PcpRangeTypeWeakerThanRoot, "weaker than root");
     TF_ADD_ENUM_NAME(PcpRangeTypeStrongerThanPayload, "stronger than payload");
     TF_ADD_ENUM_NAME(PcpRangeTypeInvalid, "invalid");
-
-    TF_ADD_ENUM_NAME(PcpDirect, "direct dependency");
-    TF_ADD_ENUM_NAME(PcpAncestral, "ancestral dependency");
 }

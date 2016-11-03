@@ -21,37 +21,68 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file writeUtil.h
+
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/primvar.h"
+
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
+#include <maya/MString.h>
+
+#include <string>
+
 
 struct PxrUsdMayaWriteUtil
 {
     /// \name Helpers for writing USD
     /// \{
 
-    /// Given an \p attrPlug, try to create and attribute on \p usdPrim with
-    /// the name \p attrName.  Note, it's value will not be set.  
-    ///
-    /// Attributes that are not part of the primSchema should have \p custom
-    /// set to true.
-    static SdfValueTypeName GetUsdTypeName( const MPlug& attrPlug );
+    /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
+    static SdfValueTypeName GetUsdTypeName(const MPlug& attrPlug);
 
-    /// Given an \p attrPlug, try to create and attribute on \p usdPrim with
-    /// the name \p attrName.  Note, it's value will not be set.  
+    /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
+    /// the name \p attrName. Note, it's value will not be set.
     ///
     /// Attributes that are not part of the primSchema should have \p custom
     /// set to true.
     static UsdAttribute GetOrCreateUsdAttr(
-            const MPlug& attrPlug, 
+            const MPlug& attrPlug,
             const UsdPrim& usdPrim,
-            const std::string &attrName,
-            bool custom);
+            const std::string& attrName,
+            const bool custom = false);
+
+    /// Given an \p attrPlug, try to create a primvar on \p imageable with
+    /// the name \p primvarName. Note, it's value will not be set.
+    ///
+    /// Attributes that are not part of the primSchema should have \p custom
+    /// set to true.
+    static UsdGeomPrimvar GetOrCreatePrimvar(
+            const MPlug& attrPlug,
+            UsdGeomImageable& imageable,
+            const std::string& primvarName,
+            const TfToken& interpolation = TfToken(),
+            const int elementSize = -1,
+            const bool custom = false);
+
+    /// Given an \p attrPlug, try to create a UsdRi attribute on \p usdPrim with
+    /// the name \p attrName. Note, it's value will not be set.
+    static UsdAttribute GetOrCreateUsdRiAttribute(
+            const MPlug& attrPlug,
+            const UsdPrim& usdPrim,
+            const std::string& attrName,
+            const std::string& nameSpace = "user");
 
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.

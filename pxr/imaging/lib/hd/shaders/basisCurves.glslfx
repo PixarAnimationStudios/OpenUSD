@@ -380,8 +380,6 @@ in VertexData
     vec3 Neye;
 } inData;
 
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color);
-vec3 getNormal(vec3 Peye, vec3 Neye);
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 void main(void)
@@ -439,7 +437,6 @@ in VertexData
     vec4 Peye;
 } inData;
 
-vec3 SimpleLighting(in vec3 Peye, in vec3 Neye, in vec3 color);
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 void main(void)

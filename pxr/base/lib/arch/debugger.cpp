@@ -458,7 +458,7 @@ Arch_InitDebuggerAttach()
 
         // Compute the length of the string.
         size_t n = 0;
-        for (char* i = e; *i; ++i) {
+        for (const char* i = e; *i; ++i) {
             if (i[0] == '%' and i[1] == 'p') {
                 n += _decimalPidLength;
                 ++i;
@@ -487,7 +487,7 @@ Arch_InitDebuggerAttach()
 
         // Build the command string.
         char* a = _archDebuggerAttachArgs[2];
-        for (char* i = e; *i; ++i) {
+        for (const char* i = e; *i; ++i) {
             if (i[0] == '%' and i[1] == 'p') {
                 // Write the process id.
                 sprintf(a, "%d", (int)getpid());
@@ -551,9 +551,9 @@ ArchDebuggerWait(bool wait)
 bool
 ArchDebuggerAttach()
 {
-    return 
+    return
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-		Arch_DebuggerIsAttachedPosix() or 
+		Arch_DebuggerIsAttachedPosix() or
 #endif
 		Arch_DebuggerAttach();
 }

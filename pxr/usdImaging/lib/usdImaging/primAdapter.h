@@ -151,7 +151,9 @@ public:
     /// return the instanceCountForThisLevel as the number of instances.
     virtual SdfPath GetPathForInstanceIndex(
         SdfPath const &path, int instanceIndex,
-        int *instanceCountForThisLevel, int *absoluteInstanceIndex);
+        int *instanceCountForThisLevel, int *absoluteInstanceIndex,
+        SdfPath * rprimPath=NULL,
+        SdfPathVector *instanceContext=NULL);
 
     /// Returns the instancer path for given \p instancePath. If it's not
     /// instanced path, returns empty.
@@ -188,7 +190,7 @@ public:
                             bool ignoreRootTransform = false);
 
     /// Gets the shader binding for the given prim, walking up namespace if
-    /// necessary.
+    /// necessary.  
     SdfPath GetShaderBinding(UsdPrim const& prim);
 
     /// Gets the instancer ID for the given prim and instancerContext.

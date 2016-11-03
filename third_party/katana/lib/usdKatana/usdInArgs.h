@@ -58,7 +58,8 @@ public:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
-            bool verbose) {
+            bool verbose,
+            const char * errorMessage = 0) {
         return TfCreateRefPtr(new PxrUsdKatanaUsdInArgs(
                     stage, 
                     rootLocation,
@@ -70,7 +71,8 @@ public:
                     shutterClose, 
                     motionSampleTimes,
                     extraAttributesOrNamespaces,
-                    verbose));
+                    verbose,
+                    errorMessage));
     }
 
     // bounds computation is kind of important, so we centralize it here.
@@ -120,6 +122,15 @@ public:
         return _motionSampleTimes;
     }
 
+    /// \brief Return true if motion blur is backward.
+    ///
+    /// PxrUsdIn supports both forward and backward motion blur. Motion
+    /// blur is considered backward if multiple samples are requested
+    /// and the first specified sample is later than the last sample.
+    const bool IsMotionBackward() const {
+        return _isMotionBackward;
+    }
+
     const StringListMap& GetExtraAttributesOrNamespaces() const {
         return _extraAttributesOrNamespaces;
     }
@@ -133,6 +144,9 @@ public:
         return _bboxCaches.local();
     }
 
+    const std::string & GetErrorMessage() {
+        return _errorMessage;
+    }
 private:
     USDKATANA_API
     PxrUsdKatanaUsdInArgs(
@@ -146,7 +160,8 @@ private:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
-            bool verbose);
+            bool verbose,
+            const char * errorMessage = 0);
 
     USDKATANA_API
     ~PxrUsdKatanaUsdInArgs();
@@ -163,6 +178,7 @@ private:
     double _shutterOpen;
     double _shutterClose;
     std::vector<double> _motionSampleTimes;
+    bool _isMotionBackward;
 
     // maps the root-level attribute name to the specified attributes or namespaces
     StringListMap _extraAttributesOrNamespaces;
@@ -171,6 +187,8 @@ private:
 
     typedef tbb::enumerable_thread_specific< std::vector<UsdGeomBBoxCache> > _ThreadLocalBBoxCaches;
     _ThreadLocalBBoxCaches _bboxCaches;
+    
+    std::string _errorMessage;
 
 };
 

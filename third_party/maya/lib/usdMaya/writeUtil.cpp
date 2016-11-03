@@ -22,14 +22,21 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "usdMaya/writeUtil.h"
+#include "usdMaya/UserTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
-#include "pxr/base/js/json.h"
-#include "pxr/base/js/value.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/property.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdRi/statements.h"
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDoubleArrayData.h>
@@ -55,15 +62,8 @@
 #include <maya/MVector.h>
 #include <maya/MVectorArray.h>
 
-#include <set>
-
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (USD_UserExportedAttributesJson)
-    (usdAttrName)
-);
-
+#include <string>
+#include <vector>
 
 SdfValueTypeName
 PxrUsdMayaWriteUtil::GetUsdTypeName( const MPlug& plg)
@@ -180,40 +180,137 @@ PxrUsdMayaWriteUtil::GetUsdTypeName( const MPlug& plg)
     return attrType;
 }
 
-
+/* static */
 UsdAttribute
 PxrUsdMayaWriteUtil::GetOrCreateUsdAttr(
-        const MPlug& plg, 
+        const MPlug& attrPlug,
         const UsdPrim& usdPrim,
-        const std::string &attrName,
-        bool custom)
+        const std::string& attrName,
+        const bool custom)
 {
-    MObject attrObj(plg.attribute());
+    UsdAttribute usdAttr;
 
-    TfToken usdAttrName(attrName);
-    if (usdAttrName.IsEmpty()) {
-        printf("Invalid attrName '%s' for %s\n",
-                attrName.c_str(),
-                plg.name().asChar());
-        return UsdAttribute();
+    if (not usdPrim) {
+        return usdAttr;
     }
-    
-    // See if usdAttr already exists.  If so, return.
-    UsdAttribute usdAttr = usdPrim.GetAttribute(usdAttrName);
+
+    MObject attrObj(attrPlug.attribute());
+
+    TfToken usdAttrNameToken(attrName);
+    if (usdAttrNameToken.IsEmpty()) {
+        MGlobal::displayError(
+            TfStringPrintf("Invalid USD attribute name '%s' for Maya plug '%s'",
+                           attrName.c_str(),
+                           attrPlug.name().asChar()).c_str());
+        return usdAttr;
+    }
+
+    // See if the USD attribute already exists. If so, return it.
+    usdAttr = usdPrim.GetAttribute(usdAttrNameToken);
     if (usdAttr) {
         return usdAttr;
     }
 
-    SdfValueTypeName attrType = PxrUsdMayaWriteUtil::GetUsdTypeName(plg);
+    const SdfValueTypeName& typeName = PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug);
+    if (typeName) {
+        usdAttr = usdPrim.CreateAttribute(usdAttrNameToken, typeName, custom);
+    }
 
-    // ---------------------
-    // CreateAttribute on USD Prim if specified above
-    if (attrType) {
-        usdAttr = usdPrim.CreateAttribute(usdAttrName, attrType, custom);
+    return usdAttr;
+}
+
+/* static */
+UsdGeomPrimvar PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
+        const MPlug& attrPlug,
+        UsdGeomImageable& imageable,
+        const std::string& primvarName,
+        const TfToken& interpolation,
+        const int elementSize,
+        const bool custom)
+{
+    UsdGeomPrimvar primvar;
+
+    if (not imageable) {
+        return primvar;
     }
-    else {
-        // Skipping.  Unsupported type.
+
+    MObject attrObj(attrPlug.attribute());
+
+    TfToken primvarNameToken(primvarName);
+    if (primvarNameToken.IsEmpty()) {
+        MGlobal::displayError(
+            TfStringPrintf("Invalid primvar name '%s' for Maya plug '%s'",
+                           primvarName.c_str(),
+                           attrPlug.name().asChar()).c_str());
+        return primvar;
     }
+
+    // See if the primvar already exists. If so, return it.
+    primvar = imageable.GetPrimvar(primvarNameToken);
+    if (primvar) {
+        return primvar;
+    }
+
+    const SdfValueTypeName& typeName = PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug);
+    if (typeName) {
+        primvar = imageable.CreatePrimvar(primvarNameToken,
+                                          typeName,
+                                          interpolation,
+                                          elementSize,
+                                          custom);
+    }
+
+    return primvar;
+}
+
+/* static */
+UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
+        const MPlug& attrPlug,
+        const UsdPrim& usdPrim,
+        const std::string& attrName,
+        const std::string& nameSpace)
+{
+    UsdAttribute usdAttr;
+
+    if (not usdPrim) {
+        return usdAttr;
+    }
+
+    MObject attrObj(attrPlug.attribute());
+
+    TfToken riAttrNameToken(attrName);
+    if (riAttrNameToken.IsEmpty()) {
+        MGlobal::displayError(
+            TfStringPrintf("Invalid UsdRi attribute name '%s' for Maya plug '%s'",
+                           attrName.c_str(),
+                           attrPlug.name().asChar()).c_str());
+        return usdAttr;
+    }
+
+    UsdRiStatements riStatements(usdPrim);
+    if (not riStatements) {
+        return usdAttr;
+    }
+
+    // See if a UsdRi attribute with this name already exists. If so, return it.
+    // XXX: There isn't currently API for looking for a specific UsdRi attribute
+    // by name, so we have to get them all and then see if one matches.
+    const std::vector<UsdProperty>& riAttrs = riStatements.GetRiAttributes(nameSpace);
+    TF_FOR_ALL(iter, riAttrs) {
+        if (iter->GetBaseName() == riAttrNameToken) {
+            // Re-get the attribute from the prim so we can return it as a
+            // UsdAttribute rather than a UsdProperty.
+            return usdPrim.GetAttribute(iter->GetName());
+        }
+    }
+
+    const SdfValueTypeName& typeName = PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug);
+    if (typeName) {
+        usdAttr = riStatements.CreateRiAttribute(riAttrNameToken,
+                                                 typeName.GetType(),
+                                                 nameSpace);
+    }
+
     return usdAttr;
 }
 
@@ -459,12 +556,24 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
 //        },
 //        "myMayaAttributeTwo": {
 //            "usdAttrName": "my:namespace:attributeTwo"
-//        }
+//        },
+//        "attributeAsPrimvar": {
+//            "usdAttrType": "primvar"
+//        },
+//        "attributeAsVertexInterpPrimvar": {
+//            "usdAttrType": "primvar",
+//            "interpolation": "vertex"
+//        },
+//        "attributeAsRibAttribute": {
+//            "usdAttrType": "usdRi"
+//        },
 //    }
 //
 // If the attribute metadata contains a value for "usdAttrName", the attribute
 // will be given that name in USD. Otherwise, the Maya attribute name will be
-// used. Maya attributes in the JSON will be processed in sorted order, and any
+// used for primvars and UsdRi attributes, or the Maya attribute name prepended
+// with the "userProperties" namespace will be used for regular USD attributes.
+// Maya attributes in the JSON will be processed in sorted order, and any
 // USD attribute name collisions will be resolved by using the first attribute
 // visited and warning about subsequent attribute tags.
 //
@@ -474,81 +583,61 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
         const UsdPrim& usdPrim,
         const UsdTimeCode& usdTime)
 {
-    MStatus status;
-    MFnDependencyNode depFn(dagPath.node());
+    std::vector<PxrUsdMayaUserTaggedAttribute> exportedAttributes =
+        PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(dagPath);
+    for (const PxrUsdMayaUserTaggedAttribute& attr : exportedAttributes) {
+        const std::string& usdAttrName = attr.GetUsdName();
+        const TfToken& usdAttrType = attr.GetUsdType();
+        const TfToken& interpolation = attr.GetUsdInterpolation();
+        const MPlug& attrPlug = attr.GetMayaPlug();
+        UsdAttribute usdAttr;
 
-    MPlug exportedAttrsJsonPlug = depFn.findPlug(
-        _tokens->USD_UserExportedAttributesJson.GetText(), true, &status);
-    if (status != MS::kSuccess || exportedAttrsJsonPlug.isNull()) {
-        // No attributes specified for export on this node.
-        return false;
-    }
-
-    std::string exportedAttrsJsonString(exportedAttrsJsonPlug.asString().asChar());
-    if (exportedAttrsJsonString.empty()) {
-        return false;
-    }
-
-    JsParseError jsError;
-    JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
-    if (not jsValue) {
-        MString errorMsg(TfStringPrintf(
-            "Failed to parse USD exported attributes JSON on node at dagPath '%s'"
-            " at line %d, column %d: %s",
-            dagPath.fullPathName().asChar(),
-            jsError.line, jsError.column, jsError.reason.c_str()).c_str());
-        MGlobal::displayError(errorMsg);
-        return false;
-    }
-
-    // Maintain a set of USD attribute names that have been processed. If an
-    // attribute is multiply-defined, we'll use the first tag encountered and
-    // issue warnings for the subsequent definitions. JsObject is really just a
-    // std::map, so we'll be considering attributes in sorted order.
-    std::set<std::string> exportedUsdAttrNames;
-
-    const JsObject& exportedAttrs = jsValue.GetJsObject();
-    for (JsObject::const_iterator iter = exportedAttrs.begin();
-         iter != exportedAttrs.end();
-         ++iter) {
-        const std::string mayaAttrName = iter->first;
-
-        const MPlug attrPlug = depFn.findPlug(mayaAttrName.c_str(), true, &status);
-        if (status != MS::kSuccess || attrPlug.isNull()) {
-            MString errorMsg(TfStringPrintf(
-                "Could not find attribute '%s' for USD export on node at dagPath '%s'",
-                mayaAttrName.c_str(), dagPath.fullPathName().asChar()).c_str());
-            MGlobal::displayError(errorMsg);
-            continue;
-        }
-
-        const JsObject& attrMetadata = iter->second.GetJsObject();
-
-        // Check the metadata to see if the USD attribute name should be
-        // different than the Maya attribute name.
-        std::string usdAttrName = mayaAttrName;
-        JsObject::const_iterator usdAttrValueIter = attrMetadata.find(_tokens->usdAttrName);
-        if (usdAttrValueIter != attrMetadata.end()) {
-            std::string nameValue = usdAttrValueIter->second.GetString();
-            if (not nameValue.empty()) {
-                usdAttrName = nameValue;
+        if (usdAttrType ==
+                    PxrUsdMayaUserTaggedAttributeTokens->USDAttrTypePrimvar) {
+            UsdGeomImageable imageable(usdPrim);
+            if (not imageable) {
+                MGlobal::displayError(
+                    TfStringPrintf(
+                        "Cannot create primvar for non-UsdGeomImageable USD prim: '%s'",
+                        usdPrim.GetPath().GetText()).c_str());
+                continue;
             }
+            UsdGeomPrimvar primvar =
+                PxrUsdMayaWriteUtil::GetOrCreatePrimvar(attrPlug,
+                                                        imageable,
+                                                        usdAttrName,
+                                                        interpolation,
+                                                        -1,
+                                                        true);
+            if (primvar) {
+                usdAttr = primvar.GetAttr();
+            }
+        } else if (usdAttrType ==
+                    PxrUsdMayaUserTaggedAttributeTokens->USDAttrTypeUsdRi) {
+            usdAttr =
+                PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(attrPlug,
+                                                               usdPrim,
+                                                               usdAttrName);
+        } else {
+            usdAttr = PxrUsdMayaWriteUtil::GetOrCreateUsdAttr(attrPlug,
+                                                              usdPrim,
+                                                              usdAttrName,
+                                                              true);
         }
 
-        const auto& insertIter = exportedUsdAttrNames.insert(usdAttrName);
-
-        if (not insertIter.second) {
-            MString errorMsg(TfStringPrintf(
-                "Ignoring duplicate USD export tag for attribute '%s' on node at dagPath '%s'",
-                usdAttrName.c_str(), dagPath.fullPathName().asChar()).c_str());
-            MGlobal::displayError(errorMsg);
-            continue;
-        }
-
-        UsdAttribute usdAttr = PxrUsdMayaWriteUtil::GetOrCreateUsdAttr(
-            attrPlug, usdPrim, usdAttrName, true);
         if (usdAttr) {
-            PxrUsdMayaWriteUtil::SetUsdAttr(attrPlug, usdAttr, usdTime);
+            if (not PxrUsdMayaWriteUtil::SetUsdAttr(attrPlug, usdAttr, usdTime)) {
+                MGlobal::displayError(
+                    TfStringPrintf("Could not set value for attribute: '%s'",
+                                   usdAttr.GetPath().GetText()).c_str());
+                continue;
+            }
+        } else {
+            MGlobal::displayError(
+                TfStringPrintf("Could not create attribute '%s' for USD prim: '%s'",
+                               usdAttrName.c_str(),
+                               usdPrim.GetPath().GetText()).c_str());
+                continue;
         }
     }
 

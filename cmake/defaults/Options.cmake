@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 option(PXR_STRICT_BUILD_MODE "Turn on additional warnings. Enforce all warnings as errors." OFF)
-option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" ON)
+option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" OFF)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
 option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" ON)
@@ -42,7 +42,11 @@ set(PXR_ALL_LIBS ""
     INTERNAL
     "Aggregation of all built libraries."
 )
-
+set(PXR_LIB_PREFIX "lib"
+    CACHE
+    STRING
+    "Prefix for build library name"
+)
 if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
     message(STATUS
         "PXR_BUILD_IMAGING=OFF implies PXR_BUILD_USD_IMAGING=OFF"

@@ -34,33 +34,20 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-#include <unordered_map>
-#include <tbb/spin_mutex.h>
-#else
 #include <tbb/concurrent_hash_map.h>
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
-#include <boost/foreach.hpp>
+static bool
+_IsFileRelative(const std::string& path) {
+    return path.find("./") == 0 or path.find("../") == 0;
+}
 
-static const char* _FileRelativePathPrefix = "./";
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-struct Ar_DefaultResolver::_Cache
-{
-    using _PathToResolvedPathMap = 
-        std::unordered_map<std::string, std::string>;
-    _PathToResolvedPathMap _pathToResolvedPathMap;
-    tbb::spin_mutex _mutex;
-};
-#else
 struct Ar_DefaultResolver::_Cache
 {
     using _PathToResolvedPathMap = 
         tbb::concurrent_hash_map<std::string, std::string>;
     _PathToResolvedPathMap _pathToResolvedPathMap;
 };
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
 Ar_DefaultResolver::Ar_DefaultResolver()
 {
@@ -68,7 +55,7 @@ Ar_DefaultResolver::Ar_DefaultResolver()
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (not envPath.empty()) {
-        BOOST_FOREACH(const std::string& p, TfStringTokenize(envPath, ":")) {
+        for (const auto& p : TfStringTokenize(envPath, ":")) {
             _searchPath.push_back(TfAbsPath(p));
         }
     }
@@ -101,13 +88,9 @@ Ar_DefaultResolver::AnchorRelativePath(
     const std::string& anchorPath, 
     const std::string& path)
 {
-    if (path.empty() or not IsRelativePath(path)) {
+    if (anchorPath.empty() or anchorPath[0] != '/' or
+        path.empty() or path[0] == '/' or not _IsFileRelative(path))
         return path;
-    }
-
-    if (anchorPath.empty() or IsRelativePath(anchorPath)) {
-        return path;
-    }
 
     // Ensure we are using forward slashes and not back slashes.
     std::string forwardPath = anchorPath;
@@ -116,18 +99,15 @@ Ar_DefaultResolver::AnchorRelativePath(
     // If anchorPath does not end with a '/', we assume it is specifying
     // a file, strip off the last component, and anchor the path to that
     // directory.
-    std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(forwardPath, '/'), path);
-    anchoredPath = TfNormPath(anchoredPath);
-    anchoredPath = TfAbsPath(anchoredPath);
-    return anchoredPath;
+    const std::string anchoredPath = TfStringCatPaths(
+        TfStringGetBeforeSuffix(anchorPath, '/'), path);
+    return TfNormPath(anchoredPath);
 }
 
 bool
 Ar_DefaultResolver::IsSearchPath(const std::string& path)
 {
-    return IsRelativePath(path)
-        and not TfStringStartsWith(path, _FileRelativePathPrefix);
+    return IsRelativePath(path) and not _IsFileRelative(path);
 }
 
 std::string
@@ -186,7 +166,7 @@ Ar_DefaultResolver::_ResolveNoCache(const std::string& path)
         // If that fails and the path is a search path, try to resolve
         // against each directory in the specified search paths.
         if (IsSearchPath(path)) {
-            BOOST_FOREACH(const std::string& searchPath, _searchPath) {
+            for (const auto& searchPath : _searchPath) {
                 resolvedPath = _Resolve(searchPath, path);
                 if (not resolvedPath.empty()) {
                     return resolvedPath;
@@ -215,18 +195,6 @@ Ar_DefaultResolver::ResolveWithAssetInfo(
         return path;
     }
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    if (_CachePtr currentCache = _GetCurrentCache()) {
-        tbb::spin_mutex::scoped_lock lock(currentCache->_mutex);
-        std::pair<_Cache::_PathToResolvedPathMap::iterator, bool> accessor =
-            currentCache->_pathToResolvedPathMap.insert(
-                std::make_pair(path, std::string()));
-        if (accessor.second) {
-            accessor.first->second = _ResolveNoCache(path);
-        }
-        return accessor.first->second;
-    }
-#else
     if (_CachePtr currentCache = _GetCurrentCache()) {
         _Cache::_PathToResolvedPathMap::accessor accessor;
         if (currentCache->_pathToResolvedPathMap.insert(
@@ -235,7 +203,6 @@ Ar_DefaultResolver::ResolveWithAssetInfo(
         }
         return accessor->second;
     }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK    
 
     return _ResolveNoCache(path);
 }

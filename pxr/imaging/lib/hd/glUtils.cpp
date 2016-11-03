@@ -224,32 +224,48 @@ HdGLBufferRelocator::Commit()
 {
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
-    if (not caps.directStateAccessEnabled) {
-        glBindBuffer(GL_COPY_READ_BUFFER, _srcBuffer);
-        glBindBuffer(GL_COPY_WRITE_BUFFER, _dstBuffer);
-    }
-
-    TF_FOR_ALL (it, _queue) {
-        if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedCopyBufferSubDataEXT(_srcBuffer,
-                                        _dstBuffer,
-                                        it->readOffset,
-                                        it->writeOffset,
-                                        it->copySize);
-        } else {
-            glCopyBufferSubData(GL_COPY_READ_BUFFER,
-                                GL_COPY_WRITE_BUFFER,
-                                it->readOffset,
-                                it->writeOffset,
-                                it->copySize);
+    if (caps.copyBufferEnabled) {
+        // glCopyBuffer
+        if (not caps.directStateAccessEnabled) {
+            glBindBuffer(GL_COPY_READ_BUFFER, _srcBuffer);
+            glBindBuffer(GL_COPY_WRITE_BUFFER, _dstBuffer);
         }
-    }
-    HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
-                        (double)_queue.size());
 
-    if (not caps.directStateAccessEnabled) {
-        glBindBuffer(GL_COPY_READ_BUFFER, 0);
-        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+        TF_FOR_ALL (it, _queue) {
+            if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
+                glNamedCopyBufferSubDataEXT(_srcBuffer,
+                                            _dstBuffer,
+                                            it->readOffset,
+                                            it->writeOffset,
+                                            it->copySize);
+            } else {
+                glCopyBufferSubData(GL_COPY_READ_BUFFER,
+                                    GL_COPY_WRITE_BUFFER,
+                                    it->readOffset,
+                                    it->writeOffset,
+                                    it->copySize);
+            }
+        }
+        HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
+                            (double)_queue.size());
+
+        if (not caps.directStateAccessEnabled) {
+            glBindBuffer(GL_COPY_READ_BUFFER, 0);
+            glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+        }
+    } else {
+        // read back to CPU and send it to GPU again
+        // (workaround for a driver crash)
+        TF_FOR_ALL (it, _queue) {
+            std::vector<char> data(it->copySize);
+            glBindBuffer(GL_ARRAY_BUFFER, _srcBuffer);
+            glGetBufferSubData(GL_ARRAY_BUFFER, it->readOffset, it->copySize,
+                               &data[0]);
+            glBindBuffer(GL_ARRAY_BUFFER, _dstBuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, it->writeOffset, it->copySize,
+                            &data[0]);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     _queue.clear();

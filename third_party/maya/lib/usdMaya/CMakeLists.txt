@@ -75,6 +75,11 @@ pxr_shared_library(${PXR_PACKAGE}
 
         Chaser
         ChaserRegistry
+        
+        AttributeConverter
+        AttributeConverterRegistry
+
+        UserTaggedAttribute
 
     PRIVATE_CLASSES
         registryHelper
@@ -103,6 +108,7 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorMesh_SubDiv.cpp
         translatorXformable_decompose.cpp
         usdReadJob_ImportWithProxies.cpp
+        UsdMetadataAttributeConverters.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -110,6 +116,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapEditUtil.cpp 
         wrapQuery.cpp 
         wrapStageCache.cpp 
+        wrapUserTaggedAttribute.cpp 
 
     PYTHON_FILES
         __init__.py 

@@ -97,10 +97,8 @@ protected:
     public:
         _DrawingProgram() {}
 
-        void CompileShader(
+        bool CompileShader(
                 HdDrawItem const *drawItem,
-                Hd_GeometricShaderSharedPtr const &geometricShader,
-                HdShaderSharedPtrVector const &shaders,
                 bool indirect);
 
         HdGLSLProgramSharedPtr GetGLSLProgram() const {
@@ -109,11 +107,54 @@ protected:
 
         /// Returns the resouce binder, which is used for buffer resource
         /// bindings at draw time.
-        const Hd_ResourceBinder &GetBinder() const { return _resourceBinder; }
+        const Hd_ResourceBinder &GetBinder() const { 
+            return _resourceBinder; 
+        }
 
         void Reset() {
             _glslProgram.reset();
+            _surfaceShader.reset();
+            _geometricShader.reset();
             _resourceBinder = Hd_ResourceBinder();
+            _shaders.clear();
+        }
+        
+        void SetSurfaceShader(HdShaderSharedPtr shader) {
+            _surfaceShader = shader;
+        }
+
+        const HdShaderSharedPtr &GetSurfaceShader() { 
+            return _surfaceShader; 
+        }
+
+        void SetGeometricShader(Hd_GeometricShaderSharedPtr shader) {
+            _geometricShader = shader;
+        }
+
+        const Hd_GeometricShaderSharedPtr &GetGeometricShader() { 
+            return _geometricShader; 
+        }
+
+        /// Set shaders (lighting/renderpass). In the case of Geometric Shaders 
+        /// or Surface shaders you can use the specific setters.
+        void SetShaders(HdShaderSharedPtrVector shaders) { 
+            _shaders = shaders; 
+        }
+
+        /// Returns array of shaders, this will not include the surface shader
+        /// passed via SetSurfaceShader (or the geometric shader).
+        const HdShaderSharedPtrVector &GetShaders() const { 
+            return _shaders; 
+        }
+
+        /// Returns array of composed shaders, this include the shaders passed
+        /// via SetShaders and the shader passed to SetSurfaceShader.
+        HdShaderSharedPtrVector GetComposedShaders() const { 
+            HdShaderSharedPtrVector shaders = _shaders;
+            if (_surfaceShader) {
+                shaders.push_back(_surfaceShader);
+            }
+            return shaders;
         }
 
     protected:
@@ -129,6 +170,9 @@ protected:
     private:
         HdGLSLProgramSharedPtr _glslProgram;
         Hd_ResourceBinder _resourceBinder;
+        HdShaderSharedPtrVector _shaders;
+        Hd_GeometricShaderSharedPtr _geometricShader;
+        HdShaderSharedPtr _surfaceShader;
     };
 
     _DrawingProgram & _GetDrawingProgram(

@@ -97,6 +97,12 @@ public:
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
     }
 
+    /// Returns the max number of elements
+    virtual size_t GetMaxNumElements() const {
+        TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
+        return 1;
+    }
+
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
     virtual HdBufferResourceSharedPtr GetResource() const {

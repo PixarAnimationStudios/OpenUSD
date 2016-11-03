@@ -26,6 +26,7 @@
 
 /// \file vt/valueFromPython.h
 
+#include <Python.h>
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/api.h"
 
@@ -33,7 +34,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <Python.h>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include "pxr/base/tf/hashmap.h"

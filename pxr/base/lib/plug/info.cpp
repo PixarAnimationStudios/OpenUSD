@@ -33,7 +33,6 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <regex>
 #include <set>
@@ -92,7 +91,7 @@ _MergePaths(
 
     // Join dirname(ownerPathname) and subpathname.
     const std::string result =
-        TfNormPath(TfStringCatPaths(TfGetPathName(ownerPathname), subpathname));
+        TfStringCatPaths(TfGetPathName(ownerPathname), subpathname);
 
     // Retain trailing slash if request and if any.
     return (keepTrailingSlash and *subpathname.rbegin() == '/')
@@ -118,7 +117,7 @@ _AppendToRootPath(
     }
 
     // Join rootPathname and subpathname.
-    return TfNormPath(TfStringCatPaths(rootPathname, subpathname));
+    return TfStringCatPaths(rootPathname, subpathname);
 }
 
 void
@@ -268,7 +267,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     }
 
     // Report unexpected keys.
-    BOOST_FOREACH(const JsObject::value_type& v, top) {
+    for (const auto& v : top) {
         const JsObject::key_type& key = v.first;
         if (key != _Tokens->PluginsKey and
             key != _Tokens->IncludesKey) {
@@ -325,26 +324,24 @@ _TraverseDirectory(
     const std::string& dirname,
     const std::shared_ptr<std::regex> dirRegex)
 {
-    const std::vector<std::string> dirContents = TfListDir(dirname);
+    std::vector<std::string> dirnames, filenames;
+    TfReadDir(dirname, &dirnames, &filenames, &filenames);
 
     // Traverse all files in the directory to see if we have a
     // match first so that we can terminate the recursive walk
     // if we find one.
-    for (const auto& path : dirContents) {
-        const bool isFilePath = (*path.rbegin() != '/');
-        if (isFilePath and std::regex_match(path, *dirRegex)) {
-            context->taskArena.Run(boost::bind(_ReadPlugInfo, 
-                                               context, path));
+    for (const auto& f : filenames) {
+        const std::string path = TfStringCatPaths(dirname, f);
+        if (std::regex_match(path, *dirRegex)) {
+            context->taskArena.Run(boost::bind(_ReadPlugInfo, context, path));
             return;
         }
     }
 
-    for (const auto& path : dirContents) {
-        const bool isDirPath = (*path.rbegin() == '/');
-        if (isDirPath) {
-            context->taskArena.Run(boost::bind(_TraverseDirectory, 
-                                               context, path, dirRegex));
-        }
+    for (const auto& d : dirnames) {
+        const std::string path = TfStringCatPaths(dirname, d);
+        context->taskArena.Run(
+            boost::bind(_TraverseDirectory, context, path, dirRegex));
     }
 }
 
@@ -386,7 +383,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
             Msg("Globbing plugin info path %s\n", pathname.c_str());
 
         // Yes, no recursive searches so do the glob.
-        BOOST_FOREACH(const std::string& match, TfGlob(pathname, 0)) {
+        for (const auto& match : TfGlob(pathname, 0)) {
             context->taskArena.Run(boost::bind(_ReadPlugInfo, context, match));
         }
 
@@ -670,7 +667,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Report unexpected keys.
-    BOOST_FOREACH(const JsObject::value_type& v, topInfo) {
+    for (const auto& v : topInfo) {
         const JsObject::key_type& subkey = v.first;
         if (subkey != _Tokens->TypeKey and
             subkey != _Tokens->NameKey and
@@ -702,14 +699,12 @@ Plug_ReadPlugInfo(
 {
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
     _ReadContext context(*taskArena, addVisitedPath, addPlugin);
-    BOOST_FOREACH(const std::string& pathname, pathnames) {
+    for (const auto& pathname : pathnames) {
         // For convenience we allow given paths that are directories but
         // don't end in "/" to be handled as directories.  Includes in
         // plugInfo files must still explicitly append '/' to be handled
         // as directories.
-        if (not pathname.empty() and
-                *pathname.rbegin() != '/' and
-                TfIsDir(pathname)) {
+        if (not pathname.empty() and *pathname.rbegin() != '/') {
             context.taskArena.Run(
                 boost::bind(_ReadPlugInfoWithWildcards, &context,
                             pathname + "/"));

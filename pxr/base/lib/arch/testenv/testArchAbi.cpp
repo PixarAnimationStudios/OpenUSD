@@ -55,7 +55,7 @@ main(int argc, char** argv)
     // Up two directories.
     path = path.substr(0, path.rfind('/', path.rfind('/') - 1));
     path += "/tests/lib/libtestArchAbiPlugin.so";
-    void* plugin = ArchOpenLibrary(path.c_str(), ARCH_LIBRARY_LAZY);
+    void* plugin = ArchLibraryOpen(path.c_str(), ARCH_LIBRARY_LAZY);
     if (not plugin) {
         error += dlerror();
     }

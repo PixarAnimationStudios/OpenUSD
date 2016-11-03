@@ -36,6 +36,7 @@ struct Hd_MeshShaderKey
                      bool smoothNormals,
                      bool doubleSided,
                      bool faceVarying,
+                     bool blendWireframeColor,
                      HdCullStyle cullStyle,
                      HdMeshGeomStyle geomStyle);
 

@@ -23,7 +23,6 @@
 //
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdf/valueTypePrivate.h"
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #include <iostream>
 
@@ -33,7 +32,7 @@ template <typename C, typename V>
 bool
 IsValueIn(const C& container, V value)
 {
-    BOOST_FOREACH(const V& element, container) {
+    for (const auto& element : container) {
         if (element == value) {
             return true;
         }

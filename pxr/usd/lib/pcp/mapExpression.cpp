@@ -27,12 +27,7 @@
 
 #include "pxr/base/tracelite/trace.h"
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-#include <tbb/spin_mutex.h>
-#include <unordered_map>
-#else
 #include <tbb/concurrent_hash_map.h>
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
 class Pcp_VariableImpl;
 
@@ -93,6 +88,13 @@ PcpMapExpression::Constant( const Value & value )
 PcpMapExpression
 PcpMapExpression::Compose(const PcpMapExpression &f) const
 {
+    // Fast path short-circuits for identities
+    if (IsConstantIdentity()) {
+        return f;
+    }
+    if (f.IsConstantIdentity()) {
+        return *this;
+    }
     if (_node->key.op == _OpConstant and f._node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( Evaluate().Compose( f.Evaluate() ) );
@@ -103,6 +105,10 @@ PcpMapExpression::Compose(const PcpMapExpression &f) const
 PcpMapExpression
 PcpMapExpression::Inverse() const
 {
+    // Fast path short-circuits for identities
+    if (IsConstantIdentity()) {
+        return *this;
+    }
     if (_node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( Evaluate().GetInverse() );
@@ -113,6 +119,10 @@ PcpMapExpression::Inverse() const
 PcpMapExpression
 PcpMapExpression::AddRootIdentity() const
 {
+    // Fast path short-circuits for identities
+    if (IsConstantIdentity()) {
+        return *this;
+    }
     if (_node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( _AddRootIdentity(Evaluate()) );
@@ -175,24 +185,10 @@ struct _KeyHashEq
 {
     inline bool equal(const Key &l, const Key &r) const { return l == r; }
     inline size_t hash(const Key &k) const { return k.GetHash(); }
-
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-    inline size_t operator()(const Key &k) const { return hash(k); }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 };
 
 } // anon
 
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-struct PcpMapExpression::_Node::_NodeMap
-{
-    typedef PcpMapExpression::_Node::Key Key;
-    typedef std::unordered_map<
-        Key, PcpMapExpression::_Node *, _KeyHashEq<Key> > MapType;
-    MapType map;
-    tbb::spin_mutex mutex;
-};
-#else 
 struct PcpMapExpression::_Node::_NodeMap
 {
     typedef PcpMapExpression::_Node::Key Key;
@@ -201,7 +197,6 @@ struct PcpMapExpression::_Node::_NodeMap
     typedef MapType::accessor accessor;
     MapType map;
 };
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
 
 TfStaticData<PcpMapExpression::_Node::_NodeMap>
 PcpMapExpression::_Node::_nodeRegistry;
@@ -254,25 +249,6 @@ PcpMapExpression::_Node::New( _Op op_,
 
     if (key.op != _OpVariable) {
         // Check for existing instance to re-use
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-        tbb::spin_mutex::scoped_lock lock(_nodeRegistry->mutex);
-
-        std::pair<_NodeMap::MapType::iterator, bool> accessor = 
-            _nodeRegistry->map.insert(std::make_pair(key, nullptr));
-        if (accessor.second or
-            accessor.first->second->_refCount.fetch_and_increment() == 0) {
-            // Either there was no node in the table, or there was but it had
-            // begun dying (another client dropped its refcount to 0).  We have
-            // to create a new node in the table.  When the client that is
-            // killing the other node it looks for itself in the table, it will
-            // either not find itself or will find a different node and so won't
-            // remove it.
-            _NodeRefPtr newNode(new _Node(key));
-            accessor.first->second = newNode.get();
-            return newNode;
-        }
-        return _NodeRefPtr(accessor.first->second, /*add_ref =*/ false);
-#else
         _NodeMap::accessor accessor;
         if (_nodeRegistry->map.insert(accessor, key) or
             accessor->second->_refCount.fetch_and_increment() == 0) {
@@ -287,7 +263,6 @@ PcpMapExpression::_Node::New( _Op op_,
             return newNode;
         }
         return _NodeRefPtr(accessor->second, /*add_ref =*/ false);
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
     }
     return _NodeRefPtr(new _Node(key));
 }
@@ -319,22 +294,12 @@ PcpMapExpression::_Node::~_Node()
     }
 
     if (key.op != _OpVariable) {
-#if MAYA_TBB_HANG_WORKAROUND_HACK
-        tbb::spin_mutex::scoped_lock lock(_nodeRegistry->mutex);
-        // Remove from node map if present.
-        _NodeMap::MapType::iterator accessor = _nodeRegistry->map.find(key);
-        if (accessor != _nodeRegistry->map.end() and
-            accessor->second == this) {
-            _nodeRegistry->map.erase(accessor);
-        }
-#else
         // Remove from node map if present.
         _NodeMap::accessor accessor;
         if (_nodeRegistry->map.find(accessor, key) and
             accessor->second == this) {
             _nodeRegistry->map.erase(accessor);
         }
-#endif // MAYA_TBB_HANG_WORKAROUND_HACK
     }
 }
 

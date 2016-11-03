@@ -109,6 +109,12 @@ public:
             ERROR("Could not initialize PxrUsdIn usdInArgs.");
             return;
         }
+        
+        if (not usdInArgs->GetErrorMessage().empty())
+        {
+            ERROR(usdInArgs->GetErrorMessage().c_str());
+            return;
+        }
 
         if (interface.atRoot()) {
             interface.stopChildTraversal();
@@ -478,26 +484,80 @@ public:
         return buffer.str();
     }
 
+    
+    // utility to make it easier to exit earlier from InitUsdInArgs
+    struct ArgsBuilder
+    {
+        UsdStageRefPtr stage;
+        std::string rootLocation;
+        std::string isolatePath;
+        SdfPathSet variantSelections;
+        std::string ignoreLayerRegex;
+        double currentTime;
+        double shutterOpen;
+        double shutterClose;
+        std::vector<double> motionSampleTimes;
+        PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
+        bool verbose;
+        const char * errorMessage;
+        
+        
+        ArgsBuilder()
+        : currentTime(0.0)
+        , shutterOpen(0.0)
+        , shutterClose(0.0)
+        , verbose(false)
+        , errorMessage(0)
+        {
+        }
+        
+        PxrUsdKatanaUsdInArgsRefPtr build()
+        {
+            return PxrUsdKatanaUsdInArgs::New(
+                stage,
+                rootLocation,
+                isolatePath,
+                variantSelections,
+                ignoreLayerRegex,
+                currentTime,
+                shutterOpen,
+                shutterClose,
+                motionSampleTimes,
+                extraAttributesOrNamespaces,
+                verbose,
+                errorMessage);
+        }
+        
+        PxrUsdKatanaUsdInArgsRefPtr buildWithError(std::string errorStr)
+        {
+            errorMessage = errorStr.c_str();
+            return build();
+        }
+        
+    };
+    
+
     static PxrUsdKatanaUsdInArgsRefPtr
     InitUsdInArgs(const FnKat::GeolibCookInterface &interface,
             FnKat::GroupAttribute & additionalOpArgs)
     {
+        ArgsBuilder ab;
+        
         FnKat::StringAttribute usdFileAttr = interface.getOpArg("fileName");
         if (not usdFileAttr.isValid()) {
-            FnLogInfo("Missing fileName attr.");
-            return TfNullPtr;
+            return ab.buildWithError("PxrUsdIn: USD fileName not specified.");
         }
 
         std::string fileName = usdFileAttr.getValue();
         
-        std::string rootLocation = FnKat::StringAttribute(
+        ab.rootLocation = FnKat::StringAttribute(
                 interface.getOpArg("location")).getValue(
                         interface.getRootLocationPath(), false);
         
         std::string variants = FnKat::StringAttribute(
                 interface.getOpArg("variants")).getValue("", false);
         
-        std::string sessionLocation = rootLocation;
+        std::string sessionLocation = ab.rootLocation;
         FnKat::StringAttribute sessionLocationAttr = 
                 interface.getOpArg("sessionLocation");
         if (sessionLocationAttr.isValid()) {
@@ -507,31 +567,32 @@ public:
         variants += GetVariantStringFromSession(
                 interface.getOpArg("session"), sessionLocation);
 
-        SdfPathSet variantSelections;
+        
         std::set<std::string> selStrings = TfStringTokenizeToSet(variants);
         TF_FOR_ALL(selString, selStrings) {
             std::string errMsg;
             if (SdfPath::IsValidPathString(*selString, &errMsg)) {
                 SdfPath varSelPath(*selString);
                 if (varSelPath.IsPrimVariantSelectionPath()) {
-                    variantSelections.insert( SdfPath(*selString) );
+                    ab.variantSelections.insert( SdfPath(*selString) );
                     continue;
                 }   
-            }   
-            FnLogWarn(TfStringPrintf("Bad variant selection \"%s\"",
-                                     selString->c_str()).c_str());
-            return TfNullPtr;
+            }
+            
+            return ab.buildWithError(
+                    TfStringPrintf("PxrUsdIn: Bad variant selection \"%s\"",
+                            selString->c_str()).c_str());
         }
 
-        std::string ignoreLayerRegex = FnKat::StringAttribute(
+        ab.ignoreLayerRegex = FnKat::StringAttribute(
                 interface.getOpArg("ignoreLayerRegex")).getValue("", false);
 
-        bool verbose = FnKat::IntAttribute(
+        ab.verbose = FnKat::IntAttribute(
                 interface.getOpArg("verbose")).getValue(0, false);
 
         FnKat::GroupAttribute systemArgs(interface.getOpArg("system"));
 
-        double currentTime = 
+        ab.currentTime = 
             FnKat::FloatAttribute(systemArgs.getChildByName(
                 "timeSlice.currentTime")).getValue(0, false);
 
@@ -539,15 +600,13 @@ public:
             FnKat::IntAttribute(systemArgs.getChildByName(
                 "timeSlice.numSamples")).getValue(1, false);
 
-        double shutterOpen =
+        ab.shutterOpen =
             FnKat::FloatAttribute(systemArgs.getChildByName(
                 "timeSlice.shutterOpen")).getValue(0, false);
 
-        double shutterClose =
+        ab.shutterClose =
             FnKat::FloatAttribute(systemArgs.getChildByName(
                 "timeSlice.shutterClose")).getValue(0, false);
-
-        std::vector<double> motionSampleTimes;
 
         std::string motionSampleStr = FnKat::StringAttribute(
                 interface.getOpArg("motionSampleTimes")).getValue("", false);
@@ -557,7 +616,7 @@ public:
         //
         if (numSamples < 2 or motionSampleStr.empty())
         {
-            motionSampleTimes.push_back(0);
+            ab.motionSampleTimes.push_back(0);
         }
         else
         {
@@ -566,20 +625,19 @@ public:
 
             for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); ++it)
             {
-                motionSampleTimes.push_back(std::stod(*it));
+                ab.motionSampleTimes.push_back(std::stod(*it));
             }
         }
 
-        UsdStageRefPtr stage = 
+        ab.stage = 
             UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
-                variantSelections, 
-                ignoreLayerRegex, 
+                ab.variantSelections, 
+                ab.ignoreLayerRegex, 
                 true /* forcePopulate */);
 
-        if (not stage) {
-            FnLogInfo("No stage.");
-            return TfNullPtr;
+        if (not ab.stage) {
+            return ab.buildWithError("PxrUsdIn: USD Stage cannot be loaded.");
         }
 
         if (FnAttribute::StringAttribute(
@@ -587,25 +645,26 @@ public:
                         ).getValue("expanded", false) == "as sources and instances")
         {
             additionalOpArgs = FnKat::GroupAttribute("masterMapping",
-                    PxrUsdKatanaUtils::BuildInstanceMasterMapping(stage), true);
+                    PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage), true);
         }
         
         
         
 
-        std::string isolatePath = FnKat::StringAttribute(
+        ab.isolatePath = FnKat::StringAttribute(
             interface.getOpArg("isolatePath")).getValue("", false);
 
         // if the specified isolatePath is not a valid prim, clear it out
-        if (not isolatePath.empty() and not stage->GetPrimAtPath(SdfPath(isolatePath)))
+        if (not ab.isolatePath.empty() and not ab.stage->GetPrimAtPath(SdfPath(ab.isolatePath)))
         {
-            FnLogWarn("Invalid isolatePath: " << isolatePath);
-            isolatePath = "";
+            std::ostringstream errorBuffer;
+            errorBuffer << "PxrUsdIn: Invalid isolatePath: " << ab.isolatePath << ".";
+            return ab.buildWithError(errorBuffer.str());
         }
 
         // get extra attributes or namespaces if they exist
         //
-        PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
+        
 
         FnKat::StringAttribute extraAttributesOrNamespacesAttr = 
             interface.getOpArg("extraAttributesOrNamespaces");
@@ -627,39 +686,28 @@ public:
                 }
                 
                 pystring::split(value, tokens, ":", 1);
-                extraAttributesOrNamespaces[tokens[0]].push_back(value);
+                ab.extraAttributesOrNamespaces[tokens[0]].push_back(value);
             }
         }
         
         // always include userProperties if not explicitly included.
-        if (extraAttributesOrNamespaces.find("userProperties")
-                == extraAttributesOrNamespaces.end())
+        if (ab.extraAttributesOrNamespaces.find("userProperties")
+                == ab.extraAttributesOrNamespaces.end())
         {
-            extraAttributesOrNamespaces["userProperties"].push_back(
+            ab.extraAttributesOrNamespaces["userProperties"].push_back(
                     "userProperties");
         }
         else
         {
             // if it is there, enforce that it includes only the top-level attr
             std::vector<std::string> & userPropertiesNames =
-                    extraAttributesOrNamespaces["userProperties"];
+                    ab.extraAttributesOrNamespaces["userProperties"];
             
             userPropertiesNames.clear();
             userPropertiesNames.push_back("userProperties");
         }
-
-        return PxrUsdKatanaUsdInArgs::New(
-                stage,
-                rootLocation,
-                isolatePath,
-                variantSelections,
-                ignoreLayerRegex,
-                currentTime,
-                shutterOpen,
-                shutterClose,
-                motionSampleTimes,
-                extraAttributesOrNamespaces,
-                verbose);
+        
+        return ab.build();
     }
 
 private:
@@ -694,9 +742,10 @@ private:
         }
         std::vector<GfBBox3d> bounds = usdInArgs->ComputeBounds(prim);
         const std::vector<double>& motionSampleTimes = usdInArgs->GetMotionSampleTimes();
+
         bool hasInfiniteBounds = false;
         FnKat::DoubleAttribute boundsAttr = PxrUsdKatanaUtils::ConvertBoundsToAttribute(
-                bounds, motionSampleTimes, &hasInfiniteBounds);
+                bounds, motionSampleTimes, usdInArgs->IsMotionBackward(), &hasInfiniteBounds);
 
         // Report infinite bounds as a warning.
         if (hasInfiniteBounds) {
@@ -742,6 +791,19 @@ public:
         FnKat::GroupAttribute additionalOpArgs;
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs =
                 PxrUsdInOp::InitUsdInArgs(interface, additionalOpArgs);
+        
+        if (not usdInArgs) {
+            ERROR("Could not initialize PxrUsdIn usdInArgs.");
+            return;
+        }
+        
+        if (not usdInArgs->GetErrorMessage().empty())
+        {
+            ERROR(usdInArgs->GetErrorMessage().c_str());
+            return;
+        }
+        
+        
 
         FnKat::GroupAttribute opArgs = FnKat::GroupBuilder()
             .update(interface.getOpArg())

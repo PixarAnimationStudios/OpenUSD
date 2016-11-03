@@ -62,6 +62,7 @@ pxr_shared_library(tf
         pathUtils
         pointerAndBits
         poolAllocator
+        pyAnnotatedBoolResult
         pyArg
         pyCall
         pyClassMethod
@@ -179,6 +180,7 @@ pxr_shared_library(tf
         wrapStopwatch.cpp
         wrapStringUtils.cpp
         wrapTemplateString.cpp
+        wrapTestPyAnnotatedBoolResult.cpp
         wrapTestPyContainerConversions.cpp
         wrapTestPyDateTime.cpp
         wrapTestPyStaticTokens.cpp
@@ -201,7 +203,6 @@ pxr_shared_library(tf
         testenv/testTfScriptModuleLoader_Test.py
         testenv/testTfScriptModuleLoader_Unknown.py
 )
-
 
 pxr_build_test(testTfPyInterpreter
     LIBRARIES

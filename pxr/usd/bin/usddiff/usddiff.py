@@ -28,9 +28,11 @@ from subprocess import call
 
 # generates a command list representing a call which will generate
 # a temporary ascii file used during diffing. 
-def _generateCatCommand(usdcatCmd, inPath, outPath, fmt=None):
+def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
     if os.stat(inPath).st_size > 0:
         command = [usdcatCmd, inPath, '--out', outPath]
+        if flatten:
+            command.append('--flatten')
 
         if fmt and os.path.splitext(outPath)[1] == '.usd':
             command.append('--usdFormat')
@@ -88,8 +90,18 @@ def _getFileFormat(path):
 
     return None
 
-def _convertTo(inPath, outPath, usdcatCmd, fmt=None):
-    call(_generateCatCommand(usdcatCmd, inPath, outPath, fmt)) 
+def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
+    call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)) 
+
+
+def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
+    if composed:
+        sys.exit('Error: Cannot write out flattened result.')
+
+    if not os.access(fileName, os.W_OK):
+        sys.exit('Error: Cannot write to %s, insufficient permissions' % fileName)
+    
+    _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
 def main():
     import argparse
@@ -108,6 +120,8 @@ def main():
                         help='The usd file to compare against the baseline')
     parser.add_argument('-n', '--noeffect', action='store_true',
                         help='Do not edit either file.') 
+    parser.add_argument('-c', '--compose', action='store_true',
+                        help='Fully compose both layers as Usd Stages.')
     results = parser.parse_args()
 
     # Generate recognizable suffixes for our files in the temp dir
@@ -134,8 +148,10 @@ def main():
             sys.exit(pluginError % results.comparison)
 
         # Dump the contents of our files into the temporaries
-        _convertTo(results.baseline, tempBaseline.name, usdcatCmd)
-        _convertTo(results.comparison, tempComparison.name, usdcatCmd)
+        _convertTo(results.baseline, tempBaseline.name, usdcatCmd, 
+                   flatten=results.compose, fmt=None)
+        _convertTo(results.comparison, tempComparison.name, usdcatCmd,
+                   flatten=results.compose, fmt=None)
 
         tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
         tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
@@ -149,20 +165,14 @@ def main():
 
         # If we intend to edit either of the files
         if not results.noeffect:
-            accessError = 'Error: Cannot write to %s, insufficient permissions' 
-            if tempBaselineChanged:
-                if not os.access(results.baseline, os.W_OK):
-                    sys.exit(accessError % results.baseline)
 
-                _convertTo(tempBaseline.name, results.baseline,
-                           usdcatCmd, baselineFileType)
+            if tempBaselineChanged:
+                _tryEdit(results.baseline, tempBaseline.name, 
+                         usdcatCmd, baselineFileType, results.compose)
 
             if tempComparisonChanged:
-                if not os.access(results.comparison, os.W_OK):
-                    sys.exit(accessError % results.comparison)
-
-                _convertTo(tempComparison.name, results.comparison,
-                           usdcatCmd, comparisonFileType)
+                _tryEdit(results.comparison, tempComparison.name,
+                         usdcatCmd, comparisonFileType, results.compose)
 
         sys.exit(diffResult)
 

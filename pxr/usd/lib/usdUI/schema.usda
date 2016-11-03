@@ -62,4 +62,26 @@ class "NodeGraphNodeAPI"(
             string apiName = "displayColor"
         }
     )
+
+    uniform asset ui:nodegraph:node:icon (
+        doc = """
+        This points to an image that should be displayed on the node
+        """
+        customData = {
+            string apiName = "icon"
+        }
+    )
+
+    uniform token ui:nodegraph:node:expansionState (
+        allowedTokens = ["open", "closed", "minimized"]
+        doc = """ 
+        The current expansionState of the node in the ui. 
+        'open' = fully expanded
+        'closed' = fully collapsed
+        'minimized' = should take the least space possible
+        """
+        customData = {
+            string apiName = "expansionState"
+        }
+    )
 }

@@ -29,6 +29,7 @@
 /// Routines for controlling malloc behavior.
 
 #include "pxr/base/arch/api.h"
+
 #include <stdlib.h>
 #include <string>
 
@@ -49,7 +50,7 @@ ARCH_API bool ArchIsPtmallocActive();
 /// platforms.
 ///
 /// \ingroup group_arch_Memory
-bool ArchIsStlAllocatorOff();
+ARCH_API bool ArchIsStlAllocatorOff();
 
 /// \class ArchMallocHook
 /// \ingroup group_arch_Memory

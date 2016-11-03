@@ -205,14 +205,14 @@ void WorkTask() {
 
     ArchNap(10);
 
-    ::_DumpLog(&workerThreadLog, &workerThreadList, &workerThreadLock);
+    _DumpLog(&workerThreadLog, &workerThreadList, &workerThreadLock);
 
     workListener->Revoke();
 
     workerThreadLog << "// WorkListener should not respond\n";
     WorkerNotice("WorkerNotice 2").Send();
 
-    ::_DumpLog(&workerThreadLog, &workerThreadList, &workerThreadLock);
+    _DumpLog(&workerThreadLog, &workerThreadList, &workerThreadLock);
 
     delete workListener;
 }
@@ -235,19 +235,19 @@ _TestThreadedNotices()
     
     mainListener->Revoke();
     
-    ::_DumpLog(&mainThreadLog, &mainThreadList, &mainThreadLock);
+    _DumpLog(&mainThreadLog, &mainThreadList, &mainThreadLock);
     
     mainThreadLog << "// MainListener::ProcessNotice should respond once\n";
     MainNotice("Main notice 2").Send();
 
-    ::_DumpLog(&mainThreadLog, &mainThreadList, &mainThreadLock);
+    _DumpLog(&mainThreadLog, &mainThreadList, &mainThreadLock);
     
     delete mainListener;
 
     mainThreadLog << "// MainListener should not respond\n";
     MainNotice("main: Error!").Send();
 
-    ::_DumpLog(&mainThreadLog, &mainThreadList, &mainThreadLock);
+    _DumpLog(&mainThreadLog, &mainThreadList, &mainThreadLock);
 
     cout << "\n--- Main Thread Log ---\n";
     cout << mainThreadLog.str();
@@ -486,11 +486,11 @@ Test_TfNotice()
     printf("// Expect: nothing\n");
     TestNotice("error!").Send();
 
-    ::_TestThreadedNotices();
+    _TestThreadedNotices();
 
-    ::_TestSpoofedNotices();
+    _TestSpoofedNotices();
 
-    ::_TestNoticeBlock();
+    _TestNoticeBlock();
     
     return true;
 }

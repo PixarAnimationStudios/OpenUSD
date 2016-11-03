@@ -67,7 +67,15 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
 			*error = "Call to GetFullPathName failed";
 		}
 		return string();
-	}
+	} else {
+        // Make sure drive letters are always lower-case out of TfRealPath on
+        // Windows -- this is so that we can be sure we can reliably use the
+        // paths as keys in tables, etc.
+        if (fullPath[1] == ':') {
+            fullPath[0] = tolower(fullPath[0]);
+        }
+
+    }
 
 	return std::string(fullPath);
 #else

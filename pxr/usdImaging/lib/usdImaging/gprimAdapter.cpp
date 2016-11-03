@@ -32,7 +32,7 @@
 
 #include "pxr/usd/usdGeom/gprim.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/pShader.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -182,7 +182,29 @@ UsdImagingGprimAdapter::UpdateForTimePrep(UsdPrim const& prim,
 }
 
 void
-UsdImagingGprimAdapter::_DiscoverPrimvars(UsdGeomGprim const& gprim,
+UsdImagingGprimAdapter::_DiscoverPrimvars(
+        UsdGeomGprim const& gprim,
+        SdfPath const& cachePath,
+        SdfPath const& shaderPath,
+        UsdTimeCode time,
+        UsdImagingValueCache* valueCache)
+{
+    // Check if each parameter is bound to a texture or primvar, if so,
+    // collect that primvar from this gprim.
+    // XXX: Should move this into ShaderAdapter
+    if (UsdPrim const& shaderPrim =
+                        gprim.GetPrim().GetStage()->GetPrimAtPath(shaderPath)) {
+        if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
+            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, s, time, valueCache);
+        } else {
+            _DiscoverPrimvarsDeprecated(gprim, cachePath, 
+                                        shaderPrim, time, valueCache);
+        }
+    }
+}
+
+void
+UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& gprim,
                                           SdfPath const& cachePath, 
                                           UsdShadeShader const& shader,
                                           UsdTimeCode time,
@@ -233,7 +255,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(UsdGeomGprim const& gprim,
                 }
             } else {
                 // Recursively look for more primvars
-                _DiscoverPrimvars(gprim, cachePath, source, time, valueCache);
+                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, source, time, valueCache);
             }
         }
     }
@@ -358,18 +380,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 prim.GetPath().GetText(), usdShaderPath.GetText());
 
         if (not usdShaderPath.IsEmpty()) {
-            // Check if each parameter is bound to a texture or primvar, if so,
-            // collect that primvar from this gprim.
-            // XXX: Should move this into ShaderAdapter
-            UsdPrim const& shaderPrim =
-                                prim.GetStage()->GetPrimAtPath(usdShaderPath);
-
-            if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
-                _DiscoverPrimvars(gprim, cachePath, s, time, valueCache);
-            } else {
-                _DiscoverPrimvarsDeprecated(gprim, cachePath, 
-                                            shaderPrim, time, valueCache);
-            }
+            _DiscoverPrimvars(gprim, cachePath, usdShaderPath, time, valueCache);
         }
     }
 
@@ -460,27 +471,27 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     static TfToken displayColorToken("displayColor");
     static TfToken displayOpacityToken("displayOpacity");
 
-    UsdRelationship look = UsdShadeLook::GetBindingRel(prim);
-    SdfPathVector lookTargets;
-    if (look.GetForwardedTargets(&lookTargets)) {
-        if (not lookTargets.empty()) {
-            if (lookTargets.size() > 1) {
-                TF_WARN("<%s> has more than one look target; "\
+    UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
+    SdfPathVector matTargets;
+    if (mat.GetForwardedTargets(&matTargets)) {
+        if (not matTargets.empty()) {
+            if (matTargets.size() > 1) {
+                TF_WARN("<%s> has more than one material target; "\
                         "using first one found: <%s>",
                         prim.GetPath().GetText(),
-                        lookTargets.front().GetText());
+                        matTargets.front().GetText());
             }
-            UsdPrim lookPrim(
-                prim.GetStage()->GetPrimAtPath(lookTargets.front()));
+            UsdPrim matPrim(
+                prim.GetStage()->GetPrimAtPath(matTargets.front()));
 
-            if (lookPrim and
-                lookPrim.GetAttribute(displayColorToken).Get(&color, time)) {
+            if (matPrim and
+                matPrim.GetAttribute(displayColorToken).Get(&color, time)) {
                 colorInterp = UsdGeomTokens->constant; 
                 result[0] = GfVec4f(color[0], color[1], color[2], opacity);
             }
 
-            if (lookPrim and
-                lookPrim.GetAttribute(displayOpacityToken).Get(&opacity, time)) {
+            if (matPrim and
+                matPrim.GetAttribute(displayOpacityToken).Get(&opacity, time)) {
                 opacityInterp = UsdGeomTokens->constant;
                 result[0][3] = opacity;
             }

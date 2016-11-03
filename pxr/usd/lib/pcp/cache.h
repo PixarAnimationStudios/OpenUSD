@@ -25,7 +25,9 @@
 #define PCP_CACHE_H
 
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/pcp/dependency.h"
 #include "pxr/usd/pcp/errors.h"
+#include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/propertyIndex.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -50,6 +52,7 @@ class Pcp_Dependencies;
 class PcpLayerStackIdentifier;
 class PcpLifeboat;
 class PcpNodeRef;
+class PcpMapFunction;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
@@ -261,57 +264,73 @@ public:
     ComputePrimIndex(const SdfPath &primPath, PcpErrorVector *allErrors);
 
     /// Compute PcpPrimIndexes in the subtree rooted at path in parallel,
-    /// subject to the supplied predicate \p pred.  This is similar to
-    /// ComputePrimIndex(), except it will compute an entire subtree of indexes
-    /// in parallel, so it can be much more efficient.  This function invokes
-    /// \p pred concurrently, so it must be safe to do so.  When a PcpPrimIndex
-    /// is finished being computed, this function invokes \p pred, passing it
-    /// the PcpPrimIndex.  If \p pred returns true, this function will continue
-    /// to the children and compute their indexes.  If \p pred returns false,
-    /// prim index computation ceases for that subtree.
-    template <class Predicate>
+    /// recursing to children based on the supplied \p childrenPred.  Also
+    /// include payloads not already in this cache's included payloads (see
+    /// GetIncludedPayloads()) according to \p payloadPred.
+    ///
+    /// This is similar to ComputePrimIndex(), except it computes an entire
+    /// subtree of indexes in parallel so it can be much more efficient.  This
+    /// function invokes both \p childrenPred and \p payloadPred concurrently,
+    /// so it must be safe to do so.  When a PcpPrimIndex computation completes
+    /// invoke \p childrenPred, passing it the PcpPrimIndex.  If \p childrenPred
+    /// returns true, continue indexing children prim indexes.  Conversely if
+    /// \p childrenPred returns false, stop indexing in that subtree.  If
+    /// payloads discovered during indexing do not already appear in this
+    /// cache's set of included payloads, invoke \p payloadPred, passing it the
+    /// path for the prim with the payload.  If \p payloadPred returns true,
+    /// include its payload and add it to the cache's set of included payloads
+    /// upon completion.
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPath &path,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred) {
-        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors, pred,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred) {
+        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors,
+                                     childrenPred, payloadPred,
                                      "Pcp", "ComputePrimIndexesInParallel");
     }
 
     /// \overload
     /// XXX Do not add new callers of this method.  It is needed as a workaround
     /// for bug #132031, which we hope to tackle soon (as of 6/2016)
-    template <class Predicate>
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPath &path,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred,
                                       const char *mallocTag1,
                                       const char *mallocTag2) {
-        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors, pred.
+        ComputePrimIndexesInParallel(SdfPathVector(1, path), allErrors,
+                                     childrenPred, payloadPred,
                                      mallocTag1, mallocTag2);
     }
 
     /// Vectorized form of ComputePrimIndexesInParallel().  Equivalent to
     /// invoking that method for each path in \p paths, but more efficient.
-    template <class Predicate>
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPathVector &paths,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred) {
-        _UntypedPredicate p(&pred);
-        _ComputePrimIndexesInParallel(paths, allErrors, p,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred) {
+        _UntypedIndexingChildrenPredicate cp(&childrenPred);
+        _UntypedIndexingPayloadPredicate pp(&payloadPred);
+        _ComputePrimIndexesInParallel(paths, allErrors, cp, pp,
                                       "Pcp", "ComputePrimIndexesInParallel");
     }
 
     /// \overload
     /// XXX Do not add new callers of this method.  It is needed as a workaround
     /// for bug #132031, which we hope to tackle soon (as of 6/2016)
-    template <class Predicate>
+    template <class ChildrenPredicate, class PayloadPredicate>
     void ComputePrimIndexesInParallel(const SdfPathVector &paths,
                                       PcpErrorVector *allErrors,
-                                      const Predicate &pred,
+                                      const ChildrenPredicate &childrenPred,
+                                      const PayloadPredicate &payloadPred,
                                       const char *mallocTag1,
                                       const char *mallocTag2) {
-        _UntypedPredicate p(&pred);
-        _ComputePrimIndexesInParallel(paths, allErrors, p, 
+        _UntypedIndexingChildrenPredicate cp(&childrenPred);
+        _UntypedIndexingPayloadPredicate pp(&payloadPred);
+        _ComputePrimIndexesInParallel(paths, allErrors, cp, pp,
                                       mallocTag1, mallocTag2);
     }
 
@@ -365,13 +384,6 @@ public:
     /// \name Dependencies
     /// @{
 
-    /// Options for finding dependencies.
-    enum UsingSite {
-        UsingSiteOnly,              ///< Dependencies of site only
-        UsingSiteAndDescendants,    ///< Dependencies at and under site
-        UsingSiteAndDescendantPrims ///< Dependencies on prims at and under site
-    };
-
     /// Returns set of all layers used by this cache. 
 	PCP_API SdfLayerHandleSet GetUsedLayers() const;
 
@@ -382,48 +394,45 @@ public:
 	PCP_API const PcpLayerStackPtrVector&
     FindAllLayerStacksUsingLayer(const SdfLayerHandle& layer) const;
 
-    /// Returns the path of every \c PcpSite that uses the spec in \p layer at
-    /// \p path.  If \p usingSite is \c UsingSiteAndDescendantPrims then also
-    /// returns the path of every \c PcpSite that uses any prim descendant of
-    /// \p path.  If \p usingSite is UsingSiteAndDescendants then also returns
-    /// the path of every \c PcpSite that uses any descendant of \p path.
+    /// Returns dependencies on the given site of scene description,
+    /// as discovered by the cached index computations.
     ///
-    /// If \p layerOffsets is not \c NULL then it will be filled with the
-    /// layer offsets from the site of the spec to the resulting paths.
-    /// Each element in \p layerOffsets corresponds to the path at the same
-    /// index in the return value.
-    ///
-    /// If \p fallbackAncestor isn't empty then, if necessary, the paths
-    /// that use the spec in \p layer at \p path will be derived from the
-    /// paths that use the \p fallbackAncestor path. This is needed in
-    /// cases where dependencies on the spec have not yet been registered,
-    /// e.g. during change processing.
-    // 
-    // XXX: The fallbackAncestor behavior feels a bit out of place in this API. 
-    //      It was originally intended to be a private helper for PcpChanges,
-    //      but was moved here and made public because Csd's change processing
-    //      needed the same functionality. There are likely alternative methods
-    //      for getting Csd the information it needs; we should revisit this
-    //      API to see if we can clean this up.
-	PCP_API 
-    SdfPathVector GetPathsUsingSite(const SdfLayerHandle& layer,
-                                    const SdfPath& path,
-                                    UsingSite usingSite = UsingSiteOnly,
-                                    SdfLayerOffsetVector* layerOffsets = 0,
-                                    const SdfPath& fallbackAncestor =
-                                                            SdfPath()) const;
+    /// \param depMask specifies what classes of dependency to include;
+    ///        see PcpDependencyFlags for details
+    /// \param recurseOnSite includes incoming dependencies on
+    ///        children of sitePath
+    /// \param recurseOnIndex extends the result to include all PcpCache
+    ///        child indexes below discovered results
+    /// \param filterForExistingCachesOnly filters the results to only
+    ///        paths representing computed prim and property index caches;
+    ///        otherwise a recursively-expanded result can include
+    ///        un-computed paths that are expected to depend on the site
+    PCP_API
+    PcpDependencyVector
+    FindDependentPaths(const PcpLayerStackPtr& siteLayerStack,
+                       const SdfPath& sitePath,
+                       PcpDependencyFlags depMask,
+                       bool recurseOnSite,
+                       bool recurseOnIndex,
+                       bool filterForExistingCachesOnly) const;
 
-    /// Returns the path of every \c PcpSite that uses the site given by
-    /// \p layerStack and \p path, via a dependency specified by 
-    /// \p dependencyType. \p dependencyType is a bitwise-OR of
-    /// \c PcpDependencyType enum values. If \p recursive is \c true, 
-    /// then we return the path of every \c PcpSite that uses any descendant 
-    /// of \p path, via a dependency specified by \p dependencyType.
-	PCP_API 
-    SdfPathVector GetPathsUsingSite(const PcpLayerStackPtr& layerStack,
-                                    const SdfPath& path,
-                                    unsigned int dependencyType,
-                                    bool recursive = false) const;
+    /// Returns dependencies on the given site of scene description,
+    /// as discovered by the cached index computations.
+    ///
+    /// This variant takes a site layer rather than a layer stack.
+    /// It will check every layer stack using that layer, and apply
+    /// any relevant sublayer offsets to the map functions in the
+    /// returned PcpDependencyVector.
+    ///
+    /// See the other method for parameter details.
+    PCP_API
+    PcpDependencyVector
+    FindDependentPaths(const SdfLayerHandle& siteLayer,
+                       const SdfPath& sitePath,
+                       PcpDependencyFlags depMask,
+                       bool recurseOnSite,
+                       bool recurseOnIndex,
+                       bool filterForExistingCachesOnly) const;
 
     /// Returns \c true if an opinion for the site at \p localPcpSitePath
     /// in the cache's layer stack can be provided by an opinion in \p layer,
@@ -610,24 +619,16 @@ public:
     /// Prints various statistics about the data stored in this cache.
 	PCP_API void PrintStatistics() const;
 
-    /// Prints the known dependencies.
-	PCP_API void PrintDependencies() const;
-
-    /// Verify that the internal dependency data structures are consistent.
-	PCP_API void CheckDependencies() const;
-
     /// @}
 
 private:
     friend class PcpChanges;
     friend class Pcp_Statistics;
 
-    template <class Predicate>
+    template <class ChildPredicate>
     friend struct Pcp_ParallelIndexer;
 
-    struct _PathDebugInfo;
-
-    // Helper struct to type-erase a predicate for the duration of
+    // Helper struct to type-erase a children predicate for the duration of
     // ComputePrimIndexesInParallel.
     //
     // This lets us achieve two goals.  First, clients may pass any arbitrary
@@ -640,9 +641,9 @@ private:
     // typecast and predicate invocation, and pass that function pointer into
     // the implementation.  There is no heap allocation, no predicate copy, no
     // argument marshalling, etc.
-    struct _UntypedPredicate {
+    struct _UntypedIndexingChildrenPredicate {
         template <class Pred>
-        explicit _UntypedPredicate(const Pred *pred)
+        explicit _UntypedIndexingChildrenPredicate(const Pred *pred)
             : pred(pred), invoke(_Invoke<Pred>) {}
 
         inline bool operator()(const PcpPrimIndex &index) const {
@@ -657,22 +658,37 @@ private:
         bool (*invoke)(const void *, const PcpPrimIndex &);
     };
 
+    // See doc for _UntypedIndexingChildrenPredicate above.  This does the same
+    // for the payload inclusion predicate.
+    struct _UntypedIndexingPayloadPredicate {
+        template <class Pred>
+        explicit _UntypedIndexingPayloadPredicate(const Pred *pred)
+            : pred(pred), invoke(_Invoke<Pred>) {}
+
+        inline bool operator()(const SdfPath &path) const {
+            return invoke(pred, path);
+        }
+    private:
+        template <class Pred>
+        static bool _Invoke(const void *pred, const SdfPath &path) {
+            return (*static_cast<const Pred *>(pred))(path);
+        }
+        const void *pred;
+        bool (*invoke)(const void *, const SdfPath &);
+    };
+
     // Parallel indexing implementation.
-	PCP_API 
-    void _ComputePrimIndexesInParallel(const SdfPathVector &paths,
-                                       PcpErrorVector *allErrors,
-                                       _UntypedPredicate pred,
-                                       const char *mallocTag1,
-                                       const char *mallocTag2);
-
-    // Helper to add a computed prim index to dependency structures.
-	PCP_API 
-    void _AddIndexDependencies(const SdfPath &path,
-                               PcpPrimIndexOutputs *outputs);
+    PCP_API
+    void _ComputePrimIndexesInParallel(
+        const SdfPathVector &paths,
+        PcpErrorVector *allErrors,
+        _UntypedIndexingChildrenPredicate childrenPred,
+        _UntypedIndexingPayloadPredicate payloadPred,
+        const char *mallocTag1,
+        const char *mallocTag2);
 
 	PCP_API 
-	void _RemovePrimCache(const SdfPath& primPath, PcpLifeboat* lifeboat);
-	PCP_API 
+    void _RemovePrimCache(const SdfPath& primPath, PcpLifeboat* lifeboat);
     void _RemovePrimAndPropertyCaches(const SdfPath& root,
                                       PcpLifeboat* lifeboat);
 	PCP_API 
@@ -705,61 +721,6 @@ private:
                             const SdfLayerHandle& layer,
                             const SdfPath& path,
                             SdfLayerOffsetVector* layerOffsets) const;
-
-    // Implementation for GetPathsUsingSite; see documentation on public API
-    // for details. If \p nodes is not \c NULL, the node that introduced
-    // the dependency on \p layerStack and \p path will be added to it/
-    // If \p spookyDependencies is true this will use the spooky dependencies 
-    // instead of normal dependencies.
-	PCP_API 
-    SdfPathVector _GetPathsUsingPcpSite(const PcpLayerStackPtr& layerStack,
-                                       const SdfPath& path,
-                                       unsigned int dependencyType,
-                                       PcpNodeRefVector* sourceNodes = 0,
-                                       bool recursive = false,
-                                       bool spookyDependencies = false) const;
-
-    // Implementation for GetPathsUsingSite; see documentation on public API
-    // for details. If supplied, this function will also fill in \p debugSummary
-    // with useful debugging information.  If \p spookyDependencies is true
-    // this will use the spooky dependencies instead of normal dependencies.
-	PCP_API 
-    SdfPathVector _GetPathsUsingSite(const SdfLayerHandle& layer,
-                                     const SdfPath& path,
-                                     UsingSite usingSite = UsingSiteOnly,
-                                     SdfLayerOffsetVector* layerOffsets = 0,
-                                     PcpNodeRefVector* sourceNodes = 0,
-                                     const SdfPath& fallbackAncestor =
-                                        SdfPath(),
-                                     bool spookyDependencies = false,
-                                     std::string* debugSummary = 0) const;
-
-    // Returns the path of every prim in this cache that uses the prim given
-    // by \p layerStack and \p path. See documentation on _GetPathsUsingSite
-    // and _GetPathsUsingSiteFromDependencies for details about arguments.
-	PCP_API 
-    SdfPathVector _GetPathsUsingPrim(const SdfLayerHandle& layer,
-                                     const SdfPath& path,
-                                     PcpNodeRefVector* sourceNodes = 0,
-                                     UsingSite usingSite = UsingSiteOnly,
-                                     const SdfPath& fallbackAncestor =
-                                        SdfPath(),
-                                     bool spookyDependencies = false,
-                                     _PathDebugInfo* debugInfo = 0) const;
-
-    // Queries the Pcp_Dependency object for the path of every \c PcpSite
-    // that uses the prim in \p layer at \p path. Additional dependencies
-    // will be returned based on the value for \p use.  If \p sourceNodes
-    // is not \c NULL, then for each returned path the node that introduced
-    // the dependency on \p layer and \p path will be added to it.
-    // \p spookyDependencies is true this will use the spooky dependencies
-    // instead of normal dependencies.
-	PCP_API SdfPathVector 
-    _GetPathsUsingPrimFromDependencies(const SdfLayerHandle& layer,
-                                       const SdfPath& path,
-                                       PcpNodeRefVector* sourceNodes = 0,
-                                       UsingSite use = UsingSiteOnly,
-                                       bool spookyDependencies = false) const;
 
     // Returns true if any prim in this cache uses \p layer, false otherwise.
 	PCP_API bool _UsesLayer(const SdfLayerHandle& layer) const;
@@ -808,7 +769,7 @@ private:
     _LayerStackCache _layerStackCache;
     _PrimIndexCache  _primIndexCache;
     _PropertyIndexCache  _propertyIndexCache;
-    boost::scoped_ptr<Pcp_Dependencies> _dependencies;
+    boost::scoped_ptr<Pcp_Dependencies> _primDependencies;
 };
 
 #endif

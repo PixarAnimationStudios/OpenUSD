@@ -59,6 +59,11 @@ VtDictionary::VtDictionary(VtDictionary const& other) {
     if (other._dictMap)
         _dictMap.reset(new _Map(*other._dictMap));
 }
+
+VtDictionary::VtDictionary(std::initializer_list<value_type> init)
+    : _dictMap(new _Map(init.begin(), init.end()))
+{
+}
    
 VtDictionary& VtDictionary::operator=(VtDictionary const& other) {
     if (this != &other)

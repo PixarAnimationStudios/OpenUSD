@@ -30,7 +30,13 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/ptexTexture.h"
-#include "pxr/imaging/glf/uvTexture.h"
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((fallbackPtexPath, "PtExNoNsEnSe"))
+    ((fallbackUVPath, "UvNoNsEnSe"))
+);
 
 HdTextureResource::~HdTextureResource()
 {
@@ -44,6 +50,32 @@ HdTextureResource::ComputeHash(TfToken const &sourceFile)
 
     uint32_t hash = 0;
     std::string const &filename = sourceFile.GetString();
+    hash = ArchHash(filename.c_str(), filename.size(), hash);
+
+    return hash;
+}
+
+/* static */
+HdTextureResource::ID
+HdTextureResource::ComputeFallbackPtexHash()
+{
+    HD_TRACE_FUNCTION();
+
+    uint32_t hash = 0;
+    std::string const &filename = _tokens->fallbackPtexPath.GetString();
+    hash = ArchHash(filename.c_str(), filename.size(), hash);
+
+    return hash;
+}
+
+/* static */
+HdTextureResource::ID
+HdTextureResource::ComputeFallbackUVHash()
+{
+    HD_TRACE_FUNCTION();
+
+    uint32_t hash = 0;
+    std::string const &filename = _tokens->fallbackUVPath.GetString();
     hash = ArchHash(filename.c_str(), filename.size(), hash);
 
     return hash;
@@ -66,6 +98,8 @@ HdSimpleTextureResource::HdSimpleTextureResource(
         HdMinFilter minFilter, HdMagFilter magFilter)
             : _textureHandle(textureHandle)
             , _texture(textureHandle->GetTexture())
+            , _borderColor(0.0,0.0,0.0,0.0)
+            , _maxAnisotropy(16.0)
             , _sampler(0)
             , _isPtex(isPtex)
 {
@@ -76,11 +110,34 @@ HdSimpleTextureResource::HdSimpleTextureResource(
     // When we are not using Ptex we will use samplers,
     // that includes both, bindless textures and no-bindless textures
     if (not _isPtex) {
+        // It is possible the texture provides wrap modes itself, in that
+        // case we will use the wrap modes provided by the texture
+        GLenum fwrapS = HdConversions::GetWrap(wrapS);
+        GLenum fwrapT = HdConversions::GetWrap(wrapT);
+        VtDictionary txInfo = _texture->GetTextureInfo();
+        if (VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeS")) {
+            fwrapS = VtDictionaryGet<GLuint>(txInfo, "wrapModeS");
+        }
+        if (VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeT")) {
+            fwrapT = VtDictionaryGet<GLuint>(txInfo, "wrapModeT");
+        }
+
+        GLenum fminFilter = HdConversions::GetMinFilter(minFilter);
+        GLenum fmagFilter = HdConversions::GetMagFilter(magFilter);
+        if (not _texture->IsMinFilterSupported(fminFilter)) {
+            fminFilter = GL_NEAREST;
+        }
+        if (not _texture->IsMagFilterSupported(fmagFilter)) {
+            fmagFilter = GL_NEAREST;
+        }
+
         glGenSamplers(1, &_sampler);
-        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_S, HdConversions::GetWrap(wrapS));
-        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, HdConversions::GetWrap(wrapT));
-        glSamplerParameteri(_sampler, GL_TEXTURE_MIN_FILTER, HdConversions::GetMinFilter(minFilter));
-        glSamplerParameteri(_sampler, GL_TEXTURE_MAG_FILTER, HdConversions::GetMagFilter(magFilter));
+        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_S, fwrapS);
+        glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, fwrapT);
+        glSamplerParameteri(_sampler, GL_TEXTURE_MIN_FILTER, fminFilter);
+        glSamplerParameteri(_sampler, GL_TEXTURE_MAG_FILTER, fmagFilter);
+        glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, _maxAnisotropy);
+        glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR, _borderColor.GetArray());
     }
 
     bool bindlessTexture = 
@@ -125,7 +182,7 @@ GLuint HdSimpleTextureResource::GetTexelsTextureId()
         return TfDynamic_cast<GlfPtexTextureRefPtr>(_texture)->GetTexelsTextureName();
     }
 
-    return TfDynamic_cast<GlfUVTextureRefPtr>(_texture)->GetGlTextureName();
+    return TfDynamic_cast<GlfBaseTextureRefPtr>(_texture)->GetGlTextureName();
 }
 
 GLuint HdSimpleTextureResource::GetTexelsSamplerId() 

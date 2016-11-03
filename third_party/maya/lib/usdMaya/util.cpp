@@ -24,20 +24,28 @@
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
+#include "pxr/base/tf/hashmap.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
+#include <maya/MAnimUtil.h>
+#include <maya/MColor.h>
+#include <maya/MDGModifier.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnExpression.h>
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnSet.h>
 #include <maya/MItDependencyGraph.h>
-#include <maya/MAnimUtil.h>
-#include <maya/MDGModifier.h>
+#include <maya/MItMeshFaceVertex.h>
+#include <maya/MItMeshPolygon.h>
 #include <maya/MPlugArray.h>
 #include <maya/MTime.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnSet.h>
-#include <maya/MFnLambertShader.h>
-#include <maya/MItMeshPolygon.h>
+
+#include <unordered_map>
+
 
 // return seconds per frame
 double PxrUsdMayaUtil::spf()
@@ -435,47 +443,82 @@ std::string PxrUsdMayaUtil::SanitizeColorSetName(const std::string& name)
     return name.substr(namePos);
 }
 
-// Get array (constant or per face) of attached shaders
-// Pass numFaces==0 if retrieving shaders on a non polymesh
-static bool 
+// Get array (constant or per component) of attached shaders
+// Pass a non-zero value for numComponents when retrieving shaders on an object
+// that supports per-component shader assignment (e.g. faces of a polymesh).
+// In this case, shaderObjs will be the length of the number of shaders
+// assigned to the object. assignmentIndices will be the length of
+// numComponents, with values indexing into shaderObjs.
+// When numComponents is zero, shaderObjs will be of length 1 and
+// assignmentIndices will be empty.
+static
+bool
 _getAttachedMayaShaderObjects(
-        const MFnDagNode &node, const int numFaces, MObjectArray *shaderObjs) 
+        const MFnDagNode &node,
+        const unsigned int numComponents,
+        MObjectArray *shaderObjs,
+        VtArray<int> *assignmentIndices)
 {
     bool hasShader=false;
     MStatus status;
-    MObjectArray sgObjs;
+
+    // This structure maps shader object names to their indices in the
+    // shaderObjs array. We use this to make sure that we add each unique
+    // shader to shaderObjs only once.
+    TfHashMap<std::string, size_t, TfHash> shaderPlugsMap;
+
+    shaderObjs->clear();
+    assignmentIndices->clear();
+
+    MObjectArray setObjs;
     MObjectArray compObjs;
-    node.getConnectedSetsAndMembers(0, sgObjs, compObjs, true); // Assuming that not using instancing
-    // If we have one shader connected we return a single shader
-    // If there are multiple shaders, we return an per face array of connected shaders
-    if (sgObjs.length()==1 or numFaces==0) {
-        shaderObjs->setLength(1);
-    } else if (sgObjs.length()>1) {
-        shaderObjs->setLength(numFaces);
+    node.getConnectedSetsAndMembers(0, setObjs, compObjs, true); // Assuming that not using instancing
+
+    // If we have multiple components and either multiple sets or one set with
+    // only a subset of the object in it, we'll keep track of the assignments
+    // for all components in assignmentIndices. We initialize all of the
+    // assignments as unassigned using a value of -1.
+    if (numComponents > 1 and
+            (setObjs.length() > 1 or
+             (setObjs.length() == 1 and not compObjs[0].isNull()))) {
+        assignmentIndices->assign((size_t)numComponents, -1);
     }
-    for (unsigned int i=0; i < sgObjs.length(); ++i) {
+
+    for (unsigned int i=0; i < setObjs.length(); ++i) {
         // Get associated Set and Shading Group
-        MFnSet setFn( sgObjs[i], &status );
+        MFnSet setFn(setObjs[i], &status);
         MPlug seSurfaceShaderPlg = setFn.findPlug("surfaceShader", &status);
 
         // Find connection shader->shadingGroup
         MPlugArray plgCons;
         seSurfaceShaderPlg.connectedTo(plgCons, true, false, &status);
-        MObject shaderObj;
-        if ( plgCons.length() > 0 ) {
-            hasShader = true;
-            shaderObj = plgCons[0].node();
+        if (plgCons.length() == 0) {
+            continue;
         }
-        // If we have multiple shaders, we assign them per face
-        if (sgObjs.length()>1 and numFaces>0) {
-            MItMeshPolygon faceIt( node.dagPath(), compObjs[i] );
-            for ( faceIt.reset() ; !faceIt.isDone() ; faceIt.next() ){
-                (*shaderObjs)[faceIt.index()]=shaderObj;
+
+        hasShader = true;
+        MPlug shaderPlug = plgCons[0];
+        MObject shaderObj = shaderPlug.node();
+
+        auto inserted = shaderPlugsMap.insert(
+            std::pair<std::string, size_t>(shaderPlug.name().asChar(),
+                                           shaderObjs->length()));
+        if (inserted.second) {
+            shaderObjs->append(shaderObj);
+        }
+
+        // If we are tracking per-component assignments, mark all components of
+        // this set as assigned to this shader.
+        if (not assignmentIndices->empty()) {
+            size_t shaderIndex = inserted.first->second;
+
+            MItMeshPolygon faceIt(node.dagPath(), compObjs[i]);
+            for (faceIt.reset(); not faceIt.isDone(); faceIt.next()) {
+                (*assignmentIndices)[faceIt.index()] = shaderIndex;
             }
-        } else {
-            (*shaderObjs)[0]=shaderObj;
         }
     }
+
     return hasShader;
 }
 
@@ -546,97 +589,381 @@ _GetColorAndTransparencyFromDepNode(
 }
 
 static void 
-_getMayaShadersColor(const int numFaces, const MObjectArray &shaderObjs, 
-    VtArray<GfVec3f> *RGBData, TfToken *RGBInterp,
-    VtArray<float> *AlphaData, TfToken *AlphaInterp)
+_getMayaShadersColor(
+        const MObjectArray &shaderObjs, 
+        VtArray<GfVec3f> *RGBData,
+        VtArray<float> *AlphaData)
 {
     MStatus status;
-    bool constantRGB=true;
-    bool constantAlpha=true;
-    if (RGBData) RGBData->resize(shaderObjs.length());
-    if (AlphaData) AlphaData->resize(shaderObjs.length());
-    for (unsigned int i=0; i < shaderObjs.length(); ++i) {
+
+    if (shaderObjs.length() == 0) {
+        return;
+    }
+
+    if (RGBData) {
+        RGBData->resize(shaderObjs.length());
+    }
+    if (AlphaData) {
+        AlphaData->resize(shaderObjs.length());
+    }
+
+    for (unsigned int i = 0; i < shaderObjs.length(); ++i) {
         // Initialize RGB and Alpha to (1,1,1,1)
         if (RGBData) {
             (*RGBData)[i][0] = 1.0;
             (*RGBData)[i][1] = 1.0;
             (*RGBData)[i][2] = 1.0;
         }
-        if (AlphaData) { (*AlphaData)[i] = 1.0; }
-        if (!shaderObjs[i].isNull()) {
+        if (AlphaData) {
+            (*AlphaData)[i] = 1.0;
+        }
 
-            // first, we assume the shader is a lambert and try that API.  if
-            // not, we try our next best guess.
-            bool gotValues = _GetColorAndTransparencyFromLambert(
-                    shaderObjs[i],
-                    RGBData ?  &(*RGBData)[i] : NULL,
-                    AlphaData ?  &(*AlphaData)[i] : NULL)
-
-                or _GetColorAndTransparencyFromDepNode(
-                    shaderObjs[i],
-                    RGBData ?  &(*RGBData)[i] : NULL,
-                    AlphaData ?  &(*AlphaData)[i] : NULL);
-
-            if (gotValues) {
-                if (RGBData) {
-                    for (int j = 0; j<3; j++) {
-                        if (GfIsClose((*RGBData)[0][j], 
-                                        (*RGBData)[i][j], 1e-9)==false) {
-                            constantRGB=false;
-                        }
-                    }
-                }
-                if (AlphaData) {
-                    if (GfIsClose((*AlphaData)[0], (*AlphaData)[i], 1e-9)==false) {
-                        constantAlpha=false;
-                    }
-                }
-            }
-            else {
-                MGlobal::displayError("Failed to get shaders colors at index: " +
-                                        MString(TfStringPrintf("%d", i).c_str()) +
-                                        ". Unable to retrieve ShaderBaseColor.");
-            }
-        } else {
+        if (shaderObjs[i].isNull()) {
             MGlobal::displayError("Invalid Maya Shader Object at index: " +
-                                    MString(TfStringPrintf("%d", i).c_str()) +
-                                    ". Unable to retrieve ShaderBaseColor.");
+                                  MString(TfStringPrintf("%d", i).c_str()) +
+                                  ". Unable to retrieve ShaderBaseColor.");
+            continue;
+        }
+
+        // first, we assume the shader is a lambert and try that API.  if
+        // not, we try our next best guess.
+        bool gotValues = _GetColorAndTransparencyFromLambert(
+                shaderObjs[i],
+                RGBData ?  &(*RGBData)[i] : NULL,
+                AlphaData ?  &(*AlphaData)[i] : NULL)
+
+            or _GetColorAndTransparencyFromDepNode(
+                shaderObjs[i],
+                RGBData ?  &(*RGBData)[i] : NULL,
+                AlphaData ?  &(*AlphaData)[i] : NULL);
+
+        if (not gotValues) {
+            MGlobal::displayError("Failed to get shaders colors at index: " +
+                                  MString(TfStringPrintf("%d", i).c_str()) +
+                                  ". Unable to retrieve ShaderBaseColor.");
         }
     }
-    // If RGB or Alpha are constant, resize the array to 1
-    if (RGBData) {
-        if (constantRGB) {
-            RGBData->resize(1);
-            *RGBInterp=UsdGeomTokens->constant;
-        } else if (RGBData->size() == static_cast<size_t>(numFaces)) {
-            *RGBInterp=UsdGeomTokens->uniform;
+}
+
+static
+bool
+_GetLinearShaderColor(
+        const MFnDagNode& node,
+        const unsigned int numComponents,
+        VtArray<GfVec3f> *RGBData,
+        VtArray<float> *AlphaData,
+        TfToken *interpolation,
+        VtArray<int> *assignmentIndices)
+{
+    MObjectArray shaderObjs;
+    if (_getAttachedMayaShaderObjects(node, numComponents, &shaderObjs, assignmentIndices)) {
+        if (assignmentIndices and interpolation) {
+            if (assignmentIndices->empty()) {
+                *interpolation = UsdGeomTokens->constant;
+            } else {
+                *interpolation = UsdGeomTokens->uniform;
+            }
         }
+
+        _getMayaShadersColor(shaderObjs, RGBData, AlphaData);
+
+        return true;
     }
-    if (AlphaData) {
-        if (constantAlpha) {
-            AlphaData->resize(1);
-            *AlphaInterp=UsdGeomTokens->constant;
-        } else if (AlphaData->size() == static_cast<size_t>(numFaces)) {
-            *AlphaInterp=UsdGeomTokens->uniform;
-        }
-    }
+
+    return false;
 }
 
 bool
 PxrUsdMayaUtil::GetLinearShaderColor(
         const MFnDagNode& node,
-        const int numFaces,
-        VtArray<GfVec3f> *RGBData, TfToken *RGBInterp, 
-        VtArray<float> *AlphaData, TfToken *AlphaInterp)
+        VtArray<GfVec3f> *RGBData,
+        VtArray<float> *AlphaData,
+        TfToken *interpolation,
+        VtArray<int> *assignmentIndices)
 {
-    MObjectArray shaderObjs;
-    if (_getAttachedMayaShaderObjects(node, numFaces, &shaderObjs)) {
-        _getMayaShadersColor(numFaces, shaderObjs,
-                RGBData, RGBInterp,
-                AlphaData, AlphaInterp);
-        return true;
+    return _GetLinearShaderColor(node,
+                                 0,
+                                 RGBData,
+                                 AlphaData,
+                                 interpolation,
+                                 assignmentIndices);
+}
+
+bool
+PxrUsdMayaUtil::GetLinearShaderColor(
+        const MFnMesh& mesh,
+        VtArray<GfVec3f> *RGBData,
+        VtArray<float> *AlphaData,
+        TfToken *interpolation,
+        VtArray<int> *assignmentIndices)
+{
+    unsigned int numComponents = mesh.numPolygons();
+    return _GetLinearShaderColor(mesh,
+                                 numComponents,
+                                 RGBData,
+                                 AlphaData,
+                                 interpolation,
+                                 assignmentIndices);
+}
+
+template <typename T>
+struct ValueHash
+{
+    std::size_t operator() (const T& value) const {
+        return hash_value(value);
     }
-    return false;
+};
+
+template <typename T>
+struct ValuesEqual
+{
+    bool operator() (const T& a, const T& b) const {
+        return GfIsClose(a, b, 1e-9);
+    }
+};
+
+template <typename T>
+static
+void
+_MergeEquivalentIndexedValues(
+        VtArray<T>* valueData,
+        VtArray<int>* assignmentIndices)
+{
+    if (not valueData or not assignmentIndices) {
+        return;
+    }
+
+    const size_t numValues = valueData->size();
+    if (numValues == 0) {
+        return;
+    }
+
+    // We maintain a map of values to that value's index in our uniqueValues
+    // array.
+    std::unordered_map<T, size_t, ValueHash<T>, ValuesEqual<T> > valuesMap;
+    VtArray<T> uniqueValues;
+    VtArray<int> uniqueIndices;
+
+    for (size_t i = 0; i < assignmentIndices->size(); ++i) {
+        int index = (*assignmentIndices)[i];
+
+        if (index < 0 or static_cast<size_t>(index) >= numValues) {
+            // This is an unassigned or otherwise unknown index, so just keep it.
+            uniqueIndices.push_back(index);
+            continue;
+        }
+
+        const T value = (*valueData)[index];
+
+        int uniqueIndex = -1;
+
+        auto inserted = valuesMap.insert(
+            std::pair<T, size_t>(value, uniqueValues.size()));
+        if (inserted.second) {
+            // This is a new value, so add it to the array.
+            uniqueValues.push_back(value);
+            uniqueIndex = uniqueValues.size() - 1;
+        } else {
+            // This is an existing value, so re-use the original's index.
+            uniqueIndex = inserted.first->second;
+        }
+
+        uniqueIndices.push_back(uniqueIndex);
+    }
+
+    // If we reduced the number of values by merging, copy the results back.
+    if (uniqueValues.size() < numValues) {
+        (*valueData) = uniqueValues;
+        (*assignmentIndices) = uniqueIndices;
+    }
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<float>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<float>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<GfVec2f>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<GfVec2f>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<GfVec3f>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<GfVec3f>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::MergeEquivalentIndexedValues(
+        VtArray<GfVec4f>* valueData,
+        VtArray<int>* assignmentIndices) {
+    return _MergeEquivalentIndexedValues<GfVec4f>(valueData, assignmentIndices);
+}
+
+void
+PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(
+        const MFnMesh& mesh,
+        TfToken *interpolation,
+        VtArray<int>* assignmentIndices)
+{
+    if (not interpolation or
+            not assignmentIndices or
+            assignmentIndices->size() == 0) {
+        return;
+    }
+
+    // Use -2 as the initial "un-stored" sentinel value, since -1 is the
+    // default unauthored value index for primvars.
+    int numPolygons = mesh.numPolygons();
+    VtArray<int> uniformAssignments;
+    uniformAssignments.assign((size_t)numPolygons, -2);
+
+    int numVertices = mesh.numVertices();
+    VtArray<int> vertexAssignments;
+    vertexAssignments.assign((size_t)numVertices, -2);
+
+    // We assume that the data is constant/uniform/vertex until we can
+    // prove otherwise that two components have differing values.
+    bool isConstant = true;
+    bool isUniform = true;
+    bool isVertex = true;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        int faceIndex = itFV.faceId();
+        int vertexIndex = itFV.vertId();
+
+        int assignedIndex = (*assignmentIndices)[fvi];
+
+        if (isConstant) {
+            if (assignedIndex != (*assignmentIndices)[0]) {
+                isConstant = false;
+            }
+        }
+
+        if (isUniform) {
+            if (uniformAssignments[faceIndex] < -1) {
+                // No value for this face yet, so store one.
+                uniformAssignments[faceIndex] = assignedIndex;
+            } else if (assignedIndex != uniformAssignments[faceIndex]) {
+                isUniform = false;
+            }
+        }
+
+        if (isVertex) {
+            if (vertexAssignments[vertexIndex] < -1) {
+                // No value for this vertex yet, so store one.
+                vertexAssignments[vertexIndex] = assignedIndex;
+            } else if (assignedIndex != vertexAssignments[vertexIndex]) {
+                isVertex = false;
+            }
+        }
+
+        if (not isConstant and not isUniform and not isVertex) {
+            // No compression will be possible, so stop trying.
+            break;
+        }
+    }
+
+    if (isConstant) {
+        assignmentIndices->resize(1);
+        *interpolation = UsdGeomTokens->constant;
+    } else if (isUniform) {
+        *assignmentIndices = uniformAssignments;
+        *interpolation = UsdGeomTokens->uniform;
+    } else if(isVertex) {
+        *assignmentIndices = vertexAssignments;
+        *interpolation = UsdGeomTokens->vertex;
+    } else {
+        *interpolation = UsdGeomTokens->faceVarying;
+    }
+}
+
+bool
+PxrUsdMayaUtil::AddUnassignedUVIfNeeded(
+        VtArray<GfVec2f>* uvData,
+        VtArray<int>* assignmentIndices,
+        int* unassignedValueIndex,
+        const GfVec2f& defaultUV)
+{
+    if (not assignmentIndices or assignmentIndices->empty()) {
+        return false;
+    }
+
+    *unassignedValueIndex = -1;
+
+    for (size_t i = 0; i < assignmentIndices->size(); ++i) {
+        if ((*assignmentIndices)[i] >= 0) {
+            // This component has an assignment, so skip it.
+            continue;
+        }
+
+        // We found an unassigned index. Add the unassigned value to uvData
+        // if we haven't already.
+        if (*unassignedValueIndex < 0) {
+            if (uvData) {
+                uvData->push_back(defaultUV);
+            }
+            *unassignedValueIndex = uvData->size() - 1;
+        }
+
+        // Assign the component the unassigned value index.
+        (*assignmentIndices)[i] = *unassignedValueIndex;
+    }
+
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::AddUnassignedColorAndAlphaIfNeeded(
+        VtArray<GfVec3f>* RGBData,
+        VtArray<float>* AlphaData,
+        VtArray<int>* assignmentIndices,
+        int* unassignedValueIndex,
+        const GfVec3f& defaultRGB,
+        const float defaultAlpha)
+{
+    if (not assignmentIndices or assignmentIndices->empty()) {
+        return false;
+    }
+
+    if (RGBData and AlphaData and (RGBData->size() != AlphaData->size())) {
+        TF_CODING_ERROR("Unequal sizes for color (%zu) and opacity (%zu)",
+                        RGBData->size(), AlphaData->size());
+    }
+
+    *unassignedValueIndex = -1;
+
+    for (size_t i=0; i < assignmentIndices->size(); ++i) {
+        if ((*assignmentIndices)[i] >= 0) {
+            // This component has an assignment, so skip it.
+            continue;
+        }
+
+        // We found an unassigned index. Add unassigned values to RGBData and
+        // AlphaData if we haven't already.
+        if (*unassignedValueIndex < 0) {
+            if (RGBData) {
+                RGBData->push_back(defaultRGB);
+            }
+            if (AlphaData) {
+                AlphaData->push_back(defaultAlpha);
+            }
+            *unassignedValueIndex = RGBData->size() - 1;
+        }
+
+        // Assign the component the unassigned value index.
+        (*assignmentIndices)[i] = *unassignedValueIndex;
+    }
+
+    return true;
 }
 
 MPlug
@@ -795,5 +1122,46 @@ PxrUsdMayaUtil::setPlugValue(
 
     CHECK_MSTATUS_AND_RETURN(status, false);
 
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::createStringAttribute(
+        MFnDependencyNode& depNode,
+        const MString& attr) {
+    MStatus status = MStatus::kFailure;
+    MFnTypedAttribute typedAttrFn;
+    MObject attrObj = typedAttrFn.create(
+            attr,
+            attr,
+            MFnData::kString,
+            MObject::kNullObj,
+            &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
+    status = depNode.addAttribute(attrObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::createNumericAttribute(
+        MFnDependencyNode& depNode,
+        const MString& attr,
+        MFnNumericData::Type type) {
+    MStatus status = MStatus::kFailure;
+    MFnNumericAttribute numericAttrFn;
+    MObject attrObj = numericAttrFn.create(
+            attr,
+            attr,
+            type,
+            0,
+            &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
+    status = depNode.addAttribute(attrObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
     return true;
 }

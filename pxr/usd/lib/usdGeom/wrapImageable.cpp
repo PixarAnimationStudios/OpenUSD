@@ -103,6 +103,11 @@ void wrapUsdGeomImageable()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        
+        .def("GetProxyPrimRel",
+             &This::GetProxyPrimRel)
+        .def("CreateProxyPrimRel",
+             &This::CreateProxyPrimRel)
     ;
 
     _CustomWrapCode(cls);
@@ -123,6 +128,23 @@ void wrapUsdGeomImageable()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/pyObjWrapper.h"
+
+static TfPyObjWrapper
+_ComputeProxyPrim(UsdGeomImageable const &self)
+{
+    UsdPrim  renderPrim, proxyPrim;
+    
+    if (self){
+        proxyPrim = self.ComputeProxyPrim(&renderPrim);
+        if (proxyPrim){
+            return TfPyObjWrapper(boost::python::make_tuple(proxyPrim, 
+                                                            renderPrim));
+        }
+    }
+    return TfPyObjWrapper();
+}
+
 WRAP_CUSTOM {
     _class
         .def("CreatePrimvar", &UsdGeomImageable::CreatePrimvar,
@@ -141,6 +163,18 @@ WRAP_CUSTOM {
         .def("ComputeVisibility", &UsdGeomImageable::ComputeVisibility,
              arg("time")=UsdTimeCode::Default())
         .def("ComputePurpose", &UsdGeomImageable::ComputePurpose)
+        .def("ComputeProxyPrim", &_ComputeProxyPrim,
+            "Returns None if neither this prim nor any of its ancestors "
+            "has a valid renderProxy prim.  Otherwise, returns a tuple of "
+            "(proxyPrim, renderPrimWithAuthoredProxyPrimRel)")
+        .def("SetProxyPrim", 
+             (bool (UsdGeomImageable::*)(const UsdPrim &) const)
+             &UsdGeomImageable::SetProxyPrim, 
+             arg("proxy"))
+        .def("SetProxyPrim", 
+             (bool (UsdGeomImageable::*)(const UsdSchemaBase &) const)
+             &UsdGeomImageable::SetProxyPrim, 
+             arg("proxy"))
         .def("MakeVisible", &UsdGeomImageable::MakeVisible, 
             arg("time")=UsdTimeCode::Default())
         .def("MakeInvisible", &UsdGeomImageable::MakeInvisible, 

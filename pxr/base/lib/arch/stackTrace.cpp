@@ -45,6 +45,7 @@
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/error.h"
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/symbols.h"
@@ -1049,6 +1050,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
     }
 
     if (fd != -1) {
+#ifdef ARCH_OS_WINDOWS
 		FILE* fout = ArchFdOpen(fd, "w");
         fprintf(stderr, "The stack can be found in %s:%s\n"
                 "--------------------------------------------------------------"
@@ -1063,6 +1065,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
                                           NULL : sessionLog.c_str(),
                                           false /* crashing hard? */);
         }
+#endif
     }
     else {
 	/* we couldn't open the tmp file, so write the stack trace to stderr */
@@ -1079,7 +1082,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
 #if defined(ARCH_OS_DARWIN)
 
 /*
- * This function will use ::_LogStackTraceForPid(const char*), which uses
+ * This function will use _LogStackTraceForPid(const char*), which uses
  * the stacktrace script, to log the stack to a file.  Then it reads the lines
  * back in and puts them into an output iterator.
  */
@@ -1091,7 +1094,7 @@ _LogStackTraceToOutputIterator(OutputIterator oi, size_t maxDepth, bool addEndl)
     char logfile[1024];
     _GetStackTraceName(logfile, sizeof(logfile));
 
-    ::_LogStackTraceForPid(logfile);
+    _LogStackTraceForPid(logfile);
 
     ifstream inFile(logfile);
     string line;
@@ -1159,7 +1162,7 @@ ArchPrintStackTrace(ostream& oss,
 
 #if defined(ARCH_OS_DARWIN)
 
-    ::_LogStackTraceToOutputIterator(ostream_iterator<string>(oss), numeric_limits<size_t>::max(), true);
+    _LogStackTraceToOutputIterator(ostream_iterator<string>(oss), numeric_limits<size_t>::max(), true);
 
 #else
 

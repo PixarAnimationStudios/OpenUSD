@@ -24,6 +24,7 @@
 #ifndef HD_LIGHTING_SHADER_H
 #define HD_LIGHTING_SHADER_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/shader.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -38,7 +39,9 @@ typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
 ///
 class HdLightingShader : public HdShader {
 public:
+    HDLIB_API
     HdLightingShader();
+    HDLIB_API
     virtual ~HdLightingShader();
 
     /// Sets camera state.

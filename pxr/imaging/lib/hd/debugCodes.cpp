@@ -75,6 +75,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SAFE_MODE, "Enable additional security checks");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SPRIM_ADDED, "Report when sprims are added");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SPRIM_REMOVED, "Report when sprims are removed")
+;
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SHADER_ADDED, "Report when shaders are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SHADER_REMOVED, "Report when shaders are removed");
 
@@ -83,4 +86,5 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TEXTURE_ADDED, "Report when textures are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TEXTURE_REMOVED, "Report when textures are removed");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_VARYING_STATE, "Reports state tracking of varying state");
 }

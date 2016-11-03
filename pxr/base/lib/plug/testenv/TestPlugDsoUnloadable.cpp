@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/plug/testPlugBase.h"
+#include "pxr/base/tf/tf.h"
 
 #if !defined(ARCH_OS_WINDOWS)
 

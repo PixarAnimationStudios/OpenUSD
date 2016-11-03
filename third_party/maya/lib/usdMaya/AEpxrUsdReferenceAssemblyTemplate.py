@@ -111,7 +111,7 @@ def variantSets_Replace(nodeAttr, new):
     if new == True:
         cmds.frameLayout(frameLayoutName, label='VariantSets', collapse=False)
     else:
-        cmds.setParent(frameLayoutName);
+        cmds.setParent(frameLayoutName)
 
     # Remove existing children of layout
     children = cmds.frameLayout(frameLayoutName, q=True, childArray=True)
@@ -131,8 +131,8 @@ def variantSets_Replace(nodeAttr, new):
             for regVarSet in UsdUtils.GetRegisteredVariantSets()]
 
     if usdPrim:
-        variantSets = usdPrim.GetVariantSets();
-        variantSetNames = variantSets.GetNames();
+        variantSets = usdPrim.GetVariantSets()
+        variantSetNames = variantSets.GetNames()
         for variantSetName in variantSetNames:
 
             if regVarSetNames and (variantSetName not in regVarSetNames):

@@ -29,5 +29,4 @@ void
 wrapTypes()
 {
     TfPyWrapEnum<PcpArcType>();
-    TfPyWrapEnum<PcpDependencyType>();
 }

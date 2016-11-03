@@ -28,6 +28,7 @@
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -52,8 +53,10 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
+#include <boost/container/flat_map.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <tbb/spin_rw_mutex.h>
+#include <map>
 #include <string>
 
 TF_DECLARE_WEAK_PTRS(UsdImagingDelegate);
@@ -62,8 +65,11 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingPrimAdapter;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
+class UsdImagingDefaultShaderAdapter;
 
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+
+typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr ;
 
 /// \class UsdImagingDelegate
 ///
@@ -75,7 +81,10 @@ class UsdImagingDelegate : public HdSceneDelegate, public TfWeakBase {
 public:
 
     typedef TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> RigidXformOverridesMap;
-    typedef TfHashMap<TfToken, int /*purposeMask*/, TfToken::HashFunctor> CollectionMap;
+    typedef boost::container::flat_map<SdfPath, int /*purposeMask*/>
+        CollectionMembershipMap;
+    typedef TfHashMap<TfToken, CollectionMembershipMap, TfToken::HashFunctor>
+        CollectionMap;
 
     USDIMAGING_API
     UsdImagingDelegate();
@@ -241,6 +250,15 @@ public:
     USDIMAGING_API
     void SetInCollection(TfToken const &collectionName, int purposeMask);
 
+    /// Sets the membership of user-defined \p collectionName as determined
+    /// by \p membershipMap, a SdfPathMap to purposeMask (int) from rprim
+    /// memership (or not) can be determined.
+    ///
+    /// IsInCollection responds based on this setting.
+    void TransferCollectionMembershipMap(
+        TfToken const &collectionName,
+        CollectionMembershipMap &&membershipMap);
+
     /// Sets the collection map
     /// (discard previously set existing map by SetInCollection)
     USDIMAGING_API
@@ -318,6 +336,8 @@ public:
 
     // Shader Support
     USDIMAGING_API
+    virtual bool GetSurfaceShaderIsTimeVarying(SdfPath const& id);
+    USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     USDIMAGING_API
     virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &id);
@@ -353,13 +373,19 @@ public:
     /// is an instanceIndex of the instancer for the given instanceIndex of
     /// the prototype.
     ///
+    /// If \p instanceContext is not NULL, it is populated with the list of 
+    /// instance roots that must be traversed to get to the rprim. The last prim
+    /// in this list is always the forwarded rprim.
+    /// 
     /// ALL_INSTANCES may be returned if the protoPrimPath isn't instanced.
     ///
     static constexpr int ALL_INSTANCES = -1;
     USDIMAGING_API
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
-                                            int *absoluteInstanceIndex);
+                                            int *absoluteInstanceIndex,
+                                            SdfPath * rprimPath=NULL,
+                                            SdfPathVector *instanceContext=NULL);
 
 private:
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PathToPathMap;
@@ -432,6 +458,9 @@ private:
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
+    // UsdImagingShaderAdapter needs access to _GetPrim.  We should
+    // consider making it public.
+    friend class UsdImagingShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
         if (not (0 <= level and level <= 8)) {
@@ -553,6 +582,15 @@ private:
     typedef SdfPathTable<_AdapterSharedPtr> _PathAdapterMap;
     _PathAdapterMap _pathAdapterMap;
 
+    typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
+
+    // This method looks up a shader adapter based on the \p shaderId.
+    // Currently, it's hard coded to return _shaderAdapter but could be
+    // extended.
+    //
+    // This will never return a nullptr.  
+    _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
+
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
     tbb::spin_rw_mutex _indexToUsdPathMapMutex;
@@ -622,11 +660,13 @@ private:
     SdfPathVector _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
-    UsdImaging_LookBindingCache _lookBindingCache;
+    UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
 
     // Collection
     CollectionMap _collectionMap;
+
+    UsdImagingShaderAdapterSharedPtr _shaderAdapter;
 };
 
 /// \class UsdImagingIndexProxy

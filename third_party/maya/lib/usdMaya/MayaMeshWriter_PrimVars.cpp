@@ -23,100 +23,130 @@
 //
 #include "usdMaya/MayaMeshWriter.h"
 
+#include "usdMaya/util.h"
+
+#include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/transform.h"
-#include "pxr/base/gf/gamma.h"
-
 #include "pxr/usd/usdGeom/mesh.h"
 
-#include <maya/MVector.h>
+#include <maya/MColor.h>
 #include <maya/MColorArray.h>
 #include <maya/MFloatArray.h>
-#include <maya/MPlugArray.h>
-#include <maya/MUintArray.h>
-#include <maya/MColor.h>
-#include <maya/MPoint.h>
-#include <maya/MFnLambertShader.h>
 #include <maya/MFnMesh.h>
-#include <maya/MFnSet.h>
-#include <maya/MItMeshPolygon.h>
 #include <maya/MItMeshFaceVertex.h>
 
-// This function tries to compress facevarying data to uniform, vertex or constant
-// Loop over all elements and invalidate any of the 3 conditions
-// Copy uniform and vertex values into a temporary array
-// At the end resize to 1 or copy those temporary array into the resulting data
-template <class VAL>
-static void compressFVPrimvar(MFnMesh& m, VtArray<VAL> *data, TfToken *interpolation)
+bool
+MayaMeshWriter::_GetMeshUVSetData(
+        const MFnMesh& mesh,
+        const MString& uvSetName,
+        VtArray<GfVec2f>* uvArray,
+        TfToken* interpolation,
+        VtArray<int>* assignmentIndices)
 {
-    std::vector<bool> valueOnVertex;
-    std::vector<bool> valueOnFace;
-    VtArray<VAL> vertexValue;
-    VtArray<VAL> faceValue;
-    
-    bool isConstant=true;
-    bool isUniform=true;
-    bool isVertex=true;
-    int numVertices = m.numVertices();
-    int numPolygons = m.numPolygons();
-    valueOnVertex.resize(numVertices, false);
-    valueOnFace.resize(numPolygons, false);
-    vertexValue.resize(numVertices);
-    faceValue.resize(numPolygons);
-    
-    MItMeshFaceVertex itFV( m.object() );
-    int fvi=0;
-    for( itFV.reset(); !itFV.isDone(); itFV.next() ) {
-        int faceId=itFV.faceId();
-        int vertId=itFV.vertId();
-        // Validate if constant by checking against the first element
-        if (isConstant && fvi>0) {
-            if (not GfIsClose((*data)[0], (*data)[fvi], 1e-9)) {
-                isConstant=false;
-            }
-        }
-        // Validate if uniform by storing the first value on a given face
-        // and the if already stored, check if being a different value
-        // on the same face
-        if (isUniform) {
-            if (valueOnFace[faceId]) {
-                if (not GfIsClose(faceValue[faceId], 
-                                            (*data)[fvi], 1e-9)) {
-                    isUniform=false;
-                }
-            } else {
-                valueOnFace[faceId]=true;
-                faceValue[faceId]=(*data)[fvi];
-            }
-        }
-        // Validate if vertex by storing the first value on a given vertex
-        // and the if already stored, check if being a different value
-        // on the same vertex
-        if (isVertex) {
-            if (valueOnVertex[vertId]) {
-                if (not GfIsClose(vertexValue[vertId], 
-                                            (*data)[fvi], 1e-9)) {
-                    isVertex=false;
-                }
-            } else {
-                valueOnVertex[vertId]=true;
-                vertexValue[vertId]=(*data)[fvi];
-            }
-        }
-        fvi++;
+    MStatus status;
+
+    // Sanity check first to make sure this UV set even has assigned values
+    // before we attempt to do anything with the data.
+    MIntArray uvCounts, uvIds;
+    status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
+    if (status != MS::kSuccess) {
+        return false;
     }
-    
-    if (isConstant) {
-        data->resize(1);
-        *interpolation=UsdGeomTokens->constant;
-    } else if (isUniform) {
-        *data=faceValue;
-        *interpolation=UsdGeomTokens->uniform;
-    } else if(isVertex) {
-        *data=vertexValue;
-        *interpolation=UsdGeomTokens->vertex;
-    } else {
-        *interpolation=UsdGeomTokens->faceVarying;
+    if (uvCounts.length() == 0 or uvIds.length() == 0) {
+        return false;
+    }
+
+    // We'll populate the assignment indices for every face vertex, but we'll
+    // only push values into the data if the face vertex has a value. All face
+    // vertices are initially unassigned/unauthored.
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    uvArray->clear();
+    assignmentIndices->assign((size_t)numFaceVertices, -1);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        if (not itFV.hasUVs(uvSetName)) {
+            // No UVs for this faceVertex, so leave it unassigned.
+            continue;
+        }
+
+        float2 uv;
+        itFV.getUV(uv, &uvSetName);
+
+        GfVec2f value(uv[0], uv[1]);
+        uvArray->push_back(value);
+        (*assignmentIndices)[fvi] = uvArray->size() - 1;
+    }
+
+    PxrUsdMayaUtil::MergeEquivalentIndexedValues(uvArray,
+                                                 assignmentIndices);
+    PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+                                                      interpolation,
+                                                      assignmentIndices);
+
+    return true;
+}
+
+// This function condenses distinct indices that point to the same color values
+// (the combination of RGB AND Alpha) to all point to the same index for that
+// value. This will potentially shrink the data arrays.
+static
+void
+_MergeEquivalentColorSetValues(
+        VtArray<GfVec3f>* colorSetRGBData,
+        VtArray<float>* colorSetAlphaData,
+        VtArray<int>* colorSetAssignmentIndices)
+{
+    if (not colorSetRGBData or not colorSetAlphaData or not colorSetAssignmentIndices) {
+        return;
+    }
+
+    const size_t numValues = colorSetRGBData->size();
+    if (numValues == 0) {
+        return;
+    }
+
+    if (colorSetAlphaData->size() != numValues) {
+        TF_CODING_ERROR("Unequal sizes for color (%zu) and alpha (%zu)",
+                        colorSetRGBData->size(), colorSetAlphaData->size());
+    }
+
+    // We first combine the separate color and alpha arrays into one GfVec4f
+    // array.
+    VtArray<GfVec4f> colorsWithAlphasData(numValues);
+    for (size_t i = 0; i < numValues; ++i) {
+        const GfVec3f color = (*colorSetRGBData)[i];
+        const float alpha = (*colorSetAlphaData)[i];
+
+        colorsWithAlphasData[i][0] = color[0];
+        colorsWithAlphasData[i][1] = color[1];
+        colorsWithAlphasData[i][2] = color[2];
+        colorsWithAlphasData[i][3] = alpha;
+    }
+
+    VtArray<int> mergedIndices(*colorSetAssignmentIndices);
+    PxrUsdMayaUtil::MergeEquivalentIndexedValues(&colorsWithAlphasData,
+                                                 &mergedIndices);
+
+    // If we reduced the number of values by merging, copy the results back,
+    // separating the values back out into colors and alphas.
+    const size_t newSize = colorsWithAlphasData.size();
+    if (newSize < numValues) {
+        colorSetRGBData->resize(newSize);
+        colorSetAlphaData->resize(newSize);
+
+        for (size_t i = 0; i < newSize; ++i) {
+            const GfVec4f colorWithAlpha = colorsWithAlphasData[i];
+
+            (*colorSetRGBData)[i][0] = colorWithAlpha[0];
+            (*colorSetRGBData)[i][1] = colorWithAlpha[1];
+            (*colorSetRGBData)[i][2] = colorWithAlpha[2];
+            (*colorSetAlphaData)[i] = colorWithAlpha[3];
+        }
+        (*colorSetAssignmentIndices) = mergedIndices;
     }
 }
 
@@ -124,108 +154,188 @@ static inline
 GfVec3f
 _LinearColorFromColorSet(
         const MColor& mayaColor,
-        bool isDisplayColor)
+        bool shouldConvertToLinear)
 {
     // we assume all color sets except displayColor are in linear space.
     // if we got a color from colorSetData and we're a displayColor, we
     // need to convert it to linear.
     GfVec3f c(mayaColor[0], mayaColor[1], mayaColor[2]);
-    if (isDisplayColor) {
+    if (shouldConvertToLinear) {
         return GfConvertDisplayToLinear(c);
     }
     return c;
 }
 
-// Collect values from the colorset
-// If gathering for displayColor, set the unpainted values to
-// the underlying shaders values, else set to 1,1,1,1
-// Values are gathered per "facevertex" but then the data
-// is compressed to constant, uniform and vertex if possible
-// RGB and Alpha data are compressed independently
-// RGBA data is compressed as a single Vec4f array
-// NOTE: We could only fill RGB and Alpha and then
-// do a merge, compress and unmerge if RGBA is needed
-// but for code simplicity we always fill the 3 arrays
+/// Collect values from the color set named \p colorSet.
+/// If \p isDisplayColor is true and this color set represents displayColor,
+/// the unauthored/unpainted values in the color set will be filled in using
+/// the shader values in \p shadersRGBData and \p shadersAlphaData if available.
+/// Values are gathered per face vertex, but then the data is compressed to
+/// vertex, uniform, or constant interpolation if possible.
+/// Unauthored/unpainted values will be given the index -1.
 bool MayaMeshWriter::_GetMeshColorSetData(
-            MFnMesh& m,
-            MString colorSet,
-            bool isDisplayColor,
-            const VtArray<GfVec3f>& shadersRGBData,
-            const VtArray<float>& shadersAlphaData,
-            VtArray<GfVec3f> *RGBData, TfToken *RGBInterp,
-            VtArray<GfVec4f> *RGBAData, TfToken *RGBAInterp,
-            VtArray<float> *AlphaData, TfToken *AlphaInterp,
-            MFnMesh::MColorRepresentation *colorSetRep,
-            bool *clamped)
+        MFnMesh& mesh,
+        const MString& colorSet,
+        bool isDisplayColor,
+        const VtArray<GfVec3f>& shadersRGBData,
+        const VtArray<float>& shadersAlphaData,
+        const VtArray<int>& shadersAssignmentIndices,
+        VtArray<GfVec3f>* colorSetRGBData,
+        VtArray<float>* colorSetAlphaData,
+        TfToken* interpolation,
+        VtArray<int>* colorSetAssignmentIndices,
+        MFnMesh::MColorRepresentation* colorSetRep,
+        bool* clamped)
 {
-    // If there are no colors, return immediately as failure
-    if (m.numColors(colorSet)==0) {
+    // If there are no colors, return immediately as failure.
+    if (mesh.numColors(colorSet) == 0) {
         return false;
     }
-    
-    // Get ColorSet representation and clamping
-    *colorSetRep = m.getColorRepresentation(colorSet);
-    *clamped = m.isColorClamped(colorSet);
-            
+
     MColorArray colorSetData;
-    const MColor unsetColor(-FLT_MAX,-FLT_MAX,-FLT_MAX,-FLT_MAX);
-    if (m.getFaceVertexColors (colorSetData, &colorSet, &unsetColor)
-        == MS::kFailure) {
+    const MColor unsetColor(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+    if (mesh.getFaceVertexColors(colorSetData, &colorSet, &unsetColor)
+            == MS::kFailure) {
         return false;
     }
 
-    // Resize the returning containers with FaceVertex amounts
-	RGBData->resize(colorSetData.length());
-	AlphaData->resize(colorSetData.length());
-	RGBAData->resize(colorSetData.length());
+    if (colorSetData.length() == 0) {
+        return false;
+    }
 
-    // Loop over every face vertex to populate colorArray
-    MItMeshFaceVertex itFV( m.object() );
-    int fvi=0;
-    for( itFV.reset(); !itFV.isDone(); itFV.next() ) {
-        // Initialize RGBData and AlphaData to (1,1,1,1) and then
-        // if isDisplayColor from  shader values (constant or uniform)
-        GfVec3f RGBValue=GfVec3f(1.0,1.0,1.0);
-        float AlphaValue=1;
+    // Get the color set representation and clamping.
+    *colorSetRep = mesh.getColorRepresentation(colorSet);
+    *clamped = mesh.isColorClamped(colorSet);
 
-        // NOTE, shadersRGBData is already linear
-        if (isDisplayColor && shadersRGBData.size() == static_cast<size_t>(m.numPolygons())) {
-            RGBValue=shadersRGBData[itFV.faceId()];
-        } else if (isDisplayColor && shadersRGBData.size()==1) {
-            RGBValue=shadersRGBData[0];
-        }
-        if (isDisplayColor && shadersAlphaData.size() == static_cast<size_t>(m.numPolygons())) {
-            AlphaValue=shadersAlphaData[itFV.faceId()];
-        } else if (isDisplayColor && shadersAlphaData.size()==1) {
-            AlphaValue=shadersAlphaData[0];
-        }
-        // Assign retrieved color set values
-        // unauthored color set values are ==unsetColor
-        // for those we use the previously initialized values
-        if (colorSetData[fvi]!=unsetColor) {
-            if ((*colorSetRep) == MFnMesh::kAlpha) {
-                AlphaValue=colorSetData[fvi][3];
-            } else if ((*colorSetRep) == MFnMesh::kRGB) {
-                RGBValue=_LinearColorFromColorSet(colorSetData[fvi], isDisplayColor);
-                AlphaValue=1;
-            } else if ((*colorSetRep) == MFnMesh::kRGBA) {
-                RGBValue=_LinearColorFromColorSet(colorSetData[fvi], isDisplayColor);
-                AlphaValue=colorSetData[fvi][3];
+    // We'll populate the assignment indices for every face vertex, but we'll
+    // only push values into the data if the face vertex has a value. All face
+    // vertices are initially unassigned/unauthored.
+    colorSetRGBData->clear();
+    colorSetAlphaData->clear();
+    colorSetAssignmentIndices->assign((size_t)colorSetData.length(), -1);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    // Loop over every face vertex to populate the value arrays.
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+        // If this is a displayColor color set, we may need to fallback on the
+        // bound shader colors/alphas for this face in some cases. In
+        // particular, if the color set is alpha-only, we fallback on the
+        // shader values for the color. If the color set is RGB-only, we
+        // fallback on the shader values for alpha only. If there's no authored
+        // color for this face vertex, we use both the color AND alpha values
+        // from the shader.
+        bool useShaderColorFallback = false;
+        bool useShaderAlphaFallback = false;
+        if (isDisplayColor) {
+            if (colorSetData[fvi] == unsetColor) {
+                useShaderColorFallback = true;
+                useShaderAlphaFallback = true;
+            } else if (*colorSetRep == MFnMesh::kAlpha) {
+                // The color set does not provide color, so fallback on shaders.
+                useShaderColorFallback = true;
+            } else if (*colorSetRep == MFnMesh::kRGB) {
+                // The color set does not provide alpha, so fallback on shaders.
+                useShaderAlphaFallback = true;
             }
         }
-        (*RGBData)[fvi]=RGBValue;
-        (*AlphaData)[fvi]=AlphaValue;
-        (*RGBAData)[fvi]=GfVec4f(RGBValue[0], RGBValue[1],
-                                RGBValue[2], AlphaValue);
-        fvi++;
+
+        // If we're exporting displayColor and we use the value from the color
+        // set, we need to convert it to linear.
+        bool convertDisplayColorToLinear = isDisplayColor;
+
+        // Shader values for the mesh could be constant
+        // (shadersAssignmentIndices is empty) or uniform.
+        int faceIndex = itFV.faceId();
+        if (useShaderColorFallback) {
+            // There was no color value in the color set to use, so we use the
+            // shader color, or the default color if there is no shader color.
+            // This color will already be in linear space, so don't convert it
+            // again.
+            convertDisplayColorToLinear = false;
+
+            int valueIndex = -1;
+            if (shadersAssignmentIndices.empty()) {
+                if (shadersRGBData.size() == 1) {
+                    valueIndex = 0;
+                }
+            } else if (faceIndex >= 0 and 
+                static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
+
+                int tmpIndex = shadersAssignmentIndices[faceIndex];
+                if (tmpIndex >= 0 and
+                    static_cast<size_t>(tmpIndex) < shadersRGBData.size()) {
+                    valueIndex = tmpIndex;
+                }
+            }
+            if (valueIndex >= 0) {
+                colorSetData[fvi][0] = shadersRGBData[valueIndex][0];
+                colorSetData[fvi][1] = shadersRGBData[valueIndex][1];
+                colorSetData[fvi][2] = shadersRGBData[valueIndex][2];
+            } else {
+                // No shader color to fallback on. Use the default shader color.
+                colorSetData[fvi][0] = _ShaderDefaultRGB[0];
+                colorSetData[fvi][1] = _ShaderDefaultRGB[1];
+                colorSetData[fvi][2] = _ShaderDefaultRGB[2];
+            }
+        }
+        if (useShaderAlphaFallback) {
+            int valueIndex = -1;
+            if (shadersAssignmentIndices.empty()) {
+                if (shadersAlphaData.size() == 1) {
+                    valueIndex = 0;
+                }
+            } else if (faceIndex >= 0 and 
+                static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
+                int tmpIndex = shadersAssignmentIndices[faceIndex];
+                if (tmpIndex >= 0 and 
+                    static_cast<size_t>(tmpIndex) < shadersAlphaData.size()) {
+                    valueIndex = tmpIndex;
+                }
+            }
+            if (valueIndex >= 0) {
+                colorSetData[fvi][3] = shadersAlphaData[valueIndex];
+            } else {
+                // No shader alpha to fallback on. Use the default shader alpha.
+                colorSetData[fvi][3] = _ShaderDefaultAlpha;
+            }
+        }
+
+        // If we have a color/alpha value, add it to the data to be returned.
+        if (colorSetData[fvi] != unsetColor) {
+            GfVec3f rgbValue = _ColorSetDefaultRGB;
+            float alphaValue = _ColorSetDefaultAlpha;
+
+            if (useShaderColorFallback or
+                    (*colorSetRep == MFnMesh::kRGB) or
+                    (*colorSetRep == MFnMesh::kRGBA)) {
+                rgbValue = _LinearColorFromColorSet(colorSetData[fvi],
+                                                    convertDisplayColorToLinear);
+            }
+            if (useShaderAlphaFallback or
+                    (*colorSetRep == MFnMesh::kAlpha) or
+                    (*colorSetRep == MFnMesh::kRGBA)) {
+                alphaValue = colorSetData[fvi][3];
+            }
+
+            colorSetRGBData->push_back(rgbValue);
+            colorSetAlphaData->push_back(alphaValue);
+            (*colorSetAssignmentIndices)[fvi] = colorSetRGBData->size() - 1;
+        }
     }
-    compressFVPrimvar(m, RGBData, RGBInterp);
-    compressFVPrimvar(m, AlphaData, AlphaInterp);
-    compressFVPrimvar(m, RGBAData, RGBAInterp);
+
+    _MergeEquivalentColorSetValues(colorSetRGBData,
+                                   colorSetAlphaData,
+                                   colorSetAssignmentIndices);
+    PxrUsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+                                                      interpolation,
+                                                      colorSetAssignmentIndices);
+
     return true;
 }
 
-// We assumed that primvars in USD are always unclamped so we add the 
+// We assumed that primvars in USD are always unclamped so we add the
 // clamped custom data ONLY when clamping is set to true in the colorset
 static void SetPVCustomData(UsdAttribute obj, bool clamped)
 {
@@ -236,345 +346,223 @@ static void SetPVCustomData(UsdAttribute obj, bool clamped)
 
 
 bool MayaMeshWriter::_createAlphaPrimVar(
-    UsdGeomGprim &primSchema, const TfToken name,
-    const VtArray<float>& data, TfToken interpolation,
-    bool clamped)
+        UsdGeomGprim &primSchema,
+        const TfToken& name,
+        const VtArray<float>& data,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex,
+        bool clamped)
 {
-    unsigned int numValues=data.size();
-    if (numValues==0) return false;
-    TfToken interp=interpolation;
-    if (numValues==1 && interp==UsdGeomTokens->constant) {
-        interp=TfToken();
+    unsigned int numValues = data.size();
+    if (numValues == 0) {
+        return false;
     }
-	UsdGeomPrimvar colorSet = primSchema.CreatePrimvar(name, 
-                                             SdfValueTypeNames->FloatArray, 
-                                             interp );
-	colorSet.Set(data);
-    SetPVCustomData(colorSet.GetAttr(), clamped);
+
+    TfToken interp = interpolation;
+    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->FloatArray,
+                                 interp);
+
+    primVar.Set(data);
+
+    if (not assignmentIndices.empty()) {
+        primVar.SetIndices(assignmentIndices);
+        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+           primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
+        }
+    }
+
+    SetPVCustomData(primVar.GetAttr(), clamped);
+
     return true;
 }
 
 bool MayaMeshWriter::_createRGBPrimVar(
-    UsdGeomGprim &primSchema, const TfToken name,
-    const VtArray<GfVec3f>& data, TfToken interpolation,
-    bool clamped)
+        UsdGeomGprim &primSchema,
+        const TfToken& name,
+        const VtArray<GfVec3f>& data,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex,
+        bool clamped)
 {
-    unsigned int numValues=data.size();
-    if (numValues==0) return false;
-    TfToken interp=interpolation;
-    if (numValues==1 && interp==UsdGeomTokens->constant) {
-        interp=TfToken();
+    unsigned int numValues = data.size();
+    if (numValues == 0) {
+        return false;
     }
-	UsdGeomPrimvar colorSet = primSchema.CreatePrimvar(name, 
-                                             SdfValueTypeNames->Color3fArray, 
-                                             interp );
-	colorSet.Set(data);
-    SetPVCustomData(colorSet.GetAttr(), clamped);
+
+    TfToken interp = interpolation;
+    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->Color3fArray,
+                                 interp);
+
+    primVar.Set(data);
+
+    if (not assignmentIndices.empty()) {
+        primVar.SetIndices(assignmentIndices);
+        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+           primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
+        }
+    }
+
+    SetPVCustomData(primVar.GetAttr(), clamped);
+
     return true;
 }
 
 bool MayaMeshWriter::_createRGBAPrimVar(
-    UsdGeomGprim &primSchema, const TfToken name,
-    const VtArray<GfVec4f>& RGBAData, TfToken RGBAInterp,
-    bool clamped)
+        UsdGeomGprim &primSchema,
+        const TfToken& name,
+        const VtArray<GfVec3f>& rgbData,
+        const VtArray<float>& alphaData,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex,
+        bool clamped)
 {
-    unsigned int numValues=RGBAData.size();
-    if (numValues==0) return false;
-    TfToken interp=RGBAInterp;
-    if (numValues==1 && interp==UsdGeomTokens->constant) {
-        interp=TfToken();
+    unsigned int numValues = rgbData.size();
+    if (numValues == 0 or numValues != alphaData.size()) {
+        return false;
     }
-	UsdGeomPrimvar colorSet = primSchema.CreatePrimvar(name, 
-                                             SdfValueTypeNames->Float4Array, 
-                                             interp );
-	colorSet.Set(RGBAData);
-    SetPVCustomData(colorSet.GetAttr(), clamped);
+
+    TfToken interp = interpolation;
+    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->Color4fArray,
+                                 interp);
+
+    VtArray<GfVec4f> rgbaData(numValues);
+    for (size_t i = 0; i < rgbaData.size(); ++i) {
+        rgbaData[i] = GfVec4f(rgbData[i][0], rgbData[i][1], rgbData[i][2],
+                              alphaData[i]);
+    }
+
+    primVar.Set(rgbaData);
+
+    if (not assignmentIndices.empty()) {
+        primVar.SetIndices(assignmentIndices);
+        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+           primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
+        }
+    }
+
+    SetPVCustomData(primVar.GetAttr(), clamped);
+
     return true;
 }
 
-bool MayaMeshWriter::_setDisplayPrimVar(
-    UsdGeomGprim &primSchema,
-    MFnMesh::MColorRepresentation colorRep,
-    VtArray<GfVec3f> RGBData, TfToken RGBInterp,
-    VtArray<float> AlphaData, TfToken AlphaInterp,
-    bool clamped, bool authored)
+bool MayaMeshWriter::_createUVPrimVar(
+        UsdGeomGprim &primSchema,
+        const TfToken& name,
+        const VtArray<GfVec2f>& data,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex)
 {
+    unsigned int numValues = data.size();
+    if (numValues == 0) {
+        return false;
+    }
 
+    TfToken interp = interpolation;
+    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->Float2Array,
+                                 interp);
+
+    primVar.Set(data);
+
+    if (not assignmentIndices.empty()) {
+        primVar.SetIndices(assignmentIndices);
+        if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
+           primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
+        }
+    }
+
+    return true;
+}
+
+bool MayaMeshWriter::_addDisplayPrimvars(
+        UsdGeomGprim &primSchema,
+        const MFnMesh::MColorRepresentation colorRep,
+        const VtArray<GfVec3f>& RGBData,
+        const VtArray<float>& AlphaData,
+        const TfToken& interpolation,
+        const VtArray<int>& assignmentIndices,
+        const int unassignedValueIndex,
+        const bool clamped,
+        const bool authored)
+{
+    // If we already have an authored value, don't try to write a new one.
     UsdAttribute colorAttr = primSchema.GetDisplayColorAttr();
     if (not colorAttr.HasAuthoredValueOpinion() and not RGBData.empty()) {
         UsdGeomPrimvar displayColor = primSchema.GetDisplayColorPrimvar();
-        if (RGBInterp != displayColor.GetInterpolation())
-            displayColor.SetInterpolation(RGBInterp);
+        if (interpolation != displayColor.GetInterpolation()) {
+            displayColor.SetInterpolation(interpolation);
+        }
         displayColor.Set(RGBData);
-        bool authRGB=authored;
-        if (colorRep == MFnMesh::kAlpha) { authRGB=false; }
+        if (not assignmentIndices.empty()) {
+            displayColor.SetIndices(assignmentIndices);
+            if (unassignedValueIndex != displayColor.GetUnauthoredValuesIndex()) {
+               displayColor.SetUnauthoredValuesIndex(unassignedValueIndex);
+            }
+        }
+        bool authRGB = authored;
+        if (colorRep == MFnMesh::kAlpha) {
+            authRGB = false;
+        }
         if (authRGB) {
             colorAttr.SetCustomDataByKey(TfToken("Authored"), VtValue(authRGB));
             SetPVCustomData(colorAttr, clamped);
         }
     }
-    
+
     UsdAttribute alphaAttr = primSchema.GetDisplayOpacityAttr();
-
-    // if we already have an authored value, don't try to write a new one.
-    if (not alphaAttr.HasAuthoredValueOpinion()) {
-
-        if (not AlphaData.empty()) {
-            // we consider a single alpha value that is 1.0 to be the "default"
-            // value.  We only want to write values that are not the "default".
-            bool hasDefaultAlpha = AlphaData.size() == 1 and GfIsClose(AlphaData[0], 1.0, 1e-9);
-            if (not hasDefaultAlpha) {
-                UsdGeomPrimvar displayOpacity = primSchema.GetDisplayOpacityPrimvar();
-                if (AlphaInterp != displayOpacity.GetInterpolation())
-                    displayOpacity.SetInterpolation(AlphaInterp);
-                displayOpacity.Set(AlphaData);
-                bool authAlpha=authored;
-                if (colorRep == MFnMesh::kRGB) { authAlpha=false; }
-                if (authAlpha) {
-                    alphaAttr.SetCustomDataByKey(TfToken("Authored"), VtValue(authAlpha));
-                    SetPVCustomData(alphaAttr, clamped);
+    if (not alphaAttr.HasAuthoredValueOpinion() and not AlphaData.empty()) {
+        // we consider a single alpha value that is 1.0 to be the "default"
+        // value.  We only want to write values that are not the "default".
+        bool hasDefaultAlpha = AlphaData.size() == 1 and GfIsClose(AlphaData[0], 1.0, 1e-9);
+        if (not hasDefaultAlpha) {
+            UsdGeomPrimvar displayOpacity = primSchema.GetDisplayOpacityPrimvar();
+            if (interpolation != displayOpacity.GetInterpolation()) {
+                displayOpacity.SetInterpolation(interpolation);
+            }
+            displayOpacity.Set(AlphaData);
+            if (not assignmentIndices.empty()) {
+                displayOpacity.SetIndices(assignmentIndices);
+                if (unassignedValueIndex != displayOpacity.GetUnauthoredValuesIndex()) {
+                   displayOpacity.SetUnauthoredValuesIndex(unassignedValueIndex);
                 }
             }
-        }
-    }
-    return true;
-}
-
-inline bool _IsClose(double a, double b)
-{
-    // This matches the results produced by numpy.allclose
-    static const double aTol(1.0e-8);
-    static const double rTol(1.0e-5);
-    return fabs(a - b) < (aTol + rTol * fabs(b));
-}
-
-
-inline bool _HasZeros(const MIntArray& v)
-{
-    for (size_t i = 0; i < v.length(); i++) {
-        if (v[i] == 0)
-            return true;
-    }
-
-    return false;
-}
-
-inline void
-_CopyUVs(const MFloatArray& uArray, const MFloatArray& vArray,
-         VtArray<GfVec2f> *uvArray)
-{
-    uvArray->clear();
-    uvArray->resize(uArray.length());
-    for (size_t i = 0; i < uvArray->size(); i++) {
-        (*uvArray)[i] = GfVec2f(uArray[i], vArray[i]);
-    }
-}
-
-/* static */
-MStatus
-MayaMeshWriter::_FullUVsFromSparse(
-    const MFnMesh& m,
-    const MIntArray& uvCounts, const MIntArray& uvIds,
-    const MFloatArray& uArray, const MFloatArray& vArray,
-    VtArray<GfVec2f> *uvArray
-)
-{
-    MIntArray faceVertexCounts, faceVertexIndices;
-    MStatus status = m.getVertices(faceVertexCounts, faceVertexIndices);
-    if (!status)
-        return status;
-
-    // Construct a cumulative index array. Each element in this array
-    // is the starting index into the vertex index and uv index arrays.
-    // We use it later to map face indices to uv indices.
-    //
-    std::vector<size_t> cumIndices(faceVertexCounts.length());
-    size_t cumIndex = 0;
-    for (size_t i = 0; i < cumIndices.size(); i++) {
-        cumIndices[i] = cumIndex;
-        cumIndex += faceVertexCounts[i];
-    }
-
-    // Our "full" u and v arrays will each have the same number of elements as
-    // faceVertexIndices. Make new arrays, and fill them with a very large
-    // negative value (very large positive values are poisonous to Mari). The
-    // idea is that texture look-ups on faces with no uvs will trigger wrap
-    // behavior, which can be set to "black", if necessary.
-    //
-    const int numUVs = faceVertexIndices.length();
-    MFloatArray uArrayFull(numUVs, -1.0e30);
-    MFloatArray vArrayFull(numUVs, -1.0e30);
-
-    // Now poke in the u and v values that actually exist
-    // k assumes values in the range [0, uvIds.length())
-    //
-    int k = 0;
-    for (size_t i = 0; i < uvCounts.length(); i++) {
-        if (uvCounts[i] == 0)
-            continue;
-
-        const int cumIndex = cumIndices[i];
-        for (int j = cumIndex; j < cumIndex + uvCounts[i]; j++, k++) {
-            const int uvId = uvIds[k];
-            uArrayFull[j] = uArray[uvId];
-            vArrayFull[j] = vArray[uvId];
-        }
-    }
-
-    if (k == 0) {
-        // No uvs assigned at all ... clear the result
-        uvArray->clear();
-        return MS::kFailure;
-    } else {
-        _CopyUVs(uArrayFull, vArrayFull, uvArray);
-        return MS::kSuccess;
-    }
-}
-
-static inline bool _AllSame(const MFloatArray& v)
-{
-    const float& firstVal = v[0];
-    for (size_t i = 1; i < v.length(); i++) {
-        if (!_IsClose(v[i], firstVal))
-            return false;
-    }
-
-    return true;
-}
-
-/* static */
-MStatus
-MayaMeshWriter::_CompressUVs(const MFnMesh& m,
-                             const MIntArray& uvIds,
-                             const MFloatArray& uArray, const MFloatArray& vArray,
-                             VtArray<GfVec2f> *uvArray,
-                             TfToken *interpolation)
-{
-    MIntArray faceVertexCounts, faceVertexIndices;
-    MStatus status = m.getVertices(faceVertexCounts, faceVertexIndices);
-    if (!status)
-        return status;
-
-    // All uvs are natively stored and accessed as "faceVarying" in Maya.
-    // But we'd like to save space when possible, so we examine the u and
-    // values to see if they can't be represented as "vertex" or "constant" instead.
-    //
-    // Our strategy is to visit all vertices of all faces, some of which might
-    // be the same physical vertex. We look up the u and v values for each
-    // vertex, and check to see if they are the same as they were for the last
-    // visit to that vertex. If they are not, we know the uvs can't be "vertex",
-    // and thus not "constant" either.
-    //
-    // Even if the uv set turns out to be "faceVarying" after all, we have to
-    // fill in the face-varying arrays, because we can't assume that "uArray"
-    // and "vArray" have as many values as there are vertices (we may still
-    // have uv sharing).
-    //
-    // Note that the Maya API guarantees that vertex indices are always in the
-    // range [0, numVertices). This algorithm depends on that being the case.
-    //
-    MFloatArray uArrayFV(faceVertexIndices.length());
-    MFloatArray vArrayFV(faceVertexIndices.length());
-
-    MFloatArray uArrayVertex(m.numVertices(), 0);
-    MFloatArray vArrayVertex(m.numVertices(), 0);
-    std::vector<bool> visited(m.numVertices(), false);
-
-    // Start off with "vertex" -- we may decide it's
-    // "faceVarying" in the middle of the loop.
-    //
-    *interpolation = UsdGeomTokens->vertex;
-
-    int k = 0;
-    for (size_t i = 0; i < faceVertexCounts.length(); i++) {
-        for (int j = 0; j < faceVertexCounts[i]; j++, k++) {
-            const int vertexIndex = faceVertexIndices[k];
-            const float u = uArray[uvIds[k]];
-            const float v = vArray[uvIds[k]];
-            uArrayFV[k] = u;
-            vArrayFV[k] = v;
-            if (*interpolation == UsdGeomTokens->vertex) {
-                if (visited[vertexIndex]) {
-                    // We've been here before -- check to see if
-                    // the u and v are the same
-                    if (!_IsClose(uArrayVertex[vertexIndex], u) ||
-                        !_IsClose(vArrayVertex[vertexIndex], v)) {
-                        // Alas, it's not "vertex". Switch the detail
-                        // to "faceVarying" and clear the arrays. Henceforth,
-                        // only fill uArrayFV and vArrayFV.
-                        //
-                        *interpolation = UsdGeomTokens->faceVarying;
-                        uArrayVertex.clear();
-                        vArrayVertex.clear();
-                    }
-                } else {
-                    // Never been here .. mark visited, and
-                    // store u and v.
-                    visited[vertexIndex] = true;
-                    uArrayVertex[vertexIndex] = u;
-                    vArrayVertex[vertexIndex] = v;
-                }
+            bool authAlpha = authored;
+            if (colorRep == MFnMesh::kRGB) {
+                authAlpha = false;
+            }
+            if (authAlpha) {
+                alphaAttr.SetCustomDataByKey(TfToken("Authored"), VtValue(authAlpha));
+                SetPVCustomData(alphaAttr, clamped);
             }
         }
     }
 
-    if (*interpolation == UsdGeomTokens->vertex) {
-        // Check to see if all the (u, v) values are the same. If they are, we can
-        // declare the detail ""constant"", and fill in just one value.
-        //
-        if (_AllSame(uArrayVertex) && _AllSame(vArrayVertex)) {
-            *interpolation = UsdGeomTokens->constant;
-            uvArray->clear();
-            uvArray->push_back(GfVec2f(uArrayVertex[0], vArrayVertex[0]));
-        } else {
-            // Nope, still "vertex"
-            _CopyUVs(uArrayVertex, vArrayVertex, uvArray);
-        }
-    } else {
-        // "faceVarying"
-        _CopyUVs(uArrayFV, vArrayFV, uvArray);
-    }
-
-    return MS::kSuccess;
-}
-
-
-
-MStatus
-MayaMeshWriter::_GetMeshUVSetData(MFnMesh& m, MString uvSetName,
-                                  VtArray<GfVec2f> *uvArray,
-                                  TfToken *interpolation)
-{
-    MStatus status;
-
-    MIntArray uvCounts, uvIds;
-    status = m.getAssignedUVs(uvCounts, uvIds, &uvSetName);
-    if (!status)
-        return status;
-
-
-    MFloatArray uArray, vArray;
-    status = m.getUVs(uArray, vArray, &uvSetName);
-    if (!status)
-        return status;
-
-    // Sanity check the data before we attempt to do anything with it.
-    if (uvCounts.length() == 0 or uvIds.length() == 0 or
-        uArray.length() == 0 or vArray.length() == 0) {
-        return MS::kFailure;
-    }
-
-    // Check for zeros in "uvCounts" -- if there are any,
-    // the uvs are sparse.
-    const bool isSparse = _HasZeros(uvCounts);
-
-    if (!isSparse) {
-        return _CompressUVs(m, uvIds, uArray, vArray,
-                            uvArray, interpolation);
-    } else {
-        *interpolation = UsdGeomTokens->faceVarying;
-        return _FullUVsFromSparse(m, uvCounts, uvIds, uArray, vArray,
-                                  uvArray);
-    }
-
+    return true;
 }

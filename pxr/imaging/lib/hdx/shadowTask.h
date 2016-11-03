@@ -41,7 +41,6 @@ class GlfSimpleLight;
 
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdSimpleLightingShader> HdSimpleLightingShaderSharedPtr;
 typedef std::vector<HdRenderPassStateSharedPtr> HdRenderPassStateSharedPtrVector;
 typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
@@ -66,7 +65,6 @@ private:
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
     int _collectionVersion;
-    bool _enableShadows;
 
     /// Polygon Offset State
     bool _depthBiasEnable;
@@ -96,7 +94,6 @@ struct HdxShadowTaskParams : public HdTaskParams
         , viewport(0.0)
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
         , lightExcludePaths()
-        , enableShadows(false)
         {}
 
     // RenderPassState
@@ -121,7 +118,6 @@ struct HdxShadowTaskParams : public HdTaskParams
     // Lights/Shadows specific paramenters
     SdfPathVector lightIncludePaths;
     SdfPathVector lightExcludePaths;
-    bool enableShadows;
 };
 
 // VtValue requirements

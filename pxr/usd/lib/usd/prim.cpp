@@ -42,8 +42,6 @@
 #include <algorithm>
 #include <vector>
 
-#include <boost/foreach.hpp>
-
 UsdPrim
 UsdPrim::GetChild(const TfToken &name) const
 {
@@ -93,13 +91,13 @@ UsdPrim::_MakeProperties(const TfTokenVector &names) const
     std::vector<UsdProperty> props;
     UsdStage *stage = _GetStage();
     props.reserve(names.size());
-    TF_FOR_ALL(propName, names) {
+    for (const auto& propName : names) {
         SdfSpecType specType =
-            stage->_GetDefiningSpecType(*this, *propName);
+            stage->_GetDefiningSpecType(*this, propName);
         if (specType == SdfSpecTypeAttribute) {
-            props.push_back(GetAttribute(*propName));
+            props.push_back(GetAttribute(propName));
         } else if (TF_VERIFY(specType == SdfSpecTypeRelationship)) {
-            props.push_back(GetRelationship(*propName));
+            props.push_back(GetRelationship(propName));
         }
     }
 
@@ -239,13 +237,13 @@ UsdPrim::_GetPropertiesInNamespace(const std::string &namespaces,
 
     // Prune out non-matches before we sort
     size_t insertionPt = 0;
-    TF_FOR_ALL(name, names) {
-        const std::string &s = name->GetString();
+    for (const auto& name : names) {
+        const std::string &s = name.GetString();
         if (s.size() > terminator and
             TfStringStartsWith(s, namespaces) and
             s[terminator] == delim) {
 
-            names[insertionPt++] = *name;
+            names[insertionPt++] = name;
         }
     }
     names.resize(insertionPt);
@@ -327,9 +325,10 @@ UsdPrim::_GetAttributes(bool onlyAuthored) const
     // attribute names, however this vector is likely short lived and worth the
     // trade off of repeated reallocation.
     attrs.reserve(names.size());
-    TF_FOR_ALL(propName, names) {
-        if (UsdAttribute attr = GetAttribute(*propName))
+    for (const auto& propName : names) {
+        if (UsdAttribute attr = GetAttribute(propName)) {
             attrs.push_back(attr);
+        }
     }
 
     return attrs;
@@ -387,9 +386,10 @@ UsdPrim::_GetRelationships(bool onlyAuthored) const
     // relationship names, however this vector is likely short lived and worth
     // the trade off of repeated reallocation.
     rels.reserve(names.size());
-    TF_FOR_ALL(propName, names) {
-        if (UsdRelationship rel = GetRelationship(*propName))
+    for (const auto& propName : names) {
+        if (UsdRelationship rel = GetRelationship(propName)) {
             rels.push_back(rel);
+        }
     }
 
     return rels;
@@ -481,7 +481,7 @@ UsdPrim::HasAuthoredReferences() const
 bool
 UsdPrim::HasPayload() const
 {
-    return GetPrimIndex().HasPayload();
+    return _Prim()->HasPayload();
 }
 
 bool

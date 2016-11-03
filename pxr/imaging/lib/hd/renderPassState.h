@@ -41,8 +41,8 @@ typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
 typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassShader>
                 HdRenderPassShaderSharedPtr;
-typedef boost::shared_ptr<class Hd_DefaultLightingShader>
-                Hd_DefaultLightingShaderSharedPtr;
+typedef boost::shared_ptr<class Hd_FallbackLightingShader>
+                Hd_FallbackLightingShaderSharedPtr;
 typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
 
 /// \class HdRenderPassState
@@ -137,11 +137,11 @@ public:
         return _overrideShader;
     }
 
-    /// returns composed shader vectors. surfaceShader may be overriden.
+    /// returns shaders (lighting/renderpass)
 	HDLIB_API
-    HdShaderSharedPtrVector GetShaders(
-        HdShaderSharedPtr const &surfaceShader) const;
+    HdShaderSharedPtrVector GetShaders() const;
 
+	HDLIB_API
     GfMatrix4d const &GetCullMatrix() const {
         return _cullMatrix;
     }
@@ -182,7 +182,7 @@ private:
     // Shader Objects
     // ---------------------------------------------------------------------- //
     HdRenderPassShaderSharedPtr _renderPassShader;
-    Hd_DefaultLightingShaderSharedPtr _defaultLightingShader;
+    Hd_FallbackLightingShaderSharedPtr _fallbackLightingShader;
     HdLightingShaderSharedPtr _lightingShader;
     HdShaderSharedPtr _overrideShader;
 

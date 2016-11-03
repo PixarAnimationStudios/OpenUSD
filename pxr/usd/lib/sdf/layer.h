@@ -502,12 +502,19 @@ public:
     bool HasField(const SdfAbstractDataSpecId& id, const TfToken &name, 
         T* value) const
     {
-        if (not value)
+        if (not value) {
             return HasField(id, name, static_cast<VtValue *>(NULL));
+        }
 
         SdfAbstractDataTypedValue<T> outValue(value);
-        return HasField(
+        const bool hasValue = HasField(
             id, name, static_cast<SdfAbstractDataValue *>(&outValue));
+
+        if (std::is_same<T, SdfValueBlock>::value) {
+            return hasValue and outValue.isValueBlock;
+        }
+
+        return hasValue and (not outValue.isValueBlock);
     }
 
     /// Return whether a value exists for the given \a id and \a fieldName and
@@ -1271,8 +1278,14 @@ public:
         }
 
         SdfAbstractDataTypedValue<T> outValue(data);
-        return QueryTimeSample(
+        const bool hasValue = QueryTimeSample(
             id, time, static_cast<SdfAbstractDataValue *>(&outValue));
+
+        if (std::is_same<T, SdfValueBlock>::value) {
+            return hasValue and outValue.isValueBlock;
+        }
+
+        return hasValue and (not outValue.isValueBlock);
     }
 
     SDF_API
@@ -1623,6 +1636,13 @@ private:
 
     // Modification timestamp of the backing file asset when last read.
     mutable double _assetModificationTime;
+
+    // Mutable revision number for cache invalidation.
+    mutable size_t _mutedLayersRevisionCache;
+
+    // Cache of whether or not this layer is muted.  Only valid if
+    // _mutedLayersRevisionCache is up-to-date with the global revision number.
+    mutable bool _isMutedCache;
 
     // Layer permission bits.
     bool _permissionToEdit;

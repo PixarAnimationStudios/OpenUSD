@@ -34,6 +34,7 @@
 #include "pxr/base/gf/traits.h"
 
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include <algorithm>
 #include <numeric>

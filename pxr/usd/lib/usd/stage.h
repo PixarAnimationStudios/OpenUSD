@@ -427,7 +427,7 @@ public:
     /// unload set were processed first followed by the load set.
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
-    /// loadSet followed by UsdStage::Load for each item in the unloadSet,
+    /// unloadSet followed by UsdStage::Load for each item in the loadSet,
     /// however this method is more efficient as all operations are committed
     /// in a single batch.
     ///
@@ -1106,13 +1106,26 @@ public:
     /// @}
 
 private:
+    struct _IncludeNewlyDiscoveredPayloadsPredicate;
+
+    enum _IncludePayloadsRule {
+        _IncludeAllDiscoveredPayloads,
+        _IncludeNoDiscoveredPayloads,
+        _IncludeNewPayloadsIfAncestorWasIncluded
+    };
+
     // --------------------------------------------------------------------- //
     // Stage Construction & Initialization
     // --------------------------------------------------------------------- //
 
     UsdStage(const SdfLayerRefPtr& rootLayer,
              const SdfLayerRefPtr& sessionLayer,
-             const ArResolverContext& pathResolverContext);
+             const ArResolverContext& pathResolverContext,
+             InitialLoadSet load);
+
+    // Helper for Open() overloads -- searches and publishes to bound caches.
+    template <class... Args>
+    static UsdStageRefPtr _OpenImpl(InitialLoadSet load, Args const &... args);
 
     // Common ref ptr initialization, called by public, static constructors.
     //
@@ -1128,14 +1141,16 @@ private:
     // --------------------------------------------------------------------- //
     // Spec Existence & Definition Helpers
     // --------------------------------------------------------------------- //
+    using _MasterToFlattenedPathMap 
+        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+
     void _CopyMetadata(const UsdObject &source,
                        const SdfSpecHandle& dest) const;
     
     void _CopyProperty(const UsdProperty &prop,
-                       const SdfPrimSpecHandle& dest) const;
-
-    using _MasterToFlattenedPathMap 
-        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+                       const SdfPrimSpecHandle& dest,
+                       const _MasterToFlattenedPathMap 
+                            &masterToFlattened) const;
 
     void _CopyMasterPrim(const UsdPrim &masterPrim,
                          const SdfLayerHandle &destinationLyer,
@@ -1239,6 +1254,7 @@ private:
     // during composition.
     void _ComposePrimIndexesInParallel(
         const std::vector<SdfPath>& primIndexPaths,
+        _IncludePayloadsRule includeRule,
         const std::string& context,
         Usd_InstanceChanges* instanceChanges = NULL);
 
@@ -1651,6 +1667,9 @@ private:
     // for this stage - from all access points - to this tag.
     std::string _mallocTagID;
 
+    // The state used when instantiating the stage.
+    const InitialLoadSet _initialLoadSet;
+    
     bool _isClosingStage;
     
     friend class UsdAttribute;
@@ -1665,6 +1684,7 @@ private:
     friend class UsdVariantSet;
     friend class UsdVariantSets;
     friend class Usd_PrimData;
+    friend class Usd_StageOpenRequest;
 };
 
 template<typename T>

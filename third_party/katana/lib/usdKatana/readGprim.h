@@ -41,12 +41,6 @@ PxrUsdKatanaReadGprim(
 
 USDKATANA_API
 Foundry::Katana::Attribute
-PxrUsdKatanaGeomGetPrimvarGroup(
-        const UsdGeomGprim& gprim,
-        const PxrUsdKatanaUsdInPrivateData& data);
-
-USDKATANA_API
-Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetDisplayColorAttr(
         const UsdGeomGprim& gprim,
         const PxrUsdKatanaUsdInPrivateData& data);
@@ -66,6 +60,11 @@ PxrUsdKatanaGeomGetWindingOrderAttr(
 USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetNormalAttr(
+    const UsdGeomPointBased& points,
+    const PxrUsdKatanaUsdInPrivateData& data);
+
+Foundry::Katana::Attribute
+PxrUsdKatanaGeomGetVelocityAttr(
     const UsdGeomPointBased& points,
     const PxrUsdKatanaUsdInPrivateData& data);
 

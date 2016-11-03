@@ -80,6 +80,10 @@ public:
               HdRenderPassSharedPtr const &renderPass,
               HdRenderPassStateSharedPtr const &renderPassState);
 
+
+    void ReloadAllShaders(HdRenderIndex& index);
+
+
 private:
     void _InitCaps() const;
 

@@ -73,6 +73,8 @@ class USDMAYA_API UsdMayaProxyShape : public MPxSurfaceShape,
             MObject displayGuides;
             MObject displayRenderGuides;
 
+            MObject softSelectable;
+
             // this will not change once constructed.
             const MTypeId typeId;
             const MString typeName;
@@ -95,12 +97,13 @@ class USDMAYA_API UsdMayaProxyShape : public MPxSurfaceShape,
                 PluginStaticData* psData);
 
         // Virtual function overrides
-        virtual void postConstructor();
+        virtual void postConstructor() override;
         virtual MStatus compute(
             const MPlug& plug,
-            MDataBlock& dataBlock);
-        virtual bool isBounded() const;
-        virtual MBoundingBox boundingBox() const;
+            MDataBlock& dataBlock) override;
+        virtual bool isBounded() const override;
+        virtual MBoundingBox boundingBox() const override;
+        virtual MSelectionMask getShapeSelectionMask() const override;
 
         // PxrUsdMayaUsdPrimProvider overrides:
         UsdPrim usdPrim() const override;
@@ -165,6 +168,8 @@ class USDMAYA_API UsdMayaProxyShape : public MPxSurfaceShape,
 	bool _GetDisplayGuides( MDataBlock dataBlock ) const;
 	bool _GetDisplayRenderGuides( MDataBlock dataBlock ) const;
         bool _GetTint( MDataBlock dataBlock, GfVec4f *outTintColor ) const;
+
+        bool _CanBeSoftSelected() const;
 
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
         

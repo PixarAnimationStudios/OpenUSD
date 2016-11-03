@@ -193,7 +193,7 @@ _GatherAnimChannel(
             chan.sampleType[i] = ANIMATED; 
             validComponents++;
         } 
-        else if (not GfIsClose(chan.defValue[i], nullValue[i], 1e-9)) {
+        else if (not GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
             chan.sampleType[i] = STATIC; 
             validComponents++;
         }

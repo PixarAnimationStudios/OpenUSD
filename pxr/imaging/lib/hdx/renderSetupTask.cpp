@@ -22,16 +22,17 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdx/renderSetupTask.h"
+#include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
@@ -129,7 +130,7 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
 
     _viewport = params.viewport;
 
-    _camera = GetDelegate()->GetRenderIndex().GetCamera(params.camera);
+    _camera = GetDelegate()->GetRenderIndex().GetSprim(params.camera);
 }
 
 void
@@ -140,12 +141,12 @@ HdxRenderSetupTask::SyncCamera()
 
         // XXX This code will be removed when we drop support for
         // storing frustum in the render index
-        VtValue frustumVt = _camera->Get(HdTokens->cameraFrustum);
+        VtValue frustumVt = _camera->Get(HdxCameraTokens->cameraFrustum);
 
         if(frustumVt.IsHolding<GfFrustum>()) {
 
             // Extract the window policy to adjust the frustum correctly
-            VtValue windowPolicy = _camera->Get(HdTokens->windowPolicy);
+            VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
             if (not TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
                 return;
             }
@@ -165,14 +166,16 @@ HdxRenderSetupTask::SyncCamera()
             modelViewMatrix = frustum.ComputeViewMatrix();;
             projectionMatrix = frustum.ComputeProjectionMatrix();
         } else {
-            VtValue modelViewMatrixVt = _camera->Get(HdShaderTokens->worldToViewMatrix);
-            VtValue projectionMatrixVt = _camera->Get(HdShaderTokens->projectionMatrix);
+            VtValue modelViewMatrixVt
+                = _camera->Get(HdxCameraTokens->worldToViewMatrix);
+            VtValue projectionMatrixVt
+                = _camera->Get(HdxCameraTokens->projectionMatrix);
 
             modelViewMatrix = modelViewMatrixVt.Get<GfMatrix4d>();
             projectionMatrix = projectionMatrixVt.Get<GfMatrix4d>();
         }
 
-        const VtValue &vClipPlanes = _camera->Get(HdTokens->clipPlanes);
+        const VtValue &vClipPlanes = _camera->Get(HdxCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
             vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 

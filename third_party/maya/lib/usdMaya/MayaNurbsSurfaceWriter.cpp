@@ -44,6 +44,38 @@ MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
 {
 }
 
+static void
+_FixNormalizedKnotRange(
+    VtArray <double> & knots,
+    const unsigned int numKnots,
+    const unsigned int degree,
+    const double startVal,
+    const double endVal)
+{
+    // ensure we've produced valid knot ranges; the data coming
+    // from Maya is fine but sometimes rounding errors in the normalization
+    // cause problems.  So we change the knots on the boundaries
+    // (whether single or multiple) to match the u/v range.
+    double changeVal;
+
+    if (startVal < knots[degree]) {
+        changeVal = knots[degree];
+        for (unsigned int i = 0; i <= degree; ++i) {
+            if (knots[i] == changeVal) {
+                knots[i] = startVal;
+            }
+        }
+    }
+    if (endVal > knots[numKnots - (degree + 1)]) {
+        changeVal = knots[numKnots - (degree + 1)];
+        for (unsigned int i = numKnots - (degree + 1); i < numKnots; ++i) {
+            if (knots[i] == changeVal) {
+                knots[i] = endVal;
+            }
+        }
+    }
+}
+
 //virtual 
 UsdPrim MayaNurbsSurfaceWriter::write(const UsdTimeCode &usdTimeCode)
 {
@@ -89,24 +121,34 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // shader assignment possible.
     if (getArgs().exportDisplayColor) {
         VtArray<GfVec3f> RGBData;
-        TfToken RGBInterp;
         VtArray<float> AlphaData;
-        TfToken AlphaInterp;
-        if (PxrUsdMayaUtil::GetLinearShaderColor(nurbs, 0,
-                                                &RGBData, &RGBInterp,
-                                                &AlphaData, &AlphaInterp)) {
+        TfToken interpolation;
+        VtArray<int> assignmentIndices;
+        if (PxrUsdMayaUtil::GetLinearShaderColor(nurbs,
+                                                 &RGBData,
+                                                 &AlphaData,
+                                                 &interpolation,
+                                                 &assignmentIndices)) {
             if (RGBData.size()>0) {
                 UsdGeomPrimvar dispColor = primSchema.GetDisplayColorPrimvar();
-                if (RGBInterp != dispColor.GetInterpolation())
-                    dispColor.SetInterpolation(RGBInterp);
+                if (interpolation != dispColor.GetInterpolation()) {
+                    dispColor.SetInterpolation(interpolation);
+                }
                 dispColor.Set(RGBData);
+                if (not assignmentIndices.empty()) {
+                    dispColor.SetIndices(assignmentIndices);
+                }
             }
             if (AlphaData.size() > 0 && 
                 GfIsClose(AlphaData[0], 1.0, 1e-9)==false) {
                 UsdGeomPrimvar dispOpacity = primSchema.GetDisplayOpacityPrimvar();
-                if (AlphaInterp != dispOpacity.GetInterpolation())
-                    dispOpacity.SetInterpolation(AlphaInterp);
+                if (interpolation != dispOpacity.GetInterpolation()) {
+                    dispOpacity.SetInterpolation(interpolation);
+                }
                 dispOpacity.Set(AlphaData);
+                if (not assignmentIndices.empty()) {
+                    dispOpacity.SetIndices(assignmentIndices);
+                }
             }
         }
     }
@@ -161,6 +203,12 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     for (unsigned int i = 0; i < numKnotsInV; i++) {
         sampKnotsInV[i+1]=(double)((knotsInV[i]-vOffset)*vScale);
     }
+
+    if (getArgs().normalizeNurbs) {
+        _FixNormalizedKnotRange(sampKnotsInU, numKnotsInU+2, nurbs.degreeU(), startU, endU);
+        _FixNormalizedKnotRange(sampKnotsInV, numKnotsInV+2, nurbs.degreeV(), startV, endV);
+    }
+
 
     sampKnotsInU[0] = (2.0 * sampKnotsInU[1] - sampKnotsInU[2]);
     sampKnotsInU[numKnotsInU+1] = (2.0 * sampKnotsInU[numKnotsInU] - 

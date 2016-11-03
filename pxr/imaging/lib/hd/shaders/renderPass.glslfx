@@ -98,7 +98,7 @@ vec4  GetWireframeColor() {
 #if defined(HD_HAS_wireframeColor)
     return HdGet_wireframeColor();
 #else
-    return vec4(0,0,0,1);
+    return vec4(0,0,0,0);
 #endif
 }
 

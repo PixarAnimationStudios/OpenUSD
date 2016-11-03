@@ -61,7 +61,7 @@ NormalFont.setWeight(35)
 AbstractPrimFont = NormalFont
 
 # Keys for destinguishing items in the attribute inspector
-class AttributeStatus:
+class AttributeStatus(object):
     DEFAULT, CLAMPED, KEYFRAME, FALLBACK, NOVALUE = range(5)
 
 def PrintWarning(title, description):
@@ -121,7 +121,7 @@ def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
 
 # Gathers information about a layer used as a subLayer, including its
 # position in the layerStack hierarchy.
-class SubLayerInfo:
+class SubLayerInfo(object):
     def __init__(self, sublayer, offset, containingLayer, prefix):
         self.layer = sublayer
         self.offset = offset
@@ -151,12 +151,22 @@ def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
     for i, l in enumerate(layer.subLayerPaths):
         offset = offsets[i] if offsets is not None and len(offsets) > i else Sdf.LayerOffset()
         subLayer = Sdf.Layer.FindRelativeToLayer(layer, l)
+        # Due to an unfortunate behavior of the Pixar studio resolver, 
+        # FindRelativeToLayer() may fail to resolve certain paths.  We will
+        # remove this extra Find() call as soon as we can retire the behavior;
+        # in the meantime, the extra call does not hurt (but should not, in 
+        # general, be necessary)
+        if not subLayer:
+            subLayer = Sdf.Layer.Find(l)
+        
         if subLayer:
             # This gives a 'tree'-ish presentation, but it looks sad in
             # a QTableWidget.  Just use spaces for now
             # addedPrefix = "|-- " if parentLayer is None else "|    "
             addedPrefix = "     "
             _AddSubLayers(subLayer, offset, addedPrefix + prefix, layer, layers)
+        else:
+            print "Could not find layer " + l
 
 def GetRootLayerStackInfo(layer):
     from pxr import Sdf
@@ -183,7 +193,7 @@ def PrettyFormatSize(sz):
         return "%db" % sz
 
 
-class Timer:
+class Timer(object):
     """Use as a context object with python's "with" statement, like so:
        with Timer() as t:
            doSomeStuff()
@@ -204,7 +214,7 @@ class Timer:
         print "Time to %s: %2.3fs" % (action, self.interval)
         
 
-class BusyContext:
+class BusyContext(object):
     """When used as a context object with python's "with" statement,
     will set Qt's busy cursor upon entry and pop it on exit.
     """
@@ -383,5 +393,4 @@ def DumpMallocTags(stage, contextStr):
     else:
         print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
 
-        
         

@@ -34,12 +34,9 @@
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
-
-#include <boost/foreach.hpp>
 
 #include <set>
 #include <utility>

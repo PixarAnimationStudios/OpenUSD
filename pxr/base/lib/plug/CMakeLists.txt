@@ -30,6 +30,7 @@ pxr_shared_library(plug
 
     PUBLIC_HEADERS
         api.h
+        thisPlugin.h
 
     CPPFILES
         initConfig.cpp
