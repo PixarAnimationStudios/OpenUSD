@@ -73,6 +73,14 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
             _masterPath = parentData->GetMasterPath();
         }
     }
+
+    // Pass along the flag to use default motion sample times.
+    //
+    const std::set<std::string>& defaultMotionPaths = usdInArgs->GetDefaultMotionPaths();
+
+    _useDefaultMotionSampleTimes = 
+            (parentData and parentData->UseDefaultMotionSampleTimes()) or
+                defaultMotionPaths.find(prim.GetPath().GetString()) != defaultMotionPaths.end();
 }
 
 const std::vector<double>
@@ -89,9 +97,9 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     const std::vector<double> motionSampleTimes = _usdInArgs->GetMotionSampleTimes();
 
-    // early exit if we don't have a valid attribute
-    // or aren't asking for multiple samples
-    if (not attr or motionSampleTimes.size() < 2)
+    // early exit if we don't have a valid attribute, aren't asking for
+    // multiple samples, or this prim has been forced to use default motion
+    if (not attr or motionSampleTimes.size() < 2 or _useDefaultMotionSampleTimes)
     {
         return motionSampleTimes;
     }

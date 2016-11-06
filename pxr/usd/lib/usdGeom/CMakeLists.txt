@@ -40,6 +40,7 @@ pxr_shared_library(usdGeom
         nurbsCurves
         nurbsPatch
         pointBased
+        pointInstancer
         points
         scope
         sphere
@@ -76,6 +77,7 @@ pxr_shared_library(usdGeom
         wrapNurbsCurves.cpp
         wrapNurbsPatch.cpp
         wrapPointBased.cpp
+        wrapPointInstancer.cpp
         wrapPoints.cpp
         wrapPrimvar.cpp
         wrapScope.cpp

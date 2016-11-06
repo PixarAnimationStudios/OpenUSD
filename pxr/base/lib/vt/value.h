@@ -24,12 +24,15 @@
 #ifndef VT_VALUE_H
 #define VT_VALUE_H
 
+// XXX: Include pyLock.h after pyObjWrapper.h to work around
+// Python include ordering issues.
+#include "pxr/base/tf/pyObjWrapper.h"
+#include "pxr/base/tf/pyLock.h"
+
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/move.h"
 #include "pxr/base/tf/pointerAndBits.h"
-#include "pxr/base/tf/pyLock.h"
-#include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"

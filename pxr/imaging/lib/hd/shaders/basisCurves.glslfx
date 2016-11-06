@@ -384,7 +384,11 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 void main(void)
 {
+#ifdef HD_HAS_color
     vec4 color = HdGet_color();
+#else
+    vec4 color = vec4(1);
+#endif
     color.rgb = ApplyColorOverrides(color).rgb;
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
@@ -441,7 +445,11 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 void main(void)
 {
+#ifdef HD_HAS_color
     vec4 color = HdGet_color();
+#else
+    vec4 color = vec4(1);
+#endif
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
 

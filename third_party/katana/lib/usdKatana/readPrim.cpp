@@ -338,19 +338,22 @@ _BuildCollections(
     std::string prefix = prim.GetPath().GetString();
     int prefixLength = prefix.length();
     
-    SdfPathVector targets;
     for (int iCollection = 0; iCollection < collections.size(); ++iCollection)
     {
+        SdfPathVector targets;
         FnKat::StringBuilder collectionBuilder;
         UsdGeomCollectionAPI &collection = collections[iCollection];
         TfToken name = collection.GetCollectionName();
         collection.GetTargets(&targets);
         for (int iTarget = 0; iTarget < targets.size(); ++iTarget)
         {
-            std::string relativePath = 
-                targets[iTarget].GetString().substr(prefixLength);
-
-            collectionBuilder.push_back(relativePath);
+            std::string targetPath = targets[iTarget].GetString();
+            
+            if (targetPath.size() >= prefixLength)
+            {
+                std::string relativePath = targetPath.substr(prefixLength);
+                collectionBuilder.push_back(relativePath);
+            }
         }
 
         collectionsBuilder.set(name.GetString() + ".baked",

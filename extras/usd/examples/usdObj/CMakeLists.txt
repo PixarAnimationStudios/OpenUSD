@@ -1,3 +1,4 @@
+set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdObj)
 
 pxr_plugin(${PXR_PACKAGE}

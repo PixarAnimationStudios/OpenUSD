@@ -68,6 +68,11 @@ public:
     }
 
     USDKATANA_API
+    const bool UseDefaultMotionSampleTimes() const {
+        return _useDefaultMotionSampleTimes;
+    }
+
+    USDKATANA_API
     const std::vector<double> GetMotionSampleTimes(const UsdAttribute& attr = UsdAttribute()) const;
 
 private:
@@ -79,6 +84,7 @@ private:
     SdfPath _instancePath;
     SdfPath _masterPath;
     
+    bool _useDefaultMotionSampleTimes;
 };
 
 #endif // PXRUSDKATANA_USDIN_PRIVATEDATA_H

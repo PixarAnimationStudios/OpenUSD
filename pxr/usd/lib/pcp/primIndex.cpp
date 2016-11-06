@@ -642,6 +642,7 @@ struct Pcp_PrimIndexer
         EvalImpliedClasses,
         EvalImpliedSpecializes,
         EvalNodeVariants,
+        EvalNodeVariantFallbacks,
         EvalNodePayload,
         NoTasksLeft
     };
@@ -683,6 +684,7 @@ struct Pcp_PrimIndexer
     _TaskDataQueue impliedClasses;
     _TaskDataQueue impliedSpecializes;
     _TaskDataQueue vars;
+    _TaskDataQueue varFallbacks;
     _TaskDataQueue payloads;
 
     struct _NodeStrengthComparator {
@@ -851,6 +853,15 @@ struct Pcp_PrimIndexer
         }
     }
 
+    void AddVariantFallbackTask(const PcpNodeRef &n)
+    {
+        auto i = std::lower_bound(varFallbacks.begin(), varFallbacks.end(),
+                                  n, _NodeStrengthComparator());
+        if (i == varFallbacks.end() || *i != n) {
+            varFallbacks.insert(i, n);
+        }
+    }
+
     void AddTasksForNode(const PcpNodeRef& n, 
                          bool skipCompletedNodes = false,
                          bool skipImpliedSpecializes = false) {
@@ -889,6 +900,22 @@ struct Pcp_PrimIndexer
                 // merging the subgraph into the parent graph.
                 AddImpliedSpecializesTask(n);
             }
+        }
+
+        // Any time we add an arc, it can introduce new information to
+        // help decide variant sets.  Take any nodes with variant sets
+        // that we had previously failed to decide using an authored
+        // selection, and retry them.
+        if (evaluateVariants) {
+            TF_FOR_ALL(node, varFallbacks) {
+                // Insert one at a time in strength order checking for dupes.
+                auto i = std::lower_bound(vars.begin(), vars.end(),
+                                          *node, _NodeStrengthComparator());
+                if (i == vars.end() || *i != *node) {
+                    vars.insert(i, *node);
+                }
+            }
+            varFallbacks.clear();
         }
 
         // Recurse over all of the rest of the nodes.  (We assume that any
@@ -976,6 +1003,13 @@ struct Pcp_PrimIndexer
             vars.pop_back();
             return varTask;
         }
+
+        if (evaluateVariants and not varFallbacks.empty()) {
+            Task varTask(EvalNodeVariantFallbacks, varFallbacks.back());
+            varFallbacks.pop_back();
+            return varTask;
+        }
+
         return Task(NoTasksLeft);
     }
 
@@ -3095,10 +3129,11 @@ _ShouldUseVariantFallback(
     const Pcp_PrimIndexer *indexer,
     const std::string& vset,
     const std::string& vsel,
+    const std::string& vselFallback,
     const PcpNodeRef &nodeWithVsel)
 {
-    // Can't use defaults if we don't have any.
-    if (not indexer->inputs.variantFallbacks) {
+    // Can't use fallback if we don't have one.
+    if (vselFallback.empty()) {
         return false;
     }
 
@@ -3182,15 +3217,34 @@ _ShouldUseVariantFallback(
     return false;
 }
 
+static std::string
+_ChooseBestFallbackAmongOptions(
+    const std::string &vset,
+    const std::set<std::string> &vsetOptions,
+    const PcpVariantFallbackMap& variantFallbacks)
+{
+    PcpVariantFallbackMap::const_iterator vsetIt = variantFallbacks.find(vset);
+    if (vsetIt != variantFallbacks.end()) {
+        for (const auto &vselIt: vsetIt->second) {
+            if (vsetOptions.find(vselIt) != vsetOptions.end()) {
+                return vselIt;
+            }
+        }
+    }
+    return std::string();
+}
+
 static void
 _EvalNodeVariants(
     PcpPrimIndex *index, 
     const PcpNodeRef& node, 
-    Pcp_PrimIndexer *indexer)
+    Pcp_PrimIndexer *indexer,
+    bool fallbacks)
 {
     PCP_GRAPH_PHASE(
         node, 
-        "Evaluating variants at %s", 
+        "Evaluating %s at %s", 
+        fallbacks ? "variant fallbacks" : "variants",
         Pcp_FormatSite(node.GetSite()).c_str());
 
     if (not node.CanContributeSpecs())
@@ -3199,6 +3253,8 @@ _EvalNodeVariants(
     std::vector<std::string> vsetNames;
     PcpComposeSiteVariantSets(node.GetSite(), &vsetNames);
 
+    bool shouldAddVariantFallbackTask = false;
+
     // Compose the selection for each variant set.
     // Variant sets are ordered strong-to-weak.
     for (size_t vsetNum=0, numVsets=vsetNames.size();
@@ -3206,34 +3262,70 @@ _EvalNodeVariants(
 
         const std::string & vset = vsetNames[vsetNum];
 
+        // Only process vsets we didn't already decide.
+        // Determine this by checking node children.
+        bool vsetAlreadyEvaluated = false;
+        TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+            if (child->GetArcType() == PcpArcTypeVariant) {
+                std::pair<std::string, std::string> vsel =
+                    child->GetPath().GetVariantSelection();
+                if (vsel.first == vset) {
+                    vsetAlreadyEvaluated = true;
+                    break;
+                }
+            }
+        }
+        if (vsetAlreadyEvaluated) {
+            // Already have a node for this vset -- skip.
+            continue;
+        }
+
         PCP_GRAPH_MSG(
-            node, "Processing variant selection for set '%s'",
+            node, "Processing %s for set '%s'",
+            fallbacks ? "variant fallbacks" : "variant selection",
             vset.c_str());
 
         // Compose options.
         std::set<std::string> vsetOptions;
         PcpComposeSiteVariantSetOptions(node.GetSite(), vset, &vsetOptions);
 
+        // Determine what the fallback selection would be.
+        const std::string vselFallback =
+            _ChooseBestFallbackAmongOptions( vset, vsetOptions,
+                                         *indexer->inputs.variantFallbacks );
+        if (not vselFallback.empty()) {
+            PCP_GRAPH_MSG(
+                node, "Found fallback '%s' for variant set '%s'",
+                vset.c_str(),
+                vselFallback.c_str());
+        }
+
         // Determine the variant selection for this set.
         std::string vsel;
-        PcpNodeRef nodeWithVsel;
-        _ComposeVariantSelection(indexer->ancestorRecursionDepth,
-                                 indexer->previousFrame, node,
-                              node.GetPath().StripAllVariantSelections(),
-                              vset, &vsel, &nodeWithVsel,
-                              indexer->outputs);
-
-        // Apply variant defaults.
-        if (_ShouldUseVariantFallback(indexer, vset, vsel, nodeWithVsel)) {
-            PcpVariantFallbackMap::const_iterator vsetIt =
-                indexer->inputs.variantFallbacks->find(vset);
-            if (vsetIt != indexer->inputs.variantFallbacks->end()) {
-                TF_FOR_ALL(vselIt, vsetIt->second) {
-                    if (vsetOptions.find(*vselIt) != vsetOptions.end()) {
-                        vsel = *vselIt;
-                        break;
-                    }
-                }
+        if (fallbacks) {
+            vsel = vselFallback;
+        } else {
+            // Check for an applicable authored opinion.
+            PcpNodeRef nodeWithVsel;
+            _ComposeVariantSelection(indexer->ancestorRecursionDepth,
+                                     indexer->previousFrame, node,
+                                     node.GetPath().StripAllVariantSelections(),
+                                     vset, &vsel, &nodeWithVsel,
+                                     indexer->outputs);
+            if (not vsel.empty()) {
+                PCP_GRAPH_MSG(
+                    node, "Found variant selection '%s' for set '%s' at %s",
+                    vsel.c_str(),
+                    vset.c_str(),
+                    Pcp_FormatSite(nodeWithVsel.GetSite()).c_str());
+            }
+            // Check if we should use the variant fallback.
+            if (_ShouldUseVariantFallback(indexer, vset, vsel, vselFallback,
+                                          nodeWithVsel)) {
+                PCP_GRAPH_MSG(
+                    node, "Deferring to variant fallback");
+                shouldAddVariantFallbackTask = true;
+                continue;
             }
         }
 
@@ -3243,10 +3335,6 @@ _EvalNodeVariants(
                 node, "No variant selection found for set '%s'", vset.c_str());
             continue;
         }
-
-        PCP_GRAPH_MSG(
-            node, "Found variant selection '%s' for set '%s'",
-            vsel.c_str(), vset.c_str());
 
         // XXX: There's a question as to whether Pcp should be responsible
         //      for validating variant selections at some point. Currently, Csd
@@ -3280,6 +3368,10 @@ _EvalNodeVariants(
                  /* requirePrimAtTarget = */ false,
                  /* skipDuplicateNodes = */ false,
                  indexer );
+    }
+
+    if (shouldAddVariantFallbackTask) {
+        indexer->AddVariantFallbackTask(node);
     }
 }
 
@@ -3979,7 +4071,12 @@ Pcp_BuildPrimIndex(
             _EvalImpliedSpecializes(&outputs->primIndex, task.node, &indexer);
             break;
         case Pcp_PrimIndexer::EvalNodeVariants:
-            _EvalNodeVariants(&outputs->primIndex, task.node, &indexer); 
+            _EvalNodeVariants(&outputs->primIndex, task.node, &indexer,
+                              /* fallbacks */ false); 
+            break;
+        case Pcp_PrimIndexer::EvalNodeVariantFallbacks:
+            _EvalNodeVariants(&outputs->primIndex, task.node, &indexer,
+                              /* fallbacks */ true); 
             break;
         case Pcp_PrimIndexer::NoTasksLeft:
             tasksAreLeft = false;

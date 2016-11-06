@@ -132,6 +132,18 @@ HdMeshTopology::operator==(HdMeshTopology const &other) const {
 }
 
 int
+HdMeshTopology::GetNumFaces() const
+{
+    return (int)_topology.GetFaceVertexCounts().size();
+}
+
+int
+HdMeshTopology::GetNumFaceVaryings() const
+{
+    return (int)_topology.GetFaceVertexIndices().size();
+}
+
+int
 HdMeshTopology::ComputeNumPoints() const
 {
     return HdMeshTopology::ComputeNumPoints(_topology.GetFaceVertexIndices());

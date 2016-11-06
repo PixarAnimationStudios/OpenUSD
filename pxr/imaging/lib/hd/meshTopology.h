@@ -101,6 +101,12 @@ public:
         return _topology;
     }
 
+    /// Returns the num faces
+    int GetNumFaces() const;
+
+    /// Returns the num facevarying primvars
+    int GetNumFaceVaryings() const;
+
     /// Returns the num points by looking vert indices array
 	HDLIB_API
     int ComputeNumPoints() const;
