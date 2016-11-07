@@ -3360,17 +3360,18 @@ _EvalNodeVariants(
         // variant selection but the mapping function is identity.
         const PcpMapExpression identityMapExpr = PcpMapExpression::Identity();
 
-        _AddArc( PcpArcTypeVariant,
-                 /* parent = */ node,
-                 /* origin = */ node,
-                 PcpLayerStackSite( node.GetLayerStack(), varPath ),
-                 identityMapExpr,
-                 /* arcSiblingNum = */ vsetNum, 
-                 /* directNodeShouldContributeSpecs = */ true,
-                 /* includeAncestralOpinions = */ false,
-                 /* requirePrimAtTarget = */ false,
-                 /* skipDuplicateNodes = */ false,
-                 indexer );
+        PcpNodeRef child =
+            _AddArc( PcpArcTypeVariant,
+                     /* parent = */ node,
+                     /* origin = */ node,
+                     PcpLayerStackSite( node.GetLayerStack(), varPath ),
+                     identityMapExpr,
+                     /* arcSiblingNum = */ vsetNum, 
+                     /* directNodeShouldContributeSpecs = */ true,
+                     /* includeAncestralOpinions = */ false,
+                     /* requirePrimAtTarget = */ false,
+                     /* skipDuplicateNodes = */ false,
+                     indexer );
 
         // If we expanded a fallback, the fallback may introduced authored
         // variant selections, so we must restart checking for authored
@@ -3378,7 +3379,7 @@ _EvalNodeVariants(
         // than re-enqueue a task for this node, just restart immediately
         // since we know the new node we just added is strictly weaker
         // than this node.
-        if (fallbacks) {
+        if (child && fallbacks) {
             fallbacks = false;
             vsetNum = -1;
             PCP_GRAPH_MSG(
