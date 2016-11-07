@@ -45,6 +45,11 @@ public:
         // nothing
     }
 
+    /// Get the name of the UsdAttribute
+    /// Since parameters do not live in a unique namespace, the parameter name 
+    /// will always be identical to the UsdAttribute name.
+    TfToken const GetName() const { return _attr.GetName(); }
+
     /// \name Configuring the Parameter's Type
     /// @{
     
