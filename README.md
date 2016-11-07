@@ -86,7 +86,7 @@ cd build
 cmake                                       \
 -DTBB_tbb_LIBRARY=/path/to/libtbb.so        \    
 -DOPENEXR_LOCATION=/path/to/openexr         \
--DOPENSUBDIV_LOCATION=/path/to/opensubdiv   \
+-DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
 -DPTEX_INCLUDE_DIR=/path/to/ptex            \
 -DOIIO_BASE_DIR=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost                 \
@@ -106,7 +106,7 @@ cmake                                       \
 -G "Xcode"                                  \
 -DTBB_tbb_LIBRARY=/path/to/libtbb.dylib     \    
 -DOPENEXR_LOCATION=/path/to/openexr         \
--DOPENSUBDIV_LOCATION=/path/to/opensubdiv   \
+-DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
 -DPTEX_INCLUDE_DIR=/path/to/ptex            \
 -DOIIO_BASE_DIR=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost/include         \
@@ -126,7 +126,7 @@ C:\Program Files\CMake\bin\cmake.exe             ^
     -G "Visual Studio 14 Win64"                  ^
     -DTBB_tbb_LIBRARY=C:\path\to\tbb.lib         ^     
     -DOPENEXR_LOCATION=C:\path\to\openexr        ^ 
-    -DOPENSUBDIV_LOCATION=C:\path\to\opensubdiv  ^ 
+    -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv  ^ 
     -DPTEX_INCLUDE_DIR=C:\path\to\ptex           ^ 
     -DOIIO_BASE_DIR=C:\path\to\openimageio       ^ 
     -DBOOST_ROOT=C:\path\to\boost                ^ 
