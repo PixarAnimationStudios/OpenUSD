@@ -501,8 +501,9 @@ PcpBuildFilteredTargetIndex(
 
             SdfPathListOp::ApplyCallback pathTranslationCallback = 
                 boost::bind(&_PathTranslateCallback, 
-                            _1, propSite, propIt.base().GetNode(), _2,
-                            property, relOrAttrType,
+                            _1, boost::ref(propSite),
+                            propIt.base().GetNode(), _2,
+                            boost::ref(property), relOrAttrType,
                             cacheForValidation, 
                             &targetPathErrors, allErrors);
             pathListOps.ApplyOperations(&paths,
