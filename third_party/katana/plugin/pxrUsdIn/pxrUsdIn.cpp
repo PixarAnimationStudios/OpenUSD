@@ -111,8 +111,20 @@ public:
             return;
         }
 
+        // A flag to force the use of default motion samples. This is only set
+        // when at root and an isolate path is specified. In this case, we must
+        // check whether the isolated path starts with any of the user-specified
+        // paths that should use the default motion sample times.
+        //
+        bool useDefaultMotion = false;
+
         if (interface.atRoot()) {
             interface.stopChildTraversal();
+
+            if (not usdInArgs->GetIsolatePath().empty())
+            {
+                useDefaultMotion = GetDefaultMotionAtRoot(usdInArgs);
+            }
 
             prim = usdInArgs->GetRootPrim();
 
@@ -189,7 +201,8 @@ public:
                             .build(),
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
-                                usdInArgs->GetRootPrim(), usdInArgs, privateData),
+                                usdInArgs->GetRootPrim(),
+                                usdInArgs, privateData, useDefaultMotion),
                         PxrUsdKatanaUsdInPrivateData::Delete);
                 
                 
@@ -408,7 +421,8 @@ public:
                         "",
                         opArgs,
                         FnKat::GeolibCookInterface::ResetRootFalse,
-                        new PxrUsdKatanaUsdInPrivateData(child, usdInArgs, privateData),
+                        new PxrUsdKatanaUsdInPrivateData(
+                                child, usdInArgs, privateData, useDefaultMotion),
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
@@ -637,7 +651,7 @@ public:
             {
                 ab.defaultMotionPaths.insert(pystring::replace(
                     FnAttribute::DelimiterDecode(defaultMotionPathsAttr.getChildName(i)),
-                        ab.rootLocation, "", 1));
+                        sessionLocation, "", 1));
             }
         }
 
@@ -715,6 +729,31 @@ public:
         }
         
         return ab.build();
+    }
+
+    /*
+     * Return true if the root prim path starts with any of the
+     * user-specified paths that should be using default motion
+     * samples.
+     */
+    static bool GetDefaultMotionAtRoot(PxrUsdKatanaUsdInArgsRefPtr usdInArgs)
+    {
+        const std::string& rootPrimPath =
+                usdInArgs->GetRootPrim().GetPath().GetString();
+
+        const std::set<std::string>& defaultMotionPaths =
+                usdInArgs->GetDefaultMotionPaths();
+
+        for (std::set<std::string>::const_iterator I = defaultMotionPaths.begin(),
+                E = defaultMotionPaths.end(); I != E; ++I)
+        {
+            if (pystring::startswith(rootPrimPath, (*I) + "/"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 private:
@@ -809,8 +848,6 @@ public:
             ERROR(usdInArgs->GetErrorMessage().c_str());
             return;
         }
-        
-        
 
         FnKat::GroupAttribute opArgs = FnKat::GroupBuilder()
             .update(interface.getOpArg())
@@ -837,7 +874,11 @@ public:
                         "PxrUsdIn",
                         opArgs,
                         FnKat::GeolibCookInterface::ResetRootTrue,
-                        new PxrUsdKatanaUsdInPrivateData(usdInArgs->GetRootPrim(), usdInArgs),
+                        new PxrUsdKatanaUsdInPrivateData(
+                                usdInArgs->GetRootPrim(),
+                                usdInArgs,
+                                NULL /* parentData */,
+                                PxrUsdInOp::GetDefaultMotionAtRoot(usdInArgs)),
                         PxrUsdKatanaUsdInPrivateData::Delete);
     }
 

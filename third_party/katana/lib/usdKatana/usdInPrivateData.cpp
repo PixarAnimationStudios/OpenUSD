@@ -30,7 +30,8 @@
 PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const UsdPrim& prim,
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-        const PxrUsdKatanaUsdInPrivateData* parentData)
+        const PxrUsdKatanaUsdInPrivateData* parentData,
+        bool useDefaultMotion)
     : _prim(prim), _usdInArgs(usdInArgs)
 {
     // XXX: manually track instance and master path for possible
@@ -78,8 +79,8 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     //
     const std::set<std::string>& defaultMotionPaths = usdInArgs->GetDefaultMotionPaths();
 
-    _useDefaultMotionSampleTimes = 
-            (parentData and parentData->UseDefaultMotionSampleTimes()) or
+    _useDefaultMotionSampleTimes =
+            useDefaultMotion or (parentData and parentData->UseDefaultMotionSampleTimes()) or
                 defaultMotionPaths.find(prim.GetPath().GetString()) != defaultMotionPaths.end();
 }
 

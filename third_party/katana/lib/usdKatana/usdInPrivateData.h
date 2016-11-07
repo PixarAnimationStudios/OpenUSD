@@ -40,7 +40,8 @@ public:
     PxrUsdKatanaUsdInPrivateData(
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-            const PxrUsdKatanaUsdInPrivateData* parentData = NULL);
+            const PxrUsdKatanaUsdInPrivateData* parentData = NULL,
+            bool useDefaultMotion = false);
 
     virtual ~PxrUsdKatanaUsdInPrivateData()
     {
