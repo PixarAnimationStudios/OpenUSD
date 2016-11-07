@@ -1144,6 +1144,16 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
         return false;
     }
 
+    const auto& schema = spec->GetSchema();
+    const auto specType = spec->GetSpecType();
+    if (not schema.IsValidFieldForSpec(fieldName, specType)) {
+        TF_CODING_ERROR("Cannot set metadata. '%s' is not registered "
+                        "as valid metadata for spec type %s.",
+                        fieldName.GetText(),
+                        TfStringify(specType).c_str());
+        return false;
+    }
+
     if (keyPath.IsEmpty()) {
         spec->GetLayer()->SetField(spec->GetPath(), fieldName, newValue);
     } else {
@@ -1405,6 +1415,16 @@ UsdStage::_ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
                       "No spec at <%s> in layer @%s@",
                       editTarget.MapToSpecPath(obj.GetPath()).GetText(),
                       GetEditTarget().GetLayer()->GetIdentifier().c_str())) {
+        return false;
+    }
+
+    const auto& schema = spec->GetSchema();
+    const auto specType = spec->GetSpecType();
+    if (not schema.IsValidFieldForSpec(fieldName, specType)) {
+        TF_CODING_ERROR("Cannot clear metadata. '%s' is not registered "
+                        "as valid metadata for spec type %s.",
+                        fieldName.GetText(),
+                        TfStringify(specType).c_str());
         return false;
     }
 
@@ -5059,12 +5079,12 @@ struct UsdStage::_PropertyStackResolver {
                 const double* time) 
     {
         // If given a time, do a range check on the clip first.
-        if (time && (*time < clip->startTime || *time >= clip->endTime))
+        if (time && (*time < clip->startTime || *time >= clip->endTime)) 
             return false;
 
         double lowerSample = 0.0, upperSample = 0.0;
         if (_HasTimeSamples(clip, specId, time, &lowerSample, &upperSample)) {
-            if (const auto propertySpec = clip->GetPropertyAtPath(specId))
+            if (const auto propertySpec = clip->GetPropertyAtPath(specId)) 
                 propertyStack.push_back(propertySpec);    
         }
      
@@ -6029,7 +6049,7 @@ _ClearLayerFieldOrDictKey(const SdfLayerHandle &layer, const TfToken &key,
 static
 bool
 _SetStageMetadataOrDictKey(const UsdStage &stage, const TfToken &key,
-                      const TfToken &keyPath, const VtValue &val)
+                           const TfToken &keyPath, const VtValue &val)
 {
     SdfLayerHandle rootLayer = stage.GetRootLayer();
     SdfLayerHandle sessionLayer = stage.GetSessionLayer();
