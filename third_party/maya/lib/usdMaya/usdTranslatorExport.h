@@ -21,13 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/**
- * \class usdTranslatorExport
- * \brief file translator for USD files
- */
 
-#ifndef __PX_USDTRANSLATOREXPORT_H__
-#define __PX_USDTRANSLATOREXPORT_H__
+#ifndef PXRUSDMAYA_TRANSLATOR_EXPORT_H
+#define PXRUSDMAYA_TRANSLATOR_EXPORT_H
+
+/// \file usdTranslatorExport.h
 
 #include <maya/MPxFileTranslator.h>
 
@@ -86,4 +84,4 @@ class usdTranslatorExport : public MPxFileTranslator {
         usdTranslatorExport& operator=(const usdTranslatorExport&);
 };
 
-#endif /* usdTranslatorExport */
+#endif // PXRUSDMAYA_TRANSLATOR_EXPORT_H

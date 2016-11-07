@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H
 #define PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H
 
+/// \file translatorModelAssembly.h
+
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"

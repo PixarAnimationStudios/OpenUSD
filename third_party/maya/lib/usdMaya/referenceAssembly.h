@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_REFERENCEASSEMBLY_H
 #define PXRUSDMAYA_REFERENCEASSEMBLY_H
 
+/// \file referenceAssembly.h
+
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 

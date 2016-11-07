@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_JOBARGS_H
 #define PXRUSDMAYA_JOBARGS_H
 
+/// \file JobArgs.h
+
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"

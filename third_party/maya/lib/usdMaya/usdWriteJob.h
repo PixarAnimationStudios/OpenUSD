@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_USDWRITEJOB_H
 #define PXRUSDMAYA_USDWRITEJOB_H
 
+/// \file usdWriteJob.h
+
 #include "usdMaya/Chaser.h"
 
 #include "usdMaya/util.h"
