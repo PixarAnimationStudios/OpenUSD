@@ -93,6 +93,8 @@ struct TfPyAnnotatedBoolResult :
             ;
     }
 
+    using AnnotationType = Annotation;
+
 private:
     // Helper function for wrapper.
     template <class Derived>
