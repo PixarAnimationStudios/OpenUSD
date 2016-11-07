@@ -40,7 +40,7 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
         
         return command
 
-    return ['cat', inPath, '--out', outPath]
+    return ['cat', inPath]
 
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
@@ -67,6 +67,8 @@ def _getFileFormat(path):
     # when obtaining an extension, but Sdf's Fileformat API doesn't 
     # expect one.
     _, ext = os.path.splitext(path)
+    if len(ext) <= 1:
+        return Sdf.FileFormat.FindByExtension('usd')
     fileFormat = Sdf.FileFormat.FindByExtension(ext[1:])
 
     if fileFormat and fileFormat.CanRead(path):
@@ -75,8 +77,13 @@ def _getFileFormat(path):
     return None
 
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
-    call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)) 
+    command = _generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)
 
+    # We are redirecting to stdout for the case where a user
+    # provides an empty file and we have to use regular 'cat'
+    # which doesn't offer the redirection usdcat does through --out
+    with open(outPath) as outFile:
+        call(command, stdout=outFile) 
 
 def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     if composed:
