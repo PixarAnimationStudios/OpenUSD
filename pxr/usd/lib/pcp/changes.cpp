@@ -1070,8 +1070,12 @@ PcpChanges::DidChangeSpecs(
 
         bool shouldRebuildIndex = false;
 
+        const PcpPrimIndex* primIndex = cache->FindPrimIndex(path);
         const PcpNodeRef nodeForChangedSpec = 
-            cache->_GetNodeProvidingSpec(path, changedLayer, changedPath);
+            primIndex
+            ? primIndex->GetNodeProvidingSpec(changedLayer, changedPath)
+            : PcpNodeRef();
+
         if (not nodeForChangedSpec) {
             const bool primWasAdded = changedLayer->HasSpec(changedPath);
             if (primWasAdded) {

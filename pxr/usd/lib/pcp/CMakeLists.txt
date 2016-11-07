@@ -31,6 +31,7 @@ pxr_shared_library(pcp
         layerStackIdentifier
         mapExpression
         mapFunction
+        namespaceEdits
         node
         pathTranslation
         payloadContext
