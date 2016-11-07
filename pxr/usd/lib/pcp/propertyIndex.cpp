@@ -152,7 +152,13 @@ private:
         const SdfPath &owningPrimPath,
         const TfToken &name)
     {
+        if (!layer->HasSpec(SdfAbstractDataSpecId(&owningPrimPath)))
+            return TfNullPtr;
+
         const SdfPath propPath = owningPrimPath.AppendProperty(name);
+        if (!layer->HasSpec(SdfAbstractDataSpecId(&propPath)))
+            return TfNullPtr;
+
         SdfPropertySpecHandle propSpec = layer->GetPropertyAtPath(propPath);
         if (not propSpec)
             return TfNullPtr;
@@ -363,7 +369,7 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
             if (not curNode.CanContributeSpecs()) {
                 continue;
             }
-            const PcpLayerStackPtr& nodeLayerStack = curNode.GetLayerStack();
+            const PcpLayerStackRefPtr& nodeLayerStack = curNode.GetLayerStack();
             const SdfPath& nodePath = curNode.GetPath();
             TF_REVERSE_FOR_ALL(j, nodeLayerStack->GetLayers()) {
                 if (SdfPropertySpecHandle propSpec = 
