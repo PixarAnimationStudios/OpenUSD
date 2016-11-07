@@ -338,18 +338,18 @@ _BuildCollections(
     std::string prefix = prim.GetPath().GetString();
     int prefixLength = prefix.length();
     
-    for (int iCollection = 0; iCollection < collections.size(); ++iCollection)
+    for (size_t iCollection = 0; iCollection < collections.size(); ++iCollection)
     {
         SdfPathVector targets;
         FnKat::StringBuilder collectionBuilder;
         UsdGeomCollectionAPI &collection = collections[iCollection];
         TfToken name = collection.GetCollectionName();
         collection.GetTargets(&targets);
-        for (int iTarget = 0; iTarget < targets.size(); ++iTarget)
+        for (size_t iTarget = 0; iTarget < targets.size(); ++iTarget)
         {
             std::string targetPath = targets[iTarget].GetString();
             
-            if (targetPath.size() >= prefixLength)
+            if (targetPath.size() >= static_cast<size_t>(prefixLength))
             {
                 std::string relativePath = targetPath.substr(prefixLength);
                 collectionBuilder.push_back(relativePath);
