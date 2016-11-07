@@ -31,7 +31,6 @@
 
 class half;
 class GfBBox3d;
-class GfColorRamp;
 class GfFrustum;
 class GfInterval;
 class GfMultiInterval;
@@ -45,8 +44,6 @@ class GfQuaternion;
 template<class T > class GfRandom;
 class GfRay;
 class GfRect2i;
-class GfRGBA;
-class GfRGB;
 class GfRect2i;
 class GfRotation;
 class GfSize2;
