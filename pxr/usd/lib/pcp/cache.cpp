@@ -742,64 +742,6 @@ PcpCache::FindSiteDependencies(
     return deps;
 }
 
-bool 
-PcpCache::_UsesLayer(const SdfLayerHandle& layer) const
-{
-    if (_layerStack->HasLayer(layer)) {
-        return true;
-    }
-    for (const auto& layerStack : FindAllLayerStacksUsingLayer(layer)) {
-        if (_primDependencies->UsesLayerStack(layerStack)) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-SdfPathVector
-PcpCache::_Translate(
-    const PcpNodeRefVector& depSourceNodes,
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
-    SdfLayerOffsetVector* layerOffsets) const
-{
-
-    SdfPathVector result;
-    result.reserve(depSourceNodes.size());
-
-    if (layerOffsets) {
-        layerOffsets->clear();
-        layerOffsets->reserve(depSourceNodes.size());
-    }
-
-    for (const auto& sourceNode : depSourceNodes) {
-        const SdfPath translatedPath = 
-            PcpTranslatePathFromNodeToRoot(sourceNode, path);
-        if (not translatedPath.IsEmpty()) {
-            result.push_back(translatedPath);
-
-            if (layerOffsets) {
-                SdfLayerOffset layerOffset;
-                    
-                // Apply sublayer offsets.
-                if (const SdfLayerOffset* sublayerOffset =
-                        sourceNode.GetLayerStack()->
-                            GetLayerOffsetForLayer(layer)) {
-                    layerOffset = *sublayerOffset * layerOffset;
-                }
-
-                // Apply arc offsets.
-                layerOffset = 
-                    sourceNode.GetMapToRoot().GetTimeOffset() * layerOffset;
-                layerOffsets->push_back(layerOffset);
-            }
-        }
-    }
-
-    return result;
-}
-
 bool
 PcpCache::CanHaveOpinionForSite(
     const SdfPath& localPcpSitePath,

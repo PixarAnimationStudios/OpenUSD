@@ -691,18 +691,6 @@ private:
                                      const SdfLayerHandle& siteLayer,
                                      const SdfPath& sitePath) const;
 
-    // Translate \p path from each of the nodes in \p nodes to their
-    // respective root nodes. Each node is assumed to provide the spec at
-    // (\p layer, \p path). If layerOffsets isn't NULL then also compute
-    // the layer offset from each node to the root node.
-    SdfPathVector _Translate(const PcpNodeRefVector& nodes,
-                            const SdfLayerHandle& layer,
-                            const SdfPath& path,
-                            SdfLayerOffsetVector* layerOffsets) const;
-
-    // Returns true if any prim in this cache uses \p layer, false otherwise.
-    bool _UsesLayer(const SdfLayerHandle& layer) const;
-
 private:
     // Fixed evaluation parameters, set when the cache is created.  Note that
     // _rootLayer and _sessionLayer are not const because we want to mutate them
