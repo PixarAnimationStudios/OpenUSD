@@ -35,7 +35,6 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/site.h"
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <iosfwd>
@@ -111,10 +110,10 @@ public:
         }
         const _SiteDepMap & siteDepMap = i->second;
         if (recurseBelowSite) {
-            BOOST_FOREACH(const _SiteDepMap::value_type& entry,
-                          siteDepMap.FindSubtreeRange(sitePath)) {
-                for(const SdfPath &primIndexPath: entry.second) {
-                    fn(primIndexPath, entry.first);
+            auto range = siteDepMap.FindSubtreeRange(sitePath);
+            for (auto iter = range.first; iter != range.second; ++iter) {
+                for(const SdfPath &primIndexPath: iter->second) {
+                    fn(primIndexPath, iter->first);
                 }
             }
         } else {
