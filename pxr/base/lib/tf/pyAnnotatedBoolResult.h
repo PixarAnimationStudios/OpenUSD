@@ -90,6 +90,7 @@ struct TfPyAnnotatedBoolResult :
             // and returns Annotation by value.  We can add_property that
             // with no problem.
             .add_property(annotationName, &This::_GetAnnotation<Derived>)
+            .def("__getitem__", &This::_GetItem<Derived>)
             ;
     }
 
@@ -101,6 +102,22 @@ private:
     static Annotation _GetAnnotation(const Derived& x)
     {
         return x.GetAnnotation();
+    }
+
+    template <class Derived>
+    static boost::python::object _GetItem(const Derived& x, int i)
+    {
+        if (i == 0) {
+            return boost::python::object(x._val);
+        }
+        if (i == 1) {
+            return boost::python::object(x._annotation);
+        }
+        
+        PyErr_SetString(PyExc_IndexError, "Index must be 0 or 1.");
+        boost::python::throw_error_already_set();
+
+        return boost::python::object();
     }
 
 private:
