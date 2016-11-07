@@ -3532,13 +3532,22 @@ UsdStage::_GetDefiningSpecType(const UsdPrim& prim,
         return specType;
 
     // Otherwise look for the strongest authored property spec.
-    for (Usd_Resolver res(
-             &prim.GetPrimIndex()); res.IsValid(); res.NextLayer()) {
+    Usd_Resolver res(&prim.GetPrimIndex(), /*skipEmptyNodes=*/true);
+    SdfPath curPath;
+    bool curPathValid = false;
+    while (res.IsValid()) {
         const SdfLayerRefPtr& layer = res.GetLayer();
-        SdfAbstractDataSpecId specId(&res.GetLocalPath(), &propName);
-        specType = layer->GetSpecType(specId);
-        if (specType != SdfSpecTypeUnknown)
-            return specType;
+        if (layer->HasSpec(SdfAbstractDataSpecId(&res.GetLocalPath()))) {
+            if (!curPathValid) {
+                curPath = res.GetLocalPath().AppendProperty(propName);
+                curPathValid = true;
+            }
+            specType = layer->GetSpecType(SdfAbstractDataSpecId(&curPath));
+            if (specType != SdfSpecTypeUnknown)
+                return specType;
+        }
+        if (res.NextLayer())
+            curPathValid = false;
     }
 
     // Unknown.
