@@ -312,8 +312,9 @@ SdfAbstractData::HasDictKey(const SdfAbstractDataSpecId& id,
 {
     VtValue tmp;
     bool result = HasDictKey(id, fieldName, keyPath, value ? &tmp : NULL);
-    if (result and value)
-        value->StoreValue(&tmp);
+    if (result and value) {
+        value->StoreValue(tmp);
+    }
     return result;
 }
 
