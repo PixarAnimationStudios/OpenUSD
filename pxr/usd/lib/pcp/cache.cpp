@@ -583,6 +583,20 @@ PcpCache::FindDependentPaths(
         return deps;
     }
 
+    // Filter function for dependencies to return.
+    auto cacheFilterFn = [this, filterForExistingCachesOnly]
+        (const SdfPath &indexPath) {
+            if (!filterForExistingCachesOnly) {
+                return true;
+            } else if (indexPath.IsAbsoluteRootOrPrimPath()) {
+                return bool(FindPrimIndex(indexPath));
+            } else if (indexPath.IsPropertyPath()) {
+                return bool(FindPropertyIndex(indexPath));
+            } else {
+                return false;
+            }
+        };
+
     // Dependency arcs expressed in scene description connect prim
     // paths, prim variant paths, and absolute paths only. Those arcs
     // imply dependency structure for children, such as properties.
@@ -597,7 +611,8 @@ PcpCache::FindDependentPaths(
     // Sites containing variant selections are never root dependencies.
     if (depMask & PcpDependencyTypeRoot &&
         siteLayerStack == _layerStack &&
-        !sitePath.ContainsPrimVariantSelection()) {
+        !sitePath.ContainsPrimVariantSelection() &&
+        cacheFilterFn(sitePath)) {
         deps.push_back(PcpDependency{
             sitePath, sitePath, PcpMapFunction::Identity()});
     }
@@ -645,7 +660,8 @@ PcpCache::FindDependentPaths(
                     depIndexPath = PcpTranslatePathFromNodeToRoot(
                         node, localSitePath, &valid);
                 }
-                if (valid && TF_VERIFY(!depIndexPath.IsEmpty())) {
+                if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
+                    cacheFilterFn(depIndexPath)) {
                     deps.push_back(PcpDependency{
                         depIndexPath, localSitePath,
                         node.GetMapToRoot().Evaluate() });
@@ -665,6 +681,7 @@ PcpCache::FindDependentPaths(
     // therefore were not encountered above, but which nonetheless
     // represent dependent paths.  Add them if requested.
     if (recurseOnIndex) {
+        TRACE_SCOPE("PcpCache::FindDependentPaths - recurseOnIndex");
         SdfPathSet seenDeps;
         PcpDependencyVector expandedDeps;
         for(const PcpDependency &dep: deps) {
@@ -710,31 +727,6 @@ PcpCache::FindDependentPaths(
             }
         }
         std::swap(deps, expandedDeps);
-    }
-
-    // Filter results against existing caches, if requested.
-    // Callers could do this themselves, but we provide it as a
-    // convenience.
-    if (filterForExistingCachesOnly) {
-        for (PcpDependencyVector::iterator i = deps.begin();
-             i != deps.end(); /* increment below */) {
-            bool keep = false;
-            const SdfPath & indexPath = i->indexPath;
-            if (indexPath.IsAbsoluteRootOrPrimPath()) {
-                keep = FindPrimIndex(indexPath);
-            } else if (indexPath.IsPropertyPath()) {
-                keep = FindPropertyIndex(indexPath);
-            }
-            if (keep) {
-                ++i;
-            } else {
-                const PcpDependencyVector::iterator iLast = --deps.end();
-                if (i != iLast) {
-                    std::swap(*i, *iLast);
-                }
-                deps.erase(iLast);
-            }
-        }
     }
 
     return deps;

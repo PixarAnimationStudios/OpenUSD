@@ -1521,9 +1521,11 @@ PcpChanges::_DidChangeSublayer(
     //
     // For significant sublayer changes, the sublayer may have introduced
     // new prims with new arcs, requiring prim and property indexes to be
-    // recomputed. So, register significant changes for every path in the
-    // cache that uses any path in any of the layer stacks that included 
-    // layer. 
+    // recomputed. So, register significant changes for every prim path
+    // in the cache that uses any path in any of the layer stacks that
+    // included layer.  Only bother doing this for prims, since thex
+    // properties will be implicitly invalidated by significant
+    // prim resyncs.
     //
     // For insignificant sublayer changes, the only prim that's really 
     // affected is the pseudo-root. However, we still need to rebuild the 
@@ -1537,7 +1539,7 @@ PcpChanges::_DidChangeSublayer(
     // have been registered yet using the normal means -- such as unmuting
     // a sublayer.
 
-    SdfPathSet depPaths;
+    bool anyFound = false;
     TF_FOR_ALL(layerStack, layerStacks) {
         PcpDependencyVector deps = cache->FindDependentPaths(
             *layerStack,
@@ -1547,28 +1549,27 @@ PcpChanges::_DidChangeSublayer(
             /* recurseOnIndex */ true,
             /* filter */ true);
         for (const auto &dep: deps) {
-            depPaths.insert(dep.indexPath);
-        }
-    }
-
-    if (not depPaths.empty()) {
-        PCP_APPEND_DEBUG(
-            "  %s following in @%s@ due to "
-            "%s reload in sublayer @%s@:\n",
-            *significant ? "Resync" : "Spec changes",
-            cache->GetLayerStackIdentifier().rootLayer->
-                 GetIdentifier().c_str(),
-            *significant ? "significant" : "insignificant",
-            sublayer->GetIdentifier().c_str());
-    }
-
-    for(const SdfPath& path: depPaths) {
-        PCP_APPEND_DEBUG("    <%s>\n", path.GetText());
-        if (*significant) {
-            DidChangeSignificantly(cache, path);
-        }
-        else {
-            DidChangeSpecStack(cache, path);
+            if (!dep.indexPath.IsAbsoluteRootOrPrimPath()) {
+                // Filter to only prims; see comment above re: properties.
+                continue;
+            }
+            if (!anyFound) {
+                PCP_APPEND_DEBUG(
+                    "  %s following in @%s@ due to "
+                    "%s reload in sublayer @%s@:\n",
+                    *significant ? "Resync" : "Spec changes",
+                    cache->GetLayerStackIdentifier().rootLayer->
+                         GetIdentifier().c_str(),
+                    *significant ? "significant" : "insignificant",
+                    sublayer->GetIdentifier().c_str());
+                anyFound = true;
+            }
+            PCP_APPEND_DEBUG("    <%s>\n", dep.indexPath.GetText());
+            if (*significant) {
+                DidChangeSignificantly(cache, dep.indexPath);
+            } else {
+                DidChangeSpecStack(cache, dep.indexPath);
+            }
         }
     }
 
