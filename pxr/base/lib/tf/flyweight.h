@@ -191,8 +191,9 @@ private:
         
         typename _PoolHash::const_accessor acc;
         if (create) {
-            if (pool.insert(acc, std::make_pair(value, _Rep())))
+            if (pool.insert(acc, std::make_pair(value, _Rep()))) {
                 TF_FLYWEIGHT_INC_STAT(numCreated);
+            }
             ++acc->second.refCount;
             return &(*acc);
         }
