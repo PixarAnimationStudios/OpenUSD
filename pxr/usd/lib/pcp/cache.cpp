@@ -510,7 +510,7 @@ PcpCache::GetUsedRootLayers() const
 }
 
 PcpDependencyVector
-PcpCache::FindDependentPaths(
+PcpCache::FindSiteDependencies(
     const SdfLayerHandle& layer,
     const SdfPath& sitePath,
     PcpDependencyFlags depMask,
@@ -521,7 +521,7 @@ PcpCache::FindDependentPaths(
 {
     PcpDependencyVector result;
     for (const auto& layerStack: FindAllLayerStacksUsingLayer(layer)) {
-        PcpDependencyVector deps = FindDependentPaths(
+        PcpDependencyVector deps = FindSiteDependencies(
             layerStack, sitePath, depMask, recurseOnSite, recurseOnIndex,
             filterForExistingCachesOnly);
         for (PcpDependency dep: deps) {
@@ -540,7 +540,7 @@ PcpCache::FindDependentPaths(
 }
 
 PcpDependencyVector
-PcpCache::FindDependentPaths(
+PcpCache::FindSiteDependencies(
     const PcpLayerStackPtr& siteLayerStack,
     const SdfPath& sitePath,
     PcpDependencyFlags depMask,
@@ -681,7 +681,7 @@ PcpCache::FindDependentPaths(
     // therefore were not encountered above, but which nonetheless
     // represent dependent paths.  Add them if requested.
     if (recurseOnIndex) {
-        TRACE_SCOPE("PcpCache::FindDependentPaths - recurseOnIndex");
+        TRACE_SCOPE("PcpCache::FindSiteDependencies - recurseOnIndex");
         SdfPathSet seenDeps;
         PcpDependencyVector expandedDeps;
         for(const PcpDependency &dep: deps) {
@@ -1255,7 +1255,7 @@ PcpCache::ComputeNamespaceEdits(
 
             // Store the node for each dependent site.
             PcpDependencyVector deps =
-                cache->FindDependentPaths(
+                cache->FindSiteDependencies(
                     relocatesLayer, primPath,
                     PcpDependencyTypeAnyNonVirtual,
                     /* recurseOnSite */ true,
@@ -1283,7 +1283,7 @@ PcpCache::ComputeNamespaceEdits(
             // Store the node for each dependent site.
             for(const SdfSite& primSite: primSites) {
                 PcpDependencyVector deps =
-                    cache->FindDependentPaths(
+                    cache->FindSiteDependencies(
                         primSite.layer, primPath,
                         PcpDependencyTypeAnyNonVirtual,
                         /* recurseOnSite */ false,
@@ -1328,10 +1328,10 @@ PcpCache::ComputeNamespaceEdits(
                 // Get all of the direct dependents on the namespace edited
                 // site and anything below.
                 for (const PcpDependency &dep:
-                    FindDependentPaths(_layerStack, primPath, depMask,
-                                       /* recurseOnSite */ true,
-                                       /* recurseOnIndex */ false,
-                                       /* filter */ true)) {
+                    FindSiteDependencies(_layerStack, primPath, depMask,
+                                         /* recurseOnSite */ true,
+                                         /* recurseOnIndex */ false,
+                                         /* filter */ true)) {
                     if (dep.indexPath.IsPrimPath()) {
                         descendentPrimPaths.insert(dep.indexPath);
                     }
@@ -1339,10 +1339,10 @@ PcpCache::ComputeNamespaceEdits(
 
                 // Remove the direct dependents on the site itself.
                 for (const PcpDependency &dep:
-                    FindDependentPaths(_layerStack, primPath, depMask,
-                                       /* recurseOnSite */ false,
-                                       /* recurseOnIndex */ false,
-                                       /* filter */ true)) {
+                    FindSiteDependencies(_layerStack, primPath, depMask,
+                                         /* recurseOnSite */ false,
+                                         /* recurseOnIndex */ false,
+                                         /* filter */ true)) {
                     descendentPrimPaths.erase(dep.indexPath);
                 }
 
@@ -1632,7 +1632,7 @@ PcpCache::ComputeNamespaceEdits(
             std::map<SdfPath, PcpNodeRef> descendantPathsAndNodes;
             for (const PcpLayerStackPtr& layerStack: layerStacks) {
                 PcpDependencyVector deps =
-                    cache->FindDependentPaths(
+                    cache->FindSiteDependencies(
                         layerStack, primPath,
                         PcpDependencyTypeAnyNonVirtual,
                         /* recurseOnSite */ true,

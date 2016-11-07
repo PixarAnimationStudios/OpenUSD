@@ -785,7 +785,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     // act as if we're deleting the object at the new path.
                     if (not newPath.IsEmpty()) {
                         PcpDependencyVector deps =
-                            cache->FindDependentPaths(
+                            cache->FindSiteDependencies(
                                 layer, newPath,
                                 PcpDependencyTypeAnyNonVirtual,
                                 /* recurseOnSite */ false,
@@ -799,7 +799,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
 
                     // Do every path dependent on the old path.
                     PcpDependencyVector deps =
-                        cache->FindDependentPaths(
+                        cache->FindSiteDependencies(
                             layer, oldPath,
                             PcpDependencyTypeAnyNonVirtual,
                             /* recurseOnSite */ false,
@@ -1005,11 +1005,11 @@ PcpChanges::DidMaybeFixAsset(
             DidChangeSignificantly(cache, site.path);
         }
         PcpDependencyVector deps =
-            cache->FindDependentPaths(layerStack, site.path,
-                                      PcpDependencyTypeAnyIncludingVirtual,
-                                      /* recurseOnSite */ true,
-                                      /* recurseOnIndex */ true,
-                                      /* filter */ true);
+            cache->FindSiteDependencies(layerStack, site.path,
+                                        PcpDependencyTypeAnyIncludingVirtual,
+                                        /* recurseOnSite */ true,
+                                        /* recurseOnIndex */ true,
+                                        /* filter */ true);
         for(const auto &dep: deps) {
             PCP_APPEND_DEBUG("    <%s>\n", dep.indexPath.GetText());
             DidChangeSignificantly(cache, dep.indexPath);
@@ -1374,7 +1374,7 @@ PcpChanges::_DidChangeDependents(
     //
     // We don't need to do this for significant property changes as properties
     // can't be individually relocated.
-    PcpDependencyVector deps = cache->FindDependentPaths(
+    PcpDependencyVector deps = cache->FindSiteDependencies(
         layer, path, PcpDependencyTypeAnyIncludingVirtual,
         /* recurseOnSite */ isSignificantPrimChange,
         /* recurseOnIndex */ false,
@@ -1541,7 +1541,7 @@ PcpChanges::_DidChangeSublayer(
 
     bool anyFound = false;
     TF_FOR_ALL(layerStack, layerStacks) {
-        PcpDependencyVector deps = cache->FindDependentPaths(
+        PcpDependencyVector deps = cache->FindSiteDependencies(
             *layerStack,
             SdfPath::AbsoluteRootPath(), 
             PcpDependencyTypeAnyIncludingVirtual,
@@ -1682,7 +1682,7 @@ PcpChanges::_DidChangeLayerStackRelocations(
             PCP_APPEND_DEBUG("    <%s>\n", path.GetText());
 
             PcpDependencyVector deps =
-                cache->FindDependentPaths(
+                cache->FindSiteDependencies(
                     equivLayerStack, path,
                     PcpDependencyTypeAnyIncludingVirtual,
                     /* recurseOnSite */ true,

@@ -202,7 +202,7 @@ _RequestLayerMuting( PcpCache & cache,
 }
 
 static PcpDependencyVector
-_FindDependentPaths(const PcpCache& cache,
+_FindSiteDependencies(const PcpCache& cache,
                     const PcpLayerStackPtr& layerStack,
                     const SdfPath& path,
                     PcpDependencyFlags depMask,
@@ -210,7 +210,7 @@ _FindDependentPaths(const PcpCache& cache,
                     bool recurseOnIndex,
                     bool filterForExistingCachesOnly)
 {
-    return cache.FindDependentPaths(layerStack, path, depMask,
+    return cache.FindSiteDependencies(layerStack, path, depMask,
                                     recurseOnSite,
                                     recurseOnIndex,
                                     filterForExistingCachesOnly);
@@ -282,8 +282,8 @@ wrapCache()
               args("stopProperty") = SdfSpecHandle(),
               args("includeStopProperty") = false))
 
-        .def("FindDependentPaths",
-             &_FindDependentPaths,
+        .def("FindSiteDependencies",
+             &_FindSiteDependencies,
              (args("siteLayerStack"),
               args("sitePath"),
               args("dependencyType") = PcpDependencyTypeAnyNonVirtual,

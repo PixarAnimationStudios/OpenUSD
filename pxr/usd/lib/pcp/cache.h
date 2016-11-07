@@ -401,29 +401,29 @@ public:
     ///        otherwise a recursively-expanded result can include
     ///        un-computed paths that are expected to depend on the site
     PcpDependencyVector
-    FindDependentPaths(const PcpLayerStackPtr& siteLayerStack,
-                       const SdfPath& sitePath,
-                       PcpDependencyFlags depMask,
-                       bool recurseOnSite,
-                       bool recurseOnIndex,
-                       bool filterForExistingCachesOnly) const;
+    FindSiteDependencies(const PcpLayerStackPtr& siteLayerStack,
+                         const SdfPath& sitePath,
+                         PcpDependencyFlags depMask,
+                         bool recurseOnSite,
+                         bool recurseOnIndex,
+                         bool filterForExistingCachesOnly) const;
 
     /// Returns dependencies on the given site of scene description,
     /// as discovered by the cached index computations.
     ///
-    /// This variant takes a site layer rather than a layer stack.
-    /// It will check every layer stack using that layer, and apply
-    /// any relevant sublayer offsets to the map functions in the
+    /// This method overload takes a site layer rather than a layer
+    /// stack.  It will check every layer stack using that layer, and
+    /// apply any relevant sublayer offsets to the map functions in the
     /// returned PcpDependencyVector.
     ///
     /// See the other method for parameter details.
     PcpDependencyVector
-    FindDependentPaths(const SdfLayerHandle& siteLayer,
-                       const SdfPath& sitePath,
-                       PcpDependencyFlags depMask,
-                       bool recurseOnSite,
-                       bool recurseOnIndex,
-                       bool filterForExistingCachesOnly) const;
+    FindSiteDependencies(const SdfLayerHandle& siteLayer,
+                         const SdfPath& sitePath,
+                         PcpDependencyFlags depMask,
+                         bool recurseOnSite,
+                         bool recurseOnIndex,
+                         bool filterForExistingCachesOnly) const;
 
     /// Returns \c true if an opinion for the site at \p localPcpSitePath
     /// in the cache's layer stack can be provided by an opinion in \p layer,

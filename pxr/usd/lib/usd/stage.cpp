@@ -2865,10 +2865,10 @@ _AddDependentPaths(const SdfLayerHandle &layer, const SdfPath &path,
     }
 
     for (const PcpDependency& dep:
-         cache.FindDependentPaths(layer, path, depTypes,
-                                  /* recurseOnSite */ true,
-                                  /* recurseOnIndex */ false,
-                                  filterForExistingCachesOnly)) {
+         cache.FindSiteDependencies(layer, path, depTypes,
+                                    /* recurseOnSite */ true,
+                                    /* recurseOnIndex */ false,
+                                    filterForExistingCachesOnly)) {
         output->insert(dep.indexPath);
     }
 
