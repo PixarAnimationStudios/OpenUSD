@@ -3234,6 +3234,20 @@ _ChooseBestFallbackAmongOptions(
     return std::string();
 }
 
+// XXX: The variant evaluation process is more convoluted than it
+//      needs to be.  In particular it seems like we can simplify
+//      this once we remove the old-style standin fallback behavior.
+//
+// XXX: There's a question as to whether Pcp should be responsible
+//      for validating variant selections at some point. Currently, Csd
+//      handles that during name children population and checks that
+//      the each variant and variant set in the selection exists.
+//
+//      One issue is that Csd's variant validation skips over classes; 
+//      this is because classes may express a selection for variants 
+//      that are provided by instances. Pcp currently doesn't know or 
+//      care whether the prim being constructed is a class, and it'd
+//      be nice if it didn't have to.
 static void
 _EvalNodeVariants(
     PcpPrimIndex *index, 
@@ -3295,7 +3309,7 @@ _EvalNodeVariants(
                                          *indexer->inputs.variantFallbacks );
         if (not vselFallback.empty()) {
             PCP_GRAPH_MSG(
-                node, "Found fallback '%s' for variant set '%s'",
+                node, "Found fallback {%s=%s}",
                 vset.c_str(),
                 vselFallback.c_str());
         }
@@ -3336,17 +3350,6 @@ _EvalNodeVariants(
             continue;
         }
 
-        // XXX: There's a question as to whether Pcp should be responsible
-        //      for validating variant selections at some point. Currently, Csd
-        //      handles that during name children population and checks that
-        //      the each variant and variant set in the selection exists.
-        //
-        //      One issue is that Csd's variant validation skips over classes; 
-        //      this is because classes may express a selection for variants 
-        //      that are provided by instances. Pcp currently doesn't know or 
-        //      care whether the prim being constructed is a class, and it'd
-        //      be nice if it didn't have to.
-
         // Add the variant arc.
         SdfPath varPath = node.GetSite()
             .path.AppendVariantSelection(vset, vsel);
@@ -3368,6 +3371,20 @@ _EvalNodeVariants(
                  /* requirePrimAtTarget = */ false,
                  /* skipDuplicateNodes = */ false,
                  indexer );
+
+        // If we expanded a fallback, the fallback may introduced authored
+        // variant selections, so we must restart checking for authored
+        // selections that resolve variant sets on this node.  Rather
+        // than re-enqueue a task for this node, just restart immediately
+        // since we know the new node we just added is strictly weaker
+        // than this node.
+        if (fallbacks) {
+            fallbacks = false;
+            vsetNum = -1;
+            PCP_GRAPH_MSG(
+                node, "Restarting variant eval after applying fallback");
+            continue;
+        }
     }
 
     if (shouldAddVariantFallbackTask) {
