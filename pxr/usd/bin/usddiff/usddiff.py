@@ -65,12 +65,17 @@ def _getFileFormat(path):
 
     # Note that python's os.path.splitext retains the '.' portion
     # when obtaining an extension, but Sdf's Fileformat API doesn't 
-    # expect one.
+    # expect one. We also make sure to prune out any version specifiers.
     _, ext = os.path.splitext(path)
     if len(ext) <= 1:
         return Sdf.FileFormat.FindByExtension('usd')
-    fileFormat = Sdf.FileFormat.FindByExtension(ext[1:])
 
+    prunedExtension = ext[1:]
+    versionSpecifierPos = prunedExtension.rfind('#')
+    if versionSpecifierPos != -1:
+        prunedExtension = prunedExtension[:versionSpecifierPos]
+     
+    fileFormat = Sdf.FileFormat.FindByExtension(prunedExtension)
     if fileFormat and fileFormat.CanRead(path):
         return fileFormat.formatId
 
