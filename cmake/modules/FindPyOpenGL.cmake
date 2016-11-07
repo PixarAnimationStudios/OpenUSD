@@ -21,22 +21,21 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-# Jinja2 is a python library, ensure that it is available for use with our
+# PyOpenGL is a python library, ensure that it is available for use with our
 # specified version of Python.
 #
+
 if (NOT PYTHON_EXECUTABLE)
     return()
 endif()
 
 execute_process(
     COMMAND 
-        "${PYTHON_EXECUTABLE}" "-c" "import jinja2"
+        "${PYTHON_EXECUTABLE}" "-c" "from OpenGL import *"
     RESULT_VARIABLE
-        jinja2ImportResult 
+        pyopenglImportResult 
 )
-if (jinja2ImportResult EQUAL 0)
-    message(STATUS "Found Jinja2")
-    set(JINJA2_FOUND True)
+if (pyopenglImportResult EQUAL 0)
+    message(STATUS "Found PyOpenGL")
+    set(PYOPENGL_FOUND True)
 endif()
-
-
