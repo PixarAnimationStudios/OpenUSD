@@ -619,8 +619,18 @@ PcpCache::FindSiteDependencies(
 
     // Handle dependencies stored in _primDependencies.
     auto visitSiteFn = [&](const SdfPath &depPrimIndexPath,
-                              const SdfPath &depPrimSitePath)
+                           const SdfPath &depPrimSitePath)
     {
+        // Because arc dependencies are analyzed in terms of prims,
+        // if we are querying deps for a property, and recurseOnSite
+        // is true, we must guard against recursing into paths
+        // that are siblings of the property and filter them out.
+        if (depPrimSitePath != sitePrimPath &&
+            depPrimSitePath.HasPrefix(sitePrimPath) &&
+            !depPrimSitePath.HasPrefix(sitePath)) {
+            return;
+        }
+
         // If we have recursed above to an ancestor, include its direct
         // dependencies, since they are considered ancestral by descendants.
         const PcpDependencyFlags localMask =
@@ -628,7 +638,7 @@ PcpCache::FindSiteDependencies(
              sitePrimPath.HasPrefix(depPrimSitePath))
             ? (depMask | PcpDependencyTypeDirect) : depMask;
 
-        // If we have recursed below sitePrimPath, use the that site;
+        // If we have recursed below sitePath, use that site;
         // otherwise use the site the caller requested.
         const SdfPath localSitePath =
             (depPrimSitePath != sitePrimPath &&
