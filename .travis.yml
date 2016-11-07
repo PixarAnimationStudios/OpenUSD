@@ -101,8 +101,6 @@ install:
     else
       echo 'Using cached OpenSubdiv';
     fi
-  # XXX: To workaround issue #3, create a symlink at opensubdiv3/ pointing to opensubdiv/
-  - rm -f $HOME/osd/include/opensubdiv3 && ln -s $HOME/osd/include/opensubdiv $HOME/osd/include/opensubdiv3
 
   ### OpenImageIO 1.5.11
   - sudo apt-get install libboost-filesystem1.55.0 libboost-filesystem1.55-dev
@@ -150,9 +148,6 @@ script:
   - mkdir build && cd build
   - cmake -DTBB_ROOT_DIR=$HOME/tbb43_20141023oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF ..
   - echo 'Building with -j4'
-  # XXX: Need to explicitly build cameraUtil before hd due to missing dependency declaration.
-  # This is fixed in commit 880b04.
-  - make -j4 cameraUtil
   - make -j4
   # Default install location is /usr/local; we need sudo access to write there.
   - sudo make install
