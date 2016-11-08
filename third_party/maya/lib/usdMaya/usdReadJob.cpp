@@ -115,12 +115,21 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         return false;
     }
 
-    // If readAnimData is true, we adjust the Min/Max time sliders
+    // If readAnimData is true, we expand the Min/Max time sliders to include
+    // the stage's range if necessary.
     if (mArgs.readAnimData) {
+        MTime currentMinTime = MAnimControl::minTime();
+        MTime currentMaxTime = MAnimControl::maxTime();
+
         double startTimeCode = stage->GetStartTimeCode();
         double endTimeCode = stage->GetEndTimeCode();
-        MAnimControl::setMinTime(MTime(startTimeCode));
-        MAnimControl::setMaxTime(MTime(endTimeCode));
+
+        if (startTimeCode < currentMinTime.value()) {
+            MAnimControl::setMinTime(MTime(startTimeCode));
+        }
+        if (endTimeCode > currentMaxTime.value()) {
+            MAnimControl::setMaxTime(MTime(endTimeCode));
+        }
     }
 
     // Use the primPath to get the root usdNode

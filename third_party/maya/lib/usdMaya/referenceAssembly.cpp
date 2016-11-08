@@ -1171,6 +1171,7 @@ bool UsdMayaRepresentationHierBase::activate()
         usdAssembly->GetVariantSetSelections();
 
     JobImportArgs importArgs;
+    importArgs.readAnimData = true;
     if (_ShouldImportWithProxies()) {
         importArgs.importWithProxyShapes = true;
 
