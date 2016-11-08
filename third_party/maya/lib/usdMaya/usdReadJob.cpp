@@ -219,14 +219,14 @@ bool usdReadJob::_DoImport(UsdTreeIterator& primIt,
                                       mArgs.readAnimData);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
-        // we should likely be checking if this is a nested model as well.
-        std::string assetIdentifier;
-        SdfPath assetPrimPath;
         if (PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
                 usdRootPrim,
-                prim,
-                &assetIdentifier,
-                &assetPrimPath)) {
+                prim)) {
+            // We use the file path of the file currently being imported and
+            // the path to the prim within that file when creating the
+            // reference assembly.
+            const std::string refFilePath = mFileName;
+            const SdfPath refPrimPath = prim.GetPath();
 
             // XXX: At some point, if assemblyRep == "import" we'd like
             // to import everything instead of just making an assembly.
@@ -234,8 +234,8 @@ bool usdReadJob::_DoImport(UsdTreeIterator& primIt,
 
             MObject parentNode = ctx.GetMayaNode(prim.GetPath().GetParentPath(), false);
             if (PxrUsdMayaTranslatorModelAssembly::Read(prim,
-                                                        assetIdentifier,
-                                                        assetPrimPath,
+                                                        refFilePath,
+                                                        refPrimPath,
                                                         parentNode,
                                                         args,
                                                         &ctx,
