@@ -143,13 +143,14 @@ class SdfAssetPath;
 /// Example of deriving per curve segment and varying primvar data counts from
 /// the wrap, type, basis, and curveVertexCount.
 /// 
-/// wrap          | type    | basis   |  curveVertexCount | curveSegmentCount  | varyingDataCount
-/// ------------- | ---------------------------------------------------------------------------------------
+/// wrap          | type    | basis   | curveVertexCount  | curveSegmentCount  | varyingDataCount
+/// ------------- | ------- | ------- | ----------------- | ------------------ | -------------------------
 /// nonperiodic   | linear  | N/A     | [2 3 2 5]         | [1 2 1 4]          | [2 3 2 5]
 /// nonperiodic   | cubic   | bezier  | [4 7 10 4 7]      | [1 2 3 1 2]        | [2 3 4 2 3]
 /// nonperiodic   | cubic   | bspline | [5 4 6 7]         | [2 1 3 4]          | [3 2 4 5]
 /// periodic      | cubic   | bezier  | [6 9 6]           | [2 3 2]            | [2 3 2]
 /// periodic      | linear  | N/A     | [3 7]             | [3 7]              | [3 7]
+/// 
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
