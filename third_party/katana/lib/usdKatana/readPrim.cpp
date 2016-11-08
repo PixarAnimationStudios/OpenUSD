@@ -335,7 +335,13 @@ _BuildCollections(
     std::vector<UsdGeomCollectionAPI> collections = 
         UsdGeomCollectionAPI::GetCollections(prim);
 
-    std::string prefix = prim.GetPath().GetString();
+    std::string prefix;
+    // in instances, collection targets are on the master
+    if (prim.IsInstance()) {
+        prefix = prim.GetMaster().GetPath().GetString();
+    } else {
+        prefix = prim.GetPath().GetString();
+    }
     int prefixLength = prefix.length();
     
     for (size_t iCollection = 0; iCollection < collections.size(); ++iCollection)
@@ -356,8 +362,12 @@ _BuildCollections(
             }
         }
 
-        collectionsBuilder.set(name.GetString() + ".baked",
-            collectionBuilder.build());
+        // if empty, no point creating collection
+        FnKat::StringAttribute collectionAttr = collectionBuilder.build();
+        if (collectionAttr.getNearestSample(0).size() > 0) {
+            collectionsBuilder.set(name.GetString() + ".baked",
+                collectionAttr);
+        }
     }
 
     return (collections.size() > 0);
