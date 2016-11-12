@@ -2958,20 +2958,32 @@ UsdStage::_HandleLayersDidChange(
                         }
                     }
                 }
-
-                if (willRecompose) {
-                    _AddDependentPaths(layerAndChangelist.first, path, 
-                                       *_cache, &pathsToRecompose);
-                }
+            }
+            else if (path.IsPropertyPath()) {
+                willRecompose = 
+                    entry.flags.didAddPropertyWithOnlyRequiredFields or
+                    entry.flags.didAddProperty or
+                    entry.flags.didRemovePropertyWithOnlyRequiredFields or
+                    entry.flags.didRemoveProperty;
+            }
+            else if (path.IsTargetPath()) {
+                // XXX: This will cause us to include target paths like
+                // /Foo.rel[/Bar] in the resynced path list in the
+                // ObjectsChanged notice we emit. This is a bug; no such
+                // object exists in the USD scenegraph. Keeping this here
+                // for now to maintain current behavior.
+                willRecompose =
+                    entry.flags.didAddTarget or
+                    entry.flags.didRemoveTarget;
             }
 
             // If we're not going to recompose this path, record the dependent
             // scene paths separately so we can notify clients about the
             // changes.
-            if (not willRecompose) {
-                _AddDependentPaths(layerAndChangelist.first, path, 
-                                   *_cache, &otherChangedPaths);
-            }
+            SdfPathSet* changedPaths = 
+                willRecompose ? &pathsToRecompose : &otherChangedPaths;
+            _AddDependentPaths(layerAndChangelist.first, path, 
+                               *_cache, changedPaths);
         }
     }
 

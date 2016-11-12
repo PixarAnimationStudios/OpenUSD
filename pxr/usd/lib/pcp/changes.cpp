@@ -348,10 +348,37 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                  TfStringify(cache->GetLayerStack()->GetIdentifier()).c_str());
     }
 
+    const bool allCachesInUsdMode = std::all_of(
+        caches.begin(), caches.end(), 
+        [](const PcpCache* cache) { return cache->IsUsd(); });
+
     // Process all changes, first looping over all layers.
     TF_FOR_ALL(i, changes) {
-        const SdfLayerHandle& layer     = TfDynamic_cast<SdfLayerHandle>(i->first);
+        const SdfLayerHandle& layer     = i->first;
         const SdfChangeList& changeList = i->second;
+
+        // PcpCaches in USD mode only cache prim indexes, so they only
+        // care about prim changes. We can do a pre-scan of the entries
+        // and bail early if none of the changes are for prims, skipping
+        // over unnecessary work.
+        if (allCachesInUsdMode) {
+            using _Entries = SdfChangeList::EntryList;
+
+            const _Entries& entries = changeList.GetEntryList();
+            const bool hasPrimChanges = std::any_of(
+                entries.begin(), entries.end(),
+                [](const _Entries::value_type& entry) {
+                    return (entry.first.IsPrimOrPrimVariantSelectionPath() or
+                            entry.first == SdfPath::AbsoluteRootPath());
+                });
+
+            if (not hasPrimChanges) {
+                PCP_APPEND_DEBUG(
+                    "  Layer @%s@ changed:  skipping non-prim changes\n",
+                    layer->GetIdentifier().c_str());
+                continue;
+            }
+        }
 
         // Find every layer stack in every cache that includes 'layer'.
         // If there aren't any such layer stacks, we can ignore this change.
@@ -576,33 +603,38 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     layerStackChangeMask |= LayerStackRelocatesChange;
                 }
             }
-
-            else if (path.IsPropertyPath()) {
-                if (entry.flags.didRename) {
-                    // XXX: See the comment above regarding renaming
-                    //      prims.
-                    oldPaths.push_back(entry.oldPath);
-                    newPaths.push_back(path);
-                    PCP_APPEND_DEBUG("  Renamed @%s@<%s> to <%s>\n",
-                                     layer->GetIdentifier().c_str(),
-                                     entry.oldPath.GetText(), path.GetText());
+            else if (not allCachesInUsdMode) {
+                // See comment above regarding PcpCaches in USD mode.
+                // We also check for USD mode here to ensure we don't
+                // process any non-prim changes if the changelist had
+                // a mix of prim and non-prim changes.
+                if (path.IsPropertyPath()) {
+                    if (entry.flags.didRename) {
+                        // XXX: See the comment above regarding renaming
+                        //      prims.
+                        oldPaths.push_back(entry.oldPath);
+                        newPaths.push_back(path);
+                        PCP_APPEND_DEBUG("  Renamed @%s@<%s> to <%s>\n",
+                                         layer->GetIdentifier().c_str(),
+                                         entry.oldPath.GetText(),path.GetText());
+                    }
+                    if (int specChanges =
+                            Pcp_EntryRequiresPropertySpecsChange(entry)) {
+                        pathsWithSpecChangesTypes[path] |= specChanges;
+                    }
+                    if (Pcp_EntryRequiresPropertyIndexChange(entry)) {
+                        pathsWithSignificantChanges.insert(path);
+                    }
                 }
-                if (int specChanges =
-                        Pcp_EntryRequiresPropertySpecsChange(entry)) {
-                    pathsWithSpecChangesTypes[path] |= specChanges;
-                }
-                if (Pcp_EntryRequiresPropertyIndexChange(entry)) {
-                    pathsWithSignificantChanges.insert(path);
-                }
-            }
-            else if (path.IsTargetPath()) {
-                if (entry.flags.didAddTarget) {
-                    pathsWithSpecChangesTypes[path] |=
-                        Pcp_EntryChangeSpecsAddInert;
-                }
-                if (entry.flags.didRemoveTarget) {
-                    pathsWithSpecChangesTypes[path] |=
-                        Pcp_EntryChangeSpecsRemoveInert;
+                else if (path.IsTargetPath()) {
+                    if (entry.flags.didAddTarget) {
+                        pathsWithSpecChangesTypes[path] |=
+                            Pcp_EntryChangeSpecsAddInert;
+                    }
+                    if (entry.flags.didRemoveTarget) {
+                        pathsWithSpecChangesTypes[path] |=
+                            Pcp_EntryChangeSpecsRemoveInert;
+                    }
                 }
             }
         }
