@@ -1724,7 +1724,7 @@ class StageView(QtOpenGL.QGLWidget):
                 material.ambient = (0.2, 0.2, 0.2, 1.0)
                 material.specular = (0.5, 0.5, 0.5, 1.0)
                 material.shininess = 32.0
-                sceneAmbient = (0.2, 0.2, 0.2, 1.0)
+                sceneAmbient = (0.01, 0.01, 0.01, 1.0)
 
                 self._renderer.SetLightingState(lights, material, sceneAmbient)
 
