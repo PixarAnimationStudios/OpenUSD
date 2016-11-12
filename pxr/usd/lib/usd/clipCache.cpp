@@ -142,6 +142,14 @@ _AddClipsFromNode(
     Usd_ResolvedClipInfo clipInfo;
     Usd_ResolveClipInfo(node, &clipInfo);
 
+    // If we haven't found all of the required clip metadata we can just 
+    // bail out. Note that clipTimes and clipManifestAssetPath are *not* 
+    // required.
+    if (not clipInfo.clipAssetPaths or not clipInfo.clipPrimPath 
+        or not clipInfo.clipActive) {
+        return;
+    }
+
     // The clip manifest is currently optional but can greatly improve
     // performance if specified. For debugging performance problems,
     // issue a message indicating if one hasn't been specified.
@@ -153,14 +161,6 @@ _AddClipsFromNode(
             node.GetRootNode().GetPath().GetString().c_str(),
             TfStringify(node.GetLayerStack()).c_str(),
             node.GetPath().GetString().c_str());
-    }
-
-    // If we haven't found all of the required clip metadata we can just 
-    // bail out. Note that clipTimes and clipManifestAssetPath are *not* 
-    // required.
-    if (not clipInfo.clipAssetPaths or not clipInfo.clipPrimPath 
-        or not clipInfo.clipActive) {
-        return;
     }
 
     // XXX: Possibly want a better way to inform consumers of the error
