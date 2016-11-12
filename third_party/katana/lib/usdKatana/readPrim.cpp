@@ -336,27 +336,19 @@ _BuildCollections(
     std::vector<UsdGeomCollectionAPI> collections = 
         UsdGeomCollectionAPI::GetCollections(prim);
 
-    std::string prefix;
-    // in instances, collection targets are on the master
-    if (prim.IsInstance()) {
-        prefix = prim.GetMaster().GetPath().GetString();
-    } else {
-        prefix = prim.GetPath().GetString();
-    }
-    int prefixLength = prefix.length();
-    
+    size_t prefixLength = prim.GetPath().GetString().length();
     for (size_t iCollection = 0; iCollection < collections.size(); ++iCollection)
     {
         SdfPathVector targets;
         FnKat::StringBuilder collectionBuilder;
         UsdGeomCollectionAPI &collection = collections[iCollection];
         TfToken name = collection.GetCollectionName();
-        collection.GetTargets(&targets);
+        collection.GetTargets(&targets, false);
         for (size_t iTarget = 0; iTarget < targets.size(); ++iTarget)
         {
             std::string targetPath = targets[iTarget].GetString();
             
-            if (targetPath.size() >= static_cast<size_t>(prefixLength))
+            if (targetPath.size() >= prefixLength)
             {
                 std::string relativePath = targetPath.substr(prefixLength);
                 // follow katana convention for collections
