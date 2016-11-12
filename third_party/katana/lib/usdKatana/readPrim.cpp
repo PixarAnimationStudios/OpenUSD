@@ -358,6 +358,12 @@ _BuildCollections(
             if (targetPath.size() >= static_cast<size_t>(prefixLength))
             {
                 std::string relativePath = targetPath.substr(prefixLength);
+                // follow katana convention for collections
+                // the "self" location relative path is "/". 
+                // Absolute paths start with "/root/"
+                // relative paths start without the "/" though.
+                if (relativePath == "")
+                    relativePath = "/";
                 collectionBuilder.push_back(relativePath);
             }
         }
