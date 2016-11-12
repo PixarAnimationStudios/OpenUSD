@@ -4,7 +4,7 @@ set(DIRS
     cameraUtil
     pxOsd
     glf
-
+    gal
     hd
     hdx
 )
