@@ -146,7 +146,7 @@ class SdfAssetPath;
 /// (smaller) arrays.  PointInstancer allows two independent means of masking
 /// instances by ID, each with different features that meet the needs of
 /// various clients in a pipeline.  Both pruning features' lists of ID's are
-/// combined to produce the mask returned by ComputeInstanceMask().
+/// combined to produce the mask returned by ComputeMaskAtTime().
 /// 
 /// \note If a PointInstancer has no authored \em ids attribute, the masking
 /// features will still be available, with the integers specifying element
