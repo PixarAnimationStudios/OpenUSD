@@ -23,6 +23,7 @@
 //
 #include "usdMaya/usdWriteJob.h"
 
+#include "usdMaya/JobArgs.h"
 #include "usdMaya/MayaMeshWriter.h"
 #include "usdMaya/MayaNurbsCurveWriter.h"
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
@@ -103,16 +104,18 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
         }  // for n
     }  // for m
 
-    // make sure the file is a valid one with proper extension
-    if (TfStringEndsWith(iFileName,".usd") || 
-        TfStringEndsWith(iFileName,".usda") ||
-        TfStringEndsWith(iFileName,".usdb") ||
-        TfStringEndsWith(iFileName,".usdc")) {
+    // Make sure the file name is a valid one with a proper USD extension.
+    const std::string iFileExtension = TfStringGetSuffix(iFileName, '.');
+    if (iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault or
+            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII or
+            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate) {
         mFileName = iFileName;
     } else {
-        mFileName = iFileName + ".usda";
+        mFileName = TfStringPrintf("%s.%s",
+                                   iFileName.c_str(),
+                                   PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     }
-    
+
     MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
 
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
@@ -518,7 +521,6 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
         }
         if (!tableOfActivePaths.empty()) {
             { // == BEG: Scope for Variant EditContext
-                // See xref: /mainline/third/plugin/px_usdBuildPlug/testenv/testPxUsdBuildPlugConstraints.py
                 // Create the variantSet and variant
                 UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().FindOrCreate("modelingVariant");
                 modelingVariantSet.FindOrCreateVariant(variantName);

@@ -28,7 +28,17 @@
 
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+
+#define PXRUSDMAYA_TRANSLATOR_TOKENS \
+    ((UsdFileExtensionDefault, "usd")) \
+    ((UsdFileExtensionASCII, "usda")) \
+    ((UsdFileExtensionCrate, "usdc")) \
+    ((UsdFileFilter, "*.usd *.usda *.usdc"))
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
+        PXRUSDMAYA_TRANSLATOR_TOKENS);
 
 #define PXRUSDMAYA_JOBARGS_TOKENS \
     (Full) \

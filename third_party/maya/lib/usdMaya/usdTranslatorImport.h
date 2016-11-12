@@ -27,49 +27,58 @@
 
 /// \file usdTranslatorImport.h
 
+#include "usdMaya/JobArgs.h"
+
+#include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
 #include <string>
+
 
 const char* const usdTranslatorImportDefaults =
         "shadingMode=GPrim Colors;"
         "readAnimData=0;"
         "assemblyRep=Collapsed";
 
-class usdTranslatorImport : public MPxFileTranslator {
 
+class usdTranslatorImport : public MPxFileTranslator
+{
     public:
 
         /**
          * method to create usdTranslatorImport file translator
          */
-        static void * creator(const std::string& assemblyTypeName,
-                              const std::string& proxyShapeTypeName);
+        static void* creator(const std::string& assemblyTypeName,
+                             const std::string& proxyShapeTypeName);
 
         MStatus reader(
-            const MFileObject& file,
-            const MString& optionsString,
-            FileAccessMode mode);
+                const MFileObject& file,
+                const MString& optionsString,
+                MPxFileTranslator::FileAccessMode mode);
 
         bool haveReadMethod() const { return true; }
         bool haveWriteMethod() const { return false; }
 
         MFileKind identifyFile(
-            const MFileObject&,
-            const char*,
-            short) const;
+                const MFileObject& file,
+                const char* buffer,
+                short size) const;
 
-        MString defaultExtension() const { return "usda"; }
-        MString filter() const { return "*.usd*"; }
-
-    protected:
+        MString defaultExtension() const {
+            return PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+        }
+        MString filter() const {
+            return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
+        }
 
     private:
 
-        usdTranslatorImport(const std::string& assemblyTypeName,
-                            const std::string& proxyShapeTypeName);
         usdTranslatorImport(
-            const usdTranslatorImport&);
+                const std::string& assemblyTypeName,
+                const std::string& proxyShapeTypeName);
+        usdTranslatorImport(const usdTranslatorImport&);
         ~usdTranslatorImport();
         usdTranslatorImport& operator=(const usdTranslatorImport&);
 

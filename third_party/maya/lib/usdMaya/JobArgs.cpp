@@ -24,10 +24,17 @@
 #include "usdMaya/JobArgs.h"
 
 #include "usdMaya/shadingModeRegistry.h"
+
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/tokens.h"
+
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
+        PXRUSDMAYA_TRANSLATOR_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, 
         PXRUSDMAYA_JOBARGS_TOKENS);
+
 
 JobExportArgs::JobExportArgs()
     :
@@ -49,6 +56,7 @@ JobExportArgs::JobExportArgs()
         exportVisibility(true)
 {
 }
+
 
 JobImportArgs::JobImportArgs()
     :

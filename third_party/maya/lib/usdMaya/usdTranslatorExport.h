@@ -27,9 +27,12 @@
 
 /// \file usdTranslatorExport.h
 
-#include <maya/MPxFileTranslator.h>
+#include "usdMaya/JobArgs.h"
 
-#include <maya/MFnMesh.h>
+#include <maya/MFileObject.h>
+#include <maya/MPxFileTranslator.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
 
 const char* const usdTranslatorExportDefaults = 
@@ -48,38 +51,40 @@ const char* const usdTranslatorExportDefaults =
         "startTime=1;"
         "endTime=1";
 
-class usdTranslatorExport : public MPxFileTranslator {
 
+class usdTranslatorExport : public MPxFileTranslator
+{
     public:
 
         /**
          * method to create usdTranslatorExport file translator
          */
-        static void * creator();
+        static void* creator();
 
         MStatus writer(
-            const MFileObject& file, 
-            const MString& optionsString,
-            MPxFileTranslator::FileAccessMode mode);
-        
+                const MFileObject& file, 
+                const MString& optionsString,
+                MPxFileTranslator::FileAccessMode mode);
+
         bool haveReadMethod() const { return false; }
         bool haveWriteMethod() const { return true; }
-        
-        MFileKind identifyFile(
-            const MFileObject&,
-            const char*, 
-            short) const;
 
-        MString defaultExtension() const { return "usda"; }
-        MString filter() const { return "*.usda"; }
-      
-    protected:
+        MFileKind identifyFile(
+                const MFileObject& file,
+                const char* buffer,
+                short size) const;
+
+        MString defaultExtension() const {
+            return PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+        }
+        MString filter() const {
+            return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
+        }
 
     private:
 
         usdTranslatorExport();
-        usdTranslatorExport(
-            const usdTranslatorExport&);
+        usdTranslatorExport(const usdTranslatorExport&);
         ~usdTranslatorExport();
         usdTranslatorExport& operator=(const usdTranslatorExport&);
 };
