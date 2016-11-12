@@ -26,6 +26,7 @@
 #include "usdKatana/usdInPrivateData.h"
 #include "usdKatana/utils.h"
 #include "usdKatana/tokens.h"
+#include "usdKatana/blindDataObject.h"
 
 
 #include "pxr/usd/usd/prim.h"
@@ -571,6 +572,17 @@ PxrUsdKatanaGeomGetPrimvarGroup(
 
     std::vector<UsdGeomPrimvar> primvarAttrs = imageable.GetPrimvars();
     TF_FOR_ALL(primvar, primvarAttrs) {
+        // If there is a block from blind data, skip to avoid the cost
+        UsdKatanaBlindDataObject kbd(imageable.GetPrim());
+        UsdAttribute blindAttr = kbd.GetKbdAttribute("geometry.arbitrary." + 
+                                        primvar->GetBaseName().GetString());
+        if (blindAttr) {
+            VtValue vtValue;
+            if (!blindAttr.Get(&vtValue) and blindAttr.HasAuthoredValueOpinion()) {
+                continue;
+            }
+        }
+        
         TfToken          name, interpolation;
         SdfValueTypeName typeName;
         int              elementSize;
