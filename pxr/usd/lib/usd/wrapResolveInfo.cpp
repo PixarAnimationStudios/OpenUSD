@@ -21,48 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/usd/resolveInfo.h"
+#include "pxr/base/tf/pyEnum.h"
 
-TF_WRAP_MODULE
+#include <boost/python/class.hpp>
+
+using std::string;
+
+using namespace boost::python;
+
+void wrapUsdResolveInfo()
 {
-    TF_WRAP(UsdCommon);
-    TF_WRAP(UsdNotice);
-    TF_WRAP(UsdTimeCode);
-    TF_WRAP(UsdInterpolationType);
+    class_<UsdResolveInfo>("ResolveInfo")
+        .add_property("source", &UsdResolveInfo::GetSource)
+        .add_property("node", &UsdResolveInfo::GetNode)
+        .add_property("valueIsBlocked", &UsdResolveInfo::ValueIsBlocked)
+        ;
 
-    // UsdObject and its subclasses.
-    TF_WRAP(UsdObject); 
-    TF_WRAP(UsdProperty);
-    TF_WRAP(UsdAttribute);
-    TF_WRAP(UsdRelationship);
-    TF_WRAP(UsdPrim);
-
-    // Value types.
-    TF_WRAP(UsdEditTarget);
-    TF_WRAP(UsdEditContext);
-    TF_WRAP(UsdInherits);
-    TF_WRAP(UsdPrimFlags);
-    TF_WRAP(UsdReferences);
-    TF_WRAP(UsdSchemaRegistry);
-    TF_WRAP(UsdSpecializes);
-    TF_WRAP(UsdTreeIterator);
-    TF_WRAP(UsdVariantSets);
-
-    // SchemaBase and subclasses.
-    TF_WRAP(UsdSchemaBase);
-    TF_WRAP(UsdTyped);
-
-    // Stage and Stage Cache
-    TF_WRAP(UsdStage);
-    TF_WRAP(UsdStageCache);
-    TF_WRAP(UsdStageCacheContext);
-
-    // Generated schema.
-    TF_WRAP(UsdClipsAPI);
-    TF_WRAP(UsdModelAPI);
-
-    // Miscellaenous classes
-    TF_WRAP(UsdAttributeQuery);
-    TF_WRAP(UsdCrateInfo);
-    TF_WRAP(UsdResolveInfo);
+    TfPyWrapEnum<UsdResolveInfoSource>();
 }

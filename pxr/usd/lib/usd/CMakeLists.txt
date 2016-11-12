@@ -94,6 +94,7 @@ pxr_shared_library(usd
         wrapProperty.cpp
         wrapReferences.cpp
         wrapRelationship.cpp
+        wrapResolveInfo.cpp
         wrapSchemaBase.cpp
         wrapSchemaRegistry.cpp
         wrapSpecializes.cpp

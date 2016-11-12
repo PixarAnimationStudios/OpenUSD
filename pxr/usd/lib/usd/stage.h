@@ -61,7 +61,7 @@ class Usd_ClipCache;
 class Usd_InstanceCache;
 class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
-class Usd_ResolveInfo;
+class UsdResolveInfo;
 class Usd_Resolver;
 class UsdTreeIterator;
 
@@ -1513,13 +1513,14 @@ private:
     // --------------------------------------------------------------------- //
 
     void _GetResolveInfo(const UsdAttribute &attr, 
-                         Usd_ResolveInfo *resolveInfo) const;
+                         UsdResolveInfo *resolveInfo,
+                         const UsdTimeCode *time = nullptr) const;
 
     template <class T> struct _ExtraResolveInfo;
 
     template <class T>
     void _GetResolveInfo(const UsdAttribute &attr, 
-                         Usd_ResolveInfo *resolveInfo,
+                         UsdResolveInfo *resolveInfo,
                          const UsdTimeCode *time = nullptr,
                          _ExtraResolveInfo<T> *extraInfo = nullptr) const;
 
@@ -1549,17 +1550,17 @@ private:
 
 
 
-    bool _GetValueFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   VtValue* result) const;
 
     template <class T>
-    bool _GetValueFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   T* result) const;
 
     template <class T>
-    bool _GetValueFromResolveInfoImpl(const Usd_ResolveInfo &info,
+    bool _GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
                                       UsdTimeCode time, const UsdAttribute &attr,
                                       Usd_InterpolatorBase* interpolator,
                                       T* value) const;
@@ -1586,14 +1587,14 @@ private:
                                    std::vector<double>* times) const;
 
     bool _GetTimeSamplesInIntervalFromResolveInfo(
-                                   const Usd_ResolveInfo &info,
+                                   const UsdResolveInfo &info,
                                    const UsdAttribute &attr,
                                    const GfInterval& interval,
                                    std::vector<double>* times) const;
 
     size_t _GetNumTimeSamples(const UsdAttribute &attr) const;
 
-    size_t _GetNumTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
+    size_t _GetNumTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                                            const UsdAttribute &attr) const;
 
     /// Gets the bracketing times around a desiredTime. Only false on error
@@ -1606,7 +1607,7 @@ private:
                                    double* upper,
                                    bool* hasSamples) const;
 
-    bool _GetBracketingTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                                                   const UsdAttribute &attr,
                                                   double desiredTime,
                                                   bool authoredOnly,
@@ -1616,7 +1617,7 @@ private:
 
     bool _ValueMightBeTimeVarying(const UsdAttribute &attr) const;
 
-    bool _ValueMightBeTimeVaryingFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
                                                  const UsdAttribute &attr) const;
 
     void _RegisterPerLayerNotices();

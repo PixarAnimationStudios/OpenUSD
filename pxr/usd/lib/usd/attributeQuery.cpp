@@ -179,7 +179,7 @@ UsdAttributeQuery::GetBracketingTimeSamples(double desiredTime,
 bool 
 UsdAttributeQuery::HasValue() const
 {
-    return _resolveInfo.source != Usd_ResolveInfoSourceNone;  
+    return _resolveInfo._source != UsdResolveInfoSourceNone;  
 }
 
 bool 

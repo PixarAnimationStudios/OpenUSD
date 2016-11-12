@@ -187,7 +187,7 @@ private:
 
 private:
     UsdAttribute _attr;
-    Usd_ResolveInfo _resolveInfo;
+    UsdResolveInfo _resolveInfo;
 };
 
 #endif // USD_ATTRIBUTE_QUERY_H

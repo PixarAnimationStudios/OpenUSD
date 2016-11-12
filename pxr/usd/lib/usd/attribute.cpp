@@ -27,7 +27,6 @@
 #include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/interpolators.h"
-#include "pxr/usd/usd/resolveInfo.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -120,7 +119,7 @@ UsdAttribute::GetTimeSamplesInInterval(const GfInterval& interval,
 bool 
 UsdAttribute::HasAuthoredValueOpinion() const
 {
-    Usd_ResolveInfo resolveInfo;
+    UsdResolveInfo resolveInfo;
     _GetStage()->_GetResolveInfo(*this, &resolveInfo);
     return resolveInfo.HasAuthoredValueOpinion();
 }
@@ -128,9 +127,9 @@ UsdAttribute::HasAuthoredValueOpinion() const
 bool 
 UsdAttribute::HasValue() const
 {
-    Usd_ResolveInfo resolveInfo;
+    UsdResolveInfo resolveInfo;
     _GetStage()->_GetResolveInfo(*this, &resolveInfo);
-    return resolveInfo.source != Usd_ResolveInfoSourceNone;
+    return resolveInfo._source != UsdResolveInfoSourceNone;
 }
 
 bool
@@ -194,6 +193,14 @@ UsdAttribute::_Get(VtArray<SdfAssetPath> *assetPaths, UsdTimeCode time) const
     }
 
     return false;
+}
+
+UsdResolveInfo
+UsdAttribute::GetResolveInfo(UsdTimeCode time) const
+{
+    UsdResolveInfo resolveInfo;
+    _GetStage()->_GetResolveInfo(*this, &resolveInfo, &time);
+    return resolveInfo;
 }
 
 bool 
