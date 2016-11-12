@@ -25,9 +25,10 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/renderPassShader.glslfx
+--- #import $TOOLS/hdx/shaders/renderPassIdShader.glslfx
 
 #import $TOOLS/hd/shaders/renderPass.glslfx
+#import $TOOLS/hdx/shaders/renderPass.glslfx
 
 -- configuration
 {
@@ -51,8 +52,8 @@
             },
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
-                            "RenderPass.ShouldCullFace",
-                            "RenderPass.RenderColorOutput" ]
+                            "HdxRenderPass.ShouldCullFaceShadows",
+                            "HdxRenderPass.RenderColorShadowsOutput" ]
             }
         }
     }
