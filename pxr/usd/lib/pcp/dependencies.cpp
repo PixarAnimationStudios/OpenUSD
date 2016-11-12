@@ -76,11 +76,8 @@ Pcp_Dependencies::Add(const PcpPrimIndex &primIndex)
              primIndexPath.GetText());
 
     int nodeIndex=0, count=0;
-    const auto nodeRange = primIndex.GetNodeRange();
-    for (auto nodeIter = nodeRange.first; nodeIter != nodeRange.second;
-         ++nodeIter, ++nodeIndex) 
-    {
-        const PcpNodeRef &n = *nodeIter;
+    for (const PcpNodeRef &n: primIndex.GetNodeRange()) {
+        const int curNodeIndex = nodeIndex++;
         const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(n);
         if (_ShouldStoreDependency(depFlags)) {
             _SiteDepMap &siteDepMap = _deps[n.GetLayerStack()];
@@ -88,7 +85,7 @@ Pcp_Dependencies::Add(const PcpPrimIndex &primIndex)
 
             TF_DEBUG(PCP_DEPENDENCIES)
                 .Msg(" - Node %i (%s %s): <%s> %s\n",
-                     nodeIndex,
+                     curNodeIndex,
                      PcpDependencyFlagsToString(depFlags).c_str(),
                      TfEnum::GetDisplayName(n.GetArcType()).c_str(),
                      n.GetPath().GetText(),
@@ -115,11 +112,8 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
              primIndexPath.GetText());
 
     int nodeIndex=0;
-    const auto nodeRange = primIndex.GetNodeRange();
-    for (auto nodeIter = nodeRange.first; nodeIter != nodeRange.second;
-         ++nodeIter, ++nodeIndex) 
-    {
-        const PcpNodeRef &n = *nodeIter;
+    for (const PcpNodeRef &n: primIndex.GetNodeRange()) {
+        const int curNodeIndex = nodeIndex++;
         const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(n);
         if (not _ShouldStoreDependency(depFlags)) {
             continue;
@@ -130,7 +124,7 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
 
         TF_DEBUG(PCP_DEPENDENCIES)
             .Msg(" - Node %i (%s %s): <%s> %s\n",
-                 nodeIndex,
+                 curNodeIndex,
                  PcpDependencyFlagsToString(depFlags).c_str(),
                  TfEnum::GetDisplayName(n.GetArcType()).c_str(),
                  n.GetPath().GetText(),

@@ -580,17 +580,20 @@ PcpComputeNamespaceEdits(
                 // nodes, since the code that handles direct inherits below
                 // needs to have the nodes where the inherits are introduced.
                 for (const SdfPath& descendentPrimPath : descendentPrimPaths) {
-                    auto range = primaryCache->FindPrimIndex(descendentPrimPath)
-                        ->GetNodeRange(PcpRangeTypeLocalInherit);
-                    for (auto nodeIter = range.first; nodeIter != range.second;
-                         ++nodeIter) 
-                    {
-                        const PcpNodeRef &node = *nodeIter;
-                        if (node.GetLayerStack() == primaryLayerStack and
-                            not node.IsDueToAncestor()) {
-                            // Found an inherit using a descendant.
-                            descendantNodes.insert(
-                                std::make_pair(cacheIndex, node));
+                    // We were just told this prim index is a deependency
+                    // so it certainly should exist.
+                    const PcpPrimIndex *index =
+                        primaryCache->FindPrimIndex(descendentPrimPath);
+                    if (TF_VERIFY(index, "Reported descendent dependency "
+                                  "lacks a prim index")) {
+                        for (const PcpNodeRef &node:
+                             index->GetNodeRange(PcpRangeTypeLocalInherit)) {
+                            if (node.GetLayerStack() == primaryLayerStack and
+                                not node.IsDueToAncestor()) {
+                                // Found an inherit using a descendant.
+                                descendantNodes.insert(
+                                   std::make_pair(cacheIndex, node));
+                            }
                         }
                     }
                 }

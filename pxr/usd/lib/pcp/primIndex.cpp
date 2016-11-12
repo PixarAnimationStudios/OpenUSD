@@ -259,9 +259,7 @@ PcpNodeRef
 PcpPrimIndex::GetNodeProvidingSpec(
     const SdfLayerHandle& layer, const SdfPath& path) const
 {
-    auto range = GetNodeRange();
-    for (auto nodeIter = range.first; nodeIter != range.second; ++nodeIter) {
-        const auto& node = *nodeIter;
+    for (const PcpNodeRef &node: GetNodeRange()) {
         // If the site has the given path and contributes specs then
         // search for the layer.
         if (node.CanContributeSpecs() and 
@@ -298,10 +296,10 @@ std::string
 PcpPrimIndex::GetSelectionAppliedForVariantSet(
     const std::string &variantSet) const
 {
-    TF_FOR_ALL(nodeIt, GetNodeRange()) {
-        if (nodeIt->GetPath().IsPrimVariantSelectionPath()) {
+    for (const PcpNodeRef &node: GetNodeRange()) {
+        if (node.GetPath().IsPrimVariantSelectionPath()) {
             std::pair<std::string, std::string> vsel =
-                nodeIt->GetPath().GetVariantSelection();
+                node.GetPath().GetVariantSelection();
             if (vsel.first == variantSet)
                 return vsel.second;
         }

@@ -73,10 +73,9 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
 
     // Collect all authored variant selections in strong-to-weak order.
     SdfVariantSelectionMap variantSelection;
-    TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-        if (nodeIt->CanContributeSpecs()) {
-            PcpComposeSiteVariantSelections(
-                nodeIt->GetSite(), &variantSelection);
+    for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+        if (node.CanContributeSpecs()) {
+            PcpComposeSiteVariantSelections(node.GetSite(), &variantSelection);
         }
     }
     _variantSelection.assign(variantSelection.begin(), variantSelection.end());

@@ -745,9 +745,7 @@ PcpCache::CanHaveOpinionForSite(
         std::set<PcpLayerStackPtr> visited;
 
         // Iterate over all nodes.
-        PcpNodeRange range = primIndex->GetNodeRange();
-        for (auto nodeIter = range.first; nodeIter != range.second; ++nodeIter) {
-            const auto& node = *nodeIter;
+        for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
             // Ignore nodes that don't provide specs.
             if (node.CanContributeSpecs()) {
                 // Check each layer stack that contributes specs only once.
@@ -888,8 +886,8 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
                     // If there are no specs left then we can discard the
                     // prim index.
                     bool anyNodeHasSpecs = false;
-                    TF_FOR_ALL(it, primIndex->GetNodeRange()) {
-                        if (it->HasSpecs()) {
+                    for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
+                        if (node.HasSpecs()) {
                             anyNodeHasSpecs = true;
                             break;
                         }
@@ -1038,8 +1036,8 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
                                               typedErr->resolvedAssetPath);
                 }
             }
-            TF_FOR_ALL(it, primIndex.GetNodeRange()) {
-                layerStacksAtOrUnderPrim.insert( it->GetSite().layerStack );
+            for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+                layerStacksAtOrUnderPrim.insert( node.GetSite().layerStack );
             }
         }
     }

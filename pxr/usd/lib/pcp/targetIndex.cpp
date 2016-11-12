@@ -107,10 +107,10 @@ _TargetInClassAndTargetsInstance(
         const SdfPath inheritedClassPath =
             nodeWhereConnectionWasAuthored.GetPathAtIntroduction();
 
-        TF_FOR_ALL(n, targetPrimIndex.GetNodeRange()) {
-            if (PcpIsInheritArc(n->GetArcType())
-                and (n->GetLayerStack() == layerStackWhereConnectionWasAuthored)
-                and (n->GetPath().HasPrefix(inheritedClassPath))) {
+        for (const PcpNodeRef &n: targetPrimIndex.GetNodeRange()) {
+            if (PcpIsInheritArc(n.GetArcType())
+                and (n.GetLayerStack() == layerStackWhereConnectionWasAuthored)
+                and (n.GetPath().HasPrefix(inheritedClassPath))) {
                 return true;
             }
         }
@@ -247,9 +247,9 @@ _TargetIsPermitted(
         owningPrimInNodeNS);
 
     PcpNodeRef owningPrimNodeWhereConnectionWasAuthored;
-    TF_FOR_ALL(it, owningPrimIndex.GetNodeRange()) {
-        if (it->GetSite() == owningPrimSiteWhereConnectionWasAuthored) {
-            owningPrimNodeWhereConnectionWasAuthored = *it;
+    for (const PcpNodeRef &node: owningPrimIndex.GetNodeRange()) {
+        if (node.GetSite() == owningPrimSiteWhereConnectionWasAuthored) {
+            owningPrimNodeWhereConnectionWasAuthored = node;
             break;
         }
     }
