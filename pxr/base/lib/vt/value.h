@@ -59,8 +59,9 @@
 
 #include <tbb/atomic.h>
 
-#include <typeinfo>
 #include <iostream>
+#include <memory>
+#include <typeinfo>
 
 /// Make a default value.
 /// VtValue uses this to create values to be returned from failed calls to \a
@@ -77,7 +78,7 @@ struct Vt_DefaultValueHolder
     template<class T>
     static Vt_DefaultValueHolder Create(T const &val) {
         return Vt_DefaultValueHolder(
-            boost::shared_ptr<void>(new T(val)), typeid(T));
+            std::shared_ptr<void>(new T(val)), typeid(T));
     }
 
     // Return the runtime type of the held object.
@@ -92,11 +93,11 @@ struct Vt_DefaultValueHolder
     }
 
 private:
-    Vt_DefaultValueHolder(boost::shared_ptr<void> const &ptr,
+    Vt_DefaultValueHolder(std::shared_ptr<void> const &ptr,
                           std::type_info const &type)
         : _ptr(ptr), _type(type) {}
 
-    boost::shared_ptr<void> _ptr;
+    std::shared_ptr<void> _ptr;
     std::type_info const &_type;
 };
 
