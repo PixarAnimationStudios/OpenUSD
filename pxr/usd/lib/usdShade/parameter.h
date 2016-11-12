@@ -279,6 +279,10 @@ public:
     ///
     /// \sa ConnectElementToSource(), GetConnectedSources()
     size_t GetConnectedArraySize() const;
+
+    /// Return the name of the sibling relationship that would encode
+    /// the connection for this parameter.
+    TfToken GetConnectionRelName(int element=-1) const;
     
     // TODO:
     /// @}

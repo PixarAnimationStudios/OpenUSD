@@ -31,7 +31,8 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const UsdPrim& prim,
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
         const PxrUsdKatanaUsdInPrivateData* parentData,
-        bool useDefaultMotion)
+        bool useDefaultMotion,
+        std::shared_ptr<const MaterialHierarchy> *materialHierarchy)
     : _prim(prim), _usdInArgs(usdInArgs)
 {
     // XXX: manually track instance and master path for possible
@@ -73,6 +74,8 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         {
             _masterPath = parentData->GetMasterPath();
         }
+
+        _materialHierarchy = parentData->GetMaterialHierarchy();
     }
 
     // Pass along the flag to use default motion sample times.
@@ -82,6 +85,10 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     _useDefaultMotionSampleTimes =
             useDefaultMotion or (parentData and parentData->UseDefaultMotionSampleTimes()) or
                 defaultMotionPaths.find(prim.GetPath().GetString()) != defaultMotionPaths.end();
+
+    if (materialHierarchy) {
+        _materialHierarchy = *materialHierarchy;
+    }
 }
 
 const std::vector<double>
