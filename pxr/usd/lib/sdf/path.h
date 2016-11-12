@@ -220,6 +220,10 @@ public:
     /// a variant selection for a prim.
     bool ContainsPrimVariantSelection() const;
 
+    /// Return true if this path is or has a prefix that's a target path or a
+    /// mapper path.
+    bool ContainsTargetPath() const;
+
     /// Returns whether the path identifies a relational attribute.
     ///
     /// If this is true, IsPropertyPath() will also be true.

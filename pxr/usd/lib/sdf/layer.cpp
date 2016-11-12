@@ -1645,7 +1645,9 @@ SdfLayer::_CanGetSpecAtPath(
     // We need to always call MakeAbsolutePath, even if relativePath is
     // already absolute, because we also need to absolutize target paths
     // within the path.
-    const SdfPath absPath = path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+    const SdfPath &absPath =
+        path.IsAbsolutePath() && !path.ContainsTargetPath() ? path :
+        path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
 
     // Grab the object type stored in the SdfData hash table. If no type has
     // been set, this path doesn't point to a valid location.
