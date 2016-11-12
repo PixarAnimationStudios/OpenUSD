@@ -30,6 +30,7 @@
 
 #include "usdMaya/util.h"
 #include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/ModelKindWriter.h"
 
 #include <string>
 
@@ -54,7 +55,6 @@ class usdWriteJob
     void perFrameCallback(double iFrame);
     void postCallback();
     bool addToPrimWriterList(MDagPath &curDag);
-    void makeModelHierarchy(UsdPrimSiblingRange const &usdRootPrims);
     
   private:
     JobExportArgs mArgs;
@@ -76,13 +76,10 @@ class usdWriteJob
     
     // USD Maya Prim mapping used for variants
     PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type mDagPathToUsdPathMap;
-    
-    // Paths on mStage at which we added usd references or authored kind
-    std::vector<SdfPath> mPathsThatMayHaveKind;
-    
-    bool mExportedGprims;
 
     PxrUsdMayaChaserRefPtrVector mChasers;
+
+    PxrUsdMaya_ModelKindWriter mModelKindWriter;
 };
 
 typedef shared_ptr < usdWriteJob > usdWriteJobPtr;

@@ -95,6 +95,8 @@ struct JobExportArgs
     // where a _BaseModel_ root path is used instead of
     // the model path. This to allow a proper internal reference
     SdfPath usdModelRootOverridePath;
+
+    TfToken rootKind;
 };
 
 struct JobImportArgs

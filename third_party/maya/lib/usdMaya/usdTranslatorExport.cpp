@@ -177,6 +177,8 @@ usdTranslatorExport::writer(const MFileObject &file,
             }
             writeJob.endJob();
             MGlobal::viewFrame(oldCurTime);
+        } else {
+            return MS::kFailure;
         }
     } else {
         MGlobal::displayWarning("No DAG nodes to export. Skipping");

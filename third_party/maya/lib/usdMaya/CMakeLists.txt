@@ -82,6 +82,7 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaNurbsCurveWriter
         MayaNurbsSurfaceWriter
         MayaTransformWriter
+        ModelKindWriter
         PluginPrimWriter
 
     PRIVATE_HEADERS
