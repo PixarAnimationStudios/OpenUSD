@@ -50,10 +50,11 @@ _GetTargetFaceIndices(const UsdGeomCollectionAPI &self, const UsdTimeCode &time)
 }
 
 static SdfPathVector 
-_GetTargets(const UsdGeomCollectionAPI &self)
+_GetTargets(const UsdGeomCollectionAPI &self, 
+            bool forwardToObjectsInMasters=true)
 {
     SdfPathVector targets;
-    self.GetTargets(&targets);
+    self.GetTargets(&targets, forwardToObjectsInMasters);
     return targets;
 }
 
@@ -160,7 +161,8 @@ wrapUsdGeomCollectionAPI()
             (arg("time")=UsdTimeCode::Default()))
 
         .def("SetTargets", &This::SetTargets)
-        .def("GetTargets", &_GetTargets)
+        .def("GetTargets", &_GetTargets, 
+             (arg("forwardToObjectsInMasters")=true))
 
         .def("AppendTarget", &_AppendTarget,
             (arg("target"),

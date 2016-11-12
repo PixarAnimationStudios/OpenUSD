@@ -176,9 +176,16 @@ public:
     /// a relationship, the target relationship is returned (and not the 
     /// ultimate targets of the target relationship).
     /// 
+    /// By default, any relationship targets that point to a child prim or
+    /// a property of a child prim beneath an instanceable prim will be
+    /// forwarded to the corresponding object in the instance's master.
+    /// This can be disabled by setting \p forwardToObjectsInMasters
+    /// to false.
+    ///
     /// \sa UsdRelationship::GetTargets
     /// 
-    bool GetTargets(SdfPathVector *targets) const;
+    bool GetTargets(SdfPathVector *targets, 
+                    bool forwardToObjectsInMasters=true) const;
 
     /// Sets the targetFaceCounts property of the collection at the given 
     /// \p time. Returns true if the value was authored successfully, false 
