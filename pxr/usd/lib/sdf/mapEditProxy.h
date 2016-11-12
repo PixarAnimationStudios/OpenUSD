@@ -149,7 +149,6 @@ private:
 
     class _ValueProxy {
     public:
-        _ValueProxy() { }
         _ValueProxy(This* owner, const Type* data, inner_iterator i) :
             _owner(owner), _data(data), _pos(i)
         {
@@ -742,10 +741,7 @@ private:
     mapped_type _Get(const Type* data, const inner_iterator& i)
     {
         if (_Validate()) {
-            if (i == inner_iterator()) {
-                TF_CODING_ERROR("Accessing an invalid map proxy value");
-            }
-            else if (data == _ConstData()) {
+            if (data == _ConstData()) {
                 return i->second;
             }
             else {
@@ -818,15 +814,10 @@ private:
     void _Set(const Type* data, const inner_iterator& i, const U& value)
     {
         if (_Validate()) {
-            if (i == inner_iterator()) {
-                TF_CODING_ERROR("Assigning to invalid map proxy value");
-            }
-            else {
-                const mapped_type& x =
-                    ValuePolicy::CanonicalizeValue(_Owner(), value);
-                if (_ValidateSet(i->first, x)) {
-                    _editor->Set(i->first, x);
-                }
+            const mapped_type& x =
+                ValuePolicy::CanonicalizeValue(_Owner(), value);
+            if (_ValidateSet(i->first, x)) {
+                _editor->Set(i->first, x);
             }
         }
     }
