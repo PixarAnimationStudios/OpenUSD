@@ -652,6 +652,9 @@ public:
     /// Returns the archive.
     const OArchive& GetArchive() const { return _archive; }
 
+    /// Returns the archive.
+    OArchive& GetArchive() { return _archive; }
+
     /// Sets the writer schema.
     void SetSchema(const _WriterSchema* schema) { _schema = schema; }
 
@@ -840,6 +843,9 @@ public:
     /// Returns the archive.
     const OArchive& GetArchive() const;
 
+    /// Returns the archive.
+    OArchive& GetArchive();
+
     /// Returns the writer schema.
     const _WriterSchema& GetSchema() const;
 
@@ -970,6 +976,12 @@ _PrimWriterContext::GetPropertyField(
 
 const OArchive&
 _PrimWriterContext::GetArchive() const
+{
+    return _context.GetArchive();
+}
+
+OArchive&
+_PrimWriterContext::GetArchive()
 {
     return _context.GetArchive();
 }
