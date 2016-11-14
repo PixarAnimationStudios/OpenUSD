@@ -2909,7 +2909,7 @@ UsdStage::_HandleLayersDidChange(
 
     // Keep track of paths to USD objects that need to be recomposed or
     // have otherwise changed.
-    SdfPathSet pathsToRecompose, nonPrimPathsToRecompose, otherChangedPaths;
+    SdfPathSet pathsToRecompose, otherResyncPaths, otherChangedPaths;
 
     // Add dependent paths for any PrimSpecs whose fields have changed that may
     // affect cached prim information.
@@ -2985,7 +2985,7 @@ UsdStage::_HandleLayersDidChange(
 
                 if (willRecompose) {
                     _AddDependentPaths(layerAndChangelist.first, path, 
-                                       *_cache, &nonPrimPathsToRecompose);
+                                       *_cache, &otherResyncPaths);
                 }
             }
 
@@ -3004,10 +3004,9 @@ UsdStage::_HandleLayersDidChange(
                       n.GetChangeListMap());
     _Recompose(changes, &pathsToRecompose);
 
-    // Add in all non-prim paths that are marked as recomposed here so
-    // that any descendents of prims are removed below.
-    pathsToRecompose.insert(
-        nonPrimPathsToRecompose.begin(), nonPrimPathsToRecompose.end());
+    // Add in all other paths that are marked as resynced here so
+    // that any descendents of resynced prims are removed below.
+    pathsToRecompose.insert(otherResyncPaths.begin(), otherResyncPaths.end());
 
     // Make a copy of pathsToRecompose, but uniqued with a prefix-check, which
     // removes all elements that are prefixed by other elements.  Also
