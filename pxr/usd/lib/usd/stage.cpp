@@ -2907,9 +2907,9 @@ UsdStage::_HandleLayersDidChange(
 
     TF_DEBUG(USD_CHANGES).Msg("\nHandleLayersDidChange received\n");
 
-    // both of these path sets will be stage-relative and thus are safe to
-    // feed into all public stage API
-    SdfPathSet pathsToRecompose, otherChangedPaths;
+    // Keep track of paths to USD objects that need to be recomposed or
+    // have otherwise changed.
+    SdfPathSet pathsToRecompose, nonPrimPathsToRecompose, otherChangedPaths;
 
     // Add dependent paths for any PrimSpecs whose fields have changed that may
     // affect cached prim information.
@@ -2958,32 +2958,44 @@ UsdStage::_HandleLayersDidChange(
                         }
                     }
                 }
+
+                if (willRecompose) {
+                    _AddDependentPaths(layerAndChangelist.first, path, 
+                                       *_cache, &pathsToRecompose);
             }
-            else if (path.IsPropertyPath()) {
-                willRecompose = 
-                    entry.flags.didAddPropertyWithOnlyRequiredFields or
-                    entry.flags.didAddProperty or
-                    entry.flags.didRemovePropertyWithOnlyRequiredFields or
-                    entry.flags.didRemoveProperty;
             }
-            else if (path.IsTargetPath()) {
-                // XXX: This will cause us to include target paths like
-                // /Foo.rel[/Bar] in the resynced path list in the
-                // ObjectsChanged notice we emit. This is a bug; no such
-                // object exists in the USD scenegraph. Keeping this here
-                // for now to maintain current behavior.
-                willRecompose =
-                    entry.flags.didAddTarget or
-                    entry.flags.didRemoveTarget;
+            else {
+                if (path.IsPropertyPath()) {
+                    willRecompose = 
+                        entry.flags.didAddPropertyWithOnlyRequiredFields or
+                        entry.flags.didAddProperty or
+                        entry.flags.didRemovePropertyWithOnlyRequiredFields or
+                        entry.flags.didRemoveProperty;
+                }
+                else if (path.IsTargetPath()) {
+                    // XXX: This will cause us to include target paths like
+                    // /Foo.rel[/Bar] in the resynced path list in the
+                    // ObjectsChanged notice we emit. This is a bug; no such
+                    // object exists in the USD scenegraph. Keeping this here
+                    // for now to maintain current behavior.
+                    willRecompose =
+                        entry.flags.didAddTarget or
+                        entry.flags.didRemoveTarget;
+                }
+
+                if (willRecompose) {
+                    _AddDependentPaths(layerAndChangelist.first, path, 
+                                       *_cache, &nonPrimPathsToRecompose);
+                }
             }
 
             // If we're not going to recompose this path, record the dependent
             // scene paths separately so we can notify clients about the
             // changes.
-            SdfPathSet* changedPaths = 
-                willRecompose ? &pathsToRecompose : &otherChangedPaths;
-            _AddDependentPaths(layerAndChangelist.first, path, 
-                               *_cache, changedPaths);
+            if (not willRecompose) {
+                _AddDependentPaths(layerAndChangelist.first, path, 
+                                   *_cache, &otherChangedPaths);
+            }
         }
     }
 
@@ -2991,6 +3003,11 @@ UsdStage::_HandleLayersDidChange(
     changes.DidChange(std::vector<PcpCache*>(1, _cache.get()),
                       n.GetChangeListMap());
     _Recompose(changes, &pathsToRecompose);
+
+    // Add in all non-prim paths that are marked as recomposed here so
+    // that any descendents of prims are removed below.
+    pathsToRecompose.insert(
+        nonPrimPathsToRecompose.begin(), nonPrimPathsToRecompose.end());
 
     // Make a copy of pathsToRecompose, but uniqued with a prefix-check, which
     // removes all elements that are prefixed by other elements.  Also
@@ -3064,8 +3081,6 @@ UsdStage::_HandleLayersDidChange(
 void UsdStage::_Recompose(const PcpChanges &changes,
                           SdfPathSet *initialPathsToRecompose)
 {
-    ArResolverScopedCache resolverCache;
-
     SdfPathSet newPathsToRecompose;
     SdfPathSet *pathsToRecompose = initialPathsToRecompose ?
         initialPathsToRecompose : &newPathsToRecompose;
@@ -3098,12 +3113,13 @@ void UsdStage::_Recompose(const PcpChanges &changes,
                                       path.GetText());
         }
 
-        if (pathsToRecompose->empty()) {
-            TF_DEBUG(USD_CHANGES).Msg(
-                "Nothing to recompose in cache changes\n");
-        }
     } else {
         TF_DEBUG(USD_CHANGES).Msg("No cache changes\n");
+    }
+
+    if (pathsToRecompose->empty()) {
+        TF_DEBUG(USD_CHANGES).Msg("Nothing to recompose in cache changes\n");
+        return;
     }
 
     // Prune descendant paths into a vector.
@@ -3121,84 +3137,84 @@ void UsdStage::_Recompose(const PcpChanges &changes,
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _MasterToPrimIndexMap;
     _MasterToPrimIndexMap masterToPrimIndexMap;
 
-    if (not pathVecToRecompose.empty()) {
-        // Ask Pcp to compute all the prim indexes in parallel, stopping at
-        // stuff that's not active.
-        SdfPathVector primPathsToRecompose;
-        primPathsToRecompose.reserve(pathVecToRecompose.size());
-        for (const SdfPath& path : pathVecToRecompose) {
-            if (not path.IsAbsoluteRootOrPrimPath() or
-                path.ContainsPrimVariantSelection()) {
+    // Ask Pcp to compute all the prim indexes in parallel, stopping at
+    // stuff that's not active.
+    SdfPathVector primPathsToRecompose;
+    primPathsToRecompose.reserve(pathVecToRecompose.size());
+    for (const SdfPath& path : pathVecToRecompose) {
+        if (not path.IsAbsoluteRootOrPrimPath() or
+            path.ContainsPrimVariantSelection()) {
+            continue;
+        }
+
+        // Instance prims don't expose any name children, so we don't
+        // need to recompose any prim index beneath instance prim 
+        // indexes *unless* they are being used as the source index
+        // for a master.
+        if (_instanceCache->IsPrimInMasterForPrimIndexAtPath(path)) {
+            const bool primIndexUsedByMaster = 
+                _instanceCache->IsPrimInMasterUsingPrimIndexAtPath(path);
+            if (not primIndexUsedByMaster) {
+                TF_DEBUG(USD_CHANGES).Msg(
+                    "Ignoring elided prim <%s>\n", path.GetText());
                 continue;
             }
-
-            // Instance prims don't expose any name children, so we don't
-            // need to recompose any prim index beneath instance prim 
-            // indexes *unless* they are being used as the source index
-            // for a master.
-            if (_instanceCache->IsPrimInMasterForPrimIndexAtPath(path)) {
-                const bool primIndexUsedByMaster = 
-                    _instanceCache->IsPrimInMasterUsingPrimIndexAtPath(path);
-                if (not primIndexUsedByMaster) {
-                    TF_DEBUG(USD_CHANGES).Msg(
-                        "Ignoring elided prim <%s>\n", path.GetText());
-                    continue;
-                }
-            }
-
-            // Unregister all instances beneath the given path. This
-            // allows us to determine which instance prim indexes are
-            // no longer present and make the appropriate instance
-            // changes during prim index composition below.
-            _instanceCache->UnregisterInstancePrimIndexesUnder(path);
-
-            primPathsToRecompose.push_back(path);
         }
 
-        Usd_InstanceChanges changes;
-        _ComposePrimIndexesInParallel(
-            primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
-            "Recomposing stage", &changes);
+        // Unregister all instances beneath the given path. This
+        // allows us to determine which instance prim indexes are
+        // no longer present and make the appropriate instance
+        // changes during prim index composition below.
+        _instanceCache->UnregisterInstancePrimIndexesUnder(path);
 
-        // Determine what instance master prims on this stage need to
-        // be recomposed due to instance prim index changes.
-        SdfPathVector masterPrimsToRecompose;
-        for (const SdfPath& path : primPathsToRecompose) {
-            for (const SdfPath& masterPath :
-                 _instanceCache->GetPrimsInMastersUsingPrimIndexAtPath(path)) {
-                masterPrimsToRecompose.push_back(masterPath);
-                masterToPrimIndexMap[masterPath] = path;
-            }
-        }
-
-        for (size_t i = 0; i != changes.newMasterPrims.size(); ++i) {
-            masterPrimsToRecompose.push_back(changes.newMasterPrims[i]);
-            masterToPrimIndexMap[changes.newMasterPrims[i]] =
-                changes.newMasterPrimIndexes[i];
-        }
-
-        for (size_t i = 0; i != changes.changedMasterPrims.size(); ++i) {
-            masterPrimsToRecompose.push_back(changes.changedMasterPrims[i]);
-            masterToPrimIndexMap[changes.changedMasterPrims[i]] =
-                changes.changedMasterPrimIndexes[i];
-        }
-
-        if (not masterPrimsToRecompose.empty()) {
-            // Insert these master prims into the pathsToRecompose set to
-            // ensure we send the appropriate notices.
-            pathsToRecompose->insert(
-                masterPrimsToRecompose.begin(), masterPrimsToRecompose.end());
-
-            pathVecToRecompose.insert(
-                pathVecToRecompose.end(), 
-                masterPrimsToRecompose.begin(), masterPrimsToRecompose.end());
-            SdfPath::RemoveDescendentPaths(&pathVecToRecompose);
-        }
-
-        pathsToRecompose->insert(
-            changes.deadMasterPrims.begin(), changes.deadMasterPrims.end());
-        _DestroyPrimsInParallel(changes.deadMasterPrims);
+        primPathsToRecompose.push_back(path);
     }
+
+    ArResolverScopedCache resolverCache;
+    Usd_InstanceChanges instanceChanges;
+    _ComposePrimIndexesInParallel(
+        primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
+        "Recomposing stage", &instanceChanges);
+
+    // Determine what instance master prims on this stage need to
+    // be recomposed due to instance prim index changes.
+    SdfPathVector masterPrimsToRecompose;
+    for (const SdfPath& path : primPathsToRecompose) {
+        for (const SdfPath& masterPath :
+                 _instanceCache->GetPrimsInMastersUsingPrimIndexAtPath(path)) {
+            masterPrimsToRecompose.push_back(masterPath);
+            masterToPrimIndexMap[masterPath] = path;
+        }
+    }
+
+    for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
+        masterPrimsToRecompose.push_back(instanceChanges.newMasterPrims[i]);
+        masterToPrimIndexMap[instanceChanges.newMasterPrims[i]] =
+            instanceChanges.newMasterPrimIndexes[i];
+    }
+
+    for (size_t i = 0; i != instanceChanges.changedMasterPrims.size(); ++i) {
+        masterPrimsToRecompose.push_back(instanceChanges.changedMasterPrims[i]);
+        masterToPrimIndexMap[instanceChanges.changedMasterPrims[i]] =
+            instanceChanges.changedMasterPrimIndexes[i];
+    }
+
+    if (not masterPrimsToRecompose.empty()) {
+        // Insert these master prims into the pathsToRecompose set to
+        // ensure we send the appropriate notices.
+        pathsToRecompose->insert(
+            masterPrimsToRecompose.begin(), masterPrimsToRecompose.end());
+
+        pathVecToRecompose.insert(
+            pathVecToRecompose.end(), 
+            masterPrimsToRecompose.begin(), masterPrimsToRecompose.end());
+        SdfPath::RemoveDescendentPaths(&pathVecToRecompose);
+    }
+
+    pathsToRecompose->insert(
+        instanceChanges.deadMasterPrims.begin(), 
+        instanceChanges.deadMasterPrims.end());
+    _DestroyPrimsInParallel(instanceChanges.deadMasterPrims);
 
     SdfPathVector::const_iterator
         i = pathVecToRecompose.begin(), end = pathVecToRecompose.end();
