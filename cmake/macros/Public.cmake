@@ -825,7 +825,7 @@ function(pxr_register_test TEST_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
             "PYTHON" 
-            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;EXPECTED_RETURN_CODE;TESTENV"
+            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
             "ENV"
             ${ARGN}
         )
@@ -862,6 +862,12 @@ function(pxr_register_test TEST_NAME)
             # an argument though.
             set(baselineDir ${testenvDir}/baseline)
             set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
+        endif()
+
+        if (bt_CLEAN_OUTPUT)
+            foreach (path ${bt_CLEAN_OUTPUT})
+                set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${path})
+            endforeach()
         endif()
 
         if (bt_EXPECTED_RETURN_CODE)
