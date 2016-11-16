@@ -30,8 +30,10 @@
 #include "pxr/base/plug/registry.h"
 
 //
-static const std::string DISPLAY_NAME = "displayName";
-static const std::string WEIGHT = "weight";
+// Plugin Metadata Keys
+//
+static const char *DISPLAY_NAME = "displayName";
+static const char *PRIORITY     = "priority";
 
 HfPluginDelegateRegistry::HfPluginDelegateRegistry(const TfType &delegateBaseType)
  : _delegateBaseType(delegateBaseType)
@@ -177,19 +179,19 @@ HfPluginDelegateRegistry::_DiscoverDelegates()
         const std::string &displayName =
                 pluginRegistry.GetStringFromPluginMetaData(delegateType,
                                                            DISPLAY_NAME);
-        const JsValue &weightValue =
+        const JsValue &priorityValue =
                 pluginRegistry.GetDataFromPluginMetaData(delegateType,
-                                                         WEIGHT);
+                                                         PRIORITY);
 
-        if (displayName.empty() || !weightValue.IsInt()) {
+        if (displayName.empty() || !priorityValue.IsInt()) {
             TF_WARN("Delegate Pluging %s plugin type information incomplete",
                     delegateType.GetTypeName().c_str());
         } else {
-            int weight = weightValue.GetInt();
+            int priority = priorityValue.GetInt();
 
             _delegateEntries.emplace_back(delegateType,
                                           displayName,
-                                          weight);
+                                          priority);
         }
     }
 

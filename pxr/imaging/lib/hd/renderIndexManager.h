@@ -21,57 +21,62 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GAL_DELEGATE_REGISTRY_H
-#define GAL_DELEGATE_REGISTRY_H
+#ifndef HD_RENDER_INDEX_MANAGER_H
+#define HD_RENDER_INDEX_MANAGER_H
 
 #include "pxr/base/tf/singleton.h"
-#include "pxr/imaging/hf/pluginDelegateRegistry.h"
 
-class GalDelegate;
+#include <memory>
+#include <unordered_map>
 
-class GalDelegateRegistry final : public HfPluginDelegateRegistry
-{
+class HdRenderIndex;
+
+///
+/// Provides a global collection of all render indexes that have been
+/// created.
+///
+class Hd_RenderIndexManager final {
 public:
     ///
-    /// Returns the singleton registry for \c GalDelegate's
+    /// Returns the singleton for \c Hd_RenderIndexManager
     ///
-    static GalDelegateRegistry &GetInstance();
+    static Hd_RenderIndexManager &GetInstance();
 
     ///
-    /// Entry point for registering a types implementation.
+    /// Create a new Render Index.
     ///
-    template<typename T, typename... Bases>
-    static void Define();
+    HdRenderIndex *CreateRenderIndex();
 
     ///
-    /// Returns the Gal delegate for the given id or null
-    /// if not found.  The reference count on the returned
-    /// delegate is incremented.
+    /// Increment reference count on a render index.
     ///
-    GalDelegate *GetGalDelegate(const TfToken &delegateId);
+    bool AddRenderIndexReference(HdRenderIndex *renderIndex);
 
+    ///
+    /// Decrement reference count on a render index, if no longer in use
+    /// the memory gets freed.
+    ///
+    void ReleaseRenderIndex(HdRenderIndex *renderIndex);
 
 private:
     // Friend required by TfSingleton to access constructor (as it is private).
-    friend class TfSingleton<GalDelegateRegistry>;
+    friend class TfSingleton<Hd_RenderIndexManager>;
+
+    // Key == Render Index Pointer
+    // Value == Ref Count.
+    typedef std::unordered_map<HdRenderIndex *, int> RenderIndexMap;
+
+    RenderIndexMap _renderIndexes;
 
     // Singleton gets private constructed
-    GalDelegateRegistry();
-    virtual ~GalDelegateRegistry();
+    Hd_RenderIndexManager();
+    ~Hd_RenderIndexManager();
 
     ///
     /// This class is not intended to be copied.
     ///
-    GalDelegateRegistry(const GalDelegateRegistry &)            = delete;
-    GalDelegateRegistry &operator=(const GalDelegateRegistry &) = delete;
+    Hd_RenderIndexManager(const Hd_RenderIndexManager &)             = delete;
+    Hd_RenderIndexManager &operator =(const Hd_RenderIndexManager &) = delete;
 };
 
-template<typename T, typename... Bases>
-void
-GalDelegateRegistry::Define()
-{
-    HfPluginDelegateRegistry::Define<T, GalDelegate, Bases...>();
-}
-
-#endif //GAL_DELEGATE_REGISTRY_H
-
+#endif // HD_RENDER_INDEX_MANAGER_H

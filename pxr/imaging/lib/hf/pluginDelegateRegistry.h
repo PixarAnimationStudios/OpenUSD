@@ -39,11 +39,11 @@ class Hf_PluginDelegateEntry;
 /// Base class for registering Hydra plugins using the plug mechanism.
 /// It is expected that each plugin has a pluginfo.json file that contains
 /// a list of types, where each type provides a list of base classes,
-/// displayName and weight.
+/// displayName and priority.
 ///
-/// The weight is used to order plugins, with the plugin with the lowest
-/// weight being at the front of the order.  Weight is a signed integer.
-/// In the event of two plugins having the same weight, the plugins are sorted
+/// The priority is used to order plugins, with the plugin with the highest
+/// priority being at the front of the order.  priority is a signed integer.
+/// In the event of two plugins having the same priority, the plugins are sorted
 /// alphabetically on the type name.
 ///
 /// The plugin sorted to the front is used as the default plugin, when not
@@ -56,7 +56,7 @@ class Hf_PluginDelegateEntry;
 ///        "CPPTypeName": {
 ///            "bases": ["BaseDelegateTypeName"],
 ///            "displayName": "Human Readable Name",
-///            "weight" : 0
+///            "priority" : 0
 ///       }
 ///    }
 ///}
@@ -72,7 +72,7 @@ public:
 
     ///
     /// Returns an ordered list of all registered delegates.
-    /// The delegates are ordered by weight then alphabetically
+    /// The delegates are ordered by priority then alphabetically
     ///
     void GetDelegateDescs(HfPluginDelegateDescVector *delegates);
 

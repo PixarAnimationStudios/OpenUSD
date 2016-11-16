@@ -21,25 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/context.h"
 
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
-
-TF_REGISTRY_FUNCTION(TfType)
+HdContext::HdContext(HdRenderDelegate *renderDelegate,
+                     GalDelegate      *galDelegate,
+                     HdRenderIndex    *index)
+ : Hd_ContextIListBase()
+ , _renderDelegate(renderDelegate)
+ , _galDelegate(galDelegate)
+ , _renderIndex(index)
 {
-    TfType::Define<HdRenderDelegate>();
 }
 
-//
-// WORKAROUND: As this class is a pure interface class, it does not need a
-// vtable.  However, it is possible that some users will use rtti.
-// This will cause a problem for some of our compilers:
-//
-// In particular clang will throw a warning: -wweak-vtables
-// For gcc, there is an issue were the rtti typeid's are different.
-//
-// As destruction of the class is not on the performance path,
-// the body of the deleter is provided here, so a vtable is created
-// in this compilation unit.
-HdRenderDelegate::~HdRenderDelegate() = default;
+HdContext::~HdContext()
+{
+}
+
+HdRenderDelegate *
+HdContext::GetRenderDelegate()
+{
+    return _renderDelegate;
+}
+
+GalDelegate *
+HdContext::GetGalDelegate()
+{
+    return _galDelegate;
+}
+
+HdRenderIndex *
+HdContext::GetRenderIndex()
+{
+    return _renderIndex;
+}

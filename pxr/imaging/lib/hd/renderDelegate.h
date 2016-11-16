@@ -24,46 +24,31 @@
 #ifndef HD_RENDER_DELEGATE_H
 #define HD_RENDER_DELEGATE_H
 
-#include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/weakPtr.h"
-
-#include <string>
-
-TF_DECLARE_WEAK_AND_REF_PTRS(HdRenderDelegate);
+#include "pxr/base/tf/token.h"
+#include "pxr/imaging/hf/pluginDelegateBase.h"
 
 /// \class HdRenderDelegate
 ///
-class HdRenderDelegate
-    : public TfRefBase
-    , public TfWeakBase
+class HdRenderDelegate : public HfPluginDelegateBase
 {
 public:
+    ///
+    /// Allows the delegate an opinion on the default Gal to use.
+    /// Return an empty token for no opinion.
+    /// Return HdDelegateTokens->None for no Gal.
+    virtual TfToken GetDefaultGalId() const = 0;
+
+
+protected:
+    /// This class must be derived from
+    HdRenderDelegate()          = default;
+    virtual ~HdRenderDelegate();
 
     ///
     /// This class is not intended to be copied.
     ///
     HdRenderDelegate(const HdRenderDelegate &) = delete;
     HdRenderDelegate &operator=(const HdRenderDelegate &) = delete;
-
-    ///
-    /// Returns a string lable that is appropriate to use in a UI menu, for
-    /// example.
-    ///
-    /// XXX: Note that this is an example only and something like the label
-    /// for the render delegate should be provided by plugin metadata so
-    /// that we don't have to load the plugin to provide it as an option.
-    ///
-    virtual std::string GetLabel() const = 0;
-
-
-
-protected:
-
-    HdRenderDelegate();
-
-    virtual ~HdRenderDelegate();
-
 };
 
 #endif //HD_RENDER_DELEGATE_H

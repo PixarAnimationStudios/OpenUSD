@@ -114,7 +114,7 @@ Hf_PluginDelegateEntry::DecRefCount()
 bool
 Hf_PluginDelegateEntry::operator <(const Hf_PluginDelegateEntry &other) const
 {
-    // Policy is sort by weight then alphabetical order on
+    // Policy is sort by priority then alphabetical order on
     // machine name.
 
     int aPriority = this->_priority;

@@ -58,7 +58,21 @@
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
 
 HdRenderIndex::HdRenderIndex()
-    : _nextPrimId(1)
+    : _delegateRprimMap()
+    , _rprimMap()
+    , _rprimIDSet()
+    , _rprimPrimIdMap()
+    , _shaderMap()
+    , _taskMap()
+    , _textureMap()
+    , _sprimMap()
+    , _sprimIDSet()
+    , _tracker()
+    , _nextPrimId(1)
+    , _instancerMap()
+    , _surfaceFallback()
+    , _syncQueue()
+   , _renderDelegateTypeId()
 {
     // Creating the fallback shader
     ReloadFallbackShader();
@@ -496,6 +510,18 @@ HdRenderIndex::GetSprimSubtree(SdfPath const& rootPath) const
     return paths;
 }
 
+void
+HdRenderIndex::SetRenderDelegateType(const TfToken &typeId)
+{
+    _renderDelegateTypeId = typeId;
+}
+
+const TfToken &
+HdRenderIndex::GetRenderDelegateType() const
+{
+    return _renderDelegateTypeId;
+}
+
 // -------------------------------------------------------------------------- //
 /// \name Draw Item Handling 
 // -------------------------------------------------------------------------- //
@@ -515,6 +541,7 @@ _AppendDrawItem(HdRprimSharedPtr const& rprim,
     }
 }
 
+// XXX: Remove
 HdRenderIndex::HdDrawItemView
 HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 {
