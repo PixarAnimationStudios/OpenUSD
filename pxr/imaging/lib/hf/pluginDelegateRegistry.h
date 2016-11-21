@@ -69,30 +69,30 @@ public:
     ///
     /// Returns the id of delegate to use as the default
     ///
-    TfToken GetDefaultDelegateId();
+    HF_API TfToken GetDefaultDelegateId();
 
     ///
     /// Returns an ordered list of all registered delegates.
     /// The delegates are ordered by priority then alphabetically
     ///
-    void GetDelegateDescs(HfPluginDelegateDescVector *delegates);
+    HF_API void GetDelegateDescs(HfPluginDelegateDescVector *delegates);
 
     ///
     /// Increment the reference count on an existing delegate.
     ///
-    void AddDelegateReference(HfPluginDelegateBase *delegate);
+    HF_API void AddDelegateReference(HfPluginDelegateBase *delegate);
 
     ///
     /// Decrement the reference count on the delegate.  If the
     /// reference count get to 0, the delegate is freed.
     ///
-    void ReleaseDelegate(HfPluginDelegateBase *delegate);
+    HF_API void ReleaseDelegate(HfPluginDelegateBase *delegate);
 
     ///
     /// Returns true if a delegate has been registered for the given id.
     /// The delegate may not be loaded or been actually created yet.
     ///
-    bool IsRegisteredDelegate(const TfToken &delegateId) const;
+    HF_API bool IsRegisteredDelegate(const TfToken &delegateId) const;
 
 protected:
     // Must be derived.
@@ -136,7 +136,7 @@ private:
 
     template<typename T>
     static HfPluginDelegateBase *_CreateDelegate();
-    static void _SetFactory(TfType &type, _FactoryFn &func);
+    HF_API static void _SetFactory(TfType &type, _FactoryFn &func);
 
     TfType                     _delegateBaseType;
 

@@ -37,7 +37,7 @@ public:
     ///
     /// Returns the singleton registry for \c GalDelegate's
     ///
-    static GalDelegateRegistry &GetInstance();
+    GAL_API static GalDelegateRegistry &GetInstance();
 
     ///
     /// Entry point for registering a types implementation.

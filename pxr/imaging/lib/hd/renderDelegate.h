@@ -24,6 +24,8 @@
 #ifndef HD_RENDER_DELEGATE_H
 #define HD_RENDER_DELEGATE_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/hf/pluginDelegateBase.h"
 
@@ -42,7 +44,7 @@ public:
 protected:
     /// This class must be derived from
     HdRenderDelegate()          = default;
-    virtual ~HdRenderDelegate();
+    HDLIB_API virtual ~HdRenderDelegate();
 
     ///
     /// This class is not intended to be copied.
