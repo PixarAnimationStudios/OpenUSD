@@ -102,7 +102,7 @@ function(_install_python LIBRARY_NAME)
         ${ARGN}
     )
 
-    _get_install_dir(lib/python libPythonPrefix)
+    set(libPythonPrefix lib/python)
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
     foreach(file ${ip_FILES})
@@ -231,7 +231,7 @@ function(_install_pyside_ui_files)
         DEPENDS ${uiFiles}
     )
 
-    _get_install_dir(lib/python libPythonPrefix)
+    set(libPythonPrefix lib/python)
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
     install(
