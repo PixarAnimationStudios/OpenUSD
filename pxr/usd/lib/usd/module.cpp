@@ -64,4 +64,5 @@ TF_WRAP_MODULE
     // Miscellaenous classes
     TF_WRAP(UsdAttributeQuery);
     TF_WRAP(UsdCrateInfo);
+    TF_WRAP(UsdResolveInfo);
 }

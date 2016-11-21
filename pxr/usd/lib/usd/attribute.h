@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/property.h"
+#include "pxr/usd/usd/resolveInfo.h"
 
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
@@ -316,6 +317,13 @@ public:
     /// \overload 
     /// Type-erased access, often not as efficient as typed access.
 	USD_API bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
+
+    /// Perform value resolution to determine the source of the resolved
+    /// value of this attribute at the requested UsdTimeCode \p time,
+    /// which defaults to \em default.
+    USD_API
+    UsdResolveInfo
+    GetResolveInfo(UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Set the value of this attribute in the current UsdEditTarget to
     /// \p value at UsdTimeCode \p time, which defaults to \em default.

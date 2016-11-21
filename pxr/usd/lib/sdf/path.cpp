@@ -229,6 +229,13 @@ SdfPath::ContainsPrimVariantSelection() const
 }
 
 bool
+SdfPath::ContainsTargetPath() const
+{
+    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
+    return node and node->ContainsTargetPath();
+}
+
+bool
 SdfPath::IsRelationalAttributePath() const {
     Sdf_PathNode const *node = boost::get_pointer(_pathNode);
     return node and

@@ -31,5 +31,15 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<HdRenderDelegate>();
 }
 
-HdRenderDelegate::HdRenderDelegate() = default;
+//
+// WORKAROUND: As this class is a pure interface class, it does not need a
+// vtable.  However, it is possible that some users will use rtti.
+// This will cause a problem for some of our compilers:
+//
+// In particular clang will throw a warning: -wweak-vtables
+// For gcc, there is an issue were the rtti typeid's are different.
+//
+// As destruction of the class is not on the performance path,
+// the body of the deleter is provided here, so a vtable is created
+// in this compilation unit.
 HdRenderDelegate::~HdRenderDelegate() = default;

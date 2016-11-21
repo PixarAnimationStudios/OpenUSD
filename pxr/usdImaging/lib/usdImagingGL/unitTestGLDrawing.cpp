@@ -222,6 +222,7 @@ UsdImagingGL_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
 UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     : _widget(NULL)
     , _testLighting(false)
+    , _cameraLight(false)
     , _testIdRender(false)
     , _complexity(1.0f)
     , _drawMode(UsdImagingGLEngine::DRAW_SHADED_SMOOTH)
@@ -254,13 +255,24 @@ UsdImagingGL_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
 }
 
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
-    _Args() : offscreen(false) { }
+    _Args() : offscreen(false) {
+        clearColor[0] = 1.0f;
+        clearColor[1] = 0.5f;
+        clearColor[2] = 0.1f;
+        clearColor[3] = 1.0f;
+
+        translate[0] = 0.0;
+        translate[1] = -1000.0;
+        translate[2] = -2500.0;
+    }
 
     std::string unresolvedStageFilePath;
     bool offscreen;
     std::string shading;
     std::vector<double> clipPlaneCoords;
     std::vector<double> complexities;
+    float clearColor[4];
+    float translate[3];
 };
 
 static void Die(const char* fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
@@ -300,6 +312,7 @@ static void Usage(int argc, char *argv[])
 "                           [-clipPlane clipPlane1 ... clipPlane4]\n"
 "                           [-complexities complexities1 complexities2 ...]\n"
 "                           [-times times1 times2 ...] [-cullBackfaces]\n"
+"                           [-clear r g b a] [-translate x y z]\n"
 "\n"
 "  usdImaging basic drawing test\n"
 "\n"
@@ -323,7 +336,9 @@ static void Usage(int argc, char *argv[])
 "  -times times1 times2 ...\n"
 "                      One or more time samples, each time will produce\n"
 "                      an image [()]\n"
-"  -cullBackfaces      enable backface culling\n";
+"  -cullBackfaces      enable backface culling\n"
+"  -clear r g b a      clear color\n"
+"  -translate x y z    default camera translation\n";
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
 }
@@ -400,6 +415,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-lighting") == 0) {
             _testLighting = true;
         }
+        else if (strcmp(argv[i], "-camlight") == 0) {
+            _cameraLight = true;
+        }
         else if (strcmp(argv[i], "-idRender") == 0) {
             _testIdRender = true;
         }
@@ -431,6 +449,19 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-times") == 0) {
             ParseDoubleVector(i, argc, argv, &_times);
+        }
+        else if (strcmp(argv[i], "-clear") == 0) {
+            CheckForMissingArguments(i, 4, argc, argv);
+            args->clearColor[0] = (float)ParseDouble(i, argc, argv);
+            args->clearColor[1] = (float)ParseDouble(i, argc, argv);
+            args->clearColor[2] = (float)ParseDouble(i, argc, argv);
+            args->clearColor[3] = (float)ParseDouble(i, argc, argv);
+        }
+        else if (strcmp(argv[i], "-translate") == 0) {
+            CheckForMissingArguments(i, 3, argc, argv);
+            args->translate[0] = (float)ParseDouble(i, argc, argv);
+            args->translate[1] = (float)ParseDouble(i, argc, argv);
+            args->translate[2] = (float)ParseDouble(i, argc, argv);
         }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);
@@ -472,6 +503,8 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     for (size_t i=0; i<args.clipPlaneCoords.size()/4; ++i) {
         _clipPlanes.push_back(GfVec4d(&args.clipPlaneCoords[i*4]));
     }
+    _clearColor = GfVec4f(args.clearColor);
+    _translate = GfVec3f(args.translate);
 
     _drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
 

@@ -24,90 +24,52 @@
 #ifndef HD_RENDER_DELEGATE_REGISTRY_H
 #define HD_RENDER_DELEGATE_REGISTRY_H
 
-#include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/base/tf/weakPtr.h"
+#include "pxr/imaging/hf/pluginDelegateRegistry.h"
 
 class HdRenderDelegate;
-TF_DECLARE_WEAK_AND_REF_PTRS(HdRenderDelegate);
 
-/// \class HdRenderDelegateRegistry
-///
-class HdRenderDelegateRegistry : TfWeakBase
+class HdRenderDelegateRegistry final  : public HfPluginDelegateRegistry
 {
 public:
-
-    /// This class is not intended to be copied.
     ///
-    HdRenderDelegateRegistry(const HdRenderDelegateRegistry &) = delete;
-    HdRenderDelegateRegistry &operator=(const HdRenderDelegateRegistry &) 
-        = delete;
-
-    ///
-    /// Returns the singleon registry for \c HdRenderDelegate
+    /// Returns the singleton registry for \c HdRenderDelegate
     ///
     static HdRenderDelegateRegistry &GetInstance();
 
     ///
-    /// Returns a vector of all the registered render delegates.
-    ///
-    HdRenderDelegatePtrVector GetAllRenderDelegates();
-    
-
-public:
-
-    ///
-    /// Factory classes used for plugin registration.
-    ///
-    class FactoryBase : public TfType::FactoryBase
-    {
-    public:
-        virtual HdRenderDelegateRefPtr New() const = 0;
-    };
-
-    template <typename T>
-    class Factory : public FactoryBase
-    {
-    public:
-        virtual HdRenderDelegateRefPtr New() const override
-        {
-            return TfCreateRefPtr(new T);
-        }
-    };
-
-public:
-
-    /// 
     /// Entry point for defining an HdRenderDelegate plugin.
     ///
     template<typename T, typename... Bases>
-    static void Define()
-    {
-        TfType::Define<T, TfType::Bases<HdRenderDelegate, Bases...> >()
-            .template SetFactory< HdRenderDelegateRegistry::Factory<T> >();
-    }
+    static void Define();
 
+    ///
+    /// Returns the render delegate for the given id or null
+    /// if not found.  The reference count on the returned
+    /// delegate is incremented.
+    ///
+    HdRenderDelegate *GetRenderDelegate(const TfToken &delegateId);
 
 private:
+    // Friend required by TfSingleton to access constructor (as it is private).
+    friend class TfSingleton<HdRenderDelegateRegistry>;
 
     // Singleton gets private constructed
     HdRenderDelegateRegistry();
-    friend class TfSingleton< HdRenderDelegateRegistry >;
+    virtual ~HdRenderDelegateRegistry();
 
-
-    // Loads all the plugins that provide HdRenderDelegates
-    void _LoadPlugins();
-
-private:
-
-    // The vector of all the registered render delegates
-    HdRenderDelegateRefPtrVector _renderDelegates;
-
-    // Protects from loading plugins multiple times.
-    bool _pluginsLoaded;
-
+    //
+    /// This class is not intended to be copied.
+    ///
+    HdRenderDelegateRegistry(const HdRenderDelegateRegistry &)            = delete;
+    HdRenderDelegateRegistry &operator=(const HdRenderDelegateRegistry &) = delete;
 };
 
+
+template<typename T, typename... Bases>
+void HdRenderDelegateRegistry::Define()
+{
+    HfPluginDelegateRegistry::Define<T, HdRenderDelegate, Bases...>();
+}
 
 #endif //HD_RENDER_DELEGATE_REGISTRY_H

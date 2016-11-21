@@ -211,7 +211,7 @@ def _GetShortString(prop, frame):
     from scalarTypes import GetScalarTypeFromAttr
     scalarType, isArray = GetScalarTypeFromAttr(prop)
     result = ''
-    if isArray:
+    if isArray and not isinstance(val, Sdf.ValueBlock):
         def arrayToStr(a):
             from itertools import chain
             elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])

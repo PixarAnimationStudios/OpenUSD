@@ -33,6 +33,7 @@
 #endif
 #undef interface // Defined on Windows.
 #include <FnGeolib/op/FnGeolibOp.h>
+#include <memory>
 
 /// \brief Private data for each non-root invocation of \c PxrUsdIn. 
 ///
@@ -41,11 +42,21 @@ class PxrUsdKatanaUsdInPrivateData : public Foundry::Katana::GeolibPrivateData
 {
 
 public:
+
+    /// \brief Material specialization hierarchy for Usd shading.
+    struct MaterialHierarchy {
+        std::map<SdfPath, SdfPath> baseMaterialPath;
+        // Maintain order of derivedMaterials, for presentation.
+        std::map<SdfPath, std::vector<SdfPath>> derivedMaterialPaths;
+    };
+
     USDKATANA_API
     PxrUsdKatanaUsdInPrivateData(
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-            const PxrUsdKatanaUsdInPrivateData* parentData = NULL);
+            const PxrUsdKatanaUsdInPrivateData* parentData = NULL,
+            bool useDefaultMotion = false,
+            std::shared_ptr<const MaterialHierarchy> *materialHierarchy = NULL);
 
     virtual ~PxrUsdKatanaUsdInPrivateData()
     {
@@ -75,6 +86,11 @@ public:
     USDKATANA_API
     const std::vector<double> GetMotionSampleTimes(const UsdAttribute& attr = UsdAttribute()) const;
 
+    std::shared_ptr<const MaterialHierarchy>
+    GetMaterialHierarchy() const {
+        return _materialHierarchy;
+    }
+
 private:
 
     UsdPrim _prim;
@@ -85,6 +101,8 @@ private:
     SdfPath _masterPath;
     
     bool _useDefaultMotionSampleTimes;
+
+    std::shared_ptr<const MaterialHierarchy> _materialHierarchy;
 };
 
 #endif // PXRUSDKATANA_USDIN_PRIVATEDATA_H

@@ -32,9 +32,16 @@ class TestTfPyAnnotatedBoolResult(unittest.TestCase):
         result = Tf._TestAnnotatedBoolResult(True, 'This is true')
         self.assertTrue(result)
         self.assertEqual(result.annotation, 'This is true')
+        boolResult, annotation = result
+        self.assertTrue(boolResult)
+        self.assertEqual(annotation, 'This is true')
+
         result = Tf._TestAnnotatedBoolResult(False, 'This is false')
         self.assertFalse(result)
         self.assertEqual(result.annotation, 'This is false')
+        boolResult, annotation = result
+        self.assertFalse(boolResult)
+        self.assertEqual(annotation, 'This is false')
 
 if __name__ == '__main__':
     unittest.main()

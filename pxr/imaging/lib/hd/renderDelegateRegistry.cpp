@@ -22,11 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
-
 #include "pxr/imaging/hd/renderDelegate.h"
-
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -38,62 +34,21 @@ HdRenderDelegateRegistry::GetInstance()
     return TfSingleton< HdRenderDelegateRegistry >::GetInstance();
 }
 
+
 HdRenderDelegateRegistry::HdRenderDelegateRegistry()
-    : _pluginsLoaded(false)
+ : HfPluginDelegateRegistry(TfType::Find<HdRenderDelegate>())
 {
 }
 
-HdRenderDelegatePtrVector 
-HdRenderDelegateRegistry::GetAllRenderDelegates()
-{
-    // Make sure all the plugins are loaded
-    _LoadPlugins();
 
-    // This is not particularily efficient, but:
-    //
-    //   1. We expect this function to be called very rarely
-    //   2. We expect a small number of render delegates
-    //
-    return HdRenderDelegatePtrVector(
-        _renderDelegates.begin(), _renderDelegates.end());
+HdRenderDelegateRegistry::~HdRenderDelegateRegistry()
+{
 }
 
-void 
-HdRenderDelegateRegistry::_LoadPlugins()
+
+HdRenderDelegate *
+HdRenderDelegateRegistry::GetRenderDelegate(const TfToken &delegateId)
 {
-    if (_pluginsLoaded)
-        return;
-
-    std::set<TfType> result;
-    PlugRegistry::GetInstance().GetAllDerivedTypes<HdRenderDelegate>(&result);
-
-    // Note that we load all the plugins in this function.
-    // XXX: This can be improved by only loading the plugins that the client
-    // has asked for.
-    for (const TfType &t : result) {
-        if (PlugPluginPtr p = PlugRegistry::GetInstance().GetPluginForType(t)) {
-
-            if (!p->Load()) {
-                TF_WARN("Failed to load HdRenderDelegate plugin at path %s",
-                    p->GetPath().c_str());
-                continue;
-            }
-
-            HdRenderDelegateRefPtr renderDelegate;
-            if (FactoryBase *factory = t.GetFactory<FactoryBase>()) {
-                renderDelegate = factory->New();
-            } else {
-                TF_WARN("Failed to find HdRenderDelegate factory for plugin %s"
-                        ", at path %s",
-                    p->GetName().c_str(),
-                    p->GetPath().c_str());
-            }
-
-            if (renderDelegate) {
-                _renderDelegates.push_back(renderDelegate);
-            }
-        }
-    }
-
-    _pluginsLoaded = true;
+    return static_cast<HdRenderDelegate *>(GetDelegate(delegateId));
 }
+

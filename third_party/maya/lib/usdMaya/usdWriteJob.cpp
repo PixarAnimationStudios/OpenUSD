@@ -23,6 +23,7 @@
 //
 #include "usdMaya/usdWriteJob.h"
 
+#include "usdMaya/JobArgs.h"
 #include "usdMaya/MayaMeshWriter.h"
 #include "usdMaya/MayaNurbsCurveWriter.h"
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
@@ -69,8 +70,7 @@
 #include <unordered_set>
 
 usdWriteJob::usdWriteJob(const JobExportArgs & iArgs) :
-    mArgs(iArgs),
-    mExportedGprims(false)
+    mArgs(iArgs), mModelKindWriter(iArgs)
 {
 }
 
@@ -103,16 +103,18 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
         }  // for n
     }  // for m
 
-    // make sure the file is a valid one with proper extension
-    if (TfStringEndsWith(iFileName,".usd") || 
-        TfStringEndsWith(iFileName,".usda") ||
-        TfStringEndsWith(iFileName,".usdb") ||
-        TfStringEndsWith(iFileName,".usdc")) {
+    // Make sure the file name is a valid one with a proper USD extension.
+    const std::string iFileExtension = TfStringGetSuffix(iFileName, '.');
+    if (iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault or
+            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII or
+            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate) {
         mFileName = iFileName;
     } else {
-        mFileName = iFileName + ".usda";
+        mFileName = TfStringPrintf("%s.%s",
+                                   iFileName.c_str(),
+                                   PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     }
-    
+
     MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
 
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
@@ -134,8 +136,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     mStage->SetStartTimeCode(startTime);
     mStage->SetEndTimeCode(endTime);
     
-    mPathsThatMayHaveKind.clear();
-    mExportedGprims = false;
+    mModelKindWriter.Reset();
 
     // Setup the requested render layer mode:
     //     defaultLayer    - Switch to the default render layer before exporting,
@@ -240,12 +241,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
                 }
             }
 
-            if (primWriter->exportsGprims()){
-                mExportedGprims = true;
-            }
-            if (primWriter->exportsReferences()){
-                mPathsThatMayHaveKind.push_back(usdPrim.GetPath());
-            }
+            mModelKindWriter.OnWritePrim(usdPrim, primWriter);
         }
     }
 
@@ -257,8 +253,9 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
                 mArgs.mergeTransformAndShape,
                 mArgs.usdModelRootOverridePath);
 
-    UsdPrimSiblingRange usdRootPrims = mStage->GetPseudoRoot().GetChildren();
-    makeModelHierarchy(usdRootPrims);
+    if (not mModelKindWriter.MakeModelHierarchy(mStage)) {
+        return false;
+    }
 
     // now we populate the chasers and run export default
     mChasers.clear();
@@ -296,103 +293,6 @@ void usdWriteJob::evalJob(double iFrame)
         chaser->ExportFrame(iFrame);
     }
     perFrameCallback(iFrame);
-}
-
-
-void usdWriteJob::makeModelHierarchy(UsdPrimSiblingRange const &usdRootPrims)
-{
-    // For any root-prim that doesn't already have an authored kind 
-    // (thinking ahead to being able to specify USD_kind per bug/128430),
-    // make it a model.  If there were any gprims authored directly during
-    // export, we will make the roots be component models, and author
-    // kind=subcomponent on any prim-references that would otherwise
-    // evaluate to some model-kind; we may in future make this behavior
-    // a jobargs option.
-    //
-    // If there were no gprims directly authored, we'll make it an assembly 
-    // instead, and attempt to create a valid model-hierarchy if any of the
-    // references we authored are references to models.
-    //
-    // Note that the code below does its best to facilitate having multiple,
-    // independent root-trees/models in the same export, however the
-    // analysis we have done about gprims and references authored is global,
-    // so all trees will get the same treatment/kind.
-
-    TfToken defaultRootKind = (mExportedGprims ? 
-                               KindTokens->component :
-                               KindTokens->assembly);
-    std::map<SdfPath, bool> rootPrimIsComponent;
-    
-    // One pass through root prims to fill in root-kinds
-    for ( UsdPrim const& prim : usdRootPrims) {
-        UsdModelAPI usdRootModel(prim);
-        TfToken  kind;
-        if (not usdRootModel.GetKind(&kind) or kind.IsEmpty()){
-            usdRootModel.SetKind(kind=defaultRootKind);
-        }
-        rootPrimIsComponent[prim.GetPath()] = KindRegistry::IsA(kind, 
-                                                        KindTokens->component);
-    }
-    
-    std::unordered_set<SdfPath, SdfPath::Hash> pathsToBeGroup;
-    for (SdfPath const &path : mPathsThatMayHaveKind){
-        // The kind of the root prim under which each reference was authored
-        // informs how we will fix-up/fill-in kind on it and its ancestors
-        UsdPrim prim = mStage->GetPrimAtPath(path);
-        if (not prim)
-            continue;
-        UsdModelAPI usdModel(prim);
-        TfToken  kind;
-        
-        // Nothing to fix if there's no resolved kind
-        if (not usdModel.GetKind(&kind) or kind.IsEmpty())
-            continue;
-        
-        SdfPathVector  ancestorPaths;
-        path.GetParentPath().GetPrefixes(&ancestorPaths);
-        if (ancestorPaths.size() < 1) {
-            continue;
-        }
-        if (rootPrimIsComponent[ancestorPaths[0]]){
-            // override any authored kind below the root to subcomponent
-            // to avoid broken model-hierarchy
-            usdModel.SetKind(KindTokens->subcomponent);
-        } else {
-            // Just insert the paths into a set at this point so that we
-            // can do the authoring in batch Sdf API for efficiency.
-            for (size_t i=1; i<ancestorPaths.size(); ++i){
-                UsdPrim ancestorPrim = mStage->GetPrimAtPath(ancestorPaths[i]);
-                if (not ancestorPrim)
-                    continue;
-                UsdModelAPI ancestorModel(ancestorPrim);
-                TfToken  kind;
-                
-                if (not usdModel.GetKind(&kind) or 
-                    not KindRegistry::IsA(kind, KindTokens->group)){
-                    pathsToBeGroup.insert(ancestorPaths[i]);
-                }
-            }
-        }
-    }
-
-    {        
-        // We drop down to Sdf to do the kind-authoring, because authoring
-        // kind induces recomposition since we cache model-hierarchy.  Using
-        // Sdf api, we can bundle the changes into a change block, and do all
-        // the recomposition at once
-        SdfLayerHandle layer = mStage->GetEditTarget().GetLayer();
-        SdfChangeBlock block;
-
-        for (SdfPath const &path : pathsToBeGroup){
-            SdfPrimSpecHandle primSpec = SdfCreatePrimInLayer(layer, path);
-            if (not primSpec){
-                MGlobal::displayError("Failed to create primSpec for setting kind at path:" + MString(path.GetText()));
-            }
-            else {
-                primSpec->SetKind(KindTokens->group);
-            }
-        }       
-    }
 }
 
 
@@ -518,7 +418,6 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
         }
         if (!tableOfActivePaths.empty()) {
             { // == BEG: Scope for Variant EditContext
-                // See xref: /mainline/third/plugin/px_usdBuildPlug/testenv/testPxUsdBuildPlugConstraints.py
                 // Create the variantSet and variant
                 UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().FindOrCreate("modelingVariant");
                 modelingVariantSet.FindOrCreateVariant(variantName);

@@ -15,6 +15,7 @@ pxr_shared_library(ar
     PUBLIC_HEADERS
         api.h
         assetInfo.h
+        defaultResolver.h
         pyResolverContext.h
         resolver.h
         resolverContext.h
@@ -25,7 +26,6 @@ pxr_shared_library(ar
 
     PRIVATE_HEADERS
         debugCodes.h
-        defaultResolver.h
 
     CPPFILES
         assetInfo.cpp

@@ -1,0 +1,9 @@
+{
+    "Types": {
+        "HdStreamRenderDelegate": {
+            "bases": ["HdRenderDelegate"],
+            "displayName": "Hydra Stream Renderer",
+            "priority" : 0
+        }
+    }
+}

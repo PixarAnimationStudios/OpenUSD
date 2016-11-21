@@ -489,14 +489,15 @@ UsdGeomPointInstancer::ComputeMaskAtTime(UsdTimeCode time,
                     // trivial pass
                     return mask;
                 }
-                idVals.reserve(protoIndices.size());
-                for (int index : protoIndices){
-                    idVals.push_back(index);
+                size_t numInstances = protoIndices.size();
+                idVals.reserve(numInstances);
+                for (size_t i = 0; i < numInstances; ++i) {
+                    idVals.push_back(i);
                 }
                 ids = &idVals;
             }
         }
-         
+
         mask.reserve(ids->size());
         for (int64_t id : *ids){
             bool pruned = (maskedIds.find(id) != maskedIds.end());

@@ -110,35 +110,6 @@ My_TestGLDrawing::InitTest()
     std::cout << glGetString(GL_RENDERER) << "\n";
     std::cout << glGetString(GL_VERSION) << "\n";
 
-    if(IsEnabledTestLighting()) {
-        if(UsdImagingGL::IsEnabledHydra()) {
-            // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
-            // OpenGL defaults
-            _lightingContext = GlfSimpleLightingContext::New();
-            GlfSimpleLight light;
-            light.SetPosition(GfVec4f(0, -.5, .5, 0));
-            light.SetDiffuse(GfVec4f(1,1,1,1));
-            light.SetAmbient(GfVec4f(0,0,0,1));
-            light.SetSpecular(GfVec4f(1,1,1,1));
-            GlfSimpleLightVector lights;
-            lights.push_back(light);
-            _lightingContext->SetLights(lights);
-
-            GlfSimpleMaterial material;
-            material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
-            material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
-            material.SetSpecular(GfVec4f(0,0,0,1));
-            material.SetShininess(0.0001f);
-            _lightingContext->SetMaterial(material);
-            _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
-        } else {
-            glEnable(GL_LIGHTING);
-            glEnable(GL_LIGHT0);
-            float position[4] = {0,-.5,.5,0};
-            glLightfv(GL_LIGHT0, GL_POSITION, position);
-        }
-    }
-
     if (_ShouldFrameAll()) {
         TfTokenVector purposes;
         purposes.push_back(UsdGeomTokens->default_);
@@ -169,9 +140,47 @@ My_TestGLDrawing::InitTest()
             _translate[2] = -worldCenter[2] - worldSize;
         }
     } else {
-        _translate[0] = 0.0;
-        _translate[1] = -1000.0;
-        _translate[2] = -2500.0;
+        _translate[0] = GetTranslate()[0];
+        _translate[1] = GetTranslate()[1];
+        _translate[2] = GetTranslate()[2];
+    }
+
+    if(IsEnabledTestLighting()) {
+        if(UsdImagingGL::IsEnabledHydra()) {
+            // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
+            // OpenGL defaults
+            _lightingContext = GlfSimpleLightingContext::New();
+            GlfSimpleLight light;
+            if (IsEnabledCameraLight()) {
+                light.SetPosition(GfVec4f(_translate[0], _translate[2], _translate[1], 0));
+            } else {
+                light.SetPosition(GfVec4f(0, -.5, .5, 0));
+            }
+            light.SetDiffuse(GfVec4f(1,1,1,1));
+            light.SetAmbient(GfVec4f(0,0,0,1));
+            light.SetSpecular(GfVec4f(1,1,1,1));
+            GlfSimpleLightVector lights;
+            lights.push_back(light);
+            _lightingContext->SetLights(lights);
+
+            GlfSimpleMaterial material;
+            material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
+            material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
+            material.SetSpecular(GfVec4f(0,0,0,1));
+            material.SetShininess(0.0001f);
+            _lightingContext->SetMaterial(material);
+            _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
+        } else {
+            glEnable(GL_LIGHTING);
+            glEnable(GL_LIGHT0);
+            if (IsEnabledCameraLight()) {
+                float position[4] = {_translate[0], _translate[2], _translate[1], 0};
+                glLightfv(GL_LIGHT0, GL_POSITION, position);
+            } else {
+                float position[4] = {0,-.5,.5,0};
+                glLightfv(GL_LIGHT0, GL_POSITION, position);
+            }
+        }
     }
 }
 
@@ -237,8 +246,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
         glViewport(0, 0, width, height);
 
-        GLfloat clearColor[4] = { 1.0f, .5f, 0.1f, 1.0f };
-        glClearBufferfv(GL_COLOR, 0, clearColor);
+        GfVec4f const &clearColor = GetClearColor();
+        glClearBufferfv(GL_COLOR, 0, clearColor.data());
 
         GLfloat clearDepth[1] = { 1.0f };
         glClearBufferfv(GL_DEPTH, 0, clearDepth);

@@ -1537,9 +1537,57 @@ CrateFile::_WriteSection(
     toc.sections.back().size = w.Tell() - toc.sections.back().start;
 }
 
+void
+CrateFile::_AddDeferredTimeSampledSpecs()
+{
+    // A map from sample time to VtValues within TimeSamples instances in
+    // _deferredTimeSampledSpecs.
+    boost::container::flat_map<double, vector<VtValue *>> allValuesAtAllTimes;
+
+    // Search for the TimeSamples, add to the allValuesAtAllTimes.
+    for (auto &spec: _deferredTimeSampledSpecs) {
+        for (auto &tsf: spec.timeSampleFields) {
+            for (size_t i = 0; i != tsf.second.values.size(); ++i) {
+                if (!tsf.second.values[i].IsHolding<ValueRep>()) {
+                    allValuesAtAllTimes[tsf.second.times.Get()[i]].push_back(
+                        &tsf.second.values[i]);
+                }
+            }
+        }
+    }
+
+    // Now walk through allValuesAtAllTimes in order and pack all the values,
+    // swapping them out with the resulting reps.  This ensures that when we
+    // pack the specs, which will re-pack the values, they'll be noops since
+    // they are just holding value reps that point into the file.
+    for (auto const &p: allValuesAtAllTimes) {
+        for (VtValue *val: p.second)
+            *val = _PackValue(*val);
+    }
+
+    // Now we've transformed all the VtValues in all the timeSampleFields to
+    // ValueReps.  We can call _AddField and add them to ordinaryFields, then
+    // add the spec.
+    for (auto &spec: _deferredTimeSampledSpecs) {
+        for (auto &p: spec.timeSampleFields) {
+            spec.ordinaryFields.push_back(
+                _AddField(make_pair(p.first, VtValue::Take(p.second))));
+        }
+        _specs.emplace_back(spec.path, spec.specType,
+                            _AddFieldSet(spec.ordinaryFields));
+    }
+
+    TfReset(_deferredTimeSampledSpecs);
+}
+
 bool
 CrateFile::_Write()
 {
+    // First, add any _deferredTimeSampledSpecs, packing their values
+    // time-by-time to ensure that all the data for given times is collocated.
+    _AddDeferredTimeSampledSpecs();
+
+    // Now proceed with writing.
     _Writer w(this);
 
     _TableOfContents toc;
@@ -1595,7 +1643,36 @@ CrateFile::_Write()
 void
 CrateFile::_AddSpec(const SdfPath &path, SdfSpecType type,
                    const std::vector<FieldValuePair> &fields) {
-    _specs.push_back(Spec(_AddPath(path), type, _AddFieldSet(fields)));
+    // If any of the fields here are TimeSamples, then defer adding this spec to
+    // the call to _Write().  In _Write(), we'll add all the sample values
+    // time-by-time to ensure that all the data for a given sample time is
+    // as collocated as possible in the file.
+
+    vector<FieldIndex> ordinaryFields; // non time-sample valued fields.
+    vector<pair<TfToken, TimeSamples>> timeSampleFields;
+
+    ordinaryFields.reserve(fields.size());
+    for (auto const &p: fields) {
+        if (p.second.IsHolding<TimeSamples>() &&
+            p.second.UncheckedGet<TimeSamples>().IsInMemory()) {
+            timeSampleFields.emplace_back(
+                p.first, p.second.UncheckedGet<TimeSamples>());
+        }
+        else {
+            ordinaryFields.push_back(_AddField(p));
+        }
+    }
+
+    // If we have no time sample fields, we can just add the spec now.
+    // Otherwise defer so we can write all sample values by time in _Write().
+    if (timeSampleFields.empty()) {
+        _specs.emplace_back(_AddPath(path), type, _AddFieldSet(ordinaryFields));
+    }
+    else {
+        _deferredTimeSampledSpecs.emplace_back(
+            _AddPath(path), type,
+            std::move(ordinaryFields), std::move(timeSampleFields));
+    }        
 }
 
 VtValue
@@ -2094,12 +2171,8 @@ CrateFile::_AddPath(const SdfPath &path)
 }
 
 FieldSetIndex
-CrateFile::_AddFieldSet(const std::vector<FieldValuePair> &fields)
+CrateFile::_AddFieldSet(const std::vector<FieldIndex> &fieldIndexes)
 {
-    auto fieldIndexes = std::vector<FieldIndex>(fields.size());
-    transform(fields.begin(), fields.end(), fieldIndexes.begin(),
-              [this](FieldValuePair const &f) { return _AddField(f); });
-
     auto iresult =
         _packCtx->fieldsToFieldSetIndex.emplace(fieldIndexes, FieldSetIndex());
     if (iresult.second) {

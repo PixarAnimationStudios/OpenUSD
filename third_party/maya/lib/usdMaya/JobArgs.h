@@ -24,10 +24,23 @@
 #ifndef PXRUSDMAYA_JOBARGS_H
 #define PXRUSDMAYA_JOBARGS_H
 
+/// \file JobArgs.h
+
 #include "usdMaya/api.h"
+
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+
+#define PXRUSDMAYA_TRANSLATOR_TOKENS \
+    ((UsdFileExtensionDefault, "usd")) \
+    ((UsdFileExtensionASCII, "usda")) \
+    ((UsdFileExtensionCrate, "usdc")) \
+    ((UsdFileFilter, "*.usd *.usda *.usdc"))
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens, USDMAYA_API,
+        PXRUSDMAYA_TRANSLATOR_TOKENS);
 
 #define PXRUSDMAYA_JOBARGS_TOKENS \
     (Full) \
@@ -84,6 +97,8 @@ struct JobExportArgs
     // where a _BaseModel_ root path is used instead of
     // the model path. This to allow a proper internal reference
     SdfPath usdModelRootOverridePath;
+
+    TfToken rootKind;
 };
 
 struct JobImportArgs

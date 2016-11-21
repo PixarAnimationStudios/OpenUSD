@@ -85,6 +85,13 @@
                         "isInternal": true,
                         "primTypeName": "Points"
                     },
+                    "UsdImagingPointInstancerAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PointInstancer"
+                    },
                     "UsdImagingSphereAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"

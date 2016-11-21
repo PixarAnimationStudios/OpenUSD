@@ -63,6 +63,6 @@ bool GlfIsCompressedFormat(GLenum format);
 ///
 /// Supported OGL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
 /// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
-int GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum type);
+size_t GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum type);
 
 #endif

@@ -45,24 +45,24 @@
 /// (1) a way to store non-attribute metadata or information (such as the hidden
 /// state) on a Maya node when importing, and
 /// (2) a way to write out the same metadata or information from a Maya node
-/// into a \class UsdPrim when exporting.
+/// into a \c UsdPrim when exporting.
 class AttributeConverter {
 public:
     /// \brief Takes attribute(s) from a Maya node and modifies a
-    /// \class UsdPrim accordingly.
+    /// \c UsdPrim accordingly.
     virtual bool MayaToUsd(
             const MFnDependencyNode& depNode,
             UsdPrim& destPrim,
             const UsdTimeCode usdTime) const = 0;
     
-    /// \brief Stores information about a source \class UsdPrim in a Maya node.
+    /// \brief Stores information about a source \c UsdPrim in a Maya node.
     virtual bool UsdToMaya(
             const UsdPrim& srcPrim,
             MFnDependencyNode& destNode,
             const UsdTimeCode usdTime) const = 0;
 };
 
-/// \brief An implementation of \class AttributeConverter that allows passing in
+/// \brief An implementation of \c AttributeConverter that allows passing in
 /// functions or lambdas to handle the conversion between Maya and USD.
 class FunctionalAttributeConverter : public AttributeConverter {
 public:

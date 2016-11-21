@@ -75,20 +75,20 @@ public:
         Pcp_GraphStats* stats,
         bool culledNodesOnly)
     {
-        TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-            if (culledNodesOnly and not nodeIt->IsCulled()) {
+        for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+            if (culledNodesOnly and not node.IsCulled()) {
                 continue;
             }
 
             ++(stats->numNodes);
-            ++(stats->typeToNumNodes[nodeIt->GetArcType()]);
+            ++(stats->typeToNumNodes[node.GetArcType()]);
             
             const bool nodeIsImpliedInherit = 
-                nodeIt->GetOriginNode() != nodeIt->GetParentNode();
+                node.GetOriginNode() != node.GetParentNode();
             if (nodeIsImpliedInherit) {
-                if (nodeIt->GetArcType() == PcpArcTypeLocalInherit)
+                if (node.GetArcType() == PcpArcTypeLocalInherit)
                     ++(stats->numImpliedLocalInherits);
-                else if (nodeIt->GetArcType() == PcpArcTypeGlobalInherit)
+                else if (node.GetArcType() == PcpArcTypeGlobalInherit)
                     ++(stats->numImpliedGlobalInherits);
             }
         }
@@ -134,9 +134,9 @@ public:
             }
 
             // Gather map functions
-            TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-                allMapFuncs.insert(nodeIt->GetMapToParent().Evaluate());
-                allMapFuncs.insert(nodeIt->GetMapToRoot().Evaluate());
+            for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+                allMapFuncs.insert(node.GetMapToParent().Evaluate());
+                allMapFuncs.insert(node.GetMapToRoot().Evaluate());
             }
         }
 

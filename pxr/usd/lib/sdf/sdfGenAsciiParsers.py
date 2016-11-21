@@ -36,7 +36,6 @@ import platform
 from subprocess import call, Popen, PIPE
 from shutil import rmtree, copyfile
 from difflib import unified_diff
-from enum import Enum
 
 # -----------------------------------------------------------------------------
 # Validation functions.
@@ -45,7 +44,7 @@ from enum import Enum
 # pass validation.
 # -----------------------------------------------------------------------------
 def _compareFiles(installedFiles, generatedFiles, configuration):
-    failOnDiff = configuration[ConfigurationKey.VALIDATE]
+    failOnDiff = configuration[VALIDATE]
 
     if len(installedFiles) != len(generatedFiles):
         installedNames = set(map(basename, installedFiles))
@@ -103,9 +102,9 @@ def _runBisonAndFlexCommands(configuration):
     # build up collections of all relevant files, these include 
     # yy/ll source files, as well as the generated C++ header
     # and source files.
-    srcDir   = configuration[ConfigurationKey.SRC_DIR]
-    destDir  = configuration[ConfigurationKey.DEST_DIR]
-    bases    = configuration[ConfigurationKey.BASES]
+    srcDir   = configuration[SRC_DIR]
+    destDir  = configuration[DEST_DIR]
+    bases    = configuration[BASES]
 
     bisonFiles      = [join(srcDir, base + '.yy') for base in bases] 
     flexFiles       = [join(srcDir, base + '.ll') for base in bases]
@@ -121,8 +120,8 @@ def _runBisonAndFlexCommands(configuration):
     bisonFlags = lambda base: ['-d', '-p', base + 'Yy', '-o']
     flexFlags  = lambda base: ['-P'+ base + "Yy", '-t']  
 
-    bisonExecutable = configuration[ConfigurationKey.BISON_EXE]
-    flexExecutable  = configuration[ConfigurationKey.FLEX_EXE]
+    bisonExecutable = configuration[BISON_EXE]
+    flexExecutable  = configuration[FLEX_EXE]
     
     bisonCommand = lambda index: ([bisonExecutable]
                                   + bisonFlags(base) 
@@ -253,25 +252,30 @@ def _parseArguments():
                              'for example, textFileFormat')
     return parser.parse_args()
 
-ConfigurationKey = Enum('ConfigurationKey', 
-                        'DEST_DIR SRC_DIR VALIDATE BASES BISON_EXE FLEX_EXE')
+# Configuration constants
+DEST_DIR   = 0
+SRC_DIR    = 1
+VALIDATE   = 2
+BASES      = 3
+BISON_EXE  = 4
+FLEX_EXE   = 5
 
 def _getConfiguration():
     arguments = _parseArguments()
 
-    config = { ConfigurationKey.VALIDATE  : arguments.validate,
-               ConfigurationKey.SRC_DIR   : arguments.srcDir,
-               ConfigurationKey.DEST_DIR  : mkdtemp(),
-               ConfigurationKey.BISON_EXE : arguments.bison,
-               ConfigurationKey.FLEX_EXE  : arguments.flex,
-               ConfigurationKey.BASES     : arguments.bases }
+    config = { VALIDATE  : arguments.validate,
+               SRC_DIR   : arguments.srcDir,
+               DEST_DIR  : mkdtemp(),
+               BISON_EXE : arguments.bison,
+               FLEX_EXE  : arguments.flex,
+               BASES     : arguments.bases }
                
     # Ensure all optional arguments get properly populated
     if not arguments.flex:
-        config[ConfigurationKey.FLEX_EXE] = _getFlex(config) 
+        config[FLEX_EXE] = _getFlex(config) 
 
     if not arguments.bison:
-        config[ConfigurationKey.BISON_EXE] = _getBison(config)
+        config[BISON_EXE] = _getBison(config)
 
     if not arguments.bases:
         allFiles = listdir(arguments.srcDir)
@@ -284,15 +288,15 @@ def _getConfiguration():
                  'are in the source directory(--srcDir). If unspecified, the '
                  'source directory is assumed to be the current directory.')
 
-        config[ConfigurationKey.BASES] = bases 
+        config[BASES] = bases 
 
     _validateSourceDirectory(config)
 
     return config
 
 def _validateSourceDirectory(configuration):
-    bases = configuration[ConfigurationKey.BASES]
-    srcDir = configuration[ConfigurationKey.SRC_DIR]
+    bases = configuration[BASES]
+    srcDir = configuration[SRC_DIR]
 
     allFiles = ([join(srcDir, base + '.yy') for base in bases] 
                 + [join(srcDir, base + '.ll') for base in bases]
@@ -310,14 +314,15 @@ def _validateSourceDirectory(configuration):
 # running sdfGenAsciiParsers. This works in the context of either a 
 # SCons build configuration or a CMake build configuration.
 # -----------------------------------------------------------------------------
-BuildSystem = Enum('BuildSystem', 'SCONS CMAKE')
+SCONS = 0
+CMAKE = 1
 
 def _determineBuildSystem(configuration):
-    srcDir = configuration[ConfigurationKey.SRC_DIR]
+    srcDir = configuration[SRC_DIR]
     if isfile(join(srcDir, 'SConscript')):
-        return BuildSystem.SCONS
+        return SCONS
     elif isfile(join(srcDir, 'CMakeLists.txt')):
-        return BuildSystem.CMAKE
+        return CMAKE
     else:
         exit('*** Unable to determine build system.')
 
@@ -338,7 +343,7 @@ def _getSconsBuildEnvSetting(environmentVariable, configuration):
 def _getCMakeBuildEnvSetting(environmentVariable, configuration):
     # Gather the root of our source directory, we'll need to 
     # point CMake to it to find the cached variables.
-    srcRootDir = configuration[ConfigurationKey.SRC_DIR]
+    srcRootDir = configuration[SRC_DIR]
 
     foundPxr = lambda d: 'pxr' in map(basename, listdir(d))
     while exists(srcRootDir) and (not foundPxr(srcRootDir)):
@@ -364,17 +369,17 @@ def _getCMakeBuildEnvSetting(environmentVariable, configuration):
 def _getFlex(configuration):
     buildSystem = _determineBuildSystem(configuration)    
 
-    if buildSystem == BuildSystem.SCONS:
+    if buildSystem == SCONS:
         return _getSconsBuildEnvSetting('LEX', configuration)
-    elif buildSystem == BuildSystem.CMAKE:
+    elif buildSystem == CMAKE:
         return _getCMakeBuildEnvSetting('FLEX_EXECUTABLE', configuration)
 
 def _getBison(configuration):
     buildSystem = _determineBuildSystem(configuration)    
 
-    if buildSystem == BuildSystem.SCONS:
+    if buildSystem == SCONS:
         return _getSconsBuildEnvSetting('YACC', configuration)
-    elif buildSystem == BuildSystem.CMAKE:
+    elif buildSystem == CMAKE:
         return _getCMakeBuildEnvSetting('BISON_EXECUTABLE', configuration) 
 
 # -----------------------------------------------------------------------------
@@ -394,14 +399,14 @@ if __name__ == '__main__':
     generatedFiles = _canonicalizeFiles(sourceFiles, generatedFiles)
     
     diffSectionMsg = 'Checking for diffs'
-    if configuration[ConfigurationKey.VALIDATE] and not any(platform.win32_ver()):
+    if configuration[VALIDATE] and not any(platform.win32_ver()):
         diffSectionMsg = diffSectionMsg + '(validation on)'
 
     _printSection(diffSectionMsg)
-    installedFiles = [join(configuration[ConfigurationKey.SRC_DIR], basename(f)) 
+    installedFiles = [join(configuration[SRC_DIR], basename(f)) 
                       for f in generatedFiles]
 
     diffs = _compareFiles(installedFiles, generatedFiles, configuration)
     _copyGeneratedFiles(installedFiles, generatedFiles, diffs) 
     # If validation passed, clean up the generated files
-    rmtree(configuration[ConfigurationKey.DEST_DIR])
+    rmtree(configuration[DEST_DIR])

@@ -56,4 +56,5 @@ pxr_shared_library(hdx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx
+        shaders/renderPassShadowShader.glslfx
 )

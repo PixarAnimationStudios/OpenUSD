@@ -231,6 +231,12 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(const string& tag)
 {
+    // XXX: 
+    // It would be nice to use the _GetFileFormatForPath helper function 
+    // from below, but that function expects a layer identifier and the 
+    // tag is supposed to be just a helpful debugging aid; the fact that
+    // one can specify an underlying layer file format by specifying an
+    // extension was unintended.
     SdfFileFormatConstPtr fileFormat;
     const string suffix = TfStringGetSuffix(tag);
     if (not suffix.empty()) {
@@ -311,6 +317,25 @@ SdfLayer::CreateNew(
     return _CreateNew(fileFormat, identifier, realPath, ArAssetInfo(), args);
 }
 
+static SdfFileFormatConstPtr
+_GetFileFormatForPath(const std::string &filePath,
+                      const SdfLayer::FileFormatArguments &args)
+{
+    // Determine which file extension to use.
+    const string ext = ArGetResolver().GetExtension(filePath);
+    if (ext.empty()) {
+        return TfNullPtr;
+    }
+
+    // Find a file format that can handle this extension and the
+    // specified target (if any).
+    const std::string* target = 
+        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
+
+    return SdfFileFormat::FindByExtension(
+        ext, (target ? *target : std::string()));
+}
+
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
@@ -367,11 +392,7 @@ SdfLayer::_CreateNew(
         // If not explicitly supplied one, try to determine the fileFormat 
         // based on the identifier suffix,
         if (not fileFormat) {
-            const string suffix = TfStringGetSuffix(absIdentifier);
-            if (not suffix.empty()) {
-                fileFormat = SdfFileFormat::FindById(TfToken(suffix));
-            }
-
+            fileFormat = _GetFileFormatForPath(absIdentifier, args);
             if (not TF_VERIFY(fileFormat))
                 return TfNullPtr;
         }
@@ -445,25 +466,6 @@ string
 SdfLayer::ComputeRealPath(const string &layerPath)
 {
     return Sdf_ComputeFilePath(layerPath);
-}
-
-static SdfFileFormatConstPtr
-_GetFileFormatForPath(const std::string &filePath,
-                      const SdfLayer::FileFormatArguments &args)
-{
-    // Determine which file extension to use.
-    const string ext = ArGetResolver().GetExtension(filePath);
-    if (ext.empty()) {
-        return TfNullPtr;
-    }
-
-    // Find a file format that can handle this extension and the
-    // specified target (if any).
-    const std::string* target = 
-        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
-
-    return SdfFileFormat::FindByExtension(
-        ext, (target ? *target : std::string()));
 }
 
 static SdfLayer::FileFormatArguments&
@@ -1646,7 +1648,9 @@ SdfLayer::_CanGetSpecAtPath(
     // We need to always call MakeAbsolutePath, even if relativePath is
     // already absolute, because we also need to absolutize target paths
     // within the path.
-    const SdfPath absPath = path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+    const SdfPath &absPath =
+        path.IsAbsolutePath() && !path.ContainsTargetPath() ? path :
+        path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
 
     // Grab the object type stored in the SdfData hash table. If no type has
     // been set, this path doesn't point to a valid location.

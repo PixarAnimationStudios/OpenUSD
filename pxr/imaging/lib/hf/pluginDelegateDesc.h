@@ -21,54 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/rgba.h"
+#ifndef HF_PLUGN_DELEGATE_DESC_H
+#define HF_PLUGN_DELEGATE_DESC_H
 
-#include "pxr/base/gf/math.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/rgb.h"
-#include "pxr/base/tf/type.h"
+#include "pxr/base/tf/token.h"
 
-#include <iostream>
+#include <vector>
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    TfType::Define<GfRGBA>();
-}
+///
+/// Common structure used to report registered delegates in one of the delegate
+/// registries.  The id token is used for internal api communication
+/// about the name of the delegate.
+/// displayName is a human readable name given to the delegate intended
+/// to be used in menus.
+/// priorty is used to provide an ordering of plugins.  The plugin
+/// with the highest priority is determined to be the default delegate (unless
+/// overriden by the application).  In the event of a tie
+/// the string version of id is used to sort alphabetically ('a' has priority
+/// over 'b').
+///
+struct HfPluginDelegateDesc {
+    TfToken     id;
+    std::string displayName;
+    int         priority;
+};
 
-GfRGBA GfRGBA::Transform(const GfMatrix4d &m) const
-{
-    return GfRGBA(_rgba * m);
-}
+typedef std::vector<HfPluginDelegateDesc> HfPluginDelegateDescVector;
 
-GfRGBA operator *(const GfRGBA &c, const GfMatrix4d &m)
-{
-    return c.Transform(m);
-}
-
-bool
-GfIsClose(const GfRGBA &v1, const GfRGBA &v2, double tolerance)
-{
-    return GfIsClose(v1._rgba, v2._rgba, tolerance);
-}
-
-void
-GfRGBA::GetHSV(float *h, float *s, float *v) const
-{
-    return GfRGB(GetArray()).GetHSV(h, s, v);
-}
-
-void
-GfRGBA::SetHSV(float h, float s, float v)
-{
-    GfRGB tmp;
-    tmp.SetHSV(h, s, v);
-    Set(tmp[0], tmp[1], tmp[2], _rgba[3]);
-}
-
-
-std::ostream &
-operator<<(std::ostream& out, const GfRGBA& c)
-{
-    return out << '(' << c[0] << ", " << c[1] << ", "
-            << c[2] << ", " << c[3] << ')';
-}
+#endif // HF_PLUGN_DELEGATE_DESC_H

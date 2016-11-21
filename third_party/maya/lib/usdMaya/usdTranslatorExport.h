@@ -21,18 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/**
- * \class usdTranslatorExport
- * \brief file translator for USD files
- */
 
-#ifndef __PX_USDTRANSLATOREXPORT_H__
-#define __PX_USDTRANSLATOREXPORT_H__
+#ifndef PXRUSDMAYA_TRANSLATOR_EXPORT_H
+#define PXRUSDMAYA_TRANSLATOR_EXPORT_H
+
+/// \file usdTranslatorExport.h
 
 #include "usdMaya/api.h"
-#include <maya/MPxFileTranslator.h>
 
-#include <maya/MFnMesh.h>
+#include "usdMaya/JobArgs.h"
+
+#include <maya/MFileObject.h>
+#include <maya/MPxFileTranslator.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
 
 const char* const usdTranslatorExportDefaults = 
@@ -51,41 +53,43 @@ const char* const usdTranslatorExportDefaults =
         "startTime=1;"
         "endTime=1";
 
-class usdTranslatorExport : public MPxFileTranslator {
 
+class usdTranslatorExport : public MPxFileTranslator
+{
     public:
 
         /**
          * method to create usdTranslatorExport file translator
          */
         USDMAYA_API
-        static void * creator();
+        static void* creator();
 
         MStatus writer(
-            const MFileObject& file, 
-            const MString& optionsString,
-            MPxFileTranslator::FileAccessMode mode);
-        
+                const MFileObject& file, 
+                const MString& optionsString,
+                MPxFileTranslator::FileAccessMode mode);
+
         bool haveReadMethod() const { return false; }
         bool haveWriteMethod() const { return true; }
-        
-        MFileKind identifyFile(
-            const MFileObject&,
-            const char*, 
-            short) const;
 
-        MString defaultExtension() const { return "usda"; }
-        MString filter() const { return "*.usda"; }
-      
-    protected:
+        MFileKind identifyFile(
+                const MFileObject& file,
+                const char* buffer,
+                short size) const;
+
+        MString defaultExtension() const {
+            return PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+        }
+        MString filter() const {
+            return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
+        }
 
     private:
 
         usdTranslatorExport();
-        usdTranslatorExport(
-            const usdTranslatorExport&);
+        usdTranslatorExport(const usdTranslatorExport&);
         ~usdTranslatorExport();
         usdTranslatorExport& operator=(const usdTranslatorExport&);
 };
 
-#endif /* usdTranslatorExport */
+#endif // PXRUSDMAYA_TRANSLATOR_EXPORT_H

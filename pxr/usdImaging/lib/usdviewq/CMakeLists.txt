@@ -4,6 +4,9 @@ set(PXR_PACKAGE usdviewq)
 if (NOT PYSIDE_FOUND)
     message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
     return()
+elseif(NOT PYOPENGL_FOUND)
+    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PyOpenGL")
+    return()
 endif()
 
 pxr_shared_library(usdviewq
@@ -34,6 +37,7 @@ pxr_shared_library(usdviewq
         arrayAttributeView.py
         customAttributes.py
         mainWindow.py
+        plugContext.py
         scalarTypes.py
         stageView.py
         usdviewContextMenuItem.py

@@ -259,9 +259,7 @@ PcpNodeRef
 PcpPrimIndex::GetNodeProvidingSpec(
     const SdfLayerHandle& layer, const SdfPath& path) const
 {
-    auto range = GetNodeRange();
-    for (auto nodeIter = range.first; nodeIter != range.second; ++nodeIter) {
-        const auto& node = *nodeIter;
+    for (const PcpNodeRef &node: GetNodeRange()) {
         // If the site has the given path and contributes specs then
         // search for the layer.
         if (node.CanContributeSpecs() and 
@@ -298,10 +296,10 @@ std::string
 PcpPrimIndex::GetSelectionAppliedForVariantSet(
     const std::string &variantSet) const
 {
-    TF_FOR_ALL(nodeIt, GetNodeRange()) {
-        if (nodeIt->GetPath().IsPrimVariantSelectionPath()) {
+    for (const PcpNodeRef &node: GetNodeRange()) {
+        if (node.GetPath().IsPrimVariantSelectionPath()) {
             std::pair<std::string, std::string> vsel =
-                nodeIt->GetPath().GetVariantSelection();
+                node.GetPath().GetVariantSelection();
             if (vsel.first == variantSet)
                 return vsel.second;
         }
@@ -3234,6 +3232,20 @@ _ChooseBestFallbackAmongOptions(
     return std::string();
 }
 
+// XXX: The variant evaluation process is more convoluted than it
+//      needs to be.  In particular it seems like we can simplify
+//      this once we remove the old-style standin fallback behavior.
+//
+// XXX: There's a question as to whether Pcp should be responsible
+//      for validating variant selections at some point. Currently, Csd
+//      handles that during name children population and checks that
+//      the each variant and variant set in the selection exists.
+//
+//      One issue is that Csd's variant validation skips over classes; 
+//      this is because classes may express a selection for variants 
+//      that are provided by instances. Pcp currently doesn't know or 
+//      care whether the prim being constructed is a class, and it'd
+//      be nice if it didn't have to.
 static void
 _EvalNodeVariants(
     PcpPrimIndex *index, 
@@ -3295,7 +3307,7 @@ _EvalNodeVariants(
                                          *indexer->inputs.variantFallbacks );
         if (not vselFallback.empty()) {
             PCP_GRAPH_MSG(
-                node, "Found fallback '%s' for variant set '%s'",
+                node, "Found fallback {%s=%s}",
                 vset.c_str(),
                 vselFallback.c_str());
         }
@@ -3336,17 +3348,6 @@ _EvalNodeVariants(
             continue;
         }
 
-        // XXX: There's a question as to whether Pcp should be responsible
-        //      for validating variant selections at some point. Currently, Csd
-        //      handles that during name children population and checks that
-        //      the each variant and variant set in the selection exists.
-        //
-        //      One issue is that Csd's variant validation skips over classes; 
-        //      this is because classes may express a selection for variants 
-        //      that are provided by instances. Pcp currently doesn't know or 
-        //      care whether the prim being constructed is a class, and it'd
-        //      be nice if it didn't have to.
-
         // Add the variant arc.
         SdfPath varPath = node.GetSite()
             .path.AppendVariantSelection(vset, vsel);
@@ -3357,17 +3358,32 @@ _EvalNodeVariants(
         // variant selection but the mapping function is identity.
         const PcpMapExpression identityMapExpr = PcpMapExpression::Identity();
 
-        _AddArc( PcpArcTypeVariant,
-                 /* parent = */ node,
-                 /* origin = */ node,
-                 PcpLayerStackSite( node.GetLayerStack(), varPath ),
-                 identityMapExpr,
-                 /* arcSiblingNum = */ static_cast<int>(vsetNum), 
-                 /* directNodeShouldContributeSpecs = */ true,
-                 /* includeAncestralOpinions = */ false,
-                 /* requirePrimAtTarget = */ false,
-                 /* skipDuplicateNodes = */ false,
-                 indexer );
+        PcpNodeRef child =
+            _AddArc( PcpArcTypeVariant,
+                     /* parent = */ node,
+                     /* origin = */ node,
+                     PcpLayerStackSite( node.GetLayerStack(), varPath ),
+                     identityMapExpr,
+                     /* arcSiblingNum = */ static_cast<int>(vsetNum), 
+                     /* directNodeShouldContributeSpecs = */ true,
+                     /* includeAncestralOpinions = */ false,
+                     /* requirePrimAtTarget = */ false,
+                     /* skipDuplicateNodes = */ false,
+                     indexer );
+
+        // If we expanded a fallback, the fallback may introduced authored
+        // variant selections, so we must restart checking for authored
+        // selections that resolve variant sets on this node.  Rather
+        // than re-enqueue a task for this node, just restart immediately
+        // since we know the new node we just added is strictly weaker
+        // than this node.
+        if (child && fallbacks) {
+            fallbacks = false;
+            vsetNum = -1;
+            PCP_GRAPH_MSG(
+                node, "Restarting variant eval after applying fallback");
+            continue;
+        }
     }
 
     if (shouldAddVariantFallbackTask) {

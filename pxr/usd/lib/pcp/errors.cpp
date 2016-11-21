@@ -896,6 +896,6 @@ void
 PcpRaiseErrors(const PcpErrorVector &errors)
 {
     TF_FOR_ALL(err, errors) {
-        TF_RUNTIME_ERROR((*err)->ToString().c_str());
+        TF_RUNTIME_ERROR("%s", (*err)->ToString().c_str());
     }
 }

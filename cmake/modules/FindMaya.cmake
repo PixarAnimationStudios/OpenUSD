@@ -11,7 +11,7 @@
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
 # MAYA_API_VERSION    Maya version (6 digits)
 #
-# IMPORTANT: Currently, there's only support for OSX platform and Maya version 2012.
+# IMPORTANT: Currently, there's only support for OSX platform and Maya version 2017 because of ABI issues with libc++.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -32,6 +32,7 @@ if(APPLE)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "/Applications/Autodesk/maya2017/Maya.app/Contents"
             "/Applications/Autodesk/maya2015/Maya.app/Contents"
             "/Applications/Autodesk/maya2014/Maya.app/Contents"
             "/Applications/Autodesk/maya2013.5/Maya.app/Contents"
@@ -51,9 +52,7 @@ if(APPLE)
         DOC
             "Maya's libraries path"
     )
-endif(APPLE)
-
-if(UNIX)
+elseif(UNIX)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -78,9 +77,7 @@ if(UNIX)
         DOC
             "Maya's libraries path"
     )
-endif(UNIX)
-
-if(WIN32)
+elseif(WIN32)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -123,7 +120,7 @@ if(WIN32)
         DOC
             "Maya's libraries path"
     )
-endif(WIN32)
+endif()
 
 find_path(MAYA_INCLUDE_DIR
         maya/MFn.h
@@ -160,7 +157,7 @@ find_path(MAYA_DEVKIT_INC_DIR
         "$ENV{MAYA_LOCATION}"
         "${MAYA_BASE_DIR}"
     PATH_SUFFIXES
-        /devkit/plug-ins/
+        ../../devkit/plug-ins/
     DOC
         "Maya's devkit headers path"
 )
@@ -191,6 +188,9 @@ foreach(MAYA_LIB
             lib/
         DOC
             "Maya's ${MAYA_LIB} library path"
+        # NO_CMAKE_SYSTEM_PATH needed to avoid conflicts between
+        # Maya's Foundation library and OSX's framework.
+        NO_CMAKE_SYSTEM_PATH
     )
 
 

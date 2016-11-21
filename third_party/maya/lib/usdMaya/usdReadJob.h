@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_USDREADJOB_H
 #define PXRUSDMAYA_USDREADJOB_H
 
+/// \file usdReadJob.h
+
 #include "usdMaya/JobArgs.h"
 #include "usdMaya/primReaderContext.h"
 

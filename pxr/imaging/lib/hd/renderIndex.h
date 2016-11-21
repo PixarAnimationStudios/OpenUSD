@@ -266,6 +266,16 @@ public:
     HDLIB_API
     SdfPathVector GetSprimSubtree(SdfPath const& root) const;
 
+
+    // ---------------------------------------------------------------------- //
+    /// \name Render Delegate Types
+    // ---------------------------------------------------------------------- //
+    /// Currently, a render index only supports connection to one type of
+    /// render delegate.  Due to the inserted information and change tracking
+    /// being specific to that delegate type.
+    void SetRenderDelegateType(const TfToken &typeId);
+    const TfToken &GetRenderDelegateType() const;
+
 private:
     // ---------------------------------------------------------------------- //
     // Private Helper methods 
@@ -350,8 +360,13 @@ private:
     _InstancerMap _instancerMap;
     HdSurfaceShaderSharedPtr _surfaceFallback;
 
+    // XXX: TO FIX Move
     typedef std::vector<HdDirtyListSharedPtr> _DirtyListVector;
     _DirtyListVector _syncQueue;
+
+    TfToken _renderDelegateTypeId;
+
+
 };
 
 template <typename T>
