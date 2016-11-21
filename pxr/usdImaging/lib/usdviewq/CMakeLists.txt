@@ -72,8 +72,7 @@ pxr_shared_library(usdviewq
         referenceEditorUI.ui
 )
 
-_get_install_dir(lib/python/pxr/Usdviewq destDir)
 install(DIRECTORY
     icons
-    DESTINATION ${destDir}
+    DESTINATION lib/python/pxr/Usdviewq
 )

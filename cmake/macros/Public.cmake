@@ -770,9 +770,8 @@ function(pxr_setup_python)
     string(REPLACE ";" ", " pyModulesStr "${converted}")
 
     # Install a pxr __init__.py with an appropriate __all__
-    _get_install_dir(lib/python/pxr installPrefix)
     install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installPrefix}/__init__.py\" \"__all__ = [${pyModulesStr}]\n\")"
+        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/python/pxr/__init__.py\" \"__all__ = [${pyModulesStr}]\n\")"
     )
 endfunction() # pxr_setup_python
 
