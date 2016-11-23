@@ -62,5 +62,6 @@ void wrapVariantSpec()
             "The variant's name.")
         .add_property("variantSets",
             &::_WrapGetVariantSetsProxy)
+        .def("GetVariantNames", &This::GetVariantNames)
         ;
 }

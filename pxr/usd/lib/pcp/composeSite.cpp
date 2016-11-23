@@ -227,17 +227,6 @@ PcpComposeSiteVariantSetOptions( const PcpLayerStackSite & site,
 {
     static const TfToken field = SdfChildrenKeys->VariantChildren;
 
-    // If this site is inside a variant for vsetName,
-    // there can be no further options introduced for vsetName.
-    if (site.path.IsPrimVariantSelectionPath()) {
-        for (SdfPath p = site.path; p.IsPrimVariantSelectionPath();
-             p = p.GetParentPath()) {
-            if (p.GetVariantSelection().first == vsetName) {
-                return;
-            }
-        }
-    }
-
     const SdfPath vsetPath = site.path.AppendVariantSelection(vsetName, "");
     TfTokenVector vsetNames;
     TF_FOR_ALL(layer, site.layerStack->GetLayers()) {

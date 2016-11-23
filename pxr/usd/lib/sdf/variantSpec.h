@@ -89,6 +89,9 @@ public:
     /// may be removed through the proxy.
     SdfVariantSetsProxy GetVariantSets() const;
 
+    /// Returns list of variant names for the given varient set.
+    std::vector<std::string> GetVariantNames(const std::string& name) const;
+
     /// @}
 };
 
