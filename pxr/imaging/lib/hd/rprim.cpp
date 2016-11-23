@@ -34,11 +34,11 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 HdRprim::HdRprim(HdSceneDelegate* delegate, SdfPath const& id,
-                 SdfPath const& surfaceShaderID, SdfPath const& instancerID)
+                 SdfPath const& instancerID)
     : _delegate(delegate)
     , _id(id)
     , _instancerID(instancerID)
-    , _surfaceShaderID(surfaceShaderID)
+    , _surfaceShaderID()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
                   /*hasInstancer=*/(not instancerID.IsEmpty()),
                   /*visible=*/true)

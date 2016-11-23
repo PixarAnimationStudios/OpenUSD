@@ -52,8 +52,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0,
 HdBasisCurves::_BasisCurvesReprConfig HdBasisCurves::_reprDescConfig;
 
 HdBasisCurves::HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
-                 SdfPath const& surfaceShaderId, SdfPath const& instancerId)
-    : HdRprim(delegate, id, surfaceShaderId, instancerId)
+                 SdfPath const& instancerId)
+    : HdRprim(delegate, id, instancerId)
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _refineLevel(0)

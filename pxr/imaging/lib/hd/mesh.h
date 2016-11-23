@@ -76,7 +76,6 @@ public:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
     HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
-           SdfPath const& surfaceShaderId,
            SdfPath const& instancerId = SdfPath());
 
     /// Returns whether computation of smooth normals is enabled on GPU.

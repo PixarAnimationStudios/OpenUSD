@@ -57,7 +57,6 @@ class HdBasisCurves: public HdRprim {
 public:
     HD_MALLOC_TAG_NEW("new HdBasisCurves");
     HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
-                  SdfPath const& surfaceShaderId,
                   SdfPath const& instancerId = SdfPath());
 
     /// Configure geometric style of drawItems for \p reprName

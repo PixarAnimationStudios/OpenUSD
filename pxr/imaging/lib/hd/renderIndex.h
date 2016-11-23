@@ -117,7 +117,7 @@ public:
     template <typename T>
     void InsertRprim(HdSceneDelegate* delegate,
                      SdfPath const& id,
-                     SdfPath const& surfaceShaderId,
+                     SdfPath const&,   // Unused
                      SdfPath const& instancerId = SdfPath());
 
     /// Remove a rprim from index
@@ -341,7 +341,7 @@ private:
 template <typename T>
 void
 HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
-                           SdfPath const& surfaceShaderId, 
+                           SdfPath const&,
                            SdfPath const& instancerId)
 {
     HD_TRACE_FUNCTION();
@@ -358,8 +358,7 @@ HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
     if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, id)))
         return;
     
-    HdRprimSharedPtr rprim = boost::make_shared<T>(delegate, id, 
-                                                  surfaceShaderId, instancerId);
+    HdRprimSharedPtr rprim = boost::make_shared<T>(delegate, id, instancerId);
     _TrackDelegateRprim(delegate, id, rprim);
 }
 

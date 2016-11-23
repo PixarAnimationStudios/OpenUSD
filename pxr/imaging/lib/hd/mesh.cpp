@@ -59,8 +59,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
 HdMesh::_MeshReprConfig HdMesh::_reprDescConfig;
 
 HdMesh::HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
-               SdfPath const& surfaceShaderId, SdfPath const& instancerId)
-    : HdRprim(delegate, id, surfaceShaderId, instancerId)
+               SdfPath const& instancerId)
+    : HdRprim(delegate, id, instancerId)
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)

@@ -52,7 +52,6 @@ class HdRprim {
 public:
     HdRprim(HdSceneDelegate* delegate,
             SdfPath const& id,
-            SdfPath const& surfaceShaderId,
             SdfPath const& instancerId);
     virtual ~HdRprim();
 
