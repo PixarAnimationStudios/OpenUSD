@@ -91,6 +91,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
 
     context->SetExportsGprims(false);
     context->SetExportsReferences(true);
+    context->SetPruneChildren(true);
 
     UsdPrim prim = stage->DefinePrim(authorPath);
     if (not prim) {

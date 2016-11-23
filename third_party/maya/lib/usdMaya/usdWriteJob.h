@@ -54,7 +54,7 @@ class usdWriteJob
   private:
     void perFrameCallback(double iFrame);
     void postCallback();
-    bool addToPrimWriterList(MDagPath &curDag);
+    bool createPrimWriter(MDagPath &curDag, MayaPrimWriterPtr* primWriterOut);
     
   private:
     JobExportArgs mArgs;

@@ -32,7 +32,8 @@ PxrUsdExport_PluginPrimWriter::PxrUsdExport_PluginPrimWriter(
     MayaTransformWriter(iDag, stage, iArgs),
     _plugFn(plugFn),
     _exportsGprims(false),
-    _exportsReferences(false)
+    _exportsReferences(false),
+    _pruneChildren(false)
 {
 }
 
@@ -53,6 +54,7 @@ PxrUsdExport_PluginPrimWriter::write(
     _plugFn(args, &ctx);
     _exportsGprims = ctx.GetExportsGprims();
     _exportsReferences = ctx.GetExportsReferences();
+    _pruneChildren = ctx.GetPruneChildren();
 
     UsdPrim prim = stage->GetPrimAtPath(authorPath);
     if (not prim) {
@@ -78,5 +80,11 @@ bool
 PxrUsdExport_PluginPrimWriter::exportsReferences() const
 {
     return _exportsReferences;
+}
+
+bool
+PxrUsdExport_PluginPrimWriter::shouldPruneChildren() const
+{
+    return _pruneChildren;
 }
 

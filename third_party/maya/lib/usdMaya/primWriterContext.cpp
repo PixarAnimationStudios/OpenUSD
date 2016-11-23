@@ -31,7 +31,8 @@ PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
     _authorPath(authorPath),
     _stage(stage),
     _exportsGprims(false),
-    _exportsReferences(false)
+    _exportsReferences(false),
+    _pruneChildren(false)
 {
 }
 
@@ -75,4 +76,16 @@ void
 PxrUsdMayaPrimWriterContext::SetExportsReferences(bool exportsReferences)
 {
     _exportsReferences = exportsReferences;
+}
+
+void
+PxrUsdMayaPrimWriterContext::SetPruneChildren(bool pruneChildren)
+{
+    _pruneChildren = pruneChildren;
+}
+
+bool
+PxrUsdMayaPrimWriterContext::GetPruneChildren() const
+{
+    return _pruneChildren;
 }

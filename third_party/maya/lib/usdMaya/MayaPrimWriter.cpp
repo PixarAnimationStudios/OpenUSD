@@ -145,3 +145,9 @@ MayaPrimWriter::exportsReferences() const
     return false;
 }
 
+bool
+MayaPrimWriter::shouldPruneChildren() const
+{
+    return false;
+}
+
