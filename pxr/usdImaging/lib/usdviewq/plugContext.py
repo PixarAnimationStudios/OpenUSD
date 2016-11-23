@@ -36,17 +36,17 @@ class PlugContext(object):
         self._mainWindow = mainWindow
 
     def GetQMainWindow(self):
-        ''' Returns a QWidget object that other widgets can use as a parent '''
+        ''' Returns a QWidget object that other widgets can use as a parent. '''
 
         return self._mainWindow
 
     def GetUsdStage(self):
-        ''' Returns the current Usd stage '''
+        ''' Returns the current Usd stage. '''
 
         return self._mainWindow._stage
 
     def GetCurrentFrame(self):
-        ''' Returns the current frame '''
+        ''' Returns the current frame. '''
 
         return self._mainWindow._currentFrame
 
@@ -66,7 +66,7 @@ class PlugContext(object):
         return models
 
     def GetCurrentNodes(self):
-        ''' Returns the current nodes '''
+        ''' Returns the current nodes. '''
 
         return self._mainWindow._currentNodes
 
@@ -77,32 +77,32 @@ class PlugContext(object):
                 for item in self._mainWindow.getSelectedItems()]
 
     def GetConfigDir(self):
-        ''' Returns the config dir, typically ~/.usdview/ '''
+        ''' Returns the config dir, typically ~/.usdview/. '''
 
         return self._mainWindow._outputBaseDirectory()
         
-    def GetUsdFilePath(self):
-        ''' Returns the file that usdview was called on '''
+    def GetInputFilePath(self):
+        ''' Returns the file that usdview was called on. '''
 
         return self._mainWindow._parserData.usdFile
 
     def PrintStatus(self, msg):
-        ''' Prints a status message '''
+        ''' Prints a status message. '''
 
         self._mainWindow.statusMessage(msg)
 
     def GetStageView(self):
-        ''' Returns the stageView object '''
+        ''' Returns the stageView object. '''
 
         return self._mainWindow._stageView
 
     # Screen capture functionality.
     def GrabWindowShot(self):
-        ''' Returns a QImage of the full usdview window '''
+        ''' Returns a QImage of the full usdview window. '''
 
         return self._mainWindow.GrabWindowShot()
 
     def GrabViewportShot(self):
-        ''' Returns a QImage of the current stage view in usdview.'''
+        ''' Returns a QImage of the current stage view in usdview. '''
 
         return self._mainWindow.GrabViewportShot()
