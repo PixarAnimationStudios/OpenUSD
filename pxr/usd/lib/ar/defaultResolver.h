@@ -89,6 +89,10 @@ public:
         const std::string& path,
         const std::string& resolvedPath) override;
 
+    virtual bool FetchToLocalResolvedPath(
+        const std::string& path,
+        const std::string& resolvedPath) override;
+
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override;

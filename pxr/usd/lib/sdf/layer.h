@@ -1353,7 +1353,9 @@ private:
     _ReloadResult _Reload(bool force);
 
     // Reads content from the specified path into the target layer.
-    bool _ReadFromFile(const std::string & realPath, bool metadataOnly);
+    bool _ReadFromFile(const std::string& identifier, 
+                       const std::string& resolvedPath, 
+                       bool metadataOnly);
     
     // Saves this layer if it is dirty or the layer doesn't already exist
     // on disk. If \p force is true, the layer will be written out

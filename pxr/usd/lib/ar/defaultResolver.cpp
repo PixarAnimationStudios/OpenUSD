@@ -238,6 +238,18 @@ ArDefaultResolver::GetModificationTimestamp(
     return VtValue();
 }
 
+bool 
+ArDefaultResolver::FetchToLocalResolvedPath(
+    const std::string& path,
+    const std::string& resolvedPath)
+{
+    // ArDefaultResolver always resolves paths to a file on the
+    // local filesystem. Because of this, we know the asset specified 
+    // by the given path already exists on the filesystem at 
+    // resolvedPath, so no further data fetching is needed.
+    return true;
+}
+
 bool
 ArDefaultResolver::CanWriteLayerToPath(
     const std::string& path,

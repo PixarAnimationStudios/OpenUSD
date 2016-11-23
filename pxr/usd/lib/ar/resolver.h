@@ -177,6 +177,24 @@ public:
         const std::string& path,
         const std::string& resolvedPath) = 0;
 
+    /// Fetch the asset identified by \p path to the filesystem location
+    /// specified by \p resolvedPath. \p resolvedPath is the resolved path
+    /// that results from calling Resolve or ResolveWithAssetInfo on 
+    /// \p path.
+    ///
+    /// This method provides a way for consumers that expect assets 
+    /// to exist as physical files on disk to retrieve data from 
+    /// systems that store data in external data stores, e.g. databases,
+    /// etc. 
+    ///
+    /// Returns true if the asset was successfully fetched to the specified
+    /// \p resolvedPath or if no fetching was required. If \p resolvedPath 
+    /// is not a local path or the asset could not be fetched to that path, 
+    /// returns false.
+    virtual bool FetchToLocalResolvedPath(
+        const std::string& path,
+        const std::string& resolvedPath) = 0;
+
     /// Returns true if a file may be written to the given \p path, false
     /// otherwise. 
     /// 
