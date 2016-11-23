@@ -26,6 +26,7 @@
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -220,6 +221,21 @@ ArDefaultResolver::UpdateAssetInfo(
             resolveInfo->version = fileVersion;
         }
     }
+}
+
+VtValue
+ArDefaultResolver::GetModificationTimestamp(
+    const std::string& path,
+    const std::string& resolvedPath)
+{
+    // Since the default resolver always resolves paths to local
+    // paths, we can just look at the mtime of the file indicated
+    // by resolvedPath.
+    struct stat fileInfo;
+    if (stat(resolvedPath.c_str(), &fileInfo) == 0) {
+        return VtValue(ArchGetModificationTime(fileInfo));
+    }
+    return VtValue();
 }
 
 bool

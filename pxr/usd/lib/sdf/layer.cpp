@@ -50,7 +50,6 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
@@ -113,7 +112,6 @@ SdfLayer::SdfLayer(
     _stateDelegate(SdfSimpleLayerStateDelegate::New()),
     _lastDirtyState(false),
     _assetInfo(new Sdf_AssetInfo),
-    _assetModificationTime(0),
     _mutedLayersRevisionCache(0),
     _isMutedCache(false),
     _permissionToEdit(true),
@@ -761,32 +759,41 @@ SdfLayer::_Reload(bool force)
             return _ReloadFailed;
         }
 
-        // Get the file's mtime on disk.
-        struct stat fileInfo;
-        double mtime = 0;
-        if (stat(realPath.c_str(), &fileInfo) == 0) {
-            mtime = ArchGetModificationTime(fileInfo);
-        } else if (errno == ENOENT) {
-            // Not existing on disk results in a reload skip.
-            // XXX 2014-09-02 Reset layer to initial data?
+        // If this layer's modification timestamp is empty, this is a
+        // new layer that has never been serialized. This could happen 
+        // if a layer were created with SdfLayer::New, for instance. 
+        // In such cases we can skip the reload since there's nowhere
+        // to reload data from.
+        //
+        // This ensures we don't ask for the modification timestamp for
+        // unserialized new layers below, which would result in errors.
+        //
+        // XXX 2014-09-02 Reset layer to initial data?
+        if (_assetModificationTime.IsEmpty()) {
             return _ReloadSkipped;
-        } else {
-            TF_RUNTIME_ERROR("Unable to stat file '%s': %s",
-                realPath.c_str(), strerror(errno));
+        }
+
+        // Get the layer's modification timestamp.
+        VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+            GetIdentifier(), realPath);
+        if (timestamp.IsEmpty()) {
+            TF_CODING_ERROR(
+                "Unable to get modification time for '%s (%s)'",
+                GetIdentifier().c_str(), realPath.c_str());
             return _ReloadFailed;
         }
 
         // See if we can skip reloading.
         if (not force and not IsDirty()
             and (realPath == oldRealPath)
-            and (mtime == _assetModificationTime)) {
+            and (timestamp == _assetModificationTime)) {
             return _ReloadSkipped;
         }
 
         if (not _ReadFromFile(realPath, /* metadataOnly = */ false))
             return _ReloadFailed;
 
-        _assetModificationTime = mtime;
+        _assetModificationTime.Swap(timestamp);
     }
 
     _MarkCurrentStateAsClean();
@@ -2115,12 +2122,25 @@ SdfLayer::SetIdentifier(const string &identifier)
     const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
         TfAbsPath(identifier) : identifier;
 
+    const string oldRealPath = GetRealPath();
+
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
     SdfChangeBlock block;
     {
         std::lock_guard<std::mutex> lock(*_layerRegistryMutex);
         _InitializeFromIdentifier(absIdentifier);
+    }
+
+    // If this layer has changed where it's stored, reset the modification
+    // time. Note that the new identifier may not resolve to an existing
+    // location, and we get an empty timestamp from the resolver. 
+    // This is OK -- this means the layer hasn't been serialized to this 
+    // new location yet.
+    const string newRealPath = GetRealPath();
+    if (oldRealPath != newRealPath) {
+        _assetModificationTime = ArGetResolver().GetModificationTimestamp(
+            GetIdentifier(), GetRealPath());
     }
 }
 
@@ -2779,14 +2799,18 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         }
 
         if (not isAnonymous) {
-            // Grab modification time.
-            struct stat fileInfo;
-            if (stat(readFilePath.c_str(), &fileInfo) != 0) {
+            // Grab modification timestamp.
+            VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+                info.identifier, readFilePath);
+            if (timestamp.IsEmpty()) {
+                TF_CODING_ERROR(
+                    "Unable to get modification timestamp for '%s (%s)'",
+                    info.identifier.c_str(), readFilePath.c_str());
                 layer->_FinishInitialization(/* success = */ false);
                 return TfNullPtr;
             }
-            layer->_assetModificationTime =
-                ArchGetModificationTime(fileInfo);
+
+            layer->_assetModificationTime.Swap(timestamp);
         }
     }
 
@@ -3759,11 +3783,16 @@ SdfLayer::_Save(bool force) const
                          GetFileFormat(), GetFileFormatArguments()))
         return false;
 
-    // Record modification time.
-    struct stat fileInfo;
-    if (stat(path.c_str(), &fileInfo) != 0)
+    // Record modification timestamp.
+    VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+        GetIdentifier(), path);
+    if (timestamp.IsEmpty()) {
+        TF_CODING_ERROR(
+            "Unable to get modification timestamp for '%s (%s)'",
+            GetIdentifier().c_str(), path.c_str());
         return false;
-    _assetModificationTime = ArchGetModificationTime(fileInfo);
+    }
+    _assetModificationTime.Swap(timestamp);
 
     SdfNotice::LayerDidSaveLayerToFile().Send(SdfCreateNonConstHandle(this));
 

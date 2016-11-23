@@ -38,6 +38,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -1465,7 +1466,7 @@ private:
     boost::scoped_ptr<Sdf_AssetInfo> _assetInfo;
 
     // Modification timestamp of the backing file asset when last read.
-    mutable double _assetModificationTime;
+    mutable VtValue _assetModificationTime;
 
     // Mutable revision number for cache invalidation.
     mutable size_t _mutedLayersRevisionCache;

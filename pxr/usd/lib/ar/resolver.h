@@ -162,6 +162,21 @@ public:
         const std::string& fileVersion,
         ArAssetInfo* assetInfo) = 0;
 
+    /// Returns a value representing the last time the asset identified
+    /// by \p path was modified. \p resolvedPath is the resolved path
+    /// of the asset.
+    ///
+    /// Implementations may use whatever value is most appropriate
+    /// for this timestamp. The value must be equality comparable, 
+    /// and this function must return a different timestamp whenever 
+    /// an asset has been modified. For instance, if an asset is stored 
+    /// as a file on disk, the timestamp may simply be that file's mtime. 
+    ///
+    /// If a timestamp cannot be retrieved, returns an empty VtValue.
+    virtual VtValue GetModificationTimestamp(
+        const std::string& path,
+        const std::string& resolvedPath) = 0;
+
     /// Returns true if a file may be written to the given \p path, false
     /// otherwise. 
     /// 

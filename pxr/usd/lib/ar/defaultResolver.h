@@ -85,6 +85,10 @@ public:
        const std::string& fileVersion,
        ArAssetInfo* assetInfo) override;
 
+    virtual VtValue GetModificationTimestamp(
+        const std::string& path,
+        const std::string& resolvedPath) override;
+
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override;
