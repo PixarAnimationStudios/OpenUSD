@@ -96,6 +96,12 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
                 jobArgs.readAnimData = theOption[1].asInt();
             } else if (theOption[0] == MString("assemblyRep")) {
                 jobArgs.assemblyRep = TfToken(theOption[1].asChar());
+            } else if (theOption[0] == MString("startTime")) {
+                jobArgs.startTime = theOption[1].asDouble();
+            } else if (theOption[0] == MString("endTime")) {
+                jobArgs.endTime = theOption[1].asDouble();
+            } else if (theOption[0] == MString("useCustomFrameRange")) {
+                jobArgs.useCustomFrameRange = theOption[1].asInt();
             }
         }
     }

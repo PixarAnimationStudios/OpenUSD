@@ -114,13 +114,15 @@ PxrUsdMayaTranslatorMesh::Create(
     std::vector<double> pointsTimeSamples;
     size_t pointsNumTimeSamples = 0;
     if (args.GetReadAnimData()) {
-        mesh.GetPointsAttr().GetTimeSamples(&pointsTimeSamples);
+        PxrUsdMayaTranslatorUtil::GetTimeSamples(mesh.GetPointsAttr(), args,
+                &pointsTimeSamples);
         pointsNumTimeSamples = pointsTimeSamples.size();
         if (pointsNumTimeSamples>0) {
             pointsTimeSample = pointsTimeSamples[0];
         }
     	std::vector<double> normalsTimeSamples;
-        mesh.GetNormalsAttr().GetTimeSamples(&normalsTimeSamples);
+        PxrUsdMayaTranslatorUtil::GetTimeSamples(mesh.GetNormalsAttr(), args,
+                &normalsTimeSamples);
         if (normalsTimeSamples.size()) {
             normalsTimeSample = normalsTimeSamples[0];
         }

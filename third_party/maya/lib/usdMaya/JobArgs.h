@@ -107,6 +107,9 @@ struct JobImportArgs
     TfToken defaultMeshScheme;
     TfToken assemblyRep;
     bool readAnimData;
+    bool useCustomFrameRange;
+    double startTime;
+    double endTime;
     bool importWithProxyShapes;
 };
 

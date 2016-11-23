@@ -185,7 +185,10 @@ usdReadJob::_ProcessProxyPrims(
         PxrUsdMayaPrimReaderArgs args(proxyPrim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (not _CreateParentTransformNodes(proxyPrim, args, &ctx)) {
@@ -241,7 +244,10 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
         PxrUsdMayaPrimReaderArgs args(subAssemblyPrim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // We use the file path of the file currently being imported and
@@ -278,7 +284,10 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
         PxrUsdMayaPrimReaderArgs args(cameraPrim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (not _CreateParentTransformNodes(cameraPrim, args, &ctx)) {

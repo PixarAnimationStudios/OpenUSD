@@ -64,6 +64,9 @@ JobImportArgs::JobImportArgs()
         defaultMeshScheme(UsdGeomTokens->catmullClark),
         assemblyRep(PxUsdExportJobArgsTokens->Collapsed),
         readAnimData(false),
+        useCustomFrameRange(false),
+        startTime(1.0),
+        endTime(1.0),
         importWithProxyShapes(false)
 {
 }

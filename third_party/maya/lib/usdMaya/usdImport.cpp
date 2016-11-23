@@ -65,7 +65,8 @@ MSyntax usdImport::createSyntax()
     syntax.addFlag("-ani", "-readAnimData"      , MSyntax::kBoolean);
     syntax.addFlag("-pp", "-primPath"           , MSyntax::kString);
     syntax.addFlag("-var" , "-variant"          , MSyntax::kString, MSyntax::kString);
-    syntax.addFlag("-ar" , "-assemblyRep"      , MSyntax::kString);
+    syntax.addFlag("-ar" , "-assemblyRep"       , MSyntax::kString);
+    syntax.addFlag("-fr" , "-frameRange"        , MSyntax::kDouble, MSyntax::kDouble);
     syntax.makeFlagMultiUse("variant");
 
     syntax.enableQuery(false);
@@ -182,6 +183,12 @@ MStatus usdImport::doIt(const MArgList & args)
         if (not assemblyRep.empty()) {
             jobArgs.assemblyRep = TfToken(assemblyRep);
         }
+    }
+
+    if (argData.isFlagSet("frameRange")) {
+        jobArgs.useCustomFrameRange = true;
+        argData.getFlagArgument("frameRange", 0, jobArgs.startTime);
+        argData.getFlagArgument("frameRange", 1, jobArgs.endTime);
     }
 
     // Create the command

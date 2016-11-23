@@ -23,6 +23,7 @@
 //
 #include "usdMaya/translatorPrim.h"
 
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 #include "usdMaya/AttributeConverter.h"
 #include "usdMaya/AttributeConverterRegistry.h"
@@ -53,7 +54,8 @@ PxrUsdMayaTranslatorPrim::Read(
     std::vector<double> visTimeSamples;
     size_t visNumTimeSamples = 0;
     if (args.GetReadAnimData()) {
-        primSchema.GetVisibilityAttr().GetTimeSamples(&visTimeSamples);
+        PxrUsdMayaTranslatorUtil::GetTimeSamples(primSchema.GetVisibilityAttr(),
+                args, &visTimeSamples);
         visNumTimeSamples = visTimeSamples.size();
         if (visNumTimeSamples>0) {
             visTimeSample = visTimeSamples[0];

@@ -121,8 +121,21 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         MTime currentMinTime = MAnimControl::minTime();
         MTime currentMaxTime = MAnimControl::maxTime();
 
-        double startTimeCode = stage->GetStartTimeCode();
-        double endTimeCode = stage->GetEndTimeCode();
+        double startTimeCode, endTimeCode;
+        if (mArgs.useCustomFrameRange) {
+            if (mArgs.startTime > mArgs.endTime) {
+                std::string errorMsg = TfStringPrintf(
+                    "Frame range start (%f) was greater than end (%f)",
+                    mArgs.startTime, mArgs.endTime);
+                MGlobal::displayError(errorMsg.c_str());
+                return false;
+            }
+            startTimeCode = mArgs.startTime;
+            endTimeCode = mArgs.endTime;
+        } else {
+            startTimeCode = stage->GetStartTimeCode();
+            endTimeCode = stage->GetEndTimeCode();
+        }
 
         if (startTimeCode < currentMinTime.value()) {
             MAnimControl::setMinTime(MTime(startTimeCode));
@@ -225,7 +238,10 @@ bool usdReadJob::_DoImport(UsdTreeIterator& primIt,
         PxrUsdMayaPrimReaderArgs args(prim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(

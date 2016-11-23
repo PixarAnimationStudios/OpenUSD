@@ -40,6 +40,7 @@
 const char* const usdTranslatorImportDefaults =
         "shadingMode=GPrim Colors;"
         "readAnimData=0;"
+        "useCustomFrameRange=0;"
         "assemblyRep=Collapsed";
 
 
