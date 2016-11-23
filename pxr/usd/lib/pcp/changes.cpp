@@ -276,17 +276,18 @@ Pcp_EntryRequiresPropertyIndexChange(const SdfChangeList::Entry& entry)
 }
 
 static bool
-Pcp_DecoratorRequiresPrimIndexChange(PcpPayloadDecorator* decorator,
-                                     const SdfLayerHandle& layer,
-                                     const SdfPath& path,
-                                     const SdfChangeList::Entry& entry)
+Pcp_MayNeedPrimIndexChangeForDecorator(PcpPayloadDecorator* decorator,
+                                       const SdfLayerHandle& layer,
+                                       const SdfPath& path,
+                                       const SdfChangeList::Entry& entry)
 {
     if (not decorator) {
         return false;
     }
 
-    TF_FOR_ALL(it, entry.infoChanged) {
-        if (decorator->IsFieldRelevantForDecoration(layer, path, it->first)) {
+    using _InfoChange = std::pair<TfToken, SdfChangeList::Entry::InfoChange>;
+    for (const _InfoChange& change : entry.infoChanged) {
+        if (decorator->IsFieldRelevantForDecoration(change.first)) {
             return true;
         }
     }
@@ -320,6 +321,10 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
     typedef std::map<SdfPath, SpecChangeBitmask,
                      SdfPath::FastLessThan> SpecChangesTypes;
 
+    // Payload decorator changes
+    typedef std::pair<PcpCache*, SdfPath> CacheAndLayerPathPair;
+    typedef std::vector<CacheAndLayerPathPair> CacheAndLayerPathPairVector;
+
     TRACE_FUNCTION();
 
     SdfPathSet pathsWithSignificantChanges;
@@ -329,9 +334,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
     SdfPathVector oldPaths, newPaths;
     SdfPathSet fallbackToAncestorPaths;
 
-    typedef std::pair<PcpCache*, SdfPath> CacheAndLayerPathPair;
-    typedef std::vector<CacheAndLayerPathPair> CacheAndLayerPathPairVector;
-    CacheAndLayerPathPairVector pathsWithSignificantChangesByCache;
+    CacheAndLayerPathPairVector payloadDecoratorChanges;
 
     // As we process each layer below, we'll look for changes that
     // affect entire layer stacks, then process those in one pass
@@ -412,7 +415,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         oldPaths.clear();
         newPaths.clear();
         fallbackToAncestorPaths.clear();
-        pathsWithSignificantChangesByCache.clear();
+        payloadDecoratorChanges.clear();
 
         // Loop over each entry on the layer.
         TF_FOR_ALL(j, changeList.GetEntryList()) {
@@ -589,11 +592,11 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                 else {
                     for (const auto& c : cacheLayerStacks) {
                         PcpCache* cache = c.first;
-                        if (Pcp_DecoratorRequiresPrimIndexChange(
+                        if (Pcp_MayNeedPrimIndexChangeForDecorator(
                                 cache->GetPayloadDecorator(), 
                                 layer, path, entry)) {
 
-                            pathsWithSignificantChangesByCache.push_back(
+                            payloadDecoratorChanges.push_back(
                                 CacheAndLayerPathPair(cache, path));
                         }
                     }
@@ -637,7 +640,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     }
                 }
             }
-        }
+        } // end for all entries in changelist
 
         // Push layer stack changes to all layer stacks using this layer.
         if (layerStackChangeMask != 0) {
@@ -711,20 +714,22 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                 fallbackToAncestorPaths.count(path) == 0;
             for (auto cache : caches) {
                 _DidChangeDependents(
-                    _ChangeTypeSignificant, cache, layer,
-                    path, onlyExistingDependentPaths, debugSummary);
+                    _ChangeTypeSignificant, cache, layer, path, changeList,
+                    onlyExistingDependentPaths, debugSummary);
             }
         }
 
-        // For every path we've found that has a significant change in
-        // a specific cache, use the same logic as above to mark those paths
-        // as having a significant change, but only in the associated cache.
-        for (const auto& p : pathsWithSignificantChangesByCache) {
+        // For every (layer, path) site we've found that has a change 
+        // to a field that a cache's payload decorator cares about, find 
+        // all paths in the cache that depend on that site and register a
+        // significant change if the decorator says the field change affects
+        // how it decorates payloads.
+        for (const auto& p : payloadDecoratorChanges) {
             const bool onlyExistingDependentPaths =
                 fallbackToAncestorPaths.count(p.second) == 0;
             _DidChangeDependents(
-                _ChangeTypeSignificant, p.first, layer,
-                p.second, onlyExistingDependentPaths, debugSummary);
+                _ChangeTypeDecorator, p.first, layer, p.second, changeList,
+                onlyExistingDependentPaths, debugSummary);
         }
 
         // For every path we've found that has a significant change,
@@ -791,8 +796,8 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
 
             for (auto cache : caches) {
                 _DidChangeDependents(
-                    changeType, cache, layer,
-                    path, /* filter */ false, debugSummary);
+                    changeType, cache, layer, path, changeList,
+                    /* filter */ false, debugSummary);
             }
         }
 
@@ -853,7 +858,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                 }
             }
         }
-    }
+    } // end for all layers in changelist map
 
     // Process layer stack changes.  This will handle both blowing
     // caches (as needed) for the layer stack contents and offsets,
@@ -1166,6 +1171,34 @@ PcpChanges::DidChangePaths(
     _GetCacheChanges(cache).didChangePath[oldPath] = newPath;
 }
 
+void 
+PcpChanges::DidChangeFieldsForDecorator(PcpCache* cache, const SdfPath& path,
+                                        const SdfLayerHandle& changedLayer,
+                                        const SdfPath& changedPath,
+                                        const SdfChangeList& changeList)
+{
+    const SdfChangeList::Entry* changes = 
+        TfMapLookupPtr(changeList.GetEntryList(), changedPath);
+    if (not TF_VERIFY(changes)) {
+        return;
+    }
+
+    PcpPayloadDecorator* decorator = cache->GetPayloadDecorator();
+    if (not TF_VERIFY(decorator)) {
+        return;
+    }
+
+    using _InfoChange = std::pair<TfToken, SdfChangeList::Entry::InfoChange>;
+    for (const _InfoChange& change : changes->infoChanged) {
+        if (decorator->IsFieldRelevantForDecoration(change.first) and
+            decorator->IsFieldChangeRelevantForDecoration(
+                path, changedLayer, changedPath, change.first, change.second)) {
+            DidChangeSignificantly(cache, path);
+            break;
+        }
+    }
+}
+
 void
 PcpChanges::DidDestroyCache(PcpCache* cache)
 {
@@ -1346,6 +1379,7 @@ PcpChanges::_DidChangeDependents(
     PcpCache* cache,
     const SdfLayerHandle& layer,
     const SdfPath& path,
+    const SdfChangeList& layerChangeList,
     bool onlyExistingDependentPaths,
     std::string* debugSummary)
 {
@@ -1371,7 +1405,8 @@ PcpChanges::_DidChangeDependents(
             PcpCache* cache, 
             const SdfPath& depPath,
             const SdfLayerHandle& changedLayer,
-            const SdfPath& changedPath) const
+            const SdfPath& changedPath,
+            const SdfChangeList& changeList) const
         {
             if (_changeType & _ChangeTypeSignificant) {
                 _changes->DidChangeSignificantly(cache, depPath);
@@ -1388,6 +1423,10 @@ PcpChanges::_DidChangeDependents(
                 if (_changeType & _ChangeTypeConnections) {
                     _changes->DidChangeTargets(cache, depPath,
                         PcpCacheChanges::TargetTypeConnection);
+                }
+                if (_changeType & _ChangeTypeDecorator) {
+                    _changes->DidChangeFieldsForDecorator(
+                        cache, depPath, changedLayer, changedPath, changeList);
                 }
             }
         }
@@ -1433,7 +1472,8 @@ PcpChanges::_DidChangeDependents(
             dep.indexPath.GetText(),
             dep.sitePath.GetText());
         changeFuncs.RunFunctionsOnDependency(cache, dep.indexPath,
-                                             layer, dep.sitePath);
+                                             layer, dep.sitePath,
+                                             layerChangeList);
     }
     PCP_APPEND_DEBUG("   Resync end\n");
 }

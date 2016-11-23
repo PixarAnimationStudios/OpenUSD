@@ -33,18 +33,29 @@ PcpPayloadDecorator::~PcpPayloadDecorator()
  
 void 
 PcpPayloadDecorator::DecoratePayload(
+    const SdfPath& primIndexPath,
     const SdfPayload& payload, 
     const PcpPayloadContext& context,
     SdfLayer::FileFormatArguments* args)
 {
-    _DecoratePayload(payload, context, args);
+    _DecoratePayload(primIndexPath, payload, context, args);
 }
 
 bool 
 PcpPayloadDecorator::IsFieldRelevantForDecoration(
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
     const TfToken& field)
 {
-    return _IsFieldRelevantForDecoration(layer, path, field);
+    return _IsFieldRelevantForDecoration(field);
+}
+
+bool 
+PcpPayloadDecorator::IsFieldChangeRelevantForDecoration(
+    const SdfPath& primIndexPath,
+    const SdfLayerHandle& siteLayer,
+    const SdfPath& sitePath,
+    const TfToken& field,
+    const std::pair<VtValue, VtValue>& oldAndNewValue)
+{
+    return _IsFieldChangeRelevantForDecoration(
+        primIndexPath, siteLayer, sitePath, field, oldAndNewValue);
 }

@@ -61,21 +61,37 @@ class PcpPayloadDecorator :
 public:
     /// Decorate the SdfLayer arguments \p args with additional arguments
     /// that will be used when opening the layer specified in the payload 
-    /// \p payload.
+    /// \p payload when composing the index at \p primIndexPath.
     void DecoratePayload(
+        const SdfPath& primIndexPath,
         const SdfPayload& payload, 
         const PcpPayloadContext& context,
         SdfLayer::FileFormatArguments* args);
 
-    /// Return true if the scene description field \p field in layer 
-    /// \p layer may affect the decoration of payloads, false otherwise.
+    /// Return true if changes to the scene description field \p field
+    /// may affect the decoration of payloads, false otherwise. 
+    /// 
+    /// If a change is made to a field for which this function returns
+    /// true, IsFieldChangeRelevantForDecoration will be called during
+    /// change processing to allow the decorator to determine if the
+    /// change is relevant and requires affected prims to be recomposed.
+    bool IsFieldRelevantForDecoration(const TfToken& field);
+
+    /// Return true if the change to scene description field \p field on
+    /// the prim spec at \p sitePath in the layer \p siteLayer may affect the 
+    /// decoration of payloads when composing the index at \p primIndexPath, 
+    /// false otherwise. \p oldAndNewValues contain the old and new values 
+    /// of the field.
     ///
     /// This is used during change processing to determine whether a scene
-    /// description change affects a prim's payload arcs.
-    bool IsFieldRelevantForDecoration(
-        const SdfLayerHandle& layer,
-        const SdfPath& path,
-        const TfToken& field);
+    /// description change affects a prim's payload arcs and requires the
+    /// prim to be recomposed.
+    bool IsFieldChangeRelevantForDecoration(
+        const SdfPath& primIndexPath,
+        const SdfLayerHandle& siteLayer,
+        const SdfPath& sitePath,
+        const TfToken& field,
+        const std::pair<VtValue, VtValue>& oldAndNewValues);
 
 protected:
     PcpPayloadDecorator();
@@ -84,14 +100,20 @@ protected:
     /// Virtual implementation functions. See corresponding public
     /// API for documentation.
     virtual void _DecoratePayload(
+        const SdfPath& primIndexPath,
         const SdfPayload& payload, 
         const PcpPayloadContext& context,
         SdfLayer::FileFormatArguments* args) = 0;
 
     virtual bool _IsFieldRelevantForDecoration(
-        const SdfLayerHandle& layer,
-        const SdfPath& path,
         const TfToken& field) = 0;
+
+    virtual bool _IsFieldChangeRelevantForDecoration(
+        const SdfPath& primIndexPath, 
+        const SdfLayerHandle& siteLayer,
+        const SdfPath& sitePath,
+        const TfToken& field,
+        const std::pair<VtValue, VtValue>& oldAndNewValues) = 0;
 };
 
 #endif // PCP_PAYLOAD_DECORATOR_H

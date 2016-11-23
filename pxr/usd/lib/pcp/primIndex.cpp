@@ -3490,7 +3490,7 @@ _EvalNodePayload(
         PcpPayloadContext payloadCtx = Pcp_CreatePayloadContext(
             node, indexer->previousFrame);
         indexer->inputs.payloadDecorator->
-            DecoratePayload(payload, payloadCtx, &args);
+            DecoratePayload(indexer->rootSite.path, payload, payloadCtx, &args);
     }
     Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema, &args);
 
