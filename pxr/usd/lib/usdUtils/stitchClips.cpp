@@ -72,7 +72,11 @@ namespace {
     const TfToken clipPrimPathKey = TfToken("clipPrimPath");
     const TfToken clipTimeKey = TfToken("clipTimes");
     const TfToken clipAssetPathsKey = TfToken("clipAssetPaths");
-    const TfToken clipManifestAssetPath = TfToken("clipManifestAssetPath");
+    const TfToken clipManifestAssetPathKey = TfToken("clipManifestAssetPath");
+    const TfToken clipTemplateAssetPathKey = TfToken("clipTemplateAssetPath");
+    const TfToken clipTemplateStartTimeKey = TfToken("clipTemplateStartTime");
+    const TfToken clipTemplateEndTimeKey = TfToken("clipTemplateEndTime");
+    const TfToken clipTemplateStrideKey = TfToken("clipTemplateStride");
 
     // Convenience function for wrapping up nice error message
     // when checking os permissions of a layers backing file.
@@ -446,7 +450,7 @@ namespace {
 
         resultLayer
            ->GetPrimAtPath(stitchPath) 
-           ->SetInfo(clipManifestAssetPath, 
+           ->SetInfo(clipManifestAssetPathKey, 
                      VtValue(SdfAssetPath(manifestAssetPath)));
     }
 
@@ -549,27 +553,7 @@ namespace {
         resultLayer->SetStartTimeCode(startTimeCode);
     }
 
-    // Generates a toplogy file name based on an input file name
-    // 
-    // For example, if given 'foo.usd', it generates 'foo.topology.usd'
-    // 
-    // Note: this will not strip preceding paths off of a file name
-    // so /bar/baze/foo.usd will produce /bar/baze/foo.topology.usd
-    std::string
-    _CreateTopologyName(const std::string& baseFileName)
-    {
-        // XXX: perhaps we have do/could have a file delimiter defined in Tf
-        //  as well as our topology convention.
-        const std::string delimiter = ".";
-        const std::size_t delimiterPos = baseFileName.rfind(".");
-        const std::string topologyFileBaseName = "topology";
-        if (delimiterPos == std::string::npos) {
-            return std::string();
-        }
 
-        return std::string(baseFileName).insert(delimiterPos,
-            delimiter+topologyFileBaseName);
-    }
 
     struct _StitchLayersResult {
         SdfPath clipPath;
@@ -759,7 +743,6 @@ namespace {
 
 // public facing API
 // ----------------------------------------------------------------------------
-
 bool
 UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
                             const _ClipFileVector& clipLayerFiles)
@@ -811,7 +794,7 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
     // Prepare topology layer for editing, create if necessary
     bool topologyPreExisting = true;
     std::string topologyLayerId 
-        = _CreateTopologyName(resultLayer->GetIdentifier());
+        = UsdUtilsGenerateClipTopologyName(resultLayer->GetIdentifier());
     SdfLayerRefPtr topologyLayer = SdfLayer::FindOrOpen(topologyLayerId);
     if (!topologyLayer) {
         topologyPreExisting = false;
@@ -842,6 +825,59 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
     // Note that we don't apply edits until all other 
     // actions have completed. 
     topologyLayer->Save();
+    resultLayer->Save();
+    return true;
+}
+
+std::string
+UsdUtilsGenerateClipTopologyName(const std::string& baseFileName)
+{
+    const std::string delimiter = ".";
+    const std::size_t delimiterPos = baseFileName.rfind(".");
+    const std::string topologyFileBaseName = "topology";
+    if (delimiterPos == std::string::npos) {
+        return std::string();
+    }
+
+    return std::string(baseFileName).insert(delimiterPos,
+        delimiter+topologyFileBaseName);
+}
+
+bool
+UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
+                            const SdfLayerHandle& topologyLayer,
+                            const SdfPath& clipPath,
+                            const std::string& templatePath,
+                            const double startTime,
+                            const double endTime,
+                            const double stride)
+{
+    // XXX: See comment in UsdUtilsStitchClipsTopology above.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();  
+
+    if (!_LayerIsWritable(resultLayer)) {
+        return false;
+    } else {
+        resultLayer->Clear();
+    }
+
+    if (!topologyLayer) {
+        return false;
+    }
+
+    // set prim level metadata
+    auto prim = SdfCreatePrimInLayer(resultLayer, clipPath);
+    prim->SetInfo(clipPrimPathKey, VtValue(clipPath.GetString()));
+    prim->SetInfo(clipTemplateAssetPathKey, VtValue(templatePath));
+    prim->SetInfo(clipTemplateStartTimeKey, VtValue(startTime));
+    prim->SetInfo(clipTemplateEndTimeKey, VtValue(endTime));
+    prim->SetInfo(clipTemplateStrideKey, VtValue(stride));
+
+    // set root layer metadata
+    _StitchClipsTopologySubLayerPath(resultLayer, 
+                                     topologyLayer->GetIdentifier());
+    resultLayer->SetStartTimeCode(startTime);
+    resultLayer->SetEndTimeCode(endTime);
     resultLayer->Save();
     return true;
 }

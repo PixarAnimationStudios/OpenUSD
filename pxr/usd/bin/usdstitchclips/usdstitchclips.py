@@ -43,8 +43,15 @@ parser.add_argument('-c', '--clipPath', action='store',
                     help='''specify a prim path to stitch clip data at. ''')
 parser.add_argument('-s', '--startTimeCode', action='store',
                     help='specify a start time')
+parser.add_argument('-r', '--stride', action='store',
+                    help='specify a stride for template metadata')
 parser.add_argument('-e', '--endTimeCode', action='store',
                     help='specify an end time')
+parser.add_argument('-t', '--templateMetadata', action='store_true',
+                    help='author template clip metadata in the root layer.')
+parser.add_argument('-p', '--templatePath', action='store',
+                    help='specify a template asset path to author') 
+
 # useful for debugging with diffs
 parser.add_argument('-n', '--noComment', action='store_true',
                     help='''do not write a comment specifying how the
@@ -60,6 +67,8 @@ if os.path.isfile(results.out):
     print "Warning: merging with current result layer"
 
 outLayerGenerated = False
+topologyLayerGenerated = False
+topologyLayerName = ""
 
 try:
     outLayer = Sdf.Layer.FindOrOpen(results.out)
@@ -67,14 +76,44 @@ try:
         outLayerGenerated = True
         outLayer = Sdf.Layer.CreateNew(results.out)
 
+    topologyLayerName = UsdUtils.GenerateClipTopologyName(results.out)
+    topologyLayer = Sdf.Layer.FindOrOpen(topologyLayerName)
+    if not topologyLayer:
+        topologyLayerGenerated = True
+        topologyLayer = Sdf.Layer.CreateNew(topologyLayerName)
+
     if results.startTimeCode:
         results.startTimeCode = float(results.startTimeCode)
 
     if results.endTimeCode:
         results.endTimeCode = float(results.endTimeCode)
 
-    UsdUtils.StitchClips(outLayer, results.usdFiles, results.clipPath, 
-                         results.startTimeCode, results.endTimeCode)
+    if results.stride:
+        results.stride = float(results.stride)
+
+    if results.templateMetadata:
+        def _checkMissingTemplateArg(argName, argValue):
+            if not argValue:
+                raise Tf.ErrorException('Error: %s must be specified '
+                                        'when --templateMetadata is' % argName)
+
+        _checkMissingTemplateArg('templatePath', results.templatePath)
+        _checkMissingTemplateArg('endTimeCode', results.endTimeCode)
+        _checkMissingTemplateArg('startTimeCode', results.startTimeCode)
+        _checkMissingTemplateArg('stride', results.stride)
+
+        UsdUtils.StitchClipsTopology(topologyLayer, results.usdFiles)
+        UsdUtils.StitchClipsTemplate(outLayer, 
+                                     topologyLayer,
+                                     results.clipPath,
+                                     results.templatePath,
+                                     results.startTimeCode,
+                                     results.endTimeCode,
+                                     results.stride)
+    else:
+        UsdUtils.StitchClips(outLayer, results.usdFiles, results.clipPath, 
+                             results.startTimeCode, results.endTimeCode)
+
 
     if not results.noComment:
         outLayer.comment = 'Generated with ' + ' '.join(sys.argv)
@@ -84,4 +123,6 @@ except Tf.ErrorException as e:
     # if something in the authoring fails, remove the output file 
     if outLayerGenerated and os.path.isfile(results.out):
         os.remove(results.out)
+    if topologyLayerGenerated and os.path.isfile(topologyLayerName):
+        os.remove(topologyLayerName)
     sys.exit(e)

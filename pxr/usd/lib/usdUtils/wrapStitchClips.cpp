@@ -35,7 +35,7 @@ using namespace boost::python;
 
 template <typename T>
 T
-_ConvertWithDefault(const boost::python::object obj, const T& def)
+_ConvertWithDefault(const object obj, const T& def)
 {
     if (not TfPyIsNone(obj)) {
         return extract<T>(obj);
@@ -44,23 +44,45 @@ _ConvertWithDefault(const boost::python::object obj, const T& def)
     return def;
 }
 
-void
+bool
 _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
-                    const boost::python::object pyStartFrame,
-                    const boost::python::object pyEndFrame)
+                    const object pyStartFrame,
+                    const object pyEndFrame)
 {
     constexpr double dmax = std::numeric_limits<double>::max();
-    UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
-                        _ConvertWithDefault(pyStartFrame, dmax),
-                        _ConvertWithDefault(pyEndFrame, dmax));
+    return UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
+                               _ConvertWithDefault(pyStartFrame, dmax),
+                               _ConvertWithDefault(pyEndFrame, dmax));
 }
 
-void _ConvertStitchClipsToplogy(const SdfLayerHandle& topologyLayer,
-                                const std::vector<std::string>& clipLayerFiles)
+bool
+_ConvertStitchClipsTopology(const SdfLayerHandle& topologyLayer,
+                           const std::vector<std::string>& clipLayerFiles)
 {
-    UsdUtilsStitchClipsTopology(topologyLayer, clipLayerFiles);
+    return UsdUtilsStitchClipsTopology(topologyLayer, clipLayerFiles);
+}
+
+std::string
+_ConvertGenerateClipTopologyName(const std::string& resultLayerName) 
+{
+    return UsdUtilsGenerateClipTopologyName(resultLayerName);
+}
+
+bool
+_ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
+                           const SdfLayerHandle& topologyLayer,
+                           const SdfPath& clipPath,
+                           const std::string& templatePath,
+                           const double startFrame,
+                           const double endFrame,
+                           const double stride)
+{
+    return UsdUtilsStitchClipsTemplate(resultLayer, topologyLayer,
+                                       clipPath, templatePath, startFrame,
+                                       endFrame, stride);
+
 }
 
 void 
@@ -71,11 +93,25 @@ wrapStitchClips()
         (arg("resultLayer"), 
          arg("clipLayerFiles"), 
          arg("clipPath"), 
-         arg("startFrame")=boost::python::object(),
-         arg("endFrame")=boost::python::object()));
+         arg("startFrame")=object(),
+         arg("endFrame")=object()));
 
     def("StitchClipsTopology",
-        _ConvertStitchClipsToplogy,
+        _ConvertStitchClipsTopology,
         (arg("topologyLayer"),
          arg("clipLayerFiles")));
+
+    def("StitchClipsTemplate",
+        _ConvertStitchClipTemplate,
+        (arg("resultLayer"),
+         arg("topologyLayer"),
+         arg("clipPath"),
+         arg("templatePath"),
+         arg("startTimeCode"),
+         arg("endTimeCode"),
+         arg("stride")));
+
+    def("GenerateClipTopologyName",
+        _ConvertGenerateClipTopologyName,
+        (arg("rootLayerName")));
 }
