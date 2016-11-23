@@ -104,6 +104,14 @@ SdfVariantSpec::GetPrimSpec() const
     return GetLayer()->GetPrimAtPath(GetPath());
 }
 
+SdfVariantSetsProxy
+SdfVariantSpec::GetVariantSets() const
+{
+    return SdfVariantSetsProxy(SdfVariantSetView(GetLayer(),
+            GetPath(), SdfChildrenKeys->VariantSetChildren),
+            "variant sets", SdfVariantSetsProxy::CanErase);
+}
+
 SdfVariantSpecHandle
 SdfCreateVariantInLayer(
     const SdfLayerHandle &layer,

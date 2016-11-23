@@ -33,6 +33,21 @@
 
 using namespace boost::python;
 
+static
+SdfVariantSetSpecHandle
+_NewUnderPrim(const SdfPrimSpecHandle &owner,
+              const std::string& name)
+{
+    return SdfVariantSetSpec::New(owner, name);
+}
+
+static
+SdfVariantSetSpecHandle
+_NewUnderVariant(const SdfVariantSpecHandle& owner, const std::string& name)
+{
+    return SdfVariantSetSpec::New(owner, name);
+}
+
 void wrapVariantSetSpec()
 {
     typedef SdfVariantSetSpec This;
@@ -44,7 +59,8 @@ void wrapVariantSetSpec()
            bases<SdfSpec>, boost::noncopyable>
         ("VariantSetSpec", no_init)
         .def(SdfPySpec())
-        .def(SdfMakePySpecConstructor(&This::New))
+        .def(SdfMakePySpecConstructor(&_NewUnderPrim))
+        .def(SdfMakePySpecConstructor(&_NewUnderVariant))
 
         .add_property("name",
             make_function(&This::GetName,

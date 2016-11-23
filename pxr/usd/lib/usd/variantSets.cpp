@@ -65,7 +65,7 @@ UsdVariantSet::GetVariantNames() const
 {
     std::set<std::string> namesSet;
     TF_REVERSE_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        if (i->GetSite().path.IsPrimPath()) {
+        if (i->GetSite().path.IsPrimOrPrimVariantSelectionPath()) {
             PcpComposeSiteVariantSetOptions(
                 i->GetSite(), _variantSetName, &namesSet);
         }

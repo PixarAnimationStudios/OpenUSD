@@ -1072,8 +1072,7 @@ _HasAncestorCycle(
         return true;
 
     if (childNodeSite.path.HasPrefix(parentNodeSite.path)) {
-        if (childNodeSite.path.IsPrimVariantSelectionPath() and
-            childNodeSite.path.GetParentPath() == parentNodeSite.path) {
+        if (childNodeSite.path.IsPrimVariantSelectionPath()) {
             // Variant selection arcs do not represent cycles, because
             // we do not look for ancestral opinions above variant
             // selection sites.  See Pcp_BuildPrimIndex.

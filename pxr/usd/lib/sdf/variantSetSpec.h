@@ -69,6 +69,10 @@ public:
     static SdfVariantSetSpecHandle
     New(const SdfPrimSpecHandle& prim, const std::string& name);
 
+    /// Constructs a new instance.
+    static SdfVariantSetSpecHandle
+    New(const SdfVariantSpecHandle& prim, const std::string& name);
+
     /// @}
 
     /// \name Name
@@ -84,8 +88,8 @@ public:
     /// \name Namespace hierarchy
     /// @{
 
-    /// Returns the prim that this variant set belongs to.
-    SdfPrimSpecHandle GetOwner() const;
+    /// Returns the prim or variant that this variant set belongs to.
+    SdfSpecHandle GetOwner() const;
 
     /// @}
     /// \name Variants

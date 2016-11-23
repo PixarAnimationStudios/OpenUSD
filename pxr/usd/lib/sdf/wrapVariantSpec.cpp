@@ -27,9 +27,19 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
+#include "pxr/usd/sdf/pyChildrenProxy.h"
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+typedef SdfPyChildrenProxy<SdfVariantSetView> VariantSetProxy;
+
+static
+VariantSetProxy
+_WrapGetVariantSetsProxy(const SdfVariantSpec& owner)
+{
+    return VariantSetProxy(owner.GetVariantSets());
+}
 
 void wrapVariantSpec()
 {
@@ -46,10 +56,11 @@ void wrapVariantSpec()
             "The root prim of this variant.")
         .add_property("owner", &This::GetOwner,
             "The variant set that this variant belongs to.")
-
         .add_property("name",
             make_function(&This::GetName,
                           return_value_policy<return_by_value>()),
             "The variant's name.")
+        .add_property("variantSets",
+            &::_WrapGetVariantSetsProxy)
         ;
 }

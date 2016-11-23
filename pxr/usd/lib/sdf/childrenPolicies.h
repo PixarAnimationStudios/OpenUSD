@@ -183,14 +183,14 @@ public:
 
     static SdfPath GetChildPath(const SdfPath &parentPath, const FieldType &key) {
         std::string variantSet = parentPath.GetVariantSelection().first;
-        return parentPath.GetPrimPath().AppendVariantSelection(
+        return parentPath.GetParentPath().AppendVariantSelection(
             TfToken(variantSet), key);
     }
 
     static SdfPath GetParentPath(const SdfPath &childPath) {
         // Construct a path with the same variant set but an empty variant
         std::string variantSet = childPath.GetVariantSelection().first;
-        return childPath.GetPrimPath().AppendVariantSelection(variantSet, "");
+        return childPath.GetParentPath().AppendVariantSelection(variantSet, "");
     }
 
     static TfToken GetChildrenToken(const SdfPath& parentPath) {

@@ -631,10 +631,11 @@ SdfPath
 SdfPath::AppendVariantSelection(const string &variantSet,
                                const string &variant) const
 {
-    if (not IsPrimPath() and
+    if (not IsPrimOrPrimVariantSelectionPath() and
         (_pathNode != Sdf_PathNode::GetRelativeRootNode())) {
         TF_CODING_ERROR("Cannot append variant selection %s = %s to <%s>; "
-                        "can only append a variant selection to a prim path.",
+                        "can only append a variant selection to a prim or "
+                        "prim variant selection path.",
                         variantSet.c_str(), variant.c_str(),
                         GetText());
         return EmptyPath();
