@@ -77,11 +77,11 @@ class SdfAssetPath;
 /// will be derived internally.
 /// 
 /// Important facts about clips:            
-/// li Within the layerstack in which clips are established, the           
+/// \li Within the layerstack in which clips are established, the           
 /// opinions within the clips will be em weaker than any direct opinions           
 /// in the layerstack, but em stronger than varying opinions coming across             
 /// references and variants.            
-/// li We will never look for metadata or default opinions in clips            
+/// \li We will never look for metadata or default opinions in clips            
 /// when performing value resolution on the owning stage, since these           
 /// quantities must be time-invariant.          
 /// 
@@ -89,6 +89,8 @@ class SdfAssetPath;
 /// on a prim, and then author clips at the same site: the asset reference          
 /// will provide the topology and unvarying data for the model, while           
 /// the clips will provide the time-sampled animation.
+/// 
+/// For further information, see \ref Usd_AdvancedFeatures_ClipsOverview 
 /// 
 ///
 class UsdClipsAPI : public UsdSchemaBase
