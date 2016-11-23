@@ -1186,6 +1186,7 @@ std::string PxrUsdKatanaUtils::GetModelInstanceName(const UsdPrim& prim)
             FnLogWarn(TfStringPrintf("Could not get modelInstanceName for "
                      "assembly/component '%s'. Using prim.name", 
                      prim.GetPath().GetText()).c_str());
+            return prim.GetName();
         }
     }
 
