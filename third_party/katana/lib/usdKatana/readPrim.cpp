@@ -45,7 +45,7 @@
 #include "pxr/usd/usdGeom/collectionAPI.h"
 
 #include "pxr/usd/usdShade/pShaderUtils.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include "pxr/usd/usdRi/statements.h"
 
@@ -69,7 +69,7 @@ _GetMaterialAssignAttr(
         return FnKat::Attribute();
     }
 
-    UsdRelationship usdRel = UsdShadeLook::GetBindingRel(prim);
+    UsdRelationship usdRel = UsdShadeMaterial::GetBindingRel(prim);
     if (usdRel) {
         // USD shading binding
         SdfPathVector targetPaths;
@@ -133,12 +133,12 @@ _GetMaterialAssignAttr(
             }
 
             // Convert the target path to the equivalent katana location.
-            // XXX: Looks may have an atypical USD->Katana 
+            // XXX: Materials may have an atypical USD->Katana 
             // path mapping
             std::string location =
                 PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(targetPath, data);
                 
-            // XXX Looks containing only display terminals are causing issues
+            // XXX Materials containing only display terminals are causing issues
             //     with katana material manipulation workflows.
             //     For now: exclude any material assign which doesn't include
             //     /Looks/ in the path
