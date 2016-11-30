@@ -150,9 +150,10 @@ class Launcher(object):
         from mainWindow import MainWindow
         if arg_parse_result.clearSettings:
             MainWindow.clearSettings()
-            
-        # find the resource directory
-        resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
+
+        # Find the resource directory
+        resourceDir = os.path.dirname(
+            os.path.realpath(__file__)).replace("\\", "/")
 
         # Create the Qt application
         app = QApplication(sys.argv)
