@@ -243,7 +243,12 @@ clients (renderers) are generally unaffected, and the applications that do
 want to stream through time generally prioritize highest performance over
 memory consumption, we are satisfied with the caching strategy for now.
 
-
+\warning Users of \ref UsdAttributeQuery may experience unanticipated
+overhead with respect to clips. When a UsdAttributeQuery is constructed with a  
+\ref UsdAttribute affected by clips, it will scan all available clips until 
+it finds one with timeSamples authored. In the case that many consecutive clips
+don't have timeSamples authored, the user pays a cost of opening all those
+layers.
 
 \subsection Usd_AdvancedFeatures_ClipToolSupport Tool Support 
 
