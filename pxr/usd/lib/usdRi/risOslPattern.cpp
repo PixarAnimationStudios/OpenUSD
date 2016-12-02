@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdRiRisOslPattern,
         TfType::Bases< UsdRiRisPattern > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("RisOslPattern") to find
-    // TfType<UsdRiRisOslPattern>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("RisOslPattern")
+    // to find TfType<UsdRiRisOslPattern>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdRiRisOslPattern>("RisOslPattern");
 }
 

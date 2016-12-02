@@ -35,9 +35,11 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< {{ cls.parentCppClassName }} > >();
     
 {% if cls.isConcrete == "true" %}
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("{{ cls.usdPrimTypeName }}") to find
-    // TfType<{{ cls.cppClassName }}>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("{{ cls.usdPrimTypeName }}")
+    // to find TfType<{{ cls.cppClassName }}>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, {{ cls.cppClassName }}>("{{ cls.usdPrimTypeName }}");
 {% endif %}
 }

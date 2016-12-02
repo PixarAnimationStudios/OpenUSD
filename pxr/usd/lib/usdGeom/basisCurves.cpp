@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdGeomBasisCurves,
         TfType::Bases< UsdGeomCurves > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("BasisCurves") to find
-    // TfType<UsdGeomBasisCurves>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("BasisCurves")
+    // to find TfType<UsdGeomBasisCurves>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdGeomBasisCurves>("BasisCurves");
 }
 
