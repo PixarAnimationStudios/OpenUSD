@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdSchemaExamplesComplex,
         TfType::Bases< UsdSchemaExamplesSimple > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("ComplexPrim") to find
-    // TfType<UsdSchemaExamplesComplex>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("ComplexPrim")
+    // to find TfType<UsdSchemaExamplesComplex>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdSchemaExamplesComplex>("ComplexPrim");
 }
 
