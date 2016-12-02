@@ -26,7 +26,7 @@ if (NOT PYTHON_EXECUTABLE)
 endif()
 
 find_program(PYSIDEUICBINARY
-    NAMES pyside-uic
+    NAMES pyside-uic python2-pyside-uic
     HINTS ${PYSIDE_BIN_DIR}
 )
 
