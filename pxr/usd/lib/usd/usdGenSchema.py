@@ -512,6 +512,7 @@ def GenerateCode(codeGenPath, tokenData, classes, env):
         tokensHTemplate = env.get_template('tokens.h')
         tokensCppTemplate = env.get_template('tokens.cpp')
         tokensWrapTemplate = env.get_template('wrapTokens.cpp')
+        plugInfoTemplate = env.get_template('plugInfo.json')
     
     except TemplateSyntaxError as tse:
         print '\t', tse,
@@ -577,7 +578,12 @@ def GenerateCode(codeGenPath, tokenData, classes, env):
             except ValueError as ve:
                 print '\t', ve, 'reading', plugInfoFile
         else:
-            info = {}
+            # use plugInfo.json template as starting point for new files,
+            try:
+                info = json.loads(plugInfoTemplate.render())
+            except ValueError as ve:
+                print '\t', ve, 'from template', plugInfoTemplate.filename
+
         # pull the types dictionary.
         if 'Plugins' in info:
             for pluginData in info.get('Plugins', {}):
