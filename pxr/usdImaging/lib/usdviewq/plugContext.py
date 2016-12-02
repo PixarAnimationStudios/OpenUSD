@@ -96,6 +96,11 @@ class PlugContext(object):
 
         return self._mainWindow._stageView
 
+    def GetSettings(self):
+        ''' Returns settings object. '''
+
+        return self._mainWindow._settings
+
     # Screen capture functionality.
     def GrabWindowShot(self):
         ''' Returns a QImage of the full usdview window. '''
