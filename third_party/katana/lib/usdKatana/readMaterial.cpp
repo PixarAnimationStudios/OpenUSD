@@ -621,21 +621,10 @@ _GetMaterialAttr(
     FnKat::GroupBuilder statementsBuilder;
     PxrUsdKatanaReadPrimPrmanStatements(materialPrim, currentTime, statementsBuilder);
 
-    FnAttribute::GroupAttribute nodesAttr = nodesBuilder.build();
-    FnAttribute::GroupAttribute terminalsAttr = terminalsBuilder.build();
-    FnAttribute::GroupAttribute interfaceAttr = interfaceBuilder.build();
+    materialBuilder.set("nodes", nodesBuilder.build());
+    materialBuilder.set("terminals", terminalsBuilder.build());
+    materialBuilder.set("interface", interfaceBuilder.build());
     FnKat::GroupAttribute statements = statementsBuilder.build();
-
-    // Only set group attributes if not empty.
-    if (nodesAttr.getNumberOfChildren()) {
-        materialBuilder.set("nodes", nodesAttr);
-    }
-    if (interfaceAttr.getNumberOfChildren()) {
-        materialBuilder.set("interface", interfaceAttr);
-    }
-    if (terminalsAttr.getNumberOfChildren()) {
-        materialBuilder.set("terminals", terminalsAttr);
-    }
     if (statements.getNumberOfChildren()) {
         materialBuilder.set("underlayAttrs.prmanStatements", statements);
     }
