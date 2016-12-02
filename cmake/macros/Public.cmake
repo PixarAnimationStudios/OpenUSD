@@ -98,6 +98,9 @@ endfunction()
 
 function(pxr_shared_library LIBRARY_NAME)
     set(options PYTHON_LIBRARY)
+    set(oneValueArgs
+        PYTHON_WRAPPED_LIB_PREFIX
+    )
     set(multiValueArgs
         PUBLIC_CLASSES
         PUBLIC_HEADERS
@@ -114,7 +117,7 @@ function(pxr_shared_library LIBRARY_NAME)
 
     cmake_parse_arguments(sl
         "${options}"
-        ""
+        "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
@@ -165,13 +168,16 @@ function(pxr_shared_library LIBRARY_NAME)
             APPEND PROPERTY PXR_PYTHON_MODULES ${pyModuleName}
         )
 
-        # Python modules for third_party libs are installed into the root
-        # pxr/lib/python but need to be able to access their corresponding
-        # library which lives in third_party/${pkg}/lib
         set(rpath ${CMAKE_INSTALL_RPATH})
-        if (PXR_INSTALL_SUBDIR)
-            set(rpath "$ORIGIN/../../../../${PXR_INSTALL_SUBDIR}/lib:${rpath}")
-        endif()
+
+        # Python modules need to be able to access their corresponding
+        # wrapped library, so compute a relative path and append that to
+        # the module's rpath.
+        file(RELATIVE_PATH
+            PYTHON_RPATH
+            "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
+            "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}")
+        _append_to_rpath(${rpath} "$ORIGIN/${PYTHON_RPATH}" rpath)
 
         # Python modules must be suffixed with .pyd on Windows and .so on
         # other platforms.
@@ -311,6 +317,7 @@ function(pxr_shared_library LIBRARY_NAME)
         pxr_shared_library(
             "_${LIBRARY_NAME}"
             PYTHON_LIBRARY
+            PYTHON_WRAPPED_LIB_PREFIX ${LIB_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${LIBRARY_NAME}
         )
@@ -540,17 +547,31 @@ function(pxr_plugin PLUGIN_NAME)
                 INSTALL_RPATH ${rpath}
         )
     else()
-        # Ensure this plugin can find the libs for its matching component, e.g.
-        # maya/plugin/px_usdIO.so can find maya/lib/*.so
+        # Ensure this plugin can find the libs for its matching component.
+        # Compute the relative path from where the plugin is installed
+        # to the corresponding lib directories and append that to the 
+        # plugin's rpath.
+        set(rpath ${CMAKE_INSTALL_RPATH})
+
+        # If an install subdirectory is specified (e.g., for third party
+        # packages), add an rpath pointing to lib/ within it.
         if (PXR_INSTALL_SUBDIR)
-            set_target_properties(${PLUGIN_NAME}
-                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../lib"
-            )
-        else()
-            set_target_properties(${PLUGIN_NAME}
-                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../../lib"
-            )
+            file(RELATIVE_PATH
+                PLUGIN_RPATH
+                "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
+                "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+            _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
         endif()
+
+        # Add an rpath pointing to the top-level lib/ directory.
+        file(RELATIVE_PATH
+            PLUGIN_RPATH
+            "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
+            "${CMAKE_INSTALL_PREFIX}/lib")
+        _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
+
+        set_target_properties(${PLUGIN_NAME}
+            PROPERTIES INSTALL_RPATH "${rpath}")
     endif()
 
     set_target_properties(${PLUGIN_NAME}
@@ -661,6 +682,7 @@ function(pxr_plugin PLUGIN_NAME)
         pxr_shared_library(
             "_${PLUGIN_NAME}"
             PYTHON_LIBRARY
+            PYTHON_WRAPPED_LIB_PREFIX ${PLUGIN_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${PLUGIN_NAME}
         )
