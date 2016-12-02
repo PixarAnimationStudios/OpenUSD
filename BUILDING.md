@@ -4,6 +4,7 @@ Advanced Build Configuration
 ## Table of Contents
 - [Optional Components](#optional-components)
 - [Third Party Plugins](#third-party-plugins)
+- [Tests](#tests)
 - [Other Build Options](#other-build-options)
 - [USD Developer Options](#usd-developer-options)
 - [Optimization Options](#optimization-options)
@@ -73,6 +74,11 @@ when invoking cmake. This plugin is compatible with Katana 2.0v5. The additional
 | KATANA_API_LOCATION   | The root path to a Katana SDK install.| 2.0v5     |
 
 For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
+
+## Tests
+
+Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE``` 
+when invoking cmake.
 
 ## Other Build Options
 
