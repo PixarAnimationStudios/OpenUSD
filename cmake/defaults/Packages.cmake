@@ -103,13 +103,12 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --PySide
     find_package(PySide)
-    # --Zlib
-    find_package(ZLIB REQUIRED)
+    # --PyOpenGL
+    find_package(PyOpenGL)
 endif()
 
 # Third Party Plugin Package Requirements
 # ----------------------------------------------
-
 if (PXR_BUILD_KATANA_PLUGIN)
     find_package(KatanaAPI REQUIRED)
     find_package(Boost

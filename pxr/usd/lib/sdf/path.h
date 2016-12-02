@@ -221,6 +221,10 @@ public:
     /// a variant selection for a prim.
 	SDF_API bool ContainsPrimVariantSelection() const;
 
+    /// Return true if this path is or has a prefix that's a target path or a
+    /// mapper path.
+    SDF_API bool ContainsTargetPath() const;
+
     /// Returns whether the path identifies a relational attribute.
     ///
     /// If this is true, IsPropertyPath() will also be true.
@@ -642,16 +646,17 @@ public:
         return _LessThanInternal(_pathNode, rhs._pathNode);
     }
 
-    inline size_t GetHash() const {
-        return TfHash()(_pathNode.get());
-    }
-
     // For hash maps and sets
     struct Hash {
         inline size_t operator()(const SdfPath& path) const {
-            return path.GetHash();
+            // Assumption: heap allocated path nodes are aligned on 32b.
+            return size_t(path._pathNode.get()) >> 5;
         }
     };
+
+    inline size_t GetHash() const {
+        return Hash()(*this);
+    }
 
     // For ordered maps
     struct FastLessThan {

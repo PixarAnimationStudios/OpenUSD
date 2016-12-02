@@ -51,20 +51,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (arrayConnectionSize)
 );
 
-static TfToken 
-_GetConnectionRelName(const TfToken& name, int element=-1)
-{
-    if (element == -1){
-        return TfToken(_tokens->connectedSourceFor.GetString() + name.GetString());
-    } else {
-        string fullName = TfStringPrintf("%s%s:_%0d",
-                                         _tokens->connectedSourceFor.GetText(),
-                                         name.GetText(),
-                                         element);
-        return TfToken(fullName);
-    }
-}
-
 static size_t
 _ElementIndexFromConnection(UsdRelationship const &connection)
 {
@@ -74,11 +60,12 @@ _ElementIndexFromConnection(UsdRelationship const &connection)
 
 static UsdRelationship
 _GetCompleteParameterConnection(
-        const UsdAttribute& attr,
+        const UsdShadeParameter &param,
         bool create)
 {
+    const UsdAttribute& attr = param.GetAttr();
     const UsdPrim& prim = attr.GetPrim();
-    const TfToken& relName = _GetConnectionRelName(attr.GetName());
+    const TfToken& relName = param.GetConnectionRelName();
     if (UsdRelationship rel = prim.GetRelationship(relName)) {
         return rel;
     }
@@ -93,12 +80,13 @@ _GetCompleteParameterConnection(
 
 static UsdRelationship
 _GetElementParameterConnection(
-        const UsdAttribute& attr,
+        const UsdShadeParameter &param,
         size_t element,
         bool create)
 {
+    const UsdAttribute& attr = param.GetAttr();
     const UsdPrim& prim = attr.GetPrim();
-    const TfToken& relName = _GetConnectionRelName(attr.GetName(), static_cast<int>(element));
+    const TfToken& relName = param.GetConnectionRelName(static_cast<int>(element));
     if (UsdRelationship rel = prim.GetRelationship(relName)) {
         return rel;
     }
@@ -289,7 +277,7 @@ UsdShadeParameter::ConnectToSource(
         TfToken const &outputName,
         bool outputIsParameter) const
 {
-    UsdRelationship rel = _GetCompleteParameterConnection(_attr, true);
+    UsdRelationship rel = _GetCompleteParameterConnection(*this, true);
 
     return _Connect(rel, source, outputName, outputIsParameter);
 }
@@ -304,7 +292,7 @@ UsdShadeParameter::ConnectElementToSource(
     if (not IsArray())
         return false;
     
-    UsdRelationship rel = _GetElementParameterConnection(_attr, 
+    UsdRelationship rel = _GetElementParameterConnection(*this, 
                                                          elementIndex,
                                                          true);
     return _Connect(rel, source, outputName, outputIsParameter);
@@ -316,7 +304,7 @@ UsdShadeParameter::DisconnectElement(size_t elementIndex) const
     if (not IsArray())
         return false;
     
-    UsdRelationship rel = _GetElementParameterConnection(_attr, 
+    UsdRelationship rel = _GetElementParameterConnection(*this, 
                                                          elementIndex,
                                                          true);
     if (not rel){
@@ -331,7 +319,7 @@ bool
 UsdShadeParameter::DisconnectSources() const
 {
     bool success = true;
-    if (UsdRelationship rel = _GetCompleteParameterConnection(_attr, false)) {
+    if (UsdRelationship rel = _GetCompleteParameterConnection(*this, false)) {
         success = rel.BlockTargets();
     }
 
@@ -340,7 +328,7 @@ UsdShadeParameter::DisconnectSources() const
     // shouldn't be an issue.
     size_t numElements = GetConnectedArraySize();
     for (size_t i=0; i<numElements; ++i){
-        UsdRelationship elt = _GetElementParameterConnection(_attr, i, true);
+        UsdRelationship elt = _GetElementParameterConnection(*this, i, true);
         if (elt){
             success = elt.BlockTargets() and success;
         }
@@ -356,7 +344,7 @@ bool
 UsdShadeParameter::ClearSources() const
 {
     bool success = true;
-    if (UsdRelationship rel = _GetCompleteParameterConnection(_attr, false)) {
+    if (UsdRelationship rel = _GetCompleteParameterConnection(*this, false)) {
         success = rel.ClearTargets(/* removeSpec = */ true);
     }
 
@@ -415,7 +403,7 @@ UsdShadeParameter::GetConnectedSource(
                         "output parameters");
         return false;
     }
-    if (UsdRelationship rel = _GetCompleteParameterConnection(_attr, false)) {
+    if (UsdRelationship rel = _GetCompleteParameterConnection(*this, false)) {
         return _EvaluateConnection(rel, source, outputName);
     }
     else {
@@ -530,3 +518,16 @@ UsdShadeParameter::GetConnectedArraySize() const
     return 1 + _ElementIndexFromConnection(connections.back());
 }
 
+TfToken 
+UsdShadeParameter::GetConnectionRelName(int element) const
+{
+    if (element == -1){
+        return TfToken(_tokens->connectedSourceFor.GetString() + _attr.GetName().GetString());
+    } else {
+        string fullName = TfStringPrintf("%s%s:_%0d",
+                                         _tokens->connectedSourceFor.GetText(),
+                                         _attr.GetName().GetText(),
+                                         element);
+        return TfToken(fullName);
+    }
+}

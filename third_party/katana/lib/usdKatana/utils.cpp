@@ -1167,7 +1167,7 @@ PxrUsdKatanaUtils::IsAttributeVarying(const  UsdAttribute& attr, double currentT
 
 std::string PxrUsdKatanaUtils::GetModelInstanceName(const UsdPrim& prim)
 {
-    if (not prim or prim.IsInMaster()) {
+    if (not prim) {
         return std::string();
     }
 

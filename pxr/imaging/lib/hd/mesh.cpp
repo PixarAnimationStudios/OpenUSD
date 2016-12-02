@@ -483,6 +483,8 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     HdComputationVector computations;
     HdBufferSourceSharedPtr points;
 
+    int numPoints = _topology ? _topology->ComputeNumPoints() : 0;
+
     bool cpuSmoothNormals =
         requireSmoothNormals and (not IsEnabledSmoothNormalsGPU());
 
@@ -542,6 +544,15 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source(
                 new HdVtBufferSource(*nameIt, value));
+
+            // verify primvar length
+            if (source->GetNumElements() != numPoints) {
+                TF_WARN(
+                    "# of points mismatch (%d != %d) for primvar %s, prim %s",
+                    source->GetNumElements(), numPoints,
+                    nameIt->GetText(), id.GetText());
+                continue;
+            }
 
             if (refineLevel > 0) {
                 source = _RefinePrimVar(source, isVarying,
@@ -746,6 +757,7 @@ HdMesh::_PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
     sources.reserve(primVarNames.size());
 
     int refineLevel = _GetRefineLevelForDesc(desc);
+    int numFaceVaryings = _topology ? _topology->GetNumFaceVaryings() : 0;
 
     TF_FOR_ALL(nameIt, primVarNames) {
         // note: facevarying primvars don't have to be refined.
@@ -759,6 +771,16 @@ HdMesh::_PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
             HdBufferSourceSharedPtr source(new HdVtBufferSource(
                                                *nameIt,
                                                value));
+
+            // verify primvar length
+            if (source->GetNumElements() != numFaceVaryings) {
+                TF_WARN(
+                    "# of facevaryings mismatch (%d != %d)"
+                    " for primvar %s, prim %s",
+                    source->GetNumElements(), numFaceVaryings,
+                    nameIt->GetText(), id.GetText());
+                continue;
+            }
 
             // FaceVarying primvar requires quadrangulation (both coarse and
             // refined) or triangulation (coase only), but refinement of the
@@ -816,6 +838,8 @@ HdMesh::_PopulateElementPrimVars(HdDrawItem *drawItem,
     HdBufferSourceVector sources;
     sources.reserve(primVarNames.size());
 
+    int numFaces = _topology ? _topology->GetNumFaces() : 0;
+
     TF_FOR_ALL(nameIt, primVarNames) {
         if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
@@ -825,6 +849,16 @@ HdMesh::_PopulateElementPrimVars(HdDrawItem *drawItem,
             HdBufferSourceSharedPtr source(new HdVtBufferSource(
                                                *nameIt,
                                                value));
+
+            // verify primvar length
+            if (source->GetNumElements() != numFaces) {
+                TF_WARN(
+                    "# of faces mismatch (%d != %d) for primvar %s, prim %s",
+                    source->GetNumElements(), numFaces,
+                    nameIt->GetText(), id.GetText());
+                continue;
+            }
+
             sources.push_back(source);
         }
     }

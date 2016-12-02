@@ -364,7 +364,7 @@ UsdObject::HasAuthoredDocumentation() const
 SdfSpecType
 UsdObject::_GetDefiningSpecType() const
 {
-    return GetStage()->_GetDefiningSpecType(GetPrim(), _propName);
+    return _GetStage()->_GetDefiningSpecType(GetPrim(), _propName);
 }
 
 std::string

@@ -32,11 +32,9 @@ elseif(MSVC)
     include(msvcdefaults)
 endif()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	_add_define(BUILD_COMPONENT_SRC_PREFIX="pxr/")
-else()
-	_add_define(BUILD_COMPONENT_SRC_PREFIX="")
-endif()
+# We don't use this prefix in the open source build
+# because CMake bakes out full paths.
+_add_define(BUILD_COMPONENT_SRC_PREFIX="")
 
 _add_define(GL_GLEXT_PROTOTYPES)
 _add_define(GLX_GLXEXT_PROTOTYPES)

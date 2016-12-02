@@ -21,8 +21,6 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-# - Find Modo libraries
-#
 # Jinja2 is a python library, ensure that it is available for use with our
 # specified version of Python.
 #
@@ -37,6 +35,7 @@ execute_process(
         jinja2ImportResult 
 )
 if (jinja2ImportResult EQUAL 0)
+    message(STATUS "Found Jinja2")
     set(JINJA2_FOUND True)
 endif()
 

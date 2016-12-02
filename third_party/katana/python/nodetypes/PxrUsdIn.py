@@ -292,6 +292,49 @@ def appendToParametersOpChain(self, interface):
 
 nb.setAppendToParametersOpChainFnc(appendToParametersOpChain)
 
+nb.build()
 
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInDefaultMotionSamples')
+nb.setInputPortNames(("in",))
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('locations', '')
+    .build(),
+        forceArrayNames=('locations',))
+
+nb.setHintsForParameter('locations', {
+    'widget' : 'scenegraphLocationArray',
+    'help' : 'Hierarchy root location paths for which to use default motion sample times.'
+})
+
+def buildOpChain(self, interface):
+    interface.setExplicitInputRequestsEnabled(True)
+    
+    graphState = interface.getGraphState()
+    frameTime = interface.getFrameTime()
+    locations = self.getParameter("locations")
+
+    if locations:
+        gb = FnAttribute.GroupBuilder()
+
+        for loc in locations.getChildren():
+            gb.set("defaultMotionPaths." + FnAttribute.DelimiterEncode(
+                    loc.getValue(frameTime)), FnAttribute.IntAttribute(1))
+
+        existingValue = (
+                interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
+        
+        if isinstance(existingValue, FnAttribute.GroupAttribute):
+            gb.deepUpdate(existingValue)
+        
+        graphState = (graphState.edit()
+                .setDynamicEntry("var:pxrUsdInSession", gb.build())
+                .build())
+        
+    interface.addInputRequest("in", graphState)
+
+nb.setBuildOpChainFnc(buildOpChain)
 
 nb.build()

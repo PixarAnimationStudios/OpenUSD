@@ -52,6 +52,7 @@
             },
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
+                            "RenderPass.ShouldCullFace",
                             "HdxRenderPass.RenderColorOutputWithSelection" ]
             }
         }

@@ -369,9 +369,11 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         Mip & mip  = _rawBufferMips[i];
         mip.width  = needsResizeOnLoad ? _resizedWidth : image->GetWidth();
         mip.height = needsResizeOnLoad ? _resizedHeight : image->GetHeight();
+        
+        const size_t numPixels = mip.width * mip.height;
         mip.size   = isCompressed ? GlfGetCompressedTextureSize( 
                                      mip.width, mip.height, _glFormat, _glType):
-                                  mip.width * mip.height * _bytesPerPixel;
+                                    numPixels * _bytesPerPixel;
         mip.offset = _size;
         _size += mip.size;
     }

@@ -203,8 +203,8 @@ std::string PcpDump(
     _NodeToPrimSpecsMap nodeToSpecsMap;
     {
         int nodeIdx = 0;
-        TF_FOR_ALL(it, primIndex.GetNodeRange()) {
-            nodeToIndexMap[*it] = nodeIdx++;
+        for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+            nodeToIndexMap[node] = nodeIdx++;
         }
 
         TF_FOR_ALL(it, primIndex.GetPrimRange()) {

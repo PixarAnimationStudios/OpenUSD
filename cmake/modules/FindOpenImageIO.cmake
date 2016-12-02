@@ -147,7 +147,6 @@ include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(OpenImageIO
     REQUIRED_VARS
-        OIIO_BASE_DIR
         OIIO_LIBRARIES
         OIIO_BINARIES
         OIIO_INCLUDE_DIRS

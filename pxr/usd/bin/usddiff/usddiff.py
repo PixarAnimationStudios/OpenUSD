@@ -40,7 +40,7 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
         
         return command
 
-    return ['cat', inPath, '--out', outPath]
+    return ['cat', inPath]
 
 def _findExe(name):
     from distutils.spawn import find_executable
@@ -81,18 +81,30 @@ def _getFileFormat(path):
 
     # Note that python's os.path.splitext retains the '.' portion
     # when obtaining an extension, but Sdf's Fileformat API doesn't 
-    # expect one.
+    # expect one. We also make sure to prune out any version specifiers.
     _, ext = os.path.splitext(path)
-    fileFormat = Sdf.FileFormat.FindByExtension(ext[1:])
+    if len(ext) <= 1:
+        return Sdf.FileFormat.FindByExtension('usd')
 
+    prunedExtension = ext[1:]
+    versionSpecifierPos = prunedExtension.rfind('#')
+    if versionSpecifierPos != -1:
+        prunedExtension = prunedExtension[:versionSpecifierPos]
+     
+    fileFormat = Sdf.FileFormat.FindByExtension(prunedExtension)
     if fileFormat and fileFormat.CanRead(path):
         return fileFormat.formatId
 
     return None
 
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
-    call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)) 
+    command = _generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)
 
+    # We are redirecting to stdout for the case where a user
+    # provides an empty file and we have to use regular 'cat'
+    # which doesn't offer the redirection usdcat does through --out
+    with open(outPath) as outFile:
+        call(command, stdout=outFile) 
 
 def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     if composed:

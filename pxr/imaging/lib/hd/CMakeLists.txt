@@ -18,8 +18,10 @@ pxr_shared_library(hd
         vt
         work
         sdf
-        glf
         garch
+        hf
+        gal
+        glf
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
         ${GLEW_LIBRARY}
@@ -45,6 +47,7 @@ pxr_shared_library(hd
         codeGen
         commandBuffer
         computation
+        context
         conversions
         copyComputation
         debugCodes
@@ -73,6 +76,8 @@ pxr_shared_library(hd
         persistentBuffer
         points
         renderContextCaps
+        renderDelegate
+        renderDelegateRegistry
         renderIndex
         renderPass
         renderPassShader
@@ -89,8 +94,9 @@ pxr_shared_library(hd
         shaderKey
         shaderParam
         sprim
-        surfaceShader
         strategyBase
+        surfaceShader
+
         task
         texture
         textureResource
@@ -115,6 +121,7 @@ pxr_shared_library(hd
         meshShaderKey
         pointsShaderKey
         quadrangulate
+        renderIndexManager
         smoothNormals
         subdivision
         subdivision3

@@ -77,7 +77,11 @@ void main(void)
     // camera facing.
     vec3 Neye = vec3(0, 0, 1);
 
+#ifdef HD_HAS_color
     vec4 color = HdGet_color();
+#else
+    vec4 color = vec4(1);
+#endif
 
     color.rgb = ApplyColorOverrides(color).rgb;
 

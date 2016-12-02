@@ -56,6 +56,13 @@ HdxPackageRenderPassIdShader()
 }
 
 TfToken
+HdxPackageRenderPassShadowShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassShadowShader.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageSimpleLightingShader()
 {
     static TfToken simpleLightingShader =

@@ -175,11 +175,10 @@ private:
     typedef Tf_FlyweightData<_PoolHash> _Data;
 
     // Return a _Rep with a pre-incremented reference count for \a value.
-    // If \a create is true, adds \a value to the pool if it isn't already
-    // there and never returns NULL.  Otherwise does not add \a value to the
-    // pool, and will return NULL if that value isn't found.
+    // Adds \a value to the pool if it isn't already there and never returns
+    // NULL.
     static _ElementPairPtr
-    _FindOrCreate(T const &value, bool create=true) {
+    _FindOrCreate(T const &value) {
         TfAutoMallocTag2 tag2("Tf", "TfFlyweight::_FindOrCreate");
         TfAutoMallocTag tag(__ARCH_PRETTY_FUNCTION__);
 
@@ -190,13 +189,11 @@ private:
         _PoolHash &pool = data->pool;
         
         typename _PoolHash::const_accessor acc;
-        if (create) {
-            if (pool.insert(acc, std::make_pair(value, _Rep())))
-                TF_FLYWEIGHT_INC_STAT(numCreated);
-            ++acc->second.refCount;
-            return &(*acc);
+        if (pool.insert(acc, std::make_pair(value, _Rep()))) {
+            TF_FLYWEIGHT_INC_STAT(numCreated);
         }
-        return pool.find(acc, value) ? &(*acc) : nullptr;
+        ++acc->second.refCount;
+        return &(*acc);
     }
 
     // Return an iterator with a pre-incremented reference count for the
@@ -369,12 +366,6 @@ public:
     /// Swap this flyweight with another.
     void Swap(TfFlyweight &other) {
         std::swap(_ptr, other._ptr);
-    }
-
-    /// Return true if \a value is a member of the flyweight pool.
-    static bool Contains(T const &value) {
-        // Passing 'false' to FindOrCreate keeps it from creating an entry.
-        return _FindOrCreate(value, false);
     }
 
     /// If stats are enabled, dump their current values to stdout.

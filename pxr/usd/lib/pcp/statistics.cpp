@@ -75,20 +75,20 @@ public:
         Pcp_GraphStats* stats,
         bool culledNodesOnly)
     {
-        TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-            if (culledNodesOnly and not nodeIt->IsCulled()) {
+        for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+            if (culledNodesOnly and not node.IsCulled()) {
                 continue;
             }
 
             ++(stats->numNodes);
-            ++(stats->typeToNumNodes[nodeIt->GetArcType()]);
+            ++(stats->typeToNumNodes[node.GetArcType()]);
             
             const bool nodeIsImpliedInherit = 
-                nodeIt->GetOriginNode() != nodeIt->GetParentNode();
+                node.GetOriginNode() != node.GetParentNode();
             if (nodeIsImpliedInherit) {
-                if (nodeIt->GetArcType() == PcpArcTypeLocalInherit)
+                if (node.GetArcType() == PcpArcTypeLocalInherit)
                     ++(stats->numImpliedLocalInherits);
-                else if (nodeIt->GetArcType() == PcpArcTypeGlobalInherit)
+                else if (node.GetArcType() == PcpArcTypeGlobalInherit)
                     ++(stats->numImpliedGlobalInherits);
             }
         }
@@ -134,9 +134,9 @@ public:
             }
 
             // Gather map functions
-            TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-                allMapFuncs.insert(nodeIt->GetMapToParent().Evaluate());
-                allMapFuncs.insert(nodeIt->GetMapToRoot().Evaluate());
+            for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+                allMapFuncs.insert(node.GetMapToParent().Evaluate());
+                allMapFuncs.insert(node.GetMapToRoot().Evaluate());
             }
         }
 
@@ -322,20 +322,20 @@ public:
             printf("%zu   %zu\n", i->first, i->second);
         }
 
+#if !defined(ARCH_OS_WINDOWS)
+
         // Assert sizes of structs we want to keep a close eye on.
         static_assert(sizeof(PcpMapFunction) == 8,
                       "PcpMapFunction must be of size 8");
         static_assert(sizeof(PcpMapExpression) == 8,
                       "PcpMapExpression must be of size 8");
 
-#if !defined(ARCH_OS_WINDOWS)
         // This object is 120 bytes when building against libstdc++
         // and 96 for libc++ because std::set is 48 bytes in the
         // former case and 24 bytes in the latter.
         static_assert(sizeof(PcpMapExpression::_Node) == 120 ||
                       sizeof(PcpMapExpression::_Node) == 96,
                       "PcpMapExpression::_Node must be of size 96 or 120");
-#endif
 
         static_assert(sizeof(PcpLayerStackPtr) == 16,
                       "PcpLayerStackPtr must be of size 16");
@@ -344,7 +344,6 @@ public:
         static_assert(sizeof(PcpPrimIndex) == 40,
                       "PcpPrimIndex must be of size 40");
 
-#if !defined(ARCH_OS_WINDOWS)
         // This object is 104 bytes when building against libstdc++
         // and 88 for libc++ because std::vector<bool> is 40 bytes
         // in the former case and 24 bytes in the latter.
@@ -354,10 +353,10 @@ public:
 
         static_assert(sizeof(PcpPrimIndex_Graph::_Node) == 40,
                       "PcpPrimIndex_Graph::_Node must be of size 40");
-#endif
 
         static_assert(sizeof(PcpPrimIndex_Graph::_SharedData) == 32,
                       "PcpPrimIndex_Graph::_SharedData must be of size 32");
+#endif
     }
 
     static void PrintPrimIndexStats(

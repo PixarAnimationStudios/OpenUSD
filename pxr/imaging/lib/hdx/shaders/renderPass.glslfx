@@ -27,6 +27,44 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdx/shaders/renderPass.glslfx
 
+-- glsl HdxRenderPass.ShouldCullFaceShadows
+
+bool ShouldCullFace(bool frontFacing, bool doubleSided)
+{
+    const uint HdCullStyleDontCare               = uint(0);
+    const uint HdCullStyleNothing                = uint(1);
+    const uint HdCullStyleBack                   = uint(2);
+    const uint HdCullStyleFront                  = uint(3);
+    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
+    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
+
+#if defined(HD_HAS_cullStyle)
+    uint cullStyle = HdGet_cullStyle();
+#else
+    uint cullStyle = HdCullStyleNothing;
+#endif
+
+    // Invert the cullstyle so we can render shadows correctly
+    return ((cullStyle == HdCullStyleBack                   && frontFacing) ||
+            (cullStyle == HdCullStyleFront                  && !frontFacing) ||
+            (cullStyle == HdCullStyleBackUnlessDoubleSided  && frontFacing && !doubleSided) ||
+            (cullStyle == HdCullStyleFrontUnlessDoubleSided && !frontFacing && !doubleSided));
+}
+
+-- glsl HdxRenderPass.RenderColorShadowsOutput
+
+layout (location = 0) out vec4 colorOut;
+
+vec4 ApplyColorOverrides(vec4 color)
+{
+    return color;
+}
+
+void RenderColor(vec4 color)
+{
+    colorOut = color;
+}
+
 -- glsl HdxRenderPass.RenderColorOutputWithSelection
 
 vec4 ApplySelectionColor(vec4 color)
@@ -152,6 +190,4 @@ void RenderColor(vec4 color)
     elementIdOut = vec4(((elementId & 0x0000ff) >>  0) / 255.0,
                         ((elementId & 0x00ff00) >>  8) / 255.0,
                         ((elementId & 0xff0000) >> 16) / 255.0, 0);
-
 }
-

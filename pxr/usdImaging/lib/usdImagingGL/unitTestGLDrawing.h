@@ -48,6 +48,7 @@ public:
     int GetHeight() const;
 
     bool IsEnabledTestLighting() const { return _testLighting; }
+    bool IsEnabledCameraLight() const { return _cameraLight; }
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
 
@@ -58,6 +59,8 @@ public:
 
     std::vector<GfVec4d> const & GetClipPlanes() const { return _clipPlanes; }
     std::vector<double> const& GetTimes() const { return _times; }
+    GfVec4f const & GetClearColor() const { return _clearColor; }
+    GfVec3f const & GetTranslate() const { return _translate; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -83,6 +86,7 @@ private:
 private:
     UsdImagingGL_UnitTestWindow *_widget;
     bool _testLighting;
+    bool _cameraLight;
     bool _testIdRender;
 
     std::string _stageFilePath;
@@ -96,6 +100,8 @@ private:
     UsdImagingGLEngine::DrawMode _drawMode;
     bool _shouldFrameAll;
     bool _cullBackfaces;
+    GfVec4f _clearColor;
+    GfVec3f _translate;
 };
 
 #endif // USDIMAGING_UNIT_TEST_DRAWING_GL

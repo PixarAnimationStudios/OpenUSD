@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/tokens.h"
+#include "pxr/imaging/hdx/package.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -203,42 +204,22 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             HdRenderPassSharedPtr p = boost::make_shared<HdRenderPass>
                 (&delegate->GetRenderIndex(), col);
 
-            HdRenderPassStateSharedPtr renderPassState(new HdRenderPassState());
+            HdRenderPassShaderSharedPtr renderPassShadowShader
+                (new HdRenderPassShader(HdxPackageRenderPassShadowShader()));
+            HdRenderPassStateSharedPtr renderPassState
+                (new HdRenderPassState(renderPassShadowShader));
 
             // Update the rest of the renderpass state parameters for this pass
             renderPassState->SetOverrideColor(params.overrideColor);
             renderPassState->SetWireframeColor(params.wireframeColor);
             renderPassState->SetLightingEnabled(false);
+            
             // XXX : This can be removed when Hydra has support for 
             //       transparent objects.
             renderPassState->SetAlphaThreshold(1.0 /* params.alphaThreshold */);
             renderPassState->SetTessLevel(params.tessLevel);
             renderPassState->SetDrawingRange(params.drawingRange);
-                
-            // Invert front and back faces for shadow
-            // XXX: this should be taken care by shadow-repr.
-            switch (params.cullStyle)
-            {
-                case HdCullStyleBack:
-                    renderPassState->SetCullStyle(HdCullStyleFront);
-                    break;
-                    
-                case HdCullStyleFront:
-                    renderPassState->SetCullStyle(HdCullStyleBack);
-                    break;
-
-                case HdCullStyleBackUnlessDoubleSided:
-                    renderPassState->SetCullStyle(HdCullStyleFrontUnlessDoubleSided);
-                    break;
-
-                case HdCullStyleFrontUnlessDoubleSided:
-                    renderPassState->SetCullStyle(HdCullStyleBackUnlessDoubleSided);
-                    break;
-                    
-                default:
-                    renderPassState->SetCullStyle(params.cullStyle);
-                    break;
-            }
+            renderPassState->SetCullStyle(params.cullStyle);
             
             _passes.push_back(p);
             _renderPassStates.push_back(renderPassState);

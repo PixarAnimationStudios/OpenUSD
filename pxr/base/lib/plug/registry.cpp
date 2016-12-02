@@ -30,6 +30,7 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/scopeDescription.h"
@@ -256,11 +257,17 @@ void
 PlugPlugin::_RegisterAllPlugins()
 {
     PlugPluginPtrVector result;
+
     static std::once_flag once;
     std::call_once(once, [&result](){
-        // Register plugins in the tree. This declares TfTypes.
-        result = PlugRegistry::GetInstance()._RegisterPlugins(Plug_GetPaths());
+        PlugRegistry &registry = PlugRegistry::GetInstance();
+
+        if (!TfGetenvBool("PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH", false)) {
+            // Register plugins in the tree. This declares TfTypes.
+            result = registry._RegisterPlugins(Plug_GetPaths());
+        }
     });
+
 
     // Send a notice outside of the call_once.  We don't want to be holding
     // a lock (even an implicit one) when sending a notice.

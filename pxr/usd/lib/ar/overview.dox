@@ -21,7 +21,7 @@ and over again, we also provide an RAII ArResolverScopedCache that can
 greatly speed up asset resolution by caching results.
 
 Finally, if no custom implementation of ArResolver is found, we will fall back
-to a Ar_DefaultResolver, which performs simple searchpath-based
+to a ArDefaultResolver, which performs simple searchpath-based
 resolution, based on an environment variable <tt>PXR_AR_DEFAULT_SEARCH_PATH</tt>
 that is expected to hold a colon-separated list of filesystem paths to search.
 

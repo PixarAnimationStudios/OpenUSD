@@ -409,30 +409,30 @@ public:
     ///        un-computed paths that are expected to depend on the site
     PCP_API
     PcpDependencyVector
-    FindDependentPaths(const PcpLayerStackPtr& siteLayerStack,
-                       const SdfPath& sitePath,
-                       PcpDependencyFlags depMask,
-                       bool recurseOnSite,
-                       bool recurseOnIndex,
-                       bool filterForExistingCachesOnly) const;
+    FindSiteDependencies(const PcpLayerStackPtr& siteLayerStack,
+                         const SdfPath& sitePath,
+                         PcpDependencyFlags depMask,
+                         bool recurseOnSite,
+                         bool recurseOnIndex,
+                         bool filterForExistingCachesOnly) const;
 
     /// Returns dependencies on the given site of scene description,
     /// as discovered by the cached index computations.
     ///
-    /// This variant takes a site layer rather than a layer stack.
-    /// It will check every layer stack using that layer, and apply
-    /// any relevant sublayer offsets to the map functions in the
+    /// This method overload takes a site layer rather than a layer
+    /// stack.  It will check every layer stack using that layer, and
+    /// apply any relevant sublayer offsets to the map functions in the
     /// returned PcpDependencyVector.
     ///
     /// See the other method for parameter details.
     PCP_API
     PcpDependencyVector
-    FindDependentPaths(const SdfLayerHandle& siteLayer,
-                       const SdfPath& sitePath,
-                       PcpDependencyFlags depMask,
-                       bool recurseOnSite,
-                       bool recurseOnIndex,
-                       bool filterForExistingCachesOnly) const;
+    FindSiteDependencies(const SdfLayerHandle& siteLayer,
+                         const SdfPath& sitePath,
+                         PcpDependencyFlags depMask,
+                         bool recurseOnSite,
+                         bool recurseOnIndex,
+                         bool filterForExistingCachesOnly) const;
 
     /// Returns \c true if an opinion for the site at \p localPcpSitePath
     /// in the cache's layer stack can be provided by an opinion in \p layer,
@@ -446,96 +446,6 @@ public:
     bool CanHaveOpinionForSite(const SdfPath& localPcpSitePath,
                                const SdfLayerHandle& layer,
                                SdfPath* allowedPathInLayer) const;
-
-    /// Types of namespace edits that a given layer stack site could need
-    /// to perform to respond to a namespace edit.
-    enum NamespaceEditType {
-        NamespaceEditPath,      ///< Must namespace edit spec
-        NamespaceEditInherit,   ///< Must fixup inherits
-        NamespaceEditReference, ///< Must fixup references
-        NamespaceEditPayload,   ///< Must fixup payload
-        NamespaceEditRelocate,  ///< Must fixup relocates
-    };
-
-    /// Sites that must respond to a namespace edit.
-    struct NamespaceEdits {
-        void Swap(NamespaceEdits& rhs)
-        {
-            cacheSites.swap(rhs.cacheSites);
-            layerStackSites.swap(rhs.layerStackSites);
-            invalidLayerStackSites.swap(rhs.invalidLayerStackSites);
-        }
-
-        /// Cache site that must respond to a namespace edit.
-        struct CacheSite {
-            size_t cacheIndex;  ///< Index of cache of site.
-            SdfPath oldPath;    ///< Old path of site.
-            SdfPath newPath;    ///< New path of site.
-        };
-        typedef std::vector<CacheSite> CacheSites;
-
-        /// Layer stack site that must respond to a namespace edit.  All
-        /// of the specs at the site will respond the same way.
-        struct LayerStackSite {
-            size_t cacheIndex;              ///< Index of cache of site.
-            NamespaceEditType type;         ///< Type of edit.
-            PcpLayerStackPtr layerStack;    ///< Layer stack needing fix.
-            SdfPath sitePath;               ///< Path of site needing fix.
-            SdfPath oldPath;                ///< Old path.
-            SdfPath newPath;                ///< New path.
-        };
-        typedef std::vector<LayerStackSite> LayerStackSites;
-
-        /// Cache sites that must respond to a namespace edit.
-        CacheSites cacheSites;
-
-        /// Layer stack sites that must respond to a namespace edit.
-        LayerStackSites layerStackSites;
-
-        /// Layer stack sites that are affected by a namespace edit but
-        /// cannot respond properly. For example, in situations involving
-        /// relocates, a valid namespace edit in one cache may result in
-        /// an invalid edit in another cache in response.
-        LayerStackSites invalidLayerStackSites;
-    };
-
-    /// Returns the changes caused in any cache in \p caches due to
-    /// namespace editing the object at \p curPath in this cache to
-    /// have the path \p newPath.  \p caches should have all caches,
-    /// including this cache.  If \p caches includes this cache then
-    /// the result includes the changes caused at \p curPath in this
-    /// cache itself.
-    ///
-    /// To keep everything consistent, a namespace edit requires that
-    /// everything using the namespace edited site to be changed in an
-    /// appropriate way.  For example, if a referenced prim /A is renamed
-    /// to /B then everything referencing /A must be changed to reference
-    /// /B instead.  There are many other possibilities.
-    ///
-    /// One possibility is that there are no opinions at \p curPath in
-    /// this cache's layer stack and the site exists due to some ancestor
-    /// arc.  This requires a relocation and only sites using \p curPath
-    /// that include the layer with the relocation must be changed in
-    /// response.  To find those sites, \p relocatesLayer indicates which
-    /// layer the client will write the relocation to.
-    ///
-    /// Clients must perform the changes to correctly perform a namespace
-    /// edit.  All changes must be performed in a change block, otherwise
-    /// notices could be sent prematurely.
-    ///
-    /// This method only works when the affected prim indexes have been
-    /// computed.  In general, this means you must have computed the prim
-    /// index of everything in any existing cache, otherwise you might miss
-    /// changes to objects in those caches that use the namespace edited
-    /// object.  Using the above example, if a prim with an uncomputed prim
-    /// index referenced /A then this method would not report that prim. 
-    /// As a result that prim would continue to reference /A, which no
-    /// longer exists.
-	PCP_API NamespaceEdits
-    ComputeNamespaceEdits(const std::vector<PcpCache*>& caches,
-                          const SdfPath& curPath,
-                          const SdfPath& newPath,
-                          const SdfLayerHandle& relocatesLayer) const;
 
     /// Returns a vector of sublayer asset paths used in the layer stack
     /// that didn't resolve to valid assets.
@@ -703,27 +613,6 @@ private:
     // Returns the property index for \p path if it exists, NULL otherwise.
 	PCP_API PcpPropertyIndex* _GetPropertyIndex(const SdfPath& path);
 	PCP_API const PcpPropertyIndex* _GetPropertyIndex(const SdfPath& path) const;
-
-    // Returns the node providing to the existing prim index at \p path
-    // the spec at \p sitePath in any layer stack containing layer
-    // \p siteLayer.  Note that this ignores path resolver contexts.
-	PCP_API 
-    PcpNodeRef _GetNodeProvidingSpec(const SdfPath& path,
-                                     const SdfLayerHandle& siteLayer,
-                                     const SdfPath& sitePath) const;
-
-    // Translate \p path from each of the nodes in \p nodes to their
-    // respective root nodes. Each node is assumed to provide the spec at
-    // (\p layer, \p path). If layerOffsets isn't NULL then also compute
-    // the layer offset from each node to the root node.
-	PCP_API 
-    SdfPathVector _Translate(const PcpNodeRefVector& nodes,
-                            const SdfLayerHandle& layer,
-                            const SdfPath& path,
-                            SdfLayerOffsetVector* layerOffsets) const;
-
-    // Returns true if any prim in this cache uses \p layer, false otherwise.
-	PCP_API bool _UsesLayer(const SdfLayerHandle& layer) const;
 
 private:
     // Fixed evaluation parameters, set when the cache is created.  Note that

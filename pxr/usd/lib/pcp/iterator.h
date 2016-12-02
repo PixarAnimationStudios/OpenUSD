@@ -249,6 +249,11 @@ public:
 #define PCP_DEFINE_RANGE(Range, Iterator, ReverseIterator)              \
     typedef std::pair<Iterator, Iterator> Range;                        \
                                                                         \
+    inline Iterator begin(Range &range) { return range.first; }         \
+    inline Iterator begin(const Range &range) { return range.first; }   \
+    inline Iterator end(Range &range) { return range.second; }          \
+    inline Iterator end(const Range &range) { return range.second; }    \
+                                                                        \
     template <>                                                         \
     struct Tf_IteratorInterface<Range, false> {                         \
         typedef Iterator IteratorType;                                  \

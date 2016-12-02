@@ -135,7 +135,7 @@ bool GlfIsCompressedFormat(GLenum format)
     return false;
 }
 
-int GlfGetCompressedTextureSize(int width, int height,GLenum format,GLenum type)
+size_t GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum type)
 {
     int blockSize = 0;
     int tileSize = 0;
@@ -149,7 +149,7 @@ int GlfGetCompressedTextureSize(int width, int height,GLenum format,GLenum type)
         alignSize = 3;
     }
 
-    return ((width + alignSize)/tileSize) * 
-            ((height + alignSize)/tileSize) * 
-            blockSize;
+    size_t numPixels = ((width + alignSize)/tileSize) * 
+                       ((height + alignSize)/tileSize);
+    return numPixels * blockSize;
 }

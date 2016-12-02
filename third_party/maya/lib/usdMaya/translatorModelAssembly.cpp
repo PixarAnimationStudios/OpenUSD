@@ -211,10 +211,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
 
 static
 bool
-_GetAssetInfo(
-    const UsdPrim& prim,
-    std::string* assetIdentifier,
-    SdfPath* assetPrimPath)
+_HasAssetInfo(const UsdPrim& prim)
 {
     UsdModelAPI usdModel(prim);
     SdfAssetPath identifier;
@@ -222,33 +219,21 @@ _GetAssetInfo(
         return false;
     }
 
-    *assetIdentifier = identifier.GetAssetPath();
-    // We are assuming the target asset will have defaultPrim.
-    *assetPrimPath = SdfPath();
     return true;
 }
 
 static
 bool
-_GetReferenceInfo(
-    const UsdPrim& prim,
-    std::string* assetIdentifier,
-    SdfPath* assetPrimPath)
+_HasReferenceInfo(const UsdPrim& prim)
 {
     SdfReferenceListOp refs;
     prim.GetMetadata(SdfFieldKeys->References, &refs);
 
     // this logic is not robust.  awaiting bug 99278.
     if (not refs.GetAddedItems().empty()) {
-        const SdfReference& ref = refs.GetAddedItems()[0];
-        *assetIdentifier = ref.GetAssetPath();
-        *assetPrimPath = ref.GetPrimPath();
         return true;
     }
     if (not refs.GetExplicitItems().empty()) {
-        const SdfReference& ref = refs.GetExplicitItems()[0];
-        *assetIdentifier = ref.GetAssetPath();
-        *assetPrimPath = ref.GetPrimPath();
         return true;
     }
 
@@ -259,9 +244,7 @@ _GetReferenceInfo(
 bool
 PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
     const UsdPrim& usdImportRootPrim,
-    const UsdPrim& prim,
-    std::string* assetIdentifier,
-    SdfPath* assetPrimPath)
+    const UsdPrim& prim)
 {
     if (not prim) {
         return false;
@@ -277,12 +260,12 @@ PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
 
     // First we check if we're bringing in an asset (and not a reference to an
     // asset).
-    if (_GetAssetInfo(prim, assetIdentifier, assetPrimPath)) {
+    if (_HasAssetInfo(prim)) {
         return true;
     }
 
     // If we can't find any assetInfo, fall back to checking the reference.
-    if (_GetReferenceInfo(prim, assetIdentifier, assetPrimPath)) {
+    if (_HasReferenceInfo(prim)) {
         return true;
     }
 
@@ -345,7 +328,24 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     // Create the assembly node under its parent node.
     MObject assemblyObj = dagMod.createNode(assemblyTypeName.c_str(), parentNode, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    status = dagMod.renameNode(assemblyObj, prim.GetName().GetText());
+
+    // XXX: This is kind of unfortunate. There doesn't seem to be any API for
+    // specifying both a node type AND a node name when creating nodes using
+    // the MDagModifier. Creating assembly nodes has the side effect of creating
+    // a namespace with the same name as the node in which the members of the
+    // assembly will go. Maya does not allow you to change namespaces associated
+    // with nested assembly nodes, and trying to add a renameNode operation to
+    // the MDagModifier will result in only the node being renamed, not it's
+    // associated namespace. As a result, we change the name of the node even
+    // before the createNode on the MDagModifier has been executed, and that
+    // seems to ensure that both the node and the namespace are named as we
+    // want them to be. If we don't do this, we end up with namespaces such as
+    // "NS_dagAsset1" which are based off of the default assembly node's name
+    // before we've had a chance to rename it.
+    MFnDagNode dagNodeFn(assemblyObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    const MString newAssemblyName(prim.GetName().GetText());
+    dagNodeFn.setName(newAssemblyName, false, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Read xformable attributes from the UsdPrim on to the assembly node.

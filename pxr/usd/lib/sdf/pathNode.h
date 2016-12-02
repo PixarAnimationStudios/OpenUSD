@@ -267,40 +267,6 @@ protected:
         }
     };
 
-    struct _FastLessThan {
-        inline bool operator()(NodeType a, NodeType b) const
-        {
-            return a < b;
-        }
-        inline bool operator()(bool a, bool b) const
-        {
-            return a < b;
-        }
-        inline bool operator()(void* a, void* b) const
-        {
-            return a < b;
-        }
-        inline bool operator()(TfToken const &a, TfToken const &b) const
-        {
-            return TfTokenFastArbitraryLessThan()(a, b);
-        }
-        inline bool operator()(SdfPath const &a, SdfPath const &b) const
-        {
-            return SdfPath::FastLessThan()(a, b);
-        }
-        inline bool operator()(Sdf_PathNode::VariantSelectionType const &a,
-                               Sdf_PathNode::VariantSelectionType const &b) const
-        {
-            const _FastLessThan& comp = *this;
-            if (comp(a.first, b.first))
-                return true;
-            if (comp(b.first, a.first))
-                return false;
-            return comp(a.second, b.second);
-        }
-    };
-
-    friend struct Sdf_PathNodeCompareArbitrarily;
     friend struct Sdf_PathNodePrivateAccess;
 
     // Ref-counting ops manage _refCount.

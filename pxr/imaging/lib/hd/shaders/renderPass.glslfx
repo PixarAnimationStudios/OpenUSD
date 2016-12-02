@@ -102,27 +102,6 @@ vec4  GetWireframeColor() {
 #endif
 }
 
-bool ShouldCullFace(bool frontFacing, bool doubleSided)
-{
-    const uint HdCullStyleDontCare               = uint(0);
-    const uint HdCullStyleNothing                = uint(1);
-    const uint HdCullStyleBack                   = uint(2);
-    const uint HdCullStyleFront                  = uint(3);
-    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
-    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
-
-#if defined(HD_HAS_cullStyle)
-    uint cullStyle = HdGet_cullStyle();
-#else
-    uint cullStyle = HdCullStyleNothing;
-#endif
-
-    return ((cullStyle == HdCullStyleBack                   && !frontFacing) ||
-            (cullStyle == HdCullStyleFront                  &&  frontFacing) ||
-            (cullStyle == HdCullStyleBackUnlessDoubleSided  && !frontFacing && !doubleSided) ||
-            (cullStyle == HdCullStyleFrontUnlessDoubleSided &&  frontFacing && !doubleSided));
-}
-
 bool IsFlipped(MAT4 m)
 {
     // The sign of the determinant indicates whether m flips handedness
@@ -150,9 +129,28 @@ bool ShouldDiscardByAlpha(vec4 color)
     return (color.a < alphaThreshold);
 }
 
-void ApplyClipPlanes(vec4 Peye);
+-- glsl RenderPass.ShouldCullFace
 
-void RenderColor(vec4 color);
+bool ShouldCullFace(bool frontFacing, bool doubleSided)
+{
+    const uint HdCullStyleDontCare               = uint(0);
+    const uint HdCullStyleNothing                = uint(1);
+    const uint HdCullStyleBack                   = uint(2);
+    const uint HdCullStyleFront                  = uint(3);
+    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
+    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
+
+#if defined(HD_HAS_cullStyle)
+    uint cullStyle = HdGet_cullStyle();
+#else
+    uint cullStyle = HdCullStyleNothing;
+#endif
+
+    return ((cullStyle == HdCullStyleBack                   && !frontFacing) ||
+            (cullStyle == HdCullStyleFront                  &&  frontFacing) ||
+            (cullStyle == HdCullStyleBackUnlessDoubleSided  && !frontFacing && !doubleSided) ||
+            (cullStyle == HdCullStyleFrontUnlessDoubleSided &&  frontFacing && !doubleSided));
+}
 
 -- glsl RenderPass.ApplyClipPlanes
 
@@ -187,4 +185,3 @@ void RenderColor(vec4 color)
 {
     colorOut = color;
 }
-

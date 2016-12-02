@@ -489,8 +489,8 @@ UsdImagingGLRefEngine::SetLightingState(GlfSimpleLightVector const &lights,
             glGetIntegerv(GL_MAX_LIGHTS, &maxLights);
         }
 
-        for (size_t i = 0; i < maxLights; ++i) {
-            if (i < (int)lights.size()) {
+        for (size_t i = 0; i < static_cast<size_t>(maxLights); ++i) {
+            if (i < lights.size()) {
                 glEnable(GL_LIGHT0+i);
                 GlfSimpleLight const &light = lights[i];
 

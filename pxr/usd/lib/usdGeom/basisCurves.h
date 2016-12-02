@@ -111,12 +111,28 @@ class SdfAssetPath;
 /// for cubic interpolation is 'vertex' and for linear interpolation is
 /// 'varying'.  Per vertex data should be the same size as the number
 /// of vertices in your curve.  Segment varying data is dependent on the 
-/// wrap (periodicity) and number of segments in your curve.
+/// wrap (periodicity) and number of segments in your curve.  For linear curves,
+/// varying and vertex data would be interpolated the same way.  By convention 
+/// varying is the preferred interpolation because of the association of 
+/// varying with linear interpolation. 
 /// 
 /// wrap          | expected linear (varying) data size
 /// ------------- | ----------------------------------------
 /// nonperiodic   | segmentCount + 1
 /// periodic      | segmentCount
+/// 
+/// Both curve types additionally define 'constant'
+/// interpolation for the entire prim and 'uniform' interpolation as per curve 
+/// data.
+/// 
+/// \image html USDCurvePrimvars.png
+/// 
+/// While not technically UsdGeomPrimvars, the widths and optional normals
+/// also have interpolation metadata.  It's common for authored widths to have
+/// constant, varying, or vertex interpolation
+/// (see UsdGeomCurves::GetWidthsInterpolation()).  It's common for
+/// authored normals to have varying interpolation
+/// (see UsdGeomPointBased::GetNormalsInterpolation()).
 /// 
 /// This prim represents two different entries in the RI spec:  RiBasis
 /// and RiCurves, hence the name "BasisCurves."  If we are interested in
@@ -128,13 +144,14 @@ class SdfAssetPath;
 /// Example of deriving per curve segment and varying primvar data counts from
 /// the wrap, type, basis, and curveVertexCount.
 /// 
-/// wrap          | type    | basis   |  curveVertexCount | curveSegmentCount  | varyingDataCount
-/// ------------- | ---------------------------------------------------------------------------------------
+/// wrap          | type    | basis   | curveVertexCount  | curveSegmentCount  | varyingDataCount
+/// ------------- | ------- | ------- | ----------------- | ------------------ | -------------------------
 /// nonperiodic   | linear  | N/A     | [2 3 2 5]         | [1 2 1 4]          | [2 3 2 5]
 /// nonperiodic   | cubic   | bezier  | [4 7 10 4 7]      | [1 2 3 1 2]        | [2 3 4 2 3]
 /// nonperiodic   | cubic   | bspline | [5 4 6 7]         | [2 1 3 4]          | [3 2 4 5]
 /// periodic      | cubic   | bezier  | [6 9 6]           | [2 3 2]            | [2 3 2]
 /// periodic      | linear  | N/A     | [3 7]             | [3 7]              | [3 7]
+/// 
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

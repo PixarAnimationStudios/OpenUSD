@@ -35,9 +35,9 @@
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include "pxr/base/tf/hashmap.h"
 
+#include <memory>
 #include <type_traits>
 #include <vector>
 
@@ -100,7 +100,7 @@ private:
 	    virtual VtValue Invoke(PyObject *) const;
 	};
 
-	typedef boost::shared_ptr<_HolderBase> _HolderBasePtr;
+	typedef std::shared_ptr<_HolderBase> _HolderBasePtr;
 
     public:
 

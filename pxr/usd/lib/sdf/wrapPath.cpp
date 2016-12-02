@@ -178,6 +178,7 @@ void wrapPath() {
         .def("ContainsPrimVariantSelection", &This::ContainsPrimVariantSelection)
         .def("IsRelationalAttributePath", &This::IsRelationalAttributePath)
         .def("IsTargetPath", &This::IsTargetPath)
+        .def("ContainsTargetPath", &This::ContainsTargetPath)
         .def("IsMapperPath", &This::IsMapperPath)
         .def("IsMapperArgPath", &This::IsMapperArgPath)
         .def("IsExpressionPath", &This::IsExpressionPath)

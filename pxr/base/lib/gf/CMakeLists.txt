@@ -16,7 +16,6 @@ pxr_shared_library(gf
     PUBLIC_CLASSES
         bbox3d
         camera
-        colorRamp
         frustum
         gamma
         half
@@ -49,8 +48,6 @@ pxr_shared_library(gf
         range3f
         ray
         rect2i
-        rgb
-        rgba
         rotation
         size2
         size3
@@ -84,7 +81,6 @@ pxr_shared_library(gf
         module.cpp
         wrapBBox3d.cpp
         wrapCamera.cpp
-        wrapColorRamp.cpp
         wrapFrustum.cpp
         wrapGamma.cpp
         wrapHalf.cpp
@@ -113,8 +109,6 @@ pxr_shared_library(gf
         wrapRange3d.cpp
         wrapRange3f.cpp
         wrapRay.cpp
-        wrapRGB.cpp
-        wrapRGBA.cpp
         wrapRect2i.cpp
         wrapRotation.cpp
         wrapSize2.cpp
@@ -167,7 +161,6 @@ pxr_build_test(testGfHardToReach
 pxr_test_scripts(
     testenv/testGfBBox3d.py
     testenv/testGfCamera.py
-    testenv/testGfColorRamp.py
     testenv/testGfDecomposeRotation.py
     testenv/testGfFrustum.py
     testenv/testGfGamma.py
@@ -183,7 +176,6 @@ pxr_test_scripts(
     testenv/testGfRange.py
     testenv/testGfRay.py
     testenv/testGfRect2i.py
-    testenv/testGfRGB.py
     testenv/testGfRotation.py
     testenv/testGfSize.py
     testenv/testGfTransform.py
@@ -193,10 +185,6 @@ pxr_test_scripts(
 pxr_register_test(testGfBBox3d
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfBBox3d"
-)
-pxr_register_test(testGfColorRamp
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfColorRamp"
 )
 pxr_register_test(testGfDecomposeRotation
     PYTHON
@@ -260,10 +248,6 @@ pxr_register_test(testGfRay
 pxr_register_test(testGfRect2i
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRect2i"
-)
-pxr_register_test(testGfRGB
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRGB"
 )
 pxr_register_test(testGfRotation
     PYTHON

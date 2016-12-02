@@ -452,12 +452,14 @@ Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, PrimDataPtr end,
                               const Usd_PrimFlagsPredicate &pred)
 {
     PrimDataPtr next = p->GetNextSibling();
-    while (next and next != end and not pred(next)) {
+    while (next && next != end && !pred(next)) {
         p = next;
         next = p->GetNextSibling();
     }
     p = next ? next : p->GetParentLink();
-    return not next;
+
+    // Return true if we successfully moved to a parent, otherwise false.
+    return !next && p;
 }
 
 // Search for the first direct child of \p p that matches \p pred (up to
@@ -470,7 +472,7 @@ Usd_MoveToChild(PrimDataPtr &p, PrimDataPtr end,
 {
     if (PrimDataPtr child = p->GetFirstChild()) {
         p = child;
-        if (pred(p) or not Usd_MoveToNextSiblingOrParent(p, end, pred))
+        if (pred(p) || !Usd_MoveToNextSiblingOrParent(p, end, pred))
             return true;
     }
     return false;

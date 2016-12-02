@@ -21,54 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/rgba.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
-#include "pxr/base/gf/math.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/rgb.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
-
-#include <iostream>
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<GfRGBA>();
+    TfType::Define<HdRenderDelegate>();
 }
 
-GfRGBA GfRGBA::Transform(const GfMatrix4d &m) const
-{
-    return GfRGBA(_rgba * m);
-}
-
-GfRGBA operator *(const GfRGBA &c, const GfMatrix4d &m)
-{
-    return c.Transform(m);
-}
-
-bool
-GfIsClose(const GfRGBA &v1, const GfRGBA &v2, double tolerance)
-{
-    return GfIsClose(v1._rgba, v2._rgba, tolerance);
-}
-
-void
-GfRGBA::GetHSV(float *h, float *s, float *v) const
-{
-    return GfRGB(GetArray()).GetHSV(h, s, v);
-}
-
-void
-GfRGBA::SetHSV(float h, float s, float v)
-{
-    GfRGB tmp;
-    tmp.SetHSV(h, s, v);
-    Set(tmp[0], tmp[1], tmp[2], _rgba[3]);
-}
-
-
-std::ostream &
-operator<<(std::ostream& out, const GfRGBA& c)
-{
-    return out << '(' << c[0] << ", " << c[1] << ", "
-            << c[2] << ", " << c[3] << ')';
-}
+//
+// WORKAROUND: As this class is a pure interface class, it does not need a
+// vtable.  However, it is possible that some users will use rtti.
+// This will cause a problem for some of our compilers:
+//
+// In particular clang will throw a warning: -wweak-vtables
+// For gcc, there is an issue were the rtti typeid's are different.
+//
+// As destruction of the class is not on the performance path,
+// the body of the deleter is provided here, so a vtable is created
+// in this compilation unit.
+HdRenderDelegate::~HdRenderDelegate() = default;

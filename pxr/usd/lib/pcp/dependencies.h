@@ -27,7 +27,6 @@
 /// \file pcp/dependencies.h
 
 #include "pxr/usd/pcp/node.h"
-#include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
@@ -36,7 +35,6 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/site.h"
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <iosfwd>
@@ -88,18 +86,22 @@ public:
     /// the site represented by (siteLayerStack, sitePath).
     ///
     /// The arguments to \p fn are: (depIndexPath, depSitePath).
+    ///
+    /// If \p includeAncestral is \c true, this will also walk up
+    /// ancestral dependencies introduced by parent prims.
     /// 
-    /// If \p recurse is \c true, then also runs the callback
+    /// If \p recurseBelowSite is \c true, then also runs the callback
     /// of every \c PcpSite that uses any descendant of \p path.
     /// depSitePath provides the descendent dependency path.
     ///
-    /// If \p recurse is \c false, depSitePath is always
+    /// If \p recurseBelowSite is \c false, depSitePath is always
     /// the sitePath supplied and can be ignored.
     template <typename FN>
     void
     ForEachDependencyOnSite( const PcpLayerStackPtr &siteLayerStack,
                              const SdfPath &sitePath,
-                             bool recurse,
+                             bool includeAncestral,
+                             bool recurseBelowSite,
                              const FN &fn ) const
     {
         _LayerStackDepMap::const_iterator i = _deps.find(siteLayerStack); 
@@ -107,11 +109,11 @@ public:
             return;
         }
         const _SiteDepMap & siteDepMap = i->second;
-        if (recurse) {
-            BOOST_FOREACH(const _SiteDepMap::value_type& entry,
-                          siteDepMap.FindSubtreeRange(sitePath)) {
-                for(const SdfPath &primIndexPath: entry.second) {
-                    fn(primIndexPath, entry.first);
+        if (recurseBelowSite) {
+            auto range = siteDepMap.FindSubtreeRange(sitePath);
+            for (auto iter = range.first; iter != range.second; ++iter) {
+                for(const SdfPath &primIndexPath: iter->second) {
+                    fn(primIndexPath, iter->first);
                 }
             }
         } else {
@@ -119,6 +121,20 @@ public:
             if (j != siteDepMap.end()) {
                 for(const SdfPath &primIndexPath: j->second) {
                     fn(primIndexPath, sitePath);
+                }
+            }
+        }
+        if (includeAncestral) {
+            for (SdfPath ancestorSitePath = sitePath.GetParentPath();
+                 !ancestorSitePath.IsEmpty();
+                 ancestorSitePath = ancestorSitePath.GetParentPath())
+            {
+                _SiteDepMap::const_iterator j =
+                    siteDepMap.find(ancestorSitePath);
+                if (j != siteDepMap.end()) {
+                    for(const SdfPath &ancestorPrimIndexPath: j->second) {
+                        fn(ancestorPrimIndexPath, ancestorSitePath);
+                    }
                 }
             }
         }
@@ -177,13 +193,13 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
     }
     if (primIndex) {
         // Find which node corresponds to (layer, oldPath).
-        TF_FOR_ALL(node, primIndex->GetNodeRange()) {
-            const PcpDependencyFlags flags = PcpClassifyNodeDependency(*node);
+        for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
+            const PcpDependencyFlags flags = PcpClassifyNodeDependency(node);
             if (flags != PcpDependencyTypeNone &&
-                node->GetLayerStack()->HasLayer(layer) &&
-                sitePath.HasPrefix(node->GetPath()))
+                node.GetLayerStack()->HasLayer(layer) &&
+                sitePath.HasPrefix(node.GetPath()))
             {
-                nodeUsingSite = *node;
+                nodeUsingSite = node;
                 fn(depIndexPath, nodeUsingSite, flags);
             }
         }
@@ -222,13 +238,13 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
     }
     if (primIndex) {
         // Find which node corresponds to (layerStack, oldPath).
-        TF_FOR_ALL(node, primIndex->GetNodeRange()) {
-            const PcpDependencyFlags flags = PcpClassifyNodeDependency(*node);
+        for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
+            const PcpDependencyFlags flags = PcpClassifyNodeDependency(node);
             if (flags != PcpDependencyTypeNone &&
-                node->GetLayerStack() == layerStack &&
-                sitePath.HasPrefix(node->GetPath()))
+                node.GetLayerStack() == layerStack &&
+                sitePath.HasPrefix(node.GetPath()))
             {
-                nodeUsingSite = *node;
+                nodeUsingSite = node;
                 fn(depIndexPath, nodeUsingSite, flags);
             }
         }
