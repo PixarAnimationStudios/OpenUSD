@@ -165,12 +165,12 @@ UsdVariantSet::GetVariantEditTarget(const SdfLayerHandle &layer) const
                         stage->GetRootLayer()->GetIdentifier().c_str());
         return target;
     }
+
+    SdfPath varSpecPath =
+        stage->GetEditTarget().MapToSpecPath(_prim.GetPath())
+        .AppendVariantSelection(curVarSel.first, curVarSel.second);
     
-    return UsdEditTarget::ForLocalDirectVariant(
-        lyr,
-        _prim.GetPath().AppendVariantSelection(curVarSel.first,
-                                               curVarSel.second),
-        stage->_cache->GetLayerStackIdentifier());
+    return UsdEditTarget::ForLocalDirectVariant(lyr, varSpecPath);
 }
 
 std::pair<UsdStagePtr, UsdEditTarget >

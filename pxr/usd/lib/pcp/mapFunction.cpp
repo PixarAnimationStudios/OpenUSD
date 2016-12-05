@@ -179,10 +179,12 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
 
         const SdfPath & source = i->first;
         const SdfPath & target = i->second;
-        if (not source.IsAbsoluteRootOrPrimPath() or
-            not target.IsAbsoluteRootOrPrimPath() or
-            source.ContainsPrimVariantSelection() or
-            target.ContainsPrimVariantSelection()) {
+        if (!source.IsAbsolutePath() ||
+            !(source.IsAbsoluteRootOrPrimPath() ||
+              source.IsPrimVariantSelectionPath()) ||
+            !target.IsAbsolutePath() ||
+            !(target.IsAbsoluteRootOrPrimPath() ||
+              target.IsPrimVariantSelectionPath())) {
             TF_CODING_ERROR("The mapping of '%s' to '%s' is invalid.",
                             source.GetText(), target.GetText());
             return PcpMapFunction();

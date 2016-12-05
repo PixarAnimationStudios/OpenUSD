@@ -32,185 +32,138 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/spec.h"
+#include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/registryManager.h"
 
 ////////////////////////////////////////////////////////////////////////
-// Usd_SpecPathMapping
-
-Usd_SpecPathMapping::Usd_SpecPathMapping()
-{
-}
-
-Usd_SpecPathMapping::Usd_SpecPathMapping(const PcpNodeRef &node)
-    : _mapFn(node.GetMapToRoot().Evaluate())
-    , _sitePath(node.GetPath())
-    , _strippedSitePath(_sitePath.StripAllVariantSelections())
-{
-    if (not _sitePath.ContainsPrimVariantSelection()) {
-        _sitePath = _strippedSitePath = SdfPath::AbsoluteRootPath();
-    }
-}
-
-Usd_SpecPathMapping::Usd_SpecPathMapping(const PcpMapFunction &mapFn,
-                                         const SdfPath &sitePath,
-                                         const SdfPath &strippedSitePath)
-    : _mapFn(mapFn)
-    , _sitePath(sitePath)
-    , _strippedSitePath(strippedSitePath)
-{
-}
-
-/* static */
-Usd_SpecPathMapping
-Usd_SpecPathMapping::Identity()
-{
-    return Usd_SpecPathMapping(PcpMapFunction::Identity(),
-                               SdfPath::AbsoluteRootPath(),
-                               SdfPath::AbsoluteRootPath());
-}
-
-void
-Usd_SpecPathMapping::Swap(Usd_SpecPathMapping &other)
-{
-    _mapFn.Swap(other._mapFn);
-    swap(_sitePath, other._sitePath);
-    swap(_strippedSitePath, other._strippedSitePath);
-}
-
-bool
-Usd_SpecPathMapping::operator==(const Usd_SpecPathMapping &other) const
-{
-    return _mapFn == other._mapFn and
-        _sitePath == other._sitePath and
-        _strippedSitePath == other._strippedSitePath;
-}
-
-bool
-Usd_SpecPathMapping::operator!=(const Usd_SpecPathMapping &other) const
-{
-    return not (*this == other);
-}
-
-bool
-Usd_SpecPathMapping::IsNull() const
-{
-    return *this == Usd_SpecPathMapping();
-}
-
-bool
-Usd_SpecPathMapping::IsIdentity() const {
-    return *this == Identity();
-}
-
-SdfPath
-Usd_SpecPathMapping::MapRootToSpec(const SdfPath &path) const
-{
-    // Null functions produce no result.
-    if (IsNull())
-        return SdfPath();
-
-    // Run it through the map function.
-    SdfPath result =
-        PcpTranslatePathFromRootToNodeUsingFunction(_mapFn, path);
-
-    // Replace the stripped prefix with the real site prefix to add back any
-    // variant selections that may be present.  Don't fix target paths -- they
-    // should never contain variant selections.
-    return result.ReplacePrefix(
-        _strippedSitePath, _sitePath, /* fixTargetPaths = */ false);
-}
-
-const PcpMapFunction &
-Usd_SpecPathMapping::GetMapFunction() const {
-    return _mapFn;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // UsdEditTarget
+
+static PcpMapFunction
+_ComposeMappingForNode(const SdfLayerHandle layer, const PcpNodeRef &node)
+{
+    PcpMapFunction result = node.GetMapToRoot().Evaluate();
+
+    // Pick up any variant selections in the node site.
+    // Pcp deliberately keeps variant selections out of the node's
+    // map function, but we want a combined mapping.
+    const SdfPath& path = node.GetPath();
+    if (path.ContainsPrimVariantSelection()) {
+        PcpMapFunction::PathMap pathMap = PcpMapFunction::IdentityPathMap();
+        pathMap[ path ] = path.StripAllVariantSelections();
+        PcpMapFunction varMap =
+            PcpMapFunction::Create(pathMap, SdfLayerOffset());
+        result = result.Compose(varMap);
+    }
+
+    // Pick up any layer offset to the given layer.
+    if (const SdfLayerOffset *layerOffset =
+        node.GetLayerStack()->GetLayerOffsetForLayer(layer)) {
+        PcpMapFunction offsetMap =
+            PcpMapFunction::Create( PcpMapFunction::IdentityPathMap(),
+                                    *layerOffset);
+        result = result.Compose(offsetMap);
+    }
+
+    return result;
+}
 
 UsdEditTarget::UsdEditTarget()
 {
 }
 
-UsdEditTarget::UsdEditTarget(const SdfLayerHandle &layer)
+UsdEditTarget::UsdEditTarget(const SdfLayerHandle &layer,
+                             SdfLayerOffset offset)
     : _layer(layer)
 {
+    if (offset.IsIdentity()) {
+        _mapping = PcpMapFunction::Identity();
+    } else {
+        _mapping = PcpMapFunction::Create( PcpMapFunction::IdentityPathMap(),
+                                           offset );
+    }
 }
 
 UsdEditTarget::UsdEditTarget(const SdfLayerHandle &layer,
                              const PcpNodeRef &node)
     : _layer(layer)
-    , _mapping(node)
-    , _lsid(node.GetLayerStack()->GetIdentifier())
+    , _mapping(_ComposeMappingForNode(layer, node))
 {
 }
 
-UsdEditTarget::UsdEditTarget(const SdfLayerRefPtr &layer)
+UsdEditTarget::UsdEditTarget(const SdfLayerRefPtr &layer,
+                             SdfLayerOffset offset)
     : _layer(layer)
 {
+    if (offset.IsIdentity()) {
+        _mapping = PcpMapFunction::Identity();
+    } else {
+        _mapping = PcpMapFunction::Create( PcpMapFunction::IdentityPathMap(),
+                                           offset );
+    }
 }
 
 UsdEditTarget::UsdEditTarget(const SdfLayerRefPtr &layer,
                              const PcpNodeRef &node)
     : _layer(layer)
-    , _mapping(node)
-    , _lsid(node.GetLayerStack()->GetIdentifier())
+    , _mapping(_ComposeMappingForNode(layer, node))
 {
 }
 
 /* private */
 UsdEditTarget::UsdEditTarget(const SdfLayerHandle &layer,
-                             const Usd_SpecPathMapping &mapping,
-                             const PcpLayerStackIdentifier &lsid)
+                             const PcpMapFunction &mapping)
     : _layer(layer)
     , _mapping(mapping)
-    , _lsid(lsid)
 {
 }
 
 UsdEditTarget
 UsdEditTarget::ForLocalDirectVariant(const SdfLayerHandle &layer,
-                                     const SdfPath &varSelPath,
-                                     const PcpLayerStackIdentifier &lsid)
+                                     const SdfPath &varSelPath)
 {
     if (not varSelPath.IsPrimVariantSelectionPath()) {
         TF_CODING_ERROR("Provided varSelPath <%s> must be a prim variant "
                         "selection path.", varSelPath.GetText());
         return UsdEditTarget();
     }
-    return UsdEditTarget(
-        layer,
-        Usd_SpecPathMapping(
-            PcpMapFunction::Identity(),
-            varSelPath, varSelPath.StripAllVariantSelections()),
-        lsid);
+
+    // Create a map function that represents the variant selections.
+    PcpMapFunction::PathMap pathMap = PcpMapFunction::IdentityPathMap();
+    pathMap[ varSelPath ] = varSelPath.StripAllVariantSelections();
+    PcpMapFunction mapping = PcpMapFunction::Create(pathMap,
+                                                    SdfLayerOffset());
+
+    return UsdEditTarget(layer, mapping);
 }
 
 bool
 UsdEditTarget::operator==(const UsdEditTarget &o) const
 {
-    return _layer == o._layer and _mapping == o._mapping and _lsid == o._lsid;
-}
-
-bool
-UsdEditTarget::HasMapping() const
-{
-    return not _mapping.IsNull();
-}
-
-bool
-UsdEditTarget::IsLocalLayer() const
-{
-    return not HasMapping() and not GetLayerStackIdentifier();
+    return _layer == o._layer and _mapping == o._mapping;
 }
 
 SdfPath
 UsdEditTarget::MapToSpecPath(const SdfPath &scenePath) const
 {
-    return _mapping.IsNull() ? scenePath : _mapping.MapRootToSpec(scenePath);
+    SdfPath result = _mapping.MapTargetToSource(scenePath);
+
+    // Translate any target paths, stripping variant selections.
+    if (result.ContainsTargetPath()) {
+        SdfPathVector targetPaths;
+        result.GetAllTargetPathsRecursively(&targetPaths);
+        for (const SdfPath &targetPath: targetPaths) {
+            const SdfPath translatedTargetPath = 
+                _mapping.MapTargetToSource(targetPath)
+                .StripAllVariantSelections();
+            if (translatedTargetPath.IsEmpty()) {
+                return SdfPath();
+            }
+            result = result.ReplacePrefix(targetPath, translatedTargetPath);
+        }
+    }
+
+    return result;
 }
 
 SdfPrimSpecHandle
@@ -237,18 +190,10 @@ UsdEditTarget::GetSpecForScenePath(const SdfPath &scenePath) const
     return TfNullPtr;
 }
 
-bool
-UsdEditTarget::IsAtNode(const PcpNodeRef &node) const
-{
-    return _lsid == node.GetLayerStack()->GetIdentifier() and
-        _mapping == Usd_SpecPathMapping(node);
-}
-
 UsdEditTarget
 UsdEditTarget::ComposeOver(const UsdEditTarget &weaker) const
 {
     return UsdEditTarget(
         not _layer ? weaker._layer : _layer,
-        _mapping.IsNull() ? weaker._mapping : _mapping,
-        not _lsid ? weaker._lsid : _lsid);
+        _mapping.Compose(weaker._mapping));
 }

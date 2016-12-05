@@ -44,10 +44,24 @@
 // ------------------------------------------------------------------------- //
 
 static SdfPath
-_MapTargetPath(const UsdStage *stage, const SdfPath &path)
+_MapTargetPath(const UsdStage *stage, const SdfPath &anchor,
+               const SdfPath &target)
 {
-    return stage->GetEditTarget().
-        MapToSpecPath(path).StripAllVariantSelections();
+    // If this is a relative target path, we have to map both the anchor
+    // and target path and then re-relativize them.
+    const UsdEditTarget &editTarget = stage->GetEditTarget();
+    if (target.IsAbsolutePath()) {
+        return editTarget.MapToSpecPath(target).StripAllVariantSelections();
+    } else {
+        const SdfPath anchorPrim = anchor.GetPrimPath();
+        const SdfPath translatedAnchorPrim =
+            editTarget.MapToSpecPath(anchorPrim)
+            .StripAllVariantSelections();
+        const SdfPath translatedTarget =
+            editTarget.MapToSpecPath(target.MakeAbsolutePath(anchorPrim))
+            .StripAllVariantSelections();
+        return translatedTarget.MakeRelativePath(translatedAnchorPrim);
+    }
 }
 
 SdfPath
@@ -67,7 +81,7 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
     }
 
     UsdStage *stage = _GetStage();
-    SdfPath mappedPath = _MapTargetPath(stage, target);
+    SdfPath mappedPath = _MapTargetPath(stage, GetPath(), target);
     if (mappedPath.IsEmpty()) {
         if (whyNot) {
             *whyNot = TfStringPrintf("Cannot map <%s> to layer @%s@ via stage's "

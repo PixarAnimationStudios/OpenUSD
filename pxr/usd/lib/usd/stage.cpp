@@ -196,9 +196,6 @@ _GetLayerOffsetToRoot(const PcpNodeRef& pcpNode,
     //
     SdfLayerOffset localOffset = nodeToRootNodeOffset;
 
-    // PERFORMANCE: GetLayerOffsetForLayer() is seems fairly cheap (because the
-    // offsets are cached), however it requires iterating over every layer in
-    // the stack calling SdfLayerOffset::IsIdentity.
     if (const SdfLayerOffset *layerToRootLayerOffset =
         pcpNode.GetLayerStack()->GetLayerOffsetForLayer(layer)) {
         localOffset = localOffset * (*layerToRootLayerOffset);
@@ -1286,25 +1283,12 @@ UsdStage::_SetValueImpl(
         // XXX: should this loft the underlying values up when
         // authoring over a weaker layer?
 
-        const PcpPrimIndex* idx = &attr.GetPrim().GetPrimIndex();
-
-        // Walk the Pcp node tree until we find the node the EditTarget is at.
-        // Then we can get the correct layer offset and invert the time value.
-        UsdEditTarget const &editTarget = GetEditTarget();
-        SdfLayerOffset layerOffset;
-        if (editTarget.IsLocalLayer()) {
-            layerOffset = _GetLayerOffsetToRoot(idx->GetRootNode(),
-                                                editTarget.GetLayer());
-        } else {
-            for (Usd_Resolver res(idx); res.IsValid(); res.NextNode()) {
-                const PcpNodeRef &node = res.GetNode();
-                if (editTarget.IsAtNode(node)) {
-                    layerOffset = _GetLayerOffsetToRoot(
-                        node, editTarget.GetLayer());
-                    break;
-                }
-            }
-        }
+        // XXX: this won't be correct if we are trying to edit
+        // across two different reference arcs -- which may have
+        // different time offsets.  perhaps we need the map function
+        // to track a time offset for each path?
+        const SdfLayerOffset layerOffset = 
+            GetEditTarget().GetMapFunction().GetTimeOffset();
 
         double localTime = layerOffset.GetInverse() * time.GetValue();
 
@@ -1353,25 +1337,8 @@ UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
         return false;
     }
 
-    // NOTE: This logic also exist in _SetValueImpl:
-    //
-    // Walk the Pcp node tree until we find the node the EditTarget is at.
-    // Then we can get the correct layer offset and invert the time value.
-    SdfLayerOffset layerOffset;
-    const PcpPrimIndex* idx = &attr.GetPrim().GetPrimIndex();
-    if (editTarget.IsLocalLayer()) {
-        layerOffset = _GetLayerOffsetToRoot(idx->GetRootNode(),
-                                            editTarget.GetLayer());
-    } else {
-        for (Usd_Resolver res(idx); res.IsValid(); res.NextNode()) {
-            const PcpNodeRef &node = res.GetNode();
-            if (editTarget.IsAtNode(node)) {
-                layerOffset = _GetLayerOffsetToRoot(
-                    node, editTarget.GetLayer());
-                break;
-            }
-        }
-    }
+    const SdfLayerOffset layerOffset = 
+        editTarget.GetMapFunction().GetTimeOffset();
 
     attrSpec->GetLayer()->EraseTimeSample(
         attrSpec->GetPath(), layerOffset.GetInverse() * time.GetValue());
@@ -2606,7 +2573,8 @@ UsdStage::CreateClassPrim(const SdfPath &path)
     }
 
     // Classes must be created in local layers.
-    if (not GetEditTarget().IsLocalLayer()) {
+    if (_editTarget.GetMapFunction().IsIdentity() and
+        not HasLocalLayer(_editTarget.GetLayer())) {
         TF_CODING_ERROR("Must create classes in local LayerStack");
         return UsdPrim();
     }
@@ -2641,6 +2609,29 @@ UsdStage::GetEditTarget() const
     return _editTarget;
 }
 
+UsdEditTarget
+UsdStage::GetEditTargetForLocalLayer(size_t i)
+{
+    const SdfLayerRefPtrVector & layers = _cache->GetLayerStack()->GetLayers();
+    if (i >= layers.size()) {
+        TF_CODING_ERROR("Layer index %zu is out of range: only %zu entries in "
+                        "layer stack", i, layers.size());
+        return UsdEditTarget();
+    }
+    const SdfLayerOffset *layerOffset =
+        _cache->GetLayerStack()->GetLayerOffsetForLayer(i);
+    return UsdEditTarget(layers[i],
+                         layerOffset ? *layerOffset : SdfLayerOffset() );
+}
+
+UsdEditTarget 
+UsdStage::GetEditTargetForLocalLayer(const SdfLayerHandle &layer)
+{
+    const SdfLayerOffset *layerOffset =
+        _cache->GetLayerStack()->GetLayerOffsetForLayer(layer);
+    return UsdEditTarget(layer, layerOffset ? *layerOffset : SdfLayerOffset() );
+}
+
 bool
 UsdStage::HasLocalLayer(const SdfLayerHandle &layer) const
 {
@@ -2655,14 +2646,13 @@ UsdStage::SetEditTarget(const UsdEditTarget &editTarget)
         return;
     }
     // Do some extra error checking if the EditTarget specifies a local layer.
-    if (editTarget.IsLocalLayer()) {
-        if (not HasLocalLayer(editTarget.GetLayer())) {
-            TF_CODING_ERROR("Layer @%s@ is not in the local LayerStack rooted "
-                            "at @%s@",
-                            editTarget.GetLayer()->GetIdentifier().c_str(),
-                            GetRootLayer()->GetIdentifier().c_str());
-            return;
-        }
+    if (editTarget.GetMapFunction().IsIdentity() and
+        not HasLocalLayer(editTarget.GetLayer())) {
+        TF_CODING_ERROR("Layer @%s@ is not in the local LayerStack rooted "
+                        "at @%s@",
+                        editTarget.GetLayer()->GetIdentifier().c_str(),
+                        GetRootLayer()->GetIdentifier().c_str());
+        return;
     }
 
     // If different from current, set EditTarget and notify.

@@ -710,6 +710,16 @@ public:
     /// Return the stage's EditTarget.
     const UsdEditTarget &GetEditTarget() const;
 
+    /// Return a UsdEditTarget for editing the layer at index \a i in the
+    /// layer stack.  This edit target will incorporate any layer time
+    /// offset that applies to the sublayer.
+    UsdEditTarget GetEditTargetForLocalLayer(size_t i);
+
+    /// Return a UsdEditTarget for editing the given local \a layer.
+    /// If the given layer appears more than once in the layer stack,
+    /// the time offset to the first occurence will be used.
+    UsdEditTarget GetEditTargetForLocalLayer(const SdfLayerHandle &layer);
+
     /// Set the stage's EditTarget.  If \a editTarget.IsLocalLayer(), check to
     /// see if it's a layer in this stage's local LayerStack.  If not, issue an
     /// error and do nothing.  If \a editTarget is invalid, issue an error
@@ -1668,6 +1678,7 @@ private:
     
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
+    friend class UsdEditTarget;
     friend class UsdInherits;
     friend class UsdObject;
     friend class UsdPrim;

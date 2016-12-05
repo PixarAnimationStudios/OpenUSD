@@ -31,51 +31,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
 
-// Helper class for UsdEditTarget.  Handles mapping scene paths to spec paths
-// via a mapping function.
-struct Usd_SpecPathMapping
-{
-    // Default ctor produces null mapping.
-    Usd_SpecPathMapping();
-
-    // Construct from PcpNodeRef.
-    explicit Usd_SpecPathMapping(const PcpNodeRef &node);
-
-    // Get an identity mapping.
-    static Usd_SpecPathMapping Identity();
-
-    // Swap this mapping with \a other.
-    void Swap(Usd_SpecPathMapping &other);
-
-    // Return true if this mapping is the same as \a other, false otherwise.
-    bool operator==(const Usd_SpecPathMapping &other) const;
-
-    // Return true if this mapping is not the same as \a other, false otherwise.
-    bool operator!=(const Usd_SpecPathMapping &other) const;
-
-    // Return true if this mapping is the null mapping.
-    bool IsNull() const;
-
-    // Return true if this mapping is the identity mapping.
-    bool IsIdentity() const;
-
-    // Map the scene path \a path to a spec path using this mapping.
-    SdfPath MapRootToSpec(const SdfPath &path) const;
-
-    // Get the map function in this mapping.
-    const PcpMapFunction &GetMapFunction() const;
-
-private:
-    friend class UsdEditTarget;
-
-    Usd_SpecPathMapping(const PcpMapFunction &mapFn,
-                        const SdfPath &sitePath,
-                        const SdfPath &strippedSitePath);
-
-    PcpMapFunction _mapFn;
-    SdfPath _sitePath;
-    SdfPath _strippedSitePath;
-};
+TF_DECLARE_WEAK_PTRS(UsdStage);
 
 /// \class UsdEditTarget
 ///
@@ -125,12 +81,16 @@ public:
     /// Constructor.  Allow implicit conversion from SdfLayerHandle.
     /// EditTargets constructed in this way specify layers in the scene's local
     /// LayerStack.  This lets clients pass layers directly in this common case
-    /// without explicitly having to construct a \a UsdEditTarget instance
-    UsdEditTarget(const SdfLayerHandle &layer);
+    /// without explicitly having to construct a \a UsdEditTarget instance.
+    /// To automatically supply the appropriate layer offset for the given
+    /// layer, see UsdStage::GetEditTargetForLayer().
+    UsdEditTarget(const SdfLayerHandle &layer,
+                  SdfLayerOffset offset = SdfLayerOffset());
 
     /// Convenience implicit conversion from SdfLayerRefPtr.  See above
     /// constructor for more information.
-    UsdEditTarget(const SdfLayerRefPtr &layer);
+    UsdEditTarget(const SdfLayerRefPtr &layer,
+                  SdfLayerOffset offset = SdfLayerOffset());
 
     /// Construct an EditTarget with \a layer and \a node.  The mapping
     /// will be used to map paths from the scene into the \a layer's namespace
@@ -146,8 +106,7 @@ public:
     /// (see SdfPath::IsPrimVariantSelectionPath()).
     static UsdEditTarget
     ForLocalDirectVariant(const SdfLayerHandle &layer,
-                          const SdfPath &varSelPath,
-                          const PcpLayerStackIdentifier &lsid);
+                          const SdfPath &varSelPath);
 
     /// Equality comparison.
     bool operator==(const UsdEditTarget &other) const;
@@ -167,22 +126,6 @@ public:
 
     /// Return the layer this EditTarget contains.
     const SdfLayerHandle &GetLayer() const { return _layer; }
-
-    /// Return the LayerStack identifier this EditTarget contains.
-    const PcpLayerStackIdentifier &GetLayerStackIdentifier() const {
-        return _lsid;
-    }
-
-    /// Return true if this EditTarget has a non-null mapping, false
-    /// otherwise.  Practically, an EditTarget has a mapping when it indicates
-    /// a location that's not direct opinions in the local LayerStack.  In
-    /// other words if it represents a point in composition across some arc,
-    /// like a reference, inherit, or variant.
-    bool HasMapping() const;
-
-    /// Return true if this EditTarget represents editing direct
-    /// opinions in a layer in the scene's local LayerStack.  False otherwise.
-    bool IsLocalLayer() const;
 
     /// Map the provided \a scenePath into the a SdfSpec path for the
     /// EditTarget's layer, according to the EditTarget's mapping.  Null edit
@@ -205,11 +148,10 @@ public:
     SdfSpecHandle
     GetSpecForScenePath(const SdfPath &scenePath) const;
 
-    /// Return true if this EditTarget matches \p node.  That is, if the
-    /// node's LayerStack and mapping matches this EditTarget's LayerStack
-    /// and mapping.  Note that this does not check whether or not this edit
-    /// target's layer is a member of the node's LayerStack.
-    bool IsAtNode(const PcpNodeRef &node) const;
+    /// Returns the PcpMapFunction representing the map from source
+    /// specs (including any variant selections) to the stage.
+    const PcpMapFunction &
+    GetMapFunction() const { return _mapping; }
 
     /// Return a new EditTarget composed over \a weaker.  This is
     /// typically used to make an EditTarget "explicit".  For example, an edit
@@ -225,12 +167,10 @@ public:
 private:
 
     UsdEditTarget(const SdfLayerHandle &layer,
-                  const Usd_SpecPathMapping &mapping,
-                  const PcpLayerStackIdentifier &lsid);
+                  const PcpMapFunction &mapping);
 
     SdfLayerHandle _layer;
-    Usd_SpecPathMapping _mapping;
-    PcpLayerStackIdentifier _lsid;
+    PcpMapFunction _mapping;
 };
 
 #endif // USD_EDITTARGET_H
