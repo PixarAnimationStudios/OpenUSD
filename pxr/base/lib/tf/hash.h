@@ -86,7 +86,11 @@ class TfWeakPtrFacade;
 class TfHash {
 private:
     inline size_t _Mix(size_t val) const {
-        return val + (val >> 3);
+        // This is based on Knuth's multiplicative hash for integers.  The
+        // constant is the closest prime to the binary expansion of the golden
+        // ratio - 1.
+        return static_cast<size_t>(
+            static_cast<uint64_t>(val) * 11400714819323198549ULL);
     }
 
 public:
