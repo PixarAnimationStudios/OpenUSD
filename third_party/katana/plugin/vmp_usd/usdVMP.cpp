@@ -350,6 +350,10 @@ USDVMP::flush()
 void
 USDVMP::_loadSubtreeForCurrentPrim()
 {
+    if (not _prim) {
+        return;
+    }
+
     // Grab an upgrade lock in case we have to write. Only one thread can pass
     // this lock, but it does not block other shared locks.
     boost::upgrade_lock<boost::upgrade_mutex>
