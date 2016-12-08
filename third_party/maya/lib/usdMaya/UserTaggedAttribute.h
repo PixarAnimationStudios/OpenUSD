@@ -45,21 +45,34 @@
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaUserTaggedAttributeTokens,
     PXRUSDMAYA_ATTR_TOKENS);
 
-/// \brief Represents a single attribute tagged for USD export, and describes
-/// how it will be exported.
+/// \brief Represents a single attribute tagged for translation between Maya
+/// and USD, and describes how it will be exported from/imported into Maya.
 class PxrUsdMayaUserTaggedAttribute {
 private:
     MPlug _plug;
     const std::string _name;
     const TfToken _type;
     const TfToken _interpolation;
+    const bool _translateMayaDoubleToUsdSinglePrecision;
 
 public:
+    /// \brief Gets the fallback value for whether attribute types should be
+    /// mapped from double precision types in Maya to single precision types in
+    /// USD.
+    /// By default, the fallback value for this property is false so that
+    /// double precision data is preserved in the translation back and forth
+    /// between Maya and USD.
+    static bool GetFallbackTranslateMayaDoubleToUsdSinglePrecision() {
+        return false;
+    };
+
     PxrUsdMayaUserTaggedAttribute(
             MPlug plug,
             const std::string& name,
             const TfToken& type,
-            const TfToken& interpolation);
+            const TfToken& interpolation,
+            const bool translateMayaDoubleToUsdSinglePrecision = 
+                GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// \brief Gets all of the exported attributes for the given node.
     static std::vector<PxrUsdMayaUserTaggedAttribute>
@@ -82,6 +95,23 @@ public:
 
     /// \brief Gets the interpolation for primvars.
     TfToken GetUsdInterpolation() const;
+
+    /// \brief Gets whether the attribute type should be mapped from a double
+    /// precision type in Maya to a single precision type in USD.
+    /// There is not always a direct mapping between Maya-native types and
+    /// USD/Sdf types, and often it's desirable to intentionally use a single
+    /// precision type when the extra precision is not needed to reduce size,
+    /// I/O bandwidth, etc.
+    ///
+    /// For example, there is no native Maya attribute type to represent an
+    /// array of float triples. To get an attribute with a VtVec3fArray type
+    /// in USD, you can create a 'vectorArray' data-typed attribute in Maya
+    /// (which stores MVectors, which contain doubles) and set
+    /// 'translateMayaDoubleToUsdSinglePrecision' to true so that the data is
+    /// cast to single-precision on export. It will be up-cast back to double
+    /// on re-import.
+    bool GetTranslateMayaDoubleToUsdSinglePrecision() const;
 };
+
 
 #endif // PXRUSDMAYA_USERTAGGEDATTRIBUTE_H

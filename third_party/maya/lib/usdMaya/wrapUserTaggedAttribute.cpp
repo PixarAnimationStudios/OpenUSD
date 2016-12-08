@@ -74,10 +74,15 @@ void wrapUserTaggedAttribute() {
             .def("GetUsdName", &PxrUsdMayaUserTaggedAttribute::GetUsdName)
             .def("GetUsdType", &PxrUsdMayaUserTaggedAttribute::GetUsdType)
             .def("GetUsdInterpolation",
-                    &PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation)
+                 &PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation)
+            .def("GetTranslateMayaDoubleToUsdSinglePrecision",
+                 &PxrUsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision)
+            .def("GetFallbackTranslateMayaDoubleToUsdSinglePrecision",
+                 &PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision)
+            .staticmethod("GetFallbackTranslateMayaDoubleToUsdSinglePrecision")
             .def("GetUserTaggedAttributesForNode",
-                    _GetUserTaggedAttributesForNode,
-                    return_value_policy<TfPySequenceToList>())
+                 _GetUserTaggedAttributesForNode,
+                 return_value_policy<TfPySequenceToList>())
             .staticmethod("GetUserTaggedAttributesForNode")
     ;
 }

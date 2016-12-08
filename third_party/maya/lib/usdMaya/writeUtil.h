@@ -27,6 +27,8 @@
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
+#include "usdMaya/UserTaggedAttribute.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/usd/sdf/valueTypeName.h"
@@ -50,46 +52,77 @@ struct PxrUsdMayaWriteUtil
     /// \{
 
     /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
-    static SdfValueTypeName GetUsdTypeName(const MPlug& attrPlug);
+    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
+    /// contain double data will return the appropriate float-based type.
+    /// Otherwise, the type returned will be the appropriate double-based type.
+    static SdfValueTypeName GetUsdTypeName(
+            const MPlug& attrPlug,
+            const bool translateMayaDoubleToUsdSinglePrecision =
+                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
     ///
     /// Attributes that are not part of the primSchema should have \p custom
     /// set to true.
+    ///
+    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
+    /// contain double data will result in USD attributes of the appropriate
+    /// float-based type. Otherwise, their type will be double-based.
     static UsdAttribute GetOrCreateUsdAttr(
             const MPlug& attrPlug,
             const UsdPrim& usdPrim,
             const std::string& attrName,
-            const bool custom = false);
+            const bool custom = false,
+            const bool translateMayaDoubleToUsdSinglePrecision =
+                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a primvar on \p imageable with
     /// the name \p primvarName. Note, it's value will not be set.
     ///
     /// Attributes that are not part of the primSchema should have \p custom
     /// set to true.
+    ///
+    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
+    /// contain double data will result in primvars of the appropriate
+    /// float-based type. Otherwise, their type will be double-based.
     static UsdGeomPrimvar GetOrCreatePrimvar(
             const MPlug& attrPlug,
             UsdGeomImageable& imageable,
             const std::string& primvarName,
             const TfToken& interpolation = TfToken(),
             const int elementSize = -1,
-            const bool custom = false);
+            const bool custom = false,
+            const bool translateMayaDoubleToUsdSinglePrecision =
+                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a UsdRi attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
+    ///
+    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
+    /// contain double data will result in UsdRi attributes of the appropriate
+    /// float-based type. Otherwise, their type will be double-based.
     static UsdAttribute GetOrCreateUsdRiAttribute(
             const MPlug& attrPlug,
             const UsdPrim& usdPrim,
             const std::string& attrName,
-            const std::string& nameSpace = "user");
+            const std::string& nameSpace = "user",
+            const bool translateMayaDoubleToUsdSinglePrecision =
+                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.
+    ///
+    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
+    /// contain double data will be set on \p usdAttr as the appropriate
+    /// float-based type. Otherwise, their data will be set as the appropriate
+    /// double-based type.
     static bool SetUsdAttr(
-            const MPlug &attrPlug, 
-            const UsdAttribute& usdAttr, 
-            const UsdTimeCode &usdTime);
+            const MPlug& attrPlug,
+            const UsdAttribute& usdAttr,
+            const UsdTimeCode& usdTime,
+            const bool translateMayaDoubleToUsdSinglePrecision =
+                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given a Maya node at \p dagPath, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time

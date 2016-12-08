@@ -42,6 +42,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (USD_UserExportedAttributesJson)
     (usdAttrName)
     (usdAttrType)
+    (translateMayaDoubleToUsdSinglePrecision)
     ((UserPropertiesNamespace, "userProperties:"))
 );
 
@@ -49,8 +50,14 @@ PxrUsdMayaUserTaggedAttribute::PxrUsdMayaUserTaggedAttribute(
         const MPlug plug,
         const std::string& name,
         const TfToken& type,
-        const TfToken& interpolation)
-        : _plug(plug), _name(name), _type(type), _interpolation(interpolation)
+        const TfToken& interpolation,
+        const bool translateMayaDoubleToUsdSinglePrecision)
+        : _plug(plug),
+          _name(name),
+          _type(type),
+          _interpolation(interpolation),
+          _translateMayaDoubleToUsdSinglePrecision(
+              translateMayaDoubleToUsdSinglePrecision)
 {
 }
 
@@ -85,7 +92,14 @@ PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation() const
     return _interpolation;
 }
 
-static std::string
+bool
+PxrUsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision() const
+{
+    return _translateMayaDoubleToUsdSinglePrecision;
+}
+
+static
+std::string
 _GetExportAttributeMetadata(
         const JsObject& attrMetadata,
         const TfToken& keyToken)
@@ -94,6 +108,22 @@ _GetExportAttributeMetadata(
     JsObject::const_iterator attrMetadataIter = attrMetadata.find(keyToken);
     if (attrMetadataIter != attrMetadata.end()) {
         value = attrMetadataIter->second.GetString();
+    }
+
+    return value;
+}
+
+static
+bool
+_GetExportAttributeMetadata(
+        const JsObject& attrMetadata,
+        const TfToken& keyToken,
+        const bool defaultValue)
+{
+    bool value = defaultValue;
+    JsObject::const_iterator attrMetadataIter = attrMetadata.find(keyToken);
+    if (attrMetadataIter != attrMetadata.end()) {
+        value = attrMetadataIter->second.GetBool();
     }
 
     return value;
@@ -168,6 +198,15 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             _GetExportAttributeMetadata(attrMetadata,
                                         UsdGeomTokens->interpolation));
 
+        // Check whether it was specified that the double precision Maya
+        // attribute type should be mapped to a single precision USD type.
+        // If it wasn't specified, use the fallback value.
+        bool translateMayaDoubleToUsdSinglePrecision(
+            _GetExportAttributeMetadata(
+                attrMetadata,
+                _tokens->translateMayaDoubleToUsdSinglePrecision,
+                GetFallbackTranslateMayaDoubleToUsdSinglePrecision()));
+
         // Check whether the USD attribute name should be different than the
         // Maya attribute name.
         std::string usdAttrName =
@@ -198,7 +237,11 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             continue;
         }
 
-        result.emplace_back(attrPlug, usdAttrName, usdAttrType, interpolation);
+        result.emplace_back(attrPlug,
+                            usdAttrName,
+                            usdAttrType,
+                            interpolation,
+                            translateMayaDoubleToUsdSinglePrecision);
     }
 
     return result;

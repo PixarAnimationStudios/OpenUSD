@@ -25,7 +25,15 @@ import json
 
 from pxr import UsdGeom
 
+# XXX: The try/except here is temporary until we change the Pixar-internal
+# package name to match the external package name.
+try:
+    from pxr import UsdMaya
+except ImportError:
+    from pixar import UsdMaya
+
 from maya import cmds
+from maya import OpenMaya as OM
 from maya.app.general import mayaMixin
 
 from PySide import QtCore
@@ -52,9 +60,123 @@ PRIMVAR_INTERPOLATION_OPTIONS = [
     UsdGeom.Tokens.faceVarying
 ]
 
+# The attribute object will store this value internally and write it into the
+# JSON as a boolean, but these strings will be returned by the property getter
+# and shown in the UI.
+DOUBLE_TO_SINGLE_PRECISION_OPTIONS = [
+    'No',
+    'Yes'
+]
+
+# This set represents the MFnNumericData types that will be cast from double
+# precision to single precision when translateMayaDoubleToUsdSinglePrecision
+# is True.
+DOUBLE_NUMERIC_DATA_TYPES = {
+    OM.MFnNumericData.kDouble,
+    OM.MFnNumericData.k2Double,
+    OM.MFnNumericData.k3Double,
+    OM.MFnNumericData.k4Double
+}
+
+# This set represents the MFnData types that will be cast from double precision
+# to single precision when translateMayaDoubleToUsdSinglePrecision is True.
+# Note that we do NOT include kMatrix here, since Matrix4f is not a supported
+# type in Sdf.
+DOUBLE_TYPED_DATA_TYPES = {
+    OM.MFnData.kDoubleArray,
+    OM.MFnData.kPointArray,
+    OM.MFnData.kVectorArray
+}
+
+# This set represents the MFnUnitAttribute types that will be cast from double
+# precision to single precision when translateMayaDoubleToUsdSinglePrecision
+# is True.
+DOUBLE_UNIT_DATA_TYPES = {
+    OM.MFnUnitAttribute.kAngle,
+    OM.MFnUnitAttribute.kDistance
+}
+
 RESERVED_ATTRIBUTES = set([EXPORTED_ATTRS_MAYA_ATTR_NAME])
 
 ITEM_MIME_TYPE = 'application/x-maya-usdmaya-user-exported-attributes'
+
+
+def _GetMayaAttributePlug(mayaNodeName, mayaAttrName):
+    selectionList = OM.MSelectionList()
+    selectionList.add(mayaNodeName)
+    node = OM.MObject()
+    selectionList.getDependNode(0, node)
+    if not node or node.isNull():
+        return None
+
+    depNodeFn = OM.MFnDependencyNode(node)
+    if not depNodeFn:
+        return None
+
+    if not depNodeFn.hasAttribute(mayaAttrName):
+        return None
+
+    plug = depNodeFn.findPlug(mayaAttrName)
+    if not plug or plug.isNull():
+        return None
+
+    return plug
+
+def _GetMayaAttributeNumericTypedAndUnitDataTypes(attrPlug):
+    numericDataType = OM.MFnNumericData.kInvalid
+    typedDataType = OM.MFnData.kInvalid
+    unitDataType = OM.MFnUnitAttribute.kInvalid
+
+    attrObj = attrPlug.attribute()
+    if not attrObj or attrObj.isNull():
+        return (numericDataType, typedDataType, unitDataType)
+
+    if attrObj.hasFn(OM.MFn.kNumericAttribute):
+        numericAttrFn = OM.MFnNumericAttribute(attrObj)
+        numericDataType = numericAttrFn.unitType()
+    elif attrObj.hasFn(OM.MFn.kTypedAttribute):
+        typedAttrFn = OM.MFnTypedAttribute(attrObj)
+        typedDataType = typedAttrFn.attrType()
+
+        if typedDataType == OM.MFnData.kNumeric:
+            # Inspect the type of the data itself to find the actual type.
+            plugObj = attrPlug.asMObject()
+            if plugObj.hasFn(OM.MFn.kNumericData):
+                numericDataFn = OM.MFnNumericData(plugObj)
+                numericDataType = numericDataFn.numericType()
+    elif attrObj.hasFn(OM.MFn.kUnitAttribute):
+        unitAttrFn = OM.MFnUnitAttribute(attrObj)
+        unitDataType = unitAttrFn.unitType()
+
+    return (numericDataType, typedDataType, unitDataType)
+
+def _ShouldEnableDoublePrecisionEditor(mayaAttrName):
+    if not mayaAttrName:
+        return False
+
+    selectedNodeNames = cmds.ls(selection=True, long=True)
+    if not selectedNodeNames:
+        return False
+
+    # Assume all nodes should use the editor until we find one that shouldn't.
+    # As soon as we find a non-match, we disable the editor for all of them.
+    for nodeName in selectedNodeNames:
+        attrPlug = _GetMayaAttributePlug(nodeName, mayaAttrName)
+        if not attrPlug:
+            return False
+
+        (numericDataType,
+         typedDataType,
+         unitDataType) = _GetMayaAttributeNumericTypedAndUnitDataTypes(attrPlug)
+
+        if (numericDataType not in DOUBLE_NUMERIC_DATA_TYPES and
+                typedDataType not in DOUBLE_TYPED_DATA_TYPES and
+                unitDataType not in DOUBLE_UNIT_DATA_TYPES):
+            # This is not a numeric, typed, or unit data type attr that can be
+            # down-cast, so disable the editor.
+            return False
+
+    return True
 
 
 class ExportedAttribute(object):
@@ -69,9 +191,12 @@ class ExportedAttribute(object):
         self._usdAttrType = None
         self._usdAttrName = None
         self._primvarInterpolation = None
+        self._translateMayaDoubleToUsdSinglePrecision = (
+            UsdMaya.UserTaggedAttribute.GetFallbackTranslateMayaDoubleToUsdSinglePrecision())
 
     def __eq__(self, other):
-        # Note that _primvarInterpolation does not factor in here.
+        # Note that _primvarInterpolation and
+        # _translateMayaDoubleToUsdSinglePrecision do not factor in here.
         return (self._mayaAttrName == other._mayaAttrName and
                 self._usdAttrType == other._usdAttrType and
                 self._usdAttrName == other._usdAttrName)
@@ -131,6 +256,22 @@ class ExportedAttribute(object):
         else:
             self._primvarInterpolation = value
 
+    @property
+    def translateMayaDoubleToUsdSinglePrecision(self):
+        if self._translateMayaDoubleToUsdSinglePrecision:
+            return 'Yes'
+        else:
+            return 'No'
+
+    @translateMayaDoubleToUsdSinglePrecision.setter
+    def translateMayaDoubleToUsdSinglePrecision(self, value):
+        if value == 'Yes':
+            self._translateMayaDoubleToUsdSinglePrecision = True
+        elif value == 'No':
+            self._translateMayaDoubleToUsdSinglePrecision = False
+        else:
+            self._translateMayaDoubleToUsdSinglePrecision = bool(value)
+
     def GetJsonDict(self):
         """
         This method returns a dictionary representation of this object
@@ -143,6 +284,12 @@ class ExportedAttribute(object):
             result[self._mayaAttrName]['usdAttrName'] = self._usdAttrName
         if self._primvarInterpolation:
             result[self._mayaAttrName]['interpolation'] = self._primvarInterpolation
+
+        # Only include translateMayaDoubleToUsdSinglePrecision if it is enabled.
+        if self._translateMayaDoubleToUsdSinglePrecision:
+            result[self._mayaAttrName]['translateMayaDoubleToUsdSinglePrecision'] = (
+                self._translateMayaDoubleToUsdSinglePrecision)
+
         return result
 
     @staticmethod
@@ -168,6 +315,10 @@ class ExportedAttribute(object):
             exportedAttr.usdAttrType = attrMetadata.get('usdAttrType')
             exportedAttr.usdAttrName = attrMetadata.get('usdAttrName')
             exportedAttr.primvarInterpolation = attrMetadata.get('interpolation')
+            exportedAttr.translateMayaDoubleToUsdSinglePrecision = (
+                attrMetadata.get(
+                    'translateMayaDoubleToUsdSinglePrecision',
+                    UsdMaya.UserTaggedAttribute.GetFallbackTranslateMayaDoubleToUsdSinglePrecision()))
             result.append(exportedAttr)
 
         return result
@@ -250,7 +401,8 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
     USD_ATTR_TYPE_COLUMN = 1
     USD_ATTR_NAME_COLUMN = 2
     PRIMVAR_INTERPOLATION_COLUMN = 3
-    NUM_COLUMNS = 4
+    DOUBLE_PRECISION_COLUMN = 4
+    NUM_COLUMNS = 5
 
     def __init__(self, exportedAttrs=None, parent=None):
         super(ExportedAttributesModel, self).__init__(parent=parent)
@@ -282,7 +434,8 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
             'Maya Attribute Name',
             'USD Attribute Type',
             'USD Attribute Name',
-            'Interpolation']
+            'Interpolation',
+            'Double-to-Single Precision']
 
         COLUMN_TOOLTIPS = [
             'The name of the Maya node attribute to be exported to USD',
@@ -290,7 +443,9 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
             'Which name to use for the attribute in USD\n' +
                 '(If empty, the Maya Attribute Name will be used, and for USD-type\n' +
                 'attributes, they will be exported into the "userProperties" namespace)',
-            'Which interpolation to use for primvar-type attributes'
+            'Which interpolation to use for primvar-type attributes',
+            'Whether a single precision type should be used to store the attribute\n' +
+                'value in USD if the Maya node attribute stores it in double precision'
         ]
 
         if role == QtCore.Qt.DisplayRole:
@@ -318,6 +473,8 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
             value = exportedAttr.usdAttrName
         elif column == ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN:
             value = exportedAttr.primvarInterpolation
+        elif column == ExportedAttributesModel.DOUBLE_PRECISION_COLUMN:
+            value = exportedAttr.translateMayaDoubleToUsdSinglePrecision
 
         return value
 
@@ -336,6 +493,8 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
             exportedAttr.usdAttrName = value
         elif column == ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN:
             exportedAttr.primvarInterpolation = value
+        elif column == ExportedAttributesModel.DOUBLE_PRECISION_COLUMN:
+            exportedAttr.translateMayaDoubleToUsdSinglePrecision = value
         else:
             return False
 
@@ -367,6 +526,12 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
             # The primvar column is only editable if this is a primvar.
             exportedAttr = self._exportedAttrs[index.row()]
             if exportedAttr.usdAttrType == USD_ATTR_TYPE_PRIMVAR:
+                itemFlags |= QtCore.Qt.ItemIsEditable
+        elif column == ExportedAttributesModel.DOUBLE_PRECISION_COLUMN:
+            # The double-to-single precision column is only editable if the
+            # Maya attribute stores double precision data.
+            exportedAttr = self._exportedAttrs[index.row()]
+            if _ShouldEnableDoublePrecisionEditor(exportedAttr.mayaAttrName):
                 itemFlags |= QtCore.Qt.ItemIsEditable
 
         return itemFlags
@@ -447,6 +612,9 @@ class ExportedAttributesView(QtGui.QTableView):
 
         self.setItemDelegateForColumn(ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN,
             ExportedAttributesViewItemDelegate(PRIMVAR_INTERPOLATION_OPTIONS, self))
+
+        self.setItemDelegateForColumn(ExportedAttributesModel.DOUBLE_PRECISION_COLUMN,
+            ExportedAttributesViewItemDelegate(DOUBLE_TO_SINGLE_PRECISION_OPTIONS, self))
 
     def dragEnterEvent(self, event):
         if event.source() == self:
@@ -697,6 +865,16 @@ class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QtGui.QWid
                 primvarInterpolationIndex = self.exportedAttrsModel.index(row,
                     ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN)
                 self.exportedAttrsView.openPersistentEditor(primvarInterpolationIndex)
+
+            # Only open the double-to-single precision editor if the Maya
+            # attribute is double-based.
+            mayaAttrNameIndex = self.exportedAttrsModel.index(row,
+                ExportedAttributesModel.MAYA_ATTR_NAME_COLUMN)
+            mayaAttrName = self.exportedAttrsModel.data(mayaAttrNameIndex)
+            if _ShouldEnableDoublePrecisionEditor(mayaAttrName):
+                doublePrecisionIndex = self.exportedAttrsModel.index(row,
+                    ExportedAttributesModel.DOUBLE_PRECISION_COLUMN)
+                self.exportedAttrsView.openPersistentEditor(doublePrecisionIndex)
 
         self.exportedAttrsView.resizeColumnsToContents()
 
