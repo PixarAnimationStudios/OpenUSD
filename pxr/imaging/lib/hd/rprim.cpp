@@ -123,7 +123,7 @@ HdRprim::_UpdateVisibility(HdChangeTracker::DirtyBits *dirtyBits)
 }
 
 bool 
-HdRprim::IsInCollection(TfToken const& collectionName)
+HdRprim::IsInCollection(TfToken const& collectionName) const
 {
     return _delegate->IsInCollection(_id, collectionName);
 }
@@ -155,6 +155,11 @@ HdRprim::SetPrimId(int32_t primId)
 
 HdSceneDelegate* 
 HdRprim::GetDelegate() {
+    return _delegate;
+}
+
+HdSceneDelegate*
+HdRprim::GetDelegate() const {
     return _delegate;
 }
 

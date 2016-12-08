@@ -40,8 +40,6 @@ class HdRepr;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
-typedef boost::shared_ptr<class HdRprim> HdRprimSharedPtr;
-typedef boost::shared_ptr<class HdRprim const> HdRprimConstSharedPtr;
 
 /// \class HdRprim
 ///
@@ -67,7 +65,7 @@ public:
     GfRange3d GetExtent();
 
     /// Returns true if the rprim exists in the named collection.
-    bool IsInCollection(TfToken const& collectionName);
+    bool IsInCollection(TfToken const& collectionName) const;
 
     /// Returns the identifier of this Rprim. This is both used in the
     /// RenderIndex and the SceneDelegate and acts as the associative key for
@@ -104,6 +102,11 @@ public:
 
     /// Returns the SceneDelegate object that is backing this Rprim.
     HdSceneDelegate* GetDelegate();
+
+    /// Returns the SceneDelegate object that is backing this Rprim.
+    /// Note: The scene delegate returned is non-const as the scene
+    /// delegate may need to perform mutable operations.
+    HdSceneDelegate* GetDelegate() const;
 
 protected:
     virtual HdReprSharedPtr const & _GetRepr(

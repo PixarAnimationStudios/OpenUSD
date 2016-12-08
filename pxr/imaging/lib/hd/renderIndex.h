@@ -38,13 +38,12 @@
 
 #include <vector>
 
+class HdRprim;
 class HdDrawItem;
 class HdRprimCollection;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::shared_ptr<class HdRprim> HdRprimSharedPtr;
-typedef boost::shared_ptr<class HdRprim const> HdRprimConstSharedPtr;
 typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
 typedef boost::shared_ptr<class HdInstancer> HdInstancerSharedPtr;
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
@@ -129,7 +128,7 @@ public:
     }
 
     /// Returns the rprim of id
-    HdRprimSharedPtr const &GetRprim(SdfPath const &id) const;
+    HdRprim const *GetRprim(SdfPath const &id) const;
 
     /// Returns true if the given RprimID is a member of the collection.
     bool IsInCollection(SdfPath const& id, TfToken const& collectionName) const;
@@ -260,12 +259,12 @@ private:
     void _CompactPrimIds();
 
     // Allocate the next available instance id to the prim
-    void _AllocatePrimId(HdRprimSharedPtr prim);
+    void _AllocatePrimId(HdRprim* prim);
     
     // Insert rprimID into the delegateRprimMap.
     void _TrackDelegateRprim(HdSceneDelegate* delegate, 
                              SdfPath const& rprimID,
-                             HdRprimSharedPtr const& rprim);
+                             HdRprim* rprim);
 
     // Inserts the shader into the index and updates tracking state.
     void _TrackDelegateShader(HdSceneDelegate* delegate, 
@@ -295,7 +294,7 @@ private:
     struct _RprimInfo {
         SdfPath delegateID;
         size_t childIndex;
-        HdRprimSharedPtr rprim;
+        HdRprim *rprim;
     };
 
     typedef TfHashMap<SdfPath, HdSurfaceShaderSharedPtr, SdfPath::Hash> _ShaderMap;
@@ -358,7 +357,7 @@ HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
     if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, id)))
         return;
     
-    HdRprimSharedPtr rprim = boost::make_shared<T>(delegate, id, instancerId);
+    HdRprim *rprim = new T(delegate, id, instancerId);
     _TrackDelegateRprim(delegate, id, rprim);
 }
 

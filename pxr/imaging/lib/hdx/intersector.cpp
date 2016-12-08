@@ -409,7 +409,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
                     ((elementIds[idIndex+1] & 0xff) <<  8) |
                     ((elementIds[idIndex+2] & 0xff) << 16);
 
-    HdRprimSharedPtr const& rprim = _index->GetRprim(hit->objectId);
+    HdRprim const* rprim = _index->GetRprim(hit->objectId);
     if (not TF_VERIFY(rprim, "%s\n", hit->objectId.GetText())) {
         return false;
     }

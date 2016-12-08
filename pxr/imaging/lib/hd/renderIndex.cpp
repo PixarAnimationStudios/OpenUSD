@@ -29,13 +29,13 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/glslfxShader.h"
+#include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -174,6 +174,7 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
+
     _RprimMap::iterator rit = _rprimMap.find(id);
     if (rit == _rprimMap.end())
         return;
@@ -215,6 +216,11 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     }
 
     _tracker.RprimRemoved(id);
+
+    // Delete the actual rprim
+    delete rprimInfo.rprim;
+    rprimInfo.rprim = nullptr;
+
     _rprimIDSet.erase(id);
     _rprimMap.erase(rit);
 }
@@ -225,6 +231,9 @@ HdRenderIndex::Clear()
     HD_TRACE_FUNCTION();
     TF_FOR_ALL(it, _rprimMap) {
         _tracker.RprimRemoved(it->first);
+        _RprimInfo &rprimInfo = it->second;
+        delete rprimInfo.rprim;
+        rprimInfo.rprim = nullptr;
     }
     // Clear Rprims, Rprim IDs, and delegate mappings.
     _rprimIDSet.clear();
@@ -301,7 +310,7 @@ HdRenderIndex::GetDelegateRprimIDs(SdfPath const& delegateID) const
 void 
 HdRenderIndex::_TrackDelegateRprim(HdSceneDelegate* delegate, 
                                    SdfPath const& rprimID,
-                                   HdRprimSharedPtr const& rprim)
+                                   HdRprim * rprim)
 {
     _rprimIDSet.insert(rprimID);
     _tracker.RprimInserted(rprimID, rprim->GetInitialDirtyBitsMask());
@@ -310,8 +319,12 @@ HdRenderIndex::_TrackDelegateRprim(HdSceneDelegate* delegate,
     SdfPathVector* vec = &_delegateRprimMap[delegate->GetDelegateID()];
     vec->push_back(rprimID);
 
-    _RprimInfo info = { delegate->GetDelegateID(), vec->size()-1, rprim };
-    _rprimMap[rprimID] = info;
+    _RprimInfo info = {
+      delegate->GetDelegateID(),
+      vec->size()-1,
+      rprim
+    };
+    _rprimMap[rprimID] = std::move(info);
 
     SdfPath instanceId = rprim->GetInstancerId();
 
@@ -528,14 +541,14 @@ HdRenderIndex::GetRenderDelegateType() const
 
 static
 void
-_AppendDrawItem(HdRprimSharedPtr const& rprim,
+_AppendDrawItem(HdRprim* rprim,
                 TfToken const& collectionName,
                 TfToken const& reprName,
                 bool forcedRepr,
                 tbb::concurrent_vector<HdDrawItem const*>* result)
 {
     if (rprim->IsInCollection(collectionName)) {
-        TF_FOR_ALL(drawItemIt, *rprim->GetDrawItems(reprName, forcedRepr)) {
+        TF_FOR_ALL(drawItemIt, *(rprim->GetDrawItems(reprName, forcedRepr))) {
             result->push_back(&(*drawItemIt));
         }
     }
@@ -603,7 +616,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
             // Main loop.
             for (; pathIt != children->end(); pathIt++) {
                 // Grab the current item.
-                HdRprimSharedPtr const& rprim = info->rprim;
+                HdRprim* rprim = info->rprim;
                 // Prefetch the next item.
                 info = TfMapLookupPtr(_rprimMap, *pathIt);
 
@@ -705,14 +718,14 @@ HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath) const
 
 namespace {
     struct _RprimSyncRequestVector {
-        void PushBack(HdRprimSharedPtr const* rprim,
+        void PushBack(HdRprim *rprim,
                       size_t reprsMask,
                       int dirtyBits, 
                       int maskedDirtyBits)
         {
             rprims.push_back(rprim);
             reprsMasks.push_back(reprsMask);
-            request.IDs.push_back((*rprim)->GetId());
+            request.IDs.push_back(rprim->GetId());
             request.allDirtyBits.push_back(dirtyBits);
             request.maskedDirtyBits.push_back(maskedDirtyBits);
         }
@@ -727,7 +740,7 @@ namespace {
             request.textureIDs.push_back(textureID);
         }
 
-        std::vector<HdRprimSharedPtr const*> rprims;
+        std::vector<HdRprim *> rprims;
         std::vector<size_t> reprsMasks;
         HdSyncRequestVector request;
     };
@@ -793,21 +806,21 @@ namespace {
         {
             for (size_t i = begin; i < end; ++i)
             {
-                HdRprimSharedPtr const& rprim = *_r.rprims[i];
+                HdRprim &rprim = *_r.rprims[i];
                 size_t reprsMask = _r.reprsMasks[i];
 
                 int dirtyBits = _r.request.allDirtyBits[i];
 
                 TF_FOR_ALL(it, _reprs) {
                     if (reprsMask & 1) {
-                        rprim->Sync(it->reprName,
+                        rprim.Sync(it->reprName,
                                     it->forcedRepr,
                                     &dirtyBits);
                     }
                     reprsMask >>= 1;
                 }
 
-                _tracker.MarkRprimClean(rprim->GetId(), dirtyBits);
+                _tracker.MarkRprimClean(rprim.GetId(), dirtyBits);
             }
         }
     };
@@ -925,7 +938,7 @@ HdRenderIndex::SyncAll()
                 curvec = &syncMap[curdel];
             }
             // XXX: maskedDirtyBits (the last argument) can be removed.
-            curvec->PushBack(&it->second.rprim, reprsMask, dirtyBits, dirtyBits);
+            curvec->PushBack(it->second.rprim, reprsMask, dirtyBits, dirtyBits);
         }
 
         // Use a heuristic to determine whether or not to destroy the entire
@@ -1058,7 +1071,7 @@ HdRenderIndex::_CompactPrimIds()
 }
 
 void
-HdRenderIndex::_AllocatePrimId(HdRprimSharedPtr prim)
+HdRenderIndex::_AllocatePrimId(HdRprim *prim)
 {
     HD_TRACE_FUNCTION();
     int32_t maxId = (1 << 24) - 1;
@@ -1148,7 +1161,7 @@ HdRenderIndex::GetInstancer(SdfPath const &id) const
     return instancer;
 }
 
-HdRprimSharedPtr const &
+HdRprim const *
 HdRenderIndex::GetRprim(SdfPath const &id) const
 {
     HD_TRACE_FUNCTION();
@@ -1158,6 +1171,5 @@ HdRenderIndex::GetRprim(SdfPath const &id) const
     if (it != _rprimMap.end())
         return it->second.rprim;
 
-    static HdRprimSharedPtr EMPTY;
-    return EMPTY;
+    return nullptr;
 }
