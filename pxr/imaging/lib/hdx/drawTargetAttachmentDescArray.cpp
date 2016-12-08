@@ -25,6 +25,10 @@
 
 HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray()
  : _attachments()
+ , _depthWrapS(HdWrapRepeat)
+ , _depthWrapT(HdWrapRepeat)
+ , _depthMinFilter(HdMinFilterLinear)
+ , _depthMagFilter(HdMagFilterLinear)
 {
 
 }
@@ -40,6 +44,10 @@ HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
 HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
                                     const HdxDrawTargetAttachmentDescArray &copy)
   : _attachments(copy._attachments)
+  , _depthWrapS(copy._depthWrapS)
+  , _depthWrapT(copy._depthWrapT)
+  , _depthMinFilter(copy._depthMinFilter)
+  , _depthMagFilter(copy._depthMagFilter)
 {
 
 }
@@ -49,7 +57,11 @@ HdxDrawTargetAttachmentDescArray &
 HdxDrawTargetAttachmentDescArray::operator =(
                                     const HdxDrawTargetAttachmentDescArray &copy)
 {
-    _attachments = copy._attachments;
+    _attachments    = copy._attachments;
+    _depthWrapS     = copy._depthWrapS;
+    _depthWrapT     = copy._depthWrapT;
+    _depthMinFilter = copy._depthMinFilter;
+    _depthMagFilter = copy._depthMagFilter;
 
     return *this;
 }
@@ -57,10 +69,20 @@ HdxDrawTargetAttachmentDescArray::operator =(
 
 void
 HdxDrawTargetAttachmentDescArray::AddAttachment(const std::string &name,
-                                               HdFormat           format,
-                                               const VtValue      &clearColor)
+                                                HdFormat           format,
+                                                const VtValue      &clearColor,
+                                                HdWrap             wrapS,
+                                                HdWrap             wrapT,
+                                                HdMinFilter        minFilter,
+                                                HdMagFilter        magFilter)
 {
-    _attachments.emplace_back(name, format, clearColor);
+    _attachments.emplace_back(name,
+                              format,
+                              clearColor,
+                              wrapS,
+                              wrapT,
+                              minFilter,
+                              magFilter);
 }
 
 
@@ -77,11 +99,27 @@ HdxDrawTargetAttachmentDescArray::GetAttachment(size_t idx) const
     return _attachments[idx];
 }
 
+void
+HdxDrawTargetAttachmentDescArray::SetDepthSampler(HdWrap      depthWrapS,
+                                                  HdWrap      depthWrapT,
+                                                  HdMinFilter depthMinFilter,
+                                                  HdMagFilter depthMagFilter)
+{
+    _depthWrapS = depthWrapS;
+    _depthWrapT = depthWrapT;
+    _depthMinFilter = depthMinFilter;
+    _depthMagFilter = depthMagFilter;
+}
+
 
 size_t
 HdxDrawTargetAttachmentDescArray::GetHash() const
 {
     size_t hash = boost::hash_value(_attachments);
+    boost::hash_combine(hash, _depthWrapS);
+    boost::hash_combine(hash, _depthWrapT);
+    boost::hash_combine(hash, _depthMinFilter);
+    boost::hash_combine(hash, _depthMagFilter);
 
     return hash;
 }
@@ -100,6 +138,11 @@ HdxDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
         const HdxDrawTargetAttachmentDesc &desc = _attachments[attachmentNum];
         out << desc;
     }
+
+    out << _depthWrapS     << " "
+        << _depthWrapT     << " "
+        << _depthMinFilter << " "
+        << _depthMagFilter << " ";
 }
 
 
@@ -107,7 +150,11 @@ bool
 HdxDrawTargetAttachmentDescArray::operator==(
                              const HdxDrawTargetAttachmentDescArray &other) const
 {
-    return (_attachments == other._attachments);
+    return ((_attachments     == other._attachments)    &&
+            (_depthWrapS      == other._depthWrapS)     &&
+            (_depthWrapT      == other._depthWrapT)     &&
+            (_depthMinFilter  == other._depthMinFilter) &&
+            (_depthMagFilter  == other._depthMagFilter));
 }
 
 
@@ -115,7 +162,11 @@ bool
 HdxDrawTargetAttachmentDescArray::operator!=(
                             const HdxDrawTargetAttachmentDescArray &other) const
 {
-    return (_attachments != other._attachments);
+    return ((_attachments     != other._attachments)    ||
+            (_depthWrapS      != other._depthWrapS)     ||
+            (_depthWrapT      != other._depthWrapT)     ||
+            (_depthMinFilter  != other._depthMinFilter) ||
+            (_depthMagFilter  != other._depthMagFilter));
 }
 
 

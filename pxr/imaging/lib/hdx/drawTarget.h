@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -124,17 +125,22 @@ private:
     HdRprimCollectionVector _collections;
 
     HdxDrawTargetRenderPassState _renderPassState;
+    std::vector<HdTextureResourceSharedPtr> _colorTextureResources;
+    HdTextureResourceSharedPtr              _depthTextureResource;
 
     /// The context which owns the draw target object.
     GlfGLContextSharedPtr  _drawTargetContext;
     GlfDrawTargetRefPtr    _drawTarget;
 
     void _SetAttachments(const HdxDrawTargetAttachmentDescArray &attachments);
+
     void _SetCamera(const SdfPath &cameraPath);
 
     HdSprimSharedPtr _GetCamera() const;
 
     void _ResizeDrawTarget();
+    void _RegisterTextureResource(const std::string &name,
+                                  HdTextureResourceSharedPtr *resourcePtr);
 
     // No copy
     HdxDrawTarget()                                 = delete;

@@ -48,6 +48,7 @@ pxr_shared_library(hdx
         version.h
 
     PRIVATE_CLASSES
+        drawTargetTextureResource
         unitTestDelegate
 
     RESOURCE_FILES

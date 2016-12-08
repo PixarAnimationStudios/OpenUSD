@@ -272,7 +272,13 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
     _ValueCache &cache = _valueCacheMap[id];
 
     HdxDrawTargetAttachmentDescArray attachments;
-    attachments.AddAttachment("color", HdFormatR8G8B8A8UNorm, VtValue(GfVec4f(1,1,0,1)));
+    attachments.AddAttachment("color",
+                              HdFormatR8G8B8A8UNorm,
+                              VtValue(GfVec4f(1,1,0,1)),
+                              HdWrapRepeat,
+                              HdWrapRepeat,
+                              HdMinFilterLinear,
+                              HdMagFilterLinear);
 
     cache[HdxDrawTargetTokens->enable]          = VtValue(true);
     cache[HdxDrawTargetTokens->camera]          = VtValue(SdfPath());

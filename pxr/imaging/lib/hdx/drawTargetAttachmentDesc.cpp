@@ -27,17 +27,29 @@ HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc()
  : _name()
  , _format(HdFormatUnknown)
  , _clearColor()
+ , _wrapS(HdWrapRepeat)
+ , _wrapT(HdWrapRepeat)
+ , _minFilter(HdMinFilterLinear)
+ , _magFilter(HdMagFilterLinear)
 {
 
 }
 
 
 HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(const std::string &name,
-                                                       HdFormat           format,
-                                                       const VtValue     &clearColor)
+                                                  HdFormat           format,
+                                                  const VtValue     &clearColor,
+                                                  HdWrap             wrapS,
+                                                  HdWrap             wrapT,
+                                                  HdMinFilter        minFilter,
+                                                  HdMagFilter        magFilter)
   : _name(name)
   , _format(format)
   , _clearColor(clearColor)
+  , _wrapS(wrapS)
+  , _wrapT(wrapT)
+  , _minFilter(minFilter)
+  , _magFilter(magFilter)
 {
 
 }
@@ -48,6 +60,10 @@ HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(
   : _name(copy._name)
   , _format(copy._format)
   , _clearColor(copy._clearColor)
+  , _wrapS(copy._wrapS)
+  , _wrapT(copy._wrapT)
+  , _minFilter(copy._minFilter)
+  , _magFilter(copy._magFilter)
 {
 
 }
@@ -59,6 +75,10 @@ HdxDrawTargetAttachmentDesc::operator =(const HdxDrawTargetAttachmentDesc &copy)
     _name       = copy._name;
     _format     = copy._format;
     _clearColor = copy._clearColor;
+    _wrapS      = copy._wrapS;
+    _wrapT      = copy._wrapT;
+    _minFilter  = copy._minFilter;
+    _magFilter  = copy._magFilter;
 
     return *this;
 }
@@ -70,6 +90,10 @@ HdxDrawTargetAttachmentDesc::GetHash() const
     size_t hash = boost::hash_value(_name);
     boost::hash_combine(hash, _format);
     boost::hash_combine(hash, _clearColor);
+    boost::hash_combine(hash, _wrapS);
+    boost::hash_combine(hash, _wrapT);
+    boost::hash_combine(hash, _minFilter);
+    boost::hash_combine(hash, _magFilter);
 
     return hash;
 }
@@ -80,7 +104,11 @@ HdxDrawTargetAttachmentDesc::Dump(std::ostream &out) const
 {
     out << _name        << " "
         << _format      << " "
-        << _clearColor;
+        << _clearColor  << " "
+        << _wrapS       << " "
+        << _wrapT       << " "
+        << _minFilter   << " "
+        << _magFilter;
 }
 
 
@@ -90,7 +118,11 @@ HdxDrawTargetAttachmentDesc::operator==(
 {
     return ((_name       == other._name)   &&
             (_format     == other._format) &&
-            (_clearColor == other._clearColor));
+            (_clearColor == other._clearColor) &&
+            (_wrapS      == other._wrapS) &&
+            (_wrapT      == other._wrapT) &&
+            (_minFilter  == other._minFilter) &&
+            (_magFilter  == other._magFilter));
 }
 
 
@@ -98,9 +130,13 @@ bool
 HdxDrawTargetAttachmentDesc::operator!=(
                                   const HdxDrawTargetAttachmentDesc &other) const
 {
-    return ((_name       != other._name)   ||
-            (_format     != other._format) ||
-            (_clearColor != other._clearColor));
+    return ((_name       != other._name)       ||
+            (_format     != other._format)     ||
+            (_clearColor != other._clearColor) ||
+            (_wrapS      != other._wrapS)      ||
+            (_wrapT      != other._wrapT)      ||
+            (_minFilter  != other._minFilter)  ||
+            (_magFilter  != other._magFilter));
 }
 
 
