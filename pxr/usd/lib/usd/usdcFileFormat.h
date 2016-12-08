@@ -51,9 +51,10 @@ public:
 
     virtual bool CanRead(const string &file) const;
 
-    virtual bool ReadFromFile(const SdfLayerBasePtr& layerBase,
-                              const string& filePath,
-                              bool metadataOnly) const;
+    virtual bool Read(
+        const SdfLayerBasePtr& layerBase,
+        const string& resolvedPath,
+        bool metadataOnly) const;
 
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,

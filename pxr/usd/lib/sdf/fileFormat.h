@@ -164,17 +164,19 @@ public:
     virtual bool CanRead(
         const std::string& file) const = 0;
 
-    /// Reads data in the file at \p filePath into the layer \p layerBase. If
-    /// the file is successfully read, this method returns true. Otherwise,
-    /// false is returned and errors are posted.
+    /// Reads scene description from the asset specified by \p resolvedPath
+    /// into the layer \p layerBase.
     ///
     /// \p metadataOnly is a flag that asks for only the layer metadata
-    //// to be read in, which can be much faster if that is all that is
+    /// to be read in, which can be much faster if that is all that is
     /// required.  Note that this is just a hint: some FileFormat readers
     /// may disregard this flag and still fully populate the layer contents.
-    virtual bool ReadFromFile(
+    ///
+    /// Returns true if the asset is successfully read into \p layerBase,
+    /// false otherwise.
+    virtual bool Read(
         const SdfLayerBasePtr& layerBase,
-        const std::string& filePath,
+        const std::string& resolvedPath,
         bool metadataOnly) const = 0;
 
     /// Writes the content in \p layerBase into the file at \p filePath. If the

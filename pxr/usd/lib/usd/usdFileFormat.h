@@ -63,9 +63,9 @@ public:
 
     virtual bool CanRead(const std::string &file) const;
 
-    virtual bool ReadFromFile(
+    virtual bool Read(
         const SdfLayerBasePtr& layerBase,
-        const std::string& filePath,
+        const std::string& resolvedPath,
         bool metadataOnly) const;
 
     virtual bool WriteToFile(

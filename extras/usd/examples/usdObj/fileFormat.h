@@ -54,9 +54,9 @@ public:
 
     // SdfFileFormat overrides.
     virtual bool CanRead(const std::string &file) const;
-    virtual bool ReadFromFile(const SdfLayerBasePtr& layerBase,
-                              const std::string& filePath,
-                              bool metadataOnly) const;
+    virtual bool Read(const SdfLayerBasePtr& layerBase,
+                      const std::string& resolvedPath,
+                      bool metadataOnly) const;
     virtual bool ReadFromString(const SdfLayerBasePtr& layerBase,
                                 const std::string& str) const;
 

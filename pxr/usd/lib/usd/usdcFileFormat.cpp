@@ -81,9 +81,9 @@ UsdUsdcFileFormat::CanRead(const string& filePath) const
 }
 
 bool
-UsdUsdcFileFormat::ReadFromFile(const SdfLayerBasePtr& layerBase,
-                                const string& filePath,
-                                bool metadataOnly) const
+UsdUsdcFileFormat::Read(const SdfLayerBasePtr& layerBase,
+                        const string& resolvedPath,
+                        bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
@@ -94,7 +94,7 @@ UsdUsdcFileFormat::ReadFromFile(const SdfLayerBasePtr& layerBase,
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
     auto crateData = TfDynamic_cast<Usd_CrateDataRefPtr>(data);
 
-    if (not crateData or not crateData->Open(filePath))
+    if (not crateData or not crateData->Open(resolvedPath))
         return false;
 
     // Just swap out the data - unlike text layers fully populated into memory,

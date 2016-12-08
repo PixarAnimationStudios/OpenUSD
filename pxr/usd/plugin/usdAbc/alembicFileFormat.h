@@ -46,9 +46,9 @@ public:
     // SdfFileFormat overrides
     virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const;
     virtual bool CanRead(const std::string &file) const;
-    virtual bool ReadFromFile(const SdfLayerBasePtr& layerBase,
-                              const std::string& filePath,
-                              bool metadataOnly) const;
+    virtual bool Read(const SdfLayerBasePtr& layerBase,
+                      const std::string& resolvedPath,
+                      bool metadataOnly) const;
     virtual bool WriteToFile(const SdfLayerBase* layerBase,
                              const std::string& filePath,
                              const std::string& comment = std::string(),

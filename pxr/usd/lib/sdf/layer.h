@@ -1352,10 +1352,11 @@ private:
     enum _ReloadResult { _ReloadFailed, _ReloadSucceeded, _ReloadSkipped };
     _ReloadResult _Reload(bool force);
 
-    // Reads content from the specified path into the target layer.
-    bool _ReadFromFile(const std::string& identifier, 
-                       const std::string& resolvedPath, 
-                       bool metadataOnly);
+    // Reads contents of asset specified by \p identifier with resolved
+    // path \p resolvedPath into this layer.
+    bool _Read(const std::string& identifier, 
+               const std::string& resolvedPath, 
+               bool metadataOnly);
     
     // Saves this layer if it is dirty or the layer doesn't already exist
     // on disk. If \p force is true, the layer will be written out

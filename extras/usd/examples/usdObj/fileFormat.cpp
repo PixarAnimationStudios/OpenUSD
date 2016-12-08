@@ -95,22 +95,22 @@ UsdObjFileFormat::_ReadFromStream(
 }
 
 bool
-UsdObjFileFormat::ReadFromFile(
+UsdObjFileFormat::Read(
     const SdfLayerBasePtr& layerBase,
-    const string& filePath,
+    const string& resolvedPath,
     bool metadataOnly) const
 {
     // try and open the file
-    std::ifstream fin(filePath.c_str());
+    std::ifstream fin(resolvedPath.c_str());
     if (!fin.is_open()) {
-        TF_RUNTIME_ERROR("Failed to open file \"%s\"", filePath.c_str());
+        TF_RUNTIME_ERROR("Failed to open file \"%s\"", resolvedPath.c_str());
         return false;
     }
 
     string error;
     if (not _ReadFromStream(layerBase, fin, metadataOnly, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ from file \"%s\": %s",
-                         filePath.c_str(), error.c_str());
+                         resolvedPath.c_str(), error.c_str());
         return false;
     }
     return true;

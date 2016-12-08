@@ -247,17 +247,17 @@ UsdUsdFileFormat::CanRead(const string& filePath) const
 }
 
 bool
-UsdUsdFileFormat::ReadFromFile(
+UsdUsdFileFormat::Read(
     const SdfLayerBasePtr& layerBase,
-    const string& filePath,
+    const string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
-    auto underlyingFileFormat = _GetUnderlyingFileFormat(filePath);
+    auto underlyingFileFormat = _GetUnderlyingFileFormat(resolvedPath);
 
     return underlyingFileFormat and
-        underlyingFileFormat->ReadFromFile(layerBase, filePath, metadataOnly);
+        underlyingFileFormat->Read(layerBase, resolvedPath, metadataOnly);
 }
 
 SdfFileFormatConstPtr 

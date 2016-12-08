@@ -83,9 +83,9 @@ UsdAbcAlembicFileFormat::CanRead(const string& filePath) const
 }
 
 bool
-UsdAbcAlembicFileFormat::ReadFromFile(
+UsdAbcAlembicFileFormat::Read(
     const SdfLayerBasePtr& layerBase,
-    const string& filePath,
+    const string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
@@ -97,7 +97,7 @@ UsdAbcAlembicFileFormat::ReadFromFile(
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
     UsdAbc_AlembicDataRefPtr abcData = TfStatic_cast<UsdAbc_AlembicDataRefPtr>(data);
-    if (not abcData->Open(filePath)) {
+    if (not abcData->Open(resolvedPath)) {
         return false;
     }
 

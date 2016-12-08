@@ -138,14 +138,14 @@ private:
 };
 
 bool
-SdfTextFileFormat::ReadFromFile(
+SdfTextFileFormat::Read(
     const SdfLayerBasePtr& layerBase,
-    const string& filePath,
+    const string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
-    Sdf_ScopedFilePointer fp(filePath.c_str());
+    Sdf_ScopedFilePointer fp(resolvedPath.c_str());
     if (not *fp)
         return false;
 
@@ -155,7 +155,7 @@ SdfTextFileFormat::ReadFromFile(
     }
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
-    if (not Sdf_ParseMenva(filePath, *fp, 
+    if (not Sdf_ParseMenva(resolvedPath, *fp, 
                            GetFormatId(),
                            GetVersionString(),
                            metadataOnly,

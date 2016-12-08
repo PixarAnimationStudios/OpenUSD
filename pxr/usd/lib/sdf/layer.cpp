@@ -696,7 +696,7 @@ SdfLayer::OpenAsAnonymous(
     }
 
     // Run the file parser to read in the file contents.
-    if (not layer->_ReadFromFile(layerPath, resolvedPath, metadataOnly)) {
+    if (not layer->_Read(layerPath, resolvedPath, metadataOnly)) {
         layer->_FinishInitialization(/* success = */ false);
         return TfNullPtr;
     }
@@ -790,8 +790,7 @@ SdfLayer::_Reload(bool force)
             return _ReloadSkipped;
         }
 
-        if (not _ReadFromFile(
-                GetIdentifier(), realPath, /* metadataOnly = */ false)) {
+        if (not _Read(GetIdentifier(), realPath, /* metadataOnly = */ false)) {
             return _ReloadFailed;
         }
 
@@ -841,7 +840,7 @@ SdfLayer::Import(const string &layerPath)
     if (filePath.empty())
         return false;
 
-    return _ReadFromFile(layerPath, filePath, /* metadataOnly = */ false);
+    return _Read(layerPath, filePath, /* metadataOnly = */ false);
 }
 
 bool
@@ -851,16 +850,16 @@ SdfLayer::ImportFromString(const std::string &s)
 }
 
 bool
-SdfLayer::_ReadFromFile(
+SdfLayer::_Read(
     const string& identifier,
     const string& resolvedPath,
     bool metadataOnly)
 {
     TRACE_FUNCTION();
-    TfAutoMallocTag tag("SdfLayer::_ReadFromFile");
+    TfAutoMallocTag tag("SdfLayer::_Read");
     TF_DESCRIBE_SCOPE("Loading layer '%s'", resolvedPath.c_str());
     TF_DEBUG(SDF_LAYER).Msg(
-        "SdfLayer::_ReadFromFile('%s', '%s', metadataOnly=%s)\n",
+        "SdfLayer::_Read('%s', '%s', metadataOnly=%s)\n",
         identifier.c_str(), resolvedPath.c_str(),
         TfStringify(metadataOnly).c_str());
 
@@ -869,19 +868,18 @@ SdfLayer::_ReadFromFile(
         if (not ArGetResolver().FetchToLocalResolvedPath(
                 identifier, resolvedPath)) {
             TF_DEBUG(SDF_LAYER).Msg(
-                "SdfLayer::_ReadFromFile - unable to fetch '%s' to "
+                "SdfLayer::_Read - unable to fetch '%s' to "
                 "local path '%s'\n",
                 identifier.c_str(), resolvedPath.c_str());
             return false;
         }
 
         TF_DEBUG(SDF_LAYER).Msg(
-            "SdfLayer::_ReadFromFile - fetched '%s' to local path '%s'\n",
+            "SdfLayer::_Read - fetched '%s' to local path '%s'\n",
             identifier.c_str(), resolvedPath.c_str());
     }
 
-    return format->ReadFromFile(
-        SdfLayerBasePtr(this), resolvedPath, metadataOnly);
+    return format->Read(SdfLayerBasePtr(this), resolvedPath, metadataOnly);
 }
 
 /*static*/
@@ -2817,7 +2815,7 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
             isAnonymous ? info.layerPath : resolvedPath;
 
         // Run the file parser to read in the file contents.
-        if (not layer->_ReadFromFile(info.identifier, resolvedPath, metadataOnly)) {
+        if (not layer->_Read(info.identifier, readFilePath, metadataOnly)) {
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;
         }
