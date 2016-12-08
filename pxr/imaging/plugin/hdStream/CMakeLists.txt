@@ -19,7 +19,7 @@ pxr_shared_library(hdStream
         work
         hd
         ${OPENSUBDIV_LIBRARIES}
-        ${TBB_LIBRARY}
+        ${TBB_LIBRARIES}
 
     INCLUDE_DIRS
         ${GLEW_INCLUDE_DIR}
