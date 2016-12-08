@@ -214,9 +214,9 @@ HdPoints::GetDirtyBitsMask(TfToken const &reprName)
         if (desc.geomStyle == HdPointsGeomStyleInvalid) {
             continue;
         }
-        mask |= HdChangeTracker::DirtyPrimVar;
-        mask |= HdChangeTracker::DirtyPoints;
-        mask |= HdChangeTracker::DirtyWidths;
+        mask |= HdChangeTracker::DirtyPoints
+             |  HdChangeTracker::DirtyPrimVar
+             |  HdChangeTracker::DirtyWidths;
     }
 
     return mask;
@@ -225,21 +225,18 @@ HdPoints::GetDirtyBitsMask(TfToken const &reprName)
 HdChangeTracker::DirtyBits 
 HdPoints::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean;
-
-    mask |= HdChangeTracker::DirtyPrimVar
-         |  HdChangeTracker::DirtyPoints
-         |  HdChangeTracker::DirtyWidths
-
-         |  HdChangeTracker::DirtyPrimID
-         |  HdChangeTracker::DirtyExtent
-         |  HdChangeTracker::DirtySurfaceShader
-         |  HdChangeTracker::DirtyTransform 
-         |  HdChangeTracker::DirtyVisibility 
-         |  HdChangeTracker::DirtyInstanceIndex
-         |  HdChangeTracker::DirtyRepr
-
-         ;
+    int mask = HdChangeTracker::Clean
+        | HdChangeTracker::DirtyExtent
+        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyPoints
+        | HdChangeTracker::DirtyPrimID
+        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyRepr
+        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyTransform
+        | HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyWidths
+        ;
 
     return (HdChangeTracker::DirtyBits)mask;
 }

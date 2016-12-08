@@ -542,14 +542,12 @@ HdBasisCurves::GetDirtyBitsMask(TfToken const &reprName)
             continue;
         }
 
-        mask |= HdChangeTracker::DirtyPrimVar;
-        mask |= HdChangeTracker::DirtyWidths;
-        mask |= HdChangeTracker::DirtyRefineLevel;
-
-        mask |= HdChangeTracker::DirtyPoints
-             |  HdChangeTracker::DirtyNormals
+        mask |= HdChangeTracker::DirtyNormals
+             |  HdChangeTracker::DirtyPoints
              |  HdChangeTracker::DirtyPrimVar
-             |  HdChangeTracker::DirtyTopology;
+             |  HdChangeTracker::DirtyRefineLevel
+             |  HdChangeTracker::DirtyTopology
+             |  HdChangeTracker::DirtyWidths;
     }
 
     return mask;
@@ -558,25 +556,21 @@ HdBasisCurves::GetDirtyBitsMask(TfToken const &reprName)
 HdChangeTracker::DirtyBits 
 HdBasisCurves::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean;
-
-    mask |= HdChangeTracker::DirtyPrimVar
-         |  HdChangeTracker::DirtyWidths
-         |  HdChangeTracker::DirtyRefineLevel
-         |  HdChangeTracker::DirtyPoints
-         |  HdChangeTracker::DirtyNormals
-         |  HdChangeTracker::DirtyPrimVar
-         |  HdChangeTracker::DirtyTopology
-
-         |  HdChangeTracker::DirtyPrimID
-         |  HdChangeTracker::DirtyExtent
-         |  HdChangeTracker::DirtySurfaceShader
-         |  HdChangeTracker::DirtyTransform 
-         |  HdChangeTracker::DirtyVisibility 
-         |  HdChangeTracker::DirtyInstanceIndex
-         |  HdChangeTracker::DirtyRepr
-
-         ;
+    int mask = HdChangeTracker::Clean
+        | HdChangeTracker::DirtyExtent
+        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyNormals
+        | HdChangeTracker::DirtyPoints
+        | HdChangeTracker::DirtyPrimID
+        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyRefineLevel
+        | HdChangeTracker::DirtyRepr
+        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyTopology
+        | HdChangeTracker::DirtyTransform 
+        | HdChangeTracker::DirtyVisibility 
+        | HdChangeTracker::DirtyWidths
+        ;
 
     return (HdChangeTracker::DirtyBits)mask;
 }

@@ -1229,11 +1229,12 @@ HdMesh::GetDirtyBitsMask(TfToken const &reprName)
 {
     HD_TRACE_FUNCTION();
 
-    int mask = HdChangeTracker::Clean;
-    mask |= HdChangeTracker::DirtyPrimVar;
-    mask |= HdChangeTracker::DirtyDoubleSided;
-    mask |= HdChangeTracker::DirtyRefineLevel;
-    mask |= HdChangeTracker::DirtyCullStyle;
+    int mask = HdChangeTracker::Clean
+        | HdChangeTracker::DirtyCullStyle
+        | HdChangeTracker::DirtyDoubleSided
+        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyRefineLevel
+        ;
 
     _MeshReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
 
@@ -1255,29 +1256,25 @@ HdMesh::GetDirtyBitsMask(TfToken const &reprName)
     return mask;
 }
 
-HdChangeTracker::DirtyBits 
+HdChangeTracker::DirtyBits
 HdMesh::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean;
-
-    mask |= HdChangeTracker::DirtyPrimVar
-         |  HdChangeTracker::DirtyDoubleSided
-         |  HdChangeTracker::DirtyRefineLevel
-         |  HdChangeTracker::DirtyCullStyle
-         |  HdChangeTracker::DirtyPoints
-         |  HdChangeTracker::DirtyPrimVar
-         |  HdChangeTracker::DirtyTopology
-         |  HdChangeTracker::DirtyNormals
-
-         |  HdChangeTracker::DirtyPrimID
-         |  HdChangeTracker::DirtyExtent
-         |  HdChangeTracker::DirtySurfaceShader
-         |  HdChangeTracker::DirtyTransform 
-         |  HdChangeTracker::DirtyVisibility 
-         |  HdChangeTracker::DirtyInstanceIndex
-         |  HdChangeTracker::DirtyRepr
-
-         ;
+    int mask = HdChangeTracker::Clean
+        | HdChangeTracker::DirtyCullStyle
+        | HdChangeTracker::DirtyDoubleSided
+        | HdChangeTracker::DirtyExtent
+        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyNormals
+        | HdChangeTracker::DirtyPoints
+        | HdChangeTracker::DirtyPrimID
+        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyRefineLevel
+        | HdChangeTracker::DirtyRepr
+        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyTopology
+        | HdChangeTracker::DirtyTransform
+        | HdChangeTracker::DirtyVisibility
+        ;
 
     return (HdChangeTracker::DirtyBits)mask;
 }
