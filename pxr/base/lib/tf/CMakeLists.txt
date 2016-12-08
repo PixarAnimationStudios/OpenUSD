@@ -303,6 +303,7 @@ pxr_build_test(testTf
 pxr_test_scripts(
     testenv/testTfCrashHandler.py
     testenv/testTfFileUtils.py
+    testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
     testenv/testTfPyDateTime.py
@@ -478,6 +479,9 @@ pxr_register_test(TfNotice
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNotice"
     STDOUT_REDIRECT notice.out
     DIFF_COMPARE notice.out
+)
+pxr_register_test(TfNamedTemporaryFile
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNamedTemporaryFile"
 )
 pxr_register_test(TfPathUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"

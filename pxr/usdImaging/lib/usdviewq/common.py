@@ -375,16 +375,17 @@ def DumpMallocTags(stage, contextStr):
         callTree = Tf.MallocTag.GetCallTree()
         memInMb = Tf.MallocTag.GetTotalBytes() / (1024.0 * 1024.0)
         
-        import tempfile
         import os.path as path
+        import tempfile
         layerName = path.basename(stage.GetRootLayer().identifier)
         # CallTree.Report() gives us the most informative (and processable)
         # form of output, but it only accepts a fileName argument.  So we
-        # use tempfile just to get a filename.
+        # use NamedTemporaryFile just to get a filename.
         statsFile = tempfile.NamedTemporaryFile(prefix=layerName+'.',
-                                                suffix='.mallocTag')
-        reportName = statsFile.name
+                                                suffix='.mallocTag',
+                                                delete=False)
         statsFile.close()
+        reportName = statsFile.name
         callTree.Report(reportName)
         print "Memory consumption of %s for %s is %d Mb" % (contextStr,
                                                             layerName,
