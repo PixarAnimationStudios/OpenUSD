@@ -240,9 +240,11 @@ class MainWindow(QtGui.QMainWindow):
         print "INFO: Settings restored to default"
 
     def _configurePlugins(self):
+        from plugContext import PlugContext
+        plugCtx = PlugContext(self)
         try:
             from pixar import UsdviewPlug
-            UsdviewPlug.ConfigureView(self)
+            UsdviewPlug.ConfigureView(plugCtx)
 
         except ImportError:
             pass
