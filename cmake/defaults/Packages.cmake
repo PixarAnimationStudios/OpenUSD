@@ -52,7 +52,12 @@ find_package(OpenEXR REQUIRED)
 find_package(Threads REQUIRED)
 
 # --math
-find_library(M_LIB m)
+if(WIN32)
+    # Math functions are linked automatically by including math.h on Windows.
+    set(M_LIB "")
+else()
+    find_library(M_LIB m)
+endif()
 
 # --Jinja2
 find_package(Jinja2)
