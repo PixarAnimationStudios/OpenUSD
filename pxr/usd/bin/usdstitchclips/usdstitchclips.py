@@ -26,15 +26,15 @@ import argparse, os, sys
 from pxr import UsdUtils, Sdf, Tf 
 
 parser = argparse.ArgumentParser( \
-            prog=sys.argv[0],
+            prog=os.path.basename(sys.argv[0]),
             description='Stitch multiple usd file(s) together '
                         'into one using value clips. '
                         'An example call is: '
                         'usdstitchclips --out result.usd --clipPath '
-                        '/World/fx/Particles_Splash clip1.usd clip2.usd'
+                        '/World/fx/Particles_Splash clip1.usd clip2.usd '
                         '\n\n'
-                        'This will produce two files, a result.topology.usd'
-                        'and a result.usd')
+                        'This will produce two files, a result.topology.usd '
+                        'and a result.usd.')
 
 parser.add_argument('usdFiles', nargs='+')
 parser.add_argument('-o', '--out', action='store',
