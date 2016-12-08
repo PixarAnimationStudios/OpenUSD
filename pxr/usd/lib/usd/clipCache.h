@@ -75,6 +75,13 @@ public:
         Usd_ClipRefPtrVector valueClips;
     };
 
+    /// Get all the layers that have been opened because we needed to extract
+    /// data from their corresponding clips.  USD tries to be as lazy as 
+    /// possible about opening clip layers to avoid unnecessary latency and
+    /// memory bloat; however, once a layer is open, it will generally be
+    /// kept open for the life of the stage.
+    SdfLayerHandleSet GetUsedLayers() const;
+    
     /// Get all clips that may contribute opinions to attributes on the
     /// prim at \p path, including clips that were authored on ancestral prims.
     ///

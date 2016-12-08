@@ -316,6 +316,7 @@ void wrapUsdStage()
              arg("includeSessionLayers")=true,
              return_value_policy<TfPySequenceToList>())
         .def("GetUsedLayers", &UsdStage::GetUsedLayers,
+             arg("includeClipLayers")=true,
              return_value_policy<TfPySequenceToList>())
 
         .def("HasLocalLayer", &UsdStage::HasLocalLayer, arg("layer"))

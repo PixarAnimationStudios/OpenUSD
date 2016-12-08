@@ -2708,12 +2708,20 @@ UsdStage::GetLayerStack(bool includeSessionLayers) const
 }
 
 SdfLayerHandleVector
-UsdStage::GetUsedLayers() const
+UsdStage::GetUsedLayers(bool includeClipLayers) const
 {
     if (not _cache)
         return SdfLayerHandleVector();
     
-    const SdfLayerHandleSet &usedLayers = _cache->GetUsedLayers();
+    SdfLayerHandleSet usedLayers = _cache->GetUsedLayers();
+
+    if (includeClipLayers && _clipCache){
+        SdfLayerHandleSet clipLayers = _clipCache->GetUsedLayers();
+        if (!clipLayers.empty()){
+            usedLayers.insert(clipLayers.begin(), clipLayers.end());
+        }
+    }
+    
     return SdfLayerHandleVector(usedLayers.begin(), usedLayers.end());
 }
 

@@ -840,6 +840,12 @@ Usd_Clip::GetPropertyAtPath(const SdfAbstractDataSpecId &id) const
     return _GetLayerForClip()->GetPropertyAtPath(path);
 }
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (dummy_clip)
+    ((dummy_clipFormat, "dummy_clip.%s"))
+    );
+
 SdfLayerRefPtr
 Usd_Clip::_GetLayerForClip() const
 {
@@ -868,7 +874,8 @@ Usd_Clip::_GetLayerForClip() const
         TF_WARN("Unable to open clip layer @%s@", 
                 assetPath.GetAssetPath().c_str());
         layer = SdfLayer::CreateAnonymous(TfStringPrintf(
-                "dummy_clip.%s", UsdUsdaFileFormatTokens->Id.GetText()));
+                     _tokens->dummy_clipFormat.GetText(), 
+                     UsdUsdaFileFormatTokens->Id.GetText()));
     }
 
     std::lock_guard<std::mutex> lock(_layerMutex);
@@ -880,3 +887,14 @@ Usd_Clip::_GetLayerForClip() const
     return _layer;
 }
 
+SdfLayerHandle
+Usd_Clip::GetLayerIfOpen() const
+{
+    if (_hasLayer){
+        return TfStringStartsWith(_layer->GetIdentifier(), 
+                                  _tokens->dummy_clip.GetString()) ?
+            SdfLayerHandle() : SdfLayerHandle(_layer);
+    }
+
+    return SdfLayerHandle();
+}

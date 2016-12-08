@@ -700,8 +700,11 @@ public:
     /// The list of consumed layers will change with the stage's load-set and
     /// variant selections, so the return value should be considered only
     /// a snapshot.  The return value will include the stage's session layer,
-    /// if it has one.
-    SdfLayerHandleVector GetUsedLayers() const;
+    /// if it has one. If \a includeClipLayers is true, we will also include
+    /// all of the layers that this stage has had to open so far to perform
+    /// value resolution of attributes affected by 
+    /// \ref Usd_AdvanedFeatures_ClipsOverview "Value Clips"
+    SdfLayerHandleVector GetUsedLayers(bool includeClipLayers=true) const;
 
     /// Return true if \a layer is one of the layers in this stage's local,
     /// root layerStack.

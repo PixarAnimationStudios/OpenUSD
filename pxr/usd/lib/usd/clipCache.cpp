@@ -292,6 +292,30 @@ Usd_ClipCache::PopulateClipsForPrim(
     return primHasClips;
 }
 
+SdfLayerHandleSet
+Usd_ClipCache::GetUsedLayers() const
+{
+    SdfLayerHandleSet layers;
+
+    tbb::mutex::scoped_lock lock(_mutex);
+
+    for (_ClipTable::iterator::value_type const &clipsListIter : _table){
+        for (Clips const &clipSet : clipsListIter.second){
+            if (SdfLayerHandle layer = clipSet.manifestClip ?
+                clipSet.manifestClip->GetLayerIfOpen() : SdfLayerHandle()){
+                layers.insert(layer);
+            }
+            for (Usd_ClipRefPtr const &clip : clipSet.valueClips){
+                if (SdfLayerHandle layer = clip->GetLayerIfOpen()){
+                    layers.insert(layer);
+                }
+            }
+        }
+    }
+
+    return layers;
+}
+
 const std::vector<Usd_ClipCache::Clips>&
 Usd_ClipCache::GetClipsForPrim(const SdfPath& path) const
 {

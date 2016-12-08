@@ -222,6 +222,14 @@ public:
         return false;
     }
 
+    /// Return the layer associated with this clip iff it has already been
+    /// opened successfully.
+    ///
+    /// USD tries to be as lazy as possible about opening clip layers to
+    /// avoid unnecessary latency and memory bloat; however, once a layer is
+    /// open, it will generally be kept open for the life of the stage.
+    SdfLayerHandle GetLayerIfOpen() const;
+
     /// Node in the composed prim index and index of layer in its LayerStack
     /// where this clip was introduced.
     PcpNodeRef sourceNode;
