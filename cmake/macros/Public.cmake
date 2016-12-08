@@ -173,11 +173,17 @@ function(pxr_shared_library LIBRARY_NAME)
         # Python modules need to be able to access their corresponding
         # wrapped library, so compute a relative path and append that to
         # the module's rpath.
-        file(RELATIVE_PATH
-            PYTHON_RPATH
-            "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
-            "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}")
-        _append_to_rpath(${rpath} "$ORIGIN/${PYTHON_RPATH}" rpath)
+	# 
+	# XXX: Only do this on Linux for now, since $ORIGIN only exists
+	# on that platform. We will need to figure out the correct thing
+	# to do here for other platforms.
+	if (LINUX)
+            file(RELATIVE_PATH
+                PYTHON_RPATH
+                "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
+                "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}")
+            _append_to_rpath(${rpath} "$ORIGIN/${PYTHON_RPATH}" rpath)
+        endif()
 
         # Python modules must be suffixed with .pyd on Windows and .so on
         # other platforms.
@@ -555,20 +561,24 @@ function(pxr_plugin PLUGIN_NAME)
 
         # If an install subdirectory is specified (e.g., for third party
         # packages), add an rpath pointing to lib/ within it.
-        if (PXR_INSTALL_SUBDIR)
+	#
+	# XXX: See comment about $ORIGIN in pxr_shared_library
+	if (LINUX)
+            if (PXR_INSTALL_SUBDIR)
+                file(RELATIVE_PATH
+                    PLUGIN_RPATH
+                    "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
+                    "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+                _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
+            endif()
+
+            # Add an rpath pointing to the top-level lib/ directory.
             file(RELATIVE_PATH
                 PLUGIN_RPATH
                 "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
-                "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+                "${CMAKE_INSTALL_PREFIX}/lib")
             _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
         endif()
-
-        # Add an rpath pointing to the top-level lib/ directory.
-        file(RELATIVE_PATH
-            PLUGIN_RPATH
-            "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
-            "${CMAKE_INSTALL_PREFIX}/lib")
-        _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
 
         set_target_properties(${PLUGIN_NAME}
             PROPERTIES INSTALL_RPATH "${rpath}")
