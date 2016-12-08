@@ -259,6 +259,7 @@ private:
     friend class UsdObject;
     friend class UsdPrim;
     friend class Usd_PrimData;
+    friend struct UsdPrim_TargetFinder;
 
     UsdRelationship(const Usd_PrimDataHandle &prim,
                     const TfToken& relName)
@@ -271,9 +272,15 @@ private:
 
     SdfRelationshipSpecHandle _CreateSpec(bool fallbackCustom=true) const;
     bool _Create(bool fallbackCustom) const;
+
+    bool _GetForwardedTargets(SdfPathVector* targets,
+                              bool includeForwardingRels,
+                              bool forwardToObjectsInMasters) const;
+
     bool _GetForwardedTargets(SdfPathSet* visited, 
                               SdfPathSet* uniqueTargets,
                               SdfPathVector* targets,
+                              bool includeForwardingRels,
                               bool forwardToObjectsInMasters) const;
 
     SdfPath _GetTargetForAuthoring(const SdfPath &targetPath,

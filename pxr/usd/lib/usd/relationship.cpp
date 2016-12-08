@@ -331,43 +331,50 @@ bool
 UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
                                       SdfPathSet* uniqueTargets,
                                       SdfPathVector* targets,
+                                      bool includeForwardingRels,
                                       bool forwardToObjectsInMasters) const
 {
-    if (not visited->insert(GetPath()).second) {
-        // Cycle or dag fan-in detected.
-        // We're not sure if it's a cycle or a closed-loop in the dag, so
-        // silently continue.
-        return true;
-    }
-
-    SdfPathVector curTargets;
     // Track recursive composition errors, starting with the first batch of
     // targets.
+    SdfPathVector curTargets;
     bool success = GetTargets(&curTargets, forwardToObjectsInMasters);
 
     // Process all targets at this relationship.
-    for (const auto& target : curTargets) {
-        UsdPrim nextPrim = GetStage()->GetPrimAtPath(target.GetPrimPath());
-
-        if (nextPrim) {
-            if (UsdRelationship rel =
-                        nextPrim.GetRelationship(target.GetNameToken())) {
-                // It doesn't matter if we fail here, just track the error
-                // state and continue attempting to gather targets.
-                success = success and 
-                      rel._GetForwardedTargets(visited, uniqueTargets, targets,
-                                               forwardToObjectsInMasters);
-                // Never append paths that target a relationship.
-                continue;
-            } 
-        }
-        
-        if (uniqueTargets->insert(target).second) {
+    for (SdfPath const &target: curTargets) {
+        if (target.IsPrimPropertyPath()) {
+            // Resolve forwarding if this target points at a relationship.
+            if (UsdPrim prim = GetStage()->GetPrimAtPath(target.GetPrimPath())) {
+                if (UsdRelationship rel =
+                    prim.GetRelationship(target.GetNameToken())) {
+                    if (visited->insert(rel.GetPath()).second) {
+                        // Only do this rel if we've not yet seen it.
+                        success &= rel._GetForwardedTargets(
+                            visited, uniqueTargets, targets,
+                            includeForwardingRels,
+                            forwardToObjectsInMasters);
+                    }
+                    if (!includeForwardingRels)
+                        continue;
+                }
+            }
+        }            
+        if (uniqueTargets->insert(target).second)
             targets->push_back(target);
-        }
     }
 
     return success;
+}
+
+bool
+UsdRelationship::_GetForwardedTargets(
+    SdfPathVector *targets,
+    bool includeForwardingRels,
+    bool forwardToObjectsInMasters) const
+{
+    SdfPathSet visited, uniqueTargets;
+    return _GetForwardedTargets(&visited, &uniqueTargets, targets,
+                                includeForwardingRels,
+                                forwardToObjectsInMasters);
 }
 
 bool
@@ -384,8 +391,8 @@ UsdRelationship::GetForwardedTargets(SdfPathVector* targets,
         targets->clear();
     }
 
-    SdfPathSet visited, uniqueTargets;
-    return _GetForwardedTargets(&visited, &uniqueTargets, targets,
+    return _GetForwardedTargets(targets,
+                                /*includeForwardingRels=*/false,
                                 forwardToObjectsInMasters);
 }
 
