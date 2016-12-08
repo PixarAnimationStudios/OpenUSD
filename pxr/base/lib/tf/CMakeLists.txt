@@ -481,7 +481,8 @@ pxr_register_test(TfNotice
     DIFF_COMPARE notice.out
 )
 pxr_register_test(TfNamedTemporaryFile
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNamedTemporaryFile"
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfNamedTemporaryFile"
 )
 pxr_register_test(TfPathUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"
