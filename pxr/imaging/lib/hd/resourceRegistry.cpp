@@ -566,6 +566,13 @@ HdResourceRegistry::GarbageCollect()
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
 
+    // Cleanup Shader registries
+    _geometricShaderRegistry.GarbageCollect();
+    _glslProgramRegistry.GarbageCollect();
+
+    // Cleanup texture registries
+    _textureResourceRegistry.GarbageCollect();
+
     GarbageCollectDispatchBuffers();
     GarbageCollectPersistentBuffers();
 }
