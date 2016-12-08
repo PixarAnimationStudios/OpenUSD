@@ -60,7 +60,6 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     add_executable(${BIN_NAME} ${BIN_NAME}.cpp)
-    add_dependencies(${BIN_NAME} ${cb_LIBRARIES})
 
     # Install and include headers from the build directory.
     get_filename_component(
