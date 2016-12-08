@@ -21,18 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "mayapkg/usdMaya/ChaserRegistry.h"
 
+#include "usdMaya/ChaserRegistry.h"
 #include "usdMaya/writeUtil.h"
 
+#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
+#include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
-#include <maya/MDagPath.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
+#include <maya/MString.h>
+
+#include <string>
+#include <vector>
+
 
 struct _Entry
 {

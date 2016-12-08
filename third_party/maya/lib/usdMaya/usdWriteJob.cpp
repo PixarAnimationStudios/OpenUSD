@@ -271,13 +271,14 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     // now we populate the chasers and run export default
     mChasers.clear();
     PxrUsdMayaChaserRegistry::FactoryContext ctx(mStage, mDagPathToUsdPathMap, mArgs);
-    for (const std::string& chaserName: mArgs.chaserNames) {
+    for (const std::string& chaserName : mArgs.chaserNames) {
         if (PxrUsdMayaChaserRefPtr fn = 
                 PxrUsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
             mChasers.push_back(fn);
         }
         else {
-            std::string error = TfStringPrintf("chaser %s failed\n", chaserName.c_str());
+            std::string error = TfStringPrintf("Failed to create chaser: %s",
+                                               chaserName.c_str());
             MGlobal::displayError(MString(error.c_str()));
         }
     }
