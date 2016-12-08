@@ -1232,7 +1232,22 @@ struct Pcp_ParallelIndexer
         if (checkCache) {
             tbb::spin_rw_mutex::scoped_lock
                 lock(_primIndexCacheMutex, /*write=*/false);
-            index = _cache->FindPrimIndex(path);
+            PcpCache::_PrimIndexCache::const_iterator
+                i = _cache->_primIndexCache.find(path);
+            if (i == _cache->_primIndexCache.end()) {
+                // There is no cache entry for this path or any children.
+                checkCache = false;
+            } else if (i->second.GetGraph()) {
+                // There is a valid cache entry.
+                index = &i->second;
+            } else {
+                // There is a cache entry but it is invalid.  There still
+                // may be valid cache entries for children, so we must
+                // continue to checkCache.  An example is when adding a
+                // new empty spec to a layer stack already used by a
+                // prim, causing a culled node to no longer be culled,
+                // and the children to be unaffected.
+            }
         }
 
         PcpPrimIndexOutputs *outputs = NULL;
@@ -1264,13 +1279,10 @@ struct Pcp_ParallelIndexer
             PcpTokenSet prohibitedNames;
             index->ComputePrimChildNames(&names, &prohibitedNames);
             for (const auto& name : names) {
-                // We only check the cache for the children if we got a cache
-                // hit for this index.  Pcp tends to invalidate entire subtrees
-                // at once.
                 didChildren = true;
                 _dispatcher.Run(
                     &This::_ComputeIndex, this, index,
-                    path.AppendChild(name), /*checkCache=*/not outputs);
+                    path.AppendChild(name), checkCache);
             }
         }
 
@@ -1302,9 +1314,6 @@ struct Pcp_ParallelIndexer
 
             SdfPath const &primIndexPath = outputs->primIndex.GetPath();
 
-            // Add dependencies.
-            _cache->_primDependencies->Add(outputs->primIndex);
-            
             // Store index off to the side so we can publish several at once,
             // ideally.  We have to make a copy to move into the _cache itself,
             // since sibling caches in other tasks will still require that their
@@ -1367,7 +1376,13 @@ struct Pcp_ParallelIndexer
                 for (auto &index: _consumerScratch) {
                     // Save the prim index in the cache.
                     const SdfPath &path = index.GetPath();
-                    _cache->_primIndexCache[path].Swap(index);
+                    PcpPrimIndex &entry = _cache->_primIndexCache[path];
+                    if (TF_VERIFY(!entry.GetRootNode(),
+                                  "PrimIndex for %s already exists in cache",
+                                  entry.GetPath().GetText())) {
+                        entry.Swap(index);
+                        _cache->_primDependencies->Add(entry);
+                    }
                 }
                 lock.release();
                 _consumerScratch.clear();
