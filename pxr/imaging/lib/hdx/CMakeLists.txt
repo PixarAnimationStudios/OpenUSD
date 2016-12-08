@@ -28,6 +28,7 @@ pxr_shared_library(hdx
         drawTargetRenderPass
         drawTargetRenderPassState
         drawTargetTask
+        drawTargetResolveTask
         intersector
         light
         package

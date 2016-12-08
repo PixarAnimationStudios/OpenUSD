@@ -34,23 +34,46 @@
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include "pxr/base/tracelite/trace.h"
 
-GlfDrawTargetRefPtr
-GlfDrawTarget::New( GfVec2i const & size )
+TF_DEFINE_ENV_SETTING(GLF_DRAW_TARGETS_NUM_SAMPLES, 4,
+                      "Number of samples greater than 1 forces MSAA.");
+
+static unsigned int 
+GetNumSamples()
 {
-    return TfCreateRefPtr(new This(size));
+    static int reqNumSamples = TfGetEnvSetting(GLF_DRAW_TARGETS_NUM_SAMPLES);
+    unsigned int numSamples = 1;
+    if (reqNumSamples > 1) {
+        numSamples = (reqNumSamples & (reqNumSamples - 1)) ? 1 : reqNumSamples;    
+    }
+    return numSamples;
 }
 
-GlfDrawTarget::GlfDrawTarget( GfVec2i const & size ) :
+GlfDrawTargetRefPtr
+GlfDrawTarget::New( GfVec2i const & size, bool requestMSAA )
+{
+    return TfCreateRefPtr(new This(size, requestMSAA));
+}
+
+GlfDrawTarget::GlfDrawTarget( GfVec2i const & size, bool requestMSAA /* =false */) :
     _framebuffer(0),
+    _framebufferMS(0),
     _unbindRestoreReadFB(0),
     _unbindRestoreDrawFB(0),
     _bindDepth(0),
-    _size(size)
+    _size(size),
+    _numSamples(1)
 {
     GlfGlewInit();
+
+    // If MSAA has been requested and it is enabled then we will create
+    // msaa buffers
+    if (requestMSAA) {
+        _numSamples = GetNumSamples();
+    }
 
     _GenFrameBuffer();
 
@@ -67,12 +90,13 @@ GlfDrawTarget::New( GlfDrawTargetPtr const & drawtarget )
 // attachments.
 GlfDrawTarget::GlfDrawTarget( GlfDrawTargetPtr const & drawtarget ) :
     _framebuffer(0),
+    _framebufferMS(0),
     _unbindRestoreReadFB(0),
     _unbindRestoreDrawFB(0),
     _bindDepth(0),
     _size(drawtarget->_size),
+    _numSamples(drawtarget->_numSamples),
     _owningContext()
-
 {
     GlfGlewInit();
 
@@ -105,7 +129,6 @@ GlfDrawTarget::~GlfDrawTarget( )
     _DeleteAttachments( );
 
     if (_framebuffer) {
-
         TF_VERIFY(glIsFramebuffer(_framebuffer),
             "Tried to free invalid framebuffer");
 
@@ -113,6 +136,13 @@ GlfDrawTarget::~GlfDrawTarget( )
         _framebuffer = 0;
     }
 
+    if (_framebufferMS) {
+        TF_VERIFY(glIsFramebuffer(_framebufferMS),
+            "Tried to free invalid multisampled framebuffer");
+
+        glDeleteFramebuffers(1, &_framebufferMS);
+        _framebufferMS = 0;
+    }
 }
 
 void
@@ -131,7 +161,8 @@ GlfDrawTarget::AddAttachment( std::string const & name,
 
         AttachmentRefPtr attachment = Attachment::New((int)attachments.size(),
                                                       format, type,
-                                                      internalFormat, _size);
+                                                      internalFormat, _size,
+                                                      _numSamples);
 
         attachments.insert(AttachmentsMap::value_type(name, attachment));
 
@@ -268,10 +299,17 @@ GlfDrawTarget::_GenFrameBuffer()
 
     _owningContext = GlfGLContext::GetCurrentGLContext();
 
+    // Create multisampled framebuffer
+    if (HasMSAA()) {
+        glGenFramebuffers(1, &_framebufferMS);
+        glBindFramebuffer(GL_FRAMEBUFFER, _framebufferMS);
+        TF_VERIFY(glIsFramebuffer(_framebufferMS),
+            "Failed to allocate multisampled framebuffer");
+    }
+
+    // Create non-multisampled framebuffer
     glGenFramebuffers(1, &_framebuffer);
-
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-
     TF_VERIFY(glIsFramebuffer(_framebuffer),
         "Failed to allocate framebuffer");
 
@@ -284,12 +322,19 @@ GlfDrawTarget::GetFramebufferId() const
     return _framebuffer;
 }
 
+GLuint 
+GlfDrawTarget::GetFramebufferMSId() const
+{
+    return _framebufferMS;
+}
+
 // Attach a texture to one of the attachment points of the framebuffer.
 // We assume that the framebuffer is currently bound !
 void
 GlfDrawTarget::_BindAttachment( GlfDrawTarget::AttachmentRefPtr const & a )
 {
     GLuint id = a->GetGlTextureName();
+    GLuint idMS = a->GetGlTextureMSName();
 
     int attach = a->GetAttach();
 
@@ -310,6 +355,15 @@ GlfDrawTarget::_BindAttachment( GlfDrawTarget::AttachmentRefPtr const & a )
         attachment += attach;
     }
 
+    // Multisampled framebuffer
+    if (HasMSAA()) {
+        glBindFramebuffer(GL_FRAMEBUFFER, _framebufferMS);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, 
+            attachment, GL_TEXTURE_2D_MULTISAMPLE, idMS, /*level*/ 0);
+    }
+
+    // Regular framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER,
         attachment, GL_TEXTURE_2D, id, /*level*/ 0);
 
@@ -323,7 +377,6 @@ GlfDrawTarget::_SaveBindingState()
                         (GLint*)&_unbindRestoreReadFB);
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
                         (GLint*)&_unbindRestoreDrawFB);
-
 }
 
 void
@@ -354,9 +407,11 @@ GlfDrawTarget::Bind()
         return;
     }
 
-
-
-    glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
+    if (HasMSAA()) {
+        glBindFramebuffer(GL_FRAMEBUFFER, _framebufferMS);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
+    }
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -381,6 +436,22 @@ GlfDrawTarget::Unbind()
     GLF_POST_PENDING_GL_ERRORS();
 }
 
+void 
+GlfDrawTarget::Resolve()
+{
+    if (HasMSAA()) {
+        // Resolve MSAA fbo to a regular fbo
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebufferMS);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _framebuffer);
+        glBlitFramebuffer(0, 0, _size[0], _size[1], 
+                          0, 0, _size[0], _size[1], 
+                          GL_COLOR_BUFFER_BIT | 
+                          GL_DEPTH_BUFFER_BIT | 
+                          GL_STENCIL_BUFFER_BIT , 
+                          GL_NEAREST); 
+    }
+}
+
 void
 GlfDrawTarget::TouchContents()
 {
@@ -397,7 +468,6 @@ GlfDrawTarget::IsValid(std::string * reason)
     return _Validate(reason);
 }
 
-
 bool
 GlfDrawTarget::_Validate(std::string * reason)
 {
@@ -405,11 +475,7 @@ GlfDrawTarget::_Validate(std::string * reason)
         return false;
     }
 
-    bool status = false;
-
-    status = GlfCheckGLFrameBufferStatus(GL_FRAMEBUFFER, reason);
-
-    return status;
+    return GlfCheckGLFrameBufferStatus(GL_FRAMEBUFFER, reason);
 }
 
 bool
@@ -514,45 +580,40 @@ GlfDrawTarget::WriteToFile(std::string const & name,
 
 GlfDrawTarget::AttachmentRefPtr
 GlfDrawTarget::Attachment::New(int glIndex, GLenum format, GLenum type,
-                                GLenum internalFormat, GfVec2i size)
+                                GLenum internalFormat, GfVec2i size,
+                                unsigned int numSamples)
 {
     return TfCreateRefPtr(new Attachment(glIndex, format, type,
-                                         internalFormat, size));
+                                         internalFormat, size, 
+                                         numSamples));
 }
 
 GlfDrawTarget::Attachment::Attachment(int glIndex, GLenum format,
                                        GLenum type, GLenum internalFormat,
-                                       GfVec2i size) :
+                                       GfVec2i size, 
+                                       unsigned int numSamples) :
+    _textureName(0),
+    _textureNameMS(0),
     _format(format),
     _type(type),
     _internalFormat(internalFormat),
     _glIndex(glIndex),
-    _size(size)
+    _size(size),
+    _numSamples(numSamples)
 {
-    _textureName = _GenTexture();
+    _GenTexture();
 }
 
 GlfDrawTarget::Attachment::~Attachment()
 {
-    _DeleteTexture(_textureName);
+    _DeleteTexture();
 }
 
 // Generate a simple GL_TEXTURE_2D to use as an attachment
 // we assume that the framebuffer is currently bound !
-GLuint
+void
 GlfDrawTarget::Attachment::_GenTexture()
 {
-    GLuint id=0;
-
-    glGenTextures(1, &id);
-
-    glBindTexture( GL_TEXTURE_2D, id );
-
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-
     GLenum internalFormat = _internalFormat;
     GLenum type = _type;
 
@@ -565,6 +626,34 @@ GlfDrawTarget::Attachment::_GenTexture()
         }
     }
 
+    // Create multisampled texture
+    if (_numSamples > 1) {
+        glGenTextures( 1, &_textureNameMS ); 
+        glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _textureNameMS );
+
+        // XXX: Hardcoded filtering for now
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+
+        glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE,
+                                 _numSamples, _internalFormat, 
+                                 _size[0], _size[1], GL_TRUE );
+
+        glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, 0);
+    }
+
+    // Create non-multisampled texture
+    glGenTextures( 1, &_textureName );
+    glBindTexture( GL_TEXTURE_2D, _textureName );
+
+    // XXX: Hardcoded filtering for now
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+
     glTexImage2D( GL_TEXTURE_2D, /*level*/ 0, internalFormat,
                   _size[0], _size[1],
                  /*border*/ 0, _format, type, NULL); 
@@ -572,21 +661,26 @@ GlfDrawTarget::Attachment::_GenTexture()
     glBindTexture( GL_TEXTURE_2D, 0 );
 
     GLF_POST_PENDING_GL_ERRORS();
-
-    return id;
 }
 
 void
-GlfDrawTarget::Attachment::_DeleteTexture(GLuint & id)
+GlfDrawTarget::Attachment::_DeleteTexture()
 {
-    if (id) {
+    if (_textureName) {
         GlfSharedGLContextScopeHolder sharedGLContextScopeHolder;
 
-        TF_VERIFY(glIsTexture(id), "Tried to delete an invalid texture");
-
-        glDeleteTextures(1, &id);
-        id=0;
+        TF_VERIFY(glIsTexture(_textureName), "Tried to delete an invalid texture");
+        glDeleteTextures(1, &_textureName);
+        _textureName = 0;
     }
+
+    if (_textureNameMS) {
+        GlfSharedGLContextScopeHolder sharedGLContextScopeHolder;
+
+        TF_VERIFY(glIsTexture(_textureNameMS), "Tried to delete an invalid texture");
+        glDeleteTextures(1, &_textureNameMS);
+        _textureNameMS = 0;
+    }    
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -596,8 +690,8 @@ GlfDrawTarget::Attachment::ResizeTexture(const GfVec2i &size)
 {
     _size = size;
 
-    _DeleteTexture(_textureName);
-    _textureName = _GenTexture();
+    _DeleteTexture();
+    _GenTexture();
 }
 
 /* virtual */
@@ -629,6 +723,7 @@ GlfDrawTarget::Attachment::GetTextureInfo() const
     info["format"] = (int)_internalFormat;
     info["imageFilePath"] = TfToken("DrawTarget");
     info["referenceCount"] = GetRefCount().Get();
+    info["numSamples"] = _numSamples;
 
     return info;
 }

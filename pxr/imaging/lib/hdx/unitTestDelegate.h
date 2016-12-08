@@ -70,6 +70,7 @@ public:
     void AddShadowTask(SdfPath const &id);
     void AddSelectionTask(SdfPath const &id);
     void AddDrawTargetTask(SdfPath const &id);
+    void AddDrawTargetResolveTask(SdfPath const &id);
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);

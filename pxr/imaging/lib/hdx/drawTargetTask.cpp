@@ -263,10 +263,15 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
     // to the library
     glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
 
-    // XXX:  Long-term ALpha to Coverage will be a render style on the
+    // XXX: Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
     // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
     GLboolean oldAlphaToCoverage = glIsEnabled(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    
+    // XXX: When rendering draw targets we need alpha to coverage
+    // at least until we support a transparency pass
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
     if (GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
         if (not TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -274,7 +279,6 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
             glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
         }
     }
-
 
     // XXX: Do we ever want to disable this?
     GLboolean oldPointSizeEnabled = glIsEnabled(GL_PROGRAM_POINT_SIZE);
@@ -305,8 +309,7 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
         glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
 
-    if (!oldPointSizeEnabled)
-    {
+    if (!oldPointSizeEnabled) {
         glDisable(GL_PROGRAM_POINT_SIZE);
     }
 
@@ -366,5 +369,3 @@ bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParam
 {
     return not(lhs == rhs);
 }
-
-

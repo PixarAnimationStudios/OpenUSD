@@ -207,7 +207,6 @@ HdxDrawTarget::WriteToFile(const std::string &attachment,
     return result;
 }
 
-
 void
 HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachments)
 {
@@ -225,7 +224,10 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
     // XXX: Discard old draw target and create a new one
     // This is necessary because a we have to clone the draw target into each
     // gl context.
-    _drawTarget = GlfDrawTarget::New(_resolution);
+    // XXX : All draw targets in Hydra are currently trying to create MSAA
+    // buffers (as long as they are allowed by the environment variables) 
+    // because we need alpha to coverage for transparent object.
+    _drawTarget = GlfDrawTarget::New(_resolution, /* MSAA */ true);
 
     size_t numAttachments = attachments.GetNumAttachments();
     _renderPassState.SetNumColorAttachments(numAttachments);
@@ -242,7 +244,6 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
         GLenum internalFormat = GL_RGBA8;
         HdConversions::GetGlFormat(desc.GetFormat(),
                                    &format, &type, &internalFormat);
-
 
         _drawTarget->AddAttachment(desc.GetName(),
                                    format,
