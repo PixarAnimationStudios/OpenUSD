@@ -145,13 +145,9 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // Iterate over all prototypes to allocate the Rprims in the Hydra
     // RenderIndex.
     size_t prototypeCount = instrData.prototypes.size();
-    size_t primCount = 0;
-    size_t instantiatedPrimCount = 0;
 
     // For each prototype, allocate the Rprims.
     for (size_t protoIndex = 0; protoIndex < prototypeCount; ++protoIndex) {
-        primCount = 0;
-        instantiatedPrimCount = 0;
 
         // -------------------------------------------------------------- //
         // Initialize this prototype.
