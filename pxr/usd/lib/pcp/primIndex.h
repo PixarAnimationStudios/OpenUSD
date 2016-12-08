@@ -69,6 +69,7 @@ class SdfPath;
 class PcpPrimIndex
 {
 public:
+    /// Default construct an empty, invalid prim index.
     PcpPrimIndex();
 
     /// Copy-construct a prim index.
@@ -85,6 +86,10 @@ public:
 
     /// Same as Swap(), but standard name.
     inline void swap(PcpPrimIndex &rhs) { Swap(rhs); }
+
+    /// Return true if this index is valid.
+    /// A default-constructed index is invalid.
+    bool IsValid() const { return bool(_graph); }
 
     void SetGraph(const PcpPrimIndex_GraphRefPtr& graph);
     PcpPrimIndex_GraphPtr GetGraph() const;

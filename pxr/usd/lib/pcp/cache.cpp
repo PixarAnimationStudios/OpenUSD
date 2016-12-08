@@ -341,7 +341,7 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
     if (not finalLayersToUnmute.empty()) {
         for (const auto& primIndexEntry : _primIndexCache) {
             const PcpPrimIndex& primIndex = primIndexEntry.second;
-            if (not primIndex.GetRootNode()) {
+            if (not primIndex.IsValid()) {
                 continue;
             }
 
@@ -702,7 +702,7 @@ PcpCache::FindSiteDependencies(
                      entryIter != primRange.second; ++entryIter) {
                     const SdfPath& subPath = entryIter->first;
                     const PcpPrimIndex& subPrimIndex = entryIter->second;
-                    if (subPrimIndex.GetGraph() &&
+                    if (subPrimIndex.IsValid() &&
                         seenDeps.find(subPath) == seenDeps.end()) {
                         expandedDeps.push_back(PcpDependency{
                             subPath,
@@ -812,7 +812,7 @@ PcpCache::GetInvalidAssetPaths() const
     TF_FOR_ALL(it, _primIndexCache) {
         const SdfPath& primPath = it->first;
         const PcpPrimIndex& primIndex = it->second;
-        if (primIndex.GetRootNode()) {
+        if (primIndex.IsValid()) {
             PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
@@ -986,7 +986,7 @@ PcpCache::Reload(PcpChanges* changes)
     }
     TF_FOR_ALL(it, _primIndexCache) {
         const PcpPrimIndex& primIndex = it->second;
-        if (primIndex.GetRootNode()) {
+        if (primIndex.IsValid()) {
             const PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
@@ -1025,7 +1025,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
         const auto& entry = *entryIter;
         const PcpPrimIndex& primIndex = entry.second;
-        if (primIndex.GetRootNode()) {
+        if (primIndex.IsValid()) {
             PcpErrorVector errors = primIndex.GetLocalErrors();
             for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
@@ -1128,7 +1128,7 @@ PcpCache::_GetPrimIndex(const SdfPath& path)
     _PrimIndexCache::iterator i = _primIndexCache.find(path);
     if (i != _primIndexCache.end()) {
         PcpPrimIndex &primIndex = i->second;
-        if (primIndex.GetRootNode()) {
+        if (primIndex.IsValid()) {
             return &primIndex;
         }
     }
@@ -1141,7 +1141,7 @@ PcpCache::_GetPrimIndex(const SdfPath& path) const
     _PrimIndexCache::const_iterator i = _primIndexCache.find(path);
     if (i != _primIndexCache.end()) {
         const PcpPrimIndex &primIndex = i->second;
-        if (primIndex.GetRootNode()) {
+        if (primIndex.IsValid()) {
             return &primIndex;
         }
     }
@@ -1237,7 +1237,7 @@ struct Pcp_ParallelIndexer
             if (i == _cache->_primIndexCache.end()) {
                 // There is no cache entry for this path or any children.
                 checkCache = false;
-            } else if (i->second.GetGraph()) {
+            } else if (i->second.IsValid()) {
                 // There is a valid cache entry.
                 index = &i->second;
             } else {
@@ -1377,7 +1377,7 @@ struct Pcp_ParallelIndexer
                     // Save the prim index in the cache.
                     const SdfPath &path = index.GetPath();
                     PcpPrimIndex &entry = _cache->_primIndexCache[path];
-                    if (TF_VERIFY(!entry.GetRootNode(),
+                    if (TF_VERIFY(!entry.IsValid(),
                                   "PrimIndex for %s already exists in cache",
                                   entry.GetPath().GetText())) {
                         entry.Swap(index);
@@ -1469,7 +1469,7 @@ PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors)
     // may live in the SdfPathTable for paths that haven't yet been computed,
     // so we have to explicitly check for that.
     _PrimIndexCache::const_iterator i = _primIndexCache.find(path);
-    if (i != _primIndexCache.end() and i->second.GetRootNode()) {
+    if (i != _primIndexCache.end() and i->second.IsValid()) {
         return i->second;
     }
 

@@ -75,6 +75,7 @@ void wrapPrimIndex()
                       make_function(&This::GetLocalErrors,
                                     return_value_policy<TfPySequenceToList>()))
 
+        .def("IsValid", &This::IsValid)
         .def("IsInstanceable", &This::IsInstanceable)
 
         .def("ComputePrimChildNames", &_ComputePrimChildNames)

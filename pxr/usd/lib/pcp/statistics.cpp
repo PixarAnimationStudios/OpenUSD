@@ -110,8 +110,9 @@ public:
 
         TF_FOR_ALL(it, cache->_primIndexCache) {
             const PcpPrimIndex& primIndex = it->second;
-            if (not primIndex.GetRootNode())
+            if (not primIndex.IsValid()) {
                 continue;
+            }
 
             ++(stats->numPrimIndexes);
 
