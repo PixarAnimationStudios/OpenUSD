@@ -76,7 +76,8 @@ public:
     };
 
     // The valid types a HdBufferSource can be constructed from.
-    typedef boost::mpl::vector31<
+    typedef boost::mpl::vector32<
+            THolder<bool>,
             THolder<int>,
             THolder<float>,
             THolder<double>,

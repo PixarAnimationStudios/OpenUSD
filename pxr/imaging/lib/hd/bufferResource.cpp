@@ -29,6 +29,7 @@
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((_bool, "bool"))
     ((_float, "float"))
     (vec2)
     (vec3)
@@ -169,6 +170,8 @@ HdBufferResource::GetGLTypeName() const
         return _tokens->uvec2;
     } else if (_glDataType == GL_INT_2_10_10_10_REV) {
         return _tokens->vec4;
+    } else if (_glDataType == GL_BOOL) {
+        return _tokens->_bool;
     }
 
     TF_CODING_ERROR("unsupported type: 0x%x numComponents = %d\n",

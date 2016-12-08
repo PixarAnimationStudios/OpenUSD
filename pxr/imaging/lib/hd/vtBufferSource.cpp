@@ -95,6 +95,8 @@ struct _GLDataType {
     int elementType;
 };
 template<typename T> _GLDataType _GetGLType();
+template<> _GLDataType _GetGLType<bool>()
+        { return _GLDataType(GL_BOOL, GL_BOOL); }
 template<> _GLDataType _GetGLType<char>()
         { return _GLDataType(GL_BYTE, GL_BYTE); }
 template<> _GLDataType _GetGLType<short>()
