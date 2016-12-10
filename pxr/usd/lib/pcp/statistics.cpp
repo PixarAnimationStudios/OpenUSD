@@ -30,8 +30,6 @@
 
 #include "pxr/base/arch/defines.h"
 
-#include <boost/static_assert.hpp>
-
 struct Pcp_GraphStats
 {
 public:
@@ -77,20 +75,20 @@ public:
         Pcp_GraphStats* stats,
         bool culledNodesOnly)
     {
-        TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-            if (culledNodesOnly and not nodeIt->IsCulled()) {
+        for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+            if (culledNodesOnly and not node.IsCulled()) {
                 continue;
             }
 
             ++(stats->numNodes);
-            ++(stats->typeToNumNodes[nodeIt->GetArcType()]);
+            ++(stats->typeToNumNodes[node.GetArcType()]);
             
             const bool nodeIsImpliedInherit = 
-                nodeIt->GetOriginNode() != nodeIt->GetParentNode();
+                node.GetOriginNode() != node.GetParentNode();
             if (nodeIsImpliedInherit) {
-                if (nodeIt->GetArcType() == PcpArcTypeLocalInherit)
+                if (node.GetArcType() == PcpArcTypeLocalInherit)
                     ++(stats->numImpliedLocalInherits);
-                else if (nodeIt->GetArcType() == PcpArcTypeGlobalInherit)
+                else if (node.GetArcType() == PcpArcTypeGlobalInherit)
                     ++(stats->numImpliedGlobalInherits);
             }
         }
@@ -136,9 +134,9 @@ public:
             }
 
             // Gather map functions
-            TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-                allMapFuncs.insert(nodeIt->GetMapToParent().Evaluate());
-                allMapFuncs.insert(nodeIt->GetMapToRoot().Evaluate());
+            for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+                allMapFuncs.insert(node.GetMapToParent().Evaluate());
+                allMapFuncs.insert(node.GetMapToRoot().Evaluate());
             }
         }
 
@@ -325,26 +323,36 @@ public:
         }
 
         // Assert sizes of structs we want to keep a close eye on.
-        BOOST_STATIC_ASSERT(sizeof(PcpMapFunction) == 8);
-        BOOST_STATIC_ASSERT(sizeof(PcpMapExpression) == 8);
+        static_assert(sizeof(PcpMapFunction) == 8,
+                      "PcpMapFunction must be of size 8");
+        static_assert(sizeof(PcpMapExpression) == 8,
+                      "PcpMapExpression must be of size 8");
 
         // This object is 120 bytes when building against libstdc++
         // and 96 for libc++ because std::set is 48 bytes in the
         // former case and 24 bytes in the latter.
-        BOOST_STATIC_ASSERT(sizeof(PcpMapExpression::_Node) == 120 or
-                            sizeof(PcpMapExpression::_Node) == 96);
+        static_assert(sizeof(PcpMapExpression::_Node) == 120 ||
+                      sizeof(PcpMapExpression::_Node) == 96,
+                      "PcpMapExpression::_Node must be of size 96 or 120");
 
-        BOOST_STATIC_ASSERT(sizeof(PcpLayerStackPtr) == 16);
-        BOOST_STATIC_ASSERT(sizeof(PcpLayerStackSite) == 24);
+        static_assert(sizeof(PcpLayerStackPtr) == 16,
+                      "PcpLayerStackPtr must be of size 16");
+        static_assert(sizeof(PcpLayerStackSite) == 16,
+                      "PcpLayerStackSite must be of size 16");
+        static_assert(sizeof(PcpPrimIndex) == 40,
+                      "PcpPrimIndex must be of size 40");
 
         // This object is 104 bytes when building against libstdc++
         // and 88 for libc++ because std::vector<bool> is 40 bytes
         // in the former case and 24 bytes in the latter.
-        BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph) == 104 or
-                            sizeof(PcpPrimIndex_Graph) == 88);
+        static_assert(sizeof(PcpPrimIndex_Graph) == 104 ||
+                      sizeof(PcpPrimIndex_Graph) == 88,
+                      "PcpPrimIndex_Graph must be of size 88 or 104");
 
-        BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph::_Node) == 48);
-        BOOST_STATIC_ASSERT(sizeof(PcpPrimIndex_Graph::_SharedData) == 32);
+        static_assert(sizeof(PcpPrimIndex_Graph::_Node) == 40,
+                      "PcpPrimIndex_Graph::_Node must be of size 40");
+        static_assert(sizeof(PcpPrimIndex_Graph::_SharedData) == 32,
+                      "PcpPrimIndex_Graph::_SharedData must be of size 32");
     }
 
     static void PrintPrimIndexStats(

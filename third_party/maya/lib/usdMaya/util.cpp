@@ -35,6 +35,8 @@
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnExpression.h>
 #include <maya/MFnLambertShader.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
 #include <maya/MFnSet.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItMeshFaceVertex.h>
@@ -1120,5 +1122,46 @@ PxrUsdMayaUtil::setPlugValue(
 
     CHECK_MSTATUS_AND_RETURN(status, false);
 
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::createStringAttribute(
+        MFnDependencyNode& depNode,
+        const MString& attr) {
+    MStatus status = MStatus::kFailure;
+    MFnTypedAttribute typedAttrFn;
+    MObject attrObj = typedAttrFn.create(
+            attr,
+            attr,
+            MFnData::kString,
+            MObject::kNullObj,
+            &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
+    status = depNode.addAttribute(attrObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::createNumericAttribute(
+        MFnDependencyNode& depNode,
+        const MString& attr,
+        MFnNumericData::Type type) {
+    MStatus status = MStatus::kFailure;
+    MFnNumericAttribute numericAttrFn;
+    MObject attrObj = numericAttrFn.create(
+            attr,
+            attr,
+            type,
+            0,
+            &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
+    status = depNode.addAttribute(attrObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    
     return true;
 }

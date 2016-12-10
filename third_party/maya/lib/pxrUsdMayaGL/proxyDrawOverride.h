@@ -25,7 +25,6 @@
 #define PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usdImaging/usdImaging/gl.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
 #include "usdMaya/proxyShape.h"

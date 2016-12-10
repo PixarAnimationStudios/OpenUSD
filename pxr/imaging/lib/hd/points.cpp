@@ -42,8 +42,8 @@
 HdPoints::_PointsReprConfig HdPoints::_reprDescConfig;
 
 HdPoints::HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
-                 SdfPath const& surfaceShaderId, SdfPath const& instancerId)
-    : HdRprim(delegate, id, surfaceShaderId, instancerId)
+                   SdfPath const& instancerId)
+    : HdRprim(delegate, id, instancerId)
 {
     /*NOTHING*/
 }

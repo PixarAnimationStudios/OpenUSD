@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H
 #define PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H
 
+/// \file translatorModelAssembly.h
+
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"
@@ -49,15 +51,12 @@ struct PxrUsdMayaTranslatorModelAssembly
         PxrUsdMayaPrimWriterContext* context);
 
     /// This method returns true if \p prim being considered for import under
-    /// \p usdImportRootPrim should be imported into Maya as an assembly. If
-    /// so, assetIdentifier and assetPrimPath will be populated appropriately.
+    /// \p usdImportRootPrim should be imported into Maya as an assembly.
     /// XXX: This might be a candidate for a plugin point that studios would
     //  want to customize.
     static bool ShouldImportAsAssembly(
         const UsdPrim& usdImportRootPrim,
-        const UsdPrim& prim,
-        std::string* assetIdentifier,
-        SdfPath* assetPrimPath);
+        const UsdPrim& prim);
 
     /// Imports the model at \p prim as a new Maya assembly under
     /// \p parentNode. An assembly node of type \p assemblyTypeName will be

@@ -219,6 +219,7 @@ GarchGLPlatformDebugContext::~GarchGLPlatformDebugContext()
 void
 GarchGLPlatformDebugContext::makeCurrent()
 {
+    // note: if not enabled, returns without making context current.
     if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }

@@ -141,6 +141,12 @@ SdfFileFormat::IsStreamingLayer(const SdfLayerBase& layer) const
     return _IsStreamingLayer(layer);
 }
 
+bool
+SdfFileFormat::LayersAreFileBased() const
+{
+    return _LayersAreFileBased();
+}
+
 const TfToken&
 SdfFileFormat::GetFormatId() const
 {
@@ -266,6 +272,12 @@ SdfFileFormat::FindByExtension(
 
 bool
 SdfFileFormat::_ShouldSkipAnonymousReload() const
+{
+    return true;
+}
+
+bool 
+SdfFileFormat::_LayersAreFileBased() const
 {
     return true;
 }

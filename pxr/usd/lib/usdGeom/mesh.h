@@ -31,6 +31,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include "pxr/usd/usd/timeCode.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -416,8 +418,6 @@ public:
     // include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-
-#include "pxr/usd/usd/timeCode.h"
 
 public:
     /// \var const float SHARPNESS_INFINITE

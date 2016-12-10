@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdGeomXform,
         TfType::Bases< UsdGeomXformable > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("Xform") to find
-    // TfType<UsdGeomXform>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("Xform")
+    // to find TfType<UsdGeomXform>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdGeomXform>("Xform");
 }
 

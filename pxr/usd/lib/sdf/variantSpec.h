@@ -27,6 +27,7 @@
 /// \file sdf/variantSpec.h
 
 #include "pxr/usd/sdf/declareSpec.h"
+#include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/spec.h"
 #include <string>
 
@@ -81,6 +82,17 @@ public:
 
     /// Get the prim spec owned by this variant.
     SdfPrimSpecHandle GetPrimSpec() const;
+
+    /// Returns the nested variant sets.
+    ///
+    /// The result maps variant set names to variant sets.  Variant sets
+    /// may be removed through the proxy.
+    SdfVariantSetsProxy GetVariantSets() const;
+
+    /// Returns list of variant names for the given varient set.
+    std::vector<std::string> GetVariantNames(const std::string& name) const;
+
+    /// @}
 };
 
 /// Convenience function to create a variant spec for a given variant set and

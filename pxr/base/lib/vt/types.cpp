@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <vector>
 
-#include <boost/foreach.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/preprocessor.hpp>
 #include <boost/type_traits/is_same.hpp>

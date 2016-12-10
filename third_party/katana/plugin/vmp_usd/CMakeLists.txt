@@ -10,6 +10,7 @@ pxr_plugin(${PXR_PACKAGE}
         usdUtils
         glf
         usdImaging
+        usdImagingGL
         katanaPluginApi
         usdKatana
 

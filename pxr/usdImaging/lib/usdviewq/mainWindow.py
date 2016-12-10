@@ -31,7 +31,7 @@ from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
-from pxr import Usd, UsdGeom, UsdUtils, UsdImaging
+from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL
 from pxr import Glf
 from pxr import Sdf
 from pxr import Tf
@@ -211,7 +211,7 @@ def _GetShortString(prop, frame):
     from scalarTypes import GetScalarTypeFromAttr
     scalarType, isArray = GetScalarTypeFromAttr(prop)
     result = ''
-    if isArray:
+    if isArray and not isinstance(val, Sdf.ValueBlock):
         def arrayToStr(a):
             from itertools import chain
             elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
@@ -875,10 +875,6 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self._updateHUDMenu)
 
-        QtCore.QObject.connect(self._ui.actionHUD_VBO,
-                               QtCore.SIGNAL('triggered()'),
-                               self._HUDMenuChanged)
-
         QtCore.QObject.connect(self._ui.actionHUD_Complexity,
                                QtCore.SIGNAL('triggered()'),
                                self._HUDMenuChanged)
@@ -1088,13 +1084,13 @@ class MainWindow(QtGui.QMainWindow):
             Tf.MallocTag.Initialize()
 
         with Timer() as t:
-            if self._noRender:
-                # no point in optimizing for editing if we're not redrawing
-                loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
-                stage = Usd.Stage.Open(usdFilePath, 
-                                       self._pathResolverContext, 
-                                       loadSet)
-            else:
+            loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
+            stage = Usd.Stage.Open(usdFilePath, 
+                                   self._pathResolverContext, 
+                                   loadSet)
+
+            # no point in optimizing for editing if we're not redrawing
+            if stage and not self._noRender:
                 # as described in bug #99309, UsdStage change processing
                 # can't yet tell the difference between an effectively
                 # "inert" change caused by adding an empty Over primSpec, and
@@ -1106,11 +1102,8 @@ class MainWindow(QtGui.QMainWindow):
                 # away and start over.  Here, we limit the propagation of
                 # invalidation due to creation of new overs to the enclosing
                 # model by pre-populating the session layer with overs for
-                # the interior of the model hierarchy, very cheaply, by
-                # creating the overs before we've loaded any models. 
-                stage = Usd.Stage.Open(usdFilePath, 
-                                       self._pathResolverContext,
-                                       Usd.Stage.LoadNone)
+                # the interior of the model hierarchy, before the renderer
+                # starts listening for changes. 
                 sl = stage.GetSessionLayer()
                 # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
                 # so gather all the paths from the UsdStage first
@@ -1121,8 +1114,6 @@ class MainWindow(QtGui.QMainWindow):
                     for mpp in modelPaths:
                         parent = sl.GetPrimAtPath(mpp.GetParentPath())
                         Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-                if not self._unloaded:
-                    stage.GetPseudoRoot().Load()
         if not stage:
             print >> sys.stderr, "Error opening stage '" + usdFilePath + "'"
         else:
@@ -1461,7 +1452,6 @@ class MainWindow(QtGui.QMainWindow):
                                           self._nodeViewHelpDlg))
             
         self._nodeViewHelpDlg.show()
-
 
     def _redrawOptionToggled(self, checked):
         self._settings.setAndSave(RedrawOnScrub=checked)
@@ -1897,8 +1887,6 @@ class MainWindow(QtGui.QMainWindow):
         #     self._settings.get("actionHUD_Info", False)
         self._stageView.showHUD_Info = False
         self._ui.actionHUD_Info.setChecked(self._stageView.showHUD_Info)
-        self._stageView.showHUD_VBO = self._settings.get("actionHUD_VBO", True)
-        self._ui.actionHUD_VBO.setChecked(self._stageView.showHUD_VBO)
         self._stageView.showHUD_Complexity = \
             self._settings.get("actionHUD_Complexity", True)
         self._ui.actionHUD_Complexity.setChecked(
@@ -2739,7 +2727,7 @@ class MainWindow(QtGui.QMainWindow):
         return self._nodeToItemMap[self._stage.GetPrimAtPath(path)]
 
     def resetSelectionToPseudoroot(self):
-        self.selectNodeByPath("/", UsdImaging.GL.ALL_INSTANCES, "replace")
+        self.selectNodeByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
 
     def selectNodeByPath(self, path, instanceIndex, updateMode):
         """Modifies selection by a stage prim based on a prim path,
@@ -2770,7 +2758,7 @@ class MainWindow(QtGui.QMainWindow):
         # If not in instances picking mode, select all instances.
         if not self._ui.actionPick_Instances.isChecked():
             self._stageView.clearInstanceSelection()
-            instanceIndex = UsdImaging.GL.ALL_INSTANCES
+            instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
 
         item = self._getItemAtPath(path, ensureExpanded=True)
 
@@ -2782,7 +2770,7 @@ class MainWindow(QtGui.QMainWindow):
             self._stageView.setInstanceSelection(path, instanceIndex, True)
             item.setSelected(True)
         else:   # "toggle"
-            if instanceIndex != UsdImaging.GL.ALL_INSTANCES:
+            if instanceIndex != UsdImagingGL.GL.ALL_INSTANCES:
                 self._stageView.setInstanceSelection(path, instanceIndex,
                     not self._stageView.getInstanceSelection(path, instanceIndex))
                 # if no instances selected, unselect item
@@ -2798,7 +2786,7 @@ class MainWindow(QtGui.QMainWindow):
                 item = self._getItemAtPath(self._stage.GetPseudoRoot().GetPath())
                 item.setSelected(True)
 
-        if instanceIndex != UsdImaging.GL.ALL_INSTANCES:
+        if instanceIndex != UsdImagingGL.GL.ALL_INSTANCES:
             self._itemSelectionChanged()
 
         return item
@@ -2861,7 +2849,7 @@ class MainWindow(QtGui.QMainWindow):
             first = True
             for prim in primsToSelect:
                 if self._primShouldBeShown(prim):
-                    instanceIndex = UsdImaging.GL.ALL_INSTANCES
+                    instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
                     item = self.selectNodeByPath(prim.GetPath(), instanceIndex,
                                           "replace" if first else "add")
                     first = False
@@ -3124,6 +3112,124 @@ class MainWindow(QtGui.QMainWindow):
     def _getSelectedPrim(self):
         return self._currentNodes[0] if self._currentNodes else None
 
+    def _findIndentPos(self, s):
+        for index, char in enumerate(s):
+            if char != ' ':
+                return index
+
+        return len(s) - 1
+
+    def _maxToolTipWidth(self):
+        return 90
+
+    def _maxToolTipHeight(self):
+        return 32
+
+    def _trimWidth(self, s, isList=False):
+        # We special-case the display offset because list
+        # items will have </li> tags embedded in them.
+        offset = 10 if isList else 5 
+
+        if len(s) >= self._maxToolTipWidth():
+            # For strings, well do special ellipsis behavior
+            # which displays the last 5 chars with an ellipsis 
+            # in between. For other values, we simply display a 
+            # trailing ellipsis to indicate more data.
+            if s[0] == '\'' and s[-1] == '\'':
+                return (s[:self._maxToolTipWidth() - offset] 
+                        + '...' 
+                        + s[len(s) - offset:])
+            else:
+                return s[:self._maxToolTipWidth()] + '...'
+        return s
+
+    def _limitToolTipSize(self, s, isList=False):
+        ttStr = '' 
+
+        lines = s.split('<br>')
+        for index, line in enumerate(lines):
+            if index+1 > self._maxToolTipHeight():
+                break
+            ttStr += self._trimWidth(line, isList)
+            if not isList and index != len(lines)-1:
+                ttStr += '<br>' 
+
+        if (len(lines) > self._maxToolTipHeight()):
+            ellipsis = ' '*self._findIndentPos(line) + '...'
+            if isList:
+                ellipsis = '<li>' + ellipsis + '</li>'
+            else:
+                ellipsis += '<br>'
+
+            ttStr += ellipsis
+            ttStr += self._trimWidth(lines[len(lines)-2], isList)
+
+        return ttStr
+
+    def _addRichTextIndicators(self, s):
+        # - We'll need to use html-style spaces to ensure they are respected
+        # in the toolTip which uses richtext formatting.
+        # - We wrap the tooltip as a paragraph to ensure &nbsp; 's are 
+        # respected by Qt's rendering engine.
+        return '<p>' + s.replace(' ', '&nbsp;') + '</p>'
+
+    def _limitValueDisplaySize(self, s):
+        maxValueChars = 300
+        return s[:maxValueChars]
+
+    def _cleanStr(self, s, repl):
+        from itertools import groupby
+        # Remove redundant char seqs and strip newlines.
+        replaced = str(s).replace('\n', repl)
+        filtered = [u for (u, _) in groupby(replaced.split())]
+        return ' '.join(filtered)
+
+    def _formatMetadataValueView(self, val):
+        from pprint import pformat, pprint
+
+        valStr = self._cleanStr(val, ' ')
+        ttStr  = ''
+        isList = False
+
+        # For iterable things, like VtArrays and lists, we want to print 
+        # a nice numbered list.
+        if isinstance(val, list) or getattr(val, "_isVtArray", False): 
+            isList = True
+
+            # We manually supply the index for our list elements
+            # because Qt's richtext processor starts the <ol> numbering at 1.
+            for index, value in enumerate(val): 
+                last = len(val) - 1
+                trimmed = self._cleanStr(value, ' ')                 
+                ttStr += ("<li>" + str(index) + ":  " + trimmed + "</li><br>")
+
+        elif isinstance(val, dict):
+            # We stringify all dict elements so they display more nicely.
+            # For example, by default, the pprint operation would print a
+            # Vt Array as Vt.Array(N, (E1, ....). By running it through
+            # str(..). we'd get [(E1, E2), ....] which is more useful to
+            # the end user trying to examine their data.
+            for k, v in val.items():
+                val[k] = str(v)
+            
+            # We'll need to strip the quotes generated by the str' operation above
+            stripQuotes = lambda s: s.replace('\'', '').replace('\"', "")
+
+            valStr = stripQuotes(self._cleanStr(val, ' '))
+
+            formattedDict = pformat(val)
+            formattedDictLines = formattedDict.split('\n')
+            for index, line in enumerate(formattedDictLines):
+                ttStr += (stripQuotes(line) 
+                    + ('' if index == len(formattedDictLines) - 1 else '<br>'))
+        else:
+            ttStr = self._cleanStr(val, '<br>') 
+
+        valStr = self._limitValueDisplaySize(valStr)
+        ttStr = self._addRichTextIndicators(
+                    self._limitToolTipSize(ttStr, isList))
+        return valStr, ttStr
+
     def _updateMetadataView(self, obj=None):
         """ Sets the contents of the metadata viewer"""
 
@@ -3146,15 +3252,24 @@ class MainWindow(QtGui.QMainWindow):
         m = obj.GetAllMetadata()
 
         # We have to explicitly add in metadata related to composition arcs
-        # here, since GetAllMetadata prunes them out.
+        # and value clips here, since GetAllMetadata prunes them out.
         #
         # XXX: Would be nice to have some official facility to query
         # this.
-        compKeys = ["references", "inheritPaths", "specializes",
+        compKeys = [# composition related metadata
+                    "references", "inheritPaths", "specializes",
                     "payload", "subLayers", 
-                    "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
-                    "clipActive", "clipPrimPath"]
 
+                    # non-template clip metadata
+                    "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
+                    "clipActive", "clipPrimPath",
+                   
+                    # template clip metadata
+                    "clipTemplateAssetPath",
+                    "clipTemplateStartTime", "clipTemplateEndTime",
+                    "clipTemplateStride"]
+        
+        
         for k in compKeys:
             v = obj.GetMetadata(k)
             if not v is None:
@@ -3195,14 +3310,8 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 val = m[key]
 
-            # format the tooltip more legibly for things that are really
-            # lists. WBN to use this in the table itself, but that requires 
-            # deeper Qt-fu
-            valStr = str(val).replace('\n', ', ')
-            ttStr = valStr
-            if isinstance(val, list):
-                ttStr = "\n".join(str(v) for v in val)
-            attrVal = QtGui.QTableWidgetItem(valStr[:500])
+            valStr, ttStr = self._formatMetadataValueView(val) 
+            attrVal = QtGui.QTableWidgetItem(valStr)
             attrVal.setToolTip(ttStr)
 
             tableWidget.setItem(i, 1, attrVal)
@@ -3248,12 +3357,16 @@ class MainWindow(QtGui.QMainWindow):
             for i, layer in enumerate(layers):
                 layerItem = QtGui.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
-                layerItem.setToolTip(layer.layer.realPath)
+                toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
+                    (layer.layer.identifier, layerItem.layerPath)
+                toolTip = self._limitToolTipSize(toolTip)
+                layerItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 0, layerItem)
 
                 offsetItem = QtGui.QTableWidgetItem(layer.GetOffsetString())
                 offsetItem.layerPath = layer.layer.realPath
-                offsetItem.setToolTip(str(layer.offset))
+                toolTip = self._limitToolTipSize(str(layer.offset)) 
+                offsetItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 1, offsetItem)
                 
             tableWidget.resizeColumnToContents(0)
@@ -3284,24 +3397,26 @@ class MainWindow(QtGui.QMainWindow):
 
             for i, spec in enumerate(specs):
                 layerItem = QtGui.QTableWidgetItem(spec.layer.GetDisplayName())
-                layerItem.setToolTip(spec.layer.realPath)
+                layerItem.setToolTip(self._limitToolTipSize(spec.layer.realPath))
                 tableWidget.setItem(i, 0, layerItem)
 
                 pathItem = QtGui.QTableWidgetItem(spec.path.pathString)
-                pathItem.setToolTip(spec.path.pathString)
+                pathItem.setToolTip(self._limitToolTipSize(spec.path.pathString))
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
                     valStr = _GetShortString(spec, self._currentFrame)
+                    ttStr = valStr
                 else:
                     metadataKeys = spec.GetMetaDataInfoKeys()
                     metadataDict = {}
                     for mykey in metadataKeys:
                         if spec.HasInfo(mykey):
                             metadataDict[mykey] = spec.GetInfo(mykey)
-                    valStr = str(metadataDict)
+                    valStr, ttStr = self._formatMetadataValueView(metadataDict)
+
                 valueItem = QtGui.QTableWidgetItem(valStr)
-                valueItem.setToolTip(valStr)
+                valueItem.setToolTip(ttStr)
                 tableWidget.setItem(i, 2, valueItem)
                 # Add the data the context menu needs
                 for j in range(3):
@@ -3327,7 +3442,6 @@ class MainWindow(QtGui.QMainWindow):
         """called when a HUD menu item has changed that does not require info refresh"""
         self._stageView.showHUD = self._ui.actionHUD.isChecked()
         self._stageView.showHUD_Info = self._ui.actionHUD_Info.isChecked()
-        self._stageView.showHUD_VBO = self._ui.actionHUD_VBO.isChecked()
         self._stageView.showHUD_Complexity = \
             self._ui.actionHUD_Complexity.isChecked()
         self._stageView.showHUD_Performance = \
@@ -3338,7 +3452,6 @@ class MainWindow(QtGui.QMainWindow):
 
         self._settings.setAndSave(actionHUD=self._ui.actionHUD.isChecked())
         self._settings.setAndSave(actionHUD_Info=self._ui.actionHUD_Info.isChecked())
-        self._settings.setAndSave(actionHUD_VBO=self._ui.actionHUD_VBO.isChecked())
         self._settings.setAndSave(actionHUD_Complexity=\
                                         self._ui.actionHUD_Complexity.isChecked())
         self._settings.setAndSave(actionHUD_Performance=\

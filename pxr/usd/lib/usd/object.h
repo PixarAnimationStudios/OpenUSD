@@ -650,4 +650,24 @@ UsdObject::SetMetadata(const TfToken& key, const T& value) const
     return _SetMetadataImpl<SdfAbstractDataConstValue>(key, in);
 }
 
+template <typename T>
+bool
+UsdObject::GetMetadataByDictKey(const TfToken& key, 
+                                const TfToken &keyPath, 
+                                T *value) const
+{
+    SdfAbstractDataTypedValue<T> result(value);
+    return _GetMetadataImpl<SdfAbstractDataValue>(key, &result, keyPath);
+}
+
+template <typename T>
+bool
+UsdObject::SetMetadataByDictKey(const TfToken& key, 
+                                const TfToken &keyPath, 
+                                const T& value) const
+{
+    SdfAbstractDataConstTypedValue<T> in(&value);
+    return _SetMetadataImpl<SdfAbstractDataConstValue>(key, in, keyPath);
+}
+
 #endif //USD_OBJECT_H

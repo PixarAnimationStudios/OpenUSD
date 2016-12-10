@@ -27,12 +27,18 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const UsdPrim& prim,
         const TfToken& shadingMode,
         const TfToken& defaultMeshScheme,
-        const bool readAnimData)
+        const bool readAnimData,
+        const bool useCustomFrameRange,
+        const double startTime,
+        const double endTime)
     : 
         _prim(prim),
         _shadingMode(shadingMode),
         _defaultMeshScheme(defaultMeshScheme),
-        _readAnimData(readAnimData)
+        _readAnimData(readAnimData),
+        _useCustomFrameRange(useCustomFrameRange),
+        _startTime(startTime),
+        _endTime(endTime)
 {
 }
 const UsdPrim&
@@ -54,4 +60,19 @@ const bool&
 PxrUsdMayaPrimReaderArgs::GetReadAnimData() const
 {
     return _readAnimData;
+}
+bool 
+PxrUsdMayaPrimReaderArgs::HasCustomFrameRange() const
+{
+    return _useCustomFrameRange;
+}
+double 
+PxrUsdMayaPrimReaderArgs::GetStartTime() const
+{
+    return _startTime;
+}
+double 
+PxrUsdMayaPrimReaderArgs::GetEndTime() const
+{
+    return _endTime;
 }

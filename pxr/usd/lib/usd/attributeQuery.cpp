@@ -57,8 +57,8 @@ UsdAttributeQuery::CreateQueries(
 {
     std::vector<UsdAttributeQuery> rval;
     rval.reserve(attrNames.size());
-    TF_FOR_ALL(it, attrNames) {
-        rval.push_back(UsdAttributeQuery(prim, *it));
+    for (const auto& attrName : attrNames) {
+        rval.push_back(UsdAttributeQuery(prim, attrName));
     }
 
     return rval;
@@ -179,7 +179,7 @@ UsdAttributeQuery::GetBracketingTimeSamples(double desiredTime,
 bool 
 UsdAttributeQuery::HasValue() const
 {
-    return _resolveInfo.source != Usd_ResolveInfoSourceNone;  
+    return _resolveInfo._source != UsdResolveInfoSourceNone;  
 }
 
 bool 

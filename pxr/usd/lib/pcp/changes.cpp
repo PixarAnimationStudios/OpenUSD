@@ -38,7 +38,6 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tracelite/trace.h"
-#include <boost/foreach.hpp>
 
 static
 void
@@ -277,17 +276,18 @@ Pcp_EntryRequiresPropertyIndexChange(const SdfChangeList::Entry& entry)
 }
 
 static bool
-Pcp_DecoratorRequiresPrimIndexChange(PcpPayloadDecorator* decorator,
-                                     const SdfLayerHandle& layer,
-                                     const SdfPath& path,
-                                     const SdfChangeList::Entry& entry)
+Pcp_MayNeedPrimIndexChangeForDecorator(PcpPayloadDecorator* decorator,
+                                       const SdfLayerHandle& layer,
+                                       const SdfPath& path,
+                                       const SdfChangeList::Entry& entry)
 {
     if (not decorator) {
         return false;
     }
 
-    TF_FOR_ALL(it, entry.infoChanged) {
-        if (decorator->IsFieldRelevantForDecoration(layer, path, it->first)) {
+    using _InfoChange = std::pair<TfToken, SdfChangeList::Entry::InfoChange>;
+    for (const _InfoChange& change : entry.infoChanged) {
+        if (decorator->IsFieldRelevantForDecoration(change.first)) {
             return true;
         }
     }
@@ -321,43 +321,9 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
     typedef std::map<SdfPath, SpecChangeBitmask,
                      SdfPath::FastLessThan> SpecChangesTypes;
 
-    class _FindAncestor {
-    public:
-        _FindAncestor(const SdfPathSet& pcs) : _pcs(pcs) { }
-
-        // If \p path or a prefix of \p path is in the set passed to the
-        // c'tor then returns the path to the nearest ancestral property
-        // or prim of the path found in the set.  Otherwise returns the
-        // empty path.
-        SdfPath operator()(const SdfPath& path) const
-        {
-            SdfPath result;
-
-            if (not _pcs.empty()) {
-                SdfPathSet::const_iterator i = _pcs.lower_bound(path);
-                if (i != _pcs.end() and *i == path) {
-                    result = *i;
-                }
-                else if (i != _pcs.begin()) {
-                    --i;
-                    if (path.HasPrefix(*i)) {
-                        result = *i;
-                    }
-                }
-                if (not result.IsEmpty()) {
-                    if (result.IsRelationalAttributePath()) {
-                        result = result.GetParentPath();
-                    }
-                    result = result.GetParentPath();
-                }
-            }
-
-            return result;
-        }
-
-    private:
-        const SdfPathSet& _pcs;
-    };
+    // Payload decorator changes
+    typedef std::pair<PcpCache*, SdfPath> CacheAndLayerPathPair;
+    typedef std::vector<CacheAndLayerPathPair> CacheAndLayerPathPairVector;
 
     TRACE_FUNCTION();
 
@@ -368,9 +334,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
     SdfPathVector oldPaths, newPaths;
     SdfPathSet fallbackToAncestorPaths;
 
-    typedef std::pair<PcpCache*, SdfPath> CacheAndLayerPathPair;
-    typedef std::vector<CacheAndLayerPathPair> CacheAndLayerPathPairVector;
-    CacheAndLayerPathPairVector pathsWithSignificantChangesByCache;
+    CacheAndLayerPathPairVector payloadDecoratorChanges;
 
     // As we process each layer below, we'll look for changes that
     // affect entire layer stacks, then process those in one pass
@@ -381,10 +345,43 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
     std::string summary;
     std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
 
+    PCP_APPEND_DEBUG("  Caches:\n");
+    for (PcpCache* cache: caches) {
+        PCP_APPEND_DEBUG("    %s\n",
+                 TfStringify(cache->GetLayerStack()->GetIdentifier()).c_str());
+    }
+
+    const bool allCachesInUsdMode = std::all_of(
+        caches.begin(), caches.end(), 
+        [](const PcpCache* cache) { return cache->IsUsd(); });
+
     // Process all changes, first looping over all layers.
     TF_FOR_ALL(i, changes) {
-        const SdfLayerHandle& layer     = TfDynamic_cast<SdfLayerHandle>(i->first);
+        const SdfLayerHandle& layer     = i->first;
         const SdfChangeList& changeList = i->second;
+
+        // PcpCaches in USD mode only cache prim indexes, so they only
+        // care about prim changes. We can do a pre-scan of the entries
+        // and bail early if none of the changes are for prims, skipping
+        // over unnecessary work.
+        if (allCachesInUsdMode) {
+            using _Entries = SdfChangeList::EntryList;
+
+            const _Entries& entries = changeList.GetEntryList();
+            const bool hasPrimChanges = std::any_of(
+                entries.begin(), entries.end(),
+                [](const _Entries::value_type& entry) {
+                    return (entry.first.IsPrimOrPrimVariantSelectionPath() or
+                            entry.first == SdfPath::AbsoluteRootPath());
+                });
+
+            if (not hasPrimChanges) {
+                PCP_APPEND_DEBUG(
+                    "  Layer @%s@ changed:  skipping non-prim changes\n",
+                    layer->GetIdentifier().c_str());
+                continue;
+            }
+        }
 
         // Find every layer stack in every cache that includes 'layer'.
         // If there aren't any such layer stacks, we can ignore this change.
@@ -392,7 +389,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         typedef std::vector<CacheLayerStacks> CacheLayerStacksVector;
 
         CacheLayerStacksVector cacheLayerStacks;
-        BOOST_FOREACH(PcpCache* cache, caches) {
+        for (auto cache : caches) {
             PcpLayerStackPtrVector stacks =
                 cache->FindAllLayerStacksUsingLayer(layer);
             if (not stacks.empty()) {
@@ -418,7 +415,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         oldPaths.clear();
         newPaths.clear();
         fallbackToAncestorPaths.clear();
-        pathsWithSignificantChangesByCache.clear();
+        payloadDecoratorChanges.clear();
 
         // Loop over each entry on the layer.
         TF_FOR_ALL(j, changeList.GetEntryList()) {
@@ -547,11 +544,6 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                         // XXX: If this becomes a performance issue, we could
                         //      potentially apply the same incremental updating
                         //      that's currently done for relocates.
-                        //
-                        // XXX: This isn't picking up the case when layer
-                        //      offsets are changed in a referenced layer
-                        //      stack -- see bug 96370.
-                        //
                         pathsWithSignificantChanges.insert(path);
                         PCP_APPEND_DEBUG("  Layer @%s@ changed:  "
                                          "layer offsets (significant)\n",
@@ -598,13 +590,13 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     pathsWithSignificantChanges.insert(path);
                 }
                 else {
-                    BOOST_FOREACH(const CacheLayerStacks& c, cacheLayerStacks) {
+                    for (const auto& c : cacheLayerStacks) {
                         PcpCache* cache = c.first;
-                        if (Pcp_DecoratorRequiresPrimIndexChange(
+                        if (Pcp_MayNeedPrimIndexChangeForDecorator(
                                 cache->GetPayloadDecorator(), 
                                 layer, path, entry)) {
 
-                            pathsWithSignificantChangesByCache.push_back(
+                            payloadDecoratorChanges.push_back(
                                 CacheAndLayerPathPair(cache, path));
                         }
                     }
@@ -614,36 +606,41 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     layerStackChangeMask |= LayerStackRelocatesChange;
                 }
             }
-
-            else if (path.IsPropertyPath()) {
-                if (entry.flags.didRename) {
-                    // XXX: See the comment above regarding renaming
-                    //      prims.
-                    oldPaths.push_back(entry.oldPath);
-                    newPaths.push_back(path);
-                    PCP_APPEND_DEBUG("  Renamed @%s@<%s> to <%s>\n",
-                                     layer->GetIdentifier().c_str(),
-                                     entry.oldPath.GetText(), path.GetText());
+            else if (not allCachesInUsdMode) {
+                // See comment above regarding PcpCaches in USD mode.
+                // We also check for USD mode here to ensure we don't
+                // process any non-prim changes if the changelist had
+                // a mix of prim and non-prim changes.
+                if (path.IsPropertyPath()) {
+                    if (entry.flags.didRename) {
+                        // XXX: See the comment above regarding renaming
+                        //      prims.
+                        oldPaths.push_back(entry.oldPath);
+                        newPaths.push_back(path);
+                        PCP_APPEND_DEBUG("  Renamed @%s@<%s> to <%s>\n",
+                                         layer->GetIdentifier().c_str(),
+                                         entry.oldPath.GetText(),path.GetText());
+                    }
+                    if (int specChanges =
+                            Pcp_EntryRequiresPropertySpecsChange(entry)) {
+                        pathsWithSpecChangesTypes[path] |= specChanges;
+                    }
+                    if (Pcp_EntryRequiresPropertyIndexChange(entry)) {
+                        pathsWithSignificantChanges.insert(path);
+                    }
                 }
-                if (int specChanges =
-                        Pcp_EntryRequiresPropertySpecsChange(entry)) {
-                    pathsWithSpecChangesTypes[path] |= specChanges;
-                }
-                if (Pcp_EntryRequiresPropertyIndexChange(entry)) {
-                    pathsWithSignificantChanges.insert(path);
+                else if (path.IsTargetPath()) {
+                    if (entry.flags.didAddTarget) {
+                        pathsWithSpecChangesTypes[path] |=
+                            Pcp_EntryChangeSpecsAddInert;
+                    }
+                    if (entry.flags.didRemoveTarget) {
+                        pathsWithSpecChangesTypes[path] |=
+                            Pcp_EntryChangeSpecsRemoveInert;
+                    }
                 }
             }
-            else if (path.IsTargetPath()) {
-                if (entry.flags.didAddTarget) {
-                    pathsWithSpecChangesTypes[path] |=
-                        Pcp_EntryChangeSpecsAddInert;
-                }
-                if (entry.flags.didRemoveTarget) {
-                    pathsWithSpecChangesTypes[path] |=
-                        Pcp_EntryChangeSpecsRemoveInert;
-                }
-            }
-        }
+        } // end for all entries in changelist
 
         // Push layer stack changes to all layer stacks using this layer.
         if (layerStackChangeMask != 0) {
@@ -682,8 +679,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // Note that in the below code, the order of the if statements does
         // matter, as a spec could be added, then removed (for example) within 
         // the same change.
-        BOOST_FOREACH(const SpecChangesTypes::value_type& value,
-                      pathsWithSpecChangesTypes) {
+        for (const auto& value : pathsWithSpecChangesTypes) {
             const SdfPath& path = value.first;
             if (path.IsPrimOrPrimVariantSelectionPath()) {
                 if (value.second & Pcp_EntryChangeSpecsNonInert) {
@@ -710,39 +706,30 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
             }
         }
 
-        // Remove every path for which a prefix path is in the ancestor set.
-        Pcp_SubsumeDescendants(&fallbackToAncestorPaths);
-
-        // Make a functor for finding the fallback ancestor.
-        _FindAncestor findAncestor(fallbackToAncestorPaths);
-
-        // For every path we've found on this layer that has a significant
-        // change, find all paths in the cache that use the spec at
-        // (layer,path).  If there aren't any and we want to fallback to our
-        // parent then find all paths in the cache that use the parent.  In
-        // either case mark the found paths as having a significant change.
-        BOOST_FOREACH(const SdfPath& path, pathsWithSignificantChanges) {
-            // Compute the closest ancestor that must have dependencies.
-            SdfPath fallbackPath = findAncestor(path);
-
-            BOOST_FOREACH(PcpCache* cache, caches) {
+        // For every path we've found on this layer that has a
+        // significant change, find all paths in the cache that use the
+        // spec at (layer, path) and mark them as affected.
+        for (const auto& path : pathsWithSignificantChanges) {
+            const bool onlyExistingDependentPaths =
+                fallbackToAncestorPaths.count(path) == 0;
+            for (auto cache : caches) {
                 _DidChangeDependents(
-                    _ChangeTypeSignificant, cache, layer,
-                    path, fallbackPath, debugSummary);
+                    _ChangeTypeSignificant, cache, layer, path, changeList,
+                    onlyExistingDependentPaths, debugSummary);
             }
         }
 
-        // For every path we've found that has a significant change in
-        // a specific cache, use the same logic as above to mark those paths
-        // as having a significant change, but only in the associated cache.
-        BOOST_FOREACH(const CacheAndLayerPathPair& p,
-                      pathsWithSignificantChangesByCache) {
-            // Compute the closest ancestor that must have dependencies.
-            SdfPath fallbackPath = findAncestor(p.second);
-
+        // For every (layer, path) site we've found that has a change 
+        // to a field that a cache's payload decorator cares about, find 
+        // all paths in the cache that depend on that site and register a
+        // significant change if the decorator says the field change affects
+        // how it decorates payloads.
+        for (const auto& p : payloadDecoratorChanges) {
+            const bool onlyExistingDependentPaths =
+                fallbackToAncestorPaths.count(p.second) == 0;
             _DidChangeDependents(
-                _ChangeTypeSignificant, p.first, layer,
-                p.second, fallbackPath, debugSummary);
+                _ChangeTypeDecorator, p.first, layer, p.second, changeList,
+                onlyExistingDependentPaths, debugSummary);
         }
 
         // For every path we've found that has a significant change,
@@ -789,7 +776,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // there aren't any then find all paths in the cache that use the
         // parent.  In either case mark the found paths as needing their
         // property spec stacks blown.
-        BOOST_FOREACH(const PathChangeValue& value, pathsWithSpecChanges) {
+        for (const auto& value : pathsWithSpecChanges) {
             const SdfPath& path        = value.first;
             PathChangeBitmask changes = value.second;
 
@@ -807,13 +794,10 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                 changeType |= _ChangeTypeSpecs;
             }
 
-            // Compute the closest ancestor that must have dependencies.
-            SdfPath fallbackPath = findAncestor(path);
-
-            BOOST_FOREACH(PcpCache* cache, caches) {
+            for (auto cache : caches) {
                 _DidChangeDependents(
-                    changeType, cache, layer,
-                    path, fallbackPath, debugSummary);
+                    changeType, cache, layer, path, changeList,
+                    /* filter */ false, debugSummary);
             }
         }
 
@@ -823,9 +807,8 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // comparison to edits added through DidChangePaths().
         if (not oldPaths.empty()) {
             SdfPathVector depPaths;
-            PcpNodeRefVector depNodes;
 
-            BOOST_FOREACH(PcpCache* cache, caches) {
+            for (auto cache : caches) {
                 PcpCacheChanges::PathEditMap& renameChanges =
                     _GetRenameChanges(cache);
 
@@ -838,38 +821,44 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     // it with the object at the old path.  So we must
                     // act as if we're deleting the object at the new path.
                     if (not newPath.IsEmpty()) {
-                        depPaths = cache->GetPathsUsingSite(layer, newPath);
-                        BOOST_FOREACH(const SdfPath& depNewPath, depPaths) {
-                            renameChanges[depNewPath] = SdfPath();
+                        PcpDependencyVector deps =
+                            cache->FindSiteDependencies(
+                                layer, newPath,
+                                PcpDependencyTypeAnyNonVirtual,
+                                /* recurseOnSite */ false,
+                                /* recurseOnIndex */ false,
+                                /* filter */ true
+                            );
+                        for (const auto &dep: deps) {
+                            renameChanges[dep.indexPath] = SdfPath();
                         }
                     }
 
                     // Do every path dependent on the old path.
-                    depPaths = cache->_GetPathsUsingSite(
-                        layer, oldPath, PcpCache::UsingSiteOnly, 
-                        /* layerOffsets = */ 0, &depNodes);
-
-                    for (size_t j = 0, o = depPaths.size(); j != o; ++j) {
-                        const SdfPath& depOldPath = depPaths[j];
-                        const PcpNodeRef& sourceNode = depNodes[j];
-
-                        SdfPath depNewPath;
-
-                        // If this isn't a delete then translate the new path
+                    PcpDependencyVector deps =
+                        cache->FindSiteDependencies(
+                            layer, oldPath,
+                            PcpDependencyTypeAnyNonVirtual,
+                            /* recurseOnSite */ false,
+                            /* recurseOnIndex */ false,
+                            /* filter */ true
+                        );
+                    for (const auto &dep: deps) {
+                        SdfPath newIndexPath;
+                        // If this isn't a delete then translate newPath
                         if (not newPath.IsEmpty()) {
-                            // XXX: Will translation work correctly
-                            //      given that it's based on the old
-                            //      path?
-                            depNewPath = PcpTranslatePathFromNodeToRoot(
-                                sourceNode, newPath);
+                            newIndexPath =
+                                dep.mapFunc.MapSourceToTarget(newPath);
                         }
-
-                        renameChanges[depOldPath] = depNewPath;
+                        renameChanges[dep.indexPath] = newIndexPath;
+                        PCP_APPEND_DEBUG("  renameChanges <%s> to <%s>\n",
+                             dep.indexPath.GetText(),
+                             newIndexPath.GetText());
                     }
                 }
             }
         }
-    }
+    } // end for all layers in changelist map
 
     // Process layer stack changes.  This will handle both blowing
     // caches (as needed) for the layer stack contents and offsets,
@@ -1052,12 +1041,15 @@ PcpChanges::DidMaybeFixAsset(
             PCP_APPEND_DEBUG("    <%s>\n", site.path.GetText());
             DidChangeSignificantly(cache, site.path);
         }
-        SdfPathVector depPaths =
-            cache->GetPathsUsingSite(layerStack, site.path, 
-                                     PcpDirect | PcpAncestral);
-        BOOST_FOREACH(const SdfPath& depPath, depPaths) {
-            PCP_APPEND_DEBUG("    <%s>\n", depPath.GetText());
-            DidChangeSignificantly(cache, depPath);
+        PcpDependencyVector deps =
+            cache->FindSiteDependencies(layerStack, site.path,
+                                        PcpDependencyTypeAnyIncludingVirtual,
+                                        /* recurseOnSite */ true,
+                                        /* recurseOnIndex */ true,
+                                        /* filter */ true);
+        for(const auto &dep: deps) {
+            PCP_APPEND_DEBUG("    <%s>\n", dep.indexPath.GetText());
+            DidChangeSignificantly(cache, dep.indexPath);
         }
     }
 
@@ -1115,8 +1107,12 @@ PcpChanges::DidChangeSpecs(
 
         bool shouldRebuildIndex = false;
 
+        const PcpPrimIndex* primIndex = cache->FindPrimIndex(path);
         const PcpNodeRef nodeForChangedSpec = 
-            cache->_GetNodeProvidingSpec(path, changedLayer, changedPath);
+            primIndex
+            ? primIndex->GetNodeProvidingSpec(changedLayer, changedPath)
+            : PcpNodeRef();
+
         if (not nodeForChangedSpec) {
             const bool primWasAdded = changedLayer->HasSpec(changedPath);
             if (primWasAdded) {
@@ -1167,12 +1163,40 @@ PcpChanges::DidChangePaths(
     //      oldPath appearing multiple times, e.g. A -> B -> C and
     //      D -> B -> E, where B appears in two chains.
 
-    TF_DEBUG(PCP_CHANGES).Msg("PcpChanges::DidChangePath: @%s@<%s> to <%s>\n",
+    TF_DEBUG(PCP_CHANGES).Msg("PcpChanges::DidChangePaths: @%s@<%s> to <%s>\n",
                               cache->GetLayerStackIdentifier().rootLayer->
                                   GetIdentifier().c_str(),
                               oldPath.GetText(), newPath.GetText());
 
     _GetCacheChanges(cache).didChangePath[oldPath] = newPath;
+}
+
+void 
+PcpChanges::DidChangeFieldsForDecorator(PcpCache* cache, const SdfPath& path,
+                                        const SdfLayerHandle& changedLayer,
+                                        const SdfPath& changedPath,
+                                        const SdfChangeList& changeList)
+{
+    const SdfChangeList::Entry* changes = 
+        TfMapLookupPtr(changeList.GetEntryList(), changedPath);
+    if (not TF_VERIFY(changes)) {
+        return;
+    }
+
+    PcpPayloadDecorator* decorator = cache->GetPayloadDecorator();
+    if (not TF_VERIFY(decorator)) {
+        return;
+    }
+
+    using _InfoChange = std::pair<TfToken, SdfChangeList::Entry::InfoChange>;
+    for (const _InfoChange& change : changes->infoChanged) {
+        if (decorator->IsFieldRelevantForDecoration(change.first) and
+            decorator->IsFieldChangeRelevantForDecoration(
+                path, changedLayer, changedPath, change.first, change.second)) {
+            DidChangeSignificantly(cache, path);
+            break;
+        }
+    }
 }
 
 void
@@ -1329,7 +1353,7 @@ PcpChanges::_OptimizePathChanges(
 
     // sdOnly now has the path changes that Sd told us about but
     // DidChangePaths() did not.  We must assume the worst.
-    BOOST_FOREACH(const PathPair& change, sdOnly) {
+    for (const auto& change : sdOnly) {
         const SdfPath& oldPath = change.first;
         const SdfPath& newPath = change.second;
 
@@ -1355,18 +1379,18 @@ PcpChanges::_DidChangeDependents(
     PcpCache* cache,
     const SdfLayerHandle& layer,
     const SdfPath& path,
-    const SdfPath& fallbackAncestor,
+    const SdfChangeList& layerChangeList,
+    bool onlyExistingDependentPaths,
     std::string* debugSummary)
 {
     // Don't want to put a trace here, as this function can get called many
     // times during change processing.
     // TRACE_FUNCTION();
 
-    const char* significance = 
-        (changeType & _ChangeTypeSignificant) ? "significant" : "insignificant";
     const bool isSignificantPrimChange = 
         (changeType & _ChangeTypeSignificant) and 
-        path.IsPrimOrPrimVariantSelectionPath();
+        (path == SdfPath::AbsoluteRootPath() or
+         path.IsPrimOrPrimVariantSelectionPath());
 
     // Set up table of functions to call for each dependency, based
     // on the type of change we're trying to propagate.
@@ -1381,7 +1405,8 @@ PcpChanges::_DidChangeDependents(
             PcpCache* cache, 
             const SdfPath& depPath,
             const SdfLayerHandle& changedLayer,
-            const SdfPath& changedPath) const
+            const SdfPath& changedPath,
+            const SdfChangeList& changeList) const
         {
             if (_changeType & _ChangeTypeSignificant) {
                 _changes->DidChangeSignificantly(cache, depPath);
@@ -1399,6 +1424,10 @@ PcpChanges::_DidChangeDependents(
                     _changes->DidChangeTargets(cache, depPath,
                         PcpCacheChanges::TargetTypeConnection);
                 }
+                if (_changeType & _ChangeTypeDecorator) {
+                    _changes->DidChangeFieldsForDecorator(
+                        cache, depPath, changedLayer, changedPath, changeList);
+                }
             }
         }
 
@@ -1408,10 +1437,6 @@ PcpChanges::_DidChangeDependents(
     };
 
     const _ChangeFunctions changeFuncs(this, changeType);
-
-    // Find all the dependencies specified.
-    std::string pathDebugSummary;
-    static const bool spookyDependencies = true;
 
     // For significant changes to an Sd prim, we need to process its
     // dependencies as well as dependencies on descendants of that prim.
@@ -1424,95 +1449,33 @@ PcpChanges::_DidChangeDependents(
     //
     // We don't need to do this for significant property changes as properties
     // can't be individually relocated.
-    const PcpCache::UsingSite usingSite = 
-        isSignificantPrimChange ?
-        PcpCache::UsingSiteAndDescendantPrims : PcpCache::UsingSiteOnly;
+    PcpDependencyVector deps = cache->FindSiteDependencies(
+        layer, path, PcpDependencyTypeAnyIncludingVirtual,
+        /* recurseOnSite */ isSignificantPrimChange,
+        /* recurseOnIndex */ false,
+        /* filter */ onlyExistingDependentPaths);
 
-    SdfPathVector depPaths;
-
-    // In USD mode, dependencies will be on the layer stacks, not the SdSites.
-    if (cache->_usd) {
-        const PcpLayerStackPtrVector& layerStacks =
-            cache->FindAllLayerStacksUsingLayer(layer);
-        BOOST_FOREACH(const PcpLayerStackPtr &layerStack, layerStacks) {
-            if (layerStack == cache->GetLayerStack()) {
-                depPaths.push_back(path.StripAllVariantSelections());
-            }
-            SdfPathVector depsFromLayerStack =
-                cache->GetPathsUsingSite(
-                    layerStack,
-                    path,
-                    PcpDirect | PcpAncestral,
-                    (changeType & _ChangeTypeSignificant) /*recursive*/);
-            if (not depsFromLayerStack.empty()) {
-                depPaths.insert(depPaths.end(), 
-                                depsFromLayerStack.begin(),
-                                depsFromLayerStack.end());
-            }
-        }
-    } else {
-        depPaths = cache->_GetPathsUsingSite(
-            layer, path, usingSite,
-            /* layerOffsets = */ NULL, /* sourceNodes = */ NULL,
-            fallbackAncestor, not spookyDependencies,
-            debugSummary ? &pathDebugSummary : NULL);
-    }
-        
-            
-    if (not depPaths.empty()) {
-        // Found dependencies at path.  We apparently did not just add
-        // the first spec.
+    PCP_APPEND_DEBUG(
+        "   Resync following in @%s@ %s due to Sd site @%s@<%s>%s:\n",
+        cache->GetLayerStackIdentifier()
+        .rootLayer->GetIdentifier().c_str(),
+        (changeType & _ChangeTypeSignificant) ?
+        "significant" :
+        "insignificant",
+        layer->GetIdentifier().c_str(), path.GetText(),
+        onlyExistingDependentPaths ?
+        " (restricted to existing caches)" :
+        " (not restricted to existing caches)");
+    for (const auto& dep: deps) {
         PCP_APPEND_DEBUG(
-            "  Resync following in @%s@ %s due to Sd site @%s@<%s>:\n"
-            "    %s\n",
-            cache->GetLayerStackIdentifier().rootLayer->GetIdentifier().c_str(),
-            significance,
-            layer->GetIdentifier().c_str(), path.GetText(),
-            TfStringReplace(pathDebugSummary, "\n", "\n  ").c_str());
-
-        BOOST_FOREACH(const SdfPath& depPath, depPaths) {
-            changeFuncs.RunFunctionsOnDependency(cache, depPath, layer, path);
-        }
+            "    <%s> depends on <%s>\n",
+            dep.indexPath.GetText(),
+            dep.sitePath.GetText());
+        changeFuncs.RunFunctionsOnDependency(cache, dep.indexPath,
+                                             layer, dep.sitePath,
+                                             layerChangeList);
     }
-
-    if (isSignificantPrimChange
-        // We do not have spooky dependencies in USD mode.
-        and not cache->_usd) {
-        // Significant prim changes require extra handling in addition
-        // to the processing above:  We must also handle prims that
-        // depend on this path via spooky dependencies.
-        //
-        // For example, we need this so that switching a variant will
-        // invalidate prims relocated out from underneath. A variant
-        // selection change is itself a significant change (i.e. it
-        // requires rebuilding the prim index); but also any other
-        // significant change potentially introduces or otherwise
-        // modifes the variant selection.
-        const SdfPathVector spookyDepPaths = 
-            cache->_GetPathsUsingSite(
-                layer, path, PcpCache::UsingSiteOnly,
-                /* layerOffsets = */ NULL, 
-                /* sourceNodes = */ NULL,
-                /* fallbackAncestor = */ SdfPath(),
-                spookyDependencies,
-                debugSummary ? &pathDebugSummary : NULL);
-                
-        if (not spookyDepPaths.empty()) {
-            PCP_APPEND_DEBUG(
-                "  Resync following in @%s@ %s due to spooky dependency on "
-                "Sd site @%s@<%s>:\n    %s\n",
-                cache->GetLayerStackIdentifier().
-                    rootLayer->GetIdentifier().c_str(),
-                significance,
-                layer->GetIdentifier().c_str(), path.GetText(),
-                TfStringReplace(pathDebugSummary, "\n", "\n  ").c_str());
-
-            BOOST_FOREACH(const SdfPath& depPath, spookyDepPaths) {
-                changeFuncs.RunFunctionsOnDependency(cache, depPath,
-                                                     layer, path);
-            }
-        }
-    }
+    PCP_APPEND_DEBUG("   Resync end\n");
 }
 
 SdfLayerRefPtr 
@@ -1634,9 +1597,11 @@ PcpChanges::_DidChangeSublayer(
     //
     // For significant sublayer changes, the sublayer may have introduced
     // new prims with new arcs, requiring prim and property indexes to be
-    // recomputed. So, register significant changes for every path in the
-    // cache that uses any path in any of the layer stacks that included 
-    // layer. 
+    // recomputed. So, register significant changes for every prim path
+    // in the cache that uses any path in any of the layer stacks that
+    // included layer.  Only bother doing this for prims, since thex
+    // properties will be implicitly invalidated by significant
+    // prim resyncs.
     //
     // For insignificant sublayer changes, the only prim that's really 
     // affected is the pseudo-root. However, we still need to rebuild the 
@@ -1644,46 +1609,42 @@ PcpChanges::_DidChangeSublayer(
     // is because PcpPrimIndex's prim stack stores indices into the layer
     // stack that may need to be adjusted due to the addition or removal of
     // a layer from that stack.
-    const SdfPath& rootPath = SdfPath::AbsoluteRootPath();
-    BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
-        static bool recursive = true;
-        SdfPathVector paths =
-            cache->GetPathsUsingSite(layerStack, rootPath, 
-                                     PcpDirect | PcpAncestral, recursive);
+    //
+    // We rely on the caller to provide the affected layer stacks for
+    // us because some changes introduce new dependencies that wouldn't
+    // have been registered yet using the normal means -- such as unmuting
+    // a sublayer.
 
-        if (cache->GetLayerStack() == layerStack) {
+    bool anyFound = false;
+    TF_FOR_ALL(layerStack, layerStacks) {
+        PcpDependencyVector deps = cache->FindSiteDependencies(
+            *layerStack,
+            SdfPath::AbsoluteRootPath(), 
+            PcpDependencyTypeAnyIncludingVirtual,
+            /* recurseOnSite */ true,
+            /* recurseOnIndex */ true,
+            /* filter */ true);
+        for (const auto &dep: deps) {
+            if (!dep.indexPath.IsAbsoluteRootOrPrimPath()) {
+                // Filter to only prims; see comment above re: properties.
+                continue;
+            }
+            if (!anyFound) {
+                PCP_APPEND_DEBUG(
+                    "  %s following in @%s@ due to "
+                    "%s reload in sublayer @%s@:\n",
+                    *significant ? "Resync" : "Spec changes",
+                    cache->GetLayerStackIdentifier().rootLayer->
+                         GetIdentifier().c_str(),
+                    *significant ? "significant" : "insignificant",
+                    sublayer->GetIdentifier().c_str());
+                anyFound = true;
+            }
+            PCP_APPEND_DEBUG("    <%s>\n", dep.indexPath.GetText());
             if (*significant) {
-                paths.push_back(rootPath);
-            }
-            else {
-                const SdfPathVector otherPaths = 
-                    cache->GetPathsUsingSite(
-                        layerStack->GetIdentifier().rootLayer,
-                        rootPath, PcpCache::UsingSiteAndDescendantPrims);
-                paths.insert(paths.end(), otherPaths.begin(), otherPaths.end());
-            }
-        }
-
-        if (not paths.empty()) {
-            PCP_APPEND_DEBUG(
-                "  %s following in @%s@ due to "
-                "%s sublayer @%s@ reload in Pcp layer stack @%s@:\n",
-                *significant ? "Resync" : "Spec changes",
-                cache->GetLayerStackIdentifier().rootLayer->
-                     GetIdentifier().c_str(),
-                *significant ? "significant" : "insignificant",
-                sublayer->GetIdentifier().c_str(),
-                layerStack->GetIdentifier().rootLayer->
-                     GetIdentifier().c_str());
-
-            BOOST_FOREACH(const SdfPath& path, paths) {
-                PCP_APPEND_DEBUG("    <%s>\n", path.GetText());
-                if (*significant) {
-                    DidChangeSignificantly(cache, path);
-                }
-                else {
-                    DidChangeSpecStack(cache, path);
-                }
+                DidChangeSignificantly(cache, dep.indexPath);
+            } else {
+                DidChangeSpecStack(cache, dep.indexPath);
             }
         }
     }
@@ -1772,65 +1733,49 @@ PcpChanges::_DidChangeLayerStackRelocations(
         &changes.newRelocatesPrimPaths);
 
     // Compare the old and new relocations to determine which
-    // paths are affected.
+    // paths (in this layer stack) are affected.
     _DeterminePathsAffectedByRelocationChanges(
         layerStack->GetRelocatesSourceToTarget(),
         changes.newRelocatesSourceToTarget,
         &changes.pathsAffectedByRelocationChanges);
 
-    // Diagnostics.
-    if (not changes.pathsAffectedByRelocationChanges.empty()) {
-        PCP_APPEND_DEBUG("  Relocation change in @%s@ affects\n",
-                         TfStringify(layerStack).c_str());
-        TF_FOR_ALL(path, changes.pathsAffectedByRelocationChanges) {
-            PCP_APPEND_DEBUG("    <%s>\n", path->GetText());
-        }
-    }
-
     // Resync affected prims.
-    BOOST_FOREACH(const SdfPath& path,
-                  changes.pathsAffectedByRelocationChanges) {
-        PCP_APPEND_DEBUG("  Relocation change affected path <%s>\n",
-                         path.GetText());
-        BOOST_FOREACH(PcpCache* cache, caches) {
-            // Find paths to dependent caches.
-            SdfPathSet depPathSet;
+    // Use dependencies to find affected caches.
+    if (not changes.pathsAffectedByRelocationChanges.empty()) {
+        PCP_APPEND_DEBUG("  Relocation change in %s affects:\n",
+                         TfStringify(layerStack).c_str());
+    }
+    for (PcpCache* cache: caches) {
+        // Find the equivalent layer stack in this cache.
+        PcpLayerStackPtr equivLayerStack =
+            cache->FindLayerStack(layerStack->GetIdentifier());
+        if (not equivLayerStack) {
+            continue;
+        }
 
-            // Include the implicit self-dependency.
-            if (cache->GetLayerStack() == layerStack) {
-                depPathSet.insert(path);
-            }
+        SdfPathSet depPathSet;
+        for (const SdfPath& path : changes.pathsAffectedByRelocationChanges) {
+            PCP_APPEND_DEBUG("    <%s>\n", path.GetText());
 
-            // Find the equivalent layer stack in this cache.
-            PcpLayerStackPtr equivLayerStack =
-                cache->FindLayerStack(layerStack->GetIdentifier());
-            if (not equivLayerStack) {
-                continue;
-            }
-
-            // Include normal dependencies.
-            const SdfPathVector depPaths = 
-                cache->_GetPathsUsingPcpSite(
+            PcpDependencyVector deps =
+                cache->FindSiteDependencies(
                     equivLayerStack, path,
-                    /* dependencyType = */ PcpDirect | PcpAncestral,
-                    /* sourceNodes = */ 0,
-                    /* recursive = */ true,
-                    /* spooky = */ false);
-            depPathSet.insert(depPaths.begin(), depPaths.end());
-
-            // Include spooky dependencies.
-            const SdfPathVector depPathsSpooky = 
-                cache->_GetPathsUsingPcpSite(
-                    equivLayerStack, path,
-                    /* dependencyType = */ PcpDirect | PcpAncestral,
-                    /* sourceNodes = */ 0,
-                    /* recursive = */ true,
-                    /* spooky = */ true);
-            depPathSet.insert(depPathsSpooky.begin(), depPathsSpooky.end());
-
-            BOOST_FOREACH(const SdfPath& depPath, depPathSet) {
-                DidChangeSignificantly(cache, depPath);
+                    PcpDependencyTypeAnyIncludingVirtual,
+                    /* recurseOnSite */ true,
+                    /* recurseOnIndex */ true,
+                    /* filterForExistingCachesOnly */ false);
+            for (const auto &dep: deps) {
+                depPathSet.insert(dep.indexPath);
             }
+        }
+
+        if (not depPathSet.empty()) {
+            PCP_APPEND_DEBUG("  and dependent paths in %s\n",
+                             TfStringify(layerStack).c_str());
+        }
+        for (const SdfPath& depPath : depPathSet) {
+            PCP_APPEND_DEBUG("      <%s>\n", depPath.GetText());
+            DidChangeSignificantly(cache, depPath);
         }
     }
 }

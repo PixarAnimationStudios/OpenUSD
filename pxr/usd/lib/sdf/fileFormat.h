@@ -144,6 +144,22 @@ public:
     /// not created with this file format.
     bool IsStreamingLayer(const SdfLayerBase& layer) const;
 
+    /// Return true if layers produced by this file format are based
+    /// on physical files on disk. If so, this file format requires
+    /// layers to be serialized to and read from files on disk.
+    ///
+    /// For file formats where this function returns true, when
+    /// opening a layer Sdf will fetch layers to the filesystem 
+    /// via calls to ArResolver::FetchToLocalResolvedPath prior 
+    /// to calling ReadFromFile.
+    ///
+    /// This allows asset systems that do not store layers as individual
+    /// files to operate with file formats that require these files.
+    ///
+    /// \sa ArResolver::Resolve
+    /// \sa ArResolver::FetchToLocalResolvedPath
+    bool LayersAreFileBased() const;
+
     /// Returns true if \p file can be read by this format.
     virtual bool CanRead(
         const std::string& file) const = 0;
@@ -269,6 +285,11 @@ private:
     // given layer is streaming or not. The file format of \p layer is 
     // guaranteed to be an instance of this class.
     virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const = 0;
+
+    /// File format subclasses may override this to specify whether
+    /// their layers are backed by physical files on disk.
+    /// Default implementation returns true.
+    virtual bool _LayersAreFileBased() const;
 
     // Helper to issue an error in case the method template NewLayer fails.
     void _IssueNewLayerFailError(SdfLayerBaseRefPtr const &l,

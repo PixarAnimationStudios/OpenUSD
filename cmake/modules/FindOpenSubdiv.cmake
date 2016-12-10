@@ -58,7 +58,7 @@ if(OPENSUBDIV_INCLUDE_DIR AND EXISTS "${OPENSUBDIV_INCLUDE_DIR}/opensubdiv/versi
          REGEX "#define OPENSUBDIV_VERSION v.*$"
     )
     string(REGEX
-        MATCHALL "[0-9_]+$"
+        MATCHALL "[0-9]_[0-9]_[0-9]"
         OPENSUBDIV_VERSION
         ${TMP}
     )
@@ -135,7 +135,6 @@ ENDFOREACH()
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(OpenSubdiv
     REQUIRED_VARS
-        OPENSUBDIV_ROOT_DIR
         OPENSUBDIV_INCLUDE_DIR
         OPENSUBDIV_LIBRARIES
     VERSION_VAR

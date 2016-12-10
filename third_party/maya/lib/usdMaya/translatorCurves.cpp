@@ -105,7 +105,8 @@ PxrUsdMayaTranslatorCurves::Create(
     std::vector<double> pointsTimeSamples;
     size_t numTimeSamples = 0;
     if (args.GetReadAnimData()) {
-        curves.GetPointsAttr().GetTimeSamples(&pointsTimeSamples);
+        PxrUsdMayaTranslatorUtil::GetTimeSamples(curves.GetPointsAttr(), args,
+                &pointsTimeSamples);
         numTimeSamples = pointsTimeSamples.size();
         if (numTimeSamples>0) {
             pointsTimeSample = pointsTimeSamples[0];

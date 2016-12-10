@@ -117,7 +117,7 @@ public:
     template <typename T>
     void InsertRprim(HdSceneDelegate* delegate,
                      SdfPath const& id,
-                     SdfPath const& surfaceShaderId,
+                     SdfPath const&,   // Unused
                      SdfPath const& instancerId = SdfPath());
 
     /// Remove a rprim from index
@@ -186,6 +186,8 @@ public:
         return _surfaceFallback;
     };
 
+    void ReloadFallbackShader();
+
     // ---------------------------------------------------------------------- //
     /// \name Task Support
     // ---------------------------------------------------------------------- //
@@ -237,6 +239,16 @@ public:
 
     /// Returns the subtree rooted under the given path.
     SdfPathVector GetSprimSubtree(SdfPath const& root) const;
+
+
+    // ---------------------------------------------------------------------- //
+    /// \name Render Delegate Types
+    // ---------------------------------------------------------------------- //
+    /// Currently, a render index only supports connection to one type of
+    /// render delegate.  Due to the inserted information and change tracking
+    /// being specific to that delegate type.
+    void SetRenderDelegateType(const TfToken &typeId);
+    const TfToken &GetRenderDelegateType() const;
 
 private:
     // ---------------------------------------------------------------------- //
@@ -317,14 +329,19 @@ private:
     _InstancerMap _instancerMap;
     HdSurfaceShaderSharedPtr _surfaceFallback;
 
+    // XXX: TO FIX Move
     typedef std::vector<HdDirtyListSharedPtr> _DirtyListVector;
     _DirtyListVector _syncQueue;
+
+    TfToken _renderDelegateTypeId;
+
+
 };
 
 template <typename T>
 void
 HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
-                           SdfPath const& surfaceShaderId, 
+                           SdfPath const&,
                            SdfPath const& instancerId)
 {
     HD_TRACE_FUNCTION();
@@ -341,8 +358,7 @@ HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
     if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, id)))
         return;
     
-    HdRprimSharedPtr rprim = boost::make_shared<T>(delegate, id, 
-                                                  surfaceShaderId, instancerId);
+    HdRprimSharedPtr rprim = boost::make_shared<T>(delegate, id, instancerId);
     _TrackDelegateRprim(delegate, id, rprim);
 }
 

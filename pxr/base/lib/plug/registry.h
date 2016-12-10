@@ -407,14 +407,8 @@ public:
     /// Returns all registered plug-ins.
     PlugPluginPtrVector GetAllPlugins() const;
 
-    /// Returns the plugin that contains the given address if any,
-    /// otherwise returns \c NULL.  Naturally, this only works for
-    /// shared library plugins.
-    PlugPluginPtr GetPluginWithAddress(void* address) const;
-
-    /// Returns the plugin at the given filesystem path if any,
-    /// otherwise returns \c NULL.
-    PlugPluginPtr GetPluginWithPath(const std::string& path) const;
+    /// Returns a plugin with the specified library name.
+    PlugPluginPtr GetPluginWithName(const std::string& name) const;
 
     /// Looks for a string associated with \a type and \a key and returns it, or
     /// an empty string if \a type or \a key are not found.

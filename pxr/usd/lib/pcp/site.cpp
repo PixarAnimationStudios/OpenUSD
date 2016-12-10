@@ -40,7 +40,8 @@ PcpSite::PcpSite( const PcpLayerStackIdentifier & layerStackIdentifier_,
     // Do nothing
 }
 
-PcpSite::PcpSite( const PcpLayerStackPtr & layerStack, const SdfPath & path_ ) :
+PcpSite::PcpSite( const PcpLayerStackPtr & layerStack,
+                  const SdfPath & path_ ) :
     path(path_)
 {
     if (layerStack) {
@@ -94,7 +95,7 @@ PcpLayerStackSite::PcpLayerStackSite()
     // Do nothing
 }
 
-PcpLayerStackSite::PcpLayerStackSite( const PcpLayerStackPtr & layerStack_,
+PcpLayerStackSite::PcpLayerStackSite( const PcpLayerStackRefPtr & layerStack_,
                                       const SdfPath & path_ ) :
     layerStack(layerStack_),
     path(path_)

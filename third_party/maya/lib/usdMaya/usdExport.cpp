@@ -83,6 +83,8 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-cha" , "-chaserArgs", MSyntax::kString, MSyntax::kString, MSyntax::kString);
     syntax.makeFlagMultiUse("-chaserArgs");
 
+    syntax.addFlag("-k", "-kind", MSyntax::kString);
+
     syntax.enableQuery(false);
     syntax.enableEdit(false);
 
@@ -341,6 +343,13 @@ try
         }
     }
 
+    if (argData.isFlagSet("kind"))
+    {
+        MString tmpVal;
+        argData.getFlagArgument("kind", 0, tmpVal);
+        jobArgs.rootKind = TfToken(tmpVal.asChar());
+    }
+
 
     // Get the objects to export as a MSelectionList
     MSelectionList objSelList;
@@ -395,6 +404,9 @@ try
 
         // Finalize the export, close the stage
         usdWriteJob.endJob();
+    } else {
+        computation.endComputation();
+        return MS::kFailure;
     }
 
     computation.endComputation();

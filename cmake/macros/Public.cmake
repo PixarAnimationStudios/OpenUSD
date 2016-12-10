@@ -98,6 +98,9 @@ endfunction()
 
 function(pxr_shared_library LIBRARY_NAME)
     set(options PYTHON_LIBRARY)
+    set(oneValueArgs
+        PYTHON_WRAPPED_LIB_PREFIX
+    )
     set(multiValueArgs
         PUBLIC_CLASSES
         PUBLIC_HEADERS
@@ -114,7 +117,7 @@ function(pxr_shared_library LIBRARY_NAME)
 
     cmake_parse_arguments(sl
         "${options}"
-        ""
+        "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
@@ -135,6 +138,9 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PUBLIC_HEADERS} ${${LIBRARY_NAME}_PUBLIC_HEADERS}
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
+
+    # Set prefix  here after the library add; ahead of python so that python lib prefix is reset to correct
+    set_target_properties(${LIBRARY_NAME} PROPERTIES PREFIX "${PXR_LIB_PREFIX}")
 
     if(sl_PYTHON_FILES)
         _install_python(${LIBRARY_NAME}
@@ -162,20 +168,43 @@ function(pxr_shared_library LIBRARY_NAME)
             APPEND PROPERTY PXR_PYTHON_MODULES ${pyModuleName}
         )
 
-        # Python modules for third_party libs are installed into the root
-        # pxr/lib/python but need to be able to access their corresponding
-        # library which lives in third_party/${pkg}/lib
         set(rpath ${CMAKE_INSTALL_RPATH})
-        if (PXR_INSTALL_SUBDIR)
-            set(rpath "$ORIGIN/../../../../${PXR_INSTALL_SUBDIR}/lib:${rpath}")
+
+        # Python modules need to be able to access their corresponding
+        # wrapped library, so compute a relative path and append that to
+        # the module's rpath.
+	# 
+	# XXX: Only do this on Linux for now, since $ORIGIN only exists
+	# on that platform. We will need to figure out the correct thing
+	# to do here for other platforms.
+	if (LINUX)
+            file(RELATIVE_PATH
+                PYTHON_RPATH
+                "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
+                "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}")
+            _append_to_rpath(${rpath} "$ORIGIN/${PYTHON_RPATH}" rpath)
         endif()
 
-        set_target_properties(${LIBRARY_NAME} 
-            PROPERTIES 
-                PREFIX ""
-                FOLDER "${PXR_PREFIX}/_python"
-                INSTALL_RPATH ${rpath}
-        )
+        # Python modules must be suffixed with .pyd on Windows and .so on
+        # other platforms.
+        if(WIN32)
+            set_target_properties(${LIBRARY_NAME}
+                PROPERTIES
+                    PREFIX ""
+                    SUFFIX ".pyd"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
+                    LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
+            )
+        else()
+            set_target_properties(${LIBRARY_NAME}
+                PROPERTIES
+                    PREFIX ""
+                    SUFFIX ".so"
+                    FOLDER "${PXR_PREFIX}/_python"
+                    INSTALL_RPATH ${rpath}
+            )
+        endif()
     else()
         _get_install_dir(lib LIB_INSTALL_PREFIX)
         _get_share_install_dir(SHARE_INSTALL_PREFIX)
@@ -294,6 +323,7 @@ function(pxr_shared_library LIBRARY_NAME)
         pxr_shared_library(
             "_${LIBRARY_NAME}"
             PYTHON_LIBRARY
+            PYTHON_WRAPPED_LIB_PREFIX ${LIB_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${LIBRARY_NAME}
         )
@@ -523,17 +553,35 @@ function(pxr_plugin PLUGIN_NAME)
                 INSTALL_RPATH ${rpath}
         )
     else()
-        # Ensure this plugin can find the libs for its matching component, e.g.
-        # maya/plugin/px_usdIO.so can find maya/lib/*.so
-        if (PXR_INSTALL_SUBDIR)
-            set_target_properties(${PLUGIN_NAME}
-                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../lib"
-            )
-        else()
-            set_target_properties(${PLUGIN_NAME}
-                PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/../../lib"
-            )
+        # Ensure this plugin can find the libs for its matching component.
+        # Compute the relative path from where the plugin is installed
+        # to the corresponding lib directories and append that to the 
+        # plugin's rpath.
+        set(rpath ${CMAKE_INSTALL_RPATH})
+
+        # If an install subdirectory is specified (e.g., for third party
+        # packages), add an rpath pointing to lib/ within it.
+	#
+	# XXX: See comment about $ORIGIN in pxr_shared_library
+	if (LINUX)
+            if (PXR_INSTALL_SUBDIR)
+                file(RELATIVE_PATH
+                    PLUGIN_RPATH
+                    "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
+                    "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+                _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
+            endif()
+
+            # Add an rpath pointing to the top-level lib/ directory.
+            file(RELATIVE_PATH
+                PLUGIN_RPATH
+                "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
+                "${CMAKE_INSTALL_PREFIX}/lib")
+            _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
         endif()
+
+        set_target_properties(${PLUGIN_NAME}
+            PROPERTIES INSTALL_RPATH "${rpath}")
     endif()
 
     set_target_properties(${PLUGIN_NAME}
@@ -644,6 +692,7 @@ function(pxr_plugin PLUGIN_NAME)
         pxr_shared_library(
             "_${PLUGIN_NAME}"
             PYTHON_LIBRARY
+            PYTHON_WRAPPED_LIB_PREFIX ${PLUGIN_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${PLUGIN_NAME}
         )
@@ -670,198 +719,216 @@ function(pxr_setup_python)
 endfunction() # pxr_setup_python
 
 function (pxr_create_test_module MODULE_NAME)
-    cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR" "" ${ARGN})
+    if (PXR_BUILD_TESTS) 
+        cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR" "" ${ARGN})
 
-    if (NOT tm_SOURCE_DIR)
-        set(tm_SOURCE_DIR testenv)
-    endif()
+        if (NOT tm_SOURCE_DIR)
+            set(tm_SOURCE_DIR testenv)
+        endif()
 
-    # Look specifically for an __init__.py and a plugInfo.json prefixed by the
-    # module name. These will be installed without the module prefix.
-    set(initPyFile ${tm_SOURCE_DIR}/${MODULE_NAME}__init__.py)
-    set(plugInfoFile ${tm_SOURCE_DIR}/${MODULE_NAME}_plugInfo.json)
+        # Look specifically for an __init__.py and a plugInfo.json prefixed by the
+        # module name. These will be installed without the module prefix.
+        set(initPyFile ${tm_SOURCE_DIR}/${MODULE_NAME}__init__.py)
+        set(plugInfoFile ${tm_SOURCE_DIR}/${MODULE_NAME}_plugInfo.json)
 
-    if (EXISTS ${initPyFile})
-        install(
-            FILES 
-                ${initPyFile}
-            RENAME 
-                __init__.py
-            DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
-        )
-    endif()
+        if (EXISTS ${initPyFile})
+            install(
+                FILES 
+                    ${initPyFile}
+                RENAME 
+                    __init__.py
+                DESTINATION 
+                    tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+            )
+        endif()
 
-    if (EXISTS ${plugInfoFile})
-        install(
-            FILES 
-                ${plugInfoFile}
-            RENAME 
-                plugInfo.json
-            DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
-        )
+        if (EXISTS ${plugInfoFile})
+            install(
+                FILES 
+                    ${plugInfoFile}
+                RENAME 
+                    plugInfo.json
+                DESTINATION 
+                    tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+            )
+        endif()
     endif()
 endfunction() # pxr_create_test_module
 
 function(pxr_build_test_shared_lib LIBRARY_NAME)
-    cmake_parse_arguments(bt
-        "" ""
-        "LIBRARIES;CPPFILES"
-        ${ARGN}
-    )
-    
-    add_library(${LIBRARY_NAME}
-        SHARED
-        ${bt_CPPFILES}
+    if (PXR_BUILD_TESTS)
+        cmake_parse_arguments(bt
+            "" ""
+            "LIBRARIES;CPPFILES"
+            ${ARGN}
         )
-    target_link_libraries(${LIBRARY_NAME}
-        ${bt_LIBRARIES}
-    )
-    set_target_properties(${LIBRARY_NAME}
-        PROPERTIES 
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            FOLDER "${PXR_PREFIX}/tests/lib"
-    )
+        
+        add_library(${LIBRARY_NAME}
+            SHARED
+            ${bt_CPPFILES}
+            )
+        target_link_libraries(${LIBRARY_NAME}
+            ${bt_LIBRARIES}
+        )
+        set_target_properties(${LIBRARY_NAME}
+            PROPERTIES 
+                INSTALL_RPATH_USE_LINK_PATH TRUE
+                FOLDER "${PXR_PREFIX}/tests/lib"
+        )
 
-    # We always want this test to build after the package it's under, even if
-    # it doesn't link directly. This ensures that this test is able to include
-    # headers from its parent package.
-    add_dependencies(${LIBRARY_NAME} ${PXR_PACKAGE})
+        # We always want this test to build after the package it's under, even if
+        # it doesn't link directly. This ensures that this test is able to include
+        # headers from its parent package.
+        add_dependencies(${LIBRARY_NAME} ${PXR_PACKAGE})
 
-    # Test libraries can include the private headers of their parent PXR_PACKAGE
-    # library
-    target_include_directories(${LIBRARY_NAME}
-        PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
-    )
+        # Test libraries can include the private headers of their parent PXR_PACKAGE
+        # library
+        target_include_directories(${LIBRARY_NAME}
+            PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
+        )
 
-    install(TARGETS ${LIBRARY_NAME}
-        LIBRARY DESTINATION "tests/lib"
-        ARCHIVE DESTINATION "tests/lib"
-    )
+        install(TARGETS ${LIBRARY_NAME}
+            LIBRARY DESTINATION "tests/lib"
+            ARCHIVE DESTINATION "tests/lib"
+        )
+    endif()
 endfunction() # pxr_build_test_shared_lib
 
 function(pxr_build_test TEST_NAME)
-    cmake_parse_arguments(bt
-        "" ""
-        "LIBRARIES;CPPFILES"
-        ${ARGN}
-    )
+    if (PXR_BUILD_TESTS)
+        cmake_parse_arguments(bt
+            "" ""
+            "LIBRARIES;CPPFILES"
+            ${ARGN}
+        )
 
-    add_executable(${TEST_NAME}
-        ${bt_CPPFILES}
-    )
-    target_link_libraries(${TEST_NAME}
-        ${bt_LIBRARIES}
-    )
-    target_include_directories(${TEST_NAME}
-        PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
-    )
-    set_target_properties(${TEST_NAME}
-        PROPERTIES 
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            POSITION_INDEPENDENT_CODE ON
-            FOLDER "${PXR_PREFIX}/tests/bin"
-    )
+        add_executable(${TEST_NAME}
+            ${bt_CPPFILES}
+        )
+        target_link_libraries(${TEST_NAME}
+            ${bt_LIBRARIES}
+        )
+        target_include_directories(${TEST_NAME}
+            PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
+        )
+        set_target_properties(${TEST_NAME}
+            PROPERTIES 
+                INSTALL_RPATH_USE_LINK_PATH TRUE
+                POSITION_INDEPENDENT_CODE ON
+                FOLDER "${PXR_PREFIX}/tests/bin"
+        )
 
-    install(TARGETS ${TEST_NAME}
-        RUNTIME DESTINATION "tests"
-    )
+        install(TARGETS ${TEST_NAME}
+            RUNTIME DESTINATION "tests"
+        )
+    endif()
 endfunction() # pxr_build_test
 
 function(pxr_test_scripts)
-    foreach(file ${ARGN})
-        get_filename_component(destFile ${file} NAME_WE)
-        install(
-            PROGRAMS ${file}
-            DESTINATION tests
-            RENAME ${destFile}
-        )
-    endforeach()
+    if (PXR_BUILD_TESTS)
+        foreach(file ${ARGN})
+            get_filename_component(destFile ${file} NAME_WE)
+            install(
+                PROGRAMS ${file}
+                DESTINATION tests
+                RENAME ${destFile}
+            )
+        endforeach()
+    endif()
 endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
-    cmake_parse_arguments(bt
-        "" 
-        "SRC;DEST"
-        ""
-        ${ARGN}
-    )
+    if (PXR_BUILD_TESTS)
+        cmake_parse_arguments(bt
+            "" 
+            "SRC;DEST"
+            ""
+            ${ARGN}
+        )
 
-    install(
-        DIRECTORY ${bt_SRC}/
-        DESTINATION tests/ctest/${bt_DEST}
-    )
+        install(
+            DIRECTORY ${bt_SRC}/
+            DESTINATION tests/ctest/${bt_DEST}
+        )
+    endif()
 endfunction() # pxr_install_test_dir
 
 function(pxr_register_test TEST_NAME)
-    cmake_parse_arguments(bt
-        "PYTHON" 
-        "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;EXPECTED_RETURN_CODE;TESTENV"
-        "ENV"
-        ${ARGN}
-    )
+    if (PXR_BUILD_TESTS)
+        cmake_parse_arguments(bt
+            "PYTHON" 
+            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
+            "ENV"
+            ${ARGN}
+        )
 
-    # This harness is a filter which allows us to manipulate the test run, 
-    # e.g. by changing the environment, changing the expected return code, etc.
-    set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
+        # This harness is a filter which allows us to manipulate the test run, 
+        # e.g. by changing the environment, changing the expected return code, etc.
+        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
 
-    if (bt_STDOUT_REDIRECT)
-        set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
+        if (bt_STDOUT_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
+        endif()
+
+        if (bt_STDERR_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
+        endif()
+
+        # Not all tests will have testenvs, but if they do let the wrapper know so
+        # it can copy the testenv contents into the run directory. By default,
+        # assume the testenv has the same name as the test but allow it to be
+        # overridden by specifying TESTENV.
+        if (bt_TESTENV)
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
+        else()
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
+        endif()
+
+        set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
+
+        if (bt_DIFF_COMPARE)
+            set(testWrapperCmd ${testWrapperCmd} --diff-compare=${bt_DIFF_COMPARE})
+
+            # For now the baseline directory is assumed by convention from the test
+            # name. There may eventually be cases where we'd want to specify it by
+            # an argument though.
+            set(baselineDir ${testenvDir}/baseline)
+            set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
+        endif()
+
+        if (bt_CLEAN_OUTPUT)
+            foreach (path ${bt_CLEAN_OUTPUT})
+                set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${path})
+            endforeach()
+        endif()
+
+        if (bt_EXPECTED_RETURN_CODE)
+            set(testWrapperCmd ${testWrapperCmd} 
+                --expected-return-code=${bt_EXPECTED_RETURN_CODE})
+        endif()
+
+        if (bt_ENV)
+            foreach(env ${bt_ENV})
+                set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
+            endforeach()
+        endif()
+
+        # Ensure that Python imports the Python files built by this build
+        set(testWrapperCmd ${testWrapperCmd}
+            --env-var=PYTHONPATH=${CMAKE_INSTALL_PREFIX}/lib/python:${PYTHON_PATH})
+
+        # Ensure we run with the python executable known to the build
+        if (bt_PYTHON)
+            set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
+        else()
+            set(testCmd "${bt_COMMAND}")
+        endif()
+
+        add_test(
+            NAME ${TEST_NAME}
+            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd} ${testCmd}
+        )
     endif()
-
-    if (bt_STDERR_REDIRECT)
-        set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
-    endif()
-
-    # Not all tests will have testenvs, but if they do let the wrapper know so
-    # it can copy the testenv contents into the run directory. By default,
-    # assume the testenv has the same name as the test but allow it to be
-    # overridden by specifying TESTENV.
-    if (bt_TESTENV)
-        set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
-    else()
-        set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
-    endif()
-
-    set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
-
-    if (bt_DIFF_COMPARE)
-        set(testWrapperCmd ${testWrapperCmd} --diff-compare=${bt_DIFF_COMPARE})
-
-        # For now the baseline directory is assumed by convention from the test
-        # name. There may eventually be cases where we'd want to specify it by
-        # an argument though.
-        set(baselineDir ${testenvDir}/baseline)
-        set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
-    endif()
-
-    if (bt_EXPECTED_RETURN_CODE)
-        set(testWrapperCmd ${testWrapperCmd} 
-            --expected-return-code=${bt_EXPECTED_RETURN_CODE})
-    endif()
-
-    if (bt_ENV)
-        foreach(env ${bt_ENV})
-            set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
-        endforeach()
-    endif()
-
-    # Ensure that Python imports the Python files built by this build
-    set(testWrapperCmd ${testWrapperCmd}
-        --env-var=PYTHONPATH=${CMAKE_INSTALL_PREFIX}/lib/python:${PYTHON_PATH})
-
-    # Ensure we run with the python executable known to the build
-    if (bt_PYTHON)
-        set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
-    else()
-        set(testCmd "${bt_COMMAND}")
-    endif()
-
-    add_test(
-        NAME ${TEST_NAME}
-        COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd} ${testCmd}
-    )
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)

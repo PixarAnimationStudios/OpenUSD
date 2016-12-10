@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdShadeSubgraph,
         TfType::Bases< UsdTyped > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("Subgraph") to find
-    // TfType<UsdShadeSubgraph>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("Subgraph")
+    // to find TfType<UsdShadeSubgraph>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdShadeSubgraph>("Subgraph");
 }
 
@@ -117,7 +119,8 @@ UsdShadeSubgraph::GetSchemaAttributeNames(bool includeInherited)
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (subgraph)
-    ((terminal, "terminal:"))
+    ((TerminalNamespaceName, "terminal"))
+    ((TerminalNamespacePrefix, "terminal:"))
 );
 
 
@@ -181,7 +184,7 @@ UsdShadeSubgraph::GetInterfaceAttributes(
 static TfToken 
 _GetTerminalRelName(const TfToken& name)
 {
-    return TfToken(_tokens->terminal.GetString() + name.GetString());
+    return TfToken(_tokens->TerminalNamespacePrefix.GetString() + name.GetString());
 }
 
 UsdRelationship 
@@ -212,4 +215,22 @@ UsdShadeSubgraph::GetTerminal(
     const UsdPrim& prim = GetPrim();
     const TfToken& relName = _GetTerminalRelName(terminalName);
     return prim.GetRelationship(relName);
+}
+
+UsdRelationshipVector
+UsdShadeSubgraph::GetTerminals() const
+{
+    UsdRelationshipVector terminals;
+
+    const UsdPrim& prim = GetPrim();
+    const std::vector<UsdProperty>& terminalNamespaceProperties =
+        prim.GetPropertiesInNamespace(_tokens->TerminalNamespaceName.GetString());
+
+    for (const UsdProperty& property : terminalNamespaceProperties) {
+        if (const UsdRelationship& relationship = property.As<UsdRelationship>()) {
+            terminals.push_back(relationship);
+        }
+    }
+
+    return terminals;
 }

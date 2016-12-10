@@ -126,6 +126,19 @@ _SetGlobalVariantFallbacks(const dict& d)
     }
 }
 
+static UsdEditTarget
+_GetEditTargetForLocalLayerIndex(const UsdStagePtr &self, size_t index)
+{
+    return self->GetEditTargetForLocalLayer(index);
+}
+
+static UsdEditTarget
+_GetEditTargetForLocalLayer(const UsdStagePtr &self,
+                            const SdfLayerHandle &layer)
+{
+    return self->GetEditTargetForLocalLayer(layer);
+}
+
 void wrapUsdStage()
 {
     typedef TfWeakPtr<UsdStage> StagePtr;
@@ -309,7 +322,10 @@ void wrapUsdStage()
 
         .def("GetEditTarget", &UsdStage::GetEditTarget,
              return_value_policy<return_by_value>())
-
+        .def("GetEditTargetForLocalLayer", &_GetEditTargetForLocalLayerIndex,
+             return_value_policy<return_by_value>())
+        .def("GetEditTargetForLocalLayer", &_GetEditTargetForLocalLayer,
+             return_value_policy<return_by_value>())
         .def("SetEditTarget", &UsdStage::SetEditTarget, arg("editTarget"))
 
         .def("MuteLayer", &UsdStage::MuteLayer,

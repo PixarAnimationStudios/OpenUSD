@@ -11,6 +11,7 @@ pxr_shared_library(${PXR_PACKAGE}
         sdf
         usd
         usdImaging
+        usdImagingGL
         usdShade
         usdGeom
         usdRi
@@ -23,6 +24,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         attrMap
+        baseMaterialHelpers
         blindDataObject
         cache
         debugCodes

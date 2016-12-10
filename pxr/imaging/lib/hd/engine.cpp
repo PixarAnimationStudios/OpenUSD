@@ -23,35 +23,446 @@
 //
 #include "pxr/imaging/hd/engine.h"
 
+#include "pxr/imaging/gal/delegateRegistry.h"
+#include "pxr/imaging/gal/delegate.h"
+
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/renderIndexManager.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include <sstream>
 
+// Placeholder instead for the default delegates for an unintalized value
+// as the empty token is valid.
+const TfToken HdEngine::_UninitalizedId = TfToken("__UNINIT__");
+
+
 HdEngine::HdEngine() 
- : _resourceRegistry(&HdResourceRegistry::GetInstance())
- , _context()
+ : _activeContexts()
+ , _inactiveContexts()
+ , _activeContextsDirty(false)
+ , _defaultRenderDelegateId(_UninitalizedId)
+ , _defaultGalDelegateId(_UninitalizedId)
+ , _resourceRegistry(&HdResourceRegistry::GetInstance())
+ , _taskContext()
 {
 }
 
 HdEngine::~HdEngine()
 {
-    /*NOTHING*/
+    if (!_activeContexts.empty() ||
+        !_inactiveContexts.empty()) {
+        TF_CODING_ERROR("Shutting down hydra with contexts still alive");
+
+        while (!_activeContexts.empty())
+        {
+            _DeleteContext(&_activeContexts.front());
+        }
+
+        while (!_inactiveContexts.empty())
+        {
+            _DeleteContext(&_inactiveContexts.front());
+        }
+
+    }
+}
+
+// static
+void
+HdEngine::GetRenderDelegateDescs(HfPluginDelegateDescVector *pDelegates)
+{
+    if (pDelegates == nullptr) {
+        TF_CODING_ERROR("Null pointer passed to GetRenderDelegateDescs");
+        return;
+    }
+
+    HdRenderDelegateRegistry::GetInstance().GetDelegateDescs(pDelegates);
+}
+
+// static
+void
+HdEngine::GetGalDelegateDescs(HfPluginDelegateDescVector *pDelegates)
+{
+    if (pDelegates == nullptr) {
+        TF_CODING_ERROR("Null pointer passed to GetRenderDelegateDescs");
+        return;
+    }
+
+    GalDelegateRegistry::GetInstance().GetDelegateDescs(pDelegates);
+}
+
+void
+HdEngine::SetDefaultRenderDelegateId(const TfToken &renderDelegateId)
+{
+    HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+    if (renderDelegateId.IsEmpty()) {
+        _InitalizeDefaultRenderDelegateId();
+    } else  if (renderRegistry.IsRegisteredDelegate(renderDelegateId)) {
+        _defaultRenderDelegateId = renderDelegateId;
+    } else {
+        TF_CODING_ERROR("Unknown render delegate id while setting default : %s",
+                        renderDelegateId.GetText());
+    }
+}
+
+void
+HdEngine::SetDefaultGalDelegateId(const TfToken &galDelegateId)
+{
+    GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
+
+    if (galDelegateId.IsEmpty()) {
+        _InitalizeDefaultGalDelegateId();
+    } else if (galDelegateId == HdDelegateTokens->none ) {
+        // Special None token.
+        _defaultGalDelegateId = HdDelegateTokens->none;
+    } else if (galRegistry.IsRegisteredDelegate(galDelegateId)) {
+        _defaultGalDelegateId = galDelegateId;
+    } else {
+        TF_CODING_ERROR("Unknown Gal delegate id while setting default: %s",
+                        galDelegateId.GetText());
+    }
+}
+
+const TfToken &
+HdEngine::GetDefaultRenderDelegateId()
+{
+    if (_defaultRenderDelegateId == _UninitalizedId)
+    {
+        _InitalizeDefaultRenderDelegateId();
+    }
+
+    return _defaultRenderDelegateId;
+}
+
+const TfToken &
+HdEngine::GetDefaultGalDelegateId()
+{
+    if (_defaultGalDelegateId == _UninitalizedId)
+    {
+        _InitalizeDefaultGalDelegateId();
+    }
+
+    return _defaultGalDelegateId;
+}
+
+HdContext *
+HdEngine::CreateContextWithDefaults()
+{
+    // Create Default Render Delegate
+    HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+    const TfToken &defaultRenderDelegateId = GetDefaultRenderDelegateId();
+    HdRenderDelegate *renderDelegate =
+                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
+
+
+    // Create Default Gal
+    GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
+
+    TfToken defaultGalId;
+    if (renderDelegate) {
+        defaultGalId = renderDelegate->GetDefaultGalId();
+    }
+    if (defaultGalId.IsEmpty()) {
+        defaultGalId = GetDefaultGalDelegateId();
+    }
+
+    GalDelegate *galDelegate = nullptr;
+    // Gal is optional, so default could be empty.
+    if (defaultGalId.IsEmpty()) {
+        defaultGalId == HdDelegateTokens->none;
+    } else {
+        // Gal could be explicitly disabled.
+        if (defaultGalId != HdDelegateTokens->none)
+        {
+            galDelegate = galRegistry.GetGalDelegate(defaultGalId);
+
+            // However if specified as a default it is expected to be there,
+            // so this is a failure.
+            if (!galDelegate) {
+                renderRegistry.ReleaseDelegate(renderDelegate);
+                return nullptr;
+            }
+        }
+    }
+
+    // Create Default Render Index.
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+    HdRenderIndex *index = riMgr.CreateRenderIndex();
+
+
+    HdContext *context = nullptr;
+    if (renderDelegate &&
+        index          &&
+        (defaultGalId == HdDelegateTokens->none || galDelegate)) {
+
+        context = _CreateContext(renderDelegate,
+                                 galDelegate,
+                                 index);
+    }
+
+    // If an error happened cleanup.
+    if (context == nullptr) {
+        // Registries and Managers are expected to handle null pointers.
+        renderRegistry.ReleaseDelegate(renderDelegate);
+        galRegistry.ReleaseDelegate(galDelegate);
+        riMgr.ReleaseRenderIndex(index);
+        return nullptr;
+    }
+
+    // We know we created the render index, so set the render delegate type,
+    // so we can check compatibility later.
+    index->SetRenderDelegateType(defaultRenderDelegateId);
+
+    return context;
+}
+
+HdContext *
+HdEngine::CreateSharedContext(HdContext *srcContext)
+{
+    if (srcContext == nullptr) {
+        TF_CODING_ERROR("Null context passed to CreateSharedContext");
+        return nullptr;
+    }
+
+    HdRenderDelegate *renderDelegate = srcContext->GetRenderDelegate();
+    GalDelegate      *galDelegate    = srcContext->GetGalDelegate();
+    HdRenderIndex    *index          = srcContext->GetRenderIndex();
+
+    // Gal's optional.
+    if ((renderDelegate == nullptr) ||
+        (index          == nullptr)) {
+        return nullptr;
+    }
+
+    HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+    GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+
+
+    renderRegistry.AddDelegateReference(renderDelegate);
+    riMgr.AddRenderIndexReference(index);
+
+    if (galDelegate != nullptr) {
+        galRegistry.AddDelegateReference(galDelegate);
+    }
+
+    HdContext *context = _CreateContext(renderDelegate,
+                                        galDelegate,
+                                        index);
+
+    // If an error happened cleanup.
+    if (context == nullptr) {
+        renderRegistry.ReleaseDelegate(renderDelegate);
+        galRegistry.ReleaseDelegate(galDelegate);
+        riMgr.ReleaseRenderIndex(index);
+    }
+
+    return context;
+}
+
+HdContext *
+HdEngine::CreateContext(const TfToken &renderDelegateId,
+                        const TfToken &galDelegateId,
+                        HdRenderIndex *index)
+{
+    if (renderDelegateId.IsEmpty() ||
+        galDelegateId.IsEmpty()    ||
+        (index == nullptr)) {
+        TF_CODING_ERROR("Failed to specify delegates to use or render index");
+        return nullptr;
+    }
+
+    HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+    GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+
+    // Check render index compatibility
+    const TfToken &riRenderDelegateType = index->GetRenderDelegateType();
+    if ((!riRenderDelegateType.IsEmpty()) &&
+        (riRenderDelegateType != renderDelegateId)) {
+        TF_CODING_ERROR("Render Index is bound to render delegate id %s, "
+                        "which conflicts with request id %s",
+                        riRenderDelegateType.GetText(),
+                        renderDelegateId.GetText());
+        return nullptr;
+    }
+
+
+    HdRenderDelegate *renderDelegate =
+                             renderRegistry.GetRenderDelegate(renderDelegateId);
+
+    if (!riMgr.AddRenderIndexReference(index)) {
+        // Index not registered, we shouldn't use it.
+        index = nullptr;
+    }
+
+    GalDelegate *galDelegate = nullptr;
+    if (galDelegateId != HdDelegateTokens->none)
+    {
+        galDelegate = galRegistry.GetGalDelegate(galDelegateId);
+
+    }
+
+
+    HdContext *context = nullptr;
+    // Gal is optional.
+    if ((renderDelegate != nullptr) &&
+        (index != nullptr) &&
+        ((galDelegate != nullptr) ||
+         (galDelegateId == HdDelegateTokens->none))) {
+
+        context = _CreateContext(renderDelegate,
+                                 galDelegate,
+                                 index);
+    }
+
+    // If an error happened cleanup.
+    if (context == nullptr) {
+        // Report Error source
+        if (renderDelegate == nullptr) {
+            TF_CODING_ERROR("Render Delegate %s not found",
+                            renderDelegateId.GetText());
+        }
+
+        if ((galDelegate == nullptr) &&
+            (galDelegateId != HdDelegateTokens->none)) {
+            TF_CODING_ERROR("Gal Delegate %s not found",
+                            galDelegateId.GetText());
+        }
+
+        renderRegistry.ReleaseDelegate(renderDelegate);
+        galRegistry.ReleaseDelegate(galDelegate);
+        riMgr.ReleaseRenderIndex(index);
+
+        return nullptr;
+    }
+
+    // Set the render delegate type on the render index,
+    // so we can check for additional compatibility later.
+    // This will either set the type for the first time or
+    // set the type to the same type, so that's ok (and should be
+    // cheaper than doing the if).
+    index->SetRenderDelegateType(renderDelegateId);
+
+    return context;
+}
+
+void
+HdEngine::DestroyContext(HdContext *context)
+{
+    if (context == nullptr) {
+        // This doesn't throw an error, so that it can be called in the
+        // event of a failure.
+        return;
+    }
+
+    HdRenderDelegate *renderDelegate = context->GetRenderDelegate();
+    GalDelegate      *galDelegate    = context->GetGalDelegate();
+    HdRenderIndex    *index          = context->GetRenderIndex();
+
+    _DeleteContext(context);
+
+    HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+    GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+
+    renderRegistry.ReleaseDelegate(renderDelegate);
+    galRegistry.ReleaseDelegate(galDelegate);
+    riMgr.ReleaseRenderIndex(index);
+}
+
+void
+HdEngine::ActivateContext(HdContext *context)
+{
+    if (context == nullptr) {
+        TF_CODING_ERROR("Null context passed to activate context");
+        return;
+    }
+
+    // As we don't know what list the context was originally in, assume it was
+    // inactive.
+    context->unlink();
+    _activeContexts.push_front(*context);
+    _activeContextsDirty = true;
+}
+
+void
+HdEngine::DeactivateContext(HdContext *context)
+{
+    if (context == nullptr) {
+        TF_CODING_ERROR("Null context passed to deactivate context");
+        return;
+    }
+
+    // As we don't know what list the context was originally in, assume it was
+    // active.
+    context->unlink();
+    _inactiveContexts.push_front(*context);
+    _activeContextsDirty = true;
+}
+
+// static
+HdRenderIndex *
+HdEngine::CreateRenderIndex()
+{
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+
+    return riMgr.CreateRenderIndex();
+}
+
+// static
+void
+HdEngine::AddRenderIndexReference(HdRenderIndex *renderIndex)
+{
+    if (renderIndex == nullptr) {
+        TF_CODING_ERROR("Null context passed to add render index reference");
+        return;
+    }
+
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+
+    riMgr.AddRenderIndexReference(renderIndex);
+}
+
+// static
+void
+HdEngine::ReleaseRenderIndex(HdRenderIndex *renderIndex)
+{
+    if (renderIndex == nullptr) {
+        // No error reported as releasing null in the event of an error
+        // is desirable use-case.
+        return;
+    }
+
+    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
+
+    riMgr.ReleaseRenderIndex(renderIndex);
 }
 
 void 
 HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
 {
     // See if the token exists in the context and if not add it.
-    std::pair<HdTaskContext::iterator, bool> result = _context.emplace(id, data);
+    std::pair<HdTaskContext::iterator, bool> result =
+                                                 _taskContext.emplace(id, data);
     if (not result.second) {
         // Item wasn't new, so need to update it
         result.first->second = data;
@@ -61,7 +472,7 @@ HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
 void
 HdEngine::RemoveTaskContextData(const TfToken &id)
 {
-    _context.erase(id);
+    _taskContext.erase(id);
 }
 
 void
@@ -155,7 +566,7 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
         if (not TF_VERIFY(*it)) {
             continue;
         }
-        (*it)->Sync(&_context);
+        (*it)->Sync(&_taskContext);
     }
 
     // Process all pending dirty lists
@@ -184,6 +595,70 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     _resourceRegistry->GarbageCollectDispatchBuffers();
 
     TF_FOR_ALL(it, tasks) {
-        (*it)->Execute(&_context);
+        (*it)->Execute(&_taskContext);
     }
+}
+
+void
+HdEngine::ReloadAllShaders(HdRenderIndex& index)
+{
+    HdChangeTracker &tracker = index.GetChangeTracker();
+
+    // 1st dirty all rprims, so they will trigger shader reload
+    tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
+
+    // Dirty all surface shaders
+    tracker.MarkAllShadersDirty(HdChangeTracker::AllDirty);
+
+    // Invalidate Geometry shader cache in Resource Registry.
+    _resourceRegistry->InvalidateGeometricShaderRegistry();
+
+    // Fallback Shader
+    index.ReloadFallbackShader();
+
+
+    // Note: Several Shaders are not currently captured in this
+    // - Lighting Shaders
+    // - Render Pass Shaders
+    // - Culling Shader
+
+}
+
+HdContext *
+HdEngine::_CreateContext(HdRenderDelegate *renderDelegate,
+                         GalDelegate      *galDelegate,
+                         HdRenderIndex    *index)
+{
+    HdContext *context = new HdContext(renderDelegate, galDelegate, index);
+
+    if (!TF_VERIFY(context != nullptr)) {
+        return nullptr;
+    }
+
+    _activeContexts.push_front(*context);
+    return context;
+}
+
+void
+HdEngine::_DeleteContext(HdContext *context)
+{
+    context->unlink();
+    delete context;
+}
+
+void
+HdEngine::_InitalizeDefaultRenderDelegateId()
+{
+    HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+    _defaultRenderDelegateId = renderRegistry.GetDefaultDelegateId();
+}
+
+void
+HdEngine::_InitalizeDefaultGalDelegateId()
+{
+    GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
+
+    _defaultGalDelegateId = galRegistry.GetDefaultDelegateId();
 }

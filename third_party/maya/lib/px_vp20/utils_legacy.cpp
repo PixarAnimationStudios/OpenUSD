@@ -27,7 +27,7 @@
 
 #include <maya/M3dView.h>
 
-#include <GL/gl.h>
+#include "pxr/imaging/garch/gl.h"
 
 
 /* static */

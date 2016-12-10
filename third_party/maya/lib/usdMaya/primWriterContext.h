@@ -81,12 +81,31 @@ public:
     /// \sa GetExportsReferences
     void SetExportsReferences(bool exportsReferences);
 
+    /// Set the value that will be returned by GetPruneChildren().
+    ///
+    /// A plugin should set this to \c true if it will handle writing
+    /// child prims by itself, or if it does not wish for any children of
+    /// the current node to be traversed by the export process.
+    ///
+    /// This should be called during the initial (unvarying) export for it
+    /// to be considered by the export process. If it is called during the
+    /// animated (varying) export, it will be ignored.
+    void SetPruneChildren(bool pruneChildren);
+
+    /// \brief Returns the value provided by SetPruneChildren(), or \c false
+    /// if SetPruneChildren() is not called.
+    ///
+    /// Export processes should prune all descendants of the current node
+    /// during traversal if this is set to \c true.
+    bool GetPruneChildren() const;
+
 private:
     const UsdTimeCode& _timeCode;
     const SdfPath& _authorPath;
     UsdStageRefPtr _stage;
     bool _exportsGprims;
     bool _exportsReferences;
+    bool _pruneChildren;
 };
 
 #endif // PXRUSDMAYA_PRIMWRITERCONTEXT_H

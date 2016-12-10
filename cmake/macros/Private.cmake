@@ -320,3 +320,12 @@ macro(_get_share_install_dir RESULT)
     _get_install_dir(share/usd ${RESULT})
 endmacro() # _get_share_install_dir
 
+function(_append_to_rpath orig_rpath new_rpath output)
+    # Strip trailing '/' path separators, then append to orig_rpath
+    # if new_rpath doesn't already exist.
+    string(REGEX REPLACE "/+$" "" new_rpath ${new_rpath})
+    string(FIND ${orig_rpath} ${new_rpath} rpath_exists)
+    if (rpath_exists EQUAL -1)
+        set(${output} "${orig_rpath}:${new_rpath}" PARENT_SCOPE)
+    endif()
+endfunction() # _add_to_rpath

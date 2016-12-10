@@ -104,6 +104,32 @@ SdfVariantSpec::GetPrimSpec() const
     return GetLayer()->GetPrimAtPath(GetPath());
 }
 
+SdfVariantSetsProxy
+SdfVariantSpec::GetVariantSets() const
+{
+    return SdfVariantSetsProxy(SdfVariantSetView(GetLayer(),
+            GetPath(), SdfChildrenKeys->VariantSetChildren),
+            "variant sets", SdfVariantSetsProxy::CanErase);
+}
+
+std::vector<std::string> 
+SdfVariantSpec::GetVariantNames(const std::string& name) const
+{
+    std::vector<std::string> variantNames;
+
+    SdfPath variantSetPath = GetPath().AppendVariantSelection(name, "");
+    std::vector<TfToken> variantNameTokens =
+        GetLayer()->GetFieldAs<std::vector<TfToken> >(variantSetPath,
+            SdfChildrenKeys->VariantChildren);
+
+    variantNames.reserve(variantNameTokens.size());
+    TF_FOR_ALL(i, variantNameTokens) {
+        variantNames.push_back(i->GetString());
+    }
+
+    return variantNames;
+}
+
 SdfVariantSpecHandle
 SdfCreateVariantInLayer(
     const SdfLayerHandle &layer,

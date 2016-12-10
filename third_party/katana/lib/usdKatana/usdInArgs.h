@@ -56,6 +56,7 @@ public:
             double shutterOpen,
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
+            const std::set<std::string>& defaultMotionPaths,
             const StringListMap& extraAttributesOrNamespaces,
             bool verbose,
             const char * errorMessage = 0) {
@@ -69,6 +70,7 @@ public:
                     shutterOpen,
                     shutterClose, 
                     motionSampleTimes,
+                    defaultMotionPaths,
                     extraAttributesOrNamespaces,
                     verbose,
                     errorMessage));
@@ -119,6 +121,10 @@ public:
         return _motionSampleTimes;
     }
 
+    const std::set<std::string>& GetDefaultMotionPaths() const {
+        return _defaultMotionPaths;
+    }
+
     /// \brief Return true if motion blur is backward.
     ///
     /// PxrUsdIn supports both forward and backward motion blur. Motion
@@ -155,6 +161,7 @@ private:
             double shutterOpen,
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
+            const std::set<std::string>& defaultMotionPaths,
             const StringListMap& extraAttributesOrNamespaces,
             bool verbose,
             const char * errorMessage = 0);
@@ -173,6 +180,7 @@ private:
     double _shutterOpen;
     double _shutterClose;
     std::vector<double> _motionSampleTimes;
+    std::set<std::string> _defaultMotionPaths;
     bool _isMotionBackward;
 
     // maps the root-level attribute name to the specified attributes or namespaces

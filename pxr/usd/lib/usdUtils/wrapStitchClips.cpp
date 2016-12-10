@@ -33,47 +33,56 @@
 
 using namespace boost::python;
 
-// A wrapper to clean up the python API, allowing users to pass in None
-// and have it default to the no-stage-frame-supplied case
-double
-_ConvertStartFrame(const boost::python::object pyStartFrame)
+template <typename T>
+T
+_ConvertWithDefault(const object obj, const T& def)
 {
-    double startFrame;
-    if (not TfPyIsNone(pyStartFrame)) {
-        startFrame = extract<double>(pyStartFrame);        
-    } else {
-        startFrame = std::numeric_limits<double>::max();
-    }
-
-    return startFrame;
+    if (not TfPyIsNone(obj)) {
+        return extract<T>(obj);
+    } 
+        
+    return def;
 }
 
 bool
-_ConvertReuseTopology(const boost::python::object pyReuseTopology) 
-{
-    if (not TfPyIsNone(pyReuseTopology)) {
-        return extract<bool>(pyReuseTopology);
-    } else {
-        return true;
-    }
-}
-
-void
 _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
-                    const boost::python::object reuseExistingTopology,
-                    const boost::python::object pyStartFrame)
+                    const object pyStartFrame,
+                    const object pyEndFrame)
 {
-    UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
-                        _ConvertReuseTopology(reuseExistingTopology),
-                        _ConvertStartFrame(pyStartFrame));
+    constexpr double dmax = std::numeric_limits<double>::max();
+    return UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
+                               _ConvertWithDefault(pyStartFrame, dmax),
+                               _ConvertWithDefault(pyEndFrame, dmax));
 }
 
-void _ConvertStitchClipsToplogy(const SdfLayerHandle& topologyLayer,
-                                const std::vector<std::string>& clipLayerFiles)
+bool
+_ConvertStitchClipsTopology(const SdfLayerHandle& topologyLayer,
+                           const std::vector<std::string>& clipLayerFiles)
 {
-    UsdUtilsStitchClipsTopology(topologyLayer, clipLayerFiles);
+    return UsdUtilsStitchClipsTopology(topologyLayer, clipLayerFiles);
+}
+
+std::string
+_ConvertGenerateClipTopologyName(const std::string& resultLayerName) 
+{
+    return UsdUtilsGenerateClipTopologyName(resultLayerName);
+}
+
+bool
+_ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
+                           const SdfLayerHandle& topologyLayer,
+                           const SdfPath& clipPath,
+                           const std::string& templatePath,
+                           const double startFrame,
+                           const double endFrame,
+                           const double stride)
+{
+    return UsdUtilsStitchClipsTemplate(resultLayer, topologyLayer,
+                                       clipPath, templatePath, startFrame,
+                                       endFrame, stride);
+
 }
 
 void 
@@ -84,11 +93,25 @@ wrapStitchClips()
         (arg("resultLayer"), 
          arg("clipLayerFiles"), 
          arg("clipPath"), 
-         arg("reuseExistingTopology")=boost::python::object(),
-         arg("startFrame")=boost::python::object()));
+         arg("startFrame")=object(),
+         arg("endFrame")=object()));
 
     def("StitchClipsTopology",
-        _ConvertStitchClipsToplogy,
+        _ConvertStitchClipsTopology,
         (arg("topologyLayer"),
          arg("clipLayerFiles")));
+
+    def("StitchClipsTemplate",
+        _ConvertStitchClipTemplate,
+        (arg("resultLayer"),
+         arg("topologyLayer"),
+         arg("clipPath"),
+         arg("templatePath"),
+         arg("startTimeCode"),
+         arg("endTimeCode"),
+         arg("stride")));
+
+    def("GenerateClipTopologyName",
+        _ConvertGenerateClipTopologyName,
+        (arg("rootLayerName")));
 }

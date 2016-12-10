@@ -28,6 +28,8 @@
 // Make sure to include glew first before any header that might include
 // gl.h
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glut.h"
+
 #include "pxrUsdMayaGL/hdRenderer.h"
 #include "px_vp20/utils.h"
 #include "px_vp20/utils_legacy.h"
@@ -42,8 +44,6 @@
 #include <maya/MStateManager.h>
 #include <maya/MViewport2Renderer.h>
 #include <maya/MHWGeometryUtilities.h>
-
-#include <GL/glut.h>
 
 void
 UsdMayaGLHdRenderer::CheckRendererSetup(
@@ -197,7 +197,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
             params.drawMode = request.drawRequest.token() == UsdMayaGLHdRenderer::DRAW_WIREFRAME ? UsdImagingGL::DRAW_WIREFRAME :
                 UsdImagingGL::DRAW_POINTS;
             params.enableLighting = false;
-            params.cullStyle = UsdImagingEngine::CULL_STYLE_NOTHING;
+            params.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
 
             params.overrideColor = request.fWireframeColor;
 
@@ -213,7 +213,7 @@ void UsdMayaGLHdRenderer::RenderVp2(
             params.drawMode = ((request.drawRequest.token() == UsdMayaGLHdRenderer::DRAW_SHADED_FLAT) ?
                 UsdImagingGL::DRAW_GEOM_FLAT : UsdImagingGL::DRAW_GEOM_SMOOTH);
             params.enableLighting = true;
-            params.cullStyle = UsdImagingEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
+            params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
 
             _renderer->Render(_renderedPrim, params);
 

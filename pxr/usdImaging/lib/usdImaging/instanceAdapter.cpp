@@ -864,7 +864,13 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (requestedBits & HdChangeTracker::DirtySurfaceShader) {
-            valueCache->GetSurfaceShader(cachePath) = GetShaderBinding(prim);
+            // First try to get the shader binded in the instance, if no shader
+            // is bound then access the shader bound to the master prim.
+            SdfPath p = GetShaderBinding(prim);
+            if (p.IsEmpty()) {
+                p = GetShaderBinding(_GetPrim(rproto.path));
+            }
+            valueCache->GetSurfaceShader(cachePath) = p;
         }
 
     } else {
@@ -1269,8 +1275,10 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     _GetPathForInstanceIndexFn(
         UsdImagingInstanceAdapter* adapter_,
         SdfPath const &usdPath_,
-        int instanceIndex_)
-        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_)
+        int instanceIndex_,
+        SdfPathVector *instanceContextPaths_)
+        : adapter(adapter_), usdPath(usdPath_), instanceIndex(instanceIndex_),
+          instanceContextPaths(instanceContextPaths_)
     { }
 
     void Initialize(size_t numInstances)
@@ -1282,9 +1290,15 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     {
         if (instanceIdx == static_cast<size_t>(instanceIndex) && instanceContext.size() > 0) {
             instancePath = instanceContext.back().GetPath();
+
+            if (instanceContextPaths) {
+                for (const UsdPrim &p: instanceContext) {
+                    instanceContextPaths->push_back(p.GetPath());
+                }
+            }
+
             return false;
         }
-
         return true;
     }
 
@@ -1292,13 +1306,16 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
     SdfPath usdPath;
     SdfPath instancePath;
     int instanceIndex;
+    SdfPathVector *instanceContextPaths;
 };
 
 /*virtual*/
 SdfPath 
 UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     SdfPath const &path, int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex)
+    int *absoluteInstanceIndex,
+    SdfPath * rprimPath,
+    SdfPathVector *instanceContext)
 {
     UsdPrim const &prim = _GetPrim(path.GetAbsoluteRootOrPrimPath());
     if (not prim) {
@@ -1327,7 +1344,9 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
                     return GetPathForInstanceIndex(instIt->first,
                                                    instanceIndex,
                                                    instanceCount,
-                                                   absoluteInstanceIndex);
+                                                   absoluteInstanceIndex,
+                                                   rprimPath,
+                                                   instanceContext);
                 }
             }
         }
@@ -1361,9 +1380,9 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         instanceIndex = instanceIndices[instanceIndex];
         break;
     }
-
+        
     _GetPathForInstanceIndexFn getPathForInstanceIndexFn(
-        this, instancerPath, instanceIndex);
+        this, instancerPath, instanceIndex, instanceContext);
 
     _RunForAllInstancesToDraw(prim, &getPathForInstanceIndexFn);
 
@@ -1377,6 +1396,17 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     if (instanceCount) {
         *instanceCount = 0;
     }
+
+    if (rprimPath) {
+        const auto rprimPathIt = instIt->second.primMap.find(path);
+        if (rprimPathIt != instIt->second.primMap.end()) {
+            *rprimPath = rprimPathIt->second.path;
+
+            TF_DEBUG(USDIMAGING_SELECTION).Msg(
+                "NI: rprimPath %s\n", rprimPath->GetText());
+        }
+    }
+
     // intentionally leave absoluteInstanceIndex as it is, so that
     // partial selection of point instancer can be passed through.
 
@@ -1487,3 +1517,30 @@ UsdImagingInstanceAdapter::PopulateSelection(
 
     return found;
 }
+
+/*virtual*/
+SdfPathVector
+UsdImagingInstanceAdapter::GetDependPaths(SdfPath const &instancerPath) const
+{
+    _InstancerDataMap::const_iterator it = _instancerData.find(instancerPath);
+
+    SdfPathVector result;
+    if (it != _instancerData.end()) {
+        _InstancerData const & instancerData = it->second;
+
+        // if the proto path is property path, that should be in the subtree
+        // and no need to return.
+        TF_FOR_ALL (protoIt, instancerData.primMap) {
+            SdfPath const &protoPath = protoIt->first;
+            if (protoPath.IsPrimOrPrimVariantSelectionPath()) {
+                if (not protoPath.HasPrefix(instancerPath)) {
+                    result.push_back(protoPath);
+                }
+            }
+        }
+    }
+    // XXX: we may want to cache this result in _instancerData.
+    return result;
+}
+
+

@@ -646,8 +646,8 @@ private:
             using result_type = _FlatMap::value_type;
             explicit _SpecToPair(CrateFile *crateFile) : crateFile(crateFile) {}
             result_type operator()(CrateFile::Spec const &spec) const {
-                result_type r;
-                r.first = crateFile->GetPath(spec.pathIndex);
+                result_type r(crateFile->GetPath(spec.pathIndex),
+                              _FlatSpecData(Usd_EmptySharedTag));
                 TF_AXIOM(!r.first.IsTargetPath());
                 return r;
             }
@@ -675,9 +675,7 @@ private:
                 TfAutoMallocTag tag2("Usd_CrateDataImpl main hash table");
                 specDataPtrs.resize(specs.size());
                 for (size_t i = 0; i != specs.size(); ++i) {
-                    auto const &s = specs[i];
-                    specDataPtrs[i] =
-                        &_flatData.at(_crateFile->GetPath(s.pathIndex));
+                    specDataPtrs[i] = &(_flatData.begin()[i].second);
                 }
             });
 
@@ -908,6 +906,9 @@ private:
 
     struct _FlatSpecData {
         inline void DetachIfNotUnique() { fields.MakeUnique(); }
+        _FlatSpecData() = default;
+        explicit _FlatSpecData(Usd_EmptySharedTagType)
+            : fields(Usd_EmptySharedTag) {}
         Usd_Shared<_FieldValuePairVector> fields;
     };
 

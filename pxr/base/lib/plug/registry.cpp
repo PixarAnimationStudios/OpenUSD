@@ -30,6 +30,7 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/scopeDescription.h"
@@ -39,8 +40,6 @@
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_mutex.h>
-
-#include <boost/foreach.hpp>
 
 using std::pair;
 using std::string;
@@ -155,8 +154,9 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo)
 
     if (not newPlugins.empty()) {
         PlugPluginPtrVector v(newPlugins.begin(), newPlugins.end());
-        BOOST_FOREACH(const PlugPluginPtr &plug, v)
+        for (const auto& plug : v) {
             plug->_DeclareTypes();
+        }
         return v;
     }
     return PlugPluginPtrVector();
@@ -179,15 +179,9 @@ PlugRegistry::GetAllPlugins() const
 }
 
 PlugPluginPtr
-PlugRegistry::GetPluginWithAddress(void* address) const
+PlugRegistry::GetPluginWithName(const string& name) const
 {
-    return PlugPlugin::_GetPluginWithAddress(address);
-}
-
-PlugPluginPtr
-PlugRegistry::GetPluginWithPath(const std::string& path) const
-{
-    return PlugPlugin::_GetPluginWithPath(path);
+    return PlugPlugin::_GetPluginWithName(name);
 }
 
 JsValue
@@ -263,11 +257,17 @@ void
 PlugPlugin::_RegisterAllPlugins()
 {
     PlugPluginPtrVector result;
+
     static std::once_flag once;
     std::call_once(once, [&result](){
-        // Register plugins in the tree. This declares TfTypes.
-        result = PlugRegistry::GetInstance()._RegisterPlugins(Plug_GetPaths());
+        PlugRegistry &registry = PlugRegistry::GetInstance();
+
+        if (!TfGetenvBool("PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH", false)) {
+            // Register plugins in the tree. This declares TfTypes.
+            result = registry._RegisterPlugins(Plug_GetPaths());
+        }
     });
+
 
     // Send a notice outside of the call_once.  We don't want to be holding
     // a lock (even an implicit one) when sending a notice.

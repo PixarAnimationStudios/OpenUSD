@@ -1,5 +1,65 @@
 # Change Log
 
+## [0.7.2] - 2016-12-02
+
+### Added
+- Added ability to apply a custom prefix to shared library names
+  by specifying the `PXR_LIB_PREFIX` option to CMake.
+- Added ability to disable tests by using the `PXR_BUILD_TESTS` option
+  with CMake.
+- usddiff can now diff two directories containing USD files.
+- Value clips on a prim may now be specified using 'template' clip
+  metadata. This is a more compact representation for simple cases
+  where each value clip corresponds to a single time code.
+- Better support for non-file-backed asset resolution
+  - Made ArDefaultResolver public, so that subclasses can layer
+    behavior on top of it.
+  - Added ArResolver API for retrieving files from data store when
+    needed.
+- Initial version of UsdGeomPointInstancer schema and preliminary
+  support in usdImaging.
+- pxrUsdReferenceAssemblies in Maya can now import animation from a USD scene.
+  See http://openusd.org/docs/Maya-USD-Plugins.html#MayaUSDPlugins-ImportingasAssemblies 
+  for details. 
+- Core USD metadata (e.g. hidden, instanceable, kind) now roundtrips through 
+  Maya, stored as "USD_XXX" attributes on corresponding Maya nodes.
+
+### Changed
+- Removed dependency on Qt. Note that PySide is still a dependency for 
+  usdview.
+  - Removed imaging/glfq library as part of this work.
+- Modified variant behavior in composition:
+  - Variants may now be nested within other variants in scene description.
+    Nested variants may be authored by using nested UsdEditContext objects
+    returned by UsdVariantSet::GetVariantEditContext.
+  - Weaker variants may now introduce variant selections that affect
+    stronger variants. Previously, these selections would be ignored 
+    and the variant fallbacks would be used instead.
+- Optimized .usdc file format performance in certain cases:
+  - Output is buffered in memory to improve write times for layers 
+    containing many nested dictionaries. In one such example, wall-clock
+    time improved by ~64% and system time improved by 89%.
+  - Time samples are now written out grouped by time to improve read 
+    performance for frame-by-frame access patterns.
+- Several optimizations to improve USD scenegraph authoring and composition 
+  speed and reduce memory consumption. In some use cases, we observed:
+  - ~5-7x less memory consumed by Pcp dependency tracking structures
+  - ~40% less time spent to author large stages
+- Exporting USD from the Maya Export window now produces binary .usd
+  files by default instead of .usda files.
+
+### Fixed
+- Fixed bug where edits to a layer opened in Maya would persist when
+  reopening that layer in a new scene.
+- Fixed issue where exporting USD from the Maya Export window would
+  produce files ending with ".usda", even if a different format
+  was specified. The exporter should now respect any extension that
+  is entered, so long as the "Default file extensions" option is
+  turned off.
+- Fixed several issues with example plugins being improperly built, making
+  them unusuable, and missing functionality.
+- Various other bug fixes and performance improvements.
+
 ## [0.7.1] - 2016-09-21
 
 ### Added

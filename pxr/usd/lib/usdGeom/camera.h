@@ -389,6 +389,49 @@ public:
     UsdAttribute CreateStereoRoleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // SHUTTEROPEN 
+    // --------------------------------------------------------------------- //
+    /// Frame relative shutter open time in UsdTimeCode units (negative
+    /// value indicates that the shutter opens before the current
+    /// frame time). Used for motion blur.
+    ///
+    /// \n  C++ Type: double
+    /// \n  Usd Type: SdfValueTypeNames->Double
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    UsdAttribute GetShutterOpenAttr() const;
+
+    /// See GetShutterOpenAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    UsdAttribute CreateShutterOpenAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SHUTTERCLOSE 
+    // --------------------------------------------------------------------- //
+    /// Frame relative shutter close time, analogous comments from
+    /// shutter:open apply. A value greater or equal to shutter:open
+    /// should be authored, otherwise there is no exposure and a
+    /// renderer should produce a black image.
+    ///
+    /// \n  C++ Type: double
+    /// \n  Usd Type: SdfValueTypeNames->Double
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    UsdAttribute GetShutterCloseAttr() const;
+
+    /// See GetShutterCloseAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    UsdAttribute CreateShutterCloseAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

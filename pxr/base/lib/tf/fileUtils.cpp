@@ -32,7 +32,6 @@
 
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/noncopyable.hpp>
@@ -343,7 +342,7 @@ Tf_WalkDirsRec(
     // symbolic link again, omit it from the directory list to prevent the
     // directory from being followed until stat() eventually fails with ELOOP.
     if (followLinks) {
-        BOOST_FOREACH(const string& name, symlinknames) {
+        for (const auto& name : symlinknames) {
             struct stat st;
             if (stat(string(dirpath + "/" + name).c_str(), &st) == 0) {
                 if (S_ISDIR(st.st_mode)) {
@@ -365,7 +364,7 @@ Tf_WalkDirsRec(
     if (topDown and not func(dirpath, &dirnames, filenames))
        return false;
 
-    BOOST_FOREACH(const string& name, dirnames) {
+    for (const auto& name : dirnames) {
         if (not Tf_WalkDirsRec(dirpath + "/" + name,
                 func, topDown, onError, followLinks, linkTargets))
             return false;

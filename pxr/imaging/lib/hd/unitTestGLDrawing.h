@@ -30,7 +30,7 @@
 
 #include <string>
 
-class Hd_UnitTestDrawingQGLWidget;
+class Hd_UnitTestWindow;
 
 /// \class Hd_UnitTestGLDrawing
 ///
@@ -76,7 +76,7 @@ protected:
     GfFrustum GetFrustum() const;
 
 private:
-    Hd_UnitTestDrawingQGLWidget *_widget;
+    Hd_UnitTestWindow *_widget;
     float _rotate[2];
     GfVec3f _translate;
 

@@ -2,9 +2,6 @@ set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hd)
 
 set(optionalPublicClasses "")
-if (QT4_FOUND)
-    list(APPEND optionalPrivateClasses unitTestHelper)
-endif()
 
 if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
@@ -21,8 +18,10 @@ pxr_shared_library(hd
         vt
         work
         sdf
-        glf
         garch
+        hf
+        gal
+        glf
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
         ${GLEW_LIBRARY}
@@ -48,6 +47,7 @@ pxr_shared_library(hd
         codeGen
         commandBuffer
         computation
+        context
         conversions
         copyComputation
         debugCodes
@@ -76,6 +76,8 @@ pxr_shared_library(hd
         persistentBuffer
         points
         renderContextCaps
+        renderDelegate
+        renderDelegateRegistry
         renderIndex
         renderPass
         renderPassShader
@@ -92,8 +94,9 @@ pxr_shared_library(hd
         shaderKey
         shaderParam
         sprim
-        surfaceShader
         strategyBase
+        surfaceShader
+
         task
         texture
         textureResource
@@ -117,10 +120,12 @@ pxr_shared_library(hd
         meshShaderKey
         pointsShaderKey
         quadrangulate
+        renderIndexManager
         smoothNormals
         subdivision
         subdivision3
         unitTestDelegate
+        unitTestHelper
         vertexAdjacency
         ${optionalPrivateClasses}
 
@@ -145,16 +150,14 @@ pxr_shared_library(hd
         shaders/renderPassShader.glslfx
 )
 
-if (QT4_FOUND)
-    pxr_build_test(testHdBasicDrawing
-        LIBRARIES
-            hd
-            glf
-            glfq
-            Qt4::QtCore
-            Qt4::QtOpenGL
-        CPPFILES
-            unitTestGLDrawing.cpp
-            testenv/testHdBasicDrawing.cpp
-    )
+if (X11_FOUND OR APPLE)
+pxr_build_test(testHdBasicDrawing
+    LIBRARIES
+        hd
+        garch
+        glf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testHdBasicDrawing.cpp
+)
 endif()

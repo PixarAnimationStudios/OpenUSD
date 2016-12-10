@@ -177,6 +177,8 @@ usdTranslatorExport::writer(const MFileObject &file,
             }
             writeJob.endJob();
             MGlobal::viewFrame(oldCurTime);
+        } else {
+            return MS::kFailure;
         }
     } else {
         MGlobal::displayWarning("No DAG nodes to export. Skipping");
@@ -185,21 +187,28 @@ usdTranslatorExport::writer(const MFileObject &file,
     return MS::kSuccess;
 }
 
-MPxFileTranslator::MFileKind usdTranslatorExport::identifyFile(
-    const MFileObject &fileName,
-    const char*,
-    short) const {
-
+MPxFileTranslator::MFileKind
+usdTranslatorExport::identifyFile(
+        const MFileObject& file,
+        const char* buffer,
+        short size) const
+{
     MFileKind retValue = kNotMyFileType;
-    MString fName = fileName.fullName();
-    int sLen=fName.length();
-    if (sLen>5) {
-        if (fName.substring(sLen-4, sLen-1)==".usd" || 
-            fName.substring(sLen-5, sLen-1)==".usda" ||
-            fName.substring(sLen-5, sLen-1)==".usdb" ||
-            fName.substring(sLen-5, sLen-1)==".usdc") {
-            retValue = kIsMyFileType;
-        }
+    const MString fileName = file.fullName();
+    const int lastIndex = fileName.length() - 1;
+
+    const int periodIndex = fileName.rindex('.');
+    if (periodIndex < 0 or periodIndex >= lastIndex) {
+        return retValue;
     }
+
+    const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
+
+    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() or
+        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() or
+        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
+        retValue = kIsMyFileType;
+    }
+
     return retValue;
 }

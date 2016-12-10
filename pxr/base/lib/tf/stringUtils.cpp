@@ -509,7 +509,7 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
         quote.erase();
         token.erase();
 
-        while ((quoteIndex = ::_FindFirstOfNotEscaped(source, quotes, i)) <
+        while ((quoteIndex = _FindFirstOfNotEscaped(source, quotes, i)) <
                (delimIndex = source.find_first_of(delimiters, i))) {
 
             // Push the token from 'i' until the first quote.
@@ -520,7 +520,7 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
             // escaped with a preceding backslash.
             j = quoteIndex;
             quote = source[j];
-            j = ::_FindFirstOfNotEscaped(source, quote.c_str(), j + 1);
+            j = _FindFirstOfNotEscaped(source, quote.c_str(), j + 1);
             
             // If we've reached the end of the string, then we are
             // missing an end-quote.
@@ -865,7 +865,7 @@ TfEscapeStringReplaceChar(const char** c, char** out)
             char n(0);
             size_t nd(0);
             for (nd = 0; isxdigit(*++(*c)); ++nd)
-                n = ((n * 16) + ::_HexToDecimal(**c));
+                n = ((n * 16) + _HexToDecimal(**c));
             --(*c);
             *(*out)++ = n;
             break;
@@ -875,8 +875,8 @@ TfEscapeStringReplaceChar(const char** c, char** out)
         {
             char n(0);
             size_t nd(0);
-            for (nd = 0; ((nd < 3) && ::_IsOctalDigit(**c)); ++nd)
-                n = ((n * 8) + ::_OctalToDecimal(*(*c)++));
+            for (nd = 0; ((nd < 3) && _IsOctalDigit(**c)); ++nd)
+                n = ((n * 8) + _OctalToDecimal(*(*c)++));
             --(*c);
             *(*out)++ = n;
             break;

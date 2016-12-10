@@ -58,4 +58,5 @@ TF_WRAP_MODULE
                         TF_WRAP(UsdGeomCurves);
                             TF_WRAP(UsdGeomBasisCurves);
                             TF_WRAP(UsdGeomNurbsCurves);
+                TF_WRAP(UsdGeomPointInstancer);
 }

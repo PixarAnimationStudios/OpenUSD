@@ -27,7 +27,6 @@
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tracelite/trace.h"
-#include <boost/foreach.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/regex.hpp>
 #include <fstream>
@@ -76,7 +75,8 @@ Sdf_ParseExternalReferences(
     // Matches a reference, with optional label/revision specifier.
     boost::regex assetRef("@([^@]+(?:[@#][^@,]+)?)?@");
     
-    BOOST_FOREACH(const string& line, boost::make_iterator_range(begin, end)) {
+    for (auto lineIter = begin; lineIter != end; ++lineIter) {
+        const string& line = *lineIter;
         // Look for an approximation of the most common kinds of comments, and
         // skip lines that match. This doesn't handle SLASHTERIX style
         // comments, and may also incorrectly identify lines as comments,

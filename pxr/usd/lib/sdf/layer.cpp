@@ -50,7 +50,6 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
@@ -63,7 +62,6 @@
 #include "pxr/base/tf/stackTrace.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include <atomic>
 #include <fstream>
@@ -85,14 +83,17 @@ TF_REGISTRY_FUNCTION(TfType)
 // paths should be asset paths, when applicable, or identifiers if no asset
 // path exists for the desired layers.
 typedef set<string> _MutedLayers;
+typedef std::map<std::string, SdfAbstractDataRefPtr> _MutedLayerDataMap;
 static TfStaticData<_MutedLayers> _mutedLayers;
-// Global mutex protecting _mutedLayers.
+static TfStaticData<_MutedLayerDataMap> _mutedLayerData;
+// Global mutex protecting _mutedLayers and _mutedLayerData
 static TfStaticData<std::mutex> _mutedLayersMutex;
 // This is a global revision number that tracks changes to _mutedLayers.  Since
 // we seldom mute and unmute layers, this lets layers cache their muteness and
 // do quick validity checks without taking a lock and looking themselves up in
 // _mutedLayers.
 static std::atomic_size_t _mutedLayersRevision { 1 };
+
 
 // A registry for loaded layers.
 static TfStaticData<Sdf_LayerRegistry> _layerRegistry;
@@ -111,7 +112,6 @@ SdfLayer::SdfLayer(
     _stateDelegate(SdfSimpleLayerStateDelegate::New()),
     _lastDirtyState(false),
     _assetInfo(new Sdf_AssetInfo),
-    _assetModificationTime(0),
     _mutedLayersRevisionCache(0),
     _isMutedCache(false),
     _permissionToEdit(true),
@@ -145,6 +145,23 @@ SdfLayer::~SdfLayer()
 {
     TF_DEBUG(SDF_LAYER).Msg(
         "SdfLayer::~SdfLayer('%s')\n", GetIdentifier().c_str());
+
+    if (IsMuted()) {
+        std::string mutedPath = _GetMutedPath();
+        SdfAbstractDataRefPtr mutedData;
+        {
+            std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+            // Drop any in-memory edits we may have been holding for this layer.
+            // To minimize time holding the lock, swap the data out and
+            // erase the entry, then release the lock before proceeding
+            // to drop the refcount.
+            _MutedLayerDataMap::iterator i = _mutedLayerData->find(mutedPath);
+            if (i != _mutedLayerData->end()) {
+                std::swap(mutedData, i->second);
+                _mutedLayerData->erase(i);
+            }
+        }
+    }
 
     std::lock_guard<std::mutex> lock(*_layerRegistryMutex);
 
@@ -211,6 +228,12 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(const string& tag)
 {
+    // XXX: 
+    // It would be nice to use the _GetFileFormatForPath helper function 
+    // from below, but that function expects a layer identifier and the 
+    // tag is supposed to be just a helpful debugging aid; the fact that
+    // one can specify an underlying layer file format by specifying an
+    // extension was unintended.
     SdfFileFormatConstPtr fileFormat;
     const string suffix = TfStringGetSuffix(tag);
     if (not suffix.empty()) {
@@ -291,6 +314,25 @@ SdfLayer::CreateNew(
     return _CreateNew(fileFormat, identifier, realPath, ArAssetInfo(), args);
 }
 
+static SdfFileFormatConstPtr
+_GetFileFormatForPath(const std::string &filePath,
+                      const SdfLayer::FileFormatArguments &args)
+{
+    // Determine which file extension to use.
+    const string ext = ArGetResolver().GetExtension(filePath);
+    if (ext.empty()) {
+        return TfNullPtr;
+    }
+
+    // Find a file format that can handle this extension and the
+    // specified target (if any).
+    const std::string* target = 
+        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
+
+    return SdfFileFormat::FindByExtension(
+        ext, (target ? *target : std::string()));
+}
+
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
@@ -347,11 +389,7 @@ SdfLayer::_CreateNew(
         // If not explicitly supplied one, try to determine the fileFormat 
         // based on the identifier suffix,
         if (not fileFormat) {
-            const string suffix = TfStringGetSuffix(absIdentifier);
-            if (not suffix.empty()) {
-                fileFormat = SdfFileFormat::FindById(TfToken(suffix));
-            }
-
+            fileFormat = _GetFileFormatForPath(absIdentifier, args);
             if (not TF_VERIFY(fileFormat))
                 return TfNullPtr;
         }
@@ -425,25 +463,6 @@ string
 SdfLayer::ComputeRealPath(const string &layerPath)
 {
     return Sdf_ComputeFilePath(layerPath);
-}
-
-static SdfFileFormatConstPtr
-_GetFileFormatForPath(const std::string &filePath,
-                      const SdfLayer::FileFormatArguments &args)
-{
-    // Determine which file extension to use.
-    const string ext = ArGetResolver().GetExtension(filePath);
-    if (ext.empty()) {
-        return TfNullPtr;
-    }
-
-    // Find a file format that can handle this extension and the
-    // specified target (if any).
-    const std::string* target = 
-        TfMapLookupPtr(args, SdfFileFormatTokens->TargetArg);
-
-    return SdfFileFormat::FindByExtension(
-        ext, (target ? *target : std::string()));
 }
 
 static SdfLayer::FileFormatArguments&
@@ -677,7 +696,7 @@ SdfLayer::OpenAsAnonymous(
     }
 
     // Run the file parser to read in the file contents.
-    if (not layer->_ReadFromFile(resolvedPath, metadataOnly)) {
+    if (not layer->_ReadFromFile(layerPath, resolvedPath, metadataOnly)) {
         layer->_FinishInitialization(/* success = */ false);
         return TfNullPtr;
     }
@@ -740,32 +759,43 @@ SdfLayer::_Reload(bool force)
             return _ReloadFailed;
         }
 
-        // Get the file's mtime on disk.
-        struct stat fileInfo;
-        double mtime = 0;
-        if (stat(realPath.c_str(), &fileInfo) == 0) {
-            mtime = ArchGetModificationTime(fileInfo);
-        } else if (errno == ENOENT) {
-            // Not existing on disk results in a reload skip.
-            // XXX 2014-09-02 Reset layer to initial data?
+        // If this layer's modification timestamp is empty, this is a
+        // new layer that has never been serialized. This could happen 
+        // if a layer were created with SdfLayer::New, for instance. 
+        // In such cases we can skip the reload since there's nowhere
+        // to reload data from.
+        //
+        // This ensures we don't ask for the modification timestamp for
+        // unserialized new layers below, which would result in errors.
+        //
+        // XXX 2014-09-02 Reset layer to initial data?
+        if (_assetModificationTime.IsEmpty()) {
             return _ReloadSkipped;
-        } else {
-            TF_RUNTIME_ERROR("Unable to stat file '%s': %s",
-                realPath.c_str(), strerror(errno));
+        }
+
+        // Get the layer's modification timestamp.
+        VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+            GetIdentifier(), realPath);
+        if (timestamp.IsEmpty()) {
+            TF_CODING_ERROR(
+                "Unable to get modification time for '%s (%s)'",
+                GetIdentifier().c_str(), realPath.c_str());
             return _ReloadFailed;
         }
 
         // See if we can skip reloading.
         if (not force and not IsDirty()
             and (realPath == oldRealPath)
-            and (mtime == _assetModificationTime)) {
+            and (timestamp == _assetModificationTime)) {
             return _ReloadSkipped;
         }
 
-        if (not _ReadFromFile(realPath, /* metadataOnly = */ false))
+        if (not _ReadFromFile(
+                GetIdentifier(), realPath, /* metadataOnly = */ false)) {
             return _ReloadFailed;
+        }
 
-        _assetModificationTime = mtime;
+        _assetModificationTime.Swap(timestamp);
     }
 
     _MarkCurrentStateAsClean();
@@ -811,7 +841,7 @@ SdfLayer::Import(const string &layerPath)
     if (filePath.empty())
         return false;
 
-    return _ReadFromFile(filePath, /* metadataOnly = */ false);
+    return _ReadFromFile(layerPath, filePath, /* metadataOnly = */ false);
 }
 
 bool
@@ -821,15 +851,37 @@ SdfLayer::ImportFromString(const std::string &s)
 }
 
 bool
-SdfLayer::_ReadFromFile(const std::string & path, bool metadataOnly)
+SdfLayer::_ReadFromFile(
+    const string& identifier,
+    const string& resolvedPath,
+    bool metadataOnly)
 {
     TRACE_FUNCTION();
     TfAutoMallocTag tag("SdfLayer::_ReadFromFile");
-    TF_DESCRIBE_SCOPE("Loading layer '%s'", path.c_str());
-    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::_ReadFromFile('%s')\n", path.c_str());
+    TF_DESCRIBE_SCOPE("Loading layer '%s'", resolvedPath.c_str());
+    TF_DEBUG(SDF_LAYER).Msg(
+        "SdfLayer::_ReadFromFile('%s', '%s', metadataOnly=%s)\n",
+        identifier.c_str(), resolvedPath.c_str(),
+        TfStringify(metadataOnly).c_str());
 
-    return GetFileFormat()->ReadFromFile(SdfLayerBasePtr(this), path,
-                                         metadataOnly);
+    SdfFileFormatConstPtr format = GetFileFormat();
+    if (format->LayersAreFileBased()) {
+        if (not ArGetResolver().FetchToLocalResolvedPath(
+                identifier, resolvedPath)) {
+            TF_DEBUG(SDF_LAYER).Msg(
+                "SdfLayer::_ReadFromFile - unable to fetch '%s' to "
+                "local path '%s'\n",
+                identifier.c_str(), resolvedPath.c_str());
+            return false;
+        }
+
+        TF_DEBUG(SDF_LAYER).Msg(
+            "SdfLayer::_ReadFromFile - fetched '%s' to local path '%s'\n",
+            identifier.c_str(), resolvedPath.c_str());
+    }
+
+    return format->ReadFromFile(
+        SdfLayerBasePtr(this), resolvedPath, metadataOnly);
 }
 
 /*static*/
@@ -1626,7 +1678,9 @@ SdfLayer::_CanGetSpecAtPath(
     // We need to always call MakeAbsolutePath, even if relativePath is
     // already absolute, because we also need to absolutize target paths
     // within the path.
-    const SdfPath absPath = path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+    const SdfPath &absPath =
+        path.IsAbsolutePath() && !path.ContainsTargetPath() ? path :
+        path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
 
     // Grab the object type stored in the SdfData hash table. If no type has
     // been set, this path doesn't point to a valid location.
@@ -1916,7 +1970,7 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     }
 
     SdfChangeBlock block;
-    BOOST_FOREACH(const SdfNamespaceEdit& edit, final) {
+    for (const auto& edit : final) {
         _DoEdit(self, edit);
     }
 
@@ -2092,12 +2146,25 @@ SdfLayer::SetIdentifier(const string &identifier)
     const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
         TfAbsPath(identifier) : identifier;
 
+    const string oldRealPath = GetRealPath();
+
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
     SdfChangeBlock block;
     {
         std::lock_guard<std::mutex> lock(*_layerRegistryMutex);
         _InitializeFromIdentifier(absIdentifier);
+    }
+
+    // If this layer has changed where it's stored, reset the modification
+    // time. Note that the new identifier may not resolve to an existing
+    // location, and we get an empty timestamp from the resolver. 
+    // This is OK -- this means the layer hasn't been serialized to this 
+    // new location yet.
+    const string newRealPath = GetRealPath();
+    if (oldRealPath != newRealPath) {
+        _assetModificationTime = ArGetResolver().GetModificationTimestamp(
+            GetIdentifier(), GetRealPath());
     }
 }
 
@@ -2291,7 +2358,46 @@ SdfLayer::AddToMutedLayers(const string &path)
     }
     if (didChange) {
         if (SdfLayerHandle layer = Find(path)) {
-            layer->_Reload(/* force */ true);
+            if (layer->IsDirty()) {
+                SdfFileFormatConstPtr format = layer->GetFileFormat();
+                SdfAbstractDataRefPtr initializedData = 
+                    format->InitData(layer->GetFileFormatArguments());
+                if (format->IsStreamingLayer(*layer.operator->())) {
+                    // See the discussion in TransferContent()
+                    // about streaming layers; the same concerns
+                    // apply here.  We must swap out the actual data
+                    // ownership and tell clients the entire data
+                    // store has changed.
+                    {
+                        std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+                        TF_VERIFY((*_mutedLayerData).find(path) ==
+                                  (*_mutedLayerData).end());
+                        (*_mutedLayerData)[path] = layer->_data;
+                    }
+                    // _SetData() takes ownership of initializedData and sends
+                    // change notification.
+                    layer->_SetData(initializedData);
+                } else {
+                    // Copy the dirty layer data to an in-memory store
+                    // that will be owned by _mutedLayerData.
+                    SdfAbstractDataRefPtr mutedData = 
+                        format->InitData(layer->GetFileFormatArguments());
+                    mutedData->CopyFrom(layer->_data);
+                    {
+                        std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+                        TF_VERIFY((*_mutedLayerData).find(path) ==
+                                  (*_mutedLayerData).end());
+                        std::swap( (*_mutedLayerData)[path], mutedData );
+                    }
+                    // Mutate the layer's data to the initialized state.
+                    // This enables efficient change processing downstream.
+                    layer->_SetData(initializedData);
+                }
+                TF_VERIFY(layer->IsDirty());
+            } else {
+                // Reload as muted.
+                layer->_Reload(/* force */ true);
+            }
         }
         SdfNotice::LayerMutenessChanged(path, /* wasMuted = */ true).Send();
     }
@@ -2310,7 +2416,28 @@ SdfLayer::RemoveFromMutedLayers(const string &path)
     }
     if (didChange) {
         if (SdfLayerHandle layer = Find(path)) {
-            layer->_Reload(/* force */ true);
+            if (layer->IsDirty()) {
+                SdfAbstractDataRefPtr mutedData;
+                {
+                    std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
+                    _MutedLayerDataMap::iterator i =
+                        _mutedLayerData->find(path);
+                    if (TF_VERIFY(i != _mutedLayerData->end())) {
+                        std::swap(mutedData, i->second);
+                        _mutedLayerData->erase(i);
+                    }
+                }
+                if (TF_VERIFY(mutedData)) {
+                    // If IsStreamingLayer() is true, this re-takes ownership
+                    // of the mutedData object.  Otherwise, this mutates
+                    // the existing data container to match its contents.
+                    layer->_SetData(mutedData);
+                }
+                TF_VERIFY(layer->IsDirty());
+            } else {
+                // Reload as unmuted.
+                layer->_Reload(/* force */ true);
+            }
         }
         SdfNotice::LayerMutenessChanged(path, /* wasMuted = */ false).Send();
     }
@@ -2333,6 +2460,9 @@ SdfLayer::Clear()
     }
 
     _SetData(GetFileFormat()->InitData(GetFileFormatArguments()));
+
+    if (GetFileFormat()->IsStreamingLayer(*this))
+        _stateDelegate->_MarkCurrentStateAsDirty();
 }
 
 bool
@@ -2426,21 +2556,28 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
     // multiple layers to be sharing the same data object, so we
     // have to make a copy of the data here.
     //
-    if (_ShouldNotify()) {
-        if (GetFileFormat()->IsStreamingLayer(*this)) {
-            SdfAbstractDataRefPtr newData = 
-                GetFileFormat()->InitData(GetFileFormatArguments());
-            newData->CopyFrom(layer->_data);
-            _SetData(newData);
-        }
-        else {
-            _SetData(layer->_data);
-        }
-    } else {
-        SdfAbstractDataRefPtr newData = 
-            GetFileFormat()->InitData(GetFileFormatArguments());
+
+    bool notify = _ShouldNotify();
+    bool isStreamingLayer = GetFileFormat()->IsStreamingLayer(*this);
+    SdfAbstractDataRefPtr newData;
+
+    if (!notify || isStreamingLayer) {
+        newData = GetFileFormat()->InitData(GetFileFormatArguments());
         newData->CopyFrom(layer->_data);
+    }
+    else {
+        newData = layer->_data;
+    }
+
+    if (notify) {
+        _SetData(newData);
+    } else {
         _data = newData;
+    }
+
+    // If this is a "streaming" layer, we must mark it dirty.
+    if (isStreamingLayer) {
+        _stateDelegate->_MarkCurrentStateAsDirty();
     }
 }
 
@@ -2680,20 +2817,24 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
             isAnonymous ? info.layerPath : resolvedPath;
 
         // Run the file parser to read in the file contents.
-        if (not layer->_ReadFromFile(readFilePath, metadataOnly)) {
+        if (not layer->_ReadFromFile(info.identifier, resolvedPath, metadataOnly)) {
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;
         }
 
         if (not isAnonymous) {
-            // Grab modification time.
-            struct stat fileInfo;
-            if (stat(readFilePath.c_str(), &fileInfo) != 0) {
+            // Grab modification timestamp.
+            VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+                info.identifier, readFilePath);
+            if (timestamp.IsEmpty()) {
+                TF_CODING_ERROR(
+                    "Unable to get modification timestamp for '%s (%s)'",
+                    info.identifier.c_str(), readFilePath.c_str());
                 layer->_FinishInitialization(/* success = */ false);
                 return TfNullPtr;
             }
-            layer->_assetModificationTime =
-                ArchGetModificationTime(fileInfo);
+
+            layer->_assetModificationTime.Swap(timestamp);
         }
     }
 
@@ -3666,11 +3807,16 @@ SdfLayer::_Save(bool force) const
                          GetFileFormat(), GetFileFormatArguments()))
         return false;
 
-    // Record modification time.
-    struct stat fileInfo;
-    if (stat(path.c_str(), &fileInfo) != 0)
+    // Record modification timestamp.
+    VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+        GetIdentifier(), path);
+    if (timestamp.IsEmpty()) {
+        TF_CODING_ERROR(
+            "Unable to get modification timestamp for '%s (%s)'",
+            GetIdentifier().c_str(), path.c_str());
         return false;
-    _assetModificationTime = ArchGetModificationTime(fileInfo);
+    }
+    _assetModificationTime.Swap(timestamp);
 
     SdfNotice::LayerDidSaveLayerToFile().Send(SdfCreateNonConstHandle(this));
 

@@ -1030,7 +1030,7 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
 bool 
 PxrUsdKatanaUtils::ModelGroupIsAssembly(const UsdPrim &prim)
 {
-    if (not (prim.IsGroup() and prim.GetParent()))
+    if (not (prim.IsGroup() and prim.GetParent()) or prim.IsInMaster())
         return false;
 
     // XXX with bug/102670, this test will be trivial: prim.IsAssembly()
@@ -1086,7 +1086,7 @@ PxrUsdKatanaUtils::ModelGroupNeedsProxy(const UsdPrim &prim)
 bool 
 PxrUsdKatanaUtils::IsModelAssemblyOrComponent(const UsdPrim& prim)
 {
-    if (not prim.IsModel()) {
+    if (not prim.IsModel() or prim.IsInMaster()) {
         return false;
     }
 
@@ -1186,6 +1186,7 @@ std::string PxrUsdKatanaUtils::GetModelInstanceName(const UsdPrim& prim)
             FnLogWarn(TfStringPrintf("Could not get modelInstanceName for "
                      "assembly/component '%s'. Using prim.name", 
                      prim.GetPath().GetText()).c_str());
+            return prim.GetName();
         }
     }
 

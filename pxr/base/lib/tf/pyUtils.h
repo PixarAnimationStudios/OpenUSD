@@ -37,8 +37,9 @@
 #include <string>
 #include <vector>
 
-#include <boost/python/object.hpp>
 #include <boost/python/dict.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/object.hpp>
 #include <boost/python/type_id.hpp>
 
 /// A macro which expands to the proper __repr__ prefix for a library.  This is

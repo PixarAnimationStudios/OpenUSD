@@ -26,6 +26,7 @@
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glut.h"
 
 #include "pxr/imaging/hd/version.h"
 #if defined(HD_API) && HD_API > 25
@@ -47,16 +48,15 @@
 #include "px_vp20/utils_legacy.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
-
 #include <maya/M3dView.h>
+#include <maya/MDrawData.h>
+#include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
 #include <maya/MObjectHandle.h>
-#include <maya/MDrawData.h>
 #include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MSceneMessage.h>
 
 #include <bitset>
-
-#include <GL/glut.h>
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -78,9 +78,21 @@ void
 UsdMayaGLBatchRenderer::Init()
 {
     GlfGlewInit();
+
+    GetGlobalRenderer();
 }
 
-UsdMayaGLBatchRenderer UsdMayaGLBatchRenderer::_sGlobalRenderer;
+/* static */
+UsdMayaGLBatchRenderer&
+UsdMayaGLBatchRenderer::GetGlobalRenderer()
+{
+    if (not _sGlobalRendererPtr) {
+        Reset();
+    }
+    return *_sGlobalRendererPtr;
+}
+
+std::unique_ptr<UsdMayaGLBatchRenderer> UsdMayaGLBatchRenderer::_sGlobalRendererPtr;
 
 /// \brief struct to hold all the information needed for a 
 /// draw request in vp1 or vp2, without requiring shape querying at
@@ -811,11 +823,35 @@ UsdMayaGLBatchRenderer::GetSoftSelectHelper()
     return _softSelectHelper;
 }
 
+// Since we're using a static singleton UsdMayaGLBatchRenderer object, we need
+// to make sure that we reset its state when switching to a new Maya scene.
+static
+void
+_OnMayaSceneUpdateCallback(void* clientData)
+{
+    UsdMayaGLBatchRenderer::Reset();
+}
+
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     : _renderIndex(new HdRenderIndex())
     , _taskDelegate(new TaskDelegate(_renderIndex, SdfPath("/mayaTask")))
     , _intersector(new HdxIntersector(_renderIndex))
 {
+    static MCallbackId sceneUpdateCallbackId = 0;
+    if (sceneUpdateCallbackId == 0) {
+        sceneUpdateCallbackId =
+            MSceneMessage::addCallback(MSceneMessage::kSceneUpdate,
+                                       _OnMayaSceneUpdateCallback);
+    }
+}
+
+/* static */
+void UsdMayaGLBatchRenderer::Reset()
+{
+    if (_sGlobalRendererPtr) {
+        MGlobal::displayInfo("Resetting USD Batch Renderer");
+    }
+    _sGlobalRendererPtr.reset(new UsdMayaGLBatchRenderer());
 }
 
 void

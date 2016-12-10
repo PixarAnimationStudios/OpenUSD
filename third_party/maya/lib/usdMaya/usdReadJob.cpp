@@ -115,12 +115,34 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         return false;
     }
 
-    // If readAnimData is true, we adjust the Min/Max time sliders
+    // If readAnimData is true, we expand the Min/Max time sliders to include
+    // the stage's range if necessary.
     if (mArgs.readAnimData) {
-        double startTimeCode = stage->GetStartTimeCode();
-        double endTimeCode = stage->GetEndTimeCode();
-        MAnimControl::setMinTime(MTime(startTimeCode));
-        MAnimControl::setMaxTime(MTime(endTimeCode));
+        MTime currentMinTime = MAnimControl::minTime();
+        MTime currentMaxTime = MAnimControl::maxTime();
+
+        double startTimeCode, endTimeCode;
+        if (mArgs.useCustomFrameRange) {
+            if (mArgs.startTime > mArgs.endTime) {
+                std::string errorMsg = TfStringPrintf(
+                    "Frame range start (%f) was greater than end (%f)",
+                    mArgs.startTime, mArgs.endTime);
+                MGlobal::displayError(errorMsg.c_str());
+                return false;
+            }
+            startTimeCode = mArgs.startTime;
+            endTimeCode = mArgs.endTime;
+        } else {
+            startTimeCode = stage->GetStartTimeCode();
+            endTimeCode = stage->GetEndTimeCode();
+        }
+
+        if (startTimeCode < currentMinTime.value()) {
+            MAnimControl::setMinTime(MTime(startTimeCode));
+        }
+        if (endTimeCode > currentMaxTime.value()) {
+            MAnimControl::setMaxTime(MTime(endTimeCode));
+        }
     }
 
     // Use the primPath to get the root usdNode
@@ -216,17 +238,20 @@ bool usdReadJob::_DoImport(UsdTreeIterator& primIt,
         PxrUsdMayaPrimReaderArgs args(prim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
-        // we should likely be checking if this is a nested model as well.
-        std::string assetIdentifier;
-        SdfPath assetPrimPath;
         if (PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
                 usdRootPrim,
-                prim,
-                &assetIdentifier,
-                &assetPrimPath)) {
+                prim)) {
+            // We use the file path of the file currently being imported and
+            // the path to the prim within that file when creating the
+            // reference assembly.
+            const std::string refFilePath = mFileName;
+            const SdfPath refPrimPath = prim.GetPath();
 
             // XXX: At some point, if assemblyRep == "import" we'd like
             // to import everything instead of just making an assembly.
@@ -234,8 +259,8 @@ bool usdReadJob::_DoImport(UsdTreeIterator& primIt,
 
             MObject parentNode = ctx.GetMayaNode(prim.GetPath().GetParentPath(), false);
             if (PxrUsdMayaTranslatorModelAssembly::Read(prim,
-                                                        assetIdentifier,
-                                                        assetPrimPath,
+                                                        refFilePath,
+                                                        refPrimPath,
                                                         parentNode,
                                                         args,
                                                         &ctx,

@@ -38,17 +38,18 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usdUtils/stageCache.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/gf/bbox3d.h"
 
 #include <maya/MDagPath.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnTypedAttribute.h>
-#include <maya/MFnEnumAttribute.h>
 #include <maya/MFnCompoundAttribute.h>
-#include <maya/MFnStringData.h>
-#include <maya/MGlobal.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnUnitAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MTime.h>
 
 #include <mutex>
 
@@ -80,18 +81,14 @@ UsdMayaProxyShape::initialize(
 {
     MStatus retValue = MS::kSuccess;
 
-    static std::once_flag once;
-    std::call_once(once, [](){
-        WorkSetMaximumConcurrencyLimit();
-    });
-
     //
     // create attr factories
     //
+    MFnCompoundAttribute compoundAttrFn;
+    MFnEnumAttribute     enumAttrFn;
     MFnNumericAttribute  numericAttrFn;
     MFnTypedAttribute    typedAttrFn;
-    MFnEnumAttribute     enumAttrFn;
-    MFnCompoundAttribute compoundAttrFn;
+    MFnUnitAttribute     unitAttrFn;
 
     psData->filePath = typedAttrFn.create(
         "filePath",
@@ -138,18 +135,18 @@ UsdMayaProxyShape::initialize(
     retValue = addAttribute(psData->excludePrimPaths);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    psData->time = numericAttrFn.create(
+    psData->time = unitAttrFn.create(
         "time",
         "tm",
-        MFnNumericData::kDouble,
-        0,    // Default to "default"
+        MFnUnitAttribute::kTime,
+        0.0,
         &retValue);
-    numericAttrFn.setCached(true);
-    numericAttrFn.setConnectable(true);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
-    numericAttrFn.setAffectsAppearance(true);
+    unitAttrFn.setCached(true);
+    unitAttrFn.setConnectable(true);
+    unitAttrFn.setReadable(true);
+    unitAttrFn.setStorable(true);
+    unitAttrFn.setWritable(true);
+    unitAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(psData->time);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -615,8 +612,8 @@ MBoundingBox UsdMayaProxyShape::boundingBox() const
     // If we could cheaply determine whether a stage only has static geometry,
     // we could make this value a constant one for that case, avoiding the
     // memory overhead of a cache entry per frame
-    MDataHandle timeHandle = dataBlock.inputValue( _psData.time, &status);
-    UsdTimeCode currTime = UsdTimeCode(timeHandle.asDouble());
+    MDataHandle timeHandle = dataBlock.inputValue(_psData.time, &status);
+    UsdTimeCode currTime = UsdTimeCode(timeHandle.asTime().value());
 
     std::map<UsdTimeCode, MBoundingBox>::const_iterator cacheLookup =
         _boundingBoxCache.find(currTime);
@@ -776,7 +773,7 @@ UsdTimeCode UsdMayaProxyShape::_GetTime( MDataBlock dataBlock ) const
 {
     MStatus status;
 
-    return UsdTimeCode(dataBlock.inputValue( _psData.time, &status).asDouble());
+    return UsdTimeCode(dataBlock.inputValue(_psData.time, &status).asTime().value());
 }
 
 SdfPathVector

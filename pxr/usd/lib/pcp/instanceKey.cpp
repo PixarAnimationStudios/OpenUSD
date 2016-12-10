@@ -29,8 +29,6 @@
 
 #include "pxr/base/tracelite/trace.h"
 
-#include <boost/foreach.hpp>
-
 struct PcpInstanceKey::_Collector
 {
     bool Visit(const PcpNodeRef& node, bool nodeIsInstanceable)
@@ -75,18 +73,17 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
 
     // Collect all authored variant selections in strong-to-weak order.
     SdfVariantSelectionMap variantSelection;
-    TF_FOR_ALL(nodeIt, primIndex.GetNodeRange()) {
-        if (nodeIt->CanContributeSpecs()) {
-            PcpComposeSiteVariantSelections(
-                nodeIt->GetSite(), &variantSelection);
+    for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+        if (node.CanContributeSpecs()) {
+            PcpComposeSiteVariantSelections(node.GetSite(), &variantSelection);
         }
     }
     _variantSelection.assign(variantSelection.begin(), variantSelection.end());
     
-    BOOST_FOREACH(const _Arc& arc, _arcs) {
+    for (const auto& arc : _arcs) {
         boost::hash_combine(_hash, arc.GetHash());
     }
-    BOOST_FOREACH(const _VariantSelection& vsel, _variantSelection) {
+    for (const auto& vsel : _variantSelection) {
         boost::hash_combine(_hash, vsel);
     }
 }
@@ -113,7 +110,7 @@ PcpInstanceKey::GetString() const
         s += "  (none)\n";
     }
     else {
-        BOOST_FOREACH(const _Arc& arc, _arcs) {
+        for (const auto& arc : _arcs) {
             s += TfStringPrintf("  %s%s : %s\n",
                 TfEnum::GetDisplayName(arc._arcType).c_str(),
                 (arc._timeOffset.IsIdentity() ? 
@@ -130,7 +127,7 @@ PcpInstanceKey::GetString() const
         s += "  (none)";
     }
     else {
-        BOOST_FOREACH(const _VariantSelection& vsel, _variantSelection) {
+        for (const auto& vsel : _variantSelection) {
             s += TfStringPrintf("  %s = %s\n", 
                 vsel.first.c_str(), vsel.second.c_str());
         }

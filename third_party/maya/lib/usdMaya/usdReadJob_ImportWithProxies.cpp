@@ -34,7 +34,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -60,6 +59,7 @@
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((PointInstancerTypeName, "PxPointInstancer"))
+    ((XformTypeName, "Xform"))
     ((GeomRootName, "Geom"))
     ((ScopePrimTypeName, "Scope"))
 
@@ -97,43 +97,6 @@ _ShouldImportAsSubAssembly(const UsdPrim& prim)
     }
 
     return false;
-}
-
-static
-std::string
-_GetReferencedAssetPath(const UsdPrim& prim)
-{
-    std::string result;
-
-    // XXX: Revisit this once UsdReferences has a getter.
-    SdfReferenceListOp refsListOp;
-    if (not prim.GetMetadata(SdfFieldKeys->References, &refsListOp)) {
-        return result;
-    }
-
-    SdfReferenceVector refs;
-    if (refsListOp.IsExplicit()) {
-        refs = refsListOp.GetExplicitItems();
-    } else {
-        refs = refsListOp.GetAddedItems();
-    }
-
-    if (refs.size() < 1) {
-        return result;
-    }
-
-    result = refs.begin()->GetAssetPath();
-
-    if (refs.size() > 1) {
-        std::string warningMsg = TfStringPrintf(
-            "Unexpected number of references (%zu) for USD prim \"%s\". "
-            "Only using first reference.",
-            refs.size(),
-            prim.GetPath().GetText());
-        MGlobal::displayWarning(warningMsg.c_str());
-    }
-
-    return result;
 }
 
 static
@@ -222,7 +185,10 @@ usdReadJob::_ProcessProxyPrims(
         PxrUsdMayaPrimReaderArgs args(proxyPrim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (not _CreateParentTransformNodes(proxyPrim, args, &ctx)) {
@@ -278,23 +244,17 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
         PxrUsdMayaPrimReaderArgs args(subAssemblyPrim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
+        // We use the file path of the file currently being imported and
+        // the path to the prim within that file when creating the
+        // subassembly.
         std::string subAssemblyUsdFilePath = mFileName;
         SdfPath subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
-
-        // If a primPath wasn't specified when importing the top-level USD
-        // and the subassembly prim being considered has a reference, make
-        // the nested assembly node point to that referenced file directly
-        // rather than to the top-level file.
-        if (mPrimPath.empty()) {
-            std::string refAssetPath = _GetReferencedAssetPath(subAssemblyPrim);
-            if (not refAssetPath.empty()) {
-                subAssemblyUsdFilePath = refAssetPath;
-                subAssemblyUsdPrimPath = SdfPath();
-            }
-        }
 
         if (not _CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {
             return false;
@@ -324,7 +284,10 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
         PxrUsdMayaPrimReaderArgs args(cameraPrim,
                                       mArgs.shadingMode,
                                       mArgs.defaultMeshScheme,
-                                      mArgs.readAnimData);
+                                      mArgs.readAnimData,
+                                      mArgs.useCustomFrameRange,
+                                      mArgs.startTime,
+                                      mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (not _CreateParentTransformNodes(cameraPrim, args, &ctx)) {
@@ -388,9 +351,13 @@ usdReadJob::_DoImportWithProxies(UsdTreeIterator& primIt)
                 TfStringPrintf("Scope \"%s\". Skipping all children.",
                                prim.GetPath().GetText()).c_str());
             primIt.PruneChildren();
-        } else {
+        } else if (prim.GetTypeName() != _tokens->XformTypeName) {
+            // Don't complain about Xform prims being unsupported. For the
+            // "Expanded" representation of assemblies, we'll only create the
+            // transforms we need to in order to reach supported prims.
             MGlobal::displayWarning(
-                TfStringPrintf("Unsupported USD prim type \"%s\" for \"%s\". Skipping...",
+                TfStringPrintf("Prim type \"%s\" unsupported in 'Expanded' "
+                               "representation for prim \"%s\". Skipping...",
                                prim.GetTypeName().GetText(),
                                prim.GetPath().GetText()).c_str());
         }

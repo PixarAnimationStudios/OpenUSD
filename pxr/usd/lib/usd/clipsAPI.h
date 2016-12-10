@@ -62,17 +62,26 @@ class SdfAssetPath;
 /// SetClipActive() specifies the ordering of clip application over time            
 /// (clips can be repeated), while SetClipTimes() specifies time-mapping            
 /// from stage-time to clip-time for the clip active at a given stage-time,         
-/// which allows for time-dilation and repetition of clips.  Finally,           
-/// SetClipPrimPath() determines the path within each clip that will map            
+/// which allows for time-dilation and repetition of clips. 
+/// Finally, SetClipPrimPath() determines the path within each clip that will map            
 /// to this prim, i.e. the location within the clip at which we will look           
-/// for opinions for this prim.         
+/// for opinions for this prim. 
+/// 
+/// The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
+/// through template clip metadata. This can be desirable when your set of 
+/// assets is very large, as the template metadata is much more concise. 
+/// SetClipTemplateAssetPath() establishes the asset identifier pattern of the set of
+/// clips to be consulted. SetClipTemplateStride(), SetClipTemplateEndTime(), 
+/// and SetClipTemplateStartTime() specify the range in which USD will search, based
+/// on the template. From the set of resolved asset paths, clipTimes, and clipActive
+/// will be derived internally.
 /// 
 /// Important facts about clips:            
-/// li Within the layerstack in which clips are established, the           
+/// \li Within the layerstack in which clips are established, the           
 /// opinions within the clips will be em weaker than any direct opinions           
 /// in the layerstack, but em stronger than varying opinions coming across             
 /// references and variants.            
-/// li We will never look for metadata or default opinions in clips            
+/// \li We will never look for metadata or default opinions in clips            
 /// when performing value resolution on the owning stage, since these           
 /// quantities must be time-invariant.          
 /// 
@@ -80,6 +89,8 @@ class SdfAssetPath;
 /// on a prim, and then author clips at the same site: the asset reference          
 /// will provide the topology and unvarying data for the model, while           
 /// the clips will provide the time-sampled animation.
+/// 
+/// For further information, see \ref Usd_AdvancedFeatures_ClipsOverview 
 /// 
 ///
 class UsdClipsAPI : public UsdSchemaBase
@@ -208,9 +219,87 @@ public:
     /// only look within this prim's clips if the attribute </Prim.size>
     /// exists and is varying in the manifest.
     bool GetClipManifestAssetPath(SdfAssetPath* manifestAssetPath) const;
-    /// Get the clipManifestAssetPath metadata for this prim.
+    /// Set the clipManifestAssetPath metadata for this prim.
     /// \sa GetClipManifestAssetPath()
     bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath);
+
+    /// A template string representing a set of assets. This string
+    /// can be of two forms: 
+    ///
+    /// integer frames: path/basename.###.usd 
+    ///
+    /// subinteger frames: path/basename.##.##.usd.
+    ///
+    /// For the integer portion of the specification, USD will take 
+    /// a particular time, determined by the clipTemplateStartTime, 
+    /// clipTemplateStride and clipTemplateEndTime, and pad it with 
+    /// zeros up to the number of hashes provided so long as the number of hashes 
+    /// is greater than the digits required to specify the integer value.
+    ///
+    /// For instance:
+    ///
+    ///    time = 12,  clipTemplateAssetPath = foo.##.usd  => foo.12.usd
+    ///    time = 12,  clipTemplateAssetPath = foo.###.usd => foo.012.usd
+    ///    time = 333, clipTemplateAssetPath = foo.#.usd   => foo.333.usd
+    ///
+    /// In the case of subinteger portion of a specifications, USD requires the 
+    /// specification to be exact. 
+    ///
+    /// For instance:
+    /// 
+    ///    time = 1.15,  clipTemplateAssetPath = foo.#.###.usd => foo.1.150.usd
+    ///    time = 1.145, clipTemplateAssetPath = foo.#.##.usd  => foo.1.15.usd
+    ///    time = 1.1,   clipTemplateAssetPath = foo.#.##.usd  => foo.1.10.usd
+    ///
+    /// Note that USD requires that hash groups be adjacent in the string, 
+    /// and that there only be one or two such groups.
+    bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const;
+    /// Set the clipTemplateAssetPath metadata for this prim.
+    /// \sa GetClipTemplateAssetPath
+    bool SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath);
+
+    /// A double representing the increment value USD will use when
+    /// searching for asset paths. For example usage \sa GetClipTemplateAssetPath.
+    bool GetClipTemplateStride(double* clipTemplateStride) const;
+    /// Set the clipTemplateStride metadata for this prim
+    /// \sa GetClipTemplateStride()
+    bool SetClipTemplateStride(const double clipTemplateStride);
+
+    /// A double which indicates the start of the range USD will use 
+    /// to search for asset paths. This value is inclusive in that range.
+    /// For example usage \sa GetClipTemplateAssetPath.
+    bool GetClipTemplateStartTime(double* clipTemplateStartTime) const;
+    /// Set the clipTemplateStartTime metadata for this prim
+    /// \sa GetClipTemplateStartTime
+    bool SetClipTemplateStartTime(const double clipTemplateStartTime);
+
+    /// A double which indicates the end of the range USD will use to
+    /// to search for asset paths. This value is inclusive in that range.
+    /// For example usage \sa GetClipTemplateAssetPath.
+    bool GetClipTemplateEndTime(double* clipTemplateEndTime) const;
+    /// Set the clipTemplateEndTime metadata for this prim
+    /// \sa GetClipTemplateEndTime()
+    bool SetClipTemplateEndTime(const double clipTemplateEndTime);
+
+    /// Clear out the following metadata from the current edit target:
+    /// 
+    /// clipTemplateAssetPath
+    /// clipTemplateStride
+    /// clipTemplateStartTime
+    /// clipTemplateEndTime
+    ///
+    /// \sa ClearNonTemplateClipMetadata()
+    bool ClearTemplateClipMetadata();
+
+    /// Clear out the following metadata from the current edit target:
+    ///
+    /// clipTimes
+    /// clipActive
+    /// clipAssetPaths
+    ///
+    /// \sa ClearTemplateClipMetadata()
+    bool ClearNonTemplateClipMetadata();
+
 };
 
 #endif

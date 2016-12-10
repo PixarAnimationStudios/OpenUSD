@@ -58,6 +58,12 @@ class MayaPrimWriter
     /// Base implementation returns \c false.
     virtual bool exportsReferences() const;
 
+    /// Does this PrimWriter request that the traversal code skip its child
+    /// nodes because this PrimWriter will handle its child nodes by itself?
+    ///
+    /// Base implementation returns \c false.
+    virtual bool shouldPruneChildren() const;
+
 public:
     const MDagPath&        getDagPath()    const { return mDagPath;};
     const SdfPath &        getUsdPath()    const { return mUsdPath; };

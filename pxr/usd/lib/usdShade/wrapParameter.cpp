@@ -83,6 +83,7 @@ void wrapUsdShadeParameter()
         .def(init<UsdAttribute>(arg("attr")))
         .def(!self)
 
+        .def("GetName", &Parameter::GetName)
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Parameter::SetRenderType,
              (arg("renderType")))

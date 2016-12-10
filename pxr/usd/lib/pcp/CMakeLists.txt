@@ -21,6 +21,7 @@ pxr_shared_library(pcp
         cache
         changes
         composeSite
+        dependency
         diagnostic
         errors
         instanceKey
@@ -30,6 +31,7 @@ pxr_shared_library(pcp
         layerStackIdentifier
         mapExpression
         mapFunction
+        namespaceEdits
         node
         pathTranslation
         payloadContext
@@ -59,6 +61,7 @@ pxr_shared_library(pcp
     PYMODULE_CPPFILES
         module.cpp
         wrapCache.cpp
+        wrapDependency.cpp
         wrapErrors.cpp
         wrapInstanceKey.cpp
         wrapPrimIndex.cpp

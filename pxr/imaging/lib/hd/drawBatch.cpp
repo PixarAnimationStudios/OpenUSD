@@ -183,26 +183,34 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 
     HdDrawItem const *firstDrawItem = _drawItemInstances[0]->GetDrawItem();
 
-    size_t shaderHash = state->GetShaderHash(); // overrideShader is taken into account
+    // Calculate unique hash to detect if the shader (composed) has changed
+    // recently and we need to recompile it.
+    size_t shaderHash = state->GetShaderHash();
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
+    HdShaderSharedPtr overrideShader = state->GetOverrideShader();
+    HdShaderSharedPtr surfaceShader  = overrideShader ? overrideShader
+                                       : firstDrawItem->GetSurfaceShader();
+    boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
     bool shaderChanged = (_shaderHash != shaderHash);
+    
+    // Set shaders (lighting and renderpass) to the program. 
+    // We need to do this before checking if the shaderChanged because 
+    // it is possible that the shader does not need to 
+    // be recompiled but some of the parameters have changed.
+    HdShaderSharedPtrVector shaders = state->GetShaders();
+    _program.SetShaders(shaders);
+    _program.SetGeometricShader(firstDrawItem->GetGeometricShader());
 
     // XXX: if this function appears to be expensive, we might consider caching
     //      programs by shaderHash.
     if (not _program.GetGLSLProgram() or shaderChanged) {
+        
+        _program.SetSurfaceShader(surfaceShader);
 
-        // compose shaders
-        HdShaderSharedPtrVector shaders(3);
-        shaders[0] = state->GetLightingShader();
-        shaders[1] = state->GetRenderPassShader();
-        HdShaderSharedPtr overrideShader = state->GetOverrideShader();
-        shaders[2] = overrideShader ? overrideShader
-                                    : firstDrawItem->GetSurfaceShader();
-
-        if (not _program.CompileShader(firstDrawItem,
-                               firstDrawItem->GetGeometricShader(),
-                               shaders, indirect)) {
+        // Try to compile the shader and if it fails to compile we go back
+        // to use the specified fallback surface shader.
+        if (not _program.CompileShader(firstDrawItem, indirect)) {
 
             // If we failed to compile the surface shader, replace it with the
             // fallback surface shader and try again.
@@ -224,11 +232,9 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
                 HdSurfaceShaderSharedPtr(
                     new HdGLSLFXShader(glslSurfaceFallback));
 
-            shaders[2] = fallbackSurface;
+            _program.SetSurfaceShader(fallbackSurface);
 
-            bool res = _program.CompileShader(firstDrawItem,
-                               firstDrawItem->GetGeometricShader(),
-                               shaders, indirect);
+            bool res = _program.CompileShader(firstDrawItem, indirect);
             // We expect the fallback shader to always compile.
             TF_VERIFY(res);
         }
@@ -242,16 +248,20 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 bool
 Hd_DrawBatch::_DrawingProgram::CompileShader(
         HdDrawItem const *drawItem,
-        Hd_GeometricShaderPtr const &geometricShader,
-        HdShaderSharedPtrVector const &shaders,
         bool indirect)
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
     // glew has to be intialized
-    if (not glLinkProgram)
+    if (not glLinkProgram) {
         return false;
+    }
+
+    if (not _geometricShader) {
+        TF_CODING_ERROR("Can not compile a shader without a geometric shader");
+        return false;
+    }
 
     // determine binding points and populate metaData
     HdBindingRequestVector customBindings;
@@ -259,11 +269,13 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
     _GetCustomBindings(&customBindings, &instanceDraw);
 
     // also (surface, renderPass) shaders use their bindings
+    HdShaderSharedPtrVector shaders = GetComposedShaders();
+
     TF_FOR_ALL(it, shaders) {
         (*it)->AddBindings(&customBindings);
     }
 
-    Hd_CodeGen codeGen(geometricShader, shaders);
+    Hd_CodeGen codeGen(_geometricShader, shaders);
 
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.

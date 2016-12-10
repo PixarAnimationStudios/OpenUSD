@@ -526,6 +526,7 @@ private:
     static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
     class _Writer;
+    class _BufferedOutput;
     class _ReaderBase;
     template <class ByteStream> class _Reader;
 
@@ -535,6 +536,8 @@ private:
     template <class Fn>
     void _WriteSection(
         _Writer &w, _SectionName name, _TableOfContents &toc, Fn writeFn) const;
+
+    void _AddDeferredTimeSampledSpecs();
 
     bool _Write();
 
@@ -560,6 +563,7 @@ private:
     template <class Reader>
     _TableOfContents _ReadTOC(Reader src, _BootStrap const &b) const;
 
+    template <class Reader> void _PrefetchStructuralSections(Reader src) const; 
     template <class Reader> void _ReadFieldSets(Reader src);
     template <class Reader> void _ReadFields(Reader src);
     template <class Reader> void _ReadSpecs(Reader src);
@@ -575,7 +579,7 @@ private:
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
 
     PathIndex _AddPath(const SdfPath &path);
-    FieldSetIndex _AddFieldSet(const std::vector<FieldValuePair> &fields);
+    FieldSetIndex _AddFieldSet(const std::vector<FieldIndex> &fieldIndexes);
     FieldIndex _AddField(const FieldValuePair &fv);
     TokenIndex _AddToken(const TfToken &token);
     TokenIndex _GetIndexForToken(const TfToken &token) const;
@@ -624,6 +628,24 @@ private:
 
     // An index into the path list, plus a range of fields.
     vector<Spec> _specs;
+
+    // Deferred specs with timeSamples that we write separately at the end,
+    // time-by-time so that time-sampled data is collocated by time.
+    struct _DeferredTimeSampledSpec {
+        _DeferredTimeSampledSpec() = default;
+        _DeferredTimeSampledSpec(PathIndex p, SdfSpecType t,
+                                 vector<FieldIndex> &&of,
+                                 vector<pair<TfToken, TimeSamples>> &&ts)
+            : path(p)
+            , specType(t)
+            , ordinaryFields(std::move(of))
+            , timeSampleFields(std::move(ts)) {}
+        PathIndex path;
+        SdfSpecType specType;
+        vector<FieldIndex> ordinaryFields;
+        vector<pair<TfToken, TimeSamples>> timeSampleFields;
+    };
+    vector<_DeferredTimeSampledSpec> _deferredTimeSampledSpecs;
 
     // All unique fields.
     vector<Field> _fields;

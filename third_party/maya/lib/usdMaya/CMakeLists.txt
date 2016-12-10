@@ -16,10 +16,12 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUtils
         vt
         ${Boost_PYTHON_LIBRARY}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaAnim_LIBRARY}
         ${MAYA_OpenMayaFX_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
-        ${MAYA_OpenMaya_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
@@ -69,6 +71,11 @@ pxr_shared_library(${PXR_PACKAGE}
 
         Chaser
         ChaserRegistry
+        
+        AttributeConverter
+        AttributeConverterRegistry
+
+        UserTaggedAttribute
 
     PRIVATE_CLASSES
         registryHelper
@@ -77,6 +84,7 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaNurbsCurveWriter
         MayaNurbsSurfaceWriter
         MayaTransformWriter
+        ModelKindWriter
         PluginPrimWriter
 
     PRIVATE_HEADERS
@@ -97,6 +105,7 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorMesh_SubDiv.cpp
         translatorXformable_decompose.cpp
         usdReadJob_ImportWithProxies.cpp
+        UsdMetadataAttributeConverters.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -104,6 +113,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapEditUtil.cpp 
         wrapQuery.cpp 
         wrapStageCache.cpp 
+        wrapUserTaggedAttribute.cpp 
 
     PYTHON_FILES
         __init__.py 

@@ -24,6 +24,8 @@
 #ifndef PXRUSDMAYA_REFERENCEASSEMBLY_H
 #define PXRUSDMAYA_REFERENCEASSEMBLY_H
 
+/// \file referenceAssembly.h
+
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
@@ -171,11 +173,11 @@ public:
     bool HasEdits() const { return _hasEdits; }
     void SetHasEdits(bool val) { _hasEdits = val; }
 
-    // This method returns a map of variantSet names to variant selections based
-    // on the variant selections specified on the Maya assembly node. The list
-    // of valid variantSets is retrieved from the referenced prim, so only
-    // Maya attributes with a selection that correspond to a valid variantSet
-    // are included in the returned map.
+    /// This method returns a map of variantSet names to variant selections based
+    /// on the variant selections specified on the Maya assembly node. The list
+    /// of valid variantSets is retrieved from the referenced prim, so only
+    /// Maya attributes with a selection that correspond to a valid variantSet
+    /// are included in the returned map.
     std::map<std::string, std::string> GetVariantSetSelections() const;
 
 
@@ -315,6 +317,7 @@ class UsdMayaRepresentationHierBase : public UsdMayaRepresentationBase
 
   protected:
     void _ConnectSubAssemblyPlugs();
+    void _ConnectProxyPlugs();
 
     virtual bool _ShouldImportWithProxies() const { return false; };
 };

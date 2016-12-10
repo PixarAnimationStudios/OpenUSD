@@ -29,7 +29,6 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
@@ -427,7 +426,7 @@ SdfNamespaceEdit_Namespace::_UneditPath(const SdfPath& path) const
 {
     // Walk down to node.
     const _Node* node = &_root;
-    BOOST_FOREACH(const SdfPath& prefix, path.GetPrefixes()) {
+    for (const auto& prefix : path.GetPrefixes()) {
         const _Node* child = node->GetChild(prefix);
         if (not child) {
             return path.ReplacePrefix(prefix.GetParentPath(),
@@ -443,7 +442,7 @@ SdfNamespaceEdit_Namespace::_GetNodeAtPath(const SdfPath& path)
 {
     // Walk down to node.
     _Node* node = &_root;
-    BOOST_FOREACH(const SdfPath& prefix, path.GetPrefixes()) {
+    for (const auto& prefix : path.GetPrefixes()) {
         node = node->GetChild(prefix);
         if (not node) {
             break;
@@ -463,7 +462,7 @@ SdfNamespaceEdit_Namespace::_FindOrCreateNodeAtPath(const SdfPath& path)
     // Walk down to node.
     bool created;
     _Node* node = &_root;
-    BOOST_FOREACH(const SdfPath& prefix, path.GetPrefixes()) {
+    for (const auto& prefix : path.GetPrefixes()) {
         if (prefix.IsTargetPath()) {
             const SdfPath& target  = prefix.GetTargetPath();
             SdfPath originalTarget = _UneditPath(target);
@@ -560,7 +559,7 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
     // Fix keys.
     static const bool fixTargetPaths = true;
     for (_BackpointerMap::iterator j = i; j != n; ++j) {
-        BOOST_FOREACH(_Node* node, j->second) {
+        for (auto node : j->second) {
             node->SetKey(
                 boost::get<SdfPath>(node->GetKey()).
                     ReplacePrefix(currentPath, newPath, not fixTargetPaths));
@@ -579,7 +578,7 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
     if (TF_VERIFY(i == _nodesWithPath.end() or
                   not i->first.HasPrefix(currentPath),
                   "Found backpointers under new path")) {
-        BOOST_FOREACH(_BackpointerMap::value_type& v, tmp) {
+        for (auto& v : tmp) {
             _nodesWithPath[v.first.ReplacePrefix(currentPath, newPath)].
                 swap(v.second);
         }
@@ -781,7 +780,7 @@ SdfBatchNamespaceEdit::Process(
     SdfNamespaceEdit_Namespace ns(fixBackpointers);
 
     // Try each edit in sequence.
-    BOOST_FOREACH(const SdfNamespaceEdit& edit, GetEdits()) {
+    for (const auto& edit : GetEdits()) {
         // Make sure paths are compatible.
         bool mismatch = false;
         if (edit.currentPath.IsPrimPath()) {
@@ -928,7 +927,7 @@ SdfBatchNamespaceEdit::Process(
             SdfPathVector targetPaths;
 
             edit.currentPath.GetAllTargetPathsRecursively(&targetPaths);
-            BOOST_FOREACH(const SdfPath& targetPath, targetPaths) {
+            for (const auto& targetPath : targetPaths) {
                 SdfPath originalPath = ns.GetOriginalPath(targetPath);
                 if (not originalPath.IsEmpty() and originalPath != targetPath) {
                     if (details) {
@@ -942,7 +941,7 @@ SdfBatchNamespaceEdit::Process(
             }
 
             edit.newPath.GetAllTargetPathsRecursively(&targetPaths);
-            BOOST_FOREACH(const SdfPath& targetPath, targetPaths) {
+            for (const auto& targetPath : targetPaths) {
                 SdfPath originalPath = ns.GetOriginalPath(targetPath);
                 if (not originalPath.IsEmpty() and originalPath != targetPath) {
                     if (details) {

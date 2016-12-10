@@ -25,6 +25,8 @@
 
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/changes.h"
+#include "pxr/usd/pcp/diagnostic.h"
+#include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
@@ -58,7 +60,6 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include <algorithm>
 #include <utility>
@@ -73,13 +74,6 @@ using boost::dynamic_pointer_cast;
 TF_DEFINE_ENV_SETTING(
     PCP_CULLING, true,
     "Controls whether culling is enabled in Pcp caches.");
-
-TF_REGISTRY_FUNCTION(TfEnum)
-{
-    TF_ADD_ENUM_NAME(PcpCache::UsingSiteOnly);
-    TF_ADD_ENUM_NAME(PcpCache::UsingSiteAndDescendants);
-    TF_ADD_ENUM_NAME(PcpCache::UsingSiteAndDescendantPrims);
-}
 
 // Helper for applying changes immediately if the client hasn't asked that
 // they only be collected instead.
@@ -126,7 +120,7 @@ PcpCache::PcpCache(
     _targetSchema(targetSchema),
     _payloadDecorator(payloadDecorator),
     _layerStackCache(Pcp_LayerStackRegistry::New(_targetSchema, _usd)),
-    _dependencies(new Pcp_Dependencies())
+    _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing
 }
@@ -150,7 +144,6 @@ PcpCache::~PcpCache()
     // a bit of time.
     WorkArenaDispatcher wd;
 
-    wd.Run([this]() { _dependencies.reset(); });
     wd.Run([this]() { _rootLayer.Reset(); });
     wd.Run([this]() { _sessionLayer.Reset(); });
     wd.Run([this]() { _payloadDecorator.Reset(); });
@@ -159,8 +152,16 @@ PcpCache::~PcpCache()
     wd.Run([this]() { _primIndexCache.ClearInParallel(); });
     wd.Run([this]() { TfReset(_propertyIndexCache); });
 
-    // Wait, since _layerStackCache cannot be destroyed until _dependencies is
-    // cleaned up.
+    // Wait, since _primDependencies cannot be destroyed concurrently
+    // with the prim indexes, since they both hold references to
+    // layer stacks and the layer stack registry is not currently
+    // prepared to handle concurrent expiry of layer stacks.
+    wd.Wait();
+
+    wd.Run([this]() { _primDependencies.reset(); });
+
+    // Wait, since _layerStackCache cannot be destroyed until
+    // _primDependencies is cleaned up.
     wd.Wait();
 
     wd.Run([this]() { _layerStackCache.Reset(); });
@@ -477,7 +478,7 @@ PcpCache::FindPropertyIndex(const SdfPath & path) const
 SdfLayerHandleSet
 PcpCache::GetUsedLayers() const
 {
-    SdfLayerHandleSet rval = _dependencies->GetUsedLayers();
+    SdfLayerHandleSet rval = _primDependencies->GetUsedLayers();
 
     // Dependencies don't include the local layer stack, so manually add those
     // layers here.
@@ -491,7 +492,7 @@ PcpCache::GetUsedLayers() const
 SdfLayerHandleSet
 PcpCache::GetUsedRootLayers() const
 {
-    SdfLayerHandleSet rval = _dependencies->GetUsedRootLayers();
+    SdfLayerHandleSet rval = _primDependencies->GetUsedRootLayers();
 
     // Dependencies don't include the local layer stack, so manually add the
     // local root layer here.
@@ -499,730 +500,237 @@ PcpCache::GetUsedRootLayers() const
     return rval;
 }
 
-SdfPathVector 
-PcpCache::_GetPathsUsingPcpSite(
-    const PcpLayerStackPtr& layerStack,
-    const SdfPath& path,
-    unsigned int dependencyType,
-    PcpNodeRefVector* sourceNodes,
-    bool recursive,
-    bool spooky) const
+PcpDependencyVector
+PcpCache::FindSiteDependencies(
+    const SdfLayerHandle& layer,
+    const SdfPath& sitePath,
+    PcpDependencyFlags depMask,
+    bool recurseOnSite,
+    bool recurseOnIndex,
+    bool filterForExistingCachesOnly
+    ) const
+{
+    PcpDependencyVector result;
+    for (const auto& layerStack: FindAllLayerStacksUsingLayer(layer)) {
+        PcpDependencyVector deps = FindSiteDependencies(
+            layerStack, sitePath, depMask, recurseOnSite, recurseOnIndex,
+            filterForExistingCachesOnly);
+        for (PcpDependency dep: deps) {
+            SdfLayerOffset offset = dep.mapFunc.GetTimeOffset();
+            // Fold in any sublayer offset.
+            if (const SdfLayerOffset *sublayer_offset =
+                layerStack->GetLayerOffsetForLayer(layer)) {
+                offset = offset * *sublayer_offset;
+            }
+            dep.mapFunc = PcpMapFunction::Create(
+                dep.mapFunc.GetSourceToTargetMap(), offset);
+            result.push_back(dep);
+        }
+    }
+    return result;
+}
+
+PcpDependencyVector
+PcpCache::FindSiteDependencies(
+    const PcpLayerStackPtr& siteLayerStack,
+    const SdfPath& sitePath,
+    PcpDependencyFlags depMask,
+    bool recurseOnSite,
+    bool recurseOnIndex,
+    bool filterForExistingCachesOnly
+    ) const
 {
     TRACE_FUNCTION();
 
-    if (layerStack->_registry != _layerStackCache) {
+    PcpDependencyVector deps;
+
+    //
+    // Validate arguments.
+    //
+    if (!(depMask & (PcpDependencyTypeVirtual|PcpDependencyTypeNonVirtual))) {
+        TF_CODING_ERROR("depMask must include at least one of "
+                        "{PcpDependencyTypeVirtual, "
+                        "PcpDependencyTypeNonVirtual}");
+        return deps;
+    }
+    if (!(depMask & (PcpDependencyTypeRoot | PcpDependencyTypeDirect |
+                     PcpDependencyTypeAncestral))) {
+        TF_CODING_ERROR("depMask must include at least one of "
+                        "{PcpDependencyTypeRoot, "
+                        "PcpDependencyTypePurelyDirect, "
+                        "PcpDependencyTypePartlyDirect, "
+                        "PcpDependencyTypeAncestral}");
+        return deps;
+    }
+    if ((depMask & PcpDependencyTypeRoot) &&
+        !(depMask & PcpDependencyTypeNonVirtual)) {
+        // Root deps are only ever non-virtual.
+        TF_CODING_ERROR("depMask of PcpDependencyTypeRoot requires "
+                        "PcpDependencyTypeNonVirtual");
+        return deps;
+    }
+    if (siteLayerStack->_registry != _layerStackCache) {
         TF_CODING_ERROR("PcpLayerStack does not belong to this PcpCache");
-        return SdfPathVector();
+        return deps;
     }
 
-    const SdfPathVector results = 
-        _dependencies->Get(layerStack, path, dependencyType, recursive, spooky);
-
-    // If asked, we need to do some extra processing to figure out the nodes
-    // that introduced the dependencies on the given Pcp site. In the simple
-    // case, we would just need to grab the prim index for each result and
-    // find the node that uses that site. However, this doesn't always work.
-    // We may not have actually computed the prim index for each result path,
-    // or we the node that actually uses the exact Pcp site may have been
-    // culled out. Both cases happen when dealing with ancestral dependencies.
-    //
-    // To produce the desired nodes, this code walks up namespace until it
-    // finds the node that introduced the dependency. This means that the
-    // nodes that are returned are not always from the prim index for each path 
-    // returned. However, these nodes are still valid and usable for path
-    // translation.
-    if (sourceNodes) {
-        sourceNodes->clear();
-        sourceNodes->reserve(results.size());
-        
-        BOOST_FOREACH(const SdfPath& pcpSitePath, results) {
-            SdfPath primUsingSite = pcpSitePath;
-            PcpLayerStackSite usedSite(layerStack, path);
-            PcpNodeRef nodeUsingSite;
-
-            while (primUsingSite.IsAbsoluteRootOrPrimPath()) {
-                if (const PcpPrimIndex* primIndex = 
-                        _GetPrimIndex(primUsingSite)) {
-
-                    TF_FOR_ALL(it, primIndex->GetNodeRange()) {
-                        const PcpLayerStackSite& nodeSite = it->GetSite();
-                        if (nodeSite.layerStack == usedSite.layerStack and 
-                            nodeSite.path.HasPrefix(usedSite.path)) {
-                            nodeUsingSite = *it;
-                            goto found;
-                        }
-                    }
-                }
-
-                if (not usedSite.path.IsPrimVariantSelectionPath()) {
-                    primUsingSite = primUsingSite.GetParentPath();
-                }
-                usedSite.path = usedSite.path.GetParentPath();
-            }
-
-        found:
-            TF_VERIFY(
-                nodeUsingSite, 
-                "Unable to find node that introduced dependency on Pcp site %s"
-                "for prim <%s>", 
-                TfStringify(PcpLayerStackSite(layerStack, path)).c_str(),
-                pcpSitePath.GetText());
-
-            sourceNodes->push_back(nodeUsingSite);
-        }
-    }
-
-    TF_VERIFY(not sourceNodes or results.size() == sourceNodes->size(),
-              "%zu sourceNodes != %zu results -- they must correspond",
-              sourceNodes->size(), results.size());
-    return results;
-}
-
-bool 
-PcpCache::_UsesLayer(const SdfLayerHandle& layer) const
-{
-    const PcpLayerStackPtrVector& layerStacks = 
-        FindAllLayerStacksUsingLayer(layer);
-
-    BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
-        // PcpCache doesn't record dependencies on its root layer stack,
-        // so we have to check that explicitly.
-        if (layerStack == _layerStack or
-            _dependencies->UsesLayerStack(layerStack)) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-static bool
-_IsAbsoluteRootOrPrimOrVariantPath(const SdfPath& path)
-{
-    return (path == SdfPath::AbsoluteRootPath() or 
-            path.IsPrimOrPrimVariantSelectionPath());
-}
-
-static SdfPath
-_GetAbsoluteRootOrPrimOrVariantPath(const SdfPath& path)
-{
-    return path == SdfPath::AbsoluteRootPath() ? 
-        path : path.GetPrimOrPrimVariantSelectionPath();
-}
-
-SdfPathVector
-PcpCache::_GetPathsUsingPrimFromDependencies(
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
-    PcpNodeRefVector* sourceNodes,
-    UsingSite usingSite,
-    bool spookyDependencies) const
-{
-    // PcpCache only stores dependencies for prims and variants
-    if (not TF_VERIFY(
-            _IsAbsoluteRootOrPrimOrVariantPath(path),
-            "Expected prim path, got: <%s>", path.GetText())) {
-        return SdfPathVector();
-    }
-
-    // Map UsingSite to flags.
-    static const bool recursive[] = { false, true,  true };
-    static const bool primsOnly[] = { false, false, true };
-
-    // Get the dependencies.
-    SdfPathVector result =
-        _dependencies->Get(layer, path,
-                           recursive[usingSite],
-                           primsOnly[usingSite] or spookyDependencies,
-                           spookyDependencies, 
-                           sourceNodes);
-
-    // Special case for the pseudo-root.  
-    //
-    // XXX: It seems like this special case shouldn't be necessary -- shouldn't
-    //      we be capturing spec dependencies for the pseudo-root? Removing
-    //      this causes at least one test (testCsdLayering6) to fail, though.
-    if (path == SdfPath::AbsoluteRootPath()) {
-        if (_layerStack and _layerStack->HasLayer(layer)) {
-            switch (usingSite) {
-            case UsingSiteOnly:
-                result.push_back(path);
-                if (sourceNodes) {
-                    const PcpPrimIndex* rootIndex = _GetPrimIndex(path);
-                    if (TF_VERIFY(rootIndex)) {
-                        sourceNodes->push_back(rootIndex->GetRootNode());
-                    }
-                }
-                break;
-
-            // This function is only expected to return prims, so we don't
-            // need to look for descendant properties -- that will be up
-            // to the consumer.
-            case UsingSiteAndDescendants:
-            case UsingSiteAndDescendantPrims:
-                TF_FOR_ALL(it, _primIndexCache) {
-                    const SdfPath& primPath = it->first;
-                    const PcpPrimIndex& primIndex = it->second;
-                    if (primIndex.GetRootNode()) {
-                        result.push_back(primPath);
-                        if (sourceNodes) {
-                            sourceNodes->push_back(primIndex.GetRootNode());
-                        }
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-    TF_VERIFY(not sourceNodes or result.size() == sourceNodes->size(),
-              "%zu sourceNodes != %zu results -- they must correspond",
-              sourceNodes->size(), result.size());
-
-    return result;
-}
-
-struct PcpCache::_PathDebugInfo
-{
-    std::vector<std::string> descriptions;
-    std::vector<SdfPathVector> paths;
-    std::vector<PcpNodeRefVector> sourceNodes;
-};
-
-#define PCP_PATH_DEBUG(resultPaths, resultSourceNodes, ...)             \
-    if (debugInfo) {                                                    \
-        debugInfo->descriptions.push_back(TfStringPrintf(__VA_ARGS__)); \
-        debugInfo->paths.push_back(resultPaths);                        \
-        debugInfo->sourceNodes.push_back(resultSourceNodes);            \
-    }
-
-SdfPathVector
-PcpCache::_GetPathsUsingPrim(
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
-    PcpNodeRefVector* sourceNodes,
-    UsingSite usingSite,
-    const SdfPath& fallbackAncestor,
-    bool spookyDependencies,
-    _PathDebugInfo* debugInfo) const
-{
-    if (not TF_VERIFY(
-            _IsAbsoluteRootOrPrimOrVariantPath(path),
-            "Expected prim path, got: <%s>", path.GetText())) {
-        return SdfPathVector();
-    }
-
-    // Dummy variables to make some code below a bit shorter.
-    PcpNodeRefVector dummy;
-    const PcpNodeRefVector& resultNodes = (sourceNodes ? *sourceNodes : dummy);
-
-    SdfPathVector result = 
-        _GetPathsUsingPrimFromDependencies(layer, path, sourceNodes,
-                                           usingSite, spookyDependencies);
-
-    // Found dependencies for the search path.
-    if (not result.empty()) {
-        PCP_PATH_DEBUG(result, resultNodes, "found by spec");
-    }
-    else if (spookyDependencies) {
-        // Spooky dependencies can only be queried on prim paths.
-        TF_VERIFY(path != SdfPath::AbsoluteRootPath());
-        TF_VERIFY(fallbackAncestor.IsEmpty());
-        
-        // Spooky dependencies cannot be queried recursively
-        // (because they are due to namespace relocations).
-        static const bool recursive = true;
-
-        const PcpLayerStackPtrVector& layerStacks =
-            FindAllLayerStacksUsingLayer(layer);
-        BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
-            PcpNodeRefVector spookyNodes;
-            const SdfPathVector spookyPaths = 
-                _GetPathsUsingPcpSite(layerStack, path,
-                                      PcpDirect | PcpAncestral, 
-                                      sourceNodes ? &spookyNodes : NULL,
-                                      not recursive, spookyDependencies);
-            if (not spookyPaths.empty()) {
-                result.insert(
-                    result.end(), spookyPaths.begin(), spookyPaths.end());
-
-                if (sourceNodes) {
-                    sourceNodes->insert(
-                        sourceNodes->end(), 
-                        spookyNodes.begin(), spookyNodes.end());
-                }
-
-                PCP_PATH_DEBUG(
-                    spookyPaths, spookyNodes,
-                    "found by spooky arc to site %s",
-                    TfStringify(PcpLayerStackSite(layerStack, path)).c_str());
-            }
-        }
-    }
-    // No dependencies.  If no fallback and no spooky dependenceies to
-    // check then we're done.
-    else if (fallbackAncestor.IsEmpty()) {
-        // Do nothing
-    }
-
-    // Try dependencies on the name parent prim for prim paths.
-    else if (path.IsPrimOrPrimVariantSelectionPath()) {
-        // Find dependencies on the parent.  Don't check recursively because
-        // that would search siblings of path, which we don't want, and
-        // because since there is no opinion at path there can't be any
-        // opinions below path so there can't be any dependencies on anything
-        // below path.  Since we recursively blow at the dependencies we find,
-        // we're sure to update any prim index that depends on anything below
-        // path.
-        result = _GetPathsUsingPrimFromDependencies(
-            layer, fallbackAncestor, sourceNodes);
-
-        if (not result.empty()) {
-            BOOST_FOREACH(SdfPath& resultPath, result) {
-                // Strip out any variant selections from the result path,
-                // as each should be a Pcp site path and not a storage path.
-                // XXX: This probably isn't handling
-                //      relocations in some important way.
-                resultPath = path
-                    .ReplacePrefix(fallbackAncestor, resultPath)
-                    .StripAllVariantSelections();
-            }
-
-            PCP_PATH_DEBUG(result, resultNodes, "found by ancestor spec");
-        }
-
-        // The above isn't quite enough.  If we inherit from a site with no
-        // opinions then add a spec there, we won't yet have dependencies on
-        // that spec (so the initial GetPathsUsingSite() call failed) and
-        // our parent will not have a relevant dependency.  We must use the
-        // Pcp site to site dependencies to find that dangling inherit.
-        const PcpLayerStackPtrVector& layerStacks =
-            FindAllLayerStacksUsingLayer(layer);
-        BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
-            PcpNodeRefVector nodes;
-            const SdfPathVector paths = 
-                _GetPathsUsingPcpSite(layerStack, path,
-                                      PcpDirect | PcpAncestral, 
-                                      sourceNodes ? &nodes : NULL);
-
-            if (not paths.empty()) {
-                result.insert(result.end(), paths.begin(), paths.end());
-
-                if (sourceNodes) {
-                    sourceNodes->insert(
-                        sourceNodes->end(), nodes.begin(), nodes.end());
-                }
-
-                PCP_PATH_DEBUG(
-                    paths, nodes,
-                    "found by arc to site %s",
-                    TfStringify(PcpLayerStackSite(layerStack, path)).c_str());
-            }
-        }
-    }
-
-    TF_VERIFY(not sourceNodes or result.size() == sourceNodes->size(),
-              "%zu sourceNodes != %zu results -- they must correspond",
-              sourceNodes->size(), result.size());
-
-    return result;
-}
-
-SdfPathVector
-PcpCache::_GetPathsUsingSite(
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
-    UsingSite usingSite,
-    SdfLayerOffsetVector* layerOffsets,
-    PcpNodeRefVector* sourceNodes,
-    const SdfPath& fallbackAncestor,
-    bool spookyDependencies,
-    std::string* debugSummary) const
-{
-    if (not TF_VERIFY(path.IsAbsolutePath())) {
-        return SdfPathVector();
-    }
-
-    SdfPathVector result;
-
-    // Instantiate a struct to hold on to debug info; this will only be used
-    // if we need to fill in debugSummary.
-    _PathDebugInfo localDebugInfo;
-    _PathDebugInfo* debugInfo = debugSummary ? &localDebugInfo : NULL;
-
-    // Flag to determine whether path translation is needed after dependencies
-    // are retrieved. If translation is required, sourceNodes must be filled
-    // with the nodes from which each dependency originates.
-    PcpNodeRefVector localSourceNodes;
-    bool needsPathTranslation = (layerOffsets != NULL);
-    bool needsSourceNodes = (needsPathTranslation or sourceNodes);
-
-    // If layerOffsets are requested, we will need to go through the path
-    // translation mechanism to compute them after we find dependencies.
-    if (layerOffsets) {
-        layerOffsets->clear();
-    }
-
-    // We can bail out immediately if there are no prim indexes that use
-    // the given layer. 
-    if (not _UsesLayer(layer)) {
-        return result;
-    }
-
-    // Pcp_Dependencies explicitly stores prim dependencies, so if we're
-    // given a prim path, we can just query the object directly.
-    if (_IsAbsoluteRootOrPrimOrVariantPath(path)) {
-        result = _GetPathsUsingPrim(
-            layer, path, 
-            needsSourceNodes ? &localSourceNodes : NULL, 
-            usingSite, fallbackAncestor, 
-            spookyDependencies, debugInfo);
-    }
-
-    // For everything else, we need to synthesize the answer from
-    // dependencies on the owning prim. We can skip this if we've been
-    // asked to return prims only, because at this point we know we've
-    // been asked for dependencies on something that isn't a prim.
-    else if (usingSite != UsingSiteAndDescendantPrims) {
-        const SdfPath owningPrimPath = 
-            _GetAbsoluteRootOrPrimOrVariantPath(path);
-        const SdfPath fallbackAncestorPrimPath = 
-            _GetAbsoluteRootOrPrimOrVariantPath(fallbackAncestor);
-
-        // Optimization: Prim properties are easy -- if we can find
-        // the composed prims that depend on the property's owning prim,
-        // the dependent paths are just the prim paths plus the property
-        // name. This lets us skip some path translations. If we don't
-        // find any dependencies, we fall back to using the fallback ancestor 
-        // below.
-        if (path.IsPrimPropertyPath()) {
-            result = _GetPathsUsingPrim(
-                layer, owningPrimPath, 
-                needsSourceNodes ? &localSourceNodes : NULL);
-
-            if (not result.empty()) {
-                // Prim-path-less references/payloads to layers that don't have
-                // 'defaultPrim' bill dependencies to the pseudoroot, since they
-                // need to be invalidated when that metadata changes, but we
-                // can't (and don't need to) translate property paths to those
-                // places, so we remove them here.  We must also remove the
-                // corresponding elements from localSourceNodes (if
-                // needsSourceNodes is true).
-                SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
-                SdfPathVector::iterator i = result.begin();
-                while (i != result.end()) {
-                    if (*i == absRoot) {
-                        i = result.erase(i);
-                        if (needsSourceNodes) {
-                            localSourceNodes.erase(localSourceNodes.begin() +
-                                                   (i - result.begin()));
-                        }
-                    } else {
-                        ++i;
-                    }
-                }
-
-                TF_FOR_ALL(it, result) {
-                    *it = it->AppendProperty(path.GetNameToken());
-                }
-                PCP_PATH_DEBUG(
-                    result, localSourceNodes, "found by owning prim spec");
-            }
-        }
-
-        // Determine the composed prims that depend on the owning prim and,
-        // more importantly, the nodes in those prim indexes where those
-        // dependencies originated. These nodes will be used to translate
-        // \p path to the root namespace, which will give us the dependency
-        // paths we want.
-        if (result.empty()) {
-            needsPathTranslation = true;
-            needsSourceNodes = true;
-
-            // Spooky dependencies can only be queried for prim paths, so
-            // we won't look at spooky dependencies here.
-            static const bool spooky = true;
-            // We only need dependencies on the owning prim and not any of
-            // its descendant prims. We're synthesizing dependencies on a 
-            // property beneath this prim and this prim only.
-            static const UsingSite owningPrimSiteOnly = UsingSiteOnly;
-
-            result = _GetPathsUsingPrim(
-                layer, owningPrimPath, 
-                &localSourceNodes, owningPrimSiteOnly, fallbackAncestorPrimPath,
-                not spooky, debugInfo);
-        }
-    }
-
-    // Perform any necessary path translations.
-    if (not result.empty() and needsPathTranslation) {
-        TF_VERIFY(needsSourceNodes);
-        result = _Translate(localSourceNodes, layer, path, layerOffsets);
-
-        // Make sure we also translate the paths we've stored in the debug
-        // info. If the debugSummary wasn't requested, the info should be
-        // empty and this will do nothing.
-        if (debugInfo) {
-            TF_VERIFY(debugInfo->paths.size() == debugInfo->sourceNodes.size());
-            for (size_t i = 0; i < debugInfo->paths.size(); ++i) {
-                debugInfo->paths[i] = _Translate(
-                    debugInfo->sourceNodes[i], layer, path, NULL);
-            }
-        }
-    }
-
-    // If asked for descendant dependencies, we need to check for descendant
-    // properties beneath the dependencies we've already computed. We don't
-    // need to check for descendant prims, as that would have been handled
-    // for us earlier in _GetPathsUsingPrim.
-    SdfPathVector descendantDeps;
-    SdfLayerOffsetVector descendantOffsets;
-    PcpNodeRefVector descendantNodes;
-    if (not result.empty() and usingSite == UsingSiteAndDescendants) {
-        // The descendant dependencies we'll find below won't need path 
-        // translation, as they're already in the cache's namespace, unless
-        // we need layer offsets.
-        const bool descendantsNeedPathTranslation = (layerOffsets != NULL);
-        const bool descendantsNeedSourceNodes = 
-            (descendantsNeedPathTranslation or needsSourceNodes);
-
-        BOOST_FOREACH(const SdfPath& depPath, result) {
-            BOOST_FOREACH(const _PropertyIndexCache::value_type& v,
-                          _propertyIndexCache.FindSubtreeRange(depPath)) {
-
-                const SdfPath& propertyPath = v.first;
-                const PcpPropertyIndex& propertyIndex = v.second;
-
-                // Check the property index to make sure it actually has a
-                // dependency on a descendant of \p path in \p layer. Note
-                // that specs in the property index may be invalid at this
-                // point if this function is being called during change
-                // processing.
-                TF_FOR_ALL(propIt, propertyIndex.GetPropertyRange()) {
-                    const SdfPropertySpecHandle& spec = *propIt;
-                    if (spec and 
-                        spec->GetLayer() == layer and 
-                        spec->GetPath().HasPrefix(path)) {
-                        descendantDeps.push_back(propertyPath);
-
-                        if (descendantsNeedSourceNodes) {
-                            descendantNodes.push_back(propIt.base().GetNode());
-                        }
-
-                        break;
-                    }
-
-                } // end for each property in property stack
-            } // end for each property index under depPath
-        } // end for each path in result
-
-        if (not descendantDeps.empty()) {
-            PCP_PATH_DEBUG(
-                descendantDeps, descendantNodes, "found by descendant search");
-        }
-
-        if (descendantsNeedPathTranslation) {
-            TF_VERIFY(descendantsNeedSourceNodes);
-            _Translate(descendantNodes, layer, path, &descendantOffsets);
-        }
-    }
-
-    // All of the previous code may have synthesized dependent paths that don't
-    // refer to any object in the cache. If \p fallbackAncestor is supplied,
-    // this is OK -- the consumer wants to know about all possible dependents.
-    // Otherwise, we need to filter out the paths that aren't in the cache.
-    const bool needsCacheCheck = (fallbackAncestor.IsEmpty());
-    if (not result.empty() and needsCacheCheck) {
-
-        struct _CacheChecker {
-            static void _RemoveResultsNotInCache(
-                const PcpCache* cache,
-                SdfPathVector* paths, 
-                PcpNodeRefVector* sourceNodes = 0,
-                SdfLayerOffsetVector* layerOffsets = 0)
-            {
-                SdfPathVector existingResults;
-                PcpNodeRefVector existingSourceNodes;
-                SdfLayerOffsetVector existingOffsets;
-
-                for (size_t i = 0; i < paths->size(); ++i) {
-                    SdfPath depPath = (*paths)[i];
-                    while (not (depPath.IsAbsoluteRootOrPrimPath() or 
-                            depPath.IsPropertyPath())) {
-                        depPath = depPath.GetParentPath();
-                    }
-
-                    const bool dependentObjectExistsInCache = 
-                        (depPath.IsAbsoluteRootOrPrimPath() and 
-                         cache->_GetPrimIndex(depPath))
-                        or 
-                        (depPath.IsPropertyPath() and 
-                         cache->_GetPropertyIndex(depPath));
-
-                    if (dependentObjectExistsInCache) {
-                        existingResults.push_back((*paths)[i]);
-
-                        if (layerOffsets and not layerOffsets->empty()) {
-                            existingOffsets.push_back((*layerOffsets)[i]);
-                        }
-
-                        if (sourceNodes and not sourceNodes->empty()) {
-                            existingSourceNodes.push_back((*sourceNodes)[i]);
-                        }
-                    }
-                }
-
-                paths->swap(existingResults);
-                if (sourceNodes) {
-                    sourceNodes->swap(existingSourceNodes);
-                }
-                if (layerOffsets) { 
-                    layerOffsets->swap(existingOffsets);
-                }
+    // Filter function for dependencies to return.
+    auto cacheFilterFn = [this, filterForExistingCachesOnly]
+        (const SdfPath &indexPath) {
+            if (!filterForExistingCachesOnly) {
+                return true;
+            } else if (indexPath.IsAbsoluteRootOrPrimPath()) {
+                return bool(FindPrimIndex(indexPath));
+            } else if (indexPath.IsPropertyPath()) {
+                return bool(FindPropertyIndex(indexPath));
+            } else {
+                return false;
             }
         };
 
+    // Dependency arcs expressed in scene description connect prim
+    // paths, prim variant paths, and absolute paths only. Those arcs
+    // imply dependency structure for children, such as properties.
+    // To service dependency queries about those children, we must
+    // examine structure at the enclosing prim/root level where deps
+    // are expresed. Find the containing path.
+    const SdfPath sitePrimPath =
+        (sitePath == SdfPath::AbsoluteRootPath()) ? sitePath :
+        sitePath.GetPrimOrPrimVariantSelectionPath();
 
-        _CacheChecker::_RemoveResultsNotInCache(
-            this, &result, &localSourceNodes, layerOffsets);
-
-        if (debugInfo) {
-            for (size_t i = 0; i < debugInfo->paths.size(); ++i) {
-                _CacheChecker::_RemoveResultsNotInCache(
-                    this, &debugInfo->paths[i], &debugInfo->sourceNodes[i]);
-            }
-        }
+    // Handle the root dependency.
+    // Sites containing variant selections are never root dependencies.
+    if (depMask & PcpDependencyTypeRoot &&
+        siteLayerStack == _layerStack &&
+        !sitePath.ContainsPrimVariantSelection() &&
+        cacheFilterFn(sitePath)) {
+        deps.push_back(PcpDependency{
+            sitePath, sitePath, PcpMapFunction::Identity()});
     }
 
-    // Descendant property dependencies (if any) were generated by inspecting
-    // cache contents, so they don't need to be run through the cache existence
-    // check above. Just append them to the results.
-    result.insert(result.end(), descendantDeps.begin(), descendantDeps.end());
-    localSourceNodes.insert(
-        localSourceNodes.end(), 
-        descendantNodes.begin(), descendantNodes.end());
-
-    if (layerOffsets) {
-        layerOffsets->insert(
-            layerOffsets->end(), 
-            descendantOffsets.begin(), descendantOffsets.end());
-    }
-
-    // If consumer wants the source nodes for the dependencies, swap them
-    // into place.
-    if (sourceNodes) {
-        sourceNodes->swap(localSourceNodes);
-    }
-
-    // Generate the debug summary if requested.
-    if (debugInfo) {
-        std::vector<std::string> entries(debugInfo->descriptions.size());
-
-        std::string usingSiteDescription;
-        switch (usingSite) {
-        case UsingSiteOnly: break;
-        case UsingSiteAndDescendants: 
-            usingSiteDescription = " and descendants"; break;
-        case UsingSiteAndDescendantPrims:
-            usingSiteDescription = " and descendant prims"; break;
+    // Handle dependencies stored in _primDependencies.
+    auto visitSiteFn = [&](const SdfPath &depPrimIndexPath,
+                           const SdfPath &depPrimSitePath)
+    {
+        // Because arc dependencies are analyzed in terms of prims,
+        // if we are querying deps for a property, and recurseOnSite
+        // is true, we must guard against recursing into paths
+        // that are siblings of the property and filter them out.
+        if (depPrimSitePath != sitePrimPath &&
+            depPrimSitePath.HasPrefix(sitePrimPath) &&
+            !depPrimSitePath.HasPrefix(sitePath)) {
+            return;
         }
 
-        for (size_t i = 0, numEntries = entries.size(); i < numEntries; ++i) {
-            std::vector<std::string> pathEntries(debugInfo->paths[i].size());
-            for (size_t j = 0; j < pathEntries.size(); ++j) {
-                pathEntries[j] = 
-                    TfStringPrintf("    <%s>", debugInfo->paths[i][j].GetText());
-            }
+        // If we have recursed above to an ancestor, include its direct
+        // dependencies, since they are considered ancestral by descendants.
+        const PcpDependencyFlags localMask =
+            (depPrimSitePath != sitePrimPath &&
+             sitePrimPath.HasPrefix(depPrimSitePath))
+            ? (depMask | PcpDependencyTypeDirect) : depMask;
 
-            std::sort(pathEntries.begin(), pathEntries.end());
+        // If we have recursed below sitePath, use that site;
+        // otherwise use the site the caller requested.
+        const SdfPath localSitePath =
+            (depPrimSitePath != sitePrimPath &&
+             depPrimSitePath.HasPrefix(sitePrimPath))
+            ? depPrimSitePath : sitePath;
 
-            entries[i] = TfStringPrintf(
-                "Paths using site%s @%s@<%s> (%s):\n%s",
-                usingSiteDescription.c_str(),
-                layer->GetIdentifier().c_str(), path.GetText(),
-                debugInfo->descriptions[i].c_str(),
-                TfStringJoin(pathEntries, "\n").c_str());
-        }
-
-        std::sort(entries.begin(), entries.end());
-        *debugSummary = TfStringJoin(entries, "\n");
-    }
-
-    TF_VERIFY(not layerOffsets or layerOffsets->size() == result.size(),
-              "%zu layerOffsets != %zu results",
-              layerOffsets->size(), result.size());
-    TF_VERIFY(not sourceNodes or result.size() == sourceNodes->size(),
-              "%zu sourceNodes != %zu results -- they must correspond",
-              sourceNodes->size(), result.size());
-
-    return result;
-}
-
-SdfPathVector
-PcpCache::_Translate(
-    const PcpNodeRefVector& depSourceNodes,
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
-    SdfLayerOffsetVector* layerOffsets) const
-{
-
-    SdfPathVector result;
-    result.reserve(depSourceNodes.size());
-
-    if (layerOffsets) {
-        layerOffsets->clear();
-        layerOffsets->reserve(depSourceNodes.size());
-    }
-
-    BOOST_FOREACH(const PcpNodeRef& sourceNode, depSourceNodes) {
-        const SdfPath translatedPath = 
-            PcpTranslatePathFromNodeToRoot(sourceNode, path);
-        if (not translatedPath.IsEmpty()) {
-            result.push_back(translatedPath);
-
-            if (layerOffsets) {
-                SdfLayerOffset layerOffset;
-                    
-                // Apply sublayer offsets.
-                if (const SdfLayerOffset* sublayerOffset =
-                        sourceNode.GetLayerStack()->
-                            GetLayerOffsetForLayer(layer)) {
-                    layerOffset = *sublayerOffset * layerOffset;
+        auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
+                               const PcpNodeRef &node,
+                               PcpDependencyFlags flags)
+        {
+            if ((flags & localMask) == flags) {
+                // Now that we have found a dependency on depPrimSitePath,
+                // use path translation to get the corresponding depIndexPath.
+                SdfPath depIndexPath;
+                bool valid = false;
+                if (node.GetArcType() == PcpArcTypeRelocate) {
+                    // Relocates require special handling.  Because
+                    // a relocate node's map function is always
+                    // identity, we must do our own prefix replacement
+                    // to step out of the relocate, then continue
+                    // with regular path translation.
+                    const PcpNodeRef parent = node.GetParentNode(); 
+                    depIndexPath = PcpTranslatePathFromNodeToRoot(
+                        parent,
+                        localSitePath.ReplacePrefix( node.GetPath(),
+                                                       parent.GetPath() ),
+                        &valid );
+                } else {
+                    depIndexPath = PcpTranslatePathFromNodeToRoot(
+                        node, localSitePath, &valid);
                 }
+                if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
+                    cacheFilterFn(depIndexPath)) {
+                    deps.push_back(PcpDependency{
+                        depIndexPath, localSitePath,
+                        node.GetMapToRoot().Evaluate() });
+                }
+            }
+        };
+        Pcp_ForEachDependentNode(depPrimSitePath, siteLayerStack,
+                                 depPrimIndexPath, *this, visitNodeFn);
+    };
+    _primDependencies->ForEachDependencyOnSite(
+        siteLayerStack, sitePrimPath,
+        /* includeAncestral = */ depMask & PcpDependencyTypeAncestral,
+        recurseOnSite, visitSiteFn);
 
-                // Apply arc offsets.
-                layerOffset = 
-                    sourceNode.GetMapToRoot().GetTimeOffset() * layerOffset;
-                layerOffsets->push_back(layerOffset);
+    // If recursing down namespace, we may have cache entries for
+    // descendants that did not introduce new dependency arcs, and
+    // therefore were not encountered above, but which nonetheless
+    // represent dependent paths.  Add them if requested.
+    if (recurseOnIndex) {
+        TRACE_SCOPE("PcpCache::FindSiteDependencies - recurseOnIndex");
+        SdfPathSet seenDeps;
+        PcpDependencyVector expandedDeps;
+        for(const PcpDependency &dep: deps) {
+            const SdfPath & indexPath = dep.indexPath;
+            if (seenDeps.find(indexPath) != seenDeps.end()) {
+                // Short circuit further expansion; expect we
+                // have already recursed below this path.
+                continue;
+            }
+            seenDeps.insert(indexPath);
+            expandedDeps.push_back(dep);
+            // Recurse on child index entries.
+            if (indexPath.IsAbsoluteRootOrPrimPath()) {
+                const auto primRange =
+                    _primIndexCache.FindSubtreeRange(indexPath);
+                for (auto entryIter = primRange.first;
+                     entryIter != primRange.second; ++entryIter) {
+                    const SdfPath& subPath = entryIter->first;
+                    const PcpPrimIndex& subPrimIndex = entryIter->second;
+                    if (subPrimIndex.GetGraph() &&
+                        seenDeps.find(subPath) == seenDeps.end()) {
+                        expandedDeps.push_back(PcpDependency{
+                            subPath,
+                            subPath.ReplacePrefix(indexPath, dep.sitePath),
+                            dep.mapFunc});
+                    }
+                }
+            }
+            // Recurse on child property entries.
+            const auto propRange =
+                _propertyIndexCache.FindSubtreeRange(indexPath);
+            for (auto entryIter = propRange.first;
+                 entryIter != propRange.second; ++entryIter) {
+                const SdfPath& subPath = entryIter->first;
+                const PcpPropertyIndex& subPropIndex = entryIter->second;
+                if (!subPropIndex.IsEmpty() &&
+                    seenDeps.find(subPath) == seenDeps.end()) {
+                    expandedDeps.push_back(PcpDependency{
+                        subPath,
+                        subPath.ReplacePrefix(indexPath, dep.sitePath),
+                        dep.mapFunc});
+                }
             }
         }
+        std::swap(deps, expandedDeps);
     }
 
-    return result;
-}
-
-SdfPathVector
-PcpCache::GetPathsUsingSite(
-    const SdfLayerHandle& layer,
-    const SdfPath& path,
-    UsingSite usingSite,
-    SdfLayerOffsetVector* layerOffsets,
-    const SdfPath& fallbackAncestor) const
-{
-    return _GetPathsUsingSite(
-        layer, path, usingSite, layerOffsets, /* sourceNodes = */ NULL, 
-        fallbackAncestor);
-}
-
-SdfPathVector
-PcpCache::GetPathsUsingSite(
-    const PcpLayerStackPtr& layerStack,
-    const SdfPath& path,
-    unsigned int dependencyType,
-    bool recursive) const
-{
-    return _GetPathsUsingPcpSite(
-        layerStack, path, dependencyType, /* sourceNodes = */ NULL, recursive);
+    return deps;
 }
 
 bool
@@ -1237,8 +745,7 @@ PcpCache::CanHaveOpinionForSite(
         std::set<PcpLayerStackPtr> visited;
 
         // Iterate over all nodes.
-        PcpNodeRange range = primIndex->GetNodeRange();
-        BOOST_FOREACH(const PcpNodeRef& node, range) {
+        for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
             // Ignore nodes that don't provide specs.
             if (node.CanContributeSpecs()) {
                 // Check each layer stack that contributes specs only once.
@@ -1258,824 +765,6 @@ PcpCache::CanHaveOpinionForSite(
     }
 
     return false;
-}
-
-static bool
-_IsInvalidEdit(const SdfPath& oldPath, const SdfPath& newPath)
-{
-    // Can't reparent an object to be a descendant of itself.
-    // See testPcpRegressionBugs_bug109700 for more details
-    // on how this can happen.
-    return newPath.HasPrefix(oldPath);
-}
-
-static PcpCache::NamespaceEdits::LayerStackSites&
-_GetLayerStackSitesForEdit(
-    PcpCache::NamespaceEdits* result,
-    const SdfPath& oldPath,
-    const SdfPath& newPath)
-{
-    // Catch any invalid fixups that have been requested here and
-    // store them away in invalidLayerStackSites so that consumers
-    // can be informed about them.
-    return _IsInvalidEdit(oldPath, newPath) ?
-        result->invalidLayerStackSites : result->layerStackSites;
-}
-
-static bool
-_RelocatesMapContainsPrimOrDescendant(
-    const SdfRelocatesMapProxy& reloMap,
-    const SdfPath& primPath)
-{
-    TF_FOR_ALL(it, reloMap) {
-        if (it->first.HasPrefix(primPath) or
-            it->second.HasPrefix(primPath)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-static void
-_AddRelocateEditsForLayerStack(
-    PcpCache::NamespaceEdits* result,
-    const PcpLayerStackPtr& layerStack,
-    size_t cacheIndex,
-    const SdfPath& oldRelocatePath,
-    const SdfPath& newRelocatePath)
-{
-    if (not result) {
-        return;
-    }
-
-    // Record a relocates edit for each layer stack site if any prim spec
-    // at that site has a relocates statement that contains oldRelocatePath.
-    // 
-    // XXX: If this is a performance issue, PcpLayerStack could keep track 
-    //      of a finer-grained table to avoid scanning through every prim 
-    //      with relocates here.
-    const SdfPathVector& relocatePrimPaths = 
-        layerStack->GetPathsToPrimsWithRelocates();
-    TF_FOR_ALL(pathIt, relocatePrimPaths) {
-        TF_FOR_ALL(layerIt, layerStack->GetLayers()) {
-            const SdfPrimSpecHandle prim = (*layerIt)->GetPrimAtPath(*pathIt);
-            // The relocate we discovered in the layerStack at this path
-            // doesn't necessarily mean there is a spec with a relocate
-            // in every layer.  Skip layers that don't have a spec with
-            // a relocate.
-            if (not prim or not prim->HasRelocates()) {
-                continue;
-            }
-
-            if (_RelocatesMapContainsPrimOrDescendant(
-                    prim->GetRelocates(), oldRelocatePath)) {
-
-                PcpCache::NamespaceEdits::LayerStackSites& layerStackSites = 
-                    _GetLayerStackSitesForEdit(
-                        result, oldRelocatePath, newRelocatePath);
-
-                layerStackSites.resize(layerStackSites.size() + 1);
-                PcpCache::NamespaceEdits::LayerStackSite& site =
-                    layerStackSites.back();
-                site.cacheIndex = cacheIndex;
-                site.type       = PcpCache::NamespaceEditRelocate;
-                site.sitePath   = *pathIt;
-                site.oldPath    = oldRelocatePath;
-                site.newPath    = newRelocatePath;
-                site.layerStack = layerStack;
-
-                // Since we record edits at the granularity of layer stacks,
-                // we can bail out once we've determined that at least one
-                // prim in this layer stack needs relocates edits.
-                break;
-            }
-        }
-    }
-}
-
-static SdfPath
-_TranslatePathAndTargetPaths(
-    const PcpNodeRef& node,
-    const SdfPath& pathIn)
-{
-    SdfPath path = node.GetMapToParent().MapSourceToTarget(pathIn);
-
-    if (path == pathIn) {
-        // We don't want to map paths that aren't explicitly allowed.  The
-        // </> -> </> mapping should not be attempted.
-        const SdfPath absRoot = SdfPath::AbsoluteRootPath();
-        if (node.GetMapToParent().MapSourceToTarget(absRoot) == absRoot) {
-            return SdfPath();
-        }
-    }
-
-    SdfPathVector targetPaths;
-    path.GetAllTargetPathsRecursively(&targetPaths);
-    BOOST_FOREACH(const SdfPath& targetPath, targetPaths) {
-        // Do allow translation via </> -> </> in target paths.
-        const SdfPath translatedTargetPath =
-            node.GetMapToParent().MapSourceToTarget(targetPath);
-        if (translatedTargetPath.IsEmpty()) {
-            return SdfPath();
-        }
-        path = path.ReplacePrefix(targetPath, translatedTargetPath);
-    }
-
-    return path;
-}
-
-// Translate *oldNodePath and *newNodePath to node's parent's namespace.
-// Request any necessary edits to relocations used for the translation.
-static void
-_TranslatePathsAndEditRelocates(
-    PcpCache::NamespaceEdits* result,
-    const PcpNodeRef& node,
-    size_t cacheIndex,
-    SdfPath* oldNodePath,
-    SdfPath* newNodePath)
-{
-    // Map the path in the node namespace to the parent's namespace.  Note
-    // that these are not the namespace parent paths, they're the paths in
-    // the *node's parent's* namespace.
-    SdfPath oldParentPath = _TranslatePathAndTargetPaths(node, *oldNodePath);
-    SdfPath newParentPath = _TranslatePathAndTargetPaths(node, *newNodePath);
-
-    // Check if there are relocations that need fixing.
-    //
-    // At this point, if oldParentPath and newParentPath refer to a 
-    // relocated prim or a descendant of a relocated prim, they will have 
-    // already had the relevant relocations from the parent's layerStack 
-    // applied.
-    // Check if one of these relocations affected oldParentPath.
-    //
-    const PcpLayerStackPtr& layerStack = 
-        node.GetParentNode().GetLayerStack();
-
-    // Since oldParentPath and newParentPath are post-relocation,
-    // we'll use the targetToSource table to check for applicable
-    // relocations.
-    const SdfRelocatesMap& relocates = layerStack->GetRelocatesTargetToSource();
-
-    // Find the relocation.
-    SdfRelocatesMap::const_iterator i = relocates.lower_bound(oldParentPath);
-    if (i != relocates.end() and oldParentPath.HasPrefix(i->first)) {
-        const SdfPath & reloTargetPath = i->first;
-        const SdfPath & reloSourcePath = i->second;
-
-        // Un-relocate oldParentPath and newParentPath.
-        // We will use these paths to decide how to fix the
-        // relocation that applied to them.
-        const SdfPath unrelocatedOldParentPath =
-            oldParentPath.ReplacePrefix(reloTargetPath, reloSourcePath);
-        const SdfPath unrelocatedNewParentPath =
-            newParentPath.ReplacePrefix(reloTargetPath, reloSourcePath);
-
-        bool reloTargetNeedsEdit = true;
-
-        // Old path is relocated in this layer stack.  We might need to
-        // change the relocation as part of the namespace edit.  If so
-        // we'll relocate the new path differently from the old path.
-        if (oldParentPath == reloTargetPath) {
-            // Relocating the new parent path depends on various stuff.
-            if (newParentPath.IsEmpty()) {
-                // Removing the object or can't map across the arc.
-                // Nothing to translate, but need to add a relocation edit
-                // to indicate that relocations that involve prims at and
-                // below oldParentPath need to be fixed.
-                _AddRelocateEditsForLayerStack(
-                    result, layerStack, cacheIndex,
-                    reloTargetPath, newParentPath);
-            }
-            else if (oldNodePath->GetParentPath() !=
-                     newNodePath->GetParentPath()) {
-                // Reparenting within the arc's root.  We'll fix the
-                // relocation source but not the target.
-                _AddRelocateEditsForLayerStack(
-                    result, layerStack, cacheIndex, 
-                    unrelocatedOldParentPath, unrelocatedNewParentPath);
-
-                reloTargetNeedsEdit = false;
-            }
-            else {
-                // Renaming.  We must fix the relocation source path,
-                // and potentially also the relocation target path
-                // (if the relocation keeps the prim name).
-                _AddRelocateEditsForLayerStack(
-                    result, layerStack, cacheIndex,
-                    unrelocatedOldParentPath, unrelocatedNewParentPath);
-
-                // If the relocation keeps the prim name then
-                // we'll fix the relocation by changing the final prim
-                // name in both the source and target.  So the new parent
-                // path is the old parent path with the name changed.
-                if (reloSourcePath.GetNameToken()
-                    == reloTargetPath.GetNameToken()) {
-                    // Relocate the new path.
-                    newParentPath = reloTargetPath
-                        .ReplaceName(newNodePath->GetNameToken());
-
-                    _AddRelocateEditsForLayerStack(
-                        result, layerStack, cacheIndex,
-                        reloTargetPath, newParentPath);
-                }
-                else {
-                    // The relocation changes the prim name.  We've no
-                    // reason to try to adjust the target's name but we
-                    // should change the source name.
-                    reloTargetNeedsEdit = false;
-                }
-            }
-
-            if (not reloTargetNeedsEdit) {
-                // Since the relocation target isn't changing, this node
-                // 'absorbs' the namespace edit -- no layer stacks that 
-                // reference this layer stack need to be updated.  So, 
-                // we can stop traversing the graph looking for things
-                // that need to be fixed.  Indicate that to consumers by 
-                // setting newParentPath = oldParentPath.
-                newParentPath = oldParentPath;
-            }
-        }
-        else {
-            // We don't need to fix the relocation.
-        }
-    }
-    else {
-        // In this case, oldParentPath and newParentPath do not refer to a
-        // relocated prim.  However, there may be descendants of oldParentPath
-        // that have been relocated, requiring relocates to be fixed up.
-        _AddRelocateEditsForLayerStack(
-            result, layerStack, cacheIndex,
-            oldParentPath, newParentPath);
-    }
-
-    *oldNodePath = oldParentPath;
-    *newNodePath = newParentPath;
-}
-
-static bool
-_AddLayerStackSite(
-    PcpCache::NamespaceEdits* result,
-    const PcpNodeRef& node,
-    size_t cacheIndex,
-    SdfPath* oldNodePath,
-    SdfPath* newNodePath)
-{
-    bool final = false;
-
-    // Save the old paths.
-    SdfPath oldPath = *oldNodePath, newPath = *newNodePath;
-
-    // Translate the paths to the parent.
-    _TranslatePathsAndEditRelocates(result, node, cacheIndex,
-                                    oldNodePath, newNodePath);
-
-    // The site is the parent's path.
-    SdfPath sitePath = *oldNodePath;
-
-    // Compute the type of edit.
-    PcpCache::NamespaceEditType type;
-    if (node.GetArcType() == PcpArcTypeRelocate) {
-        // Ignore.
-        *oldNodePath = oldPath;
-        *newNodePath = newPath;
-        return final;
-    }
-    else if (*oldNodePath == *newNodePath) {
-        // The edit is absorbed by this layer stack, so there's
-        // no need to propagate the edit any further.
-        final = true;
-        return final;
-    }
-    else if (oldNodePath->IsPrimPath() and not node.IsDueToAncestor()) {
-        final = true;
-        switch (node.GetArcType()) {
-        case PcpArcTypeLocalInherit:
-        case PcpArcTypeGlobalInherit:
-            type = PcpCache::NamespaceEditInherit;
-            break;
-
-        case PcpArcTypeReference:
-            type = PcpCache::NamespaceEditReference;
-            break;
-
-        case PcpArcTypePayload:
-            type = PcpCache::NamespaceEditPayload;
-            break;
-
-        case PcpArcTypeVariant:
-            // Do nothing.  The variant prim has no name (and therefore
-            // nothing referring to the name) so there's nothing to do.
-            return final;
-
-        default:
-            TF_VERIFY(false, "Unexpected arc type %d", node.GetArcType());
-            return final;
-        }
-    }
-    else {
-        // NamespaceEditPath the parent.
-        type    = PcpCache::NamespaceEditPath;
-        oldPath = *oldNodePath;
-        newPath = *newNodePath;
-    }
-
-    // Add a new layer stack site element at the end.
-    PcpCache::NamespaceEdits::LayerStackSites& layerStackSites = 
-        _GetLayerStackSitesForEdit(result, oldPath, newPath);
-
-    layerStackSites.resize(layerStackSites.size() + 1);
-    PcpCache::NamespaceEdits::LayerStackSite& site = layerStackSites.back();
-
-    // Fill in the site.
-    site.cacheIndex = cacheIndex;
-    site.type       = type;
-    site.sitePath   = sitePath;
-    site.oldPath    = oldPath;
-    site.newPath    = newPath;
-    site.layerStack = node.GetParentNode().GetLayerStack();
-
-    return final;
-}
-
-PcpCache::NamespaceEdits
-PcpCache::ComputeNamespaceEdits(
-    const std::vector<PcpCache*>& caches,
-    const SdfPath& curPath,
-    const SdfPath& newPath,
-    const SdfLayerHandle& relocatesLayer) const
-{
-    TRACE_FUNCTION();
-
-    static const bool recursive = true;
-    static const bool spooky = true;
-    static const bool primsOnly = true;
-
-    NamespaceEdits result;
-    SdfPathVector depPaths;
-
-    // We find dependencies using prim paths.  Compute the closest prim
-    // path to curPath.
-    SdfPath primPath = curPath.GetPrimPath();
-
-    // Verify that a prim index at primPath exists.
-    if (not _GetPrimIndex(primPath)) {
-        TF_CODING_ERROR("No prim index computed for @%s@<%s>\n",
-                        _rootLayer->GetIdentifier().c_str(), curPath.GetText());
-        return result;
-    }
-
-    // Handle trivial case.
-    if (curPath == newPath) {
-        return result;
-    }
-
-    // Find cache sites one cache at a time.  We can't simply check if a
-    // site uses (_layerStack, primPath) -- we must check if it uses any
-    // site at primPath with an intersecting layer stack.  Even that's not
-    // quite right -- we only care if the layer stacks intersect where a
-    // spec already exists (see bug 59216).  And, unfortunately, that's
-    // not right either -- if (_layerStack, primPath) has no specs at all
-    // (because opinions come across an ancestor arc) then we're doing a
-    // relocation and only sites using primPath in a layer stack that
-    // includes relocatesLayer are affected.  We special case the last
-    // case.  The earlier cases we handle by looking for any site using
-    // any spec at the namespace edited site.
-
-    // Find all specs at (_layerStack, primPath).
-    SdfSiteVector primSites;
-    PcpComposeSitePrimSites(
-        PcpLayerStackSite(_layerStack,primPath), &primSites);
-
-    // Find the nodes corresponding to primPath in any relevant layer
-    // stack over all caches.
-    typedef std::pair<size_t, PcpNodeRef> CacheNodePair;
-    std::set<CacheNodePair> nodes, descendantNodes;
-
-    struct _CacheNodeHelper {
-        static void InsertCacheNodePair(size_t cacheIdx, PcpNodeRef node,
-                                        std::set<CacheNodePair>* nodes)
-        {
-            // If a dependency on primPath was introduced via a variant
-            // node (e.g., a prim authored locally in a variant), we store
-            // the node that introduced the variant as this truly represents
-            // the namespace edited site.
-            while (node and node.GetArcType() == PcpArcTypeVariant) {
-                node = node.GetParentNode();
-            }
-
-            if (TF_VERIFY(node)) {
-                nodes->insert(std::make_pair(cacheIdx, node));
-            }
-        }
-    };
-
-    if (primSites.empty()) {
-        // This is the relocation case and we don't have any convenient
-        // dependency to report sites using (relocatesLayer, primPath).
-        // So we'll find every site using (someLayerStack, primPath)
-        // where someLayerStack is any layer stack that includes
-        // relocatesLayer.
-        for (size_t cacheIndex = 0, n = caches.size();
-                                        cacheIndex != n; ++cacheIndex) {
-            PcpCache* cache = caches[cacheIndex];
-            const PcpLayerStackPtrVector& layerStacks =
-                cache->FindAllLayerStacksUsingLayer(relocatesLayer);
-
-            // Get all sites in cache that depend on primPath in any of
-            // the layer stacks.
-            BOOST_FOREACH(const PcpLayerStackPtr& layerStack, layerStacks) {
-                PcpNodeRefVector depNodes;
-                depPaths = cache->_GetPathsUsingPcpSite(
-                    layerStack, primPath, PcpDirect | PcpAncestral, &depNodes);
-
-                // If this is the cache's own layer stack then include the
-                // original path itself.
-                if (cache->_layerStack == layerStack) {
-                    depPaths.push_back(primPath);
-                    depNodes.push_back(cache->_GetNodeProvidingSpec(
-                        primPath, relocatesLayer, primPath));
-                    TF_VERIFY(depNodes.back());
-                }
-
-                // Store the node for each dependent site.
-                BOOST_FOREACH(const PcpNodeRef& node, depNodes) {
-                    _CacheNodeHelper::InsertCacheNodePair(
-                        cacheIndex, node, &nodes);
-                }
-            }
-        }
-    }
-    else {
-        // We find dependent sites by looking for used prim specs.
-        for (size_t cacheIndex = 0, n = caches.size();
-                                        cacheIndex != n; ++cacheIndex) {
-            PcpCache* cache = caches[cacheIndex];
-
-            // Get all sites in cache that depend on any spec in primSites.
-            BOOST_FOREACH(const SdfSite& primSite, primSites) {
-                TF_VERIFY(primSite.path == primPath);
-                PcpNodeRefVector depNodes;
-                depPaths =
-                    cache->_dependencies->Get(primSite.layer, primSite.path,
-                                              not recursive, primsOnly,
-                                              not spooky, &depNodes);
-
-                // Store the node for each dependent site.
-                BOOST_FOREACH(const PcpNodeRef& node, depNodes) {
-                    _CacheNodeHelper::InsertCacheNodePair(
-                        cacheIndex, node, &nodes);
-                }
-            }
-
-            // Special case for direct inherits.  An inherit can target a
-            // descendant of curPath and we must fix up those inherits.
-            // References and payloads can't target a non-root prim so we
-            // don't have to worry about those.
-            //
-            // XXX: We only do this in this cache.  Inherits in this
-            //      cache can definitely see the namespace edit so
-            //      they must be fixed, but can't inherits outside
-            //      this cache also see the namespace edit?
-            if (cache == this and curPath.IsPrimPath()) {
-                // Get all of the direct dependents on anything at and below
-                // the namespace edited site.
-                depPaths = GetPathsUsingSite(_layerStack, primPath,
-                                             PcpDirect, recursive);
-                SdfPathSet allSites(depPaths.begin(), depPaths.end());
-
-                // Get all of the direct dependents on the namespace edited
-                // site.
-                depPaths = GetPathsUsingSite(_layerStack, primPath,
-                                             PcpDirect, not recursive);
-                SdfPathSet directSites(depPaths.begin(), depPaths.end());
-
-                // Compute the direct dependents on descendant of the
-                // namespace edited site.
-                SdfPathSet descendantSites;
-                std::set_difference(allSites.begin(),    allSites.end(),
-                                    directSites.begin(), directSites.end(),
-                                    std::inserter(descendantSites,
-                                                  descendantSites.end()));
-
-                // Check each direct dependent site for inherits pointing
-                // at this cache's layer stack. Make sure to skip ancestral
-                // nodes, since the code that handles direct inherits below
-                // needs to have the nodes where the inherits are introduced.
-                BOOST_FOREACH(const SdfPath& descendantSite, descendantSites) {
-                    BOOST_FOREACH(const PcpNodeRef& node,
-                                  _GetPrimIndex(descendantSite)->GetNodeRange(
-                                      PcpRangeTypeLocalInherit)) {
-                        if (node.GetLayerStack() == _layerStack and
-                            not node.IsDueToAncestor()) {
-                            // Found an inherit using a descendant.
-                            descendantNodes.insert(
-                                std::make_pair(cacheIndex, node));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // We now have every node representing the namespace edited site in
-    // every graph in every cache in caches that uses that site.  We now
-    // need to convert them into something the client can use.  There are
-    // two kinds of sites from the client's point of view:
-    //
-    //   1) Composed sites.  Composed sites are stored in
-    //      result.cacheSites.  They represent composed namespace
-    //      that is being namespace edited, i.e. the object is
-    //      being renamed, reparented, renamed and reparented, or
-    //      removed. They're identified by a cache (index) and path.
-    //      
-    //   2) Uncomposed sites.  Uncomposed sites are stored in
-    //      result.layerStackSites.  Each site is a layer stack and a
-    //      path (the site path) -- all Sd specs at the path in any
-    //      layer in the layer stack must be fixed up the same way.
-    //
-    // We don't include composed sites here just because they have a
-    // reference (or payload or inherit) to a site that's being namespace
-    // edited.  The reference itself absorbs the namespace edit, so the
-    // object with the reference doesn't need a namespace edit.  For
-    // example, if </A> references </B> and we rename </B> to </C> we need
-    // to fix the reference on </A> but we don't need to change the name
-    // of </A>. So </B> is added to cacheSites but </A> is not.
-    //
-    // To find composed sites we simply include one for every node that
-    // doesn't have any direct (i.e. non-ancestral) reference, inherit, or
-    // payload on the traversal of the graph from node to the root.  The
-    // old and new paths are found by translating the edited site's old
-    // and new paths from the node to the root.
-    //
-    // We expect the caller (i.e. Csd) to consume cacheSites to fix up
-    // connections and targets that point to anything in cacheSites.  It
-    // must also fix up relocations involving old paths in cacheSites.
-    //
-    // Uncomposed sites are found by walking the graph from node to root
-    // for each node.  Every node is an uncomposed site.  If we find a
-    // a direct (i.e. non-ancestral) reference, inherit, or payload then
-    // we store the referencing site and stop the traversal because the
-    // reference absorbs the namespace edit.
-    //
-    // The trick is to do path translation correctly while traversing the
-    // graph.  The easy but wrong way is to translate the path from node
-    // to root once, then translate the root paths to each node in the
-    // traversal.  That doesn't work for the new path if we need to fix
-    // any relocation, reference, inherit, or payload along the traversal
-    // because the mapping functions will not have the new mapping.  Using
-    // the example above </A> references </B> and we rename </B> to </C>.
-    // We can't map path </C> across the existing reference because it
-    // maps </A> -> </B>.  If we try we'll just get the empty path.  So
-    // we translate the path using mapToParent across each arc and we
-    // account for relocations as necessary.
-    //
-    // If we're removing then we must also remove every object using any
-    // descendant of the namespace edited prim.  (This only applies to
-    // prims since non-prims can't have arcs.)  This cleans up the layers
-    // in a way that users expect.  Note, however, that we remove objects
-    // even if they're provided via other arcs.  That could be unexpected
-    // but it doesn't normally happen.  We don't find these descendants
-    // during traversal;  instead we find them separately by getting sites
-    // using any prim spec that's a descendant of the namespace edited
-    // object.
-    //
-    // Similar to removing, if we reparent a descendant of a referenced
-    // (or inherited or payloaded) prim outside of the arc then it's as
-    // if the object was removed as far as the referencing site is
-    // concerned.
-    //
-    // Uncomposed sites have an edit type associated with them, along
-    // with an old path and a new path.  The type may be a namespace edit
-    // (in which case the site path and the old path are the same);  an
-    // edit to the references, inherits, or payload where old path must
-    // be replaced with new path;  or a relocation where we must replace
-    // old path with new path in every relocation table on every ancestor.
-    // These edits must be applied directly to the Sd objects.  If we know
-    // there are no opinions to fix at a given uncomposed site we don't
-    // have to record the site (but may anyway).
-
-    // XXX: We need to report errors, too.  There are various edits
-    //      that can't be represented and we should detect them and
-    //      call them out.  Examples are:
-    //        1) Reparent a referenced/payloaded prim (e.g. /B ->
-    //           /X/B).  We can't target a non-root prim.
-    //        2) Rename a prim into namespace already used upstream.
-    //           E.g. </A> references </B>, </A/Y> exists and so
-    //           does </B/X> -- rename </B/X> to </B/Y>.  Doing so
-    //           would cause </A/Y> to pull in </B/Y>, probably
-    //           unexpectedly.
-    //        3) Rename a prim into namespace that's salted earth
-    //           upstream.  E.g. </A> references </B>, </A> relocates
-    //           </A/Y> to </A/Z> and </B/X> exists -- rename </B/X>
-    //           to </B/Y>.  Doing so would cause </B/Y> to map to
-    //           the salted earth </A/Y>.
-    // XXX: Should we be doing (layer,path) sites?  If we have
-    //      intersecting layer stacks we might do the same spec
-    //      twice.  Csd is aware of this so it's okay for now.
-
-    // Walk the graph for each node.
-    typedef NamespaceEdits::LayerStackSites LayerStackSites;
-    typedef NamespaceEdits::LayerStackSite LayerStackSite;
-    typedef NamespaceEdits::CacheSite CacheSite;
-    std::set<PcpLayerStackSite> sites;
-    BOOST_FOREACH(const CacheNodePair& cacheAndNode, nodes) {
-        size_t cacheIndex   = cacheAndNode.first;
-        PcpNodeRef node     = cacheAndNode.second;
-        SdfPath oldNodePath  = curPath;
-        SdfPath newNodePath  = newPath;
-
-        // Handle the node itself.  Note that the node, although representing
-        // the namespace edited site, can appear in different layer stacks.
-        // This happens when we have two scenes sharing a layer.  If we edit
-        // in the shared layer then we must do the corresponding edit in each
-        // of the scene's layer stacks.
-        if (sites.insert(node.GetSite()).second) {
-            LayerStackSites& layerStackSites = 
-                _GetLayerStackSitesForEdit(&result, oldNodePath, newNodePath);
-            layerStackSites.resize(layerStackSites.size()+1);
-            LayerStackSite& site = layerStackSites.back();
-            site.cacheIndex      = cacheIndex;
-            site.type            = NamespaceEditPath;
-            site.sitePath        = oldNodePath;
-            site.oldPath         = oldNodePath;
-            site.newPath         = newNodePath;
-            site.layerStack      = node.GetLayerStack();
-
-            _AddRelocateEditsForLayerStack(
-                &result, site.layerStack, cacheIndex,
-                oldNodePath, newNodePath);
-        }
-
-        // Handle each arc from node to the root.
-        while (node.GetParentNode()) {
-            if (sites.insert(node.GetParentNode().GetSite()).second) {
-                // Add site and translate paths to parent node.
-                if (_AddLayerStackSite(&result, node, cacheIndex,
-                                       &oldNodePath, &newNodePath)) {
-                    // Reached a direct arc so we don't have to continue.
-                    break;
-                }
-            }
-            else {
-                // Translate paths to parent node.
-                _TranslatePathsAndEditRelocates(NULL, node, cacheIndex,
-                                                &oldNodePath, &newNodePath);
-            }
-
-            // Next node.
-            node = node.GetParentNode();
-        }
-
-        // If we made it all the way to the root then we have a cacheSite.
-        if (not node.GetParentNode()) {
-            if (not _IsInvalidEdit(oldNodePath, newNodePath)) {
-                result.cacheSites.resize(result.cacheSites.size() + 1);
-                CacheSite& cacheSite = result.cacheSites.back();
-                cacheSite.cacheIndex = cacheIndex;
-                cacheSite.oldPath    = oldNodePath;
-                cacheSite.newPath    = newNodePath;
-            }
-        }
-    }
-
-    // Helper functions.
-    struct _Helper {
-        // Returns true if sites contains site or any ancestor of site.
-        static bool HasSite(const std::map<PcpLayerStackSite, size_t>& sites,
-                            const PcpLayerStackSite& site)
-        {
-            std::map<PcpLayerStackSite, size_t>::const_iterator i =
-                sites.lower_bound(site);
-            if (i != sites.end() and i->first == site) {
-                // Site exists in sites.
-                return true;
-            }
-            if (i == sites.begin()) {
-                // Site comes before any other site so it's not in sites.
-                return false;
-            }
-            --i;
-            if (site.layerStack != i->first.layerStack) {
-                // Closest site is in a different layer stack.
-                return false;
-            }
-            if (site.path.HasPrefix(i->first.path)) {
-                // Ancestor exists.
-                return true;
-            }
-            // Neither site nor any ancestor of it is in sites.
-            return false;
-        }
-    };
-
-    // If we're removing a prim then also collect every uncomposed site
-    // that uses a descendant of the namespace edited site.
-    if (newPath.IsEmpty() and curPath.IsPrimPath()) {
-        std::map<PcpLayerStackSite, size_t> descendantSites;
-
-        // Make a set of sites we already know have direct arcs to
-        // descendants.  We don't want to remove those but we may
-        // want to remove their descendants.
-        std::set<PcpLayerStackSite> doNotRemoveSites;
-        BOOST_FOREACH(const CacheNodePair& cacheAndNode, descendantNodes) {
-            const PcpNodeRef& node = cacheAndNode.second;
-            doNotRemoveSites.insert(node.GetParentNode().GetSite());
-        }
-
-        for (size_t cacheIndex = 0, n = caches.size();
-                                        cacheIndex != n; ++cacheIndex) {
-            PcpCache* cache = caches[cacheIndex];
-
-            // Get the sites in cache that use any proper descendant of the
-            // namespace edited site and what each site depends on.
-            std::map<SdfPath, PcpNodeRef> descendantPathsAndNodes;
-            PcpNodeRefVector sourceNodes;
-            BOOST_FOREACH(const SdfLayerRefPtr& layer, _layerStack->GetLayers()) {
-                SdfPathVector paths = 
-                    cache->_GetPathsUsingSite(layer, curPath,
-                                              UsingSiteAndDescendants,
-                                              /* layerOffsets = */ NULL, 
-                                              &sourceNodes);
-                for (size_t i = 0, n = paths.size(); i != n; ++i) {
-                    if (not paths[i].IsPrimPath() or 
-                        sourceNodes[i].GetPath() != curPath) {
-                        descendantPathsAndNodes[paths[i]] = sourceNodes[i];
-                    }
-                }
-            }
-
-            // Add every uncomposed site used by each (cache,path) pair
-            // if we haven't already added its parent.  We don't need to
-            // add a site if we've added its parent because removing the
-            // parent will remove its descendants.  The result is that we
-            // add every uncomposed site that doesn't have a direct arc to
-            // another uncomposed site.
-            //
-            // Note that we only check nodes from the namespace edited
-            // site and its descendants to the root.  Other nodes are due
-            // to other arcs and not affected by the namespace edit.
-            TF_FOR_ALL(i, descendantPathsAndNodes) {
-                PcpNodeRef node              = i->second;
-                const SdfPath& descendantPath = i->first;
-                SdfPath descendantPrimPath    = descendantPath.GetPrimPath();
-
-                for (; node; node = node.GetParentNode()) {
-                    SdfPath path =
-                        descendantPath.ReplacePrefix(descendantPrimPath,
-                                                     node.GetPath());
-                    PcpLayerStackSite site(node.GetLayerStack(), path);
-                    if (not _Helper::HasSite(descendantSites, site)) {
-                        // We haven't seen this site or an ancestor yet.
-                        if (doNotRemoveSites.count(site) == 0) {
-                            // We're not blocking the addition of this site.
-                            descendantSites[site] = cacheIndex;
-                        }
-                    }
-                }
-            }
-        }
-
-        // We now have all the descendant sites to remove.  Add them to
-        // result.layerStackSites.
-        TF_FOR_ALL(j, descendantSites) {
-            result.layerStackSites.resize(result.layerStackSites.size()+1);
-            LayerStackSite& site = result.layerStackSites.back();
-            site.cacheIndex      = j->second;
-            site.type            = NamespaceEditPath;
-            site.sitePath        = j->first.path;
-            site.oldPath         = j->first.path;
-            site.newPath         = newPath;         // This is the empty path.
-            site.layerStack      = j->first.layerStack;
-        }
-    }
-
-    // Fix up all direct inherits to a descendant site.
-    if (not descendantNodes.empty()) {
-        BOOST_FOREACH(const CacheNodePair& cacheAndNode, descendantNodes) {
-            size_t cacheIndex   = cacheAndNode.first;
-            const PcpNodeRef& node = cacheAndNode.second;
-            SdfPath oldNodePath  = node.GetPath();
-            SdfPath newNodePath  = oldNodePath.ReplacePrefix(curPath, newPath);
-            _AddLayerStackSite(&result, node, cacheIndex,
-                               &oldNodePath, &newNodePath);
-        }
-    }
-
-    return result;
-}
-
-PcpNodeRef
-PcpCache::_GetNodeProvidingSpec(
-    const SdfPath& path,
-    const SdfLayerHandle& siteLayer,
-    const SdfPath& sitePath) const
-{
-    const PcpPrimIndex* primIndex = _GetPrimIndex(path);
-    return (primIndex 
-            ? primIndex->GetNodeProvidingSpec(siteLayer, sitePath)
-            : PcpNodeRef());
 }
 
 std::vector<std::string>
@@ -2125,7 +814,7 @@ PcpCache::GetInvalidAssetPaths() const
         const PcpPrimIndex& primIndex = it->second;
         if (primIndex.GetRootNode()) {
             PcpErrorVector errors = primIndex.GetLocalErrors();
-            BOOST_FOREACH(const PcpErrorBasePtr & e, errors) {
+            for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
                     dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)){
                     result[primPath].push_back(typedErr->resolvedAssetPath);
@@ -2164,7 +853,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         // Clear everything for scene graph objects.
         _primIndexCache.clear();
         _propertyIndexCache.clear();
-        _dependencies->RemoveAll(lifeboat);
+        _primDependencies->RemoveAll(lifeboat);
     }
     else {
         // Blow prim and property indexes due to prim graph changes.
@@ -2188,29 +877,24 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         TF_FOR_ALL(i, changes.didChangeSpecs) {
             const SdfPath& path = *i;
             if (path.IsAbsoluteRootOrPrimPath()) {
-                // We've possibly changed the prim spec stack.  Since
-                // we track dependencies using those specs we must
-                // update those specs.  Note that we may have blown
-                // the prim index so check that it still exists.
+                // We've possibly changed the prim spec stack.  Note that
+                // we may have blown the prim index so check that it exists.
                 if (PcpPrimIndex* primIndex = _GetPrimIndex(path)) {
-                    // Rebuild the prim stack and get the sites the prim
-                    // index depends on.
-                    SdfSiteVector depSites;
-                    PcpNodeRefVector depNodes;
-                    Pcp_UpdatePrimStack(primIndex, &depSites, &depNodes);
+                    Pcp_RescanForSpecs(primIndex, IsUsd(),
+                                       /* updateHasSpecs */ true);
 
                     // If there are no specs left then we can discard the
                     // prim index.
-                    if (depSites.empty()) {
+                    bool anyNodeHasSpecs = false;
+                    for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
+                        if (node.HasSpecs()) {
+                            anyNodeHasSpecs = true;
+                            break;
+                        }
+                    }
+                    if (not anyNodeHasSpecs) {
                         _RemovePrimAndPropertyCaches(path, lifeboat);
                     }
-                    else {
-                        // Replace dependencies.
-                        static const bool specsAtPathOnly = true;
-                        _dependencies->Remove(path, lifeboat, specsAtPathOnly);
-                        _dependencies->Add(path, depSites, depNodes);
-                    }
-                    
                 }
             }
             else if (path.IsPropertyPath()) {
@@ -2272,9 +956,6 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         }
     }
     _includedPayloads.insert(newIncludes.begin(), newIncludes.end());
-
-    // We can now flush any pending changes in our dependencies.
-    _dependencies->Flush();
 }
 
 void
@@ -2294,7 +975,7 @@ PcpCache::Reload(PcpChanges* changes)
         _layerStackCache->GetAllLayerStacks();
     TF_FOR_ALL(layerStack, allLayerStacks) {
         const PcpErrorVector errors = (*layerStack)->GetLocalErrors();
-        BOOST_FOREACH(const PcpErrorBasePtr& e, errors) {
+        for (const auto& e : errors) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
                 dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(e)) {
                 changes->DidMaybeFixSublayer(this,
@@ -2307,7 +988,7 @@ PcpCache::Reload(PcpChanges* changes)
         const PcpPrimIndex& primIndex = it->second;
         if (primIndex.GetRootNode()) {
             const PcpErrorVector errors = primIndex.GetLocalErrors();
-            BOOST_FOREACH(const PcpErrorBasePtr& e, errors) {
+            for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
                     dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
                     changes->DidMaybeFixAsset(this,
@@ -2335,19 +1016,18 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
 {
     TRACE_FUNCTION();
 
-    static const bool recursive = true;
-
     ArResolverContextBinder binder(_pathResolverContext);
 
     // Traverse every PrimIndex at or under primPath to find
     // InvalidAssetPath errors, and collect the unique layer stacks used.
     std::set<PcpLayerStackPtr> layerStacksAtOrUnderPrim;
-    BOOST_FOREACH(const _PrimIndexCache::value_type& entry,
-                  _primIndexCache.FindSubtreeRange(primPath)) {
+    auto range = _primIndexCache.FindSubtreeRange(primPath);
+    for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
+        const auto& entry = *entryIter;
         const PcpPrimIndex& primIndex = entry.second;
         if (primIndex.GetRootNode()) {
             PcpErrorVector errors = primIndex.GetLocalErrors();
-            BOOST_FOREACH(const PcpErrorBasePtr& e, errors) {
+            for (const auto& e : errors) {
                 if (PcpErrorInvalidAssetPathPtr typedErr =
                     dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
                 {
@@ -2356,19 +1036,19 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
                                               typedErr->resolvedAssetPath);
                 }
             }
-            TF_FOR_ALL(it, primIndex.GetNodeRange()) {
-                layerStacksAtOrUnderPrim.insert( it->GetSite().layerStack );
+            for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+                layerStacksAtOrUnderPrim.insert( node.GetSite().layerStack );
             }
         }
     }
 
     // Check each used layer stack (gathered above) for invalid sublayers.
-    TF_FOR_ALL(layerStack, layerStacksAtOrUnderPrim) {
+    for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
         // Scan errors for a sublayer error.
-        PcpErrorVector errs = (*layerStack)->GetLocalErrors();
-        TF_FOR_ALL(e, errs) {
+        PcpErrorVector errs = layerStack->GetLocalErrors();
+        for (const PcpErrorBasePtr &err: errs) {
             if (PcpErrorInvalidSublayerPathPtr typedErr =
-                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(*e)){
+                dynamic_pointer_cast<PcpErrorInvalidSublayerPath>(err)){
                 changes->DidMaybeFixSublayer(this, typedErr->layer,
                                              typedErr->sublayerPath);
             }
@@ -2377,12 +1057,12 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
 
     // Reload every layer used by prims at or under primPath, except for
     // local layers.
-    SdfLayerHandleSet layersToReload =
-        _dependencies->GetLayersUsedByPrim(primPath, recursive);
-    
-    if (_layerStack) {
-        TF_FOR_ALL(it, _layerStack->GetLayers()) {
-            layersToReload.erase(*it);
+    SdfLayerHandleSet layersToReload;
+    for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
+        for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
+            if (not _layerStack->HasLayer(layer)) {
+                layersToReload.insert(layer);
+            }
         }
     }
 
@@ -2394,9 +1074,7 @@ PcpCache::_RemovePrimCache(const SdfPath& primPath, PcpLifeboat* lifeboat)
 {
     _PrimIndexCache::iterator it = _primIndexCache.find(primPath);
     if (it != _primIndexCache.end()) {
-        static const bool specsAtPathOnly = true;
-        _dependencies->Remove(it->first, lifeboat, specsAtPathOnly);
-
+        _primDependencies->Remove(it->second, lifeboat);
         PcpPrimIndex empty;
         it->second.Swap(empty);
     }
@@ -2409,7 +1087,7 @@ PcpCache::_RemovePrimAndPropertyCaches(const SdfPath& root,
     std::pair<_PrimIndexCache::iterator, _PrimIndexCache::iterator> range =
         _primIndexCache.FindSubtreeRange(root);
     for (_PrimIndexCache::iterator i = range.first; i != range.second; ++i) {
-        _dependencies->Remove(i->first, lifeboat);
+        _primDependencies->Remove(i->second, lifeboat);
     }
     if (range.first != range.second) {
         _primIndexCache.erase(range.first);
@@ -2585,7 +1263,7 @@ struct Pcp_ParallelIndexer
             TfTokenVector names;
             PcpTokenSet prohibitedNames;
             index->ComputePrimChildNames(&names, &prohibitedNames);
-            BOOST_FOREACH(const TfToken &name, names) {
+            for (const auto& name : names) {
                 // We only check the cache for the children if we got a cache
                 // hit for this index.  Pcp tends to invalidate entire subtrees
                 // at once.
@@ -2625,7 +1303,7 @@ struct Pcp_ParallelIndexer
             SdfPath const &primIndexPath = outputs->primIndex.GetPath();
 
             // Add dependencies.
-            _cache->_AddIndexDependencies(primIndexPath, outputs);
+            _cache->_primDependencies->Add(outputs->primIndex);
             
             // Store index off to the side so we can publish several at once,
             // ideally.  We have to make a copy to move into the _cache itself,
@@ -2754,7 +1432,7 @@ PcpCache::_ComputePrimIndexesInParallel(
                     GetPrimIndexInputs().USD(_usd), allErrors, &parentCache,
                     mallocTag1, mallocTag2);
 
-    BOOST_FOREACH(const SdfPath &rootPath, roots) {
+    for (const auto& rootPath : roots) {
         // Obtain the parent index, if this is not the absolute root.  Note that
         // the call to ComputePrimIndex below is not concurrency safe.
         const PcpPrimIndex *parentIndex =
@@ -2795,41 +1473,14 @@ PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors)
         outputs.allErrors.begin(),
         outputs.allErrors.end());
 
+    // Add dependencies.
+    _primDependencies->Add(outputs.primIndex);
+
     // Save the prim index.
     PcpPrimIndex &cacheEntry = _primIndexCache[path];
     cacheEntry.Swap(outputs.primIndex);
 
-    // Add dependencies.
-    _AddIndexDependencies(path, &outputs);
-
     return cacheEntry;
-}
-
-void
-PcpCache::_AddIndexDependencies(
-    const SdfPath &path, PcpPrimIndexOutputs *outputs)
-{
-    // Don't add dependencies on our own site.
-    outputs->dependencies.sites.erase(
-        PcpPrimIndexDependencies::Site(_layerStack, path));
-
-    // Add dependencies.
-    Pcp_Dependencies *deps = _dependencies.get();
-    deps->Add(path, outputs->dependencies);
-    if (not _usd) {
-        deps->Add(path, outputs->dependencySites, outputs->dependencyNodes);
-        deps->AddSpookySitesUsedByPrim(path, outputs->spookyDependencies);
-        deps->AddSpookySitesUsedByPrim(
-            path, outputs->spookyDependencySites, 
-            outputs->spookyDependencyNodes);
-    }
-    else {
-        // We should not be picking up any spooky dependencies here, since
-        // inherits are not supported in the usd codepath.
-        TF_VERIFY(outputs->spookyDependencies.sites.empty());
-        TF_VERIFY(outputs->spookyDependencySites.empty());
-        TF_VERIFY(outputs->spookyDependencyNodes.empty());
-    }
 }
 
 PcpPropertyIndex*
@@ -2894,16 +1545,4 @@ void
 PcpCache::PrintStatistics() const
 {
     Pcp_PrintCacheStatistics(this);
-}
-
-void
-PcpCache::PrintDependencies() const
-{
-    _dependencies->DumpDependencies(std::cout);
-}
-
-void
-PcpCache::CheckDependencies() const
-{
-    _dependencies->CheckInvariants();
 }

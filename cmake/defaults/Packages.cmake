@@ -87,16 +87,14 @@ if (PXR_BUILD_IMAGING)
     find_package(PTex REQUIRED)
     # --X11
     find_package(X11)
-    # --Qt
-    find_package(Qt4)
-    if (QT4_FOUND)
-        find_package(PySide REQUIRED)
-    endif()
+    # --PySide
+    find_package(PySide)
+    # --PyOpenGL
+    find_package(PyOpenGL)
 endif()
 
 # Third Party Plugin Package Requirements
 # ----------------------------------------------
-
 if (PXR_BUILD_KATANA_PLUGIN)
     find_package(KatanaAPI REQUIRED)
     find_package(Boost

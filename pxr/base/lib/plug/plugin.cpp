@@ -24,9 +24,6 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/debugCodes.h"
 
-#include "pxr/base/arch/attributes.h"
-#include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/threads.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -39,23 +36,16 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/scopeDescription.h"
-#include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-
 #include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <sys/types.h>
-#include <sys/stat.h>
 
 using std::pair;
 using std::string;
@@ -83,12 +73,10 @@ PlugPlugin::_NewDynamicLibraryPlugin(const std::string & path,
                                      const std::string & resourcePath,
                                      const JsObject & plugInfo)
 {
-    const string realPath    = TfRealPath(path);
-    const string pluginPath  = TfRealPath(dsoPath);
     {
         // Already registered?
         std::lock_guard<std::mutex> lock(_allPluginsMutex);
-        _PluginMap::const_iterator it = _allPlugins->find(realPath);
+        _PluginMap::const_iterator it = _allPlugins->find(path);
         if (it != _allPlugins->end())
             return std::make_pair(it->second, false);
 
@@ -101,23 +89,23 @@ PlugPlugin::_NewDynamicLibraryPlugin(const std::string & path,
 
     // Go ahead and create a plugin. 
     TF_DEBUG(PLUG_REGISTRATION).Msg("Registering dso plugin '%s' at '%s'.\n",
-                                    name.c_str(), pluginPath.c_str());
+                                    name.c_str(), dsoPath.c_str());
     PlugPluginRefPtr plugin =
-        TfCreateRefPtr(new PlugPlugin(pluginPath, name, resourcePath,
+        TfCreateRefPtr(new PlugPlugin(dsoPath, name, resourcePath,
                                       plugInfo, LibraryType));
 
     pair<PlugPluginPtr, bool> result;
     {
         std::lock_guard<std::mutex> lock(_allPluginsMutex);
         pair<_PluginMap::iterator, bool> iresult =
-            _allPlugins->insert(make_pair(realPath, plugin));
+            _allPlugins->insert(make_pair(path, plugin));
         result.first = iresult.first->second;
         result.second = iresult.second;
 
         // If successfully inserted, add to _allPluginsByDynamicLibraryName too.
         if (iresult.second) {
             (*_allPluginsByDynamicLibraryName)[name]   = plugin;
-            (*_libraryPluginsByDsoPath)[pluginPath] = plugin;
+            (*_libraryPluginsByDsoPath)[dsoPath] = plugin;
         }
     }
 
@@ -130,12 +118,11 @@ PlugPlugin::_NewPythonModulePlugin(const std::string & modulePath,
                                    const std::string & resourcePath,
                                    const JsObject & plugInfo)
 {
-    const string realPath = TfRealPath(modulePath);
     {
         // Already registered?
         std::lock_guard<std::mutex> lock(_allPluginsMutex);
 
-        _PluginMap::const_iterator it = _allPlugins->find(realPath);
+        _PluginMap::const_iterator it = _allPlugins->find(modulePath);
         if (it != _allPlugins->end())
             return std::make_pair(it->second, false);
 
@@ -157,7 +144,7 @@ PlugPlugin::_NewPythonModulePlugin(const std::string & modulePath,
     {
         std::lock_guard<std::mutex> lock(_allPluginsMutex);
         pair<_PluginMap::iterator, bool> iresult =
-            _allPlugins->insert(make_pair(realPath, plugin));
+            _allPlugins->insert(make_pair(modulePath, plugin));
         result.first = iresult.first->second;
         result.second = iresult.second;
 
@@ -175,12 +162,11 @@ PlugPlugin::_NewResourcePlugin(const std::string & path,
                                const std::string & resourcePath,
                                const JsObject & plugInfo)
 {
-    const string realPath = TfRealPath(path);
     {
         // Already registered?
         std::lock_guard<std::mutex> lock(_allPluginsMutex);
 
-        _PluginMap::const_iterator it = _allPlugins->find(realPath);
+        _PluginMap::const_iterator it = _allPlugins->find(path);
         if (it != _allPlugins->end())
             return std::make_pair(it->second, false);
 
@@ -202,7 +188,7 @@ PlugPlugin::_NewResourcePlugin(const std::string & path,
     {
         std::lock_guard<std::mutex> lock(_allPluginsMutex);
         pair<_PluginMap::iterator, bool> iresult =
-            _allPlugins->insert(make_pair(realPath, plugin));
+            _allPlugins->insert(make_pair(path, plugin));
         result.first = iresult.first->second;
         result.second = iresult.second;
 
@@ -269,7 +255,7 @@ PlugPlugin::_Load()
                             _name.c_str(), _name.c_str());
             isLoaded = false;
         }
-    } else {
+    } else if (not IsResource()) {
         string dsoError;
         _handle = TfDlopen(_path.c_str(), RTLD_NOW, &dsoError);
         if ( ! _handle ) {
@@ -425,39 +411,30 @@ PlugPlugin::FindPluginResource(const std::string& path, bool verify) const
 //void PlugPlugin::_RegisterAllPlugins();
 
 PlugPluginPtr
-PlugPlugin::_GetPluginWithAddress(void* address)
+PlugPlugin::_GetPluginWithName(const std::string& name)
 {
-    std::string path;
-    return ArchGetAddressInfo(address, &path, NULL, NULL, NULL)
-           ? _GetPluginWithPath(path)
-           : TfNullPtr;
-}
-
-PlugPluginPtr
-PlugPlugin::_GetPluginWithPath(const std::string& path)
-{
-    // Plugins are registered under their real paths.
-    const std::string realPath = TfRealPath(path);
-
-    // Register all plugins first.  We can't associate a plugin with a path
+    // Register all plugins first. We can't associate a plugin with a name
     // until it's registered.
     _RegisterAllPlugins();
 
     std::lock_guard<std::mutex> lock(_allPluginsMutex);
 
-    // Try DSO paths first.
-    _WeakPluginMap::const_iterator i = _libraryPluginsByDsoPath->find(realPath);
-    if (i != _libraryPluginsByDsoPath->end()) {
-        return i->second;
+    auto idso = _allPluginsByDynamicLibraryName->find(name);
+    if (idso != _allPluginsByDynamicLibraryName->end()) {
+        return idso->second;
     }
 
-    // Try plugin paths.
-    _PluginMap::const_iterator j = _allPlugins->find(realPath);
-    if (j != _allPlugins->end()) {
-        return j->second;
+    auto imod = _allPluginsByModuleName->find(name);
+    if (imod != _allPluginsByModuleName->end()) {
+        return imod->second;
     }
 
-    return TfNullPtr;
+    auto ires = _allPluginsByResourceName->find(name);
+    if (ires != _allPluginsByResourceName->end()) {
+        return ires->second;
+    }
+
+    return nullptr;
 }
 
 PlugPluginPtrVector
@@ -685,17 +662,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<PlugPlugin>();
 }
 
-
-PlugThisPlugin::PlugThisPlugin()
-{
-    _plugin = PlugPlugin::_GetPluginWithAddress(this);
-}
-
-PlugThisPlugin::~PlugThisPlugin()
-{
-    // Do nothing
-}
-
 std::string
 PlugFindPluginResource(
     const PlugPluginPtr& plugin,
@@ -705,11 +671,3 @@ PlugFindPluginResource(
     return plugin ? plugin->FindPluginResource(path, verify) : std::string();
 }
 
-std::string
-PlugFindPluginResource(
-    const PlugThisPlugin& plugin,
-    const std::string& path,
-    bool verify)
-{
-    return PlugFindPluginResource(plugin.Get(), path, verify);
-}

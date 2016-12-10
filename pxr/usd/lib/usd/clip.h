@@ -77,8 +77,8 @@ struct Usd_ResolvedClipInfo
     {
         size_t hash = indexOfLayerWhereAssetPathsFound;
         if (clipAssetPaths) {
-            TF_FOR_ALL(it, *clipAssetPaths) {
-                boost::hash_combine(hash, it->GetHash());
+            for (const auto& assetPath : *clipAssetPaths) {
+                boost::hash_combine(hash, assetPath.GetHash());
             }
         }
         if (clipManifestAssetPath) {
@@ -88,15 +88,15 @@ struct Usd_ResolvedClipInfo
             boost::hash_combine(hash, *clipPrimPath);
         }               
         if (clipActive) {
-            TF_FOR_ALL(it, *clipActive) {
-                boost::hash_combine(hash, (*it)[0]);
-                boost::hash_combine(hash, (*it)[1]);
+            for (const auto& active : *clipActive) {
+                boost::hash_combine(hash, active[0]);
+                boost::hash_combine(hash, active[1]);
             }
         }
         if (clipTimes) {
-            TF_FOR_ALL(it, *clipTimes) {
-                boost::hash_combine(hash, (*it)[0]);
-                boost::hash_combine(hash, (*it)[1]);
+            for (const auto& time : *clipTimes) {
+                boost::hash_combine(hash, time[0]);
+                boost::hash_combine(hash, time[1]);
             }
         }
 
@@ -116,6 +116,10 @@ void
 Usd_ResolveClipInfo(
     const PcpNodeRef& node,
     Usd_ResolvedClipInfo* clipInfo);
+
+/// Sentinel values authored on the edges of a clipTimes range.
+constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::max();
+constexpr double Usd_ClipTimesLatest = std::numeric_limits<double>::max();
 
 /// \class Usd_Clip
 ///
@@ -149,7 +153,17 @@ public:
     /// offsetting or scaling the animation. 
     typedef double ExternalTime;
     typedef double InternalTime;
-    typedef std::pair<ExternalTime, InternalTime> TimeMapping;
+    struct TimeMapping {
+        ExternalTime externalTime;
+        InternalTime internalTime;
+
+        TimeMapping() {}
+        TimeMapping(const ExternalTime e, const InternalTime i) 
+            : externalTime(e),
+              internalTime(i)
+        {}
+    };
+
     typedef std::vector<TimeMapping> TimeMappings;
 
     Usd_Clip();

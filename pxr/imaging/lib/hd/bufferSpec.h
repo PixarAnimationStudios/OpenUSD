@@ -30,7 +30,7 @@
 #include "pxr/base/tf/token.h"
 #include <vector>
 
-typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
+typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 
 /// \class HdBufferSpec
 ///

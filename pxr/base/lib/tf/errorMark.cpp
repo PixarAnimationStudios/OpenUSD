@@ -28,7 +28,6 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/arch/stackTrace.h"
 
-#include <boost/foreach.hpp>
 #include <boost/utility.hpp>
 
 #include <tbb/spin_mutex.h>

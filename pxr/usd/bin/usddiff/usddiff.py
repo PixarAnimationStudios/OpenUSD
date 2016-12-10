@@ -23,7 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 import os, sys 
-from tempfile import NamedTemporaryFile
 from subprocess import call
 
 # generates a command list representing a call which will generate
@@ -40,7 +39,7 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
         
         return command
 
-    return ['cat', inPath, '--out', outPath]
+    return ['cat', inPath]
 
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
@@ -65,9 +64,17 @@ def _getFileFormat(path):
 
     # Note that python's os.path.splitext retains the '.' portion
     # when obtaining an extension, but Sdf's Fileformat API doesn't 
-    # expect one.
+    # expect one. We also make sure to prune out any version specifiers.
     _, ext = os.path.splitext(path)
-    fileFormat = Sdf.FileFormat.FindByExtension(ext[1:])
+    if len(ext) <= 1:
+        fileFormat = Sdf.FileFormat.FindByExtension('usd')
+    else:
+        prunedExtension = ext[1:]
+        versionSpecifierPos = prunedExtension.rfind('#')
+        if versionSpecifierPos != -1:
+            prunedExtension = prunedExtension[:versionSpecifierPos]
+         
+        fileFormat = Sdf.FileFormat.FindByExtension(prunedExtension)
 
     if fileFormat and fileFormat.CanRead(path):
         return fileFormat.formatId
@@ -75,57 +82,55 @@ def _getFileFormat(path):
     return None
 
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
-    call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)) 
+    command = _generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
-                description="Compares two usd files using a selected diff"
-                            " program. This is chosen by looking at the" 
-                            " $USD_DIFF environment variable. If this is unset,"
-                            " it will consult the $DIFF environment variable. "
-                            " Lastly, if neither of these is set, it will try" 
-                            " to use the canonical unix program, diff."
-                            " This will relay the exit code of the selected"
-                            " diff program.")
-    parser.add_argument('baseline', 
-                        help='The baseline usd file to diff against.')
-    parser.add_argument('comparison',
-                        help='The usd file to compare against the baseline')
-    parser.add_argument('-n', '--noeffect', action='store_true',
-                        help='Do not edit either file.') 
-    parser.add_argument('-c', '--compose', action='store_true',
-                        help='Fully compose both layers as Usd Stages.')
-    results = parser.parse_args()
+    # We are redirecting to stdout for the case where a user
+    # provides an empty file and we have to use regular 'cat'
+    # which doesn't offer the redirection usdcat does through --out
+    with open(outPath) as outFile:
+        call(command, stdout=outFile) 
+
+def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
+    if composed:
+        sys.exit('Error: Cannot write out flattened result.')
+
+    if not os.access(fileName, os.W_OK):
+        sys.exit('Error: Cannot write to %s, insufficient permissions' % fileName)
+    
+    _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
+
+def _runDiff(baseline, comparison, compose, noeffect):
+    from tempfile import NamedTemporaryFile
+    diffResult = 0
 
     # Generate recognizable suffixes for our files in the temp dir
     # location of the form /temp/string__originalFileName.usda 
     # where originalFileName is the basename(no extension) of the original file.
     # This allows users to tell which file is which when diffing.
     tempBaselineFileName = ("__" + 
-        os.path.splitext(os.path.basename(results.baseline))[0] + '.usda') 
+        os.path.splitext(os.path.basename(baseline))[0] + '.usda') 
     tempComparisonFileName = ("__" +     
-        os.path.splitext(os.path.basename(results.comparison))[0] + '.usda')
+        os.path.splitext(os.path.basename(comparison))[0] + '.usda')
 
     with NamedTemporaryFile(suffix=tempBaselineFileName) as tempBaseline, \
          NamedTemporaryFile(suffix=tempComparisonFileName) as tempComparison:
 
         usdcatCmd, diffCmd = _findDiffTools()
-        baselineFileType = _getFileFormat(results.baseline)
-        comparisonFileType = _getFileFormat(results.comparison)
+        baselineFileType = _getFileFormat(baseline)
+        comparisonFileType = _getFileFormat(comparison)
 
         pluginError = 'Error: Cannot find supported file format plugin for %s'
         if baselineFileType is None:
-            sys.exit(pluginError % results.baseline)
+            sys.exit(pluginError % baseline)
 
         if comparisonFileType is None:
-            sys.exit(pluginError % results.comparison)
+            sys.exit(pluginError % comparison)
 
         # Dump the contents of our files into the temporaries
-        _convertTo(results.baseline, tempBaseline.name, usdcatCmd, 
-                   flatten=results.compose, fmt=None)
-        _convertTo(results.comparison, tempComparison.name, usdcatCmd,
-                   flatten=results.compose, fmt=None)
+        _convertTo(baseline, tempBaseline.name, usdcatCmd, 
+                   flatten=compose, fmt=None)
+        _convertTo(comparison, tempComparison.name, usdcatCmd,
+                   flatten=compose, fmt=None)
 
         tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
         tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
@@ -138,25 +143,118 @@ def main():
             os.path.getmtime(tempComparison.name) != tempComparisonTimestamp)
 
         # If we intend to edit either of the files
-        if not results.noeffect:
-            accessError = 'Error: Cannot write to %s, insufficient permissions' 
+        if not noeffect:
             if tempBaselineChanged:
-                if not os.access(results.baseline, os.W_OK):
-                    sys.exit(accessError % results.baseline)
-
-                _convertTo(tempBaseline.name, results.baseline,
-                           usdcatCmd, flatten=results.compose,
-                           fmt=baselineFileType)
+                _tryEdit(baseline, tempBaseline.name, 
+                         usdcatCmd, baselineFileType, compose)
 
             if tempComparisonChanged:
-                if not os.access(results.comparison, os.W_OK):
-                    sys.exit(accessError % results.comparison)
+                _tryEdit(comparison, tempComparison.name,
+                         usdcatCmd, comparisonFileType, compose)
+    return diffResult
 
-                _convertTo(tempComparison.name, results.comparison,
-                           usdcatCmd, flatten=results.compose,
-                           fmt=comparisonFileType)
+def _findFiles(args):
+    '''Return a 3-tuple of lists: (baseline-only, matching, comparison-only).
+    baseline-only and comparison-only are lists of individual files, while
+    matching is a list of corresponding pairs of files.'''
+    import os
+    join = os.path.join
+    basename = os.path.basename
+    exists = os.path.exists
 
-        sys.exit(diffResult)
+    def listFiles(dirpath):
+        ret = []
+        for root, _, files in os.walk(dirpath):
+            ret += [os.path.relpath(join(root, file), dirpath)
+                    for file in files]
+        return set(ret)
+
+    # Must have FILE FILE, DIR DIR, DIR FILES... or FILES... DIR.
+    err = ValueError("Error: File arguments must be one of: "
+                     "FILE FILE, DIR DIR, DIR FILES..., or FILES... DIR.")
+    if len(args) < 2:
+        raise err
+
+    for index, exist in enumerate(map(exists, args)):
+        if not exist:
+            raise ValueError("Error: %s does not exist" % args[index]) 
+
+    # DIR FILES...
+    if os.path.isdir(args[0]) and not any(map(os.path.isdir, args[1:])):
+        dirpath = args[0]
+        files = set(map(os.path.relpath, args[1:]))
+        dirfiles = listFiles(dirpath)
+        return ([], 
+                [(join(dirpath, p), p) for p in files & dirfiles],
+                [p for p in files - dirfiles])
+    # FILES... DIR
+    elif not any(map(os.path.isdir, args[:-1])) and os.path.isdir(args[-1]):
+        dirpath = args[-1]
+        files = set(map(os.path.relpath, args[:-1]))
+        dirfiles = listFiles(dirpath)
+        return ([p for p in files - dirfiles],
+                [(p, join(dirpath, p)) for p in files & dirfiles],
+                [])
+    # FILE FILE or DIR DIR
+    elif len(args) == 2:
+        # DIR DIR
+        if all(map(os.path.isdir, args)):
+            ldir, rdir = args[0], args[1]
+            lhs, rhs = map(listFiles, args)
+            return (
+                # baseline only
+                sorted([join(ldir, p) for p in lhs - rhs]),
+                # corresponding
+                sorted([(join(ldir, p), join(rdir, p)) for p in lhs & rhs]),
+                # comparison only
+                sorted([join(rdir, p) for p in rhs - lhs]))
+        # FILE FILE
+        elif not any(map(os.path.isdir, args)):
+            return ([], [(args[0], args[1])], [])
+
+    raise err
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
+                description="Compares two usd-readable files using a selected"
+                            " diff program. This is chosen by looking at the" 
+                            " $USD_DIFF environment variable. If this is unset,"
+                            " it will consult the $DIFF environment variable. "
+                            " Lastly, if neither of these is set, it will try" 
+                            " to use the canonical unix program, diff."
+                            " This will relay the exit code of the selected"
+                            " diff program.")
+    parser.add_argument('files', nargs='+',
+                        help='The files to compare. These must be of the form '
+                             'DIR DIR, FILE... DIR, DIR FILE... or FILE FILE. ')
+    parser.add_argument('-n', '--noeffect', action='store_true',
+                        help='Do not edit either file.') 
+    parser.add_argument('-c', '--compose', action='store_true',
+                        help='Fully compose both layers as Usd Stages.')
+
+    results = parser.parse_args()
+    diffResult = 0
+
+    try:
+        baselineOnly, common, comparisonOnly = _findFiles(results.files)
+
+        for (baseline, comparison) in common:
+            diffResult += _runDiff(baseline, comparison, 
+                                   results.compose, results.noeffect)
+
+        mismatchMsg = 'No corresponding file found for %s, skipping.'
+        for b in baselineOnly:
+            print mismatchMsg % b
+
+        for c in comparisonOnly:
+            print mismatchMsg % c
+
+    except ValueError as err:
+        sys.exit(err)
+    
+    sys.exit(diffResult)
 
 if __name__ == "__main__":
     main()

@@ -56,16 +56,16 @@ public:
     // Overrides for MayaTransformWriter
     virtual UsdPrim write(const UsdTimeCode &usdTime);
     
-    /// \override
-    virtual bool exportsGprims() const;
+    virtual bool exportsGprims() const override;
     
-    /// \override
-    virtual bool exportsReferences() const;
-    
+    virtual bool exportsReferences() const override;
+
+    virtual bool shouldPruneChildren() const override;    
 
 private:
     PxrUsdMayaPrimWriterRegistry::WriterFn _plugFn;
     bool _exportsGprims;
     bool _exportsReferences;
+    bool _pruneChildren;
 };
 #endif // PXRUSDMAYA_PLUGINPRIMWRITER_H

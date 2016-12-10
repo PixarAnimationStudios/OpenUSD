@@ -65,7 +65,8 @@ MSyntax usdImport::createSyntax()
     syntax.addFlag("-ani", "-readAnimData"      , MSyntax::kBoolean);
     syntax.addFlag("-pp", "-primPath"           , MSyntax::kString);
     syntax.addFlag("-var" , "-variant"          , MSyntax::kString, MSyntax::kString);
-    syntax.addFlag("-ar" , "-assemblyRep"      , MSyntax::kString);
+    syntax.addFlag("-ar" , "-assemblyRep"       , MSyntax::kString);
+    syntax.addFlag("-fr" , "-frameRange"        , MSyntax::kDouble, MSyntax::kDouble);
     syntax.makeFlagMultiUse("variant");
 
     syntax.enableQuery(false);
@@ -132,16 +133,15 @@ MStatus usdImport::doIt(const MArgList & args)
 
         if (shadingMode.IsEmpty()) {
             jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
-        }
-        else {
-            if (PxrUsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode)) {
-                jobArgs.shadingMode = shadingMode;
+        } else if (PxrUsdMayaShadingModeRegistry::GetInstance().GetImporter(shadingMode)) {
+            jobArgs.shadingMode = shadingMode;
+        } else {
+            if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
+                MGlobal::displayError(
+                    TfStringPrintf("No shadingMode '%s' found. Setting shadingMode='none'",
+                                   shadingMode.GetText()).c_str());
             }
-            else {
-                MGlobal::displayError(TfStringPrintf("No shadingMode '%s' found.  Setting shadingMode='none'", 
-                            shadingMode.GetText()).c_str());
-                jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
-            }
+            jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
         }
     }
 
@@ -183,6 +183,12 @@ MStatus usdImport::doIt(const MArgList & args)
         if (not assemblyRep.empty()) {
             jobArgs.assemblyRep = TfToken(assemblyRep);
         }
+    }
+
+    if (argData.isFlagSet("frameRange")) {
+        jobArgs.useCustomFrameRange = true;
+        argData.getFlagArgument("frameRange", 0, jobArgs.startTime);
+        argData.getFlagArgument("frameRange", 1, jobArgs.endTime);
     }
 
     // Create the command

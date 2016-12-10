@@ -27,6 +27,8 @@
 #include "usdMaya/writeUtil.h"
 #include "usdMaya/translatorGprim.h"
 #include "usdMaya/primWriterContext.h"
+#include "usdMaya/AttributeConverter.h"
+#include "usdMaya/AttributeConverterRegistry.h"
 
 #include "pxr/base/gf/gamma.h"
 
@@ -65,33 +67,12 @@ MayaPrimWriter::MayaPrimWriter(MDagPath & iDag,
     }
 }
 
-
-void
-_writeUsdInfo(
-        const MDagPath& dag,
-        const UsdTimeCode& usdTime,
-        const UsdPrim& prim)
-{
-    MFnDependencyNode depFn(dag.node());
-
-    bool instanceable = false;
-    if (PxrUsdMayaUtil::getPlugValue(depFn, "USD_instanceable", &instanceable)) {
-        prim.SetInstanceable(instanceable);
-    }
-
-    // We only author hidden if it's to set it to true.
-    bool hidden = false;
-    if (PxrUsdMayaUtil::getPlugValue(depFn, "USD_hidden", &hidden) and hidden) {
-        prim.SetHidden(hidden);
-    }
-}
-
 bool
 MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime, UsdGeomImageable &primSchema) 
 {
     MStatus status;
     MFnDependencyNode depFn(getDagPath().node());
-    MFnDependencyNode depFn2(dagT.node()); // optionally also scan a shape's transform if merging transforms
+    MFnDependencyNode depFnT(dagT.node()); // optionally also scan a shape's transform if merging transforms
 
     if (getArgs().exportVisibility) {
         bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
@@ -101,7 +82,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
 
         if ( dagT.isValid() ) {
             bool isVis, isAnim;
-            if (PxrUsdMayaUtil::getPlugValue(depFn2, "visibility", &isVis, &isAnim)){
+            if (PxrUsdMayaUtil::getPlugValue(depFnT, "visibility", &isVis, &isAnim)){
                 isVisible = isVisible and isVis;
                 isAnimated = isAnimated or isAnim;
             }
@@ -132,7 +113,13 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
 
     }
 
-    _writeUsdInfo(dagT, usdTime, usdPrim);
+    // Process special "USD_" attributes.
+    std::vector<const AttributeConverter*> converters =
+            AttributeConverterRegistry::GetAllConverters();
+    for (const AttributeConverter* converter : converters) {
+        // We want the node for the xform (depFnT).
+        converter->MayaToUsd(depFnT, usdPrim, usdTime);
+    }
     
     // Write user-tagged export attributes. Write attributes on the transform
     // first, and then attributes on the shape node. This means that attribute
@@ -154,6 +141,12 @@ MayaPrimWriter::exportsGprims() const
     
 bool
 MayaPrimWriter::exportsReferences() const
+{
+    return false;
+}
+
+bool
+MayaPrimWriter::shouldPruneChildren() const
 {
     return false;
 }

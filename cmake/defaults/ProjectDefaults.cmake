@@ -54,5 +54,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-# Enable CTest
-enable_testing()
+if (PXR_BUILD_TESTS)
+    # Enable CTest
+    enable_testing()
+endif()

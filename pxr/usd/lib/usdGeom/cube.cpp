@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdGeomCube,
         TfType::Bases< UsdGeomGprim > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("Cube") to find
-    // TfType<UsdGeomCube>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("Cube")
+    // to find TfType<UsdGeomCube>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdGeomCube>("Cube");
 }
 

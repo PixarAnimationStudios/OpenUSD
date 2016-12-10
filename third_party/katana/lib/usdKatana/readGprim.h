@@ -37,11 +37,6 @@ PxrUsdKatanaReadGprim(
         PxrUsdKatanaAttrMap& attrs);
 
 Foundry::Katana::Attribute
-PxrUsdKatanaGeomGetPrimvarGroup(
-        const UsdGeomGprim& gprim,
-        const PxrUsdKatanaUsdInPrivateData& data);
-
-Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetDisplayColorAttr(
         const UsdGeomGprim& gprim,
         const PxrUsdKatanaUsdInPrivateData& data);

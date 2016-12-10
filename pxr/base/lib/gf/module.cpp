@@ -26,7 +26,6 @@
 TF_WRAP_MODULE
 {
     TF_WRAP( BBox3d );    
-    TF_WRAP( ColorRamp );
     TF_WRAP( Frustum );
     TF_WRAP( Gamma );
     TF_WRAP( Half );
@@ -51,8 +50,6 @@ TF_WRAP_MODULE
     TF_WRAP( Quath );
     TF_WRAP( Quaternion );
     TF_WRAP( Ray );
-    TF_WRAP( RGB );
-    TF_WRAP( RGBA );
 
     // Order of wrapping Ranges matters because in the cases where overloads
     // could choose either float or double, we want the double versions to be

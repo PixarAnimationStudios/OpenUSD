@@ -3,6 +3,7 @@ set(PXR_PACKAGE pxrUsdMayaGL)
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         arch
+        garch
         gf
         tf
         plug
@@ -13,6 +14,7 @@ pxr_shared_library(${PXR_PACKAGE}
         sdf
         usd
         usdImaging
+        usdImagingGL
         usdMaya
         ${Boost_LIBRARIES}
         ${GLUT_LIBRARIES}

@@ -36,7 +36,7 @@ void wrapUsdEditTarget()
         .def(init<SdfLayerHandle, optional<PcpNodeRef> >(
                  (arg("layer"), arg("node"))))
         .def("ForLocalDirectVariant", &UsdEditTarget::ForLocalDirectVariant,
-             (arg("layer"), arg("varSelPath"), arg("layerStackIdentifier")))
+             (arg("layer"), arg("varSelPath")))
         .staticmethod("ForLocalDirectVariant")
         .def(self == self)
         .def(self != self)
@@ -44,11 +44,8 @@ void wrapUsdEditTarget()
         .def("IsValid", &UsdEditTarget::IsValid)
         .def("GetLayer", &UsdEditTarget::GetLayer,
              return_value_policy<return_by_value>())
-        .def("GetLayerStackIdentifier",
-             &UsdEditTarget::GetLayerStackIdentifier,
+        .def("GetMapFunction", &UsdEditTarget::GetMapFunction,
              return_value_policy<return_by_value>())
-        .def("HasMapping", &UsdEditTarget::HasMapping)
-        .def("IsLocalLayer", &UsdEditTarget::IsLocalLayer)
         .def("MapToSpecPath", &UsdEditTarget::MapToSpecPath, arg("scenePath"))
         .def("GetPrimSpecForScenePath",
              &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
@@ -56,7 +53,6 @@ void wrapUsdEditTarget()
              &UsdEditTarget::GetPropertySpecForScenePath, arg("scenePath"))
         .def("GetSpecForScenePath",
              &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
-        .def("IsAtNode", &UsdEditTarget::IsAtNode, arg("node"))
         .def("ComposeOver", &UsdEditTarget::ComposeOver, arg("weaker"))
         ;
 

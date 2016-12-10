@@ -57,6 +57,11 @@ HdBufferArrayRangeContainer::Set(int index,
 {
     HD_TRACE_FUNCTION();
 
+    if (index < 0) {
+        TF_CODING_ERROR("Index negative in HdBufferArrayRangeContainer::Set()");
+        return;
+    }
+
     if (static_cast<size_t>(index) >= _ranges.size()) {
         HD_PERF_COUNTER_INCR(HdPerfTokens->bufferArrayRangeContainerResized);
         _ranges.resize(index + 1);

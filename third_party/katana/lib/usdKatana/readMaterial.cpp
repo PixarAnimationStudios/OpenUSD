@@ -25,6 +25,7 @@
 #include "usdKatana/readMaterial.h"
 #include "usdKatana/readPrim.h"
 #include "usdKatana/utils.h"
+#include "usdKatana/baseMaterialHelpers.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
@@ -161,11 +162,18 @@ _GatherShadingParameters(
                         which = TfStringPrintf(":%zu", i);
                     }
 
-                    connectionsBuilder.set(
+                    // Check the relationship representing this connection
+                    // to see if the targets come from a base material.
+                    // Ignore them if so.
+                    const TfToken relName = shaderParam.GetConnectionRelName(i);
+                    const UsdRelationship rel = prim.GetRelationship(relName);
+                    if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(rel)) {
+                        // These targets are local, so include them.
+                        connectionsBuilder.set(
                             inputParamId + which, 
                             FnKat::StringAttribute(
                                 outputName.GetString() + "@" + targetHandle));
-
+                    }
                 }
             }
         }
@@ -177,9 +185,13 @@ _GatherShadingParameters(
         if (not attr.Get(&vtValue, currentTime)) {
             continue;
         }
-        
-        paramsBuilder.set(inputParamId,
-                PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
+
+        // If the attribute value comes from a base material, leave it
+        // empty -- we will inherit it from the parent katana material.
+        if (!PxrUsdKatana_IsAttrValFromBaseMaterial(attr)) {
+            paramsBuilder.set(inputParamId,
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
+        }
     }
     
     // XXX check for info attrs as they're not strictly parameters but
@@ -282,14 +294,20 @@ _CreateShadingNode(
             // using PxrOsl pattern. Convert to katana osl node.
             oslSchema.GetOslPathAttr().Get(
                 &fileAssetPath, currentTime);
-            shdNodeAttr.set("type", FnKat::StringAttribute(
-                        "osl:" + fileAssetPath.GetAssetPath()));
+            if (!PxrUsdKatana_IsAttrValFromBaseMaterial(
+                oslSchema.GetOslPathAttr())) {
+                shdNodeAttr.set("type", FnKat::StringAttribute(
+                            "osl:" + fileAssetPath.GetAssetPath()));
+            }
         }
         else if (risObjectSchema){
             risObjectSchema.GetFilePathAttr().Get(
                 &fileAssetPath, currentTime);
-            shdNodeAttr.set("type", FnKat::StringAttribute(
-                fileAssetPath.GetAssetPath()));
+            if (!PxrUsdKatana_IsAttrValFromBaseMaterial(
+                risObjectSchema.GetFilePathAttr())) {
+                shdNodeAttr.set("type", FnKat::StringAttribute(
+                    fileAssetPath.GetAssetPath()));
+            }
         } 
         else {
             
@@ -363,7 +381,7 @@ _CreateShadingNode(
         }
     }
 
-    if (validData) {
+    if (validData and !PxrUsdKatana_IsPrimDefFromBaseMaterial(shadingNode)) {
         shdNodeAttr.set("name", FnKat::StringAttribute(handle));
         shdNodeAttr.set("srcName", FnKat::StringAttribute(handle));
         shdNodeAttr.set("target", FnKat::StringAttribute(targetName));
@@ -398,78 +416,84 @@ _GetMaterialAttr(
 
     // look for surface
     if (UsdRelationship surfaceRel = riLookAPI.GetSurfaceRel()) {
-        SdfPathVector targetPaths;
-        surfaceRel.GetForwardedTargets(&targetPaths);
-        if (targetPaths.size() > 1) {
-            FnLogWarn("Multiple surfaces detected on look:" << 
-                materialPrim.GetPath());
-        }
-        if (targetPaths.size() > 0) {
-            const SdfPath targetPath = targetPaths[0];
-            if (UsdPrim surfacePrim =
-                stage->GetPrimAtPath(targetPath)) {
+        if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(surfaceRel)) {
+            SdfPathVector targetPaths;
+            surfaceRel.GetForwardedTargets(&targetPaths);
+            if (targetPaths.size() > 1) {
+                FnLogWarn("Multiple surfaces detected on look:" << 
+                    materialPrim.GetPath());
+            }
+            if (targetPaths.size() > 0) {
+                const SdfPath targetPath = targetPaths[0];
+                if (UsdPrim surfacePrim =
+                    stage->GetPrimAtPath(targetPath)) {
 
-                std::string handle = _CreateShadingNode(
-                    surfacePrim, currentTime,
-                    nodesBuilder, interfaceBuilder, "prman");
-                terminalsBuilder.set("prmanSurface",
-                                     FnKat::StringAttribute(handle));
-            } else {
-                FnLogWarn("Surface shader does not exist at:" << 
-                          targetPath.GetString());
+                    std::string handle = _CreateShadingNode(
+                        surfacePrim, currentTime,
+                        nodesBuilder, interfaceBuilder, "prman");
+                    terminalsBuilder.set("prmanSurface",
+                                         FnKat::StringAttribute(handle));
+                } else {
+                    FnLogWarn("Surface shader does not exist at:" << 
+                              targetPath.GetString());
+                }
             }
         }
     }
 
     // look for displacement
     if (UsdRelationship displacementRel = riLookAPI.GetDisplacementRel()) {
-        SdfPathVector targetPaths;
-        displacementRel.GetForwardedTargets(&targetPaths);
-    
-        if (targetPaths.size() > 1) {
-            FnLogWarn("Multiple displacement detected on look:" << 
-                materialPrim.GetPath());
-        }
-        if (targetPaths.size() > 0) {
-            const SdfPath targetPath = targetPaths[0];
-            if (UsdPrim displacementPrim =
-                stage->GetPrimAtPath(targetPath)) {
+        if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(displacementRel)) {
+            SdfPathVector targetPaths;
+            displacementRel.GetForwardedTargets(&targetPaths);
+        
+            if (targetPaths.size() > 1) {
+                FnLogWarn("Multiple displacement detected on look:" << 
+                    materialPrim.GetPath());
+            }
+            if (targetPaths.size() > 0) {
+                const SdfPath targetPath = targetPaths[0];
+                if (UsdPrim displacementPrim =
+                    stage->GetPrimAtPath(targetPath)) {
 
-                string handle = _CreateShadingNode(
-                    displacementPrim, currentTime,
-                    nodesBuilder, interfaceBuilder, "prman");
-                terminalsBuilder.set("prmanDisplacement",
-                                     FnKat::StringAttribute(handle));
-            } else {
-                FnLogWarn("Displacement shader does not exist at:" << 
-                          targetPath.GetString());
+                    string handle = _CreateShadingNode(
+                        displacementPrim, currentTime,
+                        nodesBuilder, interfaceBuilder, "prman");
+                    terminalsBuilder.set("prmanDisplacement",
+                                         FnKat::StringAttribute(handle));
+                } else {
+                    FnLogWarn("Displacement shader does not exist at:" << 
+                              targetPath.GetString());
+                }
             }
         }
     }
 
     // look for coshaders
     if (UsdRelationship coshadersRel = riLookAPI.GetCoshadersRel()) {
-        SdfPathVector targetPaths;
-        coshadersRel.GetForwardedTargets(&targetPaths);
-        if (targetPaths.size() > 0) {
-            SdfPath targetPath;
-            for (size_t i = 0; i<targetPaths.size(); ++i){
-                targetPath = targetPaths[i];
+        if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(coshadersRel)) {
+            SdfPathVector targetPaths;
+            coshadersRel.GetForwardedTargets(&targetPaths);
+            if (targetPaths.size() > 0) {
+                SdfPath targetPath;
+                for (size_t i = 0; i<targetPaths.size(); ++i){
+                    targetPath = targetPaths[i];
 
-                if (UsdPrim shadingNodePrim =
-                    stage->GetPrimAtPath(targetPath)) {
+                    if (UsdPrim shadingNodePrim =
+                        stage->GetPrimAtPath(targetPath)) {
 
-                    string shortHandle = shadingNodePrim.GetName();
-                    
-                    std::string handle = _CreateShadingNode(
-                        shadingNodePrim, currentTime,
-                        nodesBuilder, interfaceBuilder, "prman");
+                        string shortHandle = shadingNodePrim.GetName();
+                        
+                        std::string handle = _CreateShadingNode(
+                            shadingNodePrim, currentTime,
+                            nodesBuilder, interfaceBuilder, "prman");
 
-                    terminalsBuilder.set("prmanCoshaders."+shortHandle,
-                                         FnKat::StringAttribute(handle));
-                } else {
-                    FnLogWarn("Coshader does not exist at:" << 
-                              targetPath.GetString());
+                        terminalsBuilder.set("prmanCoshaders."+shortHandle,
+                                             FnKat::StringAttribute(handle));
+                    } else {
+                        FnLogWarn("Coshader does not exist at:" << 
+                                  targetPath.GetString());
+                    }
                 }
             }
         }
@@ -482,32 +506,34 @@ _GetMaterialAttr(
 
     // look for bxdf's
     if (UsdRelationship bxdfRel = riLookAPI.GetBxdfRel()) {
-        SdfPathVector targetPaths;
-        bxdfRel.GetForwardedTargets(&targetPaths);
-    
-        if (targetPaths.size() > 1) {
-            FnLogWarn("Multiple bxdf detected on look:" << 
-                materialPrim.GetPath());
-        }
-        if (targetPaths.size() > 0) {
-            const SdfPath targetPath = targetPaths[0];
-            if (UsdPrim bxdfPrim =
-                stage->GetPrimAtPath(targetPath)) {
-
-                string handle = _CreateShadingNode(
-                    bxdfPrim, currentTime,
-                    nodesBuilder, interfaceBuilder, "prman");
-
-                terminalsBuilder.set("prmanBxdf",
-                                        FnKat::StringAttribute(handle));
-            } else {
-                FnLogWarn("Bxdf does not exist at "
-                            << targetPath.GetString());
+        if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(bxdfRel)) {
+            SdfPathVector targetPaths;
+            bxdfRel.GetForwardedTargets(&targetPaths);
+        
+            if (targetPaths.size() > 1) {
+                FnLogWarn("Multiple bxdf detected on look:" << 
+                    materialPrim.GetPath());
             }
-        }
-        else {
-            FnLogWarn("No bxdf detected on look:" 
-                    << materialPrim.GetPath());
+            if (targetPaths.size() > 0) {
+                const SdfPath targetPath = targetPaths[0];
+                if (UsdPrim bxdfPrim =
+                    stage->GetPrimAtPath(targetPath)) {
+
+                    string handle = _CreateShadingNode(
+                        bxdfPrim, currentTime,
+                        nodesBuilder, interfaceBuilder, "prman");
+
+                    terminalsBuilder.set("prmanBxdf",
+                                            FnKat::StringAttribute(handle));
+                } else {
+                    FnLogWarn("Bxdf does not exist at "
+                                << targetPath.GetString());
+                }
+            }
+            else {
+                FnLogWarn("No bxdf detected on look:" 
+                        << materialPrim.GetPath());
+            }
         }
     }
 
@@ -515,29 +541,31 @@ _GetMaterialAttr(
     // XXX, Because of relationship forwarding, there are possible name
     //      clashes with the standard prman shading.
     if (UsdRelationship bxdfRel =
-            materialPrim.GetRelationship(UsdHydraTokens->displayLookBxdf))
+        materialPrim.GetRelationship(UsdHydraTokens->displayLookBxdf))
     {
-        SdfPathVector targetPaths;
-        bxdfRel.GetForwardedTargets(&targetPaths);
-        
-        if (targetPaths.size() > 1) {
-            FnLogWarn("Multiple displayLook bxdf detected on look:" << 
-                materialPrim.GetPath());
-        }
-        if (targetPaths.size() > 0) {
-            const SdfPath targetPath = targetPaths[0];
-            if (UsdPrim bxdfPrim =
-                stage->GetPrimAtPath(targetPath)) {
-                
-                string handle = _CreateShadingNode(
-                    bxdfPrim, currentTime,
-                    nodesBuilder, interfaceBuilder, "display");
+        if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(bxdfRel)) {
+            SdfPathVector targetPaths;
+            bxdfRel.GetForwardedTargets(&targetPaths);
+            
+            if (targetPaths.size() > 1) {
+                FnLogWarn("Multiple displayLook bxdf detected on look:" << 
+                    materialPrim.GetPath());
+            }
+            if (targetPaths.size() > 0) {
+                const SdfPath targetPath = targetPaths[0];
+                if (UsdPrim bxdfPrim =
+                    stage->GetPrimAtPath(targetPath)) {
+                    
+                    string handle = _CreateShadingNode(
+                        bxdfPrim, currentTime,
+                        nodesBuilder, interfaceBuilder, "display");
 
-                terminalsBuilder.set("displayBxdf",
-                                        FnKat::StringAttribute(handle));
-            } else {
-                FnLogWarn("Bxdf does not exist at "
-                            << targetPath.GetString());
+                    terminalsBuilder.set("displayBxdf",
+                                            FnKat::StringAttribute(handle));
+                } else {
+                    FnLogWarn("Bxdf does not exist at "
+                                << targetPath.GetString());
+                }
             }
         }
     }
@@ -594,10 +622,10 @@ _GetMaterialAttr(
     PxrUsdKatanaReadPrimPrmanStatements(materialPrim, currentTime, statementsBuilder);
 
     materialBuilder.set("nodes", nodesBuilder.build());
-    materialBuilder.set("interface", interfaceBuilder.build());
     materialBuilder.set("terminals", terminalsBuilder.build());
+    materialBuilder.set("interface", interfaceBuilder.build());
     FnKat::GroupAttribute statements = statementsBuilder.build();
-    if (statements.getNumberOfChildren()>0) {
+    if (statements.getNumberOfChildren()) {
         materialBuilder.set("underlayAttrs.prmanStatements", statements);
     }
 
@@ -609,6 +637,14 @@ _GetMaterialAttr(
         // Eventually, this "derivesFrom" relationship will be
         // a "derives" composition in usd, in which case we'll have to
         // rewrite this to use partial usd composition
+        //
+        // Note that there are additional workarounds in using the
+        // "derivesFrom"/BaseMaterial relationship in the non-op SGG that
+        // would need to be replicated here if the USD Material AttributeFn
+        // were to use the PxrUsdIn op instead, particularly with respect to
+        // the tree structure that the non-op the SGG creates
+        // See _ConvertUsdMAterialPathToKatLocation in
+        // katanapkg/plugin/sgg/usd/utils.cpp
         UsdShadeMaterial materialSchema(materialPrim);
         if (materialSchema.HasBaseMaterial()) {
             SdfPath baseMaterialPath = UsdShadeMaterial(

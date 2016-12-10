@@ -40,7 +40,10 @@ public:
             const UsdPrim& prim,
             const TfToken& shadingMode,
             const TfToken& defaultMeshScheme,
-            const bool readAnimData);
+            const bool readAnimData,
+            const bool useCustomFrameRange,
+            const double startTime,
+            const double endTime);
 
     /// \brief return the usd prim that should be read.
     const UsdPrim& GetUsdPrim() const;
@@ -50,6 +53,10 @@ public:
     const TfToken& GetDefaultMeshScheme() const;
 
     const bool& GetReadAnimData() const;
+
+    bool HasCustomFrameRange() const;
+    double GetStartTime() const;
+    double GetEndTime() const;
     
     bool ShouldImportUnboundShaders() const {
         // currently this is disabled.
@@ -61,6 +68,9 @@ private:
     const TfToken& _shadingMode;
     const TfToken& _defaultMeshScheme;
     const bool _readAnimData;
+    const bool _useCustomFrameRange;
+    const double _startTime;
+    const double _endTime;
 };
 
 #endif // PXRUSDMAYA_PRIMREADERARGS_H

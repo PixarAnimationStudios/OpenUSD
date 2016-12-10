@@ -30,13 +30,14 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
+#include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tf/typeNotice.h"
 
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>

@@ -116,6 +116,8 @@ public:
     PathEditMap didChangePath;
 };
 
+/// Structure used to temporarily retain layers and layerStacks within
+/// a code block.  Analogous to the autorelease pool in obj-c.
 class PcpLifeboat {
 public:
     PcpLifeboat();
@@ -229,6 +231,15 @@ public:
     void DidChangePaths(PcpCache* cache,
                         const SdfPath& oldPath, const SdfPath& newPath);
 
+    /// The changes in \p changes to the prim spec at \p changePath in 
+    /// \p changedLayer may affect the payload decoration for the composed
+    /// prim at \p path in \p cache.  If this is the case, register a
+    /// significant change for that composed prim.
+    void DidChangeFieldsForDecorator(PcpCache* cache, const SdfPath& path,
+                                     const SdfLayerHandle& changedLayer,
+                                     const SdfPath& changedPath,
+                                     const SdfChangeList& changes);
+
     /// Remove any changes for \p cache.
     void DidDestroyCache(PcpCache* cache);
 
@@ -292,7 +303,8 @@ private:
         _ChangeTypeSignificant = 1 << 0,
         _ChangeTypeSpecs       = 1 << 1,
         _ChangeTypeTargets     = 1 << 2,
-        _ChangeTypeConnections = 1 << 3
+        _ChangeTypeConnections = 1 << 3,
+        _ChangeTypeDecorator   = 1 << 4
     };
 
     // Propagate changes of the type indicated by \p changeType to all 
@@ -303,7 +315,8 @@ private:
                               PcpCache* cache,
                               const SdfLayerHandle& layer,
                               const SdfPath& path,
-                              const SdfPath& fallbackAncestor,
+                              const SdfChangeList& layerChangeList,
+                              bool onlyExistingDependentPaths,
                               std::string* debugSummary);
 
     // Sublayer change type for _DidChangeSublayer.

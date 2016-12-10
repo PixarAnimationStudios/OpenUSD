@@ -34,11 +34,11 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 HdRprim::HdRprim(HdSceneDelegate* delegate, SdfPath const& id,
-                 SdfPath const& surfaceShaderID, SdfPath const& instancerID)
+                 SdfPath const& instancerID)
     : _delegate(delegate)
     , _id(id)
     , _instancerID(instancerID)
-    , _surfaceShaderID(surfaceShaderID)
+    , _surfaceShaderID()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
                   /*hasInstancer=*/(not instancerID.IsEmpty()),
                   /*visible=*/true)
@@ -66,10 +66,6 @@ void
 HdRprim::Sync(TfToken const &defaultReprName, bool forced,
               HdChangeTracker::DirtyBits *dirtyBits)
 {
-    TfToken reprName = _GetReprName(defaultReprName,
-                                    forced, dirtyBits);
-    _GetRepr(reprName, dirtyBits);
-
     // Check if the rprim has a new surface shader associated to it,
     // if so, we will request the binding from the delegate and set it up in
     // this rprim.
@@ -86,10 +82,10 @@ HdRprim::Sync(TfToken const &defaultReprName, bool forced,
         *dirtyBits &= ~HdChangeTracker::DirtySurfaceShader;
     }
 
-    // all scene-based dirty bits should have been cleared or handed off to
-    // repr-specific dirty bits. Otherwise sceneDelegate may be asked multiple
-    // times for same data.
-    *dirtyBits &= ~(HdChangeTracker::AllSceneDirtyBits);
+    TfToken reprName = _GetReprName(defaultReprName, forced, dirtyBits);
+    _GetRepr(reprName, dirtyBits);
+
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
 TfToken

@@ -104,7 +104,9 @@ public:
     virtual SdfPath GetPathForInstanceIndex(SdfPath const &path,
                                             int instanceIndex,
                                             int *instanceCount,
-                                            int *absoluteInstanceIndex);
+                                            int *absoluteInstanceIndex,
+                                            SdfPath * rprimPath=NULL,
+                                            SdfPathVector *instanceContext=NULL);
 
     virtual SdfPath GetInstancer(SdfPath const &cachePath);
 
@@ -114,6 +116,15 @@ public:
     virtual bool PopulateSelection(SdfPath const &path,
                                    VtIntArray const &instanceIndices,
                                    HdxSelectionSharedPtr const &result);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Utilities
+    // ---------------------------------------------------------------------- //
+
+    /// Returns the depending rprim paths which don't exist in descendants.
+    /// Used for change tracking over subtree boundary (e.g. instancing)
+    virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+
 
 private:
 

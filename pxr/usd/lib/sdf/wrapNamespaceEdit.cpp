@@ -26,7 +26,6 @@
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
-#include <boost/foreach.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/init.hpp>
@@ -89,7 +88,7 @@ std::string
 _StringifyBatchEdit(const SdfBatchNamespaceEdit& x)
 {
     std::vector<std::string> edits;
-    BOOST_FOREACH(const SdfNamespaceEdit& edit, x.GetEdits()) {
+    for (const auto& edit : x.GetEdits()) {
         edits.push_back(_StringifyEdit(edit));
     }
     if (edits.empty()) {

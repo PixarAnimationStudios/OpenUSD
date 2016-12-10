@@ -24,48 +24,47 @@
 #ifndef USDIMAGING_SHADERADAPTER_H
 #define USDIMAGING_SHADERADAPTER_H
 
+class UsdImagingDelegate;
+
 #include "pxr/imaging/hd/shaderParam.h"
 
 /// \class UsdImagingShaderAdapter
-/// \brief Interface that provides information that can be used to generate a
-/// surface shader in hydra.
-///
-/// Shaders are identified by a \p shaderPath which is a usd stage path..  All
-/// the pure virtual methods in this interface will likely need to be
-/// coordinated.  For example, \c GetSurfaceShaderParams declares all the
-/// parameters that the shader uses.  Hydra will later query the \c
-/// UsdImagingShaderAdapter for the values (\c
-/// UsdImagingShaderAdapater::GetSurfaceShaderParamValue).
-///
-/// \sa UsdImagingIndexProxy::AddShaderAdapter
-/// \sa UsdImagingDefaultShaderAdapter
+/// \brief Provides information that can be used to generate a surface shader in
+/// hydra.
 class UsdImagingShaderAdapter
 {
 public:
-    /// \brief Return true if \p usdPath is time varying.
-    virtual bool GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const = 0;
+    UsdImagingShaderAdapter(UsdImagingDelegate* delegate);
+
+    /// \brief Traverses the shading prims and if any of the attributes are time
+    /// varying, returns true.
+    bool GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const;
 
     /// \brief Returns the glsl source string for the shader at \p usdPath.
-    virtual std::string GetSurfaceShaderSource(SdfPath const& usdPath) const = 0;
+    /// 
+    /// This obtains the shading source via the \c UsdHydraShader schema.
+    std::string GetSurfaceShaderSource(SdfPath const& usdPath) const;
 
     /// \brief Returns the parameter names for \p usdPath.
     /// \deprecated This is now replaced by UsdImagingShaderAdapter::GetSurfaceShaderParams
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const& usdPath) const = 0;
+    TfTokenVector GetSurfaceShaderParamNames(SdfPath const& usdPath) const;
 
     /// \brief Returns the value of param \p paramName for \p usdPath.
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const& usdPath, TfToken const& paramName) const = 0;
+    VtValue GetSurfaceShaderParamValue(SdfPath const& usdPath, TfToken const& paramName) const;
 
     /// \brief Returns the parameters that \p usdPath users.  Hydra will built
     /// the appropriate internal data structures so that these values are
     /// available in the shader.
     ///
     /// \sa HdShaderParam
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const& usdPath) const = 0;
+    HdShaderParamVector GetSurfaceShaderParams(SdfPath const& usdPath) const;
 
     /// \brief Returns the textures (identified by \c SdfPath objects) that \p
     /// usdPath users.
-    virtual SdfPathVector GetSurfaceShaderTextures(SdfPath const& usdPath) const = 0;
+    SdfPathVector GetSurfaceShaderTextures(SdfPath const& usdPath) const;
 
+private:
+    UsdImagingDelegate* _delegate;
 };
 
 #endif // USDIMAGING_SHADERADAPTER_H

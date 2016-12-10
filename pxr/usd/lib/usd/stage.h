@@ -61,7 +61,7 @@ class Usd_ClipCache;
 class Usd_InstanceCache;
 class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
-class Usd_ResolveInfo;
+class UsdResolveInfo;
 class Usd_Resolver;
 class UsdTreeIterator;
 
@@ -710,6 +710,16 @@ public:
     /// Return the stage's EditTarget.
     const UsdEditTarget &GetEditTarget() const;
 
+    /// Return a UsdEditTarget for editing the layer at index \a i in the
+    /// layer stack.  This edit target will incorporate any layer time
+    /// offset that applies to the sublayer.
+    UsdEditTarget GetEditTargetForLocalLayer(size_t i);
+
+    /// Return a UsdEditTarget for editing the given local \a layer.
+    /// If the given layer appears more than once in the layer stack,
+    /// the time offset to the first occurence will be used.
+    UsdEditTarget GetEditTargetForLocalLayer(const SdfLayerHandle &layer);
+
     /// Set the stage's EditTarget.  If \a editTarget.IsLocalLayer(), check to
     /// see if it's a layer in this stage's local LayerStack.  If not, issue an
     /// error and do nothing.  If \a editTarget is invalid, issue an error
@@ -1114,6 +1124,10 @@ private:
              const ArResolverContext& pathResolverContext,
              InitialLoadSet load);
 
+    // Helper for Open() overloads -- searches and publishes to bound caches.
+    template <class... Args>
+    static UsdStageRefPtr _OpenImpl(InitialLoadSet load, Args const &... args);
+
     // Common ref ptr initialization, called by public, static constructors.
     //
     // This method will either return a valid refptr (if the stage is correctly
@@ -1128,14 +1142,16 @@ private:
     // --------------------------------------------------------------------- //
     // Spec Existence & Definition Helpers
     // --------------------------------------------------------------------- //
+    using _MasterToFlattenedPathMap 
+        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+
     void _CopyMetadata(const UsdObject &source,
                        const SdfSpecHandle& dest) const;
     
     void _CopyProperty(const UsdProperty &prop,
-                       const SdfPrimSpecHandle& dest) const;
-
-    using _MasterToFlattenedPathMap 
-        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+                       const SdfPrimSpecHandle& dest,
+                       const _MasterToFlattenedPathMap 
+                            &masterToFlattened) const;
 
     void _CopyMasterPrim(const UsdPrim &masterPrim,
                          const SdfLayerHandle &destinationLyer,
@@ -1507,13 +1523,14 @@ private:
     // --------------------------------------------------------------------- //
 
     void _GetResolveInfo(const UsdAttribute &attr, 
-                         Usd_ResolveInfo *resolveInfo) const;
+                         UsdResolveInfo *resolveInfo,
+                         const UsdTimeCode *time = nullptr) const;
 
     template <class T> struct _ExtraResolveInfo;
 
     template <class T>
     void _GetResolveInfo(const UsdAttribute &attr, 
-                         Usd_ResolveInfo *resolveInfo,
+                         UsdResolveInfo *resolveInfo,
                          const UsdTimeCode *time = nullptr,
                          _ExtraResolveInfo<T> *extraInfo = nullptr) const;
 
@@ -1543,17 +1560,17 @@ private:
 
 
 
-    bool _GetValueFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   VtValue* result) const;
 
     template <class T>
-    bool _GetValueFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   T* result) const;
 
     template <class T>
-    bool _GetValueFromResolveInfoImpl(const Usd_ResolveInfo &info,
+    bool _GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
                                       UsdTimeCode time, const UsdAttribute &attr,
                                       Usd_InterpolatorBase* interpolator,
                                       T* value) const;
@@ -1580,14 +1597,14 @@ private:
                                    std::vector<double>* times) const;
 
     bool _GetTimeSamplesInIntervalFromResolveInfo(
-                                   const Usd_ResolveInfo &info,
+                                   const UsdResolveInfo &info,
                                    const UsdAttribute &attr,
                                    const GfInterval& interval,
                                    std::vector<double>* times) const;
 
     size_t _GetNumTimeSamples(const UsdAttribute &attr) const;
 
-    size_t _GetNumTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
+    size_t _GetNumTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                                            const UsdAttribute &attr) const;
 
     /// Gets the bracketing times around a desiredTime. Only false on error
@@ -1600,7 +1617,7 @@ private:
                                    double* upper,
                                    bool* hasSamples) const;
 
-    bool _GetBracketingTimeSamplesFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                                                   const UsdAttribute &attr,
                                                   double desiredTime,
                                                   bool authoredOnly,
@@ -1610,7 +1627,7 @@ private:
 
     bool _ValueMightBeTimeVarying(const UsdAttribute &attr) const;
 
-    bool _ValueMightBeTimeVaryingFromResolveInfo(const Usd_ResolveInfo &info,
+    bool _ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
                                                  const UsdAttribute &attr) const;
 
     void _RegisterPerLayerNotices();
@@ -1661,6 +1678,7 @@ private:
     
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
+    friend class UsdEditTarget;
     friend class UsdInherits;
     friend class UsdObject;
     friend class UsdPrim;
@@ -1671,6 +1689,7 @@ private:
     friend class UsdVariantSet;
     friend class UsdVariantSets;
     friend class Usd_PrimData;
+    friend class Usd_StageOpenRequest;
 };
 
 template<typename T>

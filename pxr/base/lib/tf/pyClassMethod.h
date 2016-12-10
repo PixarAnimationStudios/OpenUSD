@@ -65,7 +65,7 @@ private:
         if (PyCallable_Check(expect_non_null(callable)))
             return callable;
 
-        ::PyErr_Format( PyExc_TypeError,
+        PyErr_Format( PyExc_TypeError,
            "classmethod expects callable object; got an object of type %s, "
            "which is not callable",
            callable->ob_type->tp_name);

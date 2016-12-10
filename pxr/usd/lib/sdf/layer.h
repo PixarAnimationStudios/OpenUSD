@@ -38,6 +38,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -1352,7 +1353,9 @@ private:
     _ReloadResult _Reload(bool force);
 
     // Reads content from the specified path into the target layer.
-    bool _ReadFromFile(const std::string & realPath, bool metadataOnly);
+    bool _ReadFromFile(const std::string& identifier, 
+                       const std::string& resolvedPath, 
+                       bool metadataOnly);
     
     // Saves this layer if it is dirty or the layer doesn't already exist
     // on disk. If \p force is true, the layer will be written out
@@ -1465,7 +1468,7 @@ private:
     boost::scoped_ptr<Sdf_AssetInfo> _assetInfo;
 
     // Modification timestamp of the backing file asset when last read.
-    mutable double _assetModificationTime;
+    mutable VtValue _assetModificationTime;
 
     // Mutable revision number for cache invalidation.
     mutable size_t _mutedLayersRevisionCache;

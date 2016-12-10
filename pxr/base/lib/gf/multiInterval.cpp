@@ -25,6 +25,7 @@
 
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/type.h"
 
 #include <iostream>

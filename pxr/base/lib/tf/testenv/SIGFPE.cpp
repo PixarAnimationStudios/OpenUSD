@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/stackTrace.h"
+#include "pxr/base/tf/diagnostic.h"
 #include <stdio.h>
 
 /**
@@ -33,6 +34,11 @@ int
 main(int argc, char **argv)
 {
     ArchSetFatalStackLogging( true );
+
+    // Make sure handlers have been installed
+    // This isn't guaranteed in external environments
+    // as we leave them off by default.
+    TfInstallTerminateAndCrashHandlers();
 
     int a = 1;
     int b = 0;

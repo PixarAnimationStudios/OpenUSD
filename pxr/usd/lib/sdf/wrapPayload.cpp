@@ -86,7 +86,7 @@ void wrapPayload()
         .def(self <= self)
         .def(self >= self)
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", _Repr)
 
         ;
 

@@ -38,8 +38,6 @@
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/primIndex.h"
 
-#include <boost/foreach.hpp>
-
 using std::string;
 using std::vector;
 
@@ -52,8 +50,8 @@ UsdVariantSet::FindOrCreateVariant(const std::string& variantName)
 {
     if (SdfVariantSetSpecHandle varSet = _FindOrCreateVariantSet()){
         // If the variant spec already exists, we don't need to create it
-        TF_FOR_ALL(it, varSet->GetVariants()){
-            if ((*it)->GetName() == variantName){
+        for (const auto& variant : varSet->GetVariants()) {
+            if (variant->GetName() == variantName){
                 return true;
             }
         }
@@ -67,7 +65,7 @@ UsdVariantSet::GetVariantNames() const
 {
     std::set<std::string> namesSet;
     TF_REVERSE_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        if (i->GetSite().path.IsPrimPath()) {
+        if (i->GetSite().path.IsPrimOrPrimVariantSelectionPath()) {
             PcpComposeSiteVariantSetOptions(
                 i->GetSite(), _variantSetName, &namesSet);
         }
@@ -92,10 +90,13 @@ UsdVariantSet::GetVariantSelection() const
     // Scan the composed prim for variant arcs for this variant set and
     // return the first selection found.  This ensures that we reflect
     // whatever composition process selected the variant, such as fallbacks.
-    TF_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        if (i->GetArcType() == PcpArcTypeVariant) {
+    for (auto nodeIter = _prim.GetPrimIndex().GetNodeRange().first;
+         nodeIter != _prim.GetPrimIndex().GetNodeRange().second;
+         ++nodeIter) 
+    {
+        if (nodeIter->GetArcType() == PcpArcTypeVariant) {
             std::pair<std::string, std::string> vsel =
-                i->GetSite().path.GetVariantSelection();
+                nodeIter->GetSite().path.GetVariantSelection();
             if (vsel.first == _variantSetName) {
                 return vsel.second;
             }
@@ -107,12 +108,16 @@ UsdVariantSet::GetVariantSelection() const
 bool
 UsdVariantSet::HasAuthoredVariantSelection(std::string *value) const
 {
-    TF_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        string          sel;
-        if (not value)
+    for (auto nodeIter = _prim.GetPrimIndex().GetNodeRange().first;
+         nodeIter != _prim.GetPrimIndex().GetNodeRange().second;
+         ++nodeIter) 
+    {
+        string sel;
+        if (not value) {
             value = &sel;
+        }
         if (PcpComposeSiteVariantSelection(
-                i->GetSite(), _variantSetName, value)) {
+                nodeIter->GetSite(), _variantSetName, value)) {
             return true;
         }
     }
@@ -160,12 +165,12 @@ UsdVariantSet::GetVariantEditTarget(const SdfLayerHandle &layer) const
                         stage->GetRootLayer()->GetIdentifier().c_str());
         return target;
     }
+
+    SdfPath varSpecPath =
+        stage->GetEditTarget().MapToSpecPath(_prim.GetPath())
+        .AppendVariantSelection(curVarSel.first, curVarSel.second);
     
-    return UsdEditTarget::ForLocalDirectVariant(
-        lyr,
-        _prim.GetPath().AppendVariantSelection(curVarSel.first,
-                                               curVarSel.second),
-        stage->_cache->GetLayerStackIdentifier());
+    return UsdEditTarget::ForLocalDirectVariant(lyr, varSpecPath);
 }
 
 std::pair<UsdStagePtr, UsdEditTarget >

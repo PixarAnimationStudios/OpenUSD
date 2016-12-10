@@ -31,7 +31,7 @@
 
 #include <string>
 
-class Hdx_UnitTestDrawingQGLWidget;
+class Hdx_UnitTestWindow;
 
 /// \class Hdx_UnitTestGLDrawing
 ///
@@ -51,9 +51,9 @@ public:
     virtual void DrawTest() = 0;        // interactive mode
     virtual void OffscreenTest() = 0;   // offscreen mode (automated test)
 
-    virtual void MousePress(int button, int x, int y);
-    virtual void MouseRelease(int button, int x, int y);
-    virtual void MouseMove(int x, int y);
+    virtual void MousePress(int button, int x, int y, int modKeys);
+    virtual void MouseRelease(int button, int x, int y, int modKeys);
+    virtual void MouseMove(int x, int y, int modKeys);
     virtual void KeyRelease(int key);
 
     virtual void Idle();
@@ -80,7 +80,7 @@ protected:
     GfVec2i GetMousePos() const { return GfVec2i(_mousePos[0], _mousePos[1]); }
 
 private:
-    Hdx_UnitTestDrawingQGLWidget *_widget;
+    Hdx_UnitTestWindow *_widget;
     float _rotate[2];
     GfVec3f _translate;
 

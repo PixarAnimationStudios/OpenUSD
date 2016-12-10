@@ -40,6 +40,3 @@ try:
     del __DOC
 except Exception:
     pass
-
-# FIXME XXX: need to remove Interval, RGB, RGBA, ColorRamp for public
-# API, need to leave them for tests.

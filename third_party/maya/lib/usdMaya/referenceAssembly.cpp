@@ -56,12 +56,14 @@
 #include <maya/MFnPluginData.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItEdits.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
+#include <maya/MTime.h>
 
 #include <map>
 #include <string>
@@ -92,9 +94,10 @@ MStatus UsdMayaReferenceAssembly::initialize(
 {
     MStatus status;
 
+    MFnCompoundAttribute compoundAttrFn;
     MFnNumericAttribute numericAttrFn;
     MFnTypedAttribute typedAttrFn;
-    MFnCompoundAttribute compoundAttrFn;
+    MFnUnitAttribute unitAttrFn;
 
     psData->filePath = typedAttrFn.create("filePath", "fp",MFnData::kString,MObject::kNullObj,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -119,13 +122,13 @@ MStatus UsdMayaReferenceAssembly::initialize(
     status = addAttribute(psData->excludePrimPaths);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    psData->time = numericAttrFn.create("time", "tm", MFnNumericData::kDouble,0,&status);
+    psData->time = unitAttrFn.create("time", "tm", MFnUnitAttribute::kTime, 0.0, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    numericAttrFn.setCached(true);
-    numericAttrFn.setConnectable(true);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
+    unitAttrFn.setCached(true);
+    unitAttrFn.setConnectable(true);
+    unitAttrFn.setReadable(true);
+    unitAttrFn.setStorable(true);
+    unitAttrFn.setWritable(true);
     status = addAttribute(psData->time);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -1148,6 +1151,37 @@ UsdMayaRepresentationHierBase::_ConnectSubAssemblyPlugs()
     dgMod.doIt();
 }
 
+void
+UsdMayaRepresentationHierBase::_ConnectProxyPlugs()
+{
+    MStatus status;
+
+    MFnDagNode dagFn(getAssembly()->thisMObject());
+    MDagPath assemblyPath;
+    dagFn.getPath(assemblyPath);
+    MSelectionList childUsdProxyNodes;
+
+    std::string cmdStr = TfStringPrintf(
+            "select `listRelatives -allDescendents -type \"%s\" \"%s\"`",
+            _psData.proxyShape.typeName.asChar(),
+            assemblyPath.partialPathName().asChar());
+
+    MGlobal::executeCommand(MString(cmdStr.c_str()));
+    MGlobal::getActiveSelectionList(childUsdProxyNodes);
+
+    MDGModifier dgMod;
+    MObject childUsdProxyNodeObj;
+    for ( MItSelectionList it(childUsdProxyNodes); !it.isDone(); it.next() ) {
+        status = it.getDependNode(childUsdProxyNodeObj);
+        CHECK_MSTATUS(status);
+        MFnDependencyNode proxyDepNodeFn(childUsdProxyNodeObj, &status);
+        CHECK_MSTATUS(status);
+        dgMod.connect(dagFn.findPlug(_psData.time, true),
+                      proxyDepNodeFn.findPlug(_psData.proxyShape.time, true));
+    }
+    dgMod.doIt();
+}
+
 bool UsdMayaRepresentationHierBase::activate()
 {   
     MStatus status;
@@ -1171,6 +1205,7 @@ bool UsdMayaRepresentationHierBase::activate()
         usdAssembly->GetVariantSetSelections();
 
     JobImportArgs importArgs;
+    importArgs.readAnimData = true;
     if (_ShouldImportWithProxies()) {
         importArgs.importWithProxyShapes = true;
 
@@ -1197,6 +1232,7 @@ bool UsdMayaRepresentationHierBase::activate()
     }
 
     _ConnectSubAssemblyPlugs();
+    _ConnectProxyPlugs();
 
     // Restore original selection
     status = MGlobal::setActiveSelectionList(origSelList);

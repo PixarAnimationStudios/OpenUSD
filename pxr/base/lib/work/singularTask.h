@@ -28,8 +28,10 @@
 
 #include <atomic>
 #include <functional>
+#include <type_traits>
 
 class WorkDispatcher;
+class WorkArenaDispatcher;
 
 /// \class WorkSingularTask
 ///
@@ -69,28 +71,70 @@ public:
     WorkSingularTask(WorkDispatcher &dispatcher,
                      Callable &&c, A1 &&a1, A2 &&a2, ... AN &&aN);
 
+    /// \overload
+    template <class Callable, class A1, class A2, ... class AN>
+    WorkSingularTask(WorkArenaDispatcher &dispatcher,
+                     Callable &&c, A1 &&a1, A2 &&a2, ... AN &&aN);
+
 #else // doxygen
 
     template <class Callable, class... Args>
     WorkSingularTask(WorkDispatcher &d, Callable &&c, Args&&... args)
-        : _dispatcher(d)
-        , _fn(std::bind(std::forward<Callable>(c),
-                        std::forward<Args>(args)...))
-        , _refCount(0) {}
+        : _waker(_MakeWaker(d, std::bind(std::forward<Callable>(c),
+                                         std::forward<Args>(args)...)))
+        , _count(0) {}
+
+    template <class Callable, class... Args>
+    WorkSingularTask(WorkArenaDispatcher &d, Callable &&c, Args&&... args)
+        : _waker(_MakeWaker(d, std::bind(std::forward<Callable>(c),
+                                         std::forward<Args>(args)...)))
+        , _count(0) {}
 
 #endif // doxygen
 
     /// Ensure that this task runs at least once after this call.  The task is
     /// not guaranteed to run as many times as Wake() is invoked, only that it
     /// run at least once after a call to Wake().
-    void Wake();
+    inline void Wake() {
+        if (++_count == 1)
+            _waker(_count);
+    }
 
 private:
-    struct _Invoker;
+    template <class Dispatcher, class Fn>
+    struct _Waker {
+        explicit _Waker(Dispatcher &d, Fn &&fn)
+            : _dispatcher(d), _fn(std::move(fn)) {}
 
-    WorkDispatcher &_dispatcher;
-    std::function<void ()> _fn;
-    std::atomic_size_t _refCount;
+        void operator()(std::atomic_size_t &count) const {
+            _dispatcher.Run(
+                [this, &count]() {
+                    // We read the current refCount into oldCount, then we
+                    // invoke the task function.  Finally we try to CAS the
+                    // refCount to zero.  If we fail, it means some other
+                    // clients have invoked Wake() in the meantime.  In that
+                    // case we go again to ensure the task can do whatever it
+                    // was awakened to do.  Once we successfully take the count
+                    // to zero, we stop.
+                    size_t old = count;
+                    do { _fn(); } while (
+                        !count.compare_exchange_strong(old, 0));
+                });
+        }
+        Dispatcher &_dispatcher;
+        Fn _fn;
+    };
+
+    template <class Dispatcher, class Fn>
+    static std::function<void (std::atomic_size_t &)>
+    _MakeWaker(Dispatcher &d, Fn &&fn) {
+        return std::function<void (std::atomic_size_t &)>(
+            _Waker<Dispatcher, typename std::decay<Fn>::type>(
+                d, std::forward<Fn>(fn)));
+    }
+
+    std::function<void (std::atomic_size_t &)> _waker;
+    std::atomic_size_t _count;
 };
 
 #endif // WORK_SINGULARTASK_H

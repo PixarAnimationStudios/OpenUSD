@@ -68,7 +68,7 @@ import/export.
 <li> \subpage Usd_Page_AdvancedFeatures </li>
      <ol type="i">
      <li> \ref Usd_ExplicitInstancing </li>
-     <li> \ref Usd_ClipsOverview </li>
+     <li> \ref Usd_AdvancedFeatures_ClipsOverview </li>
      </ol>
 <li> \subpage Usd_Page_AuthoringEditing </li>
      <ol type="i">

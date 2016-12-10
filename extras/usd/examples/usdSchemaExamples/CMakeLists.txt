@@ -17,6 +17,19 @@ pxr_plugin(${PXR_PACKAGE}
         paramsAPI
         tokens
 
+    CPPFILES
+        moduleDeps.cpp    
+
+    PYTHON_FILES
+        __init__.py
+
+    PYMODULE_CPPFILES
+        module.cpp
+        wrapComplex.cpp
+        wrapParamsAPI.cpp
+        wrapSimple.cpp
+        wrapTokens.cpp        
+
     RESOURCE_FILES
         generatedSchema.usda
         plugInfo.json

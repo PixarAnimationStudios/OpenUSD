@@ -317,12 +317,18 @@ public:
     /// is an instanceIndex of the instancer for the given instanceIndex of
     /// the prototype.
     ///
+    /// If \p instanceContext is not NULL, it is populated with the list of 
+    /// instance roots that must be traversed to get to the rprim. The last prim
+    /// in this list is always the forwarded rprim.
+    /// 
     /// ALL_INSTANCES may be returned if the protoPrimPath isn't instanced.
     ///
     static constexpr int ALL_INSTANCES = -1;
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
-                                            int *absoluteInstanceIndex);
+                                            int *absoluteInstanceIndex,
+                                            SdfPath * rprimPath=NULL,
+                                            SdfPathVector *instanceContext=NULL);
 
 private:
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PathToPathMap;
@@ -393,9 +399,9 @@ private:
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
-    // UsdImagingDefaultShaderAdapter needs access to _GetPrim.  We should
+    // UsdImagingShaderAdapter needs access to _GetPrim.  We should
     // consider making it public.
-    friend class UsdImagingDefaultShaderAdapter;
+    friend class UsdImagingShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
         if (not (0 <= level and level <= 8)) {
@@ -518,12 +524,12 @@ private:
     _PathAdapterMap _pathAdapterMap;
 
     typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
-    typedef SdfPathTable<_ShaderAdapterSharedPtr> _ShaderAdapterMap;
-    _ShaderAdapterMap _shaderAdapterMap;
 
     // This method looks up a shader adapter based on the \p shaderId.
-    // This will never return a nullptr.  If there is no registered shader
-    // adapter, it will return the "default".
+    // Currently, it's hard coded to return _shaderAdapter but could be
+    // extended.
+    //
+    // This will never return a nullptr.  
     _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
 
     // XXX: These maps could be store as individual member paths on the Rprim
@@ -601,8 +607,7 @@ private:
     // Collection
     CollectionMap _collectionMap;
 
-    // default shader adapter
-    boost::shared_ptr<UsdImagingDefaultShaderAdapter> _defaultShaderAdapter;
+    UsdImagingShaderAdapterSharedPtr _shaderAdapter;
 };
 
 /// \class UsdImagingIndexProxy
@@ -619,10 +624,6 @@ public:
     void AddDependency(SdfPath const& usdPath, 
                         UsdImagingPrimAdapterSharedPtr const& adapter =
                                     UsdImagingPrimAdapterSharedPtr());
-
-    /// \brief Register a \p shaderAdapter to handle the shader at \p shaderId.
-    void AddShaderAdapter(SdfPath const& shaderId,
-            UsdImagingShaderAdapterSharedPtr const& shaderAdapter);
 
     SdfPath InsertMesh(SdfPath const& usdPath,
                        SdfPath const& shaderBinding,

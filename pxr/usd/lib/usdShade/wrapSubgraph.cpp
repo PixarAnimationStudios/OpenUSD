@@ -115,5 +115,8 @@ WRAP_CUSTOM {
         .def("GetTerminal",
              &UsdShadeSubgraph::GetTerminal,
              (arg("terminalName")))
+        .def("GetTerminals",
+             &UsdShadeSubgraph::GetTerminals,
+             return_value_policy<TfPySequenceToList>())
     ;
 }

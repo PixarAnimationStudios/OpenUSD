@@ -67,6 +67,7 @@ bool
 _CheckUsdTypeAndResizeArrays(
         const UsdAttribute& usdAttr,
         const TfType& expectedType,
+        const PxrUsdMayaPrimReaderArgs& args,
         std::vector<double>* timeSamples,
         MTimeArray* timeArray,
         MDoubleArray* valueArray)
@@ -79,7 +80,8 @@ _CheckUsdTypeAndResizeArrays(
         return false;
     }
 
-    if (not usdAttr.GetTimeSamples(timeSamples)) {
+    if (not PxrUsdMayaTranslatorUtil::GetTimeSamples(usdAttr, args,
+            timeSamples)) {
         return false;
     }
 
@@ -98,6 +100,7 @@ static
 bool
 _GetTimeAndValueArrayForUsdAttribute(
         const UsdAttribute& usdAttr,
+        const PxrUsdMayaPrimReaderArgs& args,
         MTimeArray* timeArray,
         MDoubleArray* valueArray,
         bool millimetersToInches=false)
@@ -107,6 +110,7 @@ _GetTimeAndValueArrayForUsdAttribute(
 
     if (not _CheckUsdTypeAndResizeArrays(usdAttr,
                                          floatType,
+                                         args,
                                          &timeSamples,
                                          timeArray,
                                          valueArray)) {
@@ -138,6 +142,7 @@ static
 bool
 _GetTimeAndValueArraysForUsdAttribute(
         const UsdAttribute& usdAttr,
+        const PxrUsdMayaPrimReaderArgs& args,
         MTimeArray* timeArray,
         MDoubleArray* valueArray1,
         MDoubleArray* valueArray2)
@@ -147,6 +152,7 @@ _GetTimeAndValueArraysForUsdAttribute(
 
     if (not _CheckUsdTypeAndResizeArrays(usdAttr,
                                          vec2fType,
+                                         args,
                                          &timeSamples,
                                          timeArray,
                                          valueArray1)) {
@@ -210,6 +216,7 @@ _TranslateAnimatedUsdAttributeToPlug(
     MTimeArray timeArray;
     MDoubleArray valueArray;
     if (not _GetTimeAndValueArrayForUsdAttribute(usdAttr,
+                                                 args,
                                                  &timeArray,
                                                  &valueArray,
                                                  millimetersToInches)) {
@@ -240,6 +247,7 @@ _TranslateAnimatedUsdAttributeToPlugs(
     MDoubleArray valueArray1;
     MDoubleArray valueArray2;
     if (not _GetTimeAndValueArraysForUsdAttribute(usdAttr,
+                                                  args,
                                                   &timeArray,
                                                   &valueArray1,
                                                   &valueArray2)) {

@@ -224,15 +224,6 @@ TF_MAKE_STATIC_DATA(_TokenTable, _relAttrNodes) {}
 TF_MAKE_STATIC_DATA(_VarSelTable, _primVarSelNodes) {}
 TF_MAKE_STATIC_DATA(_VoidTable, _expressionNodes) {}
 
-struct Sdf_PathNodeCompareArbitrarily {
-    // Compare nodes with arbitrary ordering.
-    inline bool operator()(const Sdf_PathNode *node1,
-                           const Sdf_PathNode *node2) const
-    {
-        return node1->Compare<Sdf_PathNode::_FastLessThan>(*node2);
-    }
-};
-
 TF_MAKE_STATIC_DATA(Sdf_PathNodeConstRefPtr, _absoluteRootNode) {
     *_absoluteRootNode = Sdf_RootPathNode::New(true);
     TF_AXIOM((*_absoluteRootNode)->GetCurrentRefCount() == 1);

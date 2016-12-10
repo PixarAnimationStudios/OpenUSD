@@ -25,8 +25,6 @@
 
 #include "pxr/usd/usd/resolver.h"
 
-#include <boost/foreach.hpp>
-
 Usd_InstanceKey::Usd_InstanceKey()
 {
 }

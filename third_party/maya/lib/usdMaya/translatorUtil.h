@@ -74,6 +74,29 @@ struct PxrUsdMayaTranslatorUtil
             MObject& parentNode,
             MStatus* status,
             MObject* mayaNodeObj);
+
+    template<typename T>
+    static bool
+    GetTimeSamples(
+            const T& source,
+            const PxrUsdMayaPrimReaderArgs& args,
+            std::vector<double>* outSamples)
+    {
+        if (args.HasCustomFrameRange()) {
+            std::vector<double> tempSamples;
+            source.GetTimeSamples(&tempSamples);
+            bool didPushSample = false;
+            for (double t : tempSamples) {
+                if (t >= args.GetStartTime() && t <= args.GetEndTime()) {
+                    outSamples->push_back(t);
+                    didPushSample = true;
+                }
+            }
+            return didPushSample;
+        } else {
+            return source.GetTimeSamples(outSamples);
+        }
+    }
 };
 
 

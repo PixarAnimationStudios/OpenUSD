@@ -134,33 +134,68 @@ public:
     /// @}
 
     // --------------------------------------------------------------------- //
-    /// \name Layer-specific Operations
+    /// \name File/asset-specific Operations
     ///
-    /// \see SdfLayer
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Returns the resolved filesystem path for the layer identified
+    /// Returns the resolved filesystem path for the file identified
     /// by \p path following the same path resolution behavior as in
     /// \ref Resolve(const std::string&).
     ///
-    /// If the layer identified by \p path represents an asset and
-    /// \p assetInfo is not \c nullptr, it will be populated with
-    /// additional information about the asset.
+    /// If the file identified by \p path represents an asset and
+    /// \p assetInfo is not \c nullptr, the resolver should populate 
+    /// \p assetInfo with whatever additional metadata it knows or can
+    /// reasonably compute about the asset without actually opening it.
     ///
     /// \see Resolve(const std::string&).
     virtual std::string ResolveWithAssetInfo(
         const std::string& path, 
         ArAssetInfo* assetInfo) = 0;
 
-    /// Update \p assetInfo with respect to the given \p fileVersion
+    /// Update \p assetInfo with respect to the given \p fileVersion .
+    /// \note This API is currently in flux.  In general, you should prefer
+    /// to call ResolveWithAssetInfo()
     virtual void UpdateAssetInfo(
         const std::string& identifier,
         const std::string& filePath,
         const std::string& fileVersion,
         ArAssetInfo* assetInfo) = 0;
 
-    /// Returns true if a layer may be written to the given \p path, false
+    /// Returns a value representing the last time the asset identified
+    /// by \p path was modified. \p resolvedPath is the resolved path
+    /// of the asset.
+    ///
+    /// Implementations may use whatever value is most appropriate
+    /// for this timestamp. The value must be equality comparable, 
+    /// and this function must return a different timestamp whenever 
+    /// an asset has been modified. For instance, if an asset is stored 
+    /// as a file on disk, the timestamp may simply be that file's mtime. 
+    ///
+    /// If a timestamp cannot be retrieved, returns an empty VtValue.
+    virtual VtValue GetModificationTimestamp(
+        const std::string& path,
+        const std::string& resolvedPath) = 0;
+
+    /// Fetch the asset identified by \p path to the filesystem location
+    /// specified by \p resolvedPath. \p resolvedPath is the resolved path
+    /// that results from calling Resolve or ResolveWithAssetInfo on 
+    /// \p path.
+    ///
+    /// This method provides a way for consumers that expect assets 
+    /// to exist as physical files on disk to retrieve data from 
+    /// systems that store data in external data stores, e.g. databases,
+    /// etc. 
+    ///
+    /// Returns true if the asset was successfully fetched to the specified
+    /// \p resolvedPath or if no fetching was required. If \p resolvedPath 
+    /// is not a local path or the asset could not be fetched to that path, 
+    /// returns false.
+    virtual bool FetchToLocalResolvedPath(
+        const std::string& path,
+        const std::string& resolvedPath) = 0;
+
+    /// Returns true if a file may be written to the given \p path, false
     /// otherwise. 
     /// 
     /// If this function returns false and \p whyNot is not \c nullptr,
@@ -169,7 +204,7 @@ public:
         const std::string& path,
         std::string* whyNot) = 0;
 
-    /// Returns true if a new layer may be created using the given
+    /// Returns true if a new file may be created using the given
     /// \p identifier, false otherwise.
     ///
     /// If this function returns false and \p whyNot is not \c nullptr,

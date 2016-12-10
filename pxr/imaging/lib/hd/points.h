@@ -55,7 +55,6 @@ class HdPoints: public HdRprim {
 public:
     HD_MALLOC_TAG_NEW("new HdPoints");
     HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
-             SdfPath const& surfaceShaderId,
              SdfPath const& instancerId = SdfPath());
 
     /// Configure geometric style of drawItems for \p reprName

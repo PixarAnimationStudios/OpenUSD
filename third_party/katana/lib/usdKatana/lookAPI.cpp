@@ -34,9 +34,11 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdKatanaLookAPI,
         TfType::Bases< UsdSchemaBase > >();
     
-    // Register the usd prim typename to associate it with the TfType, under
-    // UsdSchemaBase. This enables one to call TfType::FindByName("LookAPI") to find
-    // TfType<UsdKatanaLookAPI>, which is how IsA queries are answered.
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("LookAPI")
+    // to find TfType<UsdKatanaLookAPI>, which is how IsA queries are
+    // answered.
     TfType::AddAlias<UsdSchemaBase, UsdKatanaLookAPI>("LookAPI");
 }
 

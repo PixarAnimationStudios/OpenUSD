@@ -195,7 +195,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
         return _GetDegradedImageInputChain(
             double(image->GetWidth()) / fullImage->GetWidth(),
             double(image->GetHeight()) / fullImage->GetHeight(), 
-            degradeLevel, numMipLevels);
+            degradeLevel, degradeLevel + 1);
     }
 
     // We actually have an image requiring more memory than targetMemory.
@@ -328,7 +328,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         int sizeAprox = _resizedWidth * _resizedHeight * _bytesPerPixel * scale;
 
         while ((_targetMemory > 0) 
-               && (static_cast<size_t>(sizeAprox) > _targetMemory)) {
+               and (static_cast<size_t>(sizeAprox) > _targetMemory)) {
             _resizedWidth >>= 1;
             _resizedHeight >>= 1;
             sizeAprox = _resizedWidth * _resizedHeight * _bytesPerPixel * scale;
@@ -369,9 +369,11 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         Mip & mip  = _rawBufferMips[i];
         mip.width  = needsResizeOnLoad ? _resizedWidth : image->GetWidth();
         mip.height = needsResizeOnLoad ? _resizedHeight : image->GetHeight();
+        
+        const size_t numPixels = mip.width * mip.height;
         mip.size   = isCompressed ? GlfGetCompressedTextureSize( 
                                      mip.width, mip.height, _glFormat, _glType):
-                                  mip.width * mip.height * _bytesPerPixel;
+                                    numPixels * _bytesPerPixel;
         mip.offset = _size;
         _size += mip.size;
     }

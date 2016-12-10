@@ -55,38 +55,51 @@ public:
     // implement DecoratePayload functions that take an Sdf.Payload and 
     // return a dictionary.
     SdfLayer::FileFormatArguments DecoratePayload(
+        const SdfPath& primIndexPath,
         const SdfPayload& payload,
         const PcpPayloadContext& context)
     {
         SdfLayer::FileFormatArguments args;
-        PcpPayloadDecorator::DecoratePayload(payload, context, &args);
+        PcpPayloadDecorator::DecoratePayload(
+            primIndexPath, payload, context, &args);
         return args;
     }
 
     virtual void _DecoratePayload(
+        const SdfPath& primIndexPath,
         const SdfPayload& payload,
         const PcpPayloadContext& context,
-        SdfLayer::FileFormatArguments* args)
+        SdfLayer::FileFormatArguments* args) final
     {
-        *args = _DecoratePayload(payload, context);
+        *args = _DecoratePayload(primIndexPath, payload, context);
     }
 
     virtual SdfLayer::FileFormatArguments _DecoratePayload(
+        const SdfPath& primIndexPath,
         const SdfPayload& payload,
-        const PcpPayloadContext& context)
+        const PcpPayloadContext& context) final
     {
-        const dict argsDict = 
-            CallPureVirtual<dict>("_DecoratePayload")(payload, context);
+        const dict argsDict = CallPureVirtual<dict>("_DecoratePayload")
+            (primIndexPath, payload, context);
         return _GetArgumentsFromDict(argsDict);
     }
 
     virtual bool _IsFieldRelevantForDecoration(
-        const SdfLayerHandle& layer,
-        const SdfPath& path,
-        const TfToken& field)
+        const TfToken& field) final
     {
-        return CallPureVirtual<bool>("_IsFieldRelevantForDecoration")
-            (layer, path, field);
+        return CallPureVirtual<bool>("_IsFieldRelevantForDecoration")(field);
+    }
+
+    virtual bool _IsFieldChangeRelevantForDecoration(
+        const SdfPath& primIndexPath,
+        const SdfLayerHandle& siteLayer,
+        const SdfPath& sitePath,
+        const TfToken& field,
+        const std::pair<VtValue, VtValue>& oldAndNewValue) final
+    {
+        return CallPureVirtual<bool>("_IsFieldChangeRelevantForDecoration")
+            (primIndexPath, siteLayer, sitePath, field, 
+             oldAndNewValue.first, oldAndNewValue.second);
     }
 
 private:
@@ -120,18 +133,21 @@ wrapPayloadDecorator()
 
         .def("DecoratePayload", 
             (SdfLayer::FileFormatArguments(This::*)
-                (const SdfPayload&, const PcpPayloadContext&))
+                (const SdfPath&, const SdfPayload&, const PcpPayloadContext&))
             &This::DecoratePayload)
 
         .def("IsFieldRelevantForDecoration", 
             &This::IsFieldRelevantForDecoration)
 
+        .def("IsFieldChangeRelevantForDecoration", 
+            &This::IsFieldChangeRelevantForDecoration)
+
         .def("_DecoratePayload", 
             (SdfLayer::FileFormatArguments(PolymorphicThis::*)
-                (const SdfPayload&, const PcpPayloadContext&))
+                (const SdfPath&, const SdfPayload&, const PcpPayloadContext&))
             &PolymorphicThis::_DecoratePayload)
 
-        .def("_IsFieldRelevantForDecoration", 
-            pure_virtual(&PolymorphicThis::_IsFieldRelevantForDecoration))
+        .def("_IsFieldChangeRelevantForDecoration", 
+            pure_virtual(&PolymorphicThis::_IsFieldChangeRelevantForDecoration))
         ;
 }

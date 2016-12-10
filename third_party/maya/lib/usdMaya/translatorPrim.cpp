@@ -23,7 +23,10 @@
 //
 #include "usdMaya/translatorPrim.h"
 
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
+#include "usdMaya/AttributeConverter.h"
+#include "usdMaya/AttributeConverterRegistry.h"
 
 #include "pxr/usd/usdGeom/imageable.h"
 
@@ -51,7 +54,8 @@ PxrUsdMayaTranslatorPrim::Read(
     std::vector<double> visTimeSamples;
     size_t visNumTimeSamples = 0;
     if (args.GetReadAnimData()) {
-        primSchema.GetVisibilityAttr().GetTimeSamples(&visTimeSamples);
+        PxrUsdMayaTranslatorUtil::GetTimeSamples(primSchema.GetVisibilityAttr(),
+                args, &visTimeSamples);
         visNumTimeSamples = visTimeSamples.size();
         if (visNumTimeSamples>0) {
             visTimeSample = visTimeSamples[0];
@@ -100,6 +104,14 @@ PxrUsdMayaTranslatorPrim::Read(
                         animFn.name().asChar(), animObj ); // used for undo/redo
             }
         }
+    }
+    
+    // Set "USD_" attributes to store USD-specific info on the Maya node.
+    // XXX: Handle animation properly in attribute converters.
+    std::vector<const AttributeConverter*> converters =
+            AttributeConverterRegistry::GetAllConverters();
+    for (const AttributeConverter* converter : converters) {
+        converter->UsdToMaya(prim, depFn, UsdTimeCode::EarliestTime());
     }
 
     // XXX What about all the "user attributes" that PrimWriter exports???

@@ -57,6 +57,7 @@ pxr_shared_library(tf
         patternMatcher
         pointerAndBits
         poolAllocator
+        pyAnnotatedBoolResult
         pyArg
         pyCall
         pyClassMethod
@@ -173,6 +174,7 @@ pxr_shared_library(tf
         wrapStopwatch.cpp
         wrapStringUtils.cpp
         wrapTemplateString.cpp
+        wrapTestPyAnnotatedBoolResult.cpp
         wrapTestPyContainerConversions.cpp
         wrapTestPyDateTime.cpp
         wrapTestPyStaticTokens.cpp
@@ -413,12 +415,15 @@ pxr_register_test(TfError
 pxr_register_test(TfErrorThreadTransport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
 )
+
 pxr_register_test(TfDiagnosticNotices
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDiagnosticNotices"
+    CLEAN_OUTPUT "${PROJECT_SOURCE_DIR}/" 
     DIFF_COMPARE output.txt
 )
 pxr_register_test(TfDiagnosticNotice_Fatal
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDiagnosticNotice_Fatal"
+    CLEAN_OUTPUT "${PROJECT_SOURCE_DIR}/"
     EXPECTED_RETURN_CODE 134
     DIFF_COMPARE output_fatal.txt
 )

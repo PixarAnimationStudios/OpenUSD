@@ -70,6 +70,41 @@ SdfVariantSetSpec::New(const SdfPrimSpecHandle& owner, const std::string& name)
     return TfStatic_cast<SdfVariantSetSpecHandle>(layer->GetObjectAtPath(path));
 }
 
+SdfVariantSetSpecHandle 
+SdfVariantSetSpec::New(const SdfVariantSpecHandle& owner,
+                       const std::string& name)
+{
+    TRACE_FUNCTION();
+
+    if (not owner) {
+        TF_CODING_ERROR("NULL owner variant");
+        return TfNullPtr;
+    }
+
+    if (not Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::IsValidName(name)) {
+        TF_CODING_ERROR("Cannot create variant set spec with invalid "
+            "identifier: '%s'", name.c_str());
+        return TfNullPtr;
+    }
+
+    SdfChangeBlock block;
+
+    SdfLayerHandle layer = owner->GetLayer();
+    SdfPath path = owner->GetPath().AppendVariantSelection(name, "");
+
+    if (not path.IsPrimVariantSelectionPath()) {
+        TF_CODING_ERROR("Cannot create variant set spec at invalid "
+            "path <%s{%s=}>", owner->GetPath().GetText(), name.c_str());
+        return TfNullPtr;
+    }
+
+    if (not Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::CreateSpec(
+            layer, path, SdfSpecTypeVariantSet))
+        return TfNullPtr;
+    
+    return TfStatic_cast<SdfVariantSetSpecHandle>(layer->GetObjectAtPath(path));
+}
+
 //
 // Name
 //
@@ -90,11 +125,10 @@ SdfVariantSetSpec::GetNameToken() const
 // Namespace hierarchy
 //
 
-SdfPrimSpecHandle
+SdfSpecHandle
 SdfVariantSetSpec::GetOwner() const
 {
-    return GetLayer()->GetPrimAtPath(
-        GetPath().GetParentPath());
+    return GetLayer()->GetObjectAtPath(GetPath().GetParentPath());
 }
 
 //

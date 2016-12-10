@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/renderPassShader.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -39,6 +40,7 @@ class HdRenderIndex;
 class HdSceneDelegate;
 class GlfSimpleLight;
 
+typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef std::vector<HdRenderPassStateSharedPtr> HdRenderPassStateSharedPtrVector;
@@ -65,7 +67,6 @@ private:
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
     int _collectionVersion;
-    bool _enableShadows;
 
     /// Polygon Offset State
     bool _depthBiasEnable;
@@ -95,7 +96,6 @@ struct HdxShadowTaskParams : public HdTaskParams
         , viewport(0.0)
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
         , lightExcludePaths()
-        , enableShadows(false)
         {}
 
     // RenderPassState
@@ -120,7 +120,6 @@ struct HdxShadowTaskParams : public HdTaskParams
     // Lights/Shadows specific paramenters
     SdfPathVector lightIncludePaths;
     SdfPathVector lightExcludePaths;
-    bool enableShadows;
 };
 
 // VtValue requirements

@@ -25,9 +25,6 @@
 #define TF_TYPE_H
 
 #include "pxr/base/tf/cxxCast.h"
-#include "pxr/base/tf/pyIdentity.h"
-#include "pxr/base/tf/pyLock.h"
-#include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/traits.h"

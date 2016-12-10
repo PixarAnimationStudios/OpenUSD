@@ -19,6 +19,24 @@ global proc string usdTranslatorImport_AppendFromPopup(string $currentOptions, s
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
+global proc string usdTranslatorImport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
+    string $value = `intFieldGrp -q -value1 $widget`;
+    return $currentOptions + ";" + $arg + "=" + $value;
+}
+
+global proc usdTranslatorImport_AnimationCB() {
+    if (`checkBox -q -v readAnimDataCheckBox` == 1) {
+        checkBox -e -vis true customFrameRangeCheckBox;
+        int $vis = (`checkBox -q -v customFrameRangeCheckBox` == 1);
+        intFieldGrp -e -vis $vis startTimeField;
+        intFieldGrp -e -vis $vis endTimeField;
+    } else {
+        checkBox -e -vis false customFrameRangeCheckBox;
+        intFieldGrp -e -vis false startTimeField;
+        intFieldGrp -e -vis false endTimeField;
+    }
+}
+
 global proc int usdTranslatorImport (string $parent,
                                  string $action,
                                  string $initialSettings,
@@ -62,7 +80,13 @@ global proc int usdTranslatorImport (string $parent,
 	        menuItem -l "Look Colors";
 	        menuItem -l "RfM Shaders";
             
-        checkBox -l "Read Animation Data" readAnimDataCheckBox;
+        checkBox -l "Read Animation Data" -cc ("usdTranslatorImport_AnimationCB") readAnimDataCheckBox;
+
+        checkBox -l "Custom Frame Range" -cc ("usdTranslatorImport_AnimationCB") customFrameRangeCheckBox;
+
+        columnLayout -width 100 animOptsCol;
+            intFieldGrp -l "Start Time:" startTimeField;
+            intFieldGrp -l "End Time:" endTimeField;
 
 	    optionMenuGrp -l "Assembly Representation:" assemblyRepPopup;
 	        menuItem -l "Collapsed";
@@ -80,9 +104,16 @@ global proc int usdTranslatorImport (string $parent,
                     optionMenuGrp -e -value $optionBreakDown[1] shadingModePopup;
                 } else if ($optionBreakDown[0] == "readAnimData") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "readAnimDataCheckBox");
-                }
-                if ($optionBreakDown[0] == "assemblyRep") {
+                } else if ($optionBreakDown[0] == "assemblyRep") {
                     optionMenuGrp -e -value $optionBreakDown[1] assemblyRepPopup;
+                } else if ($optionBreakDown[0] == "startTime") {
+                    int $startTime = $optionBreakDown[1];
+                    intFieldGrp -e -v1 $startTime startTimeField;
+                } else if ($optionBreakDown[0] == "endTime") {
+                    int $endTime = $optionBreakDown[1];
+                    intFieldGrp -e -v1 $endTime endTimeField;
+                } else if ($optionBreakDown[0] == "useCustomFrameRange") {
+                    usdTranslatorImport_SetCheckbox($optionBreakDown[1], "customFrameRangeCheckBox");
                 }
             }
         }
@@ -94,7 +125,10 @@ global proc int usdTranslatorImport (string $parent,
         $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "readAnimData", "readAnimDataCheckBox");
         $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "assemblyRep", "assemblyRepPopup");
-                
+        $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
+        $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
+        $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useCustomFrameRange", "customFrameRangeCheckBox");
+
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
 
@@ -102,5 +136,6 @@ global proc int usdTranslatorImport (string $parent,
         $bResult = 0;
     }
 
+    usdTranslatorImport_AnimationCB();
     return $bResult;
 }

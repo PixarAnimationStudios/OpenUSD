@@ -107,7 +107,8 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
     std::vector<double> pointsTimeSamples;
     size_t numTimeSamples = 0;
     if (args.GetReadAnimData()) {
-        usdNurbsPatch.GetPointsAttr().GetTimeSamples(&pointsTimeSamples);
+        PxrUsdMayaTranslatorUtil::GetTimeSamples(usdNurbsPatch.GetPointsAttr(),
+                args, &pointsTimeSamples);
         numTimeSamples = pointsTimeSamples.size();
         if (numTimeSamples>0) {
             pointsTimeSample = pointsTimeSamples[0];

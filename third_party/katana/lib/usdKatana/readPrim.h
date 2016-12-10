@@ -27,6 +27,7 @@
 class PxrUsdKatanaAttrMap;
 class PxrUsdKatanaUsdInPrivateData;
 class UsdPrim;
+class UsdGeomImageable;
 
 /// \brief read \p prim into \p attrs.
 void
@@ -40,6 +41,11 @@ PxrUsdKatanaReadPrimPrmanStatements(
         const UsdPrim& prim,
         double currentTime,
         Foundry::Katana::GroupBuilder& statementBuilder);
+
+Foundry::Katana::Attribute
+PxrUsdKatanaGeomGetPrimvarGroup(
+        const UsdGeomImageable& imageable,
+        const PxrUsdKatanaUsdInPrivateData& data);
 
 #endif // PXRUSDKATANA_REAGPRIM_H
 

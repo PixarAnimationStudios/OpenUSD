@@ -22,5 +22,21 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usd/resolveInfo.h"
+#include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/registryManager.h"
 
-
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceNone,
+                     "No value");
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceFallback,
+                     "Built-in fallback value");
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceDefault,
+                     "Attribute default value");
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceTimeSamples,
+                     "Attribute time samples");
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceValueClips,
+                     "Value clips");
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceIsTimeDependent,
+                     "Source may vary over time");
+}

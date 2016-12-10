@@ -311,7 +311,8 @@ std::string Tf_PyCleanEnumName(std::string name);
 /// TfPyWrapEnum provides a way to wrap enums for python, tying in with the \a
 /// TfEnum system, and potentially providing automatic wrapping by using names
 /// registered with the \a TfEnum system and by making some assumptions about
-/// the way we structure our code.  Enums may be manually wrapped as well.
+/// the way we structure our code.  Enums that are not registered with TfEnum
+/// may be manually wrapped using boost::python::enum_ instead.
 ///
 /// Example usage.  For an enum that looks like this:
 /// \code
@@ -325,17 +326,14 @@ std::string Tf_PyCleanEnumName(std::string name);
 /// Which has been registered in the \a TfEnum system and has names provided for
 /// all values, it may be wrapped like this:
 /// \code
-/// TfPyWrapEnum<FooChoices>().ExportValues();
+/// TfPyWrapEnum<FooChoices>();
 /// \endcode
 ///
 /// The enum will appear in script as Foo.Choices.{First, Second, Third} and
 /// the values will also appear as Foo.{First, Second, Third}.
 ///
 /// An enum may be given an explicit name by passing a string to
-/// TfPyWrapEnum's constructor.  Also, values with explict names may be added
-/// by calling \a AddValue().  You must either add all names explicitly or
-/// none.  If you add none, you must call \a ExportValues for implicit names
-/// to be populated.
+/// TfPyWrapEnum's constructor.
 /// 
 template <typename T>
 struct TfPyWrapEnum {

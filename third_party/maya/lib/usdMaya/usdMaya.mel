@@ -1,6 +1,6 @@
 global proc usdMaya_CreateUsdProxyShape()
 {
-    string $fileName = `fileDialog -mode 0 -dm "*.usd *.usda" -t "Choose a USD File"`;
+    string $fileName = `fileDialog -mode 0 -dm "*.usd *.usda *.usdc" -t "Choose a USD File"`;
     
     string $baseName = capitalizeString(`basenameEx $fileName`);
     if( isValidObjectName($baseName) )
