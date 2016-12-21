@@ -51,7 +51,7 @@ if (WIN32)
 
     find_library(GLEW_LIBRARY
         NAMES
-            glew GLEW glew32s glew32
+            glew GLEW glew32s glew32 glew32sd glew32d
         HINTS
             "${GLEW_LOCATION}/lib"
             "$ENV{GLEW_LOCATION}/lib"
@@ -62,6 +62,12 @@ if (WIN32)
         PATH_SUFFIXES
             Release/${ARCH}
         DOC "The GLEW library")
+
+    if ("${GLEW_LIBRARY}" MATCHES "glew32s(d|)")
+        add_definitions("/DGLEW_STATIC")
+        MESSAGE(STATUS "Glew API: GLEW_STATIC " ${GLEW_LIBRARY})
+    endif()
+
 endif ()
 
 if (${CMAKE_HOST_UNIX})
