@@ -223,10 +223,10 @@ endif()
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 
-if (${PXR_MAYA_API_ONLY} AND NOT ${PXR_MAYA_API_ONLY})
+# Allow Maya plug-in to compiled without having Maya installed
+if (${PXR_MAYA_API_ONLY})
     find_package_handle_standard_args(Maya
         REQUIRED_VARS
-            MAYA_EXECUTABLE
             MAYA_INCLUDE_DIRS
             MAYA_LIBRARIES
         VERSION_VAR
@@ -235,6 +235,7 @@ if (${PXR_MAYA_API_ONLY} AND NOT ${PXR_MAYA_API_ONLY})
 else()
     find_package_handle_standard_args(Maya
         REQUIRED_VARS
+            MAYA_EXECUTABLE
             MAYA_INCLUDE_DIRS
             MAYA_LIBRARIES
         VERSION_VAR
