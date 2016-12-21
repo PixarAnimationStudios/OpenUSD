@@ -23,6 +23,7 @@
 //
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/stackTrace.h"
 
 #include <thread>
