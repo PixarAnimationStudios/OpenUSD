@@ -51,7 +51,7 @@ UsdSchemaExamplesComplex::~UsdSchemaExamplesComplex()
 UsdSchemaExamplesComplex
 UsdSchemaExamplesComplex::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdSchemaExamplesComplex();
     }
@@ -64,7 +64,7 @@ UsdSchemaExamplesComplex::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("ComplexPrim");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdSchemaExamplesComplex();
     }
