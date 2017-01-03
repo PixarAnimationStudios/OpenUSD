@@ -272,7 +272,6 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             instrData.usdToCacheMap[
                 treeIt->GetPath()].push_back(protoPath);
             _ProtoRprim& rproto = instrData.protoRprimMap[protoPath];
-            rproto.path =  treeIt->GetPath();
             rproto.adapter = adapter;
             rproto.prototype = prototype;
 
@@ -280,6 +279,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             for (int i = treeStack.size()-1; i >= 0; i--) {
                 rproto.paths.push_back(treeStack[i]->GetPath());
             }
+
+            // make sure paths is not empty
+            TF_VERIFY(rproto.paths.size() > 0);
 
             // Book keeping, for debugging.
             instantiatedPrimCount++;
@@ -320,8 +322,12 @@ UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
         if (not TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
         }
+        if (not TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return;
+        }
 
-        rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.path), cachePath,
+        rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.paths.back()),
+                                             cachePath,
                                                 requestedBits);
         return;
     } else {
@@ -369,10 +375,15 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
     if (IsChildPath(cachePath)) {
         _ProtoRprim& rproto =
             const_cast<_ProtoRprim&>(_GetProtoRprim(prim.GetPath(), cachePath));
-        if (not TF_VERIFY(rproto.adapter, "%s", cachePath.GetText()))
+        if (not TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
-        if (not TF_VERIFY(rproto.prototype, "%s", cachePath.GetText()))
+        }
+        if (not TF_VERIFY(rproto.prototype, "%s", cachePath.GetText())) {
             return;
+        }
+        if (not TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return;
+        }
 
         // If requested, we will always mark indices dirty and update them
         // lazily.
@@ -388,7 +399,8 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         // XXX: We should never pull purpose directly from the prototype's
         // adapter, since we must compute purpose relative to the model root,
         // however we have no way of communicating that currently.
-        UsdPrim protoPrim = _GetPrim(rproto.path);
+        UsdPrim protoRootPrim = _GetPrim(rproto.prototype->protoRootPath);
+        UsdPrim protoPrim = _GetPrim(rproto.paths.back());
         rproto.adapter->TrackVariability(protoPrim, cachePath,
                                         requestedBits,
                                         &rproto.variabilityBits);
@@ -400,8 +412,8 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
         // Compute the purpose.
         {
-            _ComputeProtoPurpose(_GetPrim(rproto.prototype->protoRootPath),
-                             _GetPrim(rproto.paths.back()),
+            _ComputeProtoPurpose(protoRootPrim,
+                                 protoPrim,
                              &valueCache->GetPurpose(cachePath));
             // We may have hopped across several instance boundaries, we need to
             // walk back up the stack from instance to master until we get back
@@ -418,8 +430,8 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         if (not (rproto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
             // the rprim prototype over all time.
-            _ComputeProtoVisibility(_GetPrim(rproto.prototype->protoRootPath),
-                                    _GetPrim(rproto.paths.back()),
+            _ComputeProtoVisibility(protoRootPrim,
+                                    protoPrim,
                                     time,
                                     &rproto.visible);
             // We may have hopped across several instance boundaries, we need to
@@ -594,8 +606,12 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
         if (not TF_VERIFY(rproto.prototype, "%s", cachePath.GetText())) {
             return;
         }
+        if (not TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return;
+        }
 
-        rproto.adapter->UpdateForTimePrep(_GetPrim(rproto.path), cachePath,
+        rproto.adapter->UpdateForTimePrep(_GetPrim(rproto.paths.back()),
+                                          cachePath,
                                           time, requestedBits);
     } else {
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
@@ -680,10 +696,15 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         // instancerPath : /path/instancerPath
         SdfPath instancerPath = cachePath.GetParentPath();
         _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
-        if (not TF_VERIFY(rproto.adapter, "%s", cachePath.GetText()))
+        if (not TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
-        if (not TF_VERIFY(rproto.prototype, "%s", cachePath.GetText()))
+        }
+        if (not TF_VERIFY(rproto.prototype, "%s", cachePath.GetText())) {
             return;
+        }
+        if (not TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return;
+        }
 
         // At this point we can flip the initialized flag, only
         // _FilterRequestedBits requires it.
@@ -710,7 +731,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
         if (protoReqBits != HdChangeTracker::Clean)
-            rproto.adapter->UpdateForTime(_GetPrim(rproto.path), cachePath,
+            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.back()), cachePath,
                                           time, protoReqBits, resultBits);
 
         // Make sure we always query and return visibility. This is done
@@ -743,7 +764,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 // prim to the model instance root.
                 _ComputeProtoVisibility(
                     _GetPrim(rproto.prototype->protoRootPath), 
-                    _GetPrim(rproto.path), 
+                    _GetPrim(rproto.paths.back()), 
                     time,
                     &vis); 
             }
@@ -922,7 +943,11 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
         if (not TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return HdChangeTracker::AllDirty;
         }
-        return rproto.adapter->ProcessPropertyChange(_GetPrim(rproto.path), 
+        if (not TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return HdChangeTracker::AllDirty;
+        }
+        return rproto.adapter->ProcessPropertyChange(
+            _GetPrim(rproto.paths.back()),
                                                    cachePath, propertyName);
     }
 

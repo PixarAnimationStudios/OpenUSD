@@ -123,9 +123,7 @@ public:
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
 
 private:
-
     struct _ProtoRprim;
-    struct _ProtoGroup;
     struct _InstancerData;
 
     SdfPath _Populate(UsdPrim const& prim,
@@ -206,7 +204,7 @@ private:
     // path declared on the instancer;
     struct _Prototype {
         // The enabled flag is used to disable all rprims associated with a
-        // protoGroup; it marks them as invisible and disables data updates.
+        // prototype; it marks them as invisible and disables data updates.
         bool enabled;
         // When requiresUpdate is false and enabled is true, it indicates that
         // the rprim was drawn for a previous frame with the newly desired time;
@@ -228,13 +226,9 @@ private:
     // represented as a proto rprim.
     struct _ProtoRprim {
         _ProtoRprim() : variabilityBits(0), visible(true), initialized(false) {}
-        // Each rprim will become a prototype "child" under the instancer. This
-        // path is the path to the gprim on the Usd Stage (the path to a single
-        // mesh, for example).
-        SdfPath path;           
-        // A list of paths we had to hop across when resolving native USD 
-        // instances. TODO: We should probably remove the path member in favor
-        // of just using this vector.
+        // Each rprim will become a prototype "child" under the instancer.
+        // paths is a list of paths we had to hop across when resolving native
+        // USD instances.
         SdfPathVector paths;
         // The prim adapter for the actual prototype gprim.
         UsdImagingPrimAdapterSharedPtr adapter;
