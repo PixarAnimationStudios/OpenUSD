@@ -599,16 +599,16 @@ bool
 UsdGeomPrimvar::ComputeFlattened(VtArray<ScalarType> *value, UsdTimeCode time) const
 {
     VtArray<ScalarType> authored;
-    if (not Get(&authored, time))
+    if (!Get(&authored, time))
         return false;
 
-    if (not IsIndexed()) {
+    if (!IsIndexed()) {
         *value = authored;
         return true;
     }
 
     VtIntArray indices;
-    if (not GetIndices(&indices, time)) {
+    if (!GetIndices(&indices, time)) {
         TF_WARN("No indices authored for indexed primvar <%s>.", 
                 _attr.GetPath().GetText());
         return false;
@@ -632,7 +632,7 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
     bool success = true;
     for(size_t i=0; i < indices.size(); i++) {
         int index = indices[i];
-        if (index >= 0 and index < authored.size()) {
+        if (index >= 0 && index < authored.size()) {
             (*value)[i] = authored[index];
         } else {
             TF_WARN("Index %d is out of range [0,%ld)", index, 

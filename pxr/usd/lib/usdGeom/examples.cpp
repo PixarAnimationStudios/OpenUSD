@@ -61,7 +61,7 @@ bool CreateAnimatedTransform(UsdGeomXformable const &gprim,
                              GfVec3f const &defPivot)
 {
     // Only need to do this if you're overriding an existing scene
-    if (not gprim.ClearXformOpOrder()){
+    if (!gprim.ClearXformOpOrder()){
         return false;
     }
     

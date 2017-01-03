@@ -370,14 +370,14 @@ static boost::optional<T> _GetValue(const UsdPrim &prim,
                                     const UsdTimeCode &time)
 {
     const UsdAttribute attr = prim.GetAttribute(name);
-    if (not attr) {
+    if (!attr) {
         TF_WARN("%s attribute on prim %s missing.",
                 name.GetText(), prim.GetPath().GetText());
         return boost::none;
     }
     
     T value;
-    if (not attr.Get(&value, time)) {
+    if (!attr.Get(&value, time)) {
         TF_WARN("Failed to extract value from attribute %s at <%s>.",
                 name.GetText(), attr.GetPath().GetText());
         return boost::none;

@@ -187,7 +187,7 @@ UsdGeomCurves::ComputeExtent(const VtVec3fArray& points,
     float maxWidth = (widths.size() > 0 ? 
         *(std::max_element(widths.begin(), widths.end())) : 0);
     
-    if (not UsdGeomPointBased::ComputeExtent(points, extent)) { 
+    if (!UsdGeomPointBased::ComputeExtent(points, extent)) { 
         return false;
     }
  

@@ -90,7 +90,7 @@ UsdGeomModelAPI::GetExtentsHint(VtVec3fArray *extents,
     UsdAttribute extentsHintAttr = 
         GetPrim().GetAttribute(UsdGeomTokens->extentsHint);
     
-    if (not extentsHintAttr)
+    if (!extentsHintAttr)
         return false;
 
     return extentsHintAttr.Get(extents, time);
@@ -100,7 +100,7 @@ bool
 UsdGeomModelAPI::SetExtentsHint(VtVec3fArray const &extents, 
                              const UsdTimeCode &time)
 {
-    if (not TF_VERIFY(extents.size() >= 2 and 
+    if (!TF_VERIFY(extents.size() >= 2 &&
                       extents.size() <= (2 *
                       UsdGeomImageable::GetOrderedPurposeTokens().size())))
         return false;
@@ -110,7 +110,7 @@ UsdGeomModelAPI::SetExtentsHint(VtVec3fArray const &extents,
                                   SdfValueTypeNames->Float3Array,
                                   /* custom = */ false);
 
-    if (not extentsHintAttr)
+    if (!extentsHintAttr)
         return false;
 
     VtVec3fArray currentExtentsHint;
@@ -154,7 +154,7 @@ UsdGeomModelAPI::ComputeExtentsHint(
 
         const GfRange3d range = bbox.ComputeAlignedBox();
 
-        if (not range.IsEmpty() and lastNonEmptyBbox == std::numeric_limits<size_t>::max())
+        if (!range.IsEmpty() && lastNonEmptyBbox == std::numeric_limits<size_t>::max())
             lastNonEmptyBbox = bboxType;
         
         const GfVec3d &min = range.GetMin();
@@ -195,7 +195,7 @@ UsdGeomModelAPI::CreateConstraintTarget(
 
     // Check if the constraint target attribute already exists.
     UsdAttribute constraintAttr = GetPrim().GetAttribute(constraintAttrName);
-    if (not constraintAttr) {
+    if (!constraintAttr) {
         // Create the attribute, if it doesn't exist.
         constraintAttr = GetPrim().CreateAttribute(constraintAttrName, 
             SdfValueTypeNames->Matrix4d, 

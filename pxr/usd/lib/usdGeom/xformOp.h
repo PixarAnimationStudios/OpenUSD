@@ -249,7 +249,7 @@ public:
     template <typename T>
     bool GetAs(T* value, UsdTimeCode time) const {
         VtValue v;
-        if (not Get(&v, time)) {
+        if (!Get(&v, time)) {
             return false;
         }
         v.Cast<T>();

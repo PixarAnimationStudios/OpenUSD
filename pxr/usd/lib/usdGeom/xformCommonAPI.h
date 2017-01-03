@@ -255,22 +255,22 @@ private:
 
     // Convenience functions 
     bool _HasTranslateOp() const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _translateOpIndex != _InvalidIndex;
     }
 
     bool _HasRotateOp() const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _rotateOpIndex != _InvalidIndex;
     }
     
     bool _HasScaleOp() const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _scaleOpIndex != _InvalidIndex;
     }
 
     bool _HasPivotOp () const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _pivotOpIndex != _InvalidIndex;
     }
 

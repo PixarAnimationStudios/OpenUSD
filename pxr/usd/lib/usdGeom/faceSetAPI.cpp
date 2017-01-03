@@ -49,7 +49,7 @@ UsdGeomFaceSetAPI::~UsdGeomFaceSetAPI()
 bool
 UsdGeomFaceSetAPI::_IsCompatible(const UsdPrim &prim) const
 {
-    return GetPrim() and _GetIsPartitionAttr();
+    return GetPrim() && _GetIsPartitionAttr();
 }
 
 /* static */
@@ -230,13 +230,13 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
     bool hasBinding = GetBindingTargets(&bindings);
 
     UsdAttribute faceIndicesAttr = _GetFaceIndicesAttr();
-    if (not faceIndicesAttr) {
+    if (!faceIndicesAttr) {
         *reason += "Could not get the faceIndices attribute.\n";
         return false;
     }
 
     UsdAttribute faceCountsAttr = _GetFaceCountsAttr();
-    if (not faceCountsAttr) {
+    if (!faceCountsAttr) {
         *reason += "Could not get the faceCounts attribute.\n";
         return true;
     }
@@ -247,7 +247,7 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
 
     VtIntArray defaultFaceIndices, defaultFaceCounts;    
     // Check if faceIndices or faceCounts is authored at time=default.
-    if (faceIndicesAttr.Get(&defaultFaceIndices) or 
+    if (faceIndicesAttr.Get(&defaultFaceIndices) ||
         faceCountsAttr.Get(&defaultFaceCounts)) {
         allTimes.push_back(UsdTimeCode::Default());
     }
@@ -273,7 +273,7 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
 
         VtIntArray faceIndices;
         if (GetFaceIndices(&faceIndices, time)) {
-            if (isPartition and _ContainsDuplicates(faceIndices)) {
+            if (isPartition && _ContainsDuplicates(faceIndices)) {
                 isValid = false;
                 if (reason) {
                     *reason += TfStringPrintf("isPartition is true, "
@@ -284,7 +284,7 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
         }
 
         VtIntArray faceCounts;
-        if (not GetFaceCounts(&faceCounts, time)) {           
+        if (!GetFaceCounts(&faceCounts, time)) {           
             isValid = false;
             if (reason) {
                 *reason += TfStringPrintf("Could not get faceCounts at "
@@ -293,7 +293,7 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
             }
         } else {
 
-            if (prevNumFaceCounts != -1 and 
+            if (prevNumFaceCounts != -1 && 
                 faceCounts.size() != static_cast<size_t>(prevNumFaceCounts)) 
             {
                 isValid = false;
@@ -319,7 +319,7 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
             }
 
             if (hasBinding) {
-                if (not bindings.empty() and 
+                if (!bindings.empty() && 
                     faceCounts.size() != bindings.size()) 
                 {
                     isValid = false;
@@ -360,7 +360,7 @@ UsdGeomFaceSetAPI::GetFaceCounts(VtIntArray *faceCounts,
                                  const UsdTimeCode &time) const
 {
     UsdAttribute attr = _GetFaceCountsAttr();
-    return attr and attr.Get(faceCounts, time);
+    return attr && attr.Get(faceCounts, time);
 }
 
 bool 
@@ -390,7 +390,7 @@ bool
 UsdGeomFaceSetAPI::GetBindingTargets(SdfPathVector *bindings) const
 {
     UsdRelationship rel = _GetBindingTargetsRel();
-    return rel and rel.GetForwardedTargets(bindings);
+    return rel && rel.GetForwardedTargets(bindings);
 }
 
 bool 
@@ -418,7 +418,7 @@ UsdGeomFaceSetAPI::AppendFaceGroup(const VtIntArray &indices,
         if (faceCountsAttr.GetBracketingTimeSamples(time.GetValue(), 
             &lower, &upper, &hasTimeSamples)) 
         {
-            hasFaceGroupsAtTime = (lower==upper and lower==time.GetValue());
+            hasFaceGroupsAtTime = (lower==upper && lower==time.GetValue());
         }
     }
 
@@ -437,24 +437,24 @@ UsdGeomFaceSetAPI::AppendFaceGroup(const VtIntArray &indices,
     bool success = true;
     SdfPathVector bindingTargets;
     GetBindingTargets(&bindingTargets);
-    if (bindingTarget.IsEmpty() and not bindingTargets.empty()) {
+    if (bindingTarget.IsEmpty() && !bindingTargets.empty()) {
         TF_CODING_ERROR("No binding target was provided for a face group being "
                         "added to a face set ('%s') containing existing binding"
                         " targets.", _setName.GetText());
         success = false;
-    } else if (not bindingTarget.IsEmpty() and 
-        bindingTargets.empty() and 
+    } else if (!bindingTarget.IsEmpty() && 
+        bindingTargets.empty() && 
         faceCounts.size() > 1) 
     {
         TF_CODING_ERROR("Non-empty binding target was provided for a face group"
                         " being added to a non-empty face set ('%s') containing"
                         " no binding targets.", _setName.GetText());
         success = false;
-    } else if (not bindingTarget.IsEmpty()) {
+    } else if (!bindingTarget.IsEmpty()) {
         bindingTargets.push_back(bindingTarget);
         success &= SetBindingTargets(bindingTargets);
     }
 
-    return success and SetFaceCounts(faceCounts, time) and
+    return success && SetFaceCounts(faceCounts, time) && 
            SetFaceIndices(faceIndices, time);
 }

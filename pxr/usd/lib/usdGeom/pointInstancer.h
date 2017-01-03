@@ -719,12 +719,12 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
                                         VtArray<T> *dataArray,
                                         const int elementSize)
 {
-    if (not dataArray){
+    if (!dataArray){
         TF_CODING_ERROR("NULL dataArray.");
         return false;
     }
     size_t size = mask.size();
-    if (size == 0 or dataArray->size() == elementSize){
+    if (size == 0 || dataArray->size() == elementSize){
         return true;
     }
     else if ((size * elementSize) != dataArray->size()){

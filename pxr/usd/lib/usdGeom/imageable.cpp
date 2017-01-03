@@ -177,7 +177,7 @@ UsdGeomImageable::CreatePrimvar(const TfToken& attrName,
     UsdGeomPrimvar primvar(prim, attrName, typeName, custom);
 
     if (primvar){
-        if (not interpolation.IsEmpty())
+        if (!interpolation.IsEmpty())
             primvar.SetInterpolation(interpolation);
         if (elementSize > 0)
             primvar.SetElementSize(elementSize);
@@ -331,7 +331,7 @@ _MakeVisible(const UsdPrim &prim, UsdTimeCode const &time, bool *hasInvisibleAnc
         if (UsdGeomImageable imageableParent = UsdGeomImageable(parent)) {
 
             // Change visibility of parent to inherited if it is invisible.
-            if (*hasInvisibleAncestor or 
+            if (*hasInvisibleAncestor ||
                 _SetInheritedIfInvisible(imageableParent, time))  {
 
                 *hasInvisibleAncestor = true;
@@ -367,7 +367,7 @@ UsdGeomImageable::MakeInvisible(const UsdTimeCode &time) const
 {
     UsdAttribute visAttr = CreateVisibilityAttr();
     TfToken myVis;
-    if (not visAttr.Get(&myVis, time) or myVis != UsdGeomTokens->invisible) {
+    if (!visAttr.Get(&myVis, time) || myVis != UsdGeomTokens->invisible) {
         visAttr.Set(UsdGeomTokens->invisible, time);
     }
 }
@@ -446,10 +446,10 @@ _MakePurposeVector(TfToken const &purpose1,
 {
     TfTokenVector purposes;
     
-    if (not purpose1.IsEmpty()) purposes.push_back(purpose1);
-    if (not purpose2.IsEmpty()) purposes.push_back(purpose2);
-    if (not purpose3.IsEmpty()) purposes.push_back(purpose3);
-    if (not purpose4.IsEmpty()) purposes.push_back(purpose4);
+    if (!purpose1.IsEmpty()) purposes.push_back(purpose1);
+    if (!purpose2.IsEmpty()) purposes.push_back(purpose2);
+    if (!purpose3.IsEmpty()) purposes.push_back(purpose3);
+    if (!purpose4.IsEmpty()) purposes.push_back(purpose4);
 
     return purposes;
 }

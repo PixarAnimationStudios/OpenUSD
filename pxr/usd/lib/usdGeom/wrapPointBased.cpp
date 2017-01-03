@@ -146,7 +146,7 @@ _ComputeExtent(object points) {
         SdfValueTypeNames->Float3Array);
 
     // Check for proper conversion to VtVec3fArray
-    if (not pointsAsVtValue.IsHolding<VtVec3fArray>()) {
+    if (!pointsAsVtValue.IsHolding<VtVec3fArray>()) {
         TF_CODING_ERROR("Improper value for 'points'");
         return object();
     }

@@ -47,7 +47,7 @@ UsdGeomCollectionAPI::~UsdGeomCollectionAPI()
 bool
 UsdGeomCollectionAPI::_IsCompatible(const UsdPrim &prim) const
 {
-    return GetPrim() and _GetTargetsRel();
+    return GetPrim() && _GetTargetsRel();
 }
 
 UsdRelationship 
@@ -110,7 +110,7 @@ UsdGeomCollectionAPI::GetTargets(SdfPathVector *targets,
                                  bool forwardToObjectsInMasters) const
 {
     UsdRelationship rel = _GetTargetsRel();
-    return rel and rel.GetTargets(targets, forwardToObjectsInMasters);
+    return rel && rel.GetTargets(targets, forwardToObjectsInMasters);
 }
 
 bool 
@@ -169,7 +169,7 @@ UsdGeomCollectionAPI::AppendTarget(
         if (targetFaceCountsAttr.GetBracketingTimeSamples(time.GetValue(),
             &lower, &upper, &hasTimeSamples)) 
         {
-            hasFaceCountsAtTime = (lower==upper and lower==time.GetValue());
+            hasFaceCountsAtTime = (lower==upper && lower==time.GetValue());
         }
     }
 
@@ -184,7 +184,7 @@ UsdGeomCollectionAPI::AppendTarget(
 
     // If there are no existing face restrictions and no face-restriction is 
     // specified on the current target, simly add the target and return.
-    if (targetFaceCounts.empty() and targetFaceIndices.empty() and 
+    if (targetFaceCounts.empty() && targetFaceIndices.empty() &&
         faceIndices.empty()) 
     {
         // We can simply add the target here to the relationship here since 
@@ -192,14 +192,14 @@ UsdGeomCollectionAPI::AppendTarget(
         return CreateTargetsRel().AddTarget(target);
     }
 
-    if (targetFaceCounts.empty() and not targetFaceIndices.empty()) {
+    if (targetFaceCounts.empty() && !targetFaceIndices.empty()) {
         TF_CODING_ERROR("targetFaceCounts is empty, but targetFaceIndices "
             "is not, for the collection '%s' belonging to prim <%s>.",
             _name.GetText(), GetPath().GetText());
         return false;
     }
 
-    if (targetFaceCounts.empty() and not faceIndices.empty()) {
+    if (targetFaceCounts.empty() && !faceIndices.empty()) {
         for (size_t i = 0 ; i < targets.size(); i++)
             targetFaceCounts.push_back(0);
     }
@@ -214,8 +214,8 @@ UsdGeomCollectionAPI::AppendTarget(
     // We can't simply add the target here to the relationship since we 
     // have companion non-list-edited integer arrays. We must keep them in
     // sync irrespective of what may change in weaker layers.
-    return SetTargets(targets) and SetTargetFaceCounts(targetFaceCounts, time) 
-        and SetTargetFaceIndices(targetFaceIndices, time);
+    return SetTargets(targets) && SetTargetFaceCounts(targetFaceCounts, time) 
+        && SetTargetFaceIndices(targetFaceIndices, time);
 }
 
 UsdAttribute 
@@ -285,10 +285,10 @@ UsdGeomCollectionAPI::Create(
     // If the collection relationship does not exist or 
     // if the set of targets is not empty, then call SetTargets to create
     // the collection and set the specified targets.
-    if (not collection.GetTargetsRel() or not targets.empty())
+    if (!collection.GetTargetsRel() || !targets.empty())
         collection.SetTargets(targets);
 
-    if (not targetFaceCounts.empty() or not targetFaceIndices.empty()) {
+    if (!targetFaceCounts.empty() || !targetFaceIndices.empty()) {
         collection.SetTargetFaceCounts(targetFaceCounts);
         collection.SetTargetFaceIndices(targetFaceIndices);
     }
@@ -318,7 +318,7 @@ UsdGeomCollectionAPI::GetCollections(const UsdPrim &prim)
     TF_FOR_ALL(propIt, collectionProperties) {
         const UsdProperty &prop = *propIt;
 
-        if (not prop.Is<UsdRelationship>())
+        if (!prop.Is<UsdRelationship>())
             continue;
 
         vector<string> nameTokens = prop.SplitName();
@@ -348,7 +348,7 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
     SdfPathVector targets;
     const bool hasTargets = GetTargets(&targets);
 
-    if (not hasTargets) {
+    if (!hasTargets) {
         *reason += "Could not get targets.\n";
         return false;
     }
@@ -359,16 +359,16 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
     const bool hasTargetFaceIndices = 
         GetTargetFaceIndices(&targetFaceCounts, UsdTimeCode(0.0));
 
-    if (hasTargetFaceCounts xor hasTargetFaceIndices) {
+    if (hasTargetFaceCounts ^ hasTargetFaceIndices) {
         *reason += "collection has only one of targetFaceCounts and "
             "targetFaceIndices authored. It should have both or neither.\n";
         return false;
     }
     
     bool isValid = true;
-    if (hasTargets and targets.empty()) {
+    if (hasTargets && targets.empty()) {
         // Make sure that targetFaceCounts and targetFaceIndices are empty too.
-        if (not targetFaceCounts.empty() or not targetFaceIndices.empty()) {
+        if (!targetFaceCounts.empty() || !targetFaceIndices.empty()) {
             isValid = false;
             *reason += "Collection has empty targets, but non-empty "
                 "targetFaceCounts or targetFaceIndices.\n";
@@ -381,18 +381,18 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
     const UsdAttribute targetFaceCountsAttr = GetTargetFaceCountsAttr();
     const UsdAttribute targetFaceIndicesAttr = GetTargetFaceIndicesAttr();
 
-    if (not targetFaceCountsAttr and not targetFaceIndicesAttr) {
+    if (!targetFaceCountsAttr && !targetFaceIndicesAttr) {
         return true;
     } 
 
-    TF_VERIFY(not ((bool)targetFaceCountsAttr xor (bool)targetFaceIndicesAttr));
+    TF_VERIFY(!((bool)targetFaceCountsAttr ^ (bool)targetFaceIndicesAttr));
 
     // The list of all timeSamples at which the collection attributes are 
     // authored.
     vector<UsdTimeCode> allTimes;
 
     VtIntArray defaultTargetFaceCounts, defaultTargetFaceIndices;
-    if (targetFaceCountsAttr.Get(&defaultTargetFaceCounts, UsdTimeCode::Default()) or 
+    if (targetFaceCountsAttr.Get(&defaultTargetFaceCounts, UsdTimeCode::Default()) ||
         targetFaceIndicesAttr.Get(&defaultTargetFaceIndices, UsdTimeCode::Default())) 
     {
         allTimes.push_back(UsdTimeCode::Default());
@@ -415,8 +415,8 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
         const UsdTimeCode &time = *timeIt;
 
         VtIntArray faceCounts, faceIndices;
-        if (not GetTargetFaceCounts(&faceCounts, time) or 
-            not GetTargetFaceIndices(&faceIndices, time)) {
+        if (!GetTargetFaceCounts(&faceCounts, time) ||
+            !GetTargetFaceIndices(&faceIndices, time)) {
             *reason += TfStringPrintf("Unable to get targetFaceCounts or "
                 "targetFaceIndices at time %s.", _Stringify(time).c_str());
             isValid = false;

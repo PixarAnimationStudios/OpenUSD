@@ -56,8 +56,8 @@ TfToken
 _GetUpAxisFromZUp(const UsdStageWeakPtr &stage)
 {
     TF_FOR_ALL(prim, stage->GetPseudoRoot().
-                            GetFilteredChildren(UsdPrimIsDefined and
-                                                not UsdPrimIsAbstract)){
+                            GetFilteredChildren(UsdPrimIsDefined &&
+                                                !UsdPrimIsAbstract)){
         VtValue isZup = prim->GetCustomDataByKey(_tokens->zUp);
         if (isZup.IsEmpty()){
             continue;
@@ -80,7 +80,7 @@ _GetUpAxisFromZUp(const UsdStageWeakPtr &stage)
 TfToken 
 UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
 {
-    if (not TF_VERIFY(stage)){
+    if (!TF_VERIFY(stage)){
         return TfToken();
     }
 
@@ -95,7 +95,7 @@ UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
 
     if (TfGetEnvSetting(USD_READ_ZUP_FOR_UP_AXIS)){
         TfToken upAxis = _GetUpAxisFromZUp(stage);
-        if (not upAxis.IsEmpty())
+        if (!upAxis.IsEmpty())
             return upAxis;
     }
     
@@ -105,10 +105,10 @@ UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
 bool 
 UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis)
 {
-    if (not TF_VERIFY(stage)){
+    if (!TF_VERIFY(stage)){
         return false;
     }
-    if (axis != UsdGeomTokens->y and axis != UsdGeomTokens->z){
+    if (axis != UsdGeomTokens->y && axis != UsdGeomTokens->z){
         TF_CODING_ERROR("UsdStage upAxis can only be set to \"Y\" or \"Z\", "
                         "not attempted \"%s\" on stage %s.",
                         axis.GetText(),
@@ -133,7 +133,7 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
         JsObject metadata = plug->GetMetadata();
         JsValue metricsDictValue;
         if (TfMapLookup(metadata, _tokens->UsdGeomMetrics, &metricsDictValue)){
-            if (not metricsDictValue.Is<JsObject>()) {
+            if (!metricsDictValue.Is<JsObject>()) {
                 TF_CODING_ERROR(
                         "%s[%s] was not a dictionary in plugInfo.json file.",
                         plug->GetName().c_str(), 
@@ -147,7 +147,7 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
             if (TfMapLookup(metricsDict, 
                             UsdGeomTokens->upAxis,
                             &upAxisValue)) {
-                if (not upAxisValue.Is<std::string>()) {
+                if (!upAxisValue.Is<std::string>()) {
                     TF_CODING_ERROR(
                         "%s[%s][%s] was not a string.",
                         plug->GetName().c_str(),
@@ -173,7 +173,7 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
                     continue;
                 }
                 
-                if (not upAxis.IsEmpty() and upAxis != axisToken) {
+                if (!upAxis.IsEmpty() && upAxis != axisToken) {
                     TF_CODING_ERROR("Plugins %s and %s provided different"
                                     " fallback values for %s.  Ignoring all"
                                     " plugins and using schema fallback of"

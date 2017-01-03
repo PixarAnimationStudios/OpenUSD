@@ -136,12 +136,12 @@ _ComputeExtent(object points, object widths) {
         SdfValueTypeNames->FloatArray);
 
     // Check Proper conversion to VtVec3fArray
-    if (not pointsAsVtValue.IsHolding<VtVec3fArray>()) {
+    if (!pointsAsVtValue.IsHolding<VtVec3fArray>()) {
         TF_CODING_ERROR("Improper value for 'points'");
         return object();
     }
 
-    if (not widthsAsVtValue.IsHolding<VtFloatArray>()) {
+    if (!widthsAsVtValue.IsHolding<VtFloatArray>()) {
         TF_CODING_ERROR("Improper value for 'widths'");
         return object();
     }

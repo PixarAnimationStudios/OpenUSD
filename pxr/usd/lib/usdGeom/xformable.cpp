@@ -151,7 +151,7 @@ UsdGeomXformable::_GetXformOpOrderValue(
     bool *hasAuthoredValue) const
 {
     UsdAttribute xformOpOrderAttr = GetXformOpOrderAttr();
-    if (not xformOpOrderAttr)
+    if (!xformOpOrderAttr)
         return false;
 
     if (hasAuthoredValue)
@@ -375,7 +375,7 @@ bool
 UsdGeomXformable::GetResetXformStack() const
 {
     VtTokenArray opOrderVec;
-    if (not _GetXformOpOrderValue(&opOrderVec))
+    if (!_GetXformOpOrderValue(&opOrderVec))
         return false;
 
     return _XformOpOrderHasResetXformStack(opOrderVec);
@@ -428,11 +428,11 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
 
     bool xformOpOrderIsAuthored = false;
     VtTokenArray opOrderVec;
-    if (not _GetXformOpOrderValue(&opOrderVec, &xformOpOrderIsAuthored)) {
+    if (!_GetXformOpOrderValue(&opOrderVec, &xformOpOrderIsAuthored)) {
         return result;
     }
 
-    if (not xformOpOrderIsAuthored and 
+    if (!xformOpOrderIsAuthored && 
         TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) 
     {
         // If a transform attribute exists, wrap it in a UsdGeomXformOp and 
@@ -497,7 +497,7 @@ UsdGeomXformable::XformQuery::XformQuery(const UsdGeomXformable &xformable):
     vector<UsdGeomXformOp> orderedXformOps = 
         xformable.GetOrderedXformOps(&_resetsXformStack);
 
-    if (not orderedXformOps.empty()) {
+    if (!orderedXformOps.empty()) {
         _xformOps = orderedXformOps;
 
         // Create attribute queries for all the xform ops.
@@ -538,7 +538,7 @@ bool
 UsdGeomXformable::TransformMightBeTimeVarying() const
 {
     VtTokenArray opOrderVec;
-    if (not _GetXformOpOrderValue(&opOrderVec))
+    if (!_GetXformOpOrderValue(&opOrderVec))
         return false;
 
     if (opOrderVec.size() == 0) {
@@ -567,7 +567,7 @@ UsdGeomXformable::TransformMightBeTimeVarying() const
                     GetPrim(), opName, &isInverseOp)) {
                 // Only check valid xform ops for time-varyingness.
                 UsdGeomXformOp op(attr, isInverseOp);
-                if (op and op.MightBeTimeVarying()) {
+                if (op && op.MightBeTimeVarying()) {
                     return true;
                 }
             }
@@ -580,7 +580,7 @@ bool
 UsdGeomXformable::TransformMightBeTimeVarying(
     const vector<UsdGeomXformOp> &ops) const
 {
-    if (not ops.empty())
+    if (!ops.empty())
         return _TransformMightBeTimeVarying(ops);
 
     // Assume unvarying if neither orderedXformOps nor transform attribute is 
@@ -620,7 +620,7 @@ UsdGeomXformable::GetTimeSamples(vector<double> *times) const
         &resetsXformStack);
 
     // XXX: backwards compatibility
-    if (orderedXformOps.empty() and 
+    if (orderedXformOps.empty() && 
         TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
                 
         if (UsdAttribute transformAttr = _GetTransformAttr())
@@ -648,7 +648,7 @@ _AreInverseXformOps(const UsdGeomXformOp &a, const UsdGeomXformOp &b)
 {
     // The two given ops are inverses of each other if they have the same 
     // underlying attribute and only if one of them is an inverseOp.
-    return a.GetAttr() == b.GetAttr() and 
+    return a.GetAttr() == b.GetAttr() &&
            a.IsInverseOp() != b.IsInverseOp();
 }
 
@@ -657,7 +657,7 @@ static bool
 _AreInverseXformOps(const TfToken &a, const TfToken &b)
 {
     return _tokens->invertPrefix.GetString() + a.GetString() == b.GetString() 
-        or _tokens->invertPrefix.GetString() + b.GetString() == a.GetString();
+        || _tokens->invertPrefix.GetString() + b.GetString() == a.GetString();
 }
 
 bool 
@@ -671,7 +671,7 @@ UsdGeomXformable::GetLocalTransformation(
     static const GfMatrix4d identity(1.0);
  
     VtTokenArray opOrderVec;
-    if (not _GetXformOpOrderValue(&opOrderVec))
+    if (!_GetXformOpOrderValue(&opOrderVec))
         return false;
 
     if (opOrderVec.size() == 0) {
@@ -805,9 +805,9 @@ bool
 UsdGeomXformable::IsTransformationAffectedByAttrNamed(const TfToken &attrName)
 {
     // XXX: backwards compatibility
-    return (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM) and 
-            attrName == _tokens->transform) or
-           attrName == UsdGeomTokens->xformOpOrder or
+    return (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM) && 
+            attrName == _tokens->transform)        ||
+           attrName == UsdGeomTokens->xformOpOrder ||
            UsdGeomXformOp::IsXformOp(attrName);
 }
 
