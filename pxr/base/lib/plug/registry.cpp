@@ -125,7 +125,7 @@ PlugPluginPtrVector
 PlugRegistry::RegisterPlugins(const std::vector<std::string> & pathsToPlugInfo)
 {
     PlugPluginPtrVector result = _RegisterPlugins(pathsToPlugInfo);
-    if (not result.empty()) {
+    if (!result.empty()) {
         PlugNotice::DidRegisterPlugins(result).Send(TfCreateWeakPtr(this));
     }
     return result;
@@ -152,7 +152,7 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo)
                           _dispatcher.get());
     }
 
-    if (not newPlugins.empty()) {
+    if (!newPlugins.empty()) {
         PlugPluginPtrVector v(newPlugins.begin(), newPlugins.end());
         for (const auto& plug : v) {
             plug->_DeclareTypes();
@@ -271,7 +271,7 @@ PlugPlugin::_RegisterAllPlugins()
 
     // Send a notice outside of the call_once.  We don't want to be holding
     // a lock (even an implicit one) when sending a notice.
-    if (not result.empty()) {
+    if (!result.empty()) {
         PlugNotice::DidRegisterPlugins(result).Send(
             TfCreateWeakPtr(&PlugRegistry::GetInstance()));
     }

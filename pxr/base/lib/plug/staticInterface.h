@@ -164,7 +164,7 @@ public:
     /// \c true otherwise.
     bool operator!() const
     {
-        return not *this;
+        return !*this;
     }
 
     /// Returns the interface pointer, loading the plugin if necessary.
@@ -193,7 +193,7 @@ private:
     Interface* _GetPtr() const
     {
         // XXX: Broken double-checked locking.
-        if (not _initialized) {
+        if (!_initialized) {
             _LoadAndInstantiate(typeid(Interface));
         }
 

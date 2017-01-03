@@ -51,7 +51,7 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
     // regisered, but that won't happen until the plugin is loaded.
     const TfType &tfType =
         TfType::FindByName(TfType::GetCanonicalTypeName(type));
-    if (not tfType) {
+    if (!tfType) {
         TF_CODING_ERROR("Failed to load plugin interface: "
                         "Can't find type %s", type.name());
         return;
@@ -65,7 +65,7 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
 
     // Get the plugin with type.
     PlugPluginPtr plugin = PlugRegistry::GetInstance().GetPluginForType(tfType);
-    if (not plugin) {
+    if (!plugin) {
         TF_RUNTIME_ERROR("Failed to load plugin interface: "
                          "Can't find plugin that defines type %s",
                          tfType.GetTypeName().c_str());
@@ -73,7 +73,7 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
     }
 
     // Load the plugin.
-    if (not plugin->Load()) {
+    if (!plugin->Load()) {
         // Error already reported.
         return;
     }
@@ -81,7 +81,7 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
     // Manufacture the type.
     Plug_InterfaceFactory::Base* factory =
         tfType.GetFactory<Plug_InterfaceFactory::Base>();
-    if (not factory) {
+    if (!factory) {
         TF_CODING_ERROR("Failed to load plugin interface: "
                         "No default constructor for type %s",
                         tfType.GetTypeName().c_str());
@@ -90,7 +90,7 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
     _ptr = factory->New();
 
     // Report on error.
-    if (not _ptr) {
+    if (!_ptr) {
         TF_CODING_ERROR("Failed to load plugin interface: "
                         "Plugin didn't manufacture an instance of %s",
                         tfType.GetTypeName().c_str());

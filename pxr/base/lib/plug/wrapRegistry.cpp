@@ -96,8 +96,8 @@ struct SharedState : boost::noncopyable {
         while (true) {
             // Try to take the next plugin to load.
             size_t cur = nextAvailable;
-            while (cur != plugins.size() and
-                   not nextAvailable.compare_exchange_strong(cur, cur+1)) {
+            while (cur != plugins.size() &&
+                   !nextAvailable.compare_exchange_strong(cur, cur+1)) {
                 cur = nextAvailable;
             }
 
@@ -140,10 +140,10 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
     // Shuffle all already loaded plugins to the end.
     PlugPluginPtrVector::iterator alreadyLoaded =
         partition(plugins.begin(), plugins.end(),
-                  not boost::bind(&PlugPlugin::IsLoaded, _1));
+                  !boost::bind(&PlugPlugin::IsLoaded, _1));
 
     // Report any already loaded plugins as skipped.
-    if (verbose and alreadyLoaded != plugins.end()) {
+    if (verbose && alreadyLoaded != plugins.end()) {
         printf("Skipping already-loaded plugins: %s\n",
                PluginNames(make_pair(alreadyLoaded, plugins.end())).c_str());
     }

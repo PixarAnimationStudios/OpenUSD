@@ -71,8 +71,8 @@ Plug_InitConfig()
     // Any relative paths specified in the plugin search path will be
     // anchored to this directory, to allow for relocatability.
     std::string sharedLibPath;
-    if (not ArchGetAddressInfo(
-            reinterpret_cast<void*>(&Plug_InitConfig), &sharedLibPath,
+    if (!ArchGetAddressInfo(
+        reinterpret_cast<void*>(&Plug_InitConfig), &sharedLibPath,
             nullptr, nullptr, nullptr)) {
         TF_CODING_ERROR("Unable to determine absolute path for Plug.");
     }
