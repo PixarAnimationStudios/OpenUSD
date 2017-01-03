@@ -276,6 +276,24 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             rproto.prototype = prototype;
 
             // construct instance chain
+            // note: paths is stored in the backward of treeStack
+            //       (master, master, ... , instance path)
+            //       to get the UsdPrim, use paths.front()
+            //
+            // for example:
+            //
+            // ProtoCube   <----+
+            //   +-- cube       | (native instance)
+            // ProtoA           |  <--+
+            //   +-- ProtoCube--+     | (native instance)
+            // PointInstancer         |
+            //   +-- ProtoA ----------+
+            //
+            // paths = 
+            //    /__Master__1/cube
+            //    /__Master__2/ProtoCube
+            //    /PointInstancer/ProtoA
+            //
             for (int i = treeStack.size()-1; i >= 0; i--) {
                 rproto.paths.push_back(treeStack[i]->GetPath());
             }
@@ -326,7 +344,7 @@ UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
             return;
         }
 
-        rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.paths.back()),
+        rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.paths.front()),
                                              cachePath,
                                                 requestedBits);
         return;
@@ -400,7 +418,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         // adapter, since we must compute purpose relative to the model root,
         // however we have no way of communicating that currently.
         UsdPrim protoRootPrim = _GetPrim(rproto.prototype->protoRootPath);
-        UsdPrim protoPrim = _GetPrim(rproto.paths.back());
+        UsdPrim protoPrim = _GetPrim(rproto.paths.front());
         rproto.adapter->TrackVariability(protoPrim, cachePath,
                                         requestedBits,
                                         &rproto.variabilityBits);
@@ -610,7 +628,7 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
             return;
         }
 
-        rproto.adapter->UpdateForTimePrep(_GetPrim(rproto.paths.back()),
+        rproto.adapter->UpdateForTimePrep(_GetPrim(rproto.paths.front()),
                                           cachePath,
                                           time, requestedBits);
     } else {
@@ -731,7 +749,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
         if (protoReqBits != HdChangeTracker::Clean)
-            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.back()), cachePath,
+            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.front()), cachePath,
                                           time, protoReqBits, resultBits);
 
         // Make sure we always query and return visibility. This is done
@@ -764,7 +782,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 // prim to the model instance root.
                 _ComputeProtoVisibility(
                     _GetPrim(rproto.prototype->protoRootPath), 
-                    _GetPrim(rproto.paths.back()), 
+                    _GetPrim(rproto.paths.front()), 
                     time,
                     &vis); 
             }
@@ -947,7 +965,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             return HdChangeTracker::AllDirty;
         }
         return rproto.adapter->ProcessPropertyChange(
-            _GetPrim(rproto.paths.back()),
+            _GetPrim(rproto.paths.front()),
                                                    cachePath, propertyName);
     }
 
