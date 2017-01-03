@@ -189,7 +189,7 @@ pxr_register_test(testGfDecomposeRotation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(testGfFrustum
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"

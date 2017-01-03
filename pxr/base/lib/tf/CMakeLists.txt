@@ -366,7 +366,7 @@ pxr_register_test(TfAtomicOfstreamWrapper
 pxr_register_test(TfBitUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBitUtils"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfDl
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDl"
     )
@@ -376,7 +376,7 @@ pxr_register_test(TfDebug
     STDOUT_REDIRECT debug.out
     DIFF_COMPARE debug.out
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfDebugFatal_1
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_1"
         EXPECTED_RETURN_CODE 134
@@ -420,7 +420,7 @@ pxr_register_test(TfError
 pxr_register_test(TfErrorThreadTransport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfDiagnosticNotices
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDiagnosticNotices"
         CLEAN_OUTPUT "${PROJECT_SOURCE_DIR}/" 
@@ -448,7 +448,7 @@ pxr_register_test(TfEnvSetting
     STDERR_REDIRECT debugTfEnvSettingStderr.txt
     DIFF_COMPARE debugTfEnvSettingStderr.txt
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfFileUtils
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFileUtils"
     )
@@ -470,7 +470,7 @@ pxr_register_test(TfHash
 pxr_register_test(TfIterator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfIterator"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfMallocTag
         ENV GLIBCXX_FORCE_NEW=1
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfMallocTag"
@@ -493,7 +493,7 @@ pxr_register_test(TfNamedTemporaryFile
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfNamedTemporaryFile"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfPathUtils
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"
     )
@@ -517,7 +517,7 @@ pxr_register_test(TfProbe
 pxr_register_test(TfRegistryManager
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRegistryManager"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfRegistryManagerUnload
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRegistryManagerUnload"
     )
@@ -592,7 +592,7 @@ pxr_register_test(TfWeakPtr
 pxr_register_test(TfWeakPtrConversion
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfWeakPtrConversion"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(testTfPython
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPython"
@@ -625,7 +625,7 @@ pxr_register_test(testTfType
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfType"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(testTfSIGSEGV
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfCrashHandler ${CMAKE_INSTALL_PREFIX}/tests/testTfSIGSEGV SIGSEGV"

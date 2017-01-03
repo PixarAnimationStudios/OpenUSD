@@ -144,7 +144,7 @@ pxr_build_test(testArchVsnprintf
         testenv/testVsnprintf.cpp
 ) 
 
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(testArchAbi
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAbi"
     )
@@ -167,7 +167,7 @@ pxr_register_test(testArchFileSystem
 pxr_register_test(testArchFunction
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFunction"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(testArchStackTrace
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace"
     )

@@ -55,7 +55,7 @@ pxr_register_test(testWorkDispatcher
 pxr_register_test(testWorkLoops
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkLoops"
 )
-if (LINUX)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(testWorkThreadLimitsDefault
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimits"
     )
