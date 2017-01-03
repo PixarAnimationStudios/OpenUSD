@@ -22,9 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/plug/info.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/symbols.h"
 #include <boost/preprocessor/stringize.hpp>
 
 namespace {
@@ -36,10 +39,22 @@ const char* userLocation        = BOOST_PP_STRINGIZE(PXR_USER_LOCATION);
 const char* installLocation     = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
 
 void
-_AppendPathList(std::vector<std::string>* result, const std::string& paths)
+_AppendPathList(
+    std::vector<std::string>* result, 
+    const std::string& paths, const std::string& sharedLibPath)
 {
     for (const auto& path: TfStringSplit(paths, ":")) {
-        if (not path.empty()) {
+        if (path.empty()) {
+            continue;
+        }
+
+        // Anchor all relative paths to the shared library path.
+        // XXX: This is not sufficient on Windows.
+        const bool isLibraryRelativePath = (path[0] != '/');
+        if (isLibraryRelativePath) {
+            result->push_back(TfStringCatPaths(sharedLibPath, path));
+        }
+        else {
             result->push_back(path);
         }
     }
@@ -52,14 +67,26 @@ Plug_InitConfig()
 {
     std::vector<std::string> result;
 
+    // Determine the absolute path to the Plug shared library.
+    // Any relative paths specified in the plugin search path will be
+    // anchored to this directory, to allow for relocatability.
+    std::string sharedLibPath;
+    if (not ArchGetAddressInfo(
+            reinterpret_cast<void*>(&Plug_InitConfig), &sharedLibPath,
+            nullptr, nullptr, nullptr)) {
+        TF_CODING_ERROR("Unable to determine absolute path for Plug.");
+    }
+
+    sharedLibPath = TfGetPathName(sharedLibPath);
+
     // Environment locations.
-    _AppendPathList(&result, TfGetenv(pathEnvVarName));
+    _AppendPathList(&result, TfGetenv(pathEnvVarName), sharedLibPath);
 
     // Fallback locations.
-    _AppendPathList(&result, userLocation);
-    _AppendPathList(&result, buildLocation);
-    _AppendPathList(&result, pluginBuildLocation);
-    _AppendPathList(&result, installLocation);
+    _AppendPathList(&result, userLocation, sharedLibPath);
+    _AppendPathList(&result, buildLocation, sharedLibPath);
+    _AppendPathList(&result, pluginBuildLocation, sharedLibPath);
+    _AppendPathList(&result, installLocation, sharedLibPath);
 
     Plug_SetPaths(result);
 }

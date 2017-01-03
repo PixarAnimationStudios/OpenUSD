@@ -230,9 +230,24 @@ function(pxr_shared_library LIBRARY_NAME)
         set(installLocation ${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX})
     endif()
 
+    # Compute relative paths between lib install location and
+    # install locations for plugInfo.json files needed by the
+    # plugin system. Using relative paths allows for relocating
+    # the build (so long as the entire build structure is moved
+    # together).
+    file(RELATIVE_PATH 
+        LIB_PLUGINFO_PATH
+        ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}
+        ${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX})
+
+    file(RELATIVE_PATH 
+        PLUGIN_PLUGINFO_PATH
+        ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}
+        ${CMAKE_INSTALL_PREFIX}/plugin/usd)
+
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_PLUGIN_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/plugin/usd;PXR_INSTALL_LOCATION=${installLocation}"
+            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${LIB_PLUGINFO_PATH};PXR_PLUGIN_BUILD_LOCATION=${PLUGIN_PLUGINFO_PATH};PXR_INSTALL_LOCATION=${installLocation}"
     )
 
     # Always bake the rpath.
