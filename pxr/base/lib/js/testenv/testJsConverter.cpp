@@ -163,9 +163,9 @@ _CheckArray(
         }
         case JsValue::IntType: {
             indent << "checking int conversion" << std::endl;
-            assert((IsHolding<int64_t>(array[i]) and
-                    Get<int64_t>(array[i]) == expArray[i].GetInt()) or
-                   (IsHolding<uint64_t>(array[i]) and
+            assert((IsHolding<int64_t>(array[i])&& 
+                    Get<int64_t>(array[i]) == expArray[i].GetInt()) || 
+                   (IsHolding<uint64_t>(array[i])&& 
                     Get<uint64_t>(array[i]) == static_cast<uint64_t>(expArray[i].GetInt())));
             break;
         }
@@ -183,7 +183,7 @@ int main(int argc, char const *argv[])
 {
     std::cout << "opening values.json" << std::endl;
     std::ifstream ifs("values.json");
-    if (not ifs) {
+    if (!ifs) {
         TF_CODING_ERROR("Failed to open 'values.json' for reading");
         return 1;
     }
@@ -198,12 +198,12 @@ int main(int argc, char const *argv[])
     JsObject envelope = value.GetJsObject();
     assert(envelope["Object"].IsObject());
     JsObject object = envelope["Object"].GetJsObject();
-    assert(not object.empty());
+    assert(!object.empty());
 
     // Convert the top-level value to another container type.
     std::cout << "converting container" << std::endl;
     const _Any result = JsConvertToContainerType<_Any, _Dictionary>(value);
-    assert(not IsEmpty(result));
+    assert(!IsEmpty(result));
     assert(IsHolding<_Dictionary>(result));
 
     std::cout << "checking converted top-level object" << std::endl;
@@ -232,13 +232,13 @@ int main(int argc, char const *argv[])
 
             // This array has heterogeneous values, so IsArrayOf<T> should
             // always return false.
-            assert(not object[p.first].IsArrayOf<JsObject>());
-            assert(not object[p.first].IsArrayOf<JsArray>());
-            assert(not object[p.first].IsArrayOf<string>());
-            assert(not object[p.first].IsArrayOf<double>());
-            assert(not object[p.first].IsArrayOf<int>());
-            assert(not object[p.first].IsArrayOf<int64_t>());
-            assert(not object[p.first].IsArrayOf<uint64_t>());
+            assert(!object[p.first].IsArrayOf<JsObject>());
+            assert(!object[p.first].IsArrayOf<JsArray>());
+            assert(!object[p.first].IsArrayOf<string>());
+            assert(!object[p.first].IsArrayOf<double>());
+            assert(!object[p.first].IsArrayOf<int>());
+            assert(!object[p.first].IsArrayOf<int64_t>());
+            assert(!object[p.first].IsArrayOf<uint64_t>());
 
         } else if (p.first == "ArrayString") {
             indent << "checking string array conversion" << std::endl;
@@ -325,8 +325,8 @@ int main(int argc, char const *argv[])
             assert(object[p.first].IsBool());
             assert(object[p.first].Is<bool>());
             assert(IsHolding<bool>(p.second));
-            assert(not Get<bool>(p.second));
-            assert(not object[p.first].Get<bool>());
+            assert(!Get<bool>(p.second));
+            assert(!object[p.first].Get<bool>());
         } else if (p.first == "Null") {
             indent << "checking null conversion" << std::endl;
             assert(object[p.first].IsNull());

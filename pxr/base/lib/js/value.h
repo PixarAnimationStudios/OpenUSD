@@ -147,8 +147,8 @@ public:
     /// value returned in this case.
     template <typename T,
               typename ReturnType = typename std::conditional<
-                  std::is_same<T, JsObject>::value or 
-                  std::is_same<T, JsArray>::value or
+                  std::is_same<T, JsObject>::value || 
+                  std::is_same<T, JsArray>::value || 
                   std::is_same<T, std::string>::value,
                   const T&, T>::type>
     ReturnType Get() const {
@@ -270,7 +270,7 @@ inline std::vector<T> JsValue::GetArrayOf() const
 template <typename T>
 inline bool JsValue::IsArrayOf() const 
 {
-    if (not IsArray()) {
+    if (!IsArray()) {
         return false;
     }
     const JsArray& array = GetJsArray();

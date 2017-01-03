@@ -181,7 +181,7 @@ JsValue::GetJsObject() const
     static TfStaticData<JsObject> _emptyObject;
 
     std::string whyNot;
-    if (not _CheckType(_holder->type, ObjectType, &whyNot)) {
+    if (!_CheckType(_holder->type, ObjectType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return *_emptyObject;
     }
@@ -195,7 +195,7 @@ JsValue::GetJsArray() const
     static TfStaticData<JsArray> _emptyArray;
 
     std::string whyNot;
-    if (not _CheckType(_holder->type, ArrayType, &whyNot)) {
+    if (!_CheckType(_holder->type, ArrayType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return *_emptyArray;
     }
@@ -209,7 +209,7 @@ JsValue::GetString() const
     static TfStaticData<std::string> _emptyString;
 
     std::string whyNot;
-    if (not _CheckType(_holder->type, StringType, &whyNot)) {
+    if (!_CheckType(_holder->type, StringType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return *_emptyString;
     }
@@ -221,7 +221,7 @@ bool
 JsValue::GetBool() const
 {
     std::string whyNot;
-    if (not _CheckType(_holder->type, BoolType, &whyNot)) {
+    if (!_CheckType(_holder->type, BoolType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return false;
     }
@@ -233,7 +233,7 @@ int
 JsValue::GetInt() const
 {
     std::string whyNot;
-    if (not _CheckType(_holder->type, IntType, &whyNot)) {
+    if (!_CheckType(_holder->type, IntType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return 0;
     }
@@ -245,7 +245,7 @@ int64_t
 JsValue::GetInt64() const
 {
     std::string whyNot;
-    if (not _CheckType(_holder->type, IntType, &whyNot)) {
+    if (!_CheckType(_holder->type, IntType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return 0;
     }
@@ -260,12 +260,12 @@ uint64_t
 JsValue::GetUInt64() const
 {
     std::string whyNot;
-    if (not _CheckType(_holder->type, IntType, &whyNot)) {
+    if (!_CheckType(_holder->type, IntType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return 0;
     }
 
-    if (not IsUInt64())
+    if (!IsUInt64())
         return static_cast<uint64_t>(GetInt64());
 
     return boost::get<uint64_t>(_holder->value);
@@ -281,7 +281,7 @@ JsValue::GetReal() const
     }
 
     std::string whyNot;
-    if (not _CheckType(_holder->type, RealType, &whyNot)) {
+    if (!_CheckType(_holder->type, RealType, &whyNot)) {
         TF_CODING_ERROR(whyNot);
         return 0;
     }
@@ -354,18 +354,18 @@ JsValue::IsNull() const
 
 JsValue::operator bool() const
 {
-    return not IsNull();
+    return !IsNull();
 }
 
 bool
 JsValue::operator==(const JsValue& other) const
 {
-    return _holder->type == other._holder->type and
+    return _holder->type == other._holder->type && 
         _holder->value == other._holder->value;
 }
 
 bool
 JsValue::operator!=(const JsValue& other) const
 {
-    return not (*this == other);
+    return !(*this == other);
 }

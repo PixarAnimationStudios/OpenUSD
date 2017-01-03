@@ -187,7 +187,7 @@ JsParseStream(
     std::istream& istr,
     JsParseError* error)
 {
-    if (not istr) {
+    if (!istr) {
         TF_CODING_ERROR("Stream error");
         return JsValue();
     }
@@ -217,7 +217,7 @@ JsParseString(
     rj::ParseResult result =
         reader.Parse<rj::kParseStopWhenDoneFlag>(ss, handler);
 
-    if (not result) {
+    if (!result) {
         if (error) {
             // Rapidjson only provides a character offset for errors, not
             // line/column information like other parsers (like json_spirit,
@@ -249,7 +249,7 @@ JsWriteToStream(
     const JsValue& value,
     std::ostream& ostr)
 {
-    if (not ostr) {
+    if (!ostr) {
         TF_CODING_ERROR("Stream error");
         return;
     }

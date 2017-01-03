@@ -29,7 +29,7 @@
 int main(int argc, char const *argv[])
 {
     JsObject emptyObject;
-    assert(not JsFindValue(emptyObject, "key"));
+    assert(!JsFindValue(emptyObject, "key"));
     JsOptionalValue v = JsFindValue(emptyObject, "key", JsValue("value"));
     assert(v);
     assert(v->IsString());
