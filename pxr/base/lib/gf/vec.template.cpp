@@ -64,7 +64,7 @@ operator<<(std::ostream &out, {{ VEC }} const &v)
 bool
 {{ VEC }}::operator==({{ VECNAME(DIM, S) }} const &other) const
 {
-    return {{ LIST("_data[%(i)s] == other[%(i)s]", sep=' and\n           ') }};
+    return {{ LIST("_data[%(i)s] == other[%(i)s]", sep=' &&\n           ') }};
 }
 {% endfor %}
 

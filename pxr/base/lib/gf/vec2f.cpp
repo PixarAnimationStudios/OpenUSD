@@ -71,19 +71,19 @@ GfVec2f::GfVec2f(class GfVec2i const &other)
 bool
 GfVec2f::operator==(GfVec2d const &other) const
 {
-    return _data[0] == other[0] and
+    return _data[0] == other[0] &&
            _data[1] == other[1];
 }
 bool
 GfVec2f::operator==(GfVec2h const &other) const
 {
-    return _data[0] == other[0] and
+    return _data[0] == other[0] &&
            _data[1] == other[1];
 }
 bool
 GfVec2f::operator==(GfVec2i const &other) const
 {
-    return _data[0] == other[0] and
+    return _data[0] == other[0] &&
            _data[1] == other[1];
 }
 

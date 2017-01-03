@@ -147,7 +147,7 @@ public:
 
     /// Equality comparison.
     bool operator==(GfVec2d const &other) const {
-        return _data[0] == other[0] and
+        return _data[0] == other[0] &&
                _data[1] == other[1];
     }
     bool operator!=(GfVec2d const &other) const {

@@ -522,7 +522,7 @@ GfMatrix4d::Orthonormalize(bool issueWarning)
 	_mtx[3][3] = 1.0;
     }
 
-    if (not result and issueWarning)
+    if (!result && issueWarning)
 	TF_WARN("OrthogonalizeBasis did not converge, matrix may not be "
                 "orthonormal.");
 

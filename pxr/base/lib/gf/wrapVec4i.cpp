@@ -314,11 +314,11 @@ struct FromPythonTuple {
 
         // XXX: Would like to allow general sequences, but currently clients
         // depend on this behavior.
-        if ((PyTuple_Check(obj_ptr) or PyList_Check(obj_ptr)) and
-            PySequence_Size(obj_ptr) == 4 and
-            extract<Scalar>(PySequence_GetItem(obj_ptr, 0)).check() and
-            extract<Scalar>(PySequence_GetItem(obj_ptr, 1)).check() and
-            extract<Scalar>(PySequence_GetItem(obj_ptr, 2)).check() and
+        if ((PyTuple_Check(obj_ptr) || PyList_Check(obj_ptr)) &&
+            PySequence_Size(obj_ptr) == 4 &&
+            extract<Scalar>(PySequence_GetItem(obj_ptr, 0)).check() &&
+            extract<Scalar>(PySequence_GetItem(obj_ptr, 1)).check() &&
+            extract<Scalar>(PySequence_GetItem(obj_ptr, 2)).check() &&
             extract<Scalar>(PySequence_GetItem(obj_ptr, 3)).check()) {
             return obj_ptr;
         }

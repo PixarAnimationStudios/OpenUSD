@@ -40,9 +40,9 @@ static string
 _Repr(GfInterval const &self)
 {
     string r = TF_PY_REPR_PREFIX + "Interval(";
-    if (not self.IsEmpty()) {
+    if (!self.IsEmpty()) {
         r += TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax());
-        if (not self.IsMinClosed() or not self.IsMaxClosed()) {
+        if (!self.IsMinClosed() || !self.IsMaxClosed()) {
             r += ", " + TfPyRepr(self.IsMinClosed())
                + ", " + TfPyRepr(self.IsMaxClosed());
         }

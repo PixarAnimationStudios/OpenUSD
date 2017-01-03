@@ -50,7 +50,7 @@ private:
     // from-python
     static void *_convertible(PyObject *obj_ptr) {
         // Must be number-like.
-        if (not PyNumber_Check(obj_ptr))
+        if (!PyNumber_Check(obj_ptr))
             return NULL;
         // Try to convert to python float: if we can, then we can make a half.
         if (PyObject *flt = PyNumber_Float(obj_ptr))

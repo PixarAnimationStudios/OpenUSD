@@ -403,7 +403,7 @@ GfRay::Intersect(const GfVec3d &origin,
     double b = 2.0 * (cos2 * GfDot(u, v) - sin2 * p * q);
     double c = cos2 * GfDot(v, v) - sin2 * GfSqr(q);
     
-    if (not _SolveQuadratic(a, b, c, enterDistance, exitDistance)) {
+    if (!_SolveQuadratic(a, b, c, enterDistance, exitDistance)) {
         return false;
     }
     
@@ -411,16 +411,16 @@ GfRay::Intersect(const GfVec3d &origin,
     bool enterValid = GfDot(unitAxis, GetPoint(*enterDistance) - apex) <= 0.0;
     bool exitValid = GfDot(unitAxis, GetPoint(*exitDistance) - apex) <= 0.0;
     
-    if ((not enterValid) and (not exitValid)) {
+    if ((!enterValid) && (!exitValid)) {
         
         // Solutions lie only on double cone
         return false;
     }
     
-    if (not enterValid) {
+    if (!enterValid) {
         *enterDistance = *exitDistance;
     }
-    else if (not exitValid) {
+    else if (!exitValid) {
         *exitDistance = *enterDistance;
     }
         

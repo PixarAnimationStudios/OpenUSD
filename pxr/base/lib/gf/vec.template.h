@@ -146,7 +146,7 @@ public:
     /// Equality comparison.
     bool operator==({{ VEC }} const &other) const {
         return {{ LIST("_data[%(i)s] == other[%(i)s]",
-                       sep=' and\n               ') }};
+                       sep=' &&\n               ') }};
     }
     bool operator!=({{ VEC }} const &other) const {
         return !(*this == other);

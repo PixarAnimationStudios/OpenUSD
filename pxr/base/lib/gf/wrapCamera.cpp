@@ -80,7 +80,7 @@ static std::string _Repr(GfCamera const &self)
     if (self.GetClippingRange() != GfRange1f(1, 1000000))
         kwargs.push_back("clippingRange = " +
                          TfPyRepr(self.GetClippingRange()));
-    if (not self.GetClippingPlanes().empty())
+    if (!self.GetClippingPlanes().empty())
         kwargs.push_back("clippingPlanes = " +
                          TfPyRepr(self.GetClippingPlanes()));
     if (self.GetFStop() != 0.0)

@@ -75,22 +75,22 @@ GfVec3h::GfVec3h(class GfVec3i const &other)
 bool
 GfVec3h::operator==(GfVec3d const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
            _data[2] == other[2];
 }
 bool
 GfVec3h::operator==(GfVec3f const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
            _data[2] == other[2];
 }
 bool
 GfVec3h::operator==(GfVec3i const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
            _data[2] == other[2];
 }
 

@@ -83,7 +83,7 @@ class GfRotation {
     GfRotation &        SetAxisAngle(const GfVec3d &axis, double angle) {
         _axis = axis;
         _angle = angle;
-        if (not GfIsClose(_axis * _axis, 1.0, 1e-10))
+        if (!GfIsClose(_axis * _axis, 1.0, 1e-10))
             _axis.Normalize();
         return *this;
     }

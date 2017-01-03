@@ -135,7 +135,7 @@ bool
     _mtx[2][0] = r2[0];
     _mtx[2][1] = r2[1];
     _mtx[2][2] = r2[2];
-    if (not result and issueWarning)
+    if (!result && issueWarning)
 	TF_WARN("OrthogonalizeBasis did not converge, matrix may not be "
                 "orthonormal.");
     return result;

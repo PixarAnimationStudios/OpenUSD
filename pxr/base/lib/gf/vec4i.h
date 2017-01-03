@@ -154,9 +154,9 @@ public:
 
     /// Equality comparison.
     bool operator==(GfVec4i const &other) const {
-        return _data[0] == other[0] and
-               _data[1] == other[1] and
-               _data[2] == other[2] and
+        return _data[0] == other[0] &&
+               _data[1] == other[1] &&
+               _data[2] == other[2] &&
                _data[3] == other[3];
     }
     bool operator!=(GfVec4i const &other) const {

@@ -940,7 +940,7 @@ GfFrustum::_SegmentIntersects(GfVec3d const &p0, uint32_t p0Mask,
     
     // If either of the masks has all 6 planes set, the point is
     // inside the frustum, so there's an intersection.
-    if ((p0Mask == 0x3F) or (p1Mask == 0x3F))
+    if ((p0Mask == 0x3F) || (p1Mask == 0x3F))
         return true;
 
     // If we get here, the 2 points of the segment are both outside
@@ -1031,7 +1031,7 @@ GfFrustum::Intersects(const GfVec3d &p0,
     
     // If any of the masks has all 6 planes set, the point is inside
     // the frustum, so there's an intersection.
-    if ((p0Mask == 0x3F) or (p1Mask == 0x3F) or (p2Mask == 0x3F))
+    if ((p0Mask == 0x3F) || (p1Mask == 0x3F) || (p2Mask == 0x3F))
         return true;
 
     // If we get here, the 3 points of the triangle are all outside
@@ -1098,7 +1098,7 @@ GfFrustum::_DirtyFrustumPlanes()
 void
 GfFrustum::_CalculateFrustumPlanes() const
 {
-    if (not _planes.empty())
+    if (!_planes.empty())
         return;
 
     _planes.reserve(6);
@@ -1310,7 +1310,7 @@ GfFrustum::SetPositionAndRotationFromMatrix(
     // First conform matrix to be...
     GfMatrix4d conformedXf = camToWorldXf;
     // ... right handed
-    if (not conformedXf.IsRightHanded()) {
+    if (!conformedXf.IsRightHanded()) {
         static GfMatrix4d flip(GfVec4d(-1.0, 1.0, 1.0, 1.0));
         conformedXf = flip * conformedXf;
     }

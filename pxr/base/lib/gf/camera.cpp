@@ -299,7 +299,7 @@ GfCamera::GetFrustum() const {
     // Up to now, all computations were done in mm, convert to cm.
     window *= GfCamera::APERTURE_UNIT;
 
-    if (_projection != Orthographic and _focalLength != 0) {
+    if (_projection != Orthographic && _focalLength != 0) {
         window /= _focalLength * GfCamera::FOCAL_LENGTH_UNIT;
     }
 
@@ -327,16 +327,16 @@ bool
 GfCamera::operator==(const GfCamera& other) const
 {
     return
-        _transform == other._transform and
-        _projection == other._projection and
-        _horizontalAperture == other._horizontalAperture and
-        _verticalAperture == other._verticalAperture and
-        _horizontalApertureOffset == other._horizontalApertureOffset and
-        _verticalApertureOffset == other._verticalApertureOffset and
-        _focalLength == other._focalLength and
-        _clippingRange == other._clippingRange and
-        _clippingPlanes == other._clippingPlanes and
-        _fStop == other._fStop and
+        _transform == other._transform && 
+        _projection == other._projection && 
+        _horizontalAperture == other._horizontalAperture && 
+        _verticalAperture == other._verticalAperture && 
+        _horizontalApertureOffset == other._horizontalApertureOffset && 
+        _verticalApertureOffset == other._verticalApertureOffset && 
+        _focalLength == other._focalLength && 
+        _clippingRange == other._clippingRange && 
+        _clippingPlanes == other._clippingPlanes &&
+        _fStop == other._fStop &&
         _focusDistance == other._focusDistance;
 }
 

@@ -189,7 +189,7 @@ GfRotation::RotateOntoProjected(const GfVec3d &v1,
     double sinTheta = GfDot(crossAxis, axis);
     double cosTheta = GfDot(v1Proj, v2Proj);
     double theta = 0;
-    if (not (fabs(sinTheta) < _GetEpsilon() && fabs(cosTheta) < _GetEpsilon()))
+    if (!(fabs(sinTheta) < _GetEpsilon() && fabs(cosTheta) < _GetEpsilon()))
         theta = atan2(sinTheta, cosTheta);
 
     const double toDeg = (180.0)/M_PI;
@@ -310,7 +310,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         thetaSw = &angleStandin;
     }
 
-    if (swShift and zeroAngle != ZERO_NONE) {
+    if (swShift && zeroAngle != ZERO_NONE) {
         TF_WARN("A swing shift was provided but we're not decomposing into"
                 " four angles.  The swing shift will be ignored.");
     }

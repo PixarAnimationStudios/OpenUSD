@@ -40,7 +40,7 @@ static string
 _Repr(GfMultiInterval const &self)
 {
     string r = TF_PY_REPR_PREFIX + "MultiInterval(";
-    if (not self.IsEmpty()) {
+    if (!self.IsEmpty()) {
         r += "[";
         int count = 0;
         TF_FOR_ALL(i, self) {
