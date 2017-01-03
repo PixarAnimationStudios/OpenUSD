@@ -833,10 +833,11 @@ HdTextureResourceSharedPtr
 Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
     if (_drawTargets.find(textureId) != _drawTargets.end()) {
-        HdSprimSharedPtr const &sprim = GetRenderIndex().GetSprim(textureId);
-        if (HdxDrawTargetSharedPtr drawTarget
-            = boost::dynamic_pointer_cast<HdxDrawTarget>(sprim)) {
+        HdxDrawTarget const *drawTarget = static_cast<HdxDrawTarget const *> (
+                        GetRenderIndex().GetSprim(HdPrimTypeTokens->drawTarget,
+                                                  textureId));
 
+        if (drawTarget != nullptr) {
             HdTextureResourceSharedPtr texResource(
                 new DrawTargetTextureResource(
                     drawTarget->GetGlfDrawTarget()));

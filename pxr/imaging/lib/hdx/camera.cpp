@@ -139,3 +139,10 @@ HdxCamera::Get(TfToken const &name) const
 
     return r;
 }
+
+/* virtual */
+int
+HdxCamera::GetInitialDirtyBitsMask() const
+{
+    return AllDirty;
+}

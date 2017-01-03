@@ -119,3 +119,10 @@ HdxLight::Get(TfToken const &token) const
     TfMapLookup(_params, token, &val);
     return val;
 }
+
+/* virtual */
+int
+HdxLight::GetInitialDirtyBitsMask() const
+{
+    return AllDirty;
+}

@@ -41,6 +41,7 @@
 
 class HdRenderIndex;
 class HdSceneDelegate;
+class HdxCamera;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
@@ -66,9 +67,10 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
+    const HdxCamera *_camera;
+    HdxLightPtrConstVector _lights;
+
     // Should be weak ptrs
-    HdSprimSharedPtr _camera;
-    HdSprimSharedPtrVector _lights;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
     int _collectionVersion;
     bool _enableShadows;

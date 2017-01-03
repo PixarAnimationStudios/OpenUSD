@@ -42,6 +42,7 @@
 
 class HdRenderIndex;
 class HdSceneDelegate;
+class HdxCamera;
 
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
@@ -58,7 +59,7 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
-    HdSprimSharedPtr _camera;
+    const HdxCamera *_camera;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
 
     GlfSimpleLightingContextRefPtr _simpleLightingContext;

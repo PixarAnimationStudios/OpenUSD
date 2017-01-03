@@ -32,8 +32,6 @@
 #include <boost/shared_ptr.hpp>
 
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
-typedef std::vector<HdSprimSharedPtr> HdSprimSharedPtrVector;
 
 /// \class HdSprim
 ///
@@ -66,6 +64,11 @@ public:
     /// Accessor for tasks to get the parameter cached in this sprim object.
     /// Don't communicate back to scene delegate within this function.
     virtual VtValue Get(TfToken const &token) const = 0;
+
+    /// Returns the minimal set of dirty bits to place in the
+    /// change tracker for use in the first sync of this prim.
+    /// Typically this would be all dirty bits.
+    virtual int GetInitialDirtyBitsMask() const = 0;
 
 private:
     HdSceneDelegate* _delegate;

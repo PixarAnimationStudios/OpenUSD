@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdx/drawTargetTextureResource.h"
+#include "pxr/imaging/hdx/camera.h"
 
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -153,7 +154,7 @@ HdxDrawTarget::Sync()
     }
 }
 
-/*virtual*/
+// virtual
 VtValue
 HdxDrawTarget::Get(TfToken const &token) const
 {
@@ -163,9 +164,16 @@ HdxDrawTarget::Get(TfToken const &token) const
     return VtValue();
 }
 
+// virtual
+int
+HdxDrawTarget::GetInitialDirtyBitsMask() const
+{
+    return AllDirty;
+}
+
 bool
 HdxDrawTarget::WriteToFile(const std::string &attachment,
-                          const std::string &path)
+                          const std::string &path) const
 {
     // Check the draw targets been allocated
     if (!_drawTarget || !_drawTargetContext) {
@@ -183,8 +191,8 @@ HdxDrawTarget::WriteToFile(const std::string &attachment,
         return false;
     }
 
-    HdSprimSharedPtr camera = _GetCamera();
-    if (!camera) {
+    const HdxCamera *camera = _GetCamera();
+    if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
     }
@@ -307,10 +315,13 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
 }
 
 
-HdSprimSharedPtr
+const HdxCamera *
 HdxDrawTarget::_GetCamera() const
 {
-    return GetDelegate()->GetRenderIndex().GetSprim(_cameraId);
+    const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+
+    return static_cast<const HdxCamera *>(
+            renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 }
 
 void
@@ -362,17 +373,21 @@ HdxDrawTarget::_RegisterTextureResource(const std::string &name,
 /*static*/
 void
 HdxDrawTarget::GetDrawTargets(HdSceneDelegate *delegate,
-                              HdxDrawTargetSharedPtrVector *drawTargets)
+                              HdxDrawTargetPtrConstVector *drawTargets)
 {
-    SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
-        SdfPath::AbsoluteRootPath());
+    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+
+    SdfPathVector sprimPaths =
+            renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+                                        SdfPath::AbsoluteRootPath());
+
     TF_FOR_ALL (it, sprimPaths) {
-        // XXX: same downcast problem as in simpleLight and shadow.
-        HdSprimSharedPtr const &sprim
-            = delegate->GetRenderIndex().GetSprim(*it);
-        if (HdxDrawTargetSharedPtr drawTarget
-            = boost::dynamic_pointer_cast<HdxDrawTarget>(sprim)) {
-            drawTargets->push_back(drawTarget);
+        HdSprim const *drawTarget =
+                        renderIndex.GetSprim(HdPrimTypeTokens->drawTarget, *it);
+
+        if (drawTarget != nullptr)
+        {
+            drawTargets->push_back(static_cast<HdxDrawTarget const *>(drawTarget));
         }
     }
 }

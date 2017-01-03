@@ -50,13 +50,13 @@
 TF_DECLARE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
 
 class HdSceneDelegate;
+class HdxCamera;
 class HdxDrawTargetAttachmentDescArray;
 
-typedef boost::shared_ptr<class HdxDrawTarget> HdxDrawTargetSharedPtr;
-typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
+
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
-typedef std::vector<HdxDrawTargetSharedPtr> HdxDrawTargetSharedPtrVector;
+typedef std::vector<class HdxDrawTarget const *> HdxDrawTargetPtrConstVector;
 
 /// \class HdxDrawTarget
 ///
@@ -96,25 +96,35 @@ public:
     unsigned int GetVersion() const { return _version; }
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync();
+    virtual void Sync() override;
 
     /// Accessor for tasks to get the parameters cached in this object.
-    virtual VtValue Get(TfToken const &token) const;
+    virtual VtValue Get(TfToken const &token) const override;
+
+    /// Returns the minimal set of dirty bits to place in the
+    /// change tracker for use in the first sync of this prim.
+    /// Typically this would be all dirty bits.
+    virtual int GetInitialDirtyBitsMask() const override;
+
 
     // ---------------------------------------------------------------------- //
     /// \name Draw Target API
     // ---------------------------------------------------------------------- //
     bool                         IsEnabled()        const { return  _enabled;    }
     const GlfDrawTargetRefPtr   &GetGlfDrawTarget() const { return  _drawTarget; }
-    HdxDrawTargetRenderPassState *GetRenderPassState()     { return &_renderPassState; }
+    const HdxDrawTargetRenderPassState *GetRenderPassState() const
+    {
+        return &_renderPassState;
+    }
 
     /// Debug api to output the contents of the draw target to a png file.
     bool                WriteToFile(const std::string &attachment,
-                                    const std::string &path);
+                                    const std::string &path) const;
 
     /// returns all HdxDrawTargets in the render index
     static void GetDrawTargets(HdSceneDelegate *delegate,
-                               HdxDrawTargetSharedPtrVector *drawTargets);
+                               HdxDrawTargetPtrConstVector *drawTargets);
+
 
 private:
     unsigned int     _version;
@@ -136,7 +146,7 @@ private:
 
     void _SetCamera(const SdfPath &cameraPath);
 
-    HdSprimSharedPtr _GetCamera() const;
+    const HdxCamera *_GetCamera() const;
 
     void _ResizeDrawTarget();
     void _RegisterTextureResource(const std::string &name,

@@ -32,7 +32,6 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
 
-typedef boost::weak_ptr<class HdxDrawTarget> HdxDrawTargetWeakPtr;
 typedef std::unique_ptr<HdxDrawTargetRenderPass> HdxDrawTargetRenderPassUniquePtr;
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
@@ -55,7 +54,7 @@ private:
     struct RenderPassInfo {
         HdRenderPassStateSharedPtr        renderPassState;
         HdxSimpleLightingShaderSharedPtr  simpleLightingShader;
-        HdxDrawTargetWeakPtr              target;
+        const HdxDrawTarget              *target;
         unsigned int                      version;
     };
     unsigned _currentDrawTargetSetVersion;

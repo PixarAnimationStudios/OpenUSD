@@ -102,7 +102,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         = changeTracker.GetStateVersion(HdxDrawTargetTokens->drawTargetSet);
 
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
-        HdxDrawTargetSharedPtrVector drawTargets;
+        HdxDrawTargetPtrConstVector drawTargets;
         HdxDrawTarget::GetDrawTargets(delegate, &drawTargets);
 
         _renderPassesInfo.clear();
@@ -116,7 +116,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
              drawTargetNum < numDrawTargets;
              ++drawTargetNum) {
 
-            HdxDrawTargetSharedPtr drawTarget = drawTargets[drawTargetNum];
+            const HdxDrawTarget *drawTarget = drawTargets[drawTargetNum];
             if (drawTarget) {
                 if (drawTarget->IsEnabled()) {
                     HdxDrawTargetRenderPassUniquePtr pass(
@@ -151,7 +151,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
              ++renderPassIdx) {
             RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
 
-            HdxDrawTargetSharedPtr target = renderPassInfo.target.lock();
+            const HdxDrawTarget *target = renderPassInfo.target;
             unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
@@ -181,16 +181,17 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
         HdxDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].get();
         HdRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
-        HdxDrawTargetSharedPtr drawTarget = renderPassInfo.target.lock();
+        const HdxDrawTarget *drawTarget = renderPassInfo.target;
 
         const SdfPath &cameraId = drawTarget->GetRenderPassState()->GetCamera();
 
         // XXX: Need to detect when camera changes and only update if
         // needed
-        HdSprimSharedPtr camera
-            = GetDelegate()->GetRenderIndex().GetSprim(cameraId);
+        const HdxCamera *camera = static_cast<const HdxCamera *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                                                       cameraId));
 
-        if (!camera) {
+        if (camera == nullptr) {
             // Render pass should not have been added to task list.
             TF_CODING_ERROR("Invalid camera for render pass: %s",
                             cameraId.GetText());

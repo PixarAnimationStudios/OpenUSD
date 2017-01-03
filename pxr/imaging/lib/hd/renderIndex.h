@@ -38,20 +38,20 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <vector>
+#include <unordered_map>
 
 class HdRprim;
+class HdSprim;
 class HdDrawItem;
 class HdRprimCollection;
 class HdSceneDelegate;
 class HdRenderDelegate;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
 typedef boost::shared_ptr<class HdInstancer> HdInstancerSharedPtr;
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
 typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
-typedef std::vector<HdSprimSharedPtr> HdSprimSharedPtrVector;
 
 /// \class HdRenderIndex
 ///
@@ -241,16 +241,30 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Scene state prims (e.g. camera, light)
     // ---------------------------------------------------------------------- //
+
+    /// Insert a sprim into index
+    void InsertSprim(TfToken const& typeId,
+                     HdSceneDelegate* delegate,
+                     SdfPath const& sprimId);
+
+    /// \deprecated {
+    ///   Old templated mathod of inserting a sprim into the index.
+    ///   This API has been superseeded by passing the typeId token.
+    ///   XXX: This method still exists to aid transition but may be
+    ///   removed at any time.
+    /// }
     template <typename T>
     void
     InsertSprim(HdSceneDelegate* delegate, SdfPath const &id);
 
-    void RemoveSprim(SdfPath const &id);
+    void RemoveSprim(TfToken const& typeId, SdfPath const &id);
 
-    HdSprimSharedPtr const &GetSprim(SdfPath const &id) const;
+    HdSprim const *GetSprim(TfToken const& typeId, SdfPath const &id) const;
 
-    /// Returns the subtree rooted under the given path.
-    SdfPathVector GetSprimSubtree(SdfPath const& root) const;
+    /// Returns the subtree rooted under the given path for the given sprim
+    /// type.
+    SdfPathVector GetSprimSubtree(TfToken const& typeId,
+                                  SdfPath const& root) const;
 
 
     // ---------------------------------------------------------------------- //
@@ -289,11 +303,9 @@ private:
                               SdfPath const& textureId,
                               HdTextureSharedPtr const& texture);
 
-    // Inserts the scene state prim into the index and updates tracking state.
-    void _TrackDelegateSprim(HdSceneDelegate* delegate,
-                             SdfPath const& id,
-                             HdSprimSharedPtr const& state,
-                             int initialDirtyState);
+
+    template <typename T>
+    static inline const TfToken & _GetTypeId();
 
 
     // ---------------------------------------------------------------------- //
@@ -305,16 +317,28 @@ private:
         HdRprim *rprim;
     };
 
+
     typedef TfHashMap<SdfPath, HdSurfaceShaderSharedPtr, SdfPath::Hash> _ShaderMap;
     typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, HdTextureSharedPtr, SdfPath::Hash> _TextureMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
-    typedef TfHashMap<SdfPath, HdSprimSharedPtr, SdfPath::Hash> _SprimMap;
+    typedef TfHashMap<SdfPath, HdSprim *, SdfPath::Hash> _SprimMap;
 
     typedef std::set<SdfPath> _RprimIDSet;
     typedef std::set<SdfPath> _SprimIDSet;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
+
+    struct _SprimTypeIndex
+    {
+        _SprimMap   sprimMap;
+        _SprimIDSet sprimIDSet;
+    };
+
+
+    typedef std::unordered_map<TfToken,
+                               _SprimTypeIndex,
+                               boost::hash<TfToken> > _SprimTypeMap;
 
     _DelegateRprimMap _delegateRprimMap;
     _RprimMap _rprimMap;
@@ -326,8 +350,7 @@ private:
     _TaskMap _taskMap;
     _TextureMap _textureMap;
 
-    _SprimMap _sprimMap;
-    _SprimIDSet _sprimIDSet;
+    _SprimTypeMap   _sprimTypeMap;
 
     HdChangeTracker _tracker;
     int32_t _nextPrimId; 
@@ -388,17 +411,6 @@ HdRenderIndex::InsertTexture(HdSceneDelegate* delegate, SdfPath const& id)
     _TrackDelegateTexture(delegate, id, texture);
 }
 
-template <typename T>
-void
-HdRenderIndex::InsertSprim(HdSceneDelegate* delegate, SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    boost::shared_ptr<T> sprim = boost::make_shared<T>(delegate, id);
-    _TrackDelegateSprim(delegate, id, sprim, T::AllDirty);
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -411,6 +423,9 @@ HdRenderIndex::InsertSprim(HdSceneDelegate* delegate, SdfPath const& id)
 class HdMesh;
 class HdBasisCurves;
 class HdPoints;
+class HdxCamera;
+class HdxDrawTarget;
+class HdxLight;
 
 namespace HdRenderIndexInternal
 {  
@@ -443,6 +458,34 @@ namespace HdRenderIndexInternal
     {
         return HdPrimTypeTokens->points;
     }
+
+    template <>
+    //static
+    inline
+    const TfToken &
+    _GetTypeId<HdxCamera>()
+    {
+        return HdPrimTypeTokens->camera;
+    }
+
+    template <>
+    //static
+    inline
+    const TfToken &
+    _GetTypeId<HdxDrawTarget>()
+    {
+        return HdPrimTypeTokens->drawTarget;
+    }
+
+    template <>
+    //static
+    inline
+    const TfToken &
+    _GetTypeId<HdxLight>()
+    {
+        return HdPrimTypeTokens->light;
+    }
+
 } 
 
 template <typename T>
@@ -453,5 +496,20 @@ HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
 {
     InsertRprim(HdRenderIndexInternal::_GetTypeId<T>(), delegate, id, instancerId);
 }
+
+
+template <typename T>
+void
+HdRenderIndex::InsertSprim(HdSceneDelegate* delegate, SdfPath const& id)
+{
+    InsertSprim(HdRenderIndexInternal::_GetTypeId<T>(), delegate, id);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// XXX: End Transitional support routines
+//
+///////////////////////////////////////////////////////////////////////////////
+
 
 #endif //HD_RENDER_INDEX_H

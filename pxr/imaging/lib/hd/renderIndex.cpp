@@ -67,8 +67,7 @@ HdRenderIndex::HdRenderIndex()
     , _shaderMap()
     , _taskMap()
     , _textureMap()
-    , _sprimMap()
-    , _sprimIDSet()
+    , _sprimTypeMap()
     , _tracker()
     , _nextPrimId(1)
     , _instancerMap()
@@ -330,8 +329,14 @@ HdRenderIndex::Clear()
     _delegateRprimMap.clear();
 
     // Clear Sprims
-    _sprimIDSet.clear();
-    _sprimMap.clear();
+    TF_FOR_ALL(typeIt, _sprimTypeMap) {
+        TF_FOR_ALL(primIt, typeIt->second.sprimMap) {
+            _tracker.SprimRemoved(primIt->first);
+            _renderDelegate->DestroySprim(primIt->second);
+            primIt->second = nullptr;
+        }
+    }
+    _sprimTypeMap.clear();
 
     // Clear instancers.
     TF_FOR_ALL(it, _instancerMap) {
@@ -529,73 +534,151 @@ HdRenderIndex::RemoveTexture(SdfPath const& id)
 // -------------------------------------------------------------------------- //
 
 void
-HdRenderIndex::_TrackDelegateSprim(HdSceneDelegate* delegate,
-                                   SdfPath const& id,
-                                   HdSprimSharedPtr const& sprim,
-                                   int initialDirtyState)
-{
-    if (id == SdfPath()) {
-        return;
-    }
-    _tracker.SprimInserted(id, initialDirtyState);
-    _sprimIDSet.insert(id);
-    _sprimMap.insert(std::make_pair(id, sprim));
-}
-
-HdSprimSharedPtr const& 
-HdRenderIndex::GetSprim(SdfPath const& id) const
-{
-    _SprimMap::const_iterator it = _sprimMap.find(id);
-    if (it != _sprimMap.end()) {
-        return it->second;
-    }
-
-    static HdSprimSharedPtr EMPTY;
-    return EMPTY;
-}
-
-void
-HdRenderIndex::RemoveSprim(SdfPath const& id)
+HdRenderIndex::InsertSprim(TfToken const& typeId,
+                           HdSceneDelegate* delegate,
+                           SdfPath const& sprimId)
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    _SprimMap::iterator it = _sprimMap.find(id);
-    if (it == _sprimMap.end()) {
+    if (sprimId.IsEmpty()) {
+        return;
+    }
+
+    {
+        // XXX: Transitional code.
+        // If the application didn't use the new context api to
+        // create a render delegate, create one on its behalf.
+        //
+        // In the future, this would be an error condition as the context api
+        // would create the delegate and provide it to the render index..
+        if (_renderDelegate == nullptr)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+            const TfToken &defaultRenderDelegateId =
+                                          renderRegistry.GetDefaultDelegateId();
+             _renderDelegate =
+                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
+             _ownsDelegateXXX = true;
+        }
+    }
+
+    HdSprim *sprim = _renderDelegate->CreateSprim(typeId,
+                                                  delegate,
+                                                  sprimId);
+    if (sprim == nullptr) {
+        return;
+    }
+
+
+    int initialDirtyState = sprim->GetInitialDirtyBitsMask();
+
+    _tracker.SprimInserted(sprimId, initialDirtyState);
+
+    _SprimTypeIndex &typeIndex = _sprimTypeMap[typeId];
+
+    typeIndex.sprimIDSet.insert(sprimId);
+    typeIndex.sprimMap.insert(std::make_pair(sprimId, sprim));
+}
+
+void
+HdRenderIndex::RemoveSprim(TfToken const& typeId, SdfPath const& id)
+{
+    HD_TRACE_FUNCTION();
+    HD_MALLOC_TAG_FUNCTION();
+
+    _SprimTypeMap::iterator typeIt = _sprimTypeMap.find(typeId);
+    if (typeIt == _sprimTypeMap.end()) {
+        TF_CODING_ERROR("Unknown type %s", typeId.GetText());
+        return;
+    }
+
+    _SprimTypeIndex &typeIndex = typeIt->second;
+    _SprimMap::iterator it = typeIndex.sprimMap.find(id);
+    if (it == typeIndex.sprimMap.end()) {
         return;
     }
 
     _tracker.SprimRemoved(id);
-    _sprimMap.erase(it);
-    _sprimIDSet.erase(id);
+
+    // Ask delegate to actually delete the sprim
+    _renderDelegate->DestroySprim(it->second);
+    it->second = nullptr;
+
+    typeIndex.sprimMap.erase(it);
+    typeIndex.sprimIDSet.erase(id);
+}
+
+HdSprim const*
+HdRenderIndex::GetSprim(TfToken const& typeId, SdfPath const& id) const
+{
+    _SprimTypeMap::const_iterator typeIt = _sprimTypeMap.find(typeId);
+    if (typeIt == _sprimTypeMap.end()) {
+        TF_CODING_ERROR("Unknown type %s", typeId.GetText());
+        return nullptr;
+    }
+
+    const _SprimTypeIndex &typeIndex = typeIt->second;
+
+    _SprimMap::const_iterator it = typeIndex.sprimMap.find(id);
+    if (it != typeIndex.sprimMap.end()) {
+        return it->second;
+    }
+
+    return nullptr;
 }
 
 SdfPathVector
-HdRenderIndex::GetSprimSubtree(SdfPath const& rootPath) const
+HdRenderIndex::GetSprimSubtree(TfToken const& typeId,
+                               SdfPath const& rootPath) const
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    SdfPathVector paths;
-    paths.reserve(1024);
-    for (auto p = _sprimIDSet.lower_bound(rootPath);
-            p != _sprimIDSet.end() and p->HasPrefix(rootPath); ++p)
-    {
-        paths.push_back(*p);
+    _SprimTypeMap::const_iterator typeIt = _sprimTypeMap.find(typeId);
+    if (typeIt == _sprimTypeMap.end()) {
+        // Maybe requested for a type that never got added
+        return SdfPathVector();
     }
-    return paths;
+
+    const _SprimTypeIndex &typeIndex = typeIt->second;
+
+    // Over-allocate paths, assuming worse-case all paths are going to be
+    // returned.
+    SdfPathVector paths;
+    paths.reserve(typeIndex.sprimIDSet.size());
+
+    _SprimIDSet::const_iterator pathIt =
+                                     typeIndex.sprimIDSet.lower_bound(rootPath);
+     while ((pathIt != typeIndex.sprimIDSet.end()) &&
+            (pathIt->HasPrefix(rootPath))) {
+         paths.push_back(*pathIt);
+         ++pathIt;
+     }
+
+      return paths;
 }
 
 void
 HdRenderIndex::SetRenderDelegate(HdRenderDelegate *renderDelegate)
 {
-    if (_renderDelegate != nullptr && _renderDelegate != renderDelegate) {
-        TF_CODING_ERROR("Render Delegate already set on render index and "
-                        "switching render delegates is not supported");
-        return;
+    if (_renderDelegate != nullptr) {
+        TF_CODING_ERROR("Render Delegate already set on render index and cannot be changed");
     }
 
     _renderDelegate = renderDelegate;
+    {
+        // Small hack until applications migrate to using new
+        // context API.
+        // XXX: To be removed
+
+        HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+        renderRegistry.AddDelegateReference(_renderDelegate);
+    }
+
 }
 
 TfToken
@@ -1120,13 +1203,16 @@ HdRenderIndex::SyncAll()
 void
 HdRenderIndex::SyncSprims()
 {
-    TF_FOR_ALL(it, _sprimMap) {
-        if (_tracker.GetSprimDirtyBits(it->first) != HdChangeTracker::Clean) {
-            it->second->Sync();
+    TF_FOR_ALL(typeIt, _sprimTypeMap) {
+        TF_FOR_ALL(primIt, typeIt->second.sprimMap) {
+            const SdfPath &primPath = primIt->first;
 
-            _tracker.MarkSprimClean(it->first);
+            if (_tracker.GetSprimDirtyBits(primPath) != HdChangeTracker::Clean) {
+                primIt->second->Sync();
+
+                _tracker.MarkSprimClean(primPath);
+            }
         }
-
     }
 }
 

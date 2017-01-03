@@ -57,7 +57,7 @@ public:
 
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
-    void SetRenderPassState(HdxDrawTargetRenderPassState *renderPassState);
+    void SetRenderPassState(const HdxDrawTargetRenderPassState *renderPassState);
 
     /// Sets the collection of rprims associated to this render pass.
     void SetRprimCollection(HdRprimCollection const& col);
@@ -73,7 +73,7 @@ private:
     HdRenderPass _renderPass;
 
     /// drawtarget renderPass state
-    HdxDrawTargetRenderPassState *_drawTargetRenderPassState;
+    const HdxDrawTargetRenderPassState *_drawTargetRenderPassState;
 
     /// Local copy of the draw target object.
     GlfDrawTargetRefPtr  _drawTarget;

@@ -80,7 +80,7 @@ HdxDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
 
 void
 HdxDrawTargetRenderPass::SetRenderPassState(
-    HdxDrawTargetRenderPassState *drawTargetRenderPassState)
+    const HdxDrawTargetRenderPassState *drawTargetRenderPassState)
 {
     _drawTargetRenderPassState = drawTargetRenderPassState;
 }

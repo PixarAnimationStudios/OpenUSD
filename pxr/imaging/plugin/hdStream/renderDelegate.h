@@ -44,6 +44,11 @@ public:
                                  SdfPath const& instancerId) override;
     virtual void DestroyRprim(HdRprim *rPrim) override;
 
+    virtual HdSprim *CreateSprim(TfToken const& typeId,
+                                 HdSceneDelegate* delegate,
+                                 SdfPath const& sprimId) override;
+    virtual void DestroySprim(HdSprim *sPrim) override;
+
 private:
     HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
     HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;

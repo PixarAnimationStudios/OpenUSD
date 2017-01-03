@@ -99,22 +99,28 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         }
 
         HdSceneDelegate* delegate = GetDelegate();
-        _camera = delegate->GetRenderIndex().GetSprim(params.cameraPath);
+        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+        _camera = static_cast<const HdxCamera *>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                                         params.cameraPath));
 
         // XXX: This is inefficient, need to be optimized
-        SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
-            SdfPath::AbsoluteRootPath());
+        SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
+                                                   HdPrimTypeTokens->light,
+                                                   SdfPath::AbsoluteRootPath());
+
         SdfPathVector lights = ComputeIncludedLights(sprimPaths,
                                                      params.lightIncludePaths,
                                                      params.lightExcludePaths);
         _lights.clear();
         _lights.reserve(lights.size());
         TF_FOR_ALL (it, lights) {
-            HdSprimSharedPtr const &sprim = delegate->GetRenderIndex().GetSprim(*it);
-            // XXX: or we could say instead of downcast,
-            //      if sprim->Has(HdxLightInterface) ?
-            if (boost::dynamic_pointer_cast<HdxLight>(sprim)) {
-                _lights.push_back(sprim);
+            HdxLight const *light = static_cast<const HdxLight *>(
+                                   renderIndex.GetSprim(HdPrimTypeTokens->light,
+                                                        *it));
+
+            if (light != nullptr) {
+                _lights.push_back(light);
             }
         }
 

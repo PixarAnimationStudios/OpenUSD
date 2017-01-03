@@ -656,7 +656,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& 
     while( _lightIds.size() > lights.size() )
     {
 #if defined(HD_API) && HD_API > 25
-        GetRenderIndex().RemoveSprim(_lightIds.back());
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
 #else
         GetRenderIndex().RemoveLight(_lightIds.back());
 #endif

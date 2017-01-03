@@ -152,7 +152,7 @@ UsdImagingGL_DefaultTaskDelegate::~UsdImagingGL_DefaultTaskDelegate()
 {
     // remove the render graph entities from the renderIndex
     HdRenderIndex &renderIndex = GetRenderIndex();
-    renderIndex.RemoveSprim(_cameraId);
+    renderIndex.RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
     renderIndex.RemoveTask(_selectionTaskId);
     renderIndex.RemoveTask(_simpleLightTaskId);
     renderIndex.RemoveTask(_simpleLightBypassTaskId);
@@ -160,7 +160,7 @@ UsdImagingGL_DefaultTaskDelegate::~UsdImagingGL_DefaultTaskDelegate()
     renderIndex.RemoveTask(_idRenderTaskId);
 
     TF_FOR_ALL (id, _lightIds) {
-        renderIndex.RemoveSprim(*id);
+        renderIndex.RemoveSprim(HdPrimTypeTokens->light, *id);
     }
 }
 
@@ -425,7 +425,7 @@ UsdImagingGL_DefaultTaskDelegate::SetLightingState(
     }
     // Remove unused light Ids from HdRenderIndex
     while (_lightIds.size() > lights.size()) {
-        GetRenderIndex().RemoveSprim(_lightIds.back());
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
         _lightIds.pop_back();
         hasNumLightsChanged = true;
     }

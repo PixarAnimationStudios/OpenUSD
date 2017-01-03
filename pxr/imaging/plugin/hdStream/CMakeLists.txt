@@ -18,6 +18,7 @@ pxr_shared_library(hdStream
         vt
         work
         hd
+        hdx
         ${OPENSUBDIV_LIBRARIES}
         ${TBB_LIBRARIES}
 

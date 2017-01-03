@@ -130,7 +130,10 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
 
     _viewport = params.viewport;
 
-    _camera = GetDelegate()->GetRenderIndex().GetSprim(params.camera);
+    const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+    _camera = static_cast<const HdxCamera *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                                     params.camera));
 }
 
 void

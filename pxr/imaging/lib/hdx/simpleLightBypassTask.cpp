@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdx/simpleLightBypassTask.h"
 
+#include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 
@@ -62,7 +63,10 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
         }
 
         _simpleLightingContext = params.simpleLightingContext;
-        _camera = GetDelegate()->GetRenderIndex().GetSprim(params.cameraPath);
+        const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+        _camera = static_cast<const HdxCamera *>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                                         params.cameraPath));
     }
 
     if (_simpleLightingContext) {

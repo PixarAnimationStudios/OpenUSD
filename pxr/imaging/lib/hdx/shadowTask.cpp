@@ -153,6 +153,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         _renderPassStates.clear();
 
         HdSceneDelegate* delegate = GetDelegate();
+        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
         
         // Extract the HD lights used to render the scene from the 
         // task context, we will use them to find out what
@@ -160,21 +161,23 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         // collection for shadows mapping
         
         // XXX: This is inefficient, need to be optimized
-        SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
-            SdfPath::AbsoluteRootPath());
+        SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
+                                                   HdPrimTypeTokens->light,
+                                                   SdfPath::AbsoluteRootPath());
         SdfPathVector lightPaths =
             HdxSimpleLightTask::ComputeIncludedLights(
                 sprimPaths,
                 params.lightIncludePaths,
                 params.lightExcludePaths);
         
-        HdSprimSharedPtrVector lights;
+        HdxLightPtrConstVector lights;
         TF_FOR_ALL (it, lightPaths) {
-            HdSprimSharedPtr const &sprim = delegate->GetRenderIndex().GetSprim(*it);
-            // XXX: or we could say instead of downcast,
-            //      sprim->Has(HdxLightInterface) ?
-            if (boost::dynamic_pointer_cast<HdxLight>(sprim)) {
-                lights.push_back(sprim);
+             const HdxLight *light = static_cast<const HdxLight *>(
+                                         renderIndex.GetSprim(
+                                                 HdPrimTypeTokens->light, *it));
+
+             if (light != nullptr) {
+                lights.push_back(light);
             }
         }
         

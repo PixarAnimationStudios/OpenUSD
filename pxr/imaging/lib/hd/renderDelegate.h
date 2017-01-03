@@ -30,6 +30,7 @@
 
 class SdfPath;
 class HdRprim;
+class HdSprim;
 class HdSceneDelegate;
 
 /// \class HdRenderDelegate
@@ -62,6 +63,22 @@ public:
     /// Request to Destruct and deallocate the prim.
     /// 
     virtual void DestroyRprim(HdRprim *rPrim) = 0;
+
+    ///
+    /// Request to Allocate and Construct a new Sprim.
+    /// \param typeId the type identifier of the prim to allocate
+    /// \param delegate the scene delegate that provides the data for the prim
+    /// \param sprimId a unique identifier for the prim
+    /// \return A pointer to the new prim or nullptr on error.
+    ///
+    virtual HdSprim *CreateSprim(TfToken const& typeId,
+                                 HdSceneDelegate* delegate,
+                                 SdfPath const& sprimId) = 0;
+
+    ///
+    /// Request to Destruct and deallocate the prim.
+    ///
+    virtual void DestroySprim(HdSprim *sPrim) = 0;
 
 protected:
     /// This class must be derived from

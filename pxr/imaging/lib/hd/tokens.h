@@ -180,9 +180,16 @@
     (none)
 
 #define HD_PRIMTYPE_TOKENS                      \
+    /* Rprims */                                \
     (mesh)                                      \
     (basisCurves)                               \
-    (points)
+    (points)                                    \
+                                                \
+    /* Sprims */                                \
+    (camera)                                    \
+    (light)                                     \
+    (drawTarget)                                \
+
 
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
