@@ -121,7 +121,7 @@ static pthread_mutex_t _progInfoForErrorsMutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Key-value map for extra log info.  Stores unowned pointers to text to be
 // emitted in stack trace logs in case of fatal errors or crashes.
-typedef std::map<std::string, char const *> Arch_LogInfoMap;
+typedef std::map<std::string, std::vector<std::string> const *> Arch_LogInfoMap;
 static Arch_LogInfoMap _logInfoForErrors;
 // Mutex for above:
 static pthread_mutex_t _logInfoForErrorsMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -144,7 +144,10 @@ _EmitAnyExtraLogInfo(FILE* outFile)
     Locker lock(_logInfoForErrorsMutex);
     for (Arch_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
              end = _logInfoForErrors.end(); i != end; ++i) {
-        fprintf(outFile, "\n%s:\n%s", i->first.c_str(), i->second);
+        fprintf(outFile, "\n%s:\n", i->first.c_str());
+        for (std::string const &line: *i->second) {
+            fprintf(outFile, "%s", line.c_str());
+        }
     }
 }
 
@@ -157,13 +160,15 @@ _EmitAnyExtraLogInfo(FILE* outFile, size_t max)
     for (Arch_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
              end = _logInfoForErrors.end(); i != end; ++i) {
         // We limit the # of errors printed to avoid spam.
-        if (n++ >= max) {
-            fprintf(
-                outFile,
-                "...more diagnostic information is in the stack trace file.\n");
-            break;
+        fprintf(outFile, "%s:\n", i->first.c_str());
+        for (std::string const &line: *i->second) {
+            if (n++ >= max) {
+                fprintf(outFile, "... full diagnostics reported in the "
+                        "stack trace file.\n");
+                return;
+            }
+            fprintf(outFile, "%s", line.c_str());
         }
-        fprintf(outFile, "%s:\n%s", i->first.c_str(), i->second);
     }
 }
 
@@ -669,13 +674,14 @@ ArchGetProgramInfoForErrors(const std::string& key) {
 } 
 
 void
-ArchSetExtraLogInfoForErrors(const std::string &key, char const *text)
+ArchSetExtraLogInfoForErrors(const std::string &key,
+                             std::vector<std::string> const *lines)
 {
     Locker lock(_logInfoForErrorsMutex);
-    if (!text || !strlen(text)) {
+    if (!lines || lines->empty()) {
         _logInfoForErrors.erase(key);
     } else {
-        _logInfoForErrors[key] = text;
+        _logInfoForErrors[key] = lines;
     }
 }
 

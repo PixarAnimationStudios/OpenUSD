@@ -203,13 +203,16 @@ void ArchSetProgramInfoForErrors( const std::string& key, const std::string& val
 ARCH_API
 std::string ArchGetProgramInfoForErrors(const std::string& key);
 
-/// Stores (or removes if \p text is NULL) a pointer to additional log data
+/// Stores (or removes if \p lines is nullptr) a pointer to additional log data
 /// that will be output in the stack trace log in case of a fatal error. Note
-/// that the pointer \p text is copied, not the pointed-to text.  Thus it is
-/// the caller's responsibility to ensure that \p text is valid until the
-/// caller removes it by invoking this function again with text==NULL.
+/// that the pointer \p lines is copied, not the pointed-to data.  In addition,
+/// Arch might read the data pointed to by \p lines concurrently at any time.
+/// Thus it is the caller's responsibility to ensure that \p lines is both valid
+/// and not mutated until replacing or removing it by invoking this function
+/// again with the same \p key and different \p lines.
 ARCH_API
-void ArchSetExtraLogInfoForErrors(const std::string &key, char const *text);
+void ArchSetExtraLogInfoForErrors(const std::string &key,
+                                  std::vector<std::string> const *lines);
 
 /// Logs a stack trace to a file in /var/tmp.
 ///

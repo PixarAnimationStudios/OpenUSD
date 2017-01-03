@@ -493,55 +493,80 @@ TfDiagnosticMgr::GetCodeName(const TfEnum &code)
 }
 
 void
-TfDiagnosticMgr::_SetLogInfoForErrors(const std::string &logText) const
+TfDiagnosticMgr::_SetLogInfoForErrors(
+    std::vector<std::string> const &logText) const
 {
     ArchSetExtraLogInfoForErrors(
         TfStringPrintf("Thread %s Pending Diagnostics", 
             TfStringify(std::this_thread::get_id()).c_str()),
-        logText.empty() ? NULL : logText.c_str());
+        logText.empty() ? nullptr : &logText);
 }
 
 void
-TfDiagnosticMgr
-::_AppendErrorTextToString(ErrorIterator i, std::string &out)
+TfDiagnosticMgr::_LogText::AppendAndPublish(
+    ErrorIterator begin, ErrorIterator end)
 {
-    for (ErrorIterator end = GetErrorEnd(); i != end; ++i) {
-        out += _FormatDiagnostic(*i, i->_data->_info);
+    return _AppendAndPublishImpl(/*clear=*/false, begin, end);
+}
+
+void
+TfDiagnosticMgr::_LogText::RebuildAndPublish(
+    ErrorIterator begin, ErrorIterator end)
+{
+    return _AppendAndPublishImpl(/*clear=*/true, begin, end);
+}
+
+void
+TfDiagnosticMgr::_LogText::_AppendAndPublishImpl(
+    bool clear, ErrorIterator begin, ErrorIterator end)
+{
+    // The requirement at the Arch level for ArchSetExtraLogInfoForErrors is
+    // that the pointer we hand it must remain valid, and we can't mutate the
+    // structure it points to since if another thread crashes, Arch will read it
+    // to generate the crash report.  So instead we maintain two copies.  We
+    // update one copy to the new text anpd then publish it to Arch, effectively
+    // swapping out the old copy.  Then we update the old copy to match.  Next
+    // time through we do it again but with the data structures swapped, which
+    // is tracked by 'parity'.
+    auto *first = &texts.first;
+    auto *second = &texts.second;
+    if (parity)
+        std::swap(first, second);
+
+    // Update first.
+    if (clear)
+        first->clear();
+    for (ErrorIterator i = begin; i != end; ++i) {
+        first->push_back(_FormatDiagnostic(*i, i->_data->_info));
     }
+
+    // Publish.
+    ArchSetExtraLogInfoForErrors(
+        TfStringPrintf("Thread %s Pending Diagnostics", 
+                       TfStringify(std::this_thread::get_id()).c_str()),
+        first->empty() ? nullptr : first);
+
+    // Update second to match, arch is no longer looking at it.
+    if (clear)
+        second->clear();
+    for (ErrorIterator i = begin; i != end; ++i) {
+        second->push_back(_FormatDiagnostic(*i, i->_data->_info));
+    }
+
+    // Switch parity.
+    parity = !parity;
 }
 
 void
 TfDiagnosticMgr::_AppendErrorsToLogText(ErrorIterator i)
 {
-    // Copy the string.
-    boost::scoped_ptr<std::string> &oldStr = _logText.local();
-    boost::scoped_ptr<std::string>
-        newStr(oldStr ? new std::string(*oldStr) : new std::string());
-
-    // Write the errors.
-    _AppendErrorTextToString(i, *newStr);
-
-    // Set the log info.
-    _SetLogInfoForErrors(*newStr);
-
-    // Delete the old string by swapping it out for the new in the TLS.
-    oldStr.swap(newStr);
+    _logText.local().AppendAndPublish(i, GetErrorEnd());
 }
 
 void
 TfDiagnosticMgr::_RebuildErrorLogText()
 {
-    // Create a new string.
-    boost::scoped_ptr<std::string> newStr(new std::string());
-
-    // Write the errors.
-    _AppendErrorTextToString(GetErrorBegin(), *newStr);
-
-    // Set the log info.
-    _SetLogInfoForErrors(*newStr);
-
-    // Delete the old string by swapping it out for the new in the TLS.
-    _logText.local().swap(newStr);
+    _logText.local().RebuildAndPublish(GetErrorBegin(), GetErrorEnd());
 }
 
 static std::string
