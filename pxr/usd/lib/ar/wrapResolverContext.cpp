@@ -54,7 +54,7 @@ struct Ar_ResolverContextFromPython
 
     static void* _convertible(PyObject* obj_ptr) 
     {
-        if (obj_ptr == Py_None or 
+        if (obj_ptr == Py_None ||
             Ar_CanConvertResolverContextFromPython(obj_ptr)) {
             return obj_ptr;
         }

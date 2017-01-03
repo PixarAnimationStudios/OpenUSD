@@ -29,9 +29,9 @@ operator==(
     const ArAssetInfo& rhs)
 {
     return (lhs.version == rhs.version) 
-        and (lhs.assetName == rhs.assetName)
-        and (lhs.repoPath == rhs.repoPath)
-        and (lhs.resolverInfo == rhs.resolverInfo);
+        && (lhs.assetName == rhs.assetName)
+        && (lhs.repoPath == rhs.repoPath)
+        && (lhs.resolverInfo == rhs.resolverInfo);
 }
 
 bool 
@@ -39,5 +39,5 @@ operator!=(
     const ArAssetInfo& lhs, 
     const ArAssetInfo& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }

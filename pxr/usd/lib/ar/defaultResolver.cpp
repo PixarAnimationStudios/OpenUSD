@@ -38,7 +38,7 @@
 
 static bool
 _IsFileRelative(const std::string& path) {
-    return path.find("./") == 0 or path.find("../") == 0;
+    return path.find("./") == 0 || path.find("../") == 0;
 }
 
 
@@ -54,7 +54,7 @@ ArDefaultResolver::ArDefaultResolver()
     _searchPath.push_back(ArchGetCwd());
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
-    if (not envPath.empty()) {
+    if (!envPath.empty()) {
         for (const auto& p : TfStringTokenize(envPath, ":")) {
             _searchPath.push_back(TfAbsPath(p));
         }
@@ -74,7 +74,7 @@ ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
 bool
 ArDefaultResolver::IsRelativePath(const std::string& path)
 {
-    return (not path.empty() and path[0] != '/');
+    return (!path.empty() && path[0] != '/');
 }
 
 bool
@@ -88,8 +88,8 @@ ArDefaultResolver::AnchorRelativePath(
     const std::string& anchorPath, 
     const std::string& path)
 {
-    if (anchorPath.empty() or anchorPath[0] != '/' or
-        path.empty() or path[0] == '/' or not _IsFileRelative(path))
+    if (anchorPath.empty() || anchorPath[0] != '/' ||
+        path.empty() || path[0] == '/' || !_IsFileRelative(path))
         return path;
 
     // If anchorPath does not end with a '/', we assume it is specifying
@@ -103,7 +103,7 @@ ArDefaultResolver::AnchorRelativePath(
 bool
 ArDefaultResolver::IsSearchPath(const std::string& path)
 {
-    return IsRelativePath(path) and not _IsFileRelative(path);
+    return IsRelativePath(path) && !_IsFileRelative(path);
 }
 
 std::string
@@ -130,7 +130,7 @@ _Resolve(
     const std::string& path)
 {
     std::string resolvedPath = path;
-    if (not anchorPath.empty()) {
+    if (!anchorPath.empty()) {
         // XXX - CLEANUP:
         // It's tempting to use AnchorRelativePath to combine the two
         // paths here, but that function's file-relative anchoring
@@ -155,7 +155,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
         // First try to resolve relative paths against the current
         // working directory.
         std::string resolvedPath = _Resolve(ArchGetCwd(), path);
-        if (not resolvedPath.empty()) {
+        if (!resolvedPath.empty()) {
             return resolvedPath;
         }
 
@@ -164,7 +164,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
         if (IsSearchPath(path)) {
             for (const auto& searchPath : _searchPath) {
                 resolvedPath = _Resolve(searchPath, path);
-                if (not resolvedPath.empty()) {
+                if (!resolvedPath.empty()) {
                     return resolvedPath;
                 }
             }
@@ -217,7 +217,7 @@ ArDefaultResolver::UpdateAssetInfo(
     ArAssetInfo* resolveInfo)
 {
     if (resolveInfo) {
-        if (not fileVersion.empty()) {
+        if (!fileVersion.empty()) {
             resolveInfo->version = fileVersion;
         }
     }
@@ -306,8 +306,8 @@ ArDefaultResolver::_BeginCacheScope(
     // be empty (when constructing a regular ArResolverScopedCache)
     // or holding on to a _CachePtr (when constructing an 
     // ArResolverScopedCache that shares data with another one).
-    TF_VERIFY(cacheScopeData and
-              (cacheScopeData->IsEmpty() or 
+    TF_VERIFY(cacheScopeData && 
+              (cacheScopeData->IsEmpty() ||
                cacheScopeData->IsHolding<_CachePtr>()));
 
     _CachePtrStack& cacheStack = _threadCacheStack.local();
@@ -332,7 +332,7 @@ ArDefaultResolver::_EndCacheScope(
     VtValue* cacheScopeData)
 {
     _CachePtrStack& cacheStack = _threadCacheStack.local();
-    if (TF_VERIFY(not cacheStack.empty())) {
+    if (TF_VERIFY(!cacheStack.empty())) {
         cacheStack.pop_back();
     }
 }

@@ -131,11 +131,11 @@ struct _ResolverHolder
 
         PlugPluginPtr plugin = PlugRegistry::GetInstance()
             .GetPluginForType(resolverType);
-        if (not TF_VERIFY(
+        if (!TF_VERIFY(
                 plugin, 
                 "Failed to find plugin for %s", 
                 resolverType.GetTypeName().c_str())
-            or not TF_VERIFY(
+            || !TF_VERIFY(
                 plugin->Load(), 
                 "Failed to load plugin %s for %s",
                 plugin->GetName().c_str(),
@@ -145,13 +145,13 @@ struct _ResolverHolder
 
         ArResolverFactoryBase* factory =
             resolverType.GetFactory<ArResolverFactoryBase>();
-        if (not factory) {
+        if (!factory) {
             TF_CODING_ERROR("Cannot manufacture plugin asset resolver");
             return;
         }
 
         ArResolver* tmpResolver = factory->New();
-        if (not tmpResolver) {
+        if (!tmpResolver) {
             TF_CODING_ERROR("Failed to manufacture plugin asset resolver");
             return;
         }
