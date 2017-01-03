@@ -1539,14 +1539,14 @@ UsdStage::_IsValidForLoadUnload(const SdfPath& path) const
     }
 
     if (not curPrim.IsActive()) {
-        TF_RUNTIME_ERROR("Attempt to load/unload an inactive path <%s>",
+        TF_WARN("Attempt to load/unload an inactive path <%s>",
                 path.GetString().c_str());
         return false;
     }
 
     if (curPrim.IsMaster()) {
         TF_RUNTIME_ERROR("Attempt to load/unload instance master <%s>",
-                path.GetString().c_str());
+                         path.GetString().c_str());
         return false;
     }
 
