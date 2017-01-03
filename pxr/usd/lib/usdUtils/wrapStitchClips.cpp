@@ -37,7 +37,7 @@ template <typename T>
 T
 _ConvertWithDefault(const object obj, const T& def)
 {
-    if (not TfPyIsNone(obj)) {
+    if (!TfPyIsNone(obj)) {
         return extract<T>(obj);
     } 
         

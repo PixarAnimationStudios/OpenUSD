@@ -50,7 +50,7 @@ UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath,
     }
     
     UsdStageRefPtr stage = UsdStage::Open(rootLayerPath, UsdStage::LoadAll);
-    if (not stage)
+    if (!stage)
         return nullptr;
 
     if (TfMallocTag::IsInitialized()) {
@@ -79,7 +79,7 @@ _UpdateCountsHelper(const UsdPrim &prim,
     size_t *instanceCount,
     std::unordered_map<TfToken, size_t, TfToken::HashFunctor> *primCountsByType)
 {
-    if (not prim)
+    if (!prim)
         return;
 
     ++(*totalPrimCount);
@@ -88,7 +88,7 @@ _UpdateCountsHelper(const UsdPrim &prim,
     if (prim.IsModel()) {
         TfToken kind;
         // Only count if it is a component model.
-        if (UsdModelAPI(prim).GetKind(&kind) and 
+        if (UsdModelAPI(prim).GetKind(&kind) &&
             KindRegistry::IsA(kind, KindTokens->component)) {
                 
             ++(*modelCount);
@@ -107,8 +107,8 @@ _UpdateCountsHelper(const UsdPrim &prim,
 
     (*instanceCount) += prim.IsInstance();
     (*activePrimCount) += prim.IsActive();
-    (*inactivePrimCount) += not prim.IsActive();
-    (*pureOverCount) += not prim.HasDefiningSpecifier();
+    (*inactivePrimCount) += !prim.IsActive();
+    (*pureOverCount) += !prim.HasDefiningSpecifier();
 
     TfToken typeName = prim.GetTypeName().IsEmpty() ? 
         UsdUtilsUsdStageStatsKeys->untyped : prim.GetTypeName();

@@ -73,8 +73,8 @@ namespace {
     _LayerIsWritable(const SdfLayerHandle& layer)
     {
         if (layer 
-            and TfIsFile(layer->GetIdentifier())
-            and not TfIsWritable(layer->GetIdentifier())) {
+            && TfIsFile(layer->GetIdentifier())
+            && !TfIsWritable(layer->GetIdentifier())) {
             TF_RUNTIME_ERROR("Error: Layer %s is unwritable.", 
                              layer->GetIdentifier().c_str());
             return false;
@@ -506,7 +506,7 @@ namespace {
                       double endTimeCode) 
     {
         // it is a coding error to look up clip data in a non-existent path
-        if (not resultLayer->GetPrimAtPath(clipDataPath)) {
+        if (!resultLayer->GetPrimAtPath(clipDataPath)) {
             TF_CODING_ERROR("Invalid prim in path: @%s@<%s>",
                             resultLayer->GetIdentifier().c_str(),
                             clipDataPath.GetString().c_str());
@@ -615,7 +615,7 @@ namespace {
         UsdUtilsStitchLayers(topologyLayer, result.topology, true);
 
         // if the rootLayer has no clip-metadata authored 
-        if (not resultLayer->GetPrimAtPath(clipPath)) {
+        if (!resultLayer->GetPrimAtPath(clipPath)) {
             // we need to run traditional stitching to add the prim structure
             UsdUtilsStitchLayers(resultLayer, result.root, true);
         } else {
@@ -686,7 +686,7 @@ namespace {
         
         for (size_t i = 0; i < clipLayerFiles.size(); i++) { 
             const auto& layer = clipLayers[i];
-            if (not layer) {
+            if (!layer) {
                 TF_CODING_ERROR("Failed to open layer %s\n",
                                 clipLayerFiles[i].c_str());
                 return false;
@@ -696,7 +696,7 @@ namespace {
         }
 
         // if no clipLayers contain the primPath we want
-        if (not somePrimContainsPath) {
+        if (!somePrimContainsPath) {
             TF_CODING_ERROR("Invalid clip path specified <%s>", 
                             clipPath.GetString().c_str());
             return false;

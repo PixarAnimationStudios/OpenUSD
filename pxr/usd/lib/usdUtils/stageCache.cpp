@@ -76,7 +76,7 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
         _SessionLayerMap::iterator itr = sessionLayerMap.find(sessionKey);
         if (itr == sessionLayerMap.end()) {
             SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
-            if (not variantSelections.empty()) {
+            if (!variantSelections.empty()) {
                 SdfPrimSpecHandle over = SdfPrimSpec::New(
                     layer,
                     modelName,

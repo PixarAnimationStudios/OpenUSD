@@ -57,7 +57,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 bool UsdUtilsGetCamerasAreZup(UsdStageWeakPtr const &stage)
 {
-    if (not stage){
+    if (!stage){
         return false;
     }
     
@@ -66,8 +66,8 @@ bool UsdUtilsGetCamerasAreZup(UsdStageWeakPtr const &stage)
     bool hasZupCamera = false;
 
     TF_FOR_ALL(prim, stage->GetPseudoRoot().
-                            GetFilteredChildren(UsdPrimIsDefined and
-                                                not UsdPrimIsAbstract)){
+                            GetFilteredChildren(UsdPrimIsDefined &&
+                                                !UsdPrimIsAbstract)){
         VtValue isZup = prim->GetCustomDataByKey(_tokens->zUp);
         if (isZup.IsEmpty()){
             continue;
@@ -102,7 +102,7 @@ UsdUtilsGetModelNameFromRootLayer(
 {
     // First check if if we have the metadata.
     TfToken modelName = rootLayer->GetDefaultPrim();
-    if (not modelName.IsEmpty()) {
+    if (!modelName.IsEmpty()) {
         return modelName;
     }
 
@@ -112,7 +112,7 @@ UsdUtilsGetModelNameFromRootLayer(
     std::string baseName = TfGetBaseName(filePath);
     modelName = TfToken(baseName.substr(0, baseName.find('.')));
 
-    if (not modelName.IsEmpty() and rootLayer->GetPrimAtPath(
+    if (!modelName.IsEmpty() && rootLayer->GetPrimAtPath(
             SdfPath::AbsoluteRootPath().AppendChild(modelName))) {
         return modelName;
     }
@@ -136,7 +136,7 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
         JsObject metadata = plug->GetMetadata();
         JsValue pipelineUtilsDictValue;
         if (TfMapLookup(metadata, _tokens->UsdUtilsPipeline, &pipelineUtilsDictValue)) {
-            if (not pipelineUtilsDictValue.Is<JsObject>()) {
+            if (!pipelineUtilsDictValue.Is<JsObject>()) {
                 TF_CODING_ERROR(
                         "%s[UsdUtilsPipeline] was not a dictionary.",
                         plug->GetName().c_str());
@@ -150,7 +150,7 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
             if (TfMapLookup(pipelineUtilsDict,
                         _tokens->RegisteredVariantSets,
                         &registeredVariantSetsValue)) {
-                if (not registeredVariantSetsValue.IsObject()) {
+                if (!registeredVariantSetsValue.IsObject()) {
                     TF_CODING_ERROR(
                             "%s[UsdUtilsPipeline][RegisteredVariantSets] was not a dictionary.",
                             plug->GetName().c_str());
@@ -162,7 +162,7 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
                 for (const auto& i: registeredVariantSets) {
                     const std::string& variantSetName = i.first;
                     const JsValue& v = i.second;
-                    if (not v.IsObject()) {
+                    if (!v.IsObject()) {
                         TF_CODING_ERROR(
                                 "%s[UsdUtilsPipeline][RegisteredVariantSets][%s] was not a dictionary.",
                                 plug->GetName().c_str(),
@@ -217,8 +217,8 @@ UsdUtilsGetPrimAtPathWithForwarding(const UsdStagePtr &stage,
 
     SdfPath validAncestorPath = path;
     UsdPrim validAncestor;
-    while (not validAncestor) {
-        if (validAncestorPath == SdfPath::AbsoluteRootPath() or 
+    while (!validAncestor) {
+        if (validAncestorPath == SdfPath::AbsoluteRootPath() ||
             validAncestorPath == SdfPath::EmptyPath()) {
             break;
         }
@@ -228,7 +228,7 @@ UsdUtilsGetPrimAtPathWithForwarding(const UsdStagePtr &stage,
     }
 
     if (validAncestorPath.IsPrimPath()) {
-        if (not validAncestor.IsInstance())
+        if (!validAncestor.IsInstance())
             return UsdPrim();
 
         SdfPath instanceRelPath = path.ReplacePrefix(validAncestorPath, 
@@ -253,13 +253,13 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
         return p;
 
     // Check if the path can be forwarded to a valid prim in a master.
-    if (not UsdUtilsGetPrimAtPathWithForwarding(stage, path))
+    if (!UsdUtilsGetPrimAtPathWithForwarding(stage, path))
         return UsdPrim();
 
     SdfPath validAncestorPath = path;
     UsdPrim validAncestor;
-    while (not validAncestor) {
-        if (validAncestorPath == SdfPath::AbsoluteRootPath() or 
+    while (!validAncestor) {
+        if (validAncestorPath == SdfPath::AbsoluteRootPath() ||
             validAncestorPath == SdfPath::EmptyPath()) {
             break;
         }
@@ -269,7 +269,7 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
     }
 
     if (validAncestorPath.IsPrimPath()) {
-        if (not TF_VERIFY(validAncestor.IsInstance()))
+        if (!TF_VERIFY(validAncestor.IsInstance()))
             return UsdPrim();
 
         validAncestor.SetInstanceable(false);

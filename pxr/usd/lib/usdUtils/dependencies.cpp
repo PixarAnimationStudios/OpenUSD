@@ -46,7 +46,7 @@ _AppendAssetPathIfNotEmpty(
     const T& assetPath,
     vector<string>* deps)
 {
-    if (TF_VERIFY(deps) and not assetPath.GetAssetPath().empty())
+    if (TF_VERIFY(deps) && !assetPath.GetAssetPath().empty())
         deps->push_back(assetPath.GetAssetPath());
 }
 
@@ -87,7 +87,7 @@ _ExtractDependenciesForBinary(
     TRACE_FUNCTION();
 
     SdfLayerRefPtr layer = SdfLayer::OpenAsAnonymous(filePath);
-    if (not TF_VERIFY(layer))
+    if (!TF_VERIFY(layer))
         return;
 
     *sublayers = layer->GetSubLayerPaths();
@@ -95,7 +95,7 @@ _ExtractDependenciesForBinary(
     std::stack<SdfPrimSpecHandle> dfs;
     dfs.push(layer->GetPseudoRoot());
 
-    while (not dfs.empty()) {
+    while (!dfs.empty()) {
         SdfPrimSpecHandle curr = dfs.top();
         dfs.pop();
 
@@ -128,12 +128,12 @@ _ExtractDependenciesForBinary(
                     const SdfPath path = curr->GetPath().AppendProperty(name);
                     const VtValue vtTypeName = layer->GetField(
                         path, SdfFieldKeys->TypeName);
-                    if (not vtTypeName.IsHolding<TfToken>())
+                    if (!vtTypeName.IsHolding<TfToken>())
                         continue;
 
                     const TfToken typeName =
                         vtTypeName.UncheckedGet<TfToken>();
-                    if (typeName == SdfValueTypeNames->Asset or
+                    if (typeName == SdfValueTypeNames->Asset ||
                         typeName == SdfValueTypeNames->AssetArray) {
                         _AppendAssetValue(layer->GetField(
                             path, SdfFieldKeys->Default), references);
@@ -169,7 +169,7 @@ _IsUsdBinary(const std::string& filePath)
 {
     SdfFileFormatConstPtr textFormat =
         SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
-    return not (textFormat and textFormat->CanRead(filePath));
+    return !(textFormat && textFormat->CanRead(filePath));
 }
 
 void
