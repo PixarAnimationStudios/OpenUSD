@@ -24,7 +24,9 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdx/drawTargetResolveTask.h"
+#include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/drawTarget.h"
+#include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -47,34 +49,31 @@ HdxDrawTargetResolveTask::_Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    HdSceneDelegate* delegate = GetDelegate();
+    // Extract the list of render pass for draw targets from the task context.
+    // This list is set from drawTargetTask.cpp during Sync phase.
+    std::vector< std::unique_ptr<HdxDrawTargetRenderPass> >  *passes;
+    if (not _GetTaskContextData(ctx, HdxTokens->drawTargetRenderPasses, &passes)) {
+        return;
+    }
 
-    HdxDrawTargetSharedPtrVector drawTargets;
-    HdxDrawTarget::GetDrawTargets(delegate, &drawTargets);
-
-    size_t numDrawTargets = drawTargets.size();
-
+    // Iterate through all renderpass (drawtarget renderpass), extract the
+    // draw target and resolve them if needed. We need to resolve them to 
+    // regular buffers so use them in the rest of the pipeline.
+    size_t numDrawTargets = passes->size();
     if (numDrawTargets > 0) {
-    
         // Store the current framebuffers so we can set them back after blitting
-        GLuint rfb, dfb;
+        GLuint rfb;
+        GLuint dfb;
         glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, (GLint*)&rfb);
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, (GLint*)&dfb);
 
-        // XXX : This can be optimized if we pass an array of current 
-        // draw targets from drawTargetTask.cpp via the HdxTaskContext
         for (size_t i = 0; i < numDrawTargets; ++i) {
-            HdxDrawTargetSharedPtr drawTarget = drawTargets[i];
+            HdxDrawTargetRenderPass *pass = (*passes)[i].get();
+            GlfDrawTargetRefPtr drawtarget= pass->GetDrawTarget();
 
-            if (drawTarget and drawTarget->IsEnabled()) {
-                
-                // If the fbo has msaa attachments let's resolve them now
-                GlfDrawTargetRefPtr glfdrawtarget = drawTarget->GetGlfDrawTarget();
-                if (glfdrawtarget->HasMSAA()) {
-                    GlfDrawTargetRefPtr contextFriendlyDrawTarget = 
-                        GlfDrawTarget::New(glfdrawtarget);
-                    contextFriendlyDrawTarget->Resolve();
-                }
+            // If the fbo has msaa attachments let's resolve them now
+            if (drawtarget->HasMSAA()) {
+                drawtarget->Resolve();
             }
         }
 

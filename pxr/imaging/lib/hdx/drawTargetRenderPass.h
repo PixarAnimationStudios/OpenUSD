@@ -52,10 +52,14 @@ public:
     /// the color buffers and depth buffer to use.
     void SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget);
 
+    /// Returns the draw target associated to this render pass.
+    GlfDrawTargetRefPtr GetDrawTarget();
+
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
     void SetRenderPassState(HdxDrawTargetRenderPassState *renderPassState);
 
+    /// Sets the collection of rprims associated to this render pass.
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Execute render pass task
@@ -83,7 +87,7 @@ private:
     void _ClearBuffers();
 
     // No default/copy
-    HdxDrawTargetRenderPass()                                           = delete;
+    HdxDrawTargetRenderPass()                                            = delete;
     HdxDrawTargetRenderPass(const HdxDrawTargetRenderPass &)             = delete;
     HdxDrawTargetRenderPass &operator =(const HdxDrawTargetRenderPass &) = delete;
 };

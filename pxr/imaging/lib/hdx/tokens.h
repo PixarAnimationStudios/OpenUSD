@@ -43,7 +43,8 @@
     (selMaskColor)              \
     (selOffset)                 \
     (selOffsetMinMax)           \
-    (selValue)
+    (selValue)                  \
+    (drawTargetRenderPasses)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
 

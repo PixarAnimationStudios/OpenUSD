@@ -76,7 +76,6 @@ HdxDrawTargetRenderPass::SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget)
     // context, so create a local copy here to use on this context.
     _drawTarget = GlfDrawTarget::New(drawTarget);
     _drawTargetContext = GlfGLContext::GetCurrentGLContext();
-
 }
 
 void
@@ -155,4 +154,10 @@ HdxDrawTargetRenderPass::_ClearBuffers()
 
         _ClearBuffer(GL_COLOR, attachmentNum, clearColor);
     }
+}
+
+GlfDrawTargetRefPtr 
+HdxDrawTargetRenderPass::GetDrawTarget()
+{
+    return _drawTarget;
 }

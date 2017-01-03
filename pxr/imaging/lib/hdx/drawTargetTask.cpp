@@ -40,6 +40,7 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
  : HdSceneTask(delegate, id)
  , _currentDrawTargetSetVersion(0)
+ , _renderPassesInfo()
  , _renderPasses()
  , _depthBiasUseDefault(true)
  , _depthBiasEnable(false)
@@ -104,9 +105,11 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         HdxDrawTargetSharedPtrVector drawTargets;
         HdxDrawTarget::GetDrawTargets(delegate, &drawTargets);
 
+        _renderPassesInfo.clear();
         _renderPasses.clear();
 
         size_t numDrawTargets = drawTargets.size();
+        _renderPassesInfo.reserve(numDrawTargets);
         _renderPasses.reserve(numDrawTargets);
 
         for (size_t drawTargetNum = 0;
@@ -117,7 +120,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
             if (drawTarget) {
                 if (drawTarget->IsEnabled()) {
                     HdxDrawTargetRenderPassUniquePtr pass(
-                                      new HdxDrawTargetRenderPass(&renderIndex));
+                                    new HdxDrawTargetRenderPass(&renderIndex));
 
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
@@ -127,37 +130,40 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
                     HdxSimpleLightingShaderSharedPtr simpleLightingShader(
                         new HdxSimpleLightingShader());
 
-                    _renderPasses.emplace_back(
+                    _renderPassesInfo.emplace_back(
                             RenderPassInfo {
-                                    std::move(pass),
                                     renderPassState,
                                     simpleLightingShader,
                                     drawTarget,
                                     drawTarget->GetVersion()
                              });
+                    _renderPasses.emplace_back(std::move(pass));
                 }
             }
         }
         _currentDrawTargetSetVersion = drawTargetVersion;
     } else {
-        size_t numRenderPasses = _renderPasses.size();
+        size_t numRenderPasses = _renderPassesInfo.size();
 
         // Need to look for changes in individual draw targets.
         for (size_t renderPassIdx = 0;
              renderPassIdx < numRenderPasses;
              ++renderPassIdx) {
-            RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
+            RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
+
             HdxDrawTargetSharedPtr target = renderPassInfo.target.lock();
             unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
-
-                renderPassInfo.pass->SetDrawTarget(target->GetGlfDrawTarget());
-
+                _renderPasses[renderPassIdx]->SetDrawTarget(target->GetGlfDrawTarget());
                 renderPassInfo.version = targetVersion;
             }
         }
     }
+
+    // Store the draw targets in the task context so the resolve 
+    // task does not have to extract them again.
+    (*ctx)[HdxTokens->drawTargetRenderPasses] = &_renderPasses;
 
     ///----------------------
     static const GfMatrix4d yflip = GfMatrix4d().SetScale(
@@ -167,13 +173,13 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     GlfSimpleLightingContextRefPtr lightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
 
-    size_t numRenderPasses = _renderPasses.size();
+    size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
-        HdxDrawTargetRenderPass *renderPass = renderPassInfo.pass.get();
+        RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
+        HdxDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].get();
         HdRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
         HdxDrawTargetSharedPtr drawTarget = renderPassInfo.target.lock();
 
@@ -214,7 +220,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetCullStyle(_cullStyle);
 
         HdxSimpleLightingShaderSharedPtr &simpleLightingShader
-            = _renderPasses[renderPassIdx].simpleLightingShader;
+            = _renderPassesInfo[renderPassIdx].simpleLightingShader;
         GlfSimpleLightingContextRefPtr const& simpleLightingContext =
             simpleLightingShader->GetLightingContext();
 
@@ -289,15 +295,15 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
     // PSO.
     glFrontFace(GL_CW);  // Restored by GL_POLYGON_BIT
 
-    size_t numRenderPasses = _renderPasses.size();
+    size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdxDrawTargetRenderPass *renderPass =
-            _renderPasses[renderPassIdx].pass.get();
+        HdxDrawTargetRenderPass *renderPass = 
+            _renderPasses[renderPassIdx].get();
         HdRenderPassStateSharedPtr renderPassState =
-            _renderPasses[renderPassIdx].renderPassState;
+            _renderPassesInfo[renderPassIdx].renderPassState;
         renderPassState->Bind();
         renderPass->Execute(renderPassState);
         renderPassState->Unbind();
