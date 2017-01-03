@@ -136,7 +136,7 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 {
     Garch_GLPlatformDebugWindow *window
         = Garch_GLPlatformDebugWindow::GetWindowByHandle(hWnd);
-    if (not TF_VERIFY(window)) {
+    if (!TF_VERIFY(window)) {
         return 0;
     }
 
@@ -185,12 +185,12 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 void
 Garch_GLPlatformDebugWindow::Run()
 {
-    if (not _display) return;
+    if (!_display) return;
 
     _running = true;
 
     MSG msg = {0};
-    while (_running and message != WM_QUIT) {
+    while (_running && message != WM_QUIT) {
         if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);

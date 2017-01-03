@@ -88,7 +88,7 @@ GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
     GLXFBConfig *configs = NULL;
     int configCount = 0;
     configs = glXChooseFBConfig(shareDisplay, screen, configSpec, &configCount);
-    if (not TF_VERIFY(configCount > 0)) {
+    if (!TF_VERIFY(configCount > 0)) {
         return;
     }
 
@@ -121,7 +121,7 @@ GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
         _ctx = glXCreateContext(shareDisplay, vis,
                                 shareContext, directRendering);
     }
-    if (not TF_VERIFY(_ctx)) {
+    if (!TF_VERIFY(_ctx)) {
         return;
     }
 
@@ -130,7 +130,7 @@ GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
 
 GarchGLPlatformDebugContextPrivate::~GarchGLPlatformDebugContextPrivate()
 {
-    if (_dpy and _ctx) {
+    if (_dpy && _ctx) {
         glXDestroyContext(_dpy, _ctx);
     }
 }
@@ -201,7 +201,7 @@ GarchGLPlatformDebugContext::GarchGLPlatformDebugContext(int majorVersion,
     , _coreProfile(coreProfile)
 
 {
-    if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
+    if (!GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
     _private.reset(new GarchGLPlatformDebugContextPrivate(majorVersion,
@@ -220,11 +220,11 @@ void
 GarchGLPlatformDebugContext::makeCurrent()
 {
     // note: if not enabled, returns without making context current.
-    if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
+    if (!GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
 
-    if (not TF_VERIFY(_private)) {
+    if (!TF_VERIFY(_private)) {
         return;
     }
 
@@ -234,7 +234,7 @@ GarchGLPlatformDebugContext::makeCurrent()
 void*
 GarchGLPlatformDebugContext::chooseMacVisual()
 {
-    if (_coreProfile or
+    if (_coreProfile ||
         GarchGLPlatformDebugContext::IsEnabledCoreProfile()) {
         return GarchSelectCoreProfileMacVisual();
     } else {
