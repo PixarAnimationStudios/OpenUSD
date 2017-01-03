@@ -75,8 +75,8 @@ UsdAbc_AlembicType::Stringify() const
 bool
 UsdAbc_AlembicType::operator==(const UsdAbc_AlembicType& rhs) const
 {
-    return pod    == rhs.pod and
-           extent == rhs.extent and
+    return pod    == rhs.pod &&
+           extent == rhs.extent &&
            array  == rhs.array;
 }
 
@@ -254,7 +254,7 @@ UsdAbc_AlembicDataConversion::GetToUsdConverter(
     const SdfValueTypeName &usdType) const
 {
     for (const auto& c : _typeConverters) {
-        if (c.usdType == usdType and c.abcType == alembicType) {
+        if (c.usdType == usdType && c.abcType == alembicType) {
             return c.toUsdFn;
         }
     }

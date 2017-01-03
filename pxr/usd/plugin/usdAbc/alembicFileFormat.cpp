@@ -91,13 +91,13 @@ UsdAbcAlembicFileFormat::Read(
     TRACE_FUNCTION();
 
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
     UsdAbc_AlembicDataRefPtr abcData = TfStatic_cast<UsdAbc_AlembicDataRefPtr>(data);
-    if (not abcData->Open(resolvedPath)) {
+    if (!abcData->Open(resolvedPath)) {
         return false;
     }
 
@@ -119,14 +119,14 @@ UsdAbcAlembicFileFormat::WriteToFile(
     const FileFormatArguments& args) const
 {
     const SdfLayer* layer = dynamic_cast<const SdfLayer*>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     // Write.
     SdfAbstractDataConstPtr data = 
         _GetLayerData(SdfCreateNonConstHandle(layer));
-    return TF_VERIFY(data) and UsdAbc_AlembicData::Write(data, filePath, comment);
+    return TF_VERIFY(data) && UsdAbc_AlembicData::Write(data, filePath, comment);
 }
 
 bool 

@@ -78,7 +78,7 @@ _GetGeometryScope(const TfToken& interpolation)
     static const TfToken varying("varying");
     static const TfToken vertex("vertex");
     static const TfToken faceVarying("faceVarying");
-    if (interpolation.IsEmpty() or interpolation == constant) {
+    if (interpolation.IsEmpty() || interpolation == constant) {
         return kConstantScope;
     }
     if (interpolation == uniform) {
@@ -231,7 +231,7 @@ UsdSamples::_Validate()
 restart:
     for (const auto& v : *_samples) {
         if (v.second.GetType() != type) {
-            if (not TF_VERIFY(v.second.GetType() == backupType,
+            if (!TF_VERIFY(v.second.GetType() == backupType,
                               "Expected sample at <%s> time %f of type '%s', "
                               "got '%s'",
                               GetId().GetFullSpecPath().GetText(),
@@ -242,7 +242,7 @@ restart:
             }
             else {
                 // Make sure we have a local copy.
-                if (not _local) {
+                if (!_local) {
                     _local.reset(new SdfTimeSampleMap(*_samples));
                     _samples = _local.get();
                     goto restart;
@@ -334,7 +334,7 @@ UsdSamples::GetSamples() const
 void
 UsdSamples::TakeSamples(SdfTimeSampleMap& samples)
 {
-    if (not _local) {
+    if (!_local) {
         _value.reset();
         _local.reset(new SdfTimeSampleMap);
     }
@@ -900,7 +900,7 @@ public:
     UsdSamples ExtractSamples(const TfToken& name, const SdfValueTypeName& type)
     {
         UsdSamples result = _ExtractSamples(name);
-        if (not result.IsEmpty() and type != result.GetTypeName()) {
+        if (!result.IsEmpty() && type != result.GetTypeName()) {
             TF_WARN("Expected property '%s' to have type '%s', got '%s'",
                     GetPath().AppendProperty(name).GetText(),
                     type.GetAsToken().GetText(),
@@ -1094,7 +1094,7 @@ _IsOver(const _PrimWriterContext& context)
         return true;
     }
     const VtValue value = context.GetField(SdfFieldKeys->Specifier);
-    return not value.IsHolding<SdfSpecifier>() or
+    return ! value.IsHolding<SdfSpecifier>() ||
                value.UncheckedGet<SdfSpecifier>() == SdfSpecifierOver;
 }
 
@@ -1112,15 +1112,15 @@ _ReverseWindingOrder(UsdSamples* valuesMap, const UsdSamples& countsMap)
     for (const auto& v : valuesMap->GetSamples()) {
         const VtValue& valuesValue = v.second;
         const VtValue& countsValue = countsMap.Get(v.first);
-        if (not TF_VERIFY(valuesValue.IsHolding<ValueArray>())) {
+        if (! TF_VERIFY(valuesValue.IsHolding<ValueArray>())) {
             continue;
         }
-        if (not TF_VERIFY(countsValue.IsHolding<CountArray>())) {
+        if (! TF_VERIFY(countsValue.IsHolding<CountArray>())) {
             continue;
         }
         ValueArray values        = valuesValue.UncheckedGet<ValueArray>();
         const CountArray& counts = countsValue.UncheckedGet<CountArray>();
-        if (not UsdAbc_ReverseOrderImpl(values, counts)) {
+        if (! UsdAbc_ReverseOrderImpl(values, counts)) {
             continue;
         }
         result[v.first].Swap(values);
@@ -1143,7 +1143,7 @@ _ReverseWindingOrder(
     const VtValue value =
         context->GetPropertyField(UsdGeomTokens->orientation,
                                   SdfFieldKeys->Default);
-    if (not value.IsHolding<TfToken>() or
+    if (! value.IsHolding<TfToken>() ||
             value.UncheckedGet<TfToken>() != UsdGeomTokens->leftHanded) {
         _ReverseWindingOrder<int>(faceVertexIndices, faceVertexCounts);
     }
@@ -1164,7 +1164,7 @@ _GetInterpretation(const SdfValueTypeName& typeName)
         return "vector";
     }
     if (roleName == SdfValueRoleNames->Color) {
-        if (typeName == SdfValueTypeNames->Float4 or
+        if (typeName == SdfValueTypeNames->Float4 ||
             typeName == SdfValueTypeNames->Double4) {
             return "rgba";
         }
@@ -1173,7 +1173,7 @@ _GetInterpretation(const SdfValueTypeName& typeName)
     if (roleName == SdfValueRoleNames->Transform) {
         return "matrix";
     }
-    if (typeName == SdfValueTypeNames->Quatd or
+    if (typeName == SdfValueTypeNames->Quatd ||
         typeName == SdfValueTypeNames->Quatf) {
         return "quat";
     }
@@ -1215,7 +1215,7 @@ _MakeSample(
 
     // This catches when the programmer fails to supply a conversion function
     // for the conversion.
-    if (not converter) {
+    if (! converter) {
         return _ErrorSampleForAlembic(TfStringPrintf(
                     "No conversion for '%s'",
                     usdType.GetAsToken().GetText()));
@@ -1223,7 +1223,7 @@ _MakeSample(
 
     // This catches when the programmer supplies a conversion that doesn't
     // yield the correct Alembic type.  This should never happen.
-    if (not skipAlembicTypeCheck) {
+    if (! skipAlembicTypeCheck) {
         const UsdAbc_AlembicType actualAlembicType = schema.FindConverter(usdType);
         if (actualAlembicType.GetDataType() != expectedAlembicType) {
             return _ErrorSampleForAlembic(TfStringPrintf(
@@ -1442,7 +1442,7 @@ _Copy(
     _SampleForAlembic sample =
         _MakeSample<SampleValueType>(schema, converter,
                                      usdType, samples.Get(time));
-    if (not _CheckSample(sample, samples, usdType)) {
+    if (! _CheckSample(sample, samples, usdType)) {
         return;
     }
 
@@ -1473,7 +1473,7 @@ _Copy(
         _MakeSample<SampleValueType>(schema, converter,
                                      usdType, samples.Get(time),
                                      skipAlembicTypeCheck);
-    if (not _CheckSample(sample, samples, usdType)) {
+    if (! _CheckSample(sample, samples, usdType)) {
         return;
     }
 
@@ -1511,7 +1511,7 @@ _Copy(
         _MakeSample<PodType, extent>(schema, converter,
                                      usdType, samples.Get(time),
                                      skipAlembicTypeCheck);
-    if (not _CheckSample(sample, samples, usdType)) {
+    if (! _CheckSample(sample, samples, usdType)) {
         return sample;
     }
 
@@ -1535,7 +1535,7 @@ _Copy(
 {
     static const bool skipAlembicTypeCheck = true;
     return _Copy(schema, schema.GetConverter(samples.GetTypeName()),
-                 time, samples, dst, method, not skipAlembicTypeCheck);
+                 time, samples, dst, method, !skipAlembicTypeCheck);
 }
 
 // Copy to a OTypedGeomParam<T>::Sample.  The client *must* hold the returned
@@ -1569,7 +1569,7 @@ _Copy(
     _SampleForAlembic vals =
         _MakeSample<PodType, extent>(schema, converter,
                                      usdType, valueSamples.Get(time));
-    if (not _CheckSample(vals, valueSamples, usdType)) {
+    if (! _CheckSample(vals, valueSamples, usdType)) {
         return vals;
     }
 
@@ -1625,7 +1625,7 @@ _Copy(
         _MakeSample(schema, converter, usdType,
                     samples.Get(time), dataType,
                     skipAlembicTypeCheck);
-    if (not _CheckSample(sample, samples, usdType)) {
+    if (! _CheckSample(sample, samples, usdType)) {
         return;
     }
 
@@ -1652,7 +1652,7 @@ _Copy(
         _MakeSample(schema, converter, usdType,
                     samples.Get(time), dataType,
                     skipAlembicTypeCheck);
-    if (not _CheckSample(sample, samples, usdType)) {
+    if (! _CheckSample(sample, samples, usdType)) {
         return;
     }
 
@@ -1707,7 +1707,7 @@ _SampleForAlembic
 _CopyVisibility(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->inherited) {
+    if (value.IsEmpty() || value == UsdGeomTokens->inherited) {
         return _SampleForAlembic(int8_t(kVisibilityDeferred));
     }
     if (value == UsdGeomTokens->invisible) {
@@ -1723,7 +1723,7 @@ _SampleForAlembic
 _CopySubdivisionScheme(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->catmullClark) {
+    if (value.IsEmpty() || value == UsdGeomTokens->catmullClark) {
         return _SampleForAlembic(std::string("catmull-clark"));
     }
     if (value == UsdGeomTokens->loop) {
@@ -1742,7 +1742,7 @@ _SampleForAlembic
 _CopyInterpolateBoundary(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->none) {
+    if (value.IsEmpty() || value == UsdGeomTokens->none) {
         return _SampleForAlembic(int32_t(0));
     }
     if (value == UsdGeomTokens->edgeAndCorner) {
@@ -1761,7 +1761,7 @@ _SampleForAlembic
 _CopyFaceVaryingInterpolateBoundary(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->all) {
+    if (value.IsEmpty() || value == UsdGeomTokens->all) {
         return _SampleForAlembic(int32_t(0));
     }
     if (value == UsdGeomTokens->cornersPlus1) {
@@ -1793,7 +1793,7 @@ _SampleForAlembic
 _CopyCurveBasis(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->none) {
+    if (value.IsEmpty() || value == UsdGeomTokens->none) {
         return _SampleForAlembic(kNoBasis);
     }
     if (value == UsdGeomTokens->bezier) {
@@ -1821,7 +1821,7 @@ _SampleForAlembic
 _CopyCurveType(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->none) {
+    if (value.IsEmpty() || value == UsdGeomTokens->none) {
         return _SampleForAlembic(kCubic);
     }
     if (value == UsdGeomTokens->linear) {
@@ -1840,7 +1840,7 @@ _SampleForAlembic
 _CopyCurveWrap(const VtValue& src)
 {
     const TfToken& value = src.UncheckedGet<TfToken>();
-    if (value.IsEmpty() or value == UsdGeomTokens->none) {
+    if (value.IsEmpty() || value == UsdGeomTokens->none) {
         return _SampleForAlembic(kNonPeriodic);
     }
     if (value == UsdGeomTokens->nonperiodic) {
@@ -1922,7 +1922,7 @@ _SetStringMetadata(
     VtValue value = _GetField(context, field, usdName);
     if (value.IsHolding<std::string>()) {
         const std::string& tmp = value.UncheckedGet<std::string>();
-        if (not tmp.empty()) {
+        if (! tmp.empty()) {
             metadata->set(_AmdName(field), tmp);
         }
     }
@@ -1939,7 +1939,7 @@ _SetTokenMetadata(
     VtValue value = _GetField(context, field, usdName);
     if (value.IsHolding<TfToken>()) {
         const TfToken& tmp = value.UncheckedGet<TfToken>();
-        if (not tmp.IsEmpty()) {
+        if (! tmp.IsEmpty()) {
             metadata->set(_AmdName(field), tmp);
         }
     }
@@ -1988,13 +1988,13 @@ _GetPropertyMetadata(
     }
 
     // Note a single time sample (as opposed to a default value).
-    if (samples.IsTimeSampled() and samples.GetNumSamples() == 1) {
+    if (samples.IsTimeSampled() && samples.GetNumSamples() == 1) {
         metadata.set(_AmdName(SdfFieldKeys->TimeSamples), "true");
     }
 
     // Set the interpretation if there is one.
     const std::string interpretation = _GetInterpretation(typeName);
-    if (not interpretation.empty()) {
+    if (! interpretation.empty()) {
         metadata.set("interpretation", interpretation);
     }
 
@@ -2003,7 +2003,7 @@ _GetPropertyMetadata(
     _SetStringMetadata(&metadata, context, SdfFieldKeys->Documentation,usdName);
     _SetBoolMetadata(&metadata, context, SdfFieldKeys->Hidden, usdName);
     value = context.GetPropertyField(usdName, SdfFieldKeys->Variability);
-    if (value.IsHolding<SdfVariability>() and
+    if (value.IsHolding<SdfVariability>() && 
             value.UncheckedGet<SdfVariability>() ==
                 SdfVariabilityUniform) {
         metadata.set(_AmdName(SdfFieldKeys->Variability), "uniform");
@@ -2161,7 +2161,7 @@ OCompoundProperty
 _CompoundPropertyTable::FindOrCreate(const TfTokenVector& names)
 {
     OCompoundProperty result = _table[names];
-    if (not result.valid()) {
+    if (! result.valid()) {
         TfTokenVector tmpNames = names;
         return _FindOrCreate(tmpNames);
     }
@@ -2174,7 +2174,7 @@ OCompoundProperty
 _CompoundPropertyTable::_FindOrCreate(TfTokenVector& names)
 {
     OCompoundProperty& result = _table[names];
-    if (not result.valid()) {
+    if (! result.valid()) {
         // We don't have an entry for this path.  Recursively get parent
         // and add the child.
         TfToken name = names.back();
@@ -2200,7 +2200,7 @@ _WriteNamespacedPropertyGroup(
     bool anyProperties = false;
     for (const auto& name : context->GetUnextractedNames()) {
         TfTokenVector names = SdfPath::TokenizeIdentifierAsTokens(name);
-        if (names.size() >= 2 and names[0] == namespaceName) {
+        if (names.size() >= 2 && names[0] == namespaceName) {
             anyProperties = true;
             break;
         }
@@ -2210,7 +2210,7 @@ _WriteNamespacedPropertyGroup(
     // Strip the namespace name from each name before copying.
     if (anyProperties) {
         OCompoundProperty parent = getParentProperty();
-        if (not parent.valid()) {
+        if (! parent.valid()) {
             // We can't get the parent property.  Just put the properties
             // at the top level.
             parent = context->GetParent().GetProperties();
@@ -2222,7 +2222,7 @@ _WriteNamespacedPropertyGroup(
         // Convert each property.
         for (const auto& name : context->GetUnextractedNames()) {
             TfTokenVector names = SdfPath::TokenizeIdentifierAsTokens(name);
-            if (names.size() >= 2 and names[0] == namespaceName) {
+            if (names.size() >= 2 && names[0] == namespaceName) {
                 // Remove the namespace prefix.
                 names.erase(names.begin());
 
@@ -2293,7 +2293,7 @@ _WriteMayaColor(_PrimWriterContext* context)
     }
     if (color.IsEmpty()) {
         // Copy existing Maya color.
-        if (not _WriteOutOfSchemaProperty(context,
+        if (! _WriteOutOfSchemaProperty(context,
                                           context->GetParent().GetSchema(),
                                           name, name)) {
             return;
@@ -2366,7 +2366,7 @@ _AddOrderingMetadata(
     VtValue value = context.GetField(fieldName);
     if (value.IsHolding<TfTokenVector>()) {
         const TfTokenVector& order = value.UncheckedGet<TfTokenVector>();
-        if (not order.empty()) {
+        if (! order.empty()) {
             // Write as space separated names all surrounded by square
             // brackets.
             metadata->set(metadataName, TfStringify(order));
@@ -2567,7 +2567,7 @@ _WriteUnknown(_PrimWriterContext* context)
     const VtValue value = context->GetField(SdfFieldKeys->TypeName);
     if (value.IsHolding<TfToken>()) {
         const TfToken& typeName = value.UncheckedGet<TfToken>();
-        if (not typeName.IsEmpty()) {
+        if (! typeName.IsEmpty()) {
             metadata.set(_AmdName(SdfFieldKeys->TypeName), typeName);
         }
     }
@@ -2644,7 +2644,7 @@ _WriteXform(_PrimWriterContext* context)
         // can extract later for round-tripping.
         for (MetaData::const_iterator i  = transformMetadata.begin();
                                       i != transformMetadata.end(); ++i) {
-            if (not i->second.empty()) {
+            if (! i->second.empty()) {
                 metadata.set("Usd.transform:" + i->first, i->second);
             }
         }
@@ -3168,7 +3168,7 @@ _WritePoints(_PrimWriterContext* context)
         // Alembic requires ids.  We only need to write one and it'll
         // be reused for all the other samples.  We also use a valid
         // but empty array because we don't actually have any data.
-        if (first and not sample.getIds()) {
+        if (first && !sample.getIds()) {
             static const uint64_t data = 0;
             first = false;
             sample.setIds(UInt64ArraySample(&data, 0));
@@ -3196,7 +3196,7 @@ _ComputeTypeName(
 
     // General case.
     VtValue value = context.GetData().Get(id, SdfFieldKeys->TypeName);
-    if (not value.IsHolding<TfToken>()) {
+    if (! value.IsHolding<TfToken>()) {
         return TfToken();
     }
     TfToken typeName = value.UncheckedGet<TfToken>();
@@ -3206,7 +3206,7 @@ _ComputeTypeName(
         SdfAbstractDataSpecId propId(&id.GetPropertyOwningSpecPath(),
                                      &UsdGeomTokens->subdivisionScheme);
         value = context.GetData().Get(propId, SdfFieldKeys->Default);
-        if (value.IsHolding<TfToken>() and
+        if (value.IsHolding<TfToken>() && 
                 value.UncheckedGet<TfToken>() == "none") {
             typeName = UsdAbcPrimTypeNames->PolyMesh;
         }
@@ -3405,7 +3405,7 @@ UsdAbc_AlembicDataWriter::Write(const SdfAbstractDataConstPtr& data)
     TRACE_FUNCTION();
 
     try {
-        if (_impl->GetArchive().valid() and data) {
+        if (_impl->GetArchive().valid() && data) {
             const _WriterSchema& schema = _GetSchema();
             _impl->SetSchema(&schema);
             _impl->SetData(data);

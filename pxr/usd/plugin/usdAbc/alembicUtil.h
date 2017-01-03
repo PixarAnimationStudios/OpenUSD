@@ -425,7 +425,7 @@ public:
     /// Returns \c false iff the data is valid.
     bool operator!() const
     {
-        return not _IsValid();
+        return !_IsValid();
     }
 
     /// Returns the raw data.
@@ -1037,7 +1037,7 @@ UsdAbc_ReverseOrderImpl(
         const int count = counts[k];
 
         // Bail out with failure if we run out of items.
-        if (not TF_VERIFY(j + count <= n)) {
+        if (!TF_VERIFY(j + count <= n)) {
             return false;
         }
 

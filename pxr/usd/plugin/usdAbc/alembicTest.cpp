@@ -68,7 +68,7 @@ public:
             // Pass ids to the wrapped visitor.
             for (const auto& id : _ids) {
                 if (_Pass(data, id)) {
-                    if (not _visitor->VisitSpec(data, id)) {
+                    if (!_visitor->VisitSpec(data, id)) {
                         break;
                     }
                 }
@@ -150,7 +150,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                     fprintf(stdout, "%s",
                             custom.UncheckedGet<bool>() ? "custom " : "");
                 }
-                else if (not custom.IsEmpty()) {
+                else if (!custom.IsEmpty()) {
                     fprintf(stdout, "!BAD_CUSTOM ");
                 }
 
@@ -158,14 +158,14 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                 if (typeName.IsHolding<TfToken>()) {
                     fprintf(stdout, "%s ", TfStringify(typeName).c_str());
                 }
-                else if (not typeName.IsEmpty()) {
+                else if (!typeName.IsEmpty()) {
                     fprintf(stdout, "!BAD_TYPE ");
                 }
 
                 fprintf(stdout, "%s", path.GetName().c_str());
 
                 VtValue value = data.Get(id, SdfFieldKeys->Default);
-                if (not value.IsEmpty()) {
+                if (!value.IsEmpty()) {
                     // Truncate shaped types to not dump too much data.
                     const char* trailing = NULL;
                     if (value.IsArrayValued()) {
@@ -275,7 +275,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                 if (typeName.IsHolding<TfToken>()) {
                     fprintf(stdout, "%s ", TfStringify(typeName).c_str());
                 }
-                else if (not typeName.IsEmpty()) {
+                else if (!typeName.IsEmpty()) {
                     fprintf(stdout, "!BAD_TYPE ");
                 }
 
@@ -342,7 +342,7 @@ UsdAbc_TestAlembic(const std::string& pathname)
             SdfPath path("/octopus_low/octopus_lowShape.extent");
             SdfAbstractDataSpecId id(&path);
             std::set<double> times = data->ListTimeSamplesForPath(id);
-            if (not times.empty()) {
+            if (!times.empty()) {
                 fprintf(stdout, "\nExtent samples:\n");
                 for (double t : times) {
                     VtValue value;
@@ -385,7 +385,7 @@ bool
 UsdAbc_WriteAlembic(const std::string& srcPathname, const std::string& dstPathname)
 {
     SdfLayerRefPtr layer = SdfLayer::OpenAsAnonymous(srcPathname);
-    if (not layer) {
+    if (!layer) {
         fprintf(stderr, "Can't open '%s'\n", srcPathname.c_str());
         return false;
     }
