@@ -50,10 +50,13 @@ wrapConformWindow()
     typedef GfVec4d (*Signature3)(
         const GfVec4d &, CameraUtilConformWindowPolicy, double);
 
-    typedef void (*Signature4)(
-        GfCamera *, CameraUtilConformWindowPolicy, double);
+    typedef GfMatrix4d (*Signature4)(
+        const GfMatrix4d &, CameraUtilConformWindowPolicy, double);
 
     typedef void (*Signature5)(
+        GfCamera *, CameraUtilConformWindowPolicy, double);
+
+    typedef void (*Signature6)(
         GfFrustum *, CameraUtilConformWindowPolicy, double);
 
     def("ConformedWindow", (Signature1)&CameraUtilConformedWindow,
@@ -62,11 +65,13 @@ wrapConformWindow()
         (arg("window"), arg("policy"), arg("targetAspect")));
     def("ConformedWindow", (Signature3)&CameraUtilConformedWindow,
         (arg("window"), arg("policy"), arg("targetAspect")));
+    def("ConformedWindow", (Signature4)&CameraUtilConformedWindow,
+        (arg("window"), arg("policy"), arg("targetAspect")));
     
-    def("ConformWindow", (Signature4)&CameraUtilConformWindow,
+    def("ConformWindow", (Signature5)&CameraUtilConformWindow,
         (arg("camera"), arg("policy"), arg("targetAspect")));
 
-    def("ConformWindow", (Signature5)&CameraUtilConformWindow,
+    def("ConformWindow", (Signature6)&CameraUtilConformWindow,
         (arg("frustum"), arg("policy"), arg("targetAspect")));
 
     TfPyWrapEnum<CameraUtilConformWindowPolicy>();

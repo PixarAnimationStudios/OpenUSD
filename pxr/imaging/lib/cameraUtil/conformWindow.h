@@ -26,6 +26,7 @@
 
 class GfVec2d;
 class GfVec4d;
+class GfMatrix4d;
 class GfRange2d;
 class GfCamera;
 class GfFrustum;
@@ -67,6 +68,13 @@ CameraUtilConformedWindow(
 GfVec2d
 CameraUtilConformedWindow(
     const GfVec2d &window,
+    CameraUtilConformWindowPolicy policy, double targetAspect);
+
+/// Conforms the given \p projectionMatrix to have aspect ratio \p targetAspect
+/// by applying \p policy
+GfMatrix4d
+CameraUtilConformedWindow(
+    const GfMatrix4d &projectionMatrix,
     CameraUtilConformWindowPolicy policy, double targetAspect);
 
 /// Conforms the given \p camera to have aspect ratio \p targetAspect
