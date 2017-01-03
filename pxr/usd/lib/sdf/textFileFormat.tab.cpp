@@ -158,7 +158,7 @@ using boost::get;
 #define ERROR_IF_NOT_ALLOWED(context, allowed)                   \
     {                                                            \
         const SdfAllowed allow = allowed;                        \
-        if (not allow) {                                         \
+        if (!allow) {                                         \
             Err(context, "%s", allow.GetWhyNot().c_str());       \
         }                                                        \
     }
@@ -166,7 +166,7 @@ using boost::get;
 #define ERROR_AND_RETURN_IF_NOT_ALLOWED(context, allowed)        \
     {                                                            \
         const SdfAllowed allow = allowed;                        \
-        if (not allow) {                                         \
+        if (!allow) {                                         \
             Err(context, "%s", allow.GetWhyNot().c_str());       \
             return;                                              \
         }                                                        \
@@ -217,7 +217,7 @@ _HasDuplicates(const std::vector<T> &v)
 {
     std::set<T> s;
     TF_FOR_ALL(i, v) {
-        if (not s.insert(*i).second) {
+        if (!s.insert(*i).second) {
             return true;
         }
     }
@@ -311,8 +311,8 @@ _MatchMagicIdentifier(const Value& arg1, Sdf_TextParserContext *context)
     const std::string cookie = TfStringTrimRight(arg1.Get<std::string>());
     const std::string expected = "#" + context->magicIdentifierToken + " ";
     if (TfStringStartsWith(cookie, expected)) {
-        if (not context->versionString.empty() and
-            not TfStringEndsWith(cookie, context->versionString)) {
+        if (!context->versionString.empty() &&
+            !TfStringEndsWith(cookie, context->versionString)) {
             TF_WARN("File '%s' is not the latest %s version (found '%s', "
                 "expected '%s'). The file may parse correctly and yield "
                 "incorrect results.",
@@ -363,7 +363,7 @@ _ValueAppendAtomic(const Value& arg1, Sdf_TextParserContext *context)
 static void
 _ValueSetAtomic(Sdf_TextParserContext *context)
 {
-    if (not context->values.IsRecordingString()) {
+    if (!context->values.IsRecordingString()) {
         if (context->values.valueIsShaped) {
             Err(context, "Type name has [] for non-shaped value!\n");
             return;
@@ -381,7 +381,7 @@ _ValueSetAtomic(Sdf_TextParserContext *context)
 static void
 _PrimSetInheritListItems(SdfListOpType opType, Sdf_TextParserContext *context) 
 {
-    if (context->inheritParsingTargetPaths.empty() and 
+    if (context->inheritParsingTargetPaths.empty() &&
         opType != SdfListOpTypeExplicit) {
         Err(context, 
             "Setting inherit paths to None (or empty list) is only allowed "
@@ -416,7 +416,7 @@ _InheritAppendPath(Sdf_TextParserContext *context)
 static void
 _PrimSetSpecializesListItems(SdfListOpType opType, Sdf_TextParserContext *context) 
 {
-    if (context->specializesParsingTargetPaths.empty() and 
+    if (context->specializesParsingTargetPaths.empty() &&
         opType != SdfListOpTypeExplicit) {
         Err(context, 
             "Setting specializes paths to None (or empty list) is only allowed "
@@ -451,7 +451,7 @@ _SpecializesAppendPath(Sdf_TextParserContext *context)
 static void
 _PrimSetReferenceListItems(SdfListOpType opType, Sdf_TextParserContext *context) 
 {
-    if (context->referenceParsingRefs.empty() and 
+    if (context->referenceParsingRefs.empty() &&
         opType != SdfListOpTypeExplicit) {
         Err(context, 
             "Setting references to None (or an empty list) is only allowed "
@@ -485,7 +485,7 @@ _PrimSetVariantSetNamesListItems(SdfListOpType opType,
     _SetListOpItems(SdfFieldKeys->VariantSetNames, opType, names, context);
 
     // If the op type is added or explicit, create the variant sets
-    if (opType == SdfListOpTypeAdded or opType == SdfListOpTypeExplicit) {
+    if (opType == SdfListOpTypeAdded || opType == SdfListOpTypeExplicit) {
         TF_FOR_ALL(i, context->nameVector) {
             _CreateSpec(
                 context->path.AppendVariantSelection(*i,""),
@@ -505,7 +505,7 @@ _RelationshipInitTarget(const SdfPath& targetPath,
 {
     SdfPath path = context->path.AppendTarget(targetPath);
 
-    if (not _HasSpec(path, context)) {
+    if (!_HasSpec(path, context)) {
         // Create relationship target spec by setting the appropriate 
         // object type flag.
         _CreateSpec(path, SdfSpecTypeRelationshipTarget, context);
@@ -520,12 +520,12 @@ static void
 _RelationshipSetTargetsList(SdfListOpType opType, 
                             Sdf_TextParserContext *context)
 {
-    if (not context->relParsingTargetPaths) {
+    if (!context->relParsingTargetPaths) {
         // No target paths were encountered.
         return;
     }
 
-    if (context->relParsingTargetPaths->empty() and 
+    if (context->relParsingTargetPaths->empty() &&
         opType != SdfListOpTypeExplicit) {
         Err(context, 
             "Setting relationship targets to None (or empty list) is only "
@@ -539,7 +539,7 @@ _RelationshipSetTargetsList(SdfListOpType opType,
             SdfSchema::IsValidRelationshipTargetPath(*path));
     }
 
-    if (opType == SdfListOpTypeAdded or 
+    if (opType == SdfListOpTypeAdded || 
         opType == SdfListOpTypeExplicit) {
 
         // Initialize relationship target specs for each target path that
@@ -567,7 +567,7 @@ _PrimSetVariantSelection(Sdf_TextParserContext *context)
     }
 
     TF_FOR_ALL(it, context->currentDictionaries[0]) {
-        if (not it->second.IsHolding<std::string>()) {
+        if (!it->second.IsHolding<std::string>()) {
             Err(context, "variant name must be a string");
             return;
         } else {
@@ -594,12 +594,12 @@ _RelocatesAdd(const Value& arg1, const Value& arg2,
     SdfPath srcPath(srcStr);
     SdfPath targetPath(targetStr);
 
-    if (not srcPath.IsPrimPath()) {
+    if (!srcPath.IsPrimPath()) {
         Err(context, "'%s' is not a valid prim path",
             srcStr.c_str());
         return;
     }
-    if (not targetPath.IsPrimPath()) {
+    if (!targetPath.IsPrimPath()) {
         Err(context, "'%s' is not a valid prim path",
             targetStr.c_str());
         return;
@@ -621,7 +621,7 @@ static void
 _AttributeSetConnectionTargetsList(SdfListOpType opType, 
                                    Sdf_TextParserContext *context)
 {
-    if (context->connParsingTargetPaths.empty() and 
+    if (context->connParsingTargetPaths.empty() &&
         opType != SdfListOpTypeExplicit) {
         Err(context, "Setting connection paths to None (or an empty list) "
             "is only allowed when setting explicit connection paths, "
@@ -635,12 +635,12 @@ _AttributeSetConnectionTargetsList(SdfListOpType opType,
             SdfSchema::IsValidAttributeConnectionPath(*path));
     }
 
-    if (opType == SdfListOpTypeAdded or 
+    if (opType == SdfListOpTypeAdded || 
         opType == SdfListOpTypeExplicit) {
 
         TF_FOR_ALL(pathIter, context->connParsingTargetPaths) {
             SdfPath path = context->path.AppendTarget(*pathIter);
-            if (not _HasSpec(path, context)) {
+            if (!_HasSpec(path, context)) {
                 _CreateSpec(path, SdfSpecTypeConnection, context);
             }
         }
@@ -692,7 +692,7 @@ static void
 _PrimInitAttribute(const Value &arg1, Sdf_TextParserContext *context)  
 {
     TfToken name(arg1.Get<std::string>());
-    if (not SdfPath::IsValidNamespacedIdentifier(name)) {
+    if (!SdfPath::IsValidNamespacedIdentifier(name)) {
         Err(context, "'%s' is not a valid attribute name", name.GetText());
     }
 
@@ -704,7 +704,7 @@ _PrimInitAttribute(const Value &arg1, Sdf_TextParserContext *context)
     // If we haven't seen this attribute before, then set the object type
     // and add it to the parent's list of properties. Otherwise both have
     // already been done, so we don't need to do anything.
-    if (not _HasSpec(context->path, context)) {
+    if (!_HasSpec(context->path, context)) {
         context->propertiesStack.back().push_back(name);
         _CreateSpec(context->path, SdfSpecTypeAttribute, context);
         _SetField(context->path, SdfFieldKeys->Custom, false, context);
@@ -803,7 +803,7 @@ _DictionaryInitScalarFactory(const Value& arg1,
                              Sdf_TextParserContext *context)
 {
     const std::string& typeName = arg1.Get<std::string>();
-    if (not _SetupValue(typeName, context)) {
+    if (!_SetupValue(typeName, context)) {
         Err(context, "Unrecognized value typename '%s' for dictionary", 
             typeName.c_str());
     }
@@ -814,7 +814,7 @@ _DictionaryInitShapedFactory(const Value& arg1,
                              Sdf_TextParserContext *context)
 {
     const std::string typeName = arg1.Get<std::string>() + "[]";
-    if (not _SetupValue(typeName, context)) {
+    if (!_SetupValue(typeName, context)) {
         Err(context, "Unrecognized value typename '%s' for dictionary", 
             typeName.c_str());
     }
@@ -823,7 +823,7 @@ _DictionaryInitShapedFactory(const Value& arg1,
 static void
 _ValueSetTuple(Sdf_TextParserContext *context)
 {
-    if (not context->values.IsRecordingString()) {
+    if (!context->values.IsRecordingString()) {
         if (context->values.valueIsShaped) {
             Err(context, "Type name has [] for non-shaped value.\n");
             return;
@@ -841,8 +841,8 @@ _ValueSetTuple(Sdf_TextParserContext *context)
 static void
 _ValueSetList(Sdf_TextParserContext *context)
 {
-    if (not context->values.IsRecordingString()) {
-        if (not context->values.valueIsShaped) {
+    if (!context->values.IsRecordingString()) {
+        if (!context->values.valueIsShaped) {
             Err(context, "Type name missing [] for shaped value.");
             return;
         }
@@ -859,8 +859,8 @@ _ValueSetList(Sdf_TextParserContext *context)
 static void
 _ValueSetShaped(Sdf_TextParserContext *context)
 {
-    if (not context->values.IsRecordingString()) {
-        if (not context->values.valueIsShaped) {
+    if (!context->values.IsRecordingString()) {
+        if (!context->values.valueIsShaped) {
             Err(context, "Type name missing [] for shaped value.");
             return;
         }
@@ -900,14 +900,14 @@ _PrimInitRelationship(const Value& arg1,
                       Sdf_TextParserContext *context)
 {
     TfToken name( arg1.Get<std::string>() );
-    if (not SdfPath::IsValidNamespacedIdentifier(name)) {
+    if (!SdfPath::IsValidNamespacedIdentifier(name)) {
         Err(context, "'%s' is not a valid relationship name", name.GetText());
         return;
     }
 
     context->path = context->path.AppendProperty(name);
 
-    if (not _HasSpec(context->path, context)) {
+    if (!_HasSpec(context->path, context)) {
         context->propertiesStack.back().push_back(name);
         _CreateSpec(context->path, SdfSpecTypeRelationship, context);
     }
@@ -928,7 +928,7 @@ _PrimInitRelationship(const Value& arg1,
 static void
 _PrimEndRelationship(Sdf_TextParserContext *context)
 {
-    if (not context->relParsingNewTargetChildren.empty()) {
+    if (!context->relParsingNewTargetChildren.empty()) {
         std::vector<SdfPath> children = 
             context->data->GetAs<std::vector<SdfPath> >(
                 SdfAbstractDataSpecId(&context->path), 
@@ -954,7 +954,7 @@ _RelationshipAppendTargetPath(const Value& arg1,
     const std::string& pathStr = arg1.Get<std::string>();
     SdfPath path(pathStr);
 
-    if (not path.IsAbsolutePath()) {
+    if (!path.IsAbsolutePath()) {
         // Expand paths relative to the containing prim.
         //
         // This strips any variant selections from the containing prim
@@ -963,7 +963,7 @@ _RelationshipAppendTargetPath(const Value& arg1,
         path = path.MakeAbsolutePath(context->path.GetPrimPath());
     }
 
-    if (not context->relParsingTargetPaths) {
+    if (!context->relParsingTargetPaths) {
         // This is the first target we've seen for this relationship.
         // Start tracking them in a vector.
         context->relParsingTargetPaths = SdfPathVector();
@@ -995,13 +995,13 @@ template <class ListOpType>
 static bool
 _SetItemsIfListOp(const TfType& type, Sdf_TextParserContext *context)
 {
-    if (not type.IsA<ListOpType>()) {
+    if (!type.IsA<ListOpType>()) {
         return false;
     }
 
     typedef VtArray<typename ListOpType::value_type> ArrayType;
 
-    if (not TF_VERIFY(context->currentValue.IsHolding<ArrayType>() or
+    if (!TF_VERIFY(context->currentValue.IsHolding<ArrayType>() || 
                       context->currentValue.IsEmpty())) {
         return true;
     }
@@ -1022,11 +1022,11 @@ _SetGenericMetadataListOpItems(const TfType& fieldType,
 {
     // Chain together attempts to set list op items using 'or' to bail
     // out as soon as we successfully write out the list op we're holding.
-    _SetItemsIfListOp<SdfIntListOp>(fieldType, context) or
-    _SetItemsIfListOp<SdfInt64ListOp>(fieldType, context) or
-    _SetItemsIfListOp<SdfUIntListOp>(fieldType, context) or
-    _SetItemsIfListOp<SdfUInt64ListOp>(fieldType, context) or
-    _SetItemsIfListOp<SdfStringListOp>(fieldType, context) or
+    _SetItemsIfListOp<SdfIntListOp>(fieldType, context)    ||
+    _SetItemsIfListOp<SdfInt64ListOp>(fieldType, context)  ||
+    _SetItemsIfListOp<SdfUIntListOp>(fieldType, context)   ||
+    _SetItemsIfListOp<SdfUInt64ListOp>(fieldType, context) ||
+    _SetItemsIfListOp<SdfStringListOp>(fieldType, context) ||
     _SetItemsIfListOp<SdfTokenListOp>(fieldType, context);
 }
 
@@ -1048,11 +1048,11 @@ static bool
 _IsGenericMetadataListOpType(const TfType& type,
                              TfType* itemArrayType = nullptr)
 {
-    return _IsListOpType<SdfIntListOp>(type, itemArrayType) or
-           _IsListOpType<SdfInt64ListOp>(type, itemArrayType) or
-           _IsListOpType<SdfUIntListOp>(type, itemArrayType) or
-           _IsListOpType<SdfUInt64ListOp>(type, itemArrayType) or
-           _IsListOpType<SdfStringListOp>(type, itemArrayType) or
+    return _IsListOpType<SdfIntListOp>(type, itemArrayType)    ||
+           _IsListOpType<SdfInt64ListOp>(type, itemArrayType)  || 
+           _IsListOpType<SdfUIntListOp>(type, itemArrayType)   ||
+           _IsListOpType<SdfUInt64ListOp>(type, itemArrayType) ||
+           _IsListOpType<SdfStringListOp>(type, itemArrayType) ||
            _IsListOpType<SdfTokenListOp>(type, itemArrayType);
 }
 
@@ -1105,7 +1105,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
         const TfType fieldType = fieldDef.GetFallbackValue().GetType();
 
         if (_IsGenericMetadataListOpType(fieldType)) {
-            if (not fieldDef.IsValidListValue(context->currentValue)) {
+            if (!fieldDef.IsValidListValue(context->currentValue)) {
                 Err(context, "invalid value for field \"%s\"", 
                     context->genericMetadataKey.GetText());
             }
@@ -1114,7 +1114,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
             }
         }
         else {
-            if (not fieldDef.IsValidValue(context->currentValue) or
+            if (!fieldDef.IsValidValue(context->currentValue) ||
                 context->currentValue.IsEmpty()) {
                 Err(context, "invalid value for field \"%s\"", 
                     context->genericMetadataKey.GetText());
@@ -1147,7 +1147,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
                 VtValue v;
                 if (_HasField(context->path, context->genericMetadataKey,
                               &v, context)
-                    and TF_VERIFY(v.IsHolding<SdfUnregisteredValue>())) {
+                    && TF_VERIFY(v.IsHolding<SdfUnregisteredValue>())) {
                     return v.UncheckedGet<SdfUnregisteredValue>().GetValue();
                 }
                 return VtValue();
@@ -1163,8 +1163,8 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
                 // a single SdfUnregisteredValue, but strip off the enclosing
                 // brackets so that we don't write out two sets of brackets
                 // when serializing out the list op.
-                if (not s.empty() and s.front() == '[') { s.erase(0, 1); }
-                if (not s.empty() and s.back() == ']') { s.pop_back(); }
+                if (!s.empty() && s.front() == '[') { s.erase(0, 1); }
+                if (!s.empty() && s.back() == ']') { s.pop_back(); }
                 return std::vector<SdfUnregisteredValue>(
                     { SdfUnregisteredValue(s) });
             };
@@ -1179,7 +1179,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
                     SdfUnregisteredValue(context->values.GetRecordedString());
             }
             else if (oldValue.IsEmpty()
-                     or oldValue.IsHolding<SdfUnregisteredValueListOp>()) {
+                     || oldValue.IsHolding<SdfUnregisteredValueListOp>()) {
                 // In this case, we've parsed a list op statement so unpack
                 // it into a list op unless we've already parsed something
                 // for this field that *isn't* a list op.
@@ -1198,7 +1198,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
             }
         }
 
-        if (not value.IsEmpty()) {
+        if (!value.IsEmpty()) {
             _SetField(context->path, context->genericMetadataKey, 
                       value, context);
         }
@@ -3647,7 +3647,7 @@ yyreduce:
 #line 1476 "pxr/usd/sdf/textFileFormat.yy"
     {
             TfToken name((yyvsp[(1) - (1)]).Get<std::string>());
-            if (not SdfPath::IsValidIdentifier(name)) {
+            if (!SdfPath::IsValidIdentifier(name)) {
                 Err(context, "'%s' is not a valid prim name", name.GetText());
             }
             context->path = context->path.AppendChild(name);
@@ -3670,7 +3670,7 @@ yyreduce:
                 context->path, SdfFieldKeys->Specifier, 
                 context->specifier, context);
 
-            if (not context->typeName.IsEmpty())
+            if (!context->typeName.IsEmpty())
                 _SetField(
                     context->path, SdfFieldKeys->TypeName, 
                     context->typeName, context);
@@ -3683,14 +3683,14 @@ yyreduce:
 #line 1509 "pxr/usd/sdf/textFileFormat.yy"
     {
             // Store the names of our children
-            if (not context->nameChildrenStack.back().empty()) {
+            if (!context->nameChildrenStack.back().empty()) {
                 _SetField(
                     context->path, SdfChildrenKeys->PrimChildren,
                     context->nameChildrenStack.back(), context);
             }
 
             // Store the names of our properties, if there are any
-            if (not context->propertiesStack.back().empty()) {
+            if (!context->propertiesStack.back().empty()) {
                 _SetField(
                     context->path, SdfChildrenKeys->PropertyChildren,
                     context->propertiesStack.back(), context);
@@ -4203,7 +4203,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1783 "pxr/usd/sdf/textFileFormat.yy"
     {
-        if (not (yyvsp[(1) - (3)]).Get<std::string>().empty()) {
+        if (!(yyvsp[(1) - (3)]).Get<std::string>().empty()) {
            _PathSetPrim((yyvsp[(1) - (3)]), context);
         }
         else {
@@ -4300,7 +4300,7 @@ yyreduce:
         context->path = context->path.GetParentPath();
 
         // Create this VariantSetSpec if it does not already exist.
-        if (not _HasSpec(variantSetPath, context)) {
+        if (!_HasSpec(variantSetPath, context)) {
             _CreateSpec(variantSetPath, SdfSpecTypeVariantSet, context);
 
             // Add the name of this variant set to the VariantSets field
@@ -4352,12 +4352,12 @@ yyreduce:
 #line 1967 "pxr/usd/sdf/textFileFormat.yy"
     {
         // Store the names of the prims and properties defined in this variant.
-        if (not context->nameChildrenStack.back().empty()) {
+        if (!context->nameChildrenStack.back().empty()) {
             _SetField(
                 context->path, SdfChildrenKeys->PrimChildren, 
                 context->nameChildrenStack.back(), context);
         }
-        if (not context->propertiesStack.back().empty()) {
+        if (!context->propertiesStack.back().empty()) {
             _SetField(
                 context->path, SdfChildrenKeys->PropertyChildren, 
                 context->propertiesStack.back(), context);
@@ -4467,7 +4467,7 @@ yyreduce:
     {
         _PrimInitAttribute((yyvsp[(2) - (2)]), context);
 
-        if (not context->values.valueTypeIsValid) {
+        if (!context->values.valueTypeIsValid) {
             context->values.StartRecordingString();
         }
     ;}
@@ -4478,7 +4478,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 2062 "pxr/usd/sdf/textFileFormat.yy"
     {
-        if (not context->values.valueTypeIsValid) {
+        if (!context->values.valueTypeIsValid) {
             context->values.StopRecordingString();
         }
     ;}
@@ -4501,7 +4501,7 @@ yyreduce:
         context->custom = true;
         _PrimInitAttribute((yyvsp[(3) - (3)]), context);
 
-        if (not context->values.valueTypeIsValid) {
+        if (!context->values.valueTypeIsValid) {
             context->values.StartRecordingString();
         }
     ;}
@@ -4512,7 +4512,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 2081 "pxr/usd/sdf/textFileFormat.yy"
     {
-        if (not context->values.valueTypeIsValid) {
+        if (!context->values.valueTypeIsValid) {
             context->values.StopRecordingString();
         }
     ;}
@@ -4761,7 +4761,7 @@ yyreduce:
 
                 // Create the connection spec object if one doesn't already
                 // exist to parent the marker data.
-                if (not _HasSpec(specPath, context)) {
+                if (!_HasSpec(specPath, context)) {
                     _CreateSpec(specPath, SdfSpecTypeConnection, context);
                 }
 
@@ -5616,7 +5616,7 @@ yyreduce:
 
             context->propertiesStack.push_back(std::vector<TfToken>());
 
-            if (not context->relParsingAllowTargetData) {
+            if (!context->relParsingAllowTargetData) {
                 Err(context, 
                     "Relational attributes cannot be specified in lists of "
                     "targets to be deleted or reordered");
@@ -5629,7 +5629,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 2907 "pxr/usd/sdf/textFileFormat.yy"
     {
-        if (not context->propertiesStack.back().empty()) {
+        if (!context->propertiesStack.back().empty()) {
             _SetField(
                 context->path, SdfChildrenKeys->PropertyChildren, 
                 context->propertiesStack.back(), context);
@@ -5938,7 +5938,7 @@ void textFileFormatYyerror(Sdf_TextParserContext *context, const char *msg)
     const std::string nextToken(textFileFormatYyget_text(context->scanner), 
                                 textFileFormatYyget_leng(context->scanner));
     const bool isNewlineToken = 
-        (nextToken.length() == 1 and nextToken[0] == '\n');
+        (nextToken.length() == 1 && nextToken[0] == '\n');
 
     int errLineNumber = context->menvaLineNo;
 
@@ -5958,7 +5958,7 @@ void textFileFormatYyerror(Sdf_TextParserContext *context, const char *msg)
         errLineNumber);
 
     // Append file context, if known.
-    if (not context->fileContext.empty()) {
+    if (!context->fileContext.empty()) {
         s += " in file " + context->fileContext;
     }
     s += "\n";
