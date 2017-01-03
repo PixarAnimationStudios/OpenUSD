@@ -144,9 +144,11 @@ pxr_build_test(testArchVsnprintf
         testenv/testVsnprintf.cpp
 ) 
 
-pxr_register_test(testArchAbi
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAbi"
-)
+if (LINUX)
+    pxr_register_test(testArchAbi
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAbi"
+    )
+endif()
 pxr_register_test(testArchAttributes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAttributes"
 )
@@ -165,9 +167,11 @@ pxr_register_test(testArchFileSystem
 pxr_register_test(testArchFunction
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFunction"
 )
-pxr_register_test(testArchStackTrace
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace"
-)
+if (LINUX)
+    pxr_register_test(testArchStackTrace
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace"
+    )
+endif()
 pxr_register_test(testArchSymbols
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSymbols"
 )
