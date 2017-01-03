@@ -86,7 +86,12 @@ static void Run()
     // Remove some stuff.
     printf("erasing 8000 elements\n");
     for(size_t i = 1000; i < 9000; ++i)
-        _map.erase(i);
+        TF_AXIOM(_map.erase(i) == 1);
+
+    // Attempt to remove some stuff again.
+    printf("erasing 8000 elements\n");
+    for(size_t i = 1000; i < 9000; ++i)
+        TF_AXIOM(_map.erase(i) == 0);
 
     TF_AXIOM(not _map.empty());
     TF_AXIOM(_map.size() == 2000);

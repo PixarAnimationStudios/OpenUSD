@@ -268,13 +268,16 @@ public:
         }
     }
 
-    /// Erase element with key \p k.
+    /// Erase element with key \p k.  Returns the number of elements erased.
     ///
-    void erase(const Element &k) {
+    size_t erase(const Element &k) {
 
         const_iterator iter = find(k);
-        if (iter != end())
+        if (iter != end()) {
             erase(iter);
+            return 1;
+        }
+        return 0;
     }
 
     /// Erases element pointed to by \p iter.
