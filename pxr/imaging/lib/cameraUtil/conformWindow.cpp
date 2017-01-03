@@ -118,7 +118,7 @@ _ResolveConformWindowPolicy(const GfVec2d &size,
                             CameraUtilConformWindowPolicy policy,
                             double targetAspect)
 {
-    if ((policy == CameraUtilMatchVertically) or 
+    if ((policy == CameraUtilMatchVertically) ||
         (policy == CameraUtilMatchHorizontally)) {
         return policy;
     }
@@ -126,7 +126,7 @@ _ResolveConformWindowPolicy(const GfVec2d &size,
     const double aspect =
         (size[1] != 0.0) ? size[0] / size[1] : 1.0;
 
-    if ((policy == CameraUtilFit) xor (aspect > targetAspect)) {
+    if ((policy == CameraUtilFit) ^ (aspect > targetAspect)) {
         return CameraUtilMatchVertically;
     }
     return CameraUtilMatchHorizontally;
