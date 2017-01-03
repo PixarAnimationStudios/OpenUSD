@@ -29,6 +29,8 @@
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/light.h"
+#include "pxr/imaging/hd/bprim.h" // XXX: Remove when adding a real bprim
+
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -89,3 +91,22 @@ HdStreamRenderDelegate::DestroySprim(HdSprim *sPrim)
 {
     delete sPrim;
 }
+
+HdBprim *
+HdStreamRenderDelegate::CreateBprim(TfToken const& typeId,
+                                    HdSceneDelegate* delegate,
+                                    SdfPath const& bprimId)
+{
+    {
+        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    }
+
+    return nullptr;
+}
+
+void
+HdStreamRenderDelegate::DestroyBprim(HdBprim *bPrim)
+{
+    delete bPrim;
+}
+

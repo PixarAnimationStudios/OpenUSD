@@ -364,6 +364,28 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
+    /// \name Bprim (buffer prim: texture, buffer, ...) state Tracking
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Start tracking bprim with the given \p id.
+    void BprimInserted(SdfPath const& id, int initialDirtyState);
+
+    /// Stop tracking bprim with the given \p id.
+    void BprimRemoved(SdfPath const& id);
+
+    /// Get the dirty bits for bprim with the given \p id.
+    DirtyBits GetBprimDirtyBits(SdfPath const& id);
+
+    /// Set the dirty flags to \p bits.
+    void MarkBprimDirty(SdfPath const& id, DirtyBits bits);
+
+    /// Set the dirty flags to \p newBits.
+    void MarkBprimClean(SdfPath const& id, DirtyBits newBits=Clean);
+
+
+    // ---------------------------------------------------------------------- //
+    /// @}
     /// \name GarbageCollection Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -470,6 +492,7 @@ private:
     _IDStateMap _taskState;
     _IDStateMap _textureState;
     _IDStateMap _sprimState;
+    _IDStateMap _bprimState;
     _GeneralStateMap _generalState;
 
     // Collection versions / state.

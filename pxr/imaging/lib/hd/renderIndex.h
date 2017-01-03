@@ -42,6 +42,7 @@
 
 class HdRprim;
 class HdSprim;
+class HdBprim;
 class HdDrawItem;
 class HdRprimCollection;
 class HdSceneDelegate;
@@ -266,6 +267,24 @@ public:
     SdfPathVector GetSprimSubtree(TfToken const& typeId,
                                   SdfPath const& root) const;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Buffer prims (e.g. textures, buffers)
+    // ---------------------------------------------------------------------- //
+
+    /// Insert a bprim into index
+    void InsertBprim(TfToken const& typeId,
+                     HdSceneDelegate* delegate,
+                     SdfPath const& bprimId);
+
+    void RemoveBprim(TfToken const& typeId, SdfPath const &id);
+
+    HdBprim const *GetBprim(TfToken const& typeId, SdfPath const &id) const;
+
+    /// Returns the subtree rooted under the given path for the given bprim
+    /// type.
+    SdfPathVector GetBprimSubtree(TfToken const& typeId,
+                                  SdfPath const& root) const;
+
 
     // ---------------------------------------------------------------------- //
     /// \name Render Delegate
@@ -324,9 +343,11 @@ private:
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
     typedef TfHashMap<SdfPath, HdSprim *, SdfPath::Hash> _SprimMap;
+    typedef TfHashMap<SdfPath, HdBprim *, SdfPath::Hash> _BprimMap;
 
     typedef std::set<SdfPath> _RprimIDSet;
     typedef std::set<SdfPath> _SprimIDSet;
+    typedef std::set<SdfPath> _BprimIDSet;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
 
     struct _SprimTypeIndex
@@ -335,10 +356,19 @@ private:
         _SprimIDSet sprimIDSet;
     };
 
+    struct _BprimTypeIndex
+    {
+        _BprimMap   bprimMap;
+        _BprimIDSet bprimIDSet;
+    };
 
     typedef std::unordered_map<TfToken,
                                _SprimTypeIndex,
                                boost::hash<TfToken> > _SprimTypeMap;
+
+    typedef std::unordered_map<TfToken,
+                               _BprimTypeIndex,
+                               boost::hash<TfToken> > _BprimTypeMap;
 
     _DelegateRprimMap _delegateRprimMap;
     _RprimMap _rprimMap;
@@ -351,6 +381,8 @@ private:
     _TextureMap _textureMap;
 
     _SprimTypeMap   _sprimTypeMap;
+    _SprimIDSet _sprimIDSet;
+    _BprimTypeMap   _bprimTypeMap;
 
     HdChangeTracker _tracker;
     int32_t _nextPrimId; 

@@ -28,7 +28,8 @@
 #include "pxr/base/tf/debug.h"
 
 TF_DEBUG_CODES(
-
+    HD_BPRIM_ADDED,
+    HD_BPRIM_REMOVED,
     HD_BUFFER_ARRAY_INFO,
     HD_BUFFER_ARRAY_RANGE_CLEANED,
     HD_CACHE_HITS,

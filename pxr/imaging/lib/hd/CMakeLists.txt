@@ -37,6 +37,7 @@ pxr_shared_library(hd
         basisCurves
         basisCurvesTopology
         binding
+        bprim
         bufferArray
         bufferArrayRange
         bufferArrayRegistry

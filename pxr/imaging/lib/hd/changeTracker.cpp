@@ -443,6 +443,52 @@ HdChangeTracker::MarkSprimClean(SdfPath const& id, DirtyBits newBits)
 }
 
 // -------------------------------------------------------------------------- //
+/// \name Bprim Tracking (texture, buffer...)
+// -------------------------------------------------------------------------- //
+
+void
+HdChangeTracker::BprimInserted(SdfPath const& id, int initialDirtyState)
+{
+    TF_DEBUG(HD_BPRIM_ADDED).Msg("Bprim Added: %s\n", id.GetText());
+    _bprimState[id] = initialDirtyState;
+}
+
+void
+HdChangeTracker::BprimRemoved(SdfPath const& id)
+{
+    TF_DEBUG(HD_BPRIM_REMOVED).Msg("Bprim Removed: %s\n", id.GetText());
+    _bprimState.erase(id);
+}
+
+HdChangeTracker::DirtyBits
+HdChangeTracker::GetBprimDirtyBits(SdfPath const& id)
+{
+    _IDStateMap::iterator it = _bprimState.find(id);
+    if (not TF_VERIFY(it != _bprimState.end()))
+        return Clean;
+    return it->second;
+}
+
+void
+HdChangeTracker::MarkBprimDirty(SdfPath const& id, DirtyBits bits)
+{
+    _IDStateMap::iterator it = _bprimState.find(id);
+    if (not TF_VERIFY(it != _bprimState.end()))
+        return;
+    it->second = it->second | bits;
+}
+
+void
+HdChangeTracker::MarkBprimClean(SdfPath const& id, DirtyBits newBits)
+{
+    _IDStateMap::iterator it = _bprimState.find(id);
+    if (not TF_VERIFY(it != _bprimState.end()))
+        return;
+    it->second = newBits;
+}
+
+
+// -------------------------------------------------------------------------- //
 /// \name RPrim Object Tracking
 // -------------------------------------------------------------------------- //
 
