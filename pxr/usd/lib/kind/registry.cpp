@@ -57,7 +57,7 @@ void
 KindRegistry::_Register(const TfToken& kind,
                         const TfToken& baseKind)
 {
-    if (not TfIsValidIdentifier(kind.GetString())) {
+    if (!TfIsValidIdentifier(kind.GetString())) {
         TF_CODING_ERROR("Invalid kind: '%s'", kind.GetText());
         return;
     }
