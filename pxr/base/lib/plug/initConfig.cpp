@@ -35,7 +35,6 @@ namespace {
 const char* pathEnvVarName      = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation       = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
 const char* pluginBuildLocation = BOOST_PP_STRINGIZE(PXR_PLUGIN_BUILD_LOCATION);
-const char* userLocation        = BOOST_PP_STRINGIZE(PXR_USER_LOCATION);
 const char* installLocation     = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
 
 void
@@ -83,7 +82,6 @@ Plug_InitConfig()
     _AppendPathList(&result, TfGetenv(pathEnvVarName), sharedLibPath);
 
     // Fallback locations.
-    _AppendPathList(&result, userLocation, sharedLibPath);
     _AppendPathList(&result, buildLocation, sharedLibPath);
     _AppendPathList(&result, pluginBuildLocation, sharedLibPath);
     _AppendPathList(&result, installLocation, sharedLibPath);
