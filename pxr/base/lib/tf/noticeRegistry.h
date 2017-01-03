@@ -155,7 +155,7 @@ private:
              TfNotice::_DelivererBase* item) {
         _Lock lock(c->_mutex);
 
-        TF_DEV_AXIOM(not item->_list);
+        TF_DEV_AXIOM(!item->_list);
 
         _DelivererList *dlist;
         if (sender)

@@ -87,7 +87,7 @@ TfPoolAllocator::GetElement(size_t index) const
 {
     // Verify assumption that there is no waste per chunk.
     TF_AXIOM(_bytesPerChunk % _elementSize == 0);
-    TF_AXIOM(not _freeCalled);
+    TF_AXIOM(!_freeCalled);
     size_t nelem = _bytesPerChunk / _elementSize;
     size_t chunk = index / nelem;
     TF_AXIOM(chunk < _chunks.size());

@@ -64,9 +64,9 @@ TfGetenvBool(const string& envName, bool defaultValue)
     if (!value || value[0] == '\0')
         return defaultValue;
     else {
-        return strcasecmp(value, "true") == 0 or
-            strcasecmp(value, "yes") == 0 or
-            strcasecmp(value, "on") == 0 or
+        return strcasecmp(value, "true") == 0 ||
+            strcasecmp(value, "yes") == 0     ||
+            strcasecmp(value, "on") == 0      ||
             strcmp(value, "1") == 0;
     }
 }

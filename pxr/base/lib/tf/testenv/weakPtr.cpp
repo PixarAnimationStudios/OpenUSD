@@ -90,34 +90,34 @@ static void _TestComparisons()
 
     TF_AXIOM( x <  y);
     TF_AXIOM( x <= y);
-    TF_AXIOM( not(x >  y) );
-    TF_AXIOM( not(x >= y) );
+    TF_AXIOM( !(x >  y) );
+    TF_AXIOM( !(x >= y) );
 
-    TF_AXIOM( not(y <  x) );
-    TF_AXIOM( not(y <= x) );
+    TF_AXIOM( !(y <  x) );
+    TF_AXIOM( !(y <= x) );
     TF_AXIOM( y >  x );
     TF_AXIOM( y >= x );
 
-    TF_AXIOM( not (x == nullptr) );
-    TF_AXIOM( not (nullptr == x) );
+    TF_AXIOM( !(x == nullptr) );
+    TF_AXIOM( !(nullptr == x) );
 
     TF_AXIOM( nullptr != x );
     TF_AXIOM( x != nullptr );
 
-    TF_AXIOM( not (x < nullptr) );
+    TF_AXIOM( !(x < nullptr) );
     TF_AXIOM( nullptr < x );
 
-    TF_AXIOM( not (nullptr > x) );
+    TF_AXIOM( !(nullptr > x) );
     TF_AXIOM( x > nullptr );
 
-    TF_AXIOM( not (x <= nullptr) );
+    TF_AXIOM( !(x <= nullptr) );
     TF_AXIOM( nullptr <= x );
 
-    TF_AXIOM( not (nullptr >= x) );
+    TF_AXIOM( !(nullptr >= x) );
     TF_AXIOM( x >= nullptr );
 
-    TF_AXIOM( not (x == NULL) );
-    TF_AXIOM( not (NULL == x) );
+    TF_AXIOM( !(x == NULL) );
+    TF_AXIOM( !(NULL == x) );
 }
 
 static bool
@@ -167,7 +167,7 @@ Test_TfWeakPtr()
     TfWeakPtr<Human> hPtr(human);
     InvokeSeeAndDo(hPtr);
     delete human;
-    TF_AXIOM(not hPtr);
+    TF_AXIOM(!hPtr);
     _TestComparisons();
 
     return true;
@@ -218,7 +218,7 @@ public:
     void Wait()
     {
         std::unique_lock<std::mutex> lock(_mutex);
-        while (not _count) {
+        while (!_count) {
             _condvar.wait(lock);
         }
         --_count;
@@ -251,7 +251,7 @@ public:
             ProtectedBase_Registry::GetInstance();
         ProtectedBase_Registry::_RegistryMap::iterator it =
             reg._registry.find(_id);
-        if (it != reg._registry.end() and it->second == TfCreateWeakPtr(this)) {
+        if (it != reg._registry.end() && it->second == TfCreateWeakPtr(this)) {
             reg._registry.erase(it);
         }
     }
@@ -347,8 +347,8 @@ Test_TfCreateRefPtrFromProtectedWeakPtr()
         // The thread will have detected that b1 is expiring, and have
         // returned a new object.  (We use the weak_ptrs to verify this.)
         TF_VERIFY(reg.GetNumEntries() == 1);
-        TF_VERIFY(not b1);
-        TF_VERIFY(not b1_weak);
+        TF_VERIFY(!b1);
+        TF_VERIFY(!b1_weak);
         TF_VERIFY(b2);
         TF_VERIFY(b2_weak);
         TF_VERIFY(b1_weak != b2_weak);

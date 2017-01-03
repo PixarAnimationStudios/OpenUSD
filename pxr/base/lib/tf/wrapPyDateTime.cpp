@@ -54,7 +54,7 @@ struct BoostPtimeToPyDateTime
 
         _ImportPyDateTimeModuleOnce();
 
-        if (not ptime.is_special()) {
+        if (!ptime.is_special()) {
             const boost::gregorian::date date = ptime.date();
             const boost_pt::time_duration time = ptime.time_of_day();
             // Convert fractional seconds to microseconds.
@@ -100,7 +100,7 @@ struct Tf_BoostPtimeFromPyDateTime
     }
     static void *convertible(PyObject *obj) {
         _ImportPyDateTimeModuleOnce();
-        return (obj and PyDateTime_Check(obj)) ? obj : 0;
+        return (obj && PyDateTime_Check(obj)) ? obj : 0;
     }
     static void construct(PyObject *src,
                           boost::python::converter::

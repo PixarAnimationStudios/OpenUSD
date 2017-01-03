@@ -138,7 +138,7 @@ TfAtomicOfstreamWrapper::Open(
 
     _stream.open(_tmpFilePath.c_str(),
         std::fstream::out|std::fstream::binary|std::fstream::trunc);
-    if (not _stream) {
+    if (!_stream) {
         if (reason) {
             *reason = TfStringPrintf(
                 "Unable to open '%s' for writing",
@@ -154,7 +154,7 @@ bool
 TfAtomicOfstreamWrapper::Commit(
     string* reason)
 {
-    if (not _stream.is_open()) {
+    if (!_stream.is_open()) {
         if (reason) {
             *reason = "Stream is not open";
         }
@@ -207,7 +207,7 @@ bool
 TfAtomicOfstreamWrapper::Cancel(
     string* reason)
 {
-    if (not _stream.is_open()) {
+    if (!_stream.is_open()) {
         if (reason) {
             *reason = "Buffer is not open";
         }

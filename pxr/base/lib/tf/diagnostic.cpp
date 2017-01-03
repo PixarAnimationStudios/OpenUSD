@@ -71,7 +71,7 @@ Tf_FailedVerifyHelper(const TfCallContext &context,
     std::string errorMsg =
         std::string("Failed verification: ' ") + condition + " '";
 
-    if (not msg.empty())
+    if (!msg.empty())
         errorMsg += " -- " + msg;
 
     if (TfGetenvBool("TF_FATAL_VERIFY", false)) {

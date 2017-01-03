@@ -133,7 +133,7 @@ public:
         const_iterator tend = end();
 
         for(const_iterator iter = begin(); iter != tend; ++iter) {
-            if (not rhs.count(*iter))
+            if (!rhs.count(*iter))
                 return false;
         }
 
@@ -218,7 +218,7 @@ public:
             std::pair<typename _HashMap::iterator, bool> res =
                 _h->insert(std::make_pair(v, size()));
     
-            if (not res.second)
+            if (!res.second)
                 return insert_result(_vec().begin() + res.first->second, false);
     
         } else {
@@ -329,7 +329,7 @@ public:
         //XXX: When switching to c++0x we should call _vec().shrink_to_fit().
         _Vector(_vec()).swap(_vec());
 
-        if (not _h)
+        if (!_h)
             return;
 
         size_t sz = size();
@@ -399,7 +399,7 @@ private:
     // Unconditionally create the acceleration table if it doesn't already
     // exist.
     inline void _CreateTable() {
-        if (not _h) {
+        if (!_h) {
             _h.reset(new _HashMap(Threshold, _hash(), _equ()));
             for(size_t i=0; i < size(); ++i)
                 (*_h)[_vec()[i]] = i;

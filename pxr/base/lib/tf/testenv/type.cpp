@@ -185,7 +185,7 @@ public:
     }
 
     void _HandleTypeDeclaredNotice( const TfTypeWasDeclaredNotice & n ) {
-        assert( not n.GetType().IsUnknown() );
+        assert( !n.GetType().IsUnknown() );
         _seenNotices->insert( n.GetType() );
     }
 
@@ -266,13 +266,13 @@ Test_TfType()
     // IsUnknown()
 
     assert( tUnknown.IsUnknown() );
-    assert( not tRoot.IsUnknown() );
-    assert( not tChild.IsUnknown() );
-    assert( not tAbstract.IsUnknown() );
-    assert( not tChild.IsUnknown() );
-    assert( not tGrandchild.IsUnknown() );
-    assert( not tCounted.IsUnknown() );
-    assert( not tSingle.IsUnknown() );
+    assert( !tRoot.IsUnknown() );
+    assert( !tChild.IsUnknown() );
+    assert( !tAbstract.IsUnknown() );
+    assert( !tChild.IsUnknown() );
+    assert( !tGrandchild.IsUnknown() );
+    assert( !tCounted.IsUnknown() );
+    assert( !tSingle.IsUnknown() );
 
     ////////////////////////////////////////////////////////////////////////
     // All types should be distinct.
@@ -317,7 +317,7 @@ Test_TfType()
     {
         TfErrorMark m;
         m.SetMark();
-        assert( not tUnknown.IsA(tUnknown) );
+        assert( !tUnknown.IsA(tUnknown) );
         m.Clear();
     }
 
@@ -329,8 +329,8 @@ Test_TfType()
         {
             TfErrorMark m;
             m.SetMark();
-            assert( not it->IsA(tUnknown) );
-            assert( not it->IsA<UnknownClass>() );
+            assert( !it->IsA(tUnknown) );
+            assert( !it->IsA<UnknownClass>() );
             m.Clear();
         }
     }
@@ -341,10 +341,10 @@ Test_TfType()
     assert( tChild.IsA<IAbstractClass>() );
 
     assert( tConcrete.IsA<ConcreteClass>() );
-    assert( not tConcrete.IsA<ChildClass>() );
+    assert( !tConcrete.IsA<ChildClass>() );
 
     assert( tAbstract.IsA(tAbstract) );
-    assert( not tAbstract.IsA(tChild) );
+    assert( !tAbstract.IsA(tChild) );
 
     assert( tGrandchild.IsA(tAbstract) );
     assert( tGrandchild.IsA(tConcrete) );
@@ -392,7 +392,7 @@ Test_TfType()
     // Test Get{Base,Derived}Types()
 
     assert( tRoot.GetBaseTypes().empty() );
-    assert( not tRoot.GetDirectlyDerivedTypes().empty() );
+    assert( !tRoot.GetDirectlyDerivedTypes().empty() );
 
     assert( tUnknown.GetBaseTypes().empty() );
     assert( tUnknown.GetDirectlyDerivedTypes().empty() );
@@ -487,31 +487,31 @@ Test_TfType()
     // We don't have an actual Unknown C++ type, so we fashion a bogus
     // pointer to supply; we expect all the cast functions to return 0.
     void *bogusPtr = reinterpret_cast<void*>(1234);
-    assert( not tChild.CastFromAncestor( tUnknown, bogusPtr ) );
-    assert( not tChild.CastToAncestor( tUnknown, bogusPtr ) );
-    assert( not tUnknown.CastFromAncestor( tChild, &childForCast) );
-    assert( not tUnknown.CastToAncestor( tChild, &childForCast) );
+    assert( !tChild.CastFromAncestor( tUnknown, bogusPtr ) );
+    assert( !tChild.CastToAncestor( tUnknown, bogusPtr ) );
+    assert( !tUnknown.CastFromAncestor( tChild, &childForCast) );
+    assert( !tUnknown.CastToAncestor( tChild, &childForCast) );
     
    //////////////////////////////////////////////////////////////////////// 
     // Test manufacture
 
     // Factory w/ 0 arguments
     CountedClassRefPtr orig;
-    assert(not orig);
+    assert(!orig);
     orig = tCounted.GetFactory<CountedClassFactory>()->New();
     assert(orig);
     assert(orig->GetNumber() == 0);
 
     // Factory w/ 1 arguments
     orig.Reset();
-    assert(not orig);
+    assert(!orig);
     orig = tCounted.GetFactory<CountedClassFactory>()->New(123);
     assert(orig);
     assert(orig->GetNumber() == 123);
 
     // Test argument promotion
     orig.Reset();
-    assert(not orig);
+    assert(!orig);
     orig = tCounted.GetFactory<CountedClassFactory>()->New(true);
     assert(orig);
     assert(orig->GetNumber() == int(true));
@@ -537,8 +537,8 @@ Test_TfType()
     {
         TfErrorMark m;
         m.SetMark();
-        assert( not tUnknown.GetFactory<TfType::FactoryBase>() );
-        assert( not tRoot.GetFactory<TfType::FactoryBase>() );
+        assert( !tUnknown.GetFactory<TfType::FactoryBase>() );
+        assert( !tRoot.GetFactory<TfType::FactoryBase>() );
         m.Clear();
     }
 
@@ -547,13 +547,13 @@ Test_TfType()
 
     // POD types
     assert( TfType::Find<int>().IsPlainOldDataType() );
-    assert( not TfType::Find<std::string>().IsPlainOldDataType() );
+    assert( !TfType::Find<std::string>().IsPlainOldDataType() );
 
     // Enum types
     TfType::Define<_TestEnum>();
-    assert( not TfType::Find<_TestEnum>().IsUnknown() );
+    assert( !TfType::Find<_TestEnum>().IsUnknown() );
     assert( TfType::Find<_TestEnum>().IsEnumType() );
-    assert( not TfType::Find<int>().IsEnumType() );
+    assert( !TfType::Find<int>().IsEnumType() );
 
     ////////////////////////////////////////////////////////////////////////
     // We should only have C++ types in this test

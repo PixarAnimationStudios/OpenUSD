@@ -95,8 +95,8 @@ public:
     }
 
     static void SetUniqueChangedListener(UniqueChangedListener listener) {
-        if (_uniqueChangedListener.lock or
-            _uniqueChangedListener.func or
+        if (_uniqueChangedListener.lock ||
+            _uniqueChangedListener.func ||
             _uniqueChangedListener.unlock) {
             TF_FATAL_ERROR("Setting an already set UniqueChangedListener");
         }

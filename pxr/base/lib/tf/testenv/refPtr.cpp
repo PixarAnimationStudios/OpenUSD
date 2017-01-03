@@ -148,10 +148,10 @@ static void TestNullptrComparisons()
     NodeRefPtr p;
 
     TF_AXIOM(p == nullptr);
-    TF_AXIOM(not (p != nullptr));
-    TF_AXIOM(not (p < nullptr));
+    TF_AXIOM(!(p != nullptr));
+    TF_AXIOM(!(p < nullptr));
     TF_AXIOM(p <= nullptr);
-    TF_AXIOM(not (p > nullptr));
+    TF_AXIOM(!(p > nullptr));
     TF_AXIOM(p >= nullptr);
 
     // These should be exactly the same as the above comparisons to nullptr,

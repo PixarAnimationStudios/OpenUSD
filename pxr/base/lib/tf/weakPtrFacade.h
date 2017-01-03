@@ -128,20 +128,20 @@ public:
 
     template <class Other>
     bool operator != (PtrTemplate<Other> const &p) const {
-        return not (*this == p);
+        return !(*this == p);
     }
 
     template <class T>
     bool operator == (TfRefPtr<T> const &p) const {
-        if (not GetUniqueIdentifier())
-            return not p;
+        if (!GetUniqueIdentifier())
+            return !p;
         DataType *ptr = _FetchPointer();
-        return ptr and ptr == get_pointer(p);
+        return ptr && ptr == get_pointer(p);
     }
 
     template <class T>
     bool operator != (TfRefPtr<T> const &p) const {
-        return not (*this == p);
+        return !(*this == p);
     }
 
     template <class T>
@@ -151,7 +151,7 @@ public:
 
     template <class T>
     friend bool operator != (const TfRefPtr<T>& p1, Derived const &p2) {
-        return not (p1 == p2);
+        return !(p1 == p2);
     }
 
     template <class Other>
@@ -163,17 +163,17 @@ public:
 
     template <class Other>
     bool operator > (PtrTemplate<Other> const &p) const {
-        return not (*this < p) and not (*this == p);
+        return !(*this < p) && !(*this == p);
     }
 
     template <class Other>
     bool operator <= (PtrTemplate<Other> const &p) const {
-        return (*this < p) or (*this == p);
+        return (*this < p) || (*this == p);
     }
 
     template <class Other>
     bool operator >= (PtrTemplate<Other> const &p) const {
-        return not (*this < p);
+        return !(*this < p);
     }
 
     using UnspecifiedBoolType = DataType * (TfWeakPtrFacade::*)(void) const;
@@ -183,7 +183,7 @@ public:
     }
 
     bool operator ! () const {
-        return not bool(*this);
+        return !(bool(*this));
     }
 
     template <class T>
@@ -245,7 +245,7 @@ private:
     friend struct boost::python::objects::pointer_holder;
 
     friend std::type_info const &TfTypeid(Derived const &p) {
-        if (ARCH_UNLIKELY(not p))
+        if (ARCH_UNLIKELY(!p))
             TF_FATAL_ERROR("Called TfTypeid on invalid %s",
                            ArchGetDemangled(typeid(Derived)).c_str());
         return typeid(*get_pointer(p));
@@ -282,23 +282,23 @@ private:
 template <template <class> class X, class Y>
 inline bool operator== (TfWeakPtrFacade<X, Y> const &p, std::nullptr_t)
 {
-    return not p;
+    return !p;
 }
 template <template <class> class X, class Y>
 inline bool operator== (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
 {
-    return not p;
+    return !p;
 }
 
 template <template <class> class X, class Y>
 inline bool operator!= (TfWeakPtrFacade<X, Y> const &p, std::nullptr_t)
 {
-    return not (p == nullptr);
+    return !(p == nullptr);
 }
 template <template <class> class X, class Y>
 inline bool operator!= (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
 {
-    return not (nullptr == p);
+    return !(nullptr == p);
 }
 
 template <template <class> class X, class Y>
@@ -315,12 +315,12 @@ inline bool operator< (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
 template <template <class> class X, class Y>
 inline bool operator<= (TfWeakPtrFacade<X, Y> const &p, std::nullptr_t)
 {
-    return not (nullptr < p);
+    return !(nullptr < p);
 }
 template <template <class> class X, class Y>
 inline bool operator<= (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
 {
-    return not (p < nullptr);
+    return !(p < nullptr);
 }
 
 template <template <class> class X, class Y>
@@ -337,12 +337,12 @@ inline bool operator> (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
 template <template <class> class X, class Y>
 inline bool operator>= (TfWeakPtrFacade<X, Y> const &p, std::nullptr_t)
 {
-    return not (p < nullptr);
+    return !(p < nullptr);
 }
 template <template <class> class X, class Y>
 inline bool operator>= (std::nullptr_t, TfWeakPtrFacade<X, Y> const &p)
 {
-    return not (nullptr < p);
+    return !(nullptr < p);
 }
 
 ///@}

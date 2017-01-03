@@ -215,7 +215,7 @@ public:
     template <typename X = T, 
               typename std::enable_if<
                   Tf_ShouldIterateOverCopy<T>::value 
-                  and std::is_same<X, T>::value>::type* = nullptr>
+                  && std::is_same<X, T>::value>::type* = nullptr>
     TfIterator(X const &container)
         : _data(container)
     {
@@ -248,14 +248,14 @@ public:
     /// Returns false if (*this == \a iterator) returns true, returns true
     /// otherwise.
     bool operator!=(const TfIterator& iterator) const {
-        return not (*this == iterator);
+        return !(*this == iterator);
     }
 
     /// Pre-increment operator.  Advances this iterator to the next element in
     /// the sequence.
     /// \return this iterator
     TfIterator& operator++() {
-        if (not *this) {
+        if (!*this) {
             TF_CODING_ERROR("iterator exhausted");
             return *this;
         }
@@ -276,7 +276,7 @@ public:
     /// Returns the element referenced by this iterator.
     /// \return element
     StarReturnType operator*() {
-        if (ARCH_UNLIKELY(not *this))
+        if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return *_data.current;
     }
@@ -284,7 +284,7 @@ public:
     /// Returns the element referenced by this iterator.
     /// \return element
     StarReturnType operator*() const {
-        if (ARCH_UNLIKELY(not *this))
+        if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return *_data.current;
     }
@@ -292,7 +292,7 @@ public:
     /// Returns a pointer to the element referenced by this iterator.
     /// \return pointer to element
     ArrowReturnType operator->() {
-        if (ARCH_UNLIKELY(not *this))
+        if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return _data.current.operator->();
     }   

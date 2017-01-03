@@ -115,7 +115,7 @@ Tf_NoticeRegistry::_InsertProbe(const TfNotice::WeakProbePtr &probe)
     _Lock lock(_probeMutex);
     if (probe)
         _probes.insert(probe);
-    _doProbing = not _probes.empty();
+    _doProbing = !_probes.empty();
 }
 
 
@@ -124,7 +124,7 @@ Tf_NoticeRegistry::_RemoveProbe(const TfNotice::WeakProbePtr &probe)
 {
     _Lock lock(_probeMutex);
     _probes.erase(probe);
-    _doProbing = not _probes.empty();
+    _doProbing = !_probes.empty();
 }
 
 void
@@ -274,7 +274,7 @@ Tf_NoticeRegistry::_Send(const TfNotice &n, const TfType & noticeType,
     {
         _Lock lock(_userCountMutex);
 
-        if (_userCount == 1 and not _deadEntries.empty()) {
+        if (_userCount == 1 && !_deadEntries.empty()) {
             for (size_t i=0, n=_deadEntries.size(); i!=n; ++i) {
                 _FreeDeliverer(_deadEntries[i]);
             }
@@ -296,19 +296,19 @@ Tf_NoticeRegistry::_Deliver(const TfNotice &n, const TfType &type,
                              const _DelivererListEntry & entry)
 { 
     _DelivererList *dlist = entry.first;
-    if (not dlist)
+    if (!dlist)
         return 0;
 
     int nSent = 0;
     _DelivererList::iterator i = entry.second;
     while (i != dlist->end()) {
         _DelivererList::value_type deliverer = *i;
-        if (deliverer->_IsActive() and deliverer->
+        if (deliverer->_IsActive() && deliverer->
             _SendToListener(n, type, s, senderUniqueId, senderType, probes)) {
             ++nSent;
         } else {
             _Lock lock(_userCountMutex);
-            if (not deliverer->_IsMarkedForRemoval()) {
+            if (!deliverer->_IsMarkedForRemoval()) {
                 deliverer->_Deactivate();
                 deliverer->_MarkForRemoval();
                 _deadEntries.push_back(TfCreateWeakPtr(deliverer));

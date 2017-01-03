@@ -202,7 +202,7 @@ private:
         _Data *data = _GetData();
         // XXX this is (technically speaking) broken double-checked locking.
         _ElementPairPtr defaultPtr = data->defaultPtr;
-        if (ARCH_UNLIKELY(not defaultPtr)) {
+        if (ARCH_UNLIKELY(!defaultPtr)) {
             data->defaultPtr = defaultPtr = _FindOrCreate(T());
         }
         TF_FLYWEIGHT_INC_STAT(numGetDefault);

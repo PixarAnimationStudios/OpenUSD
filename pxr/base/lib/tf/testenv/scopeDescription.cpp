@@ -41,28 +41,28 @@ Test_TfScopeDescription()
         TF_DESCRIBE_SCOPE("one");
         
         stack = TfGetCurrentScopeDescriptionStack();
-        TF_AXIOM(stack.size() == 1 and stack.back() == "one");
+        TF_AXIOM(stack.size() == 1 && stack.back() == "one");
         
         {
             TF_DESCRIBE_SCOPE("two");
             
             stack = TfGetCurrentScopeDescriptionStack();
-            TF_AXIOM(stack.size() == 2 and stack.back() == "two");
+            TF_AXIOM(stack.size() == 2 && stack.back() == "two");
             
         }
         
         stack = TfGetCurrentScopeDescriptionStack();
-        TF_AXIOM(stack.size() == 1 and stack.back() == "one");
+        TF_AXIOM(stack.size() == 1 && stack.back() == "one");
         {
             TF_DESCRIBE_SCOPE("%s", "three");
             
             stack = TfGetCurrentScopeDescriptionStack();
-            TF_AXIOM(stack.size() == 2 and stack.back() == "three");
+            TF_AXIOM(stack.size() == 2 && stack.back() == "three");
             
         }
         
         stack = TfGetCurrentScopeDescriptionStack();
-        TF_AXIOM(stack.size() == 1 and stack.back() == "one");
+        TF_AXIOM(stack.size() == 1 && stack.back() == "one");
         
     }
     

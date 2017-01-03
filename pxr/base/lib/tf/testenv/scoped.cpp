@@ -73,7 +73,7 @@ Test_TfScoped()
     {
         x = true;
         TfScoped<> scope(&Func);
-        if (not x) {
+        if (!x) {
             cout << "Function: unexpected state in scope" << endl;
             ++errors;
         }
@@ -90,7 +90,7 @@ Test_TfScoped()
     {
         x = true;
         TfScoped<> scope(boost::bind(&BoundFunc, &x, false));
-        if (not x) {
+        if (!x) {
             cout << "boost::bind: unexpected state in scope" << endl;
             ++errors;
         }
@@ -107,7 +107,7 @@ Test_TfScoped()
     {
         x = true;
         TfScoped<> scope(boost::lambda::var(x) = false);
-        if (not x) {
+        if (!x) {
             cout << "boost lambda: unexpected state in scope" << endl;
             ++errors;
         }
@@ -124,7 +124,7 @@ Test_TfScoped()
     {
         x = true;
         TfScoped<void (*)(bool*)> scope(&ResetFunc, &x);
-        if (not x) {
+        if (!x) {
             cout << "Function with arg: unexpected state in scope" << endl;
             ++errors;
         }
@@ -142,7 +142,7 @@ Test_TfScoped()
         Resetter r(&x);
         x = true;
         TfScoped<void (Resetter::*)()> scope(&r, &Resetter::Reset);
-        if (not x) {
+        if (!x) {
             cout << "Method: unexpected state in scope" << endl;
             ++errors;
         }
@@ -152,7 +152,7 @@ Test_TfScoped()
         ++errors;
     }
 
-    return not errors;
+    return !errors;
 }
 
 static bool
@@ -163,7 +163,7 @@ Test_TfScopedVar()
     bool x = false;
     {
         TfScopedVar<bool> scope(x, true);
-        if (not x) {
+        if (!x) {
             cout << "bool: unexpected state in scope" << endl;
             ++errors;
         }
@@ -186,7 +186,7 @@ Test_TfScopedVar()
         ++errors;
     }
 
-    return not errors;
+    return !errors;
 }
 
 TF_ADD_REGTEST(TfScoped);

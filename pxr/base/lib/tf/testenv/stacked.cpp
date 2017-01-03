@@ -100,7 +100,7 @@ static void Test()
             
             Stack const &stack = Stacked::GetStack();
             TF_AXIOM(stack.size() == 2);
-            TF_AXIOM(stack[0]->value == 1 and
+            TF_AXIOM(stack[0]->value == 1 &&
                      stack[1]->value == 2);
         }
 
@@ -115,10 +115,10 @@ static void Test()
             
             Stack const &stack = Stacked::GetStack();
             TF_AXIOM(stack.size() == 5);
-            TF_AXIOM(stack[0]->value == 1 and
-                     stack[1]->value == 2 and
-                     stack[2]->value == 3 and
-                     stack[3]->value == 4 and
+            TF_AXIOM(stack[0]->value == 1 && 
+                     stack[1]->value == 2 && 
+                     stack[2]->value == 3 && 
+                     stack[3]->value == 4 && 
                      stack[4]->value == 5);
         }
 
@@ -130,7 +130,7 @@ static void Test()
             
             Stack const &stack = Stacked::GetStack();
             TF_AXIOM(stack.size() == 2);
-            TF_AXIOM(stack[0]->value == 1 and
+            TF_AXIOM(stack[0]->value == 1 && 
                      stack[1]->value == 2);
         }
 

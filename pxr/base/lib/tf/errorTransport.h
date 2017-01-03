@@ -50,7 +50,7 @@ public:
     /// Post all contained errors to the current thread's error list, leaving
     /// this TfErrorTransport empty.
     void Post() {
-        if (ARCH_UNLIKELY(not IsEmpty()))
+        if (ARCH_UNLIKELY(!IsEmpty()))
             _PostImpl();
     }
 

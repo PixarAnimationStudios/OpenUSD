@@ -137,7 +137,7 @@ TfDiagnosticMgr::SetDelegate( DelegateWeakPtr const &delegate )
 
 void
 TfDiagnosticMgr::AppendError(TfError const &e) {
-    if (not HasActiveErrorMark()) {
+    if (!HasActiveErrorMark()) {
         _ReportError(e);
     } else {
         e._data->_serial = _nextSerial.fetch_and_increment();
@@ -150,7 +150,7 @@ TfDiagnosticMgr::AppendError(TfError const &e) {
 void
 TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
 {
-    if (not HasActiveErrorMark()) {
+    if (!HasActiveErrorMark()) {
         for (ErrorList::const_iterator
                  i = src.begin(), end = src.end(); i != end; ++i) {
             _ReportError(*i);
@@ -184,7 +184,7 @@ TfDiagnosticMgr::PostError(TfEnum errorCode, const char* errorCodeString,
     const bool logStackTraceOnError =
         TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_ERROR);
 
-    if (logStackTraceOnError or
+    if (logStackTraceOnError ||
         TfDebug::IsEnabled(TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR)) {
     
         _PrintDiagnostic(stderr, errorCode, context, commentary, info);
@@ -214,9 +214,9 @@ TfDiagnosticMgr::_ReportError(const TfError &err)
 {
     const bool isMainThread = ArchIsMainThread();
 
-    if (isMainThread and _delegate) {
+    if (isMainThread && _delegate) {
         _delegate->IssueError(err);
-    } else if (not err.GetQuiet()) {
+    } else if (!err.GetQuiet()) {
         _PrintDiagnostic(stderr,
                          err.GetDiagnosticCode(),
                          err.GetContext(),
@@ -237,7 +237,7 @@ TfDiagnosticMgr::PostWarning(
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_WARNING))
         ArchDebuggerTrap();
 
-    if (not ArchIsMainThread()) {
+    if (!ArchIsMainThread()) {
         _PrintDiagnostic(stderr, warningCode, context, commentary, info);
         return;
     }
@@ -249,7 +249,7 @@ TfDiagnosticMgr::PostWarning(
 
     if (_delegate)
         _delegate->IssueWarning(warning);
-    else if (not quiet)
+    else if (!quiet)
         _PrintDiagnostic(stderr, warningCode, context, commentary, info);
 
     TfDiagnosticNotice::IssuedWarning(warning).Send(TfCreateWeakPtr(this));
@@ -269,7 +269,7 @@ void TfDiagnosticMgr::PostStatus(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet) const
 {
-    if (not ArchIsMainThread()) {
+    if (!ArchIsMainThread()) {
         _PrintDiagnostic(stdout, statusCode, context, commentary, info);
         return;
     }
@@ -281,7 +281,7 @@ void TfDiagnosticMgr::PostStatus(
 
     if (_delegate)
         _delegate->IssueStatus(status);
-    else if (not quiet)
+    else if (!quiet)
         _PrintDiagnostic(stderr, statusCode, context, commentary, info);
 
     TfDiagnosticNotice::IssuedStatus(status).Send(TfCreateWeakPtr(this));
@@ -300,7 +300,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
                                 TfEnum statusCode,
                                 std::string const &msg) const
 {
-    if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR) or
+    if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR) ||
         TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_FATAL_ERROR))
         ArchDebuggerTrap();
 
@@ -315,7 +315,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
         fe.Send(TfCreateWeakPtr(this));
     }
 
-    if (isMainThread and _delegate) {
+    if (isMainThread && _delegate) {
         _delegate->IssueFatalError(context, msg);
     } else {
         if (statusCode == TF_DIAGNOSTIC_CODING_ERROR_TYPE) {
@@ -353,7 +353,7 @@ TfDiagnosticMgr::_GetErrorMarkBegin(size_t mark, size_t *nErrors)
 {
     ErrorList &errorList = _errorList.local();
 
-    if (mark >= _nextSerial or errorList.empty()) {
+    if (mark >= _nextSerial || errorList.empty()) {
         if (nErrors)
             *nErrors = 0;
         return errorList.end();
@@ -364,7 +364,7 @@ TfDiagnosticMgr::_GetErrorMarkBegin(size_t mark, size_t *nErrors)
     size_t count = 0;
 
     ErrorList::reverse_iterator i = errorList.rbegin(), end = errorList.rend();
-    while (i != end and i->_data->_serial >= mark) {
+    while (i != end && i->_data->_serial >= mark) {
         ++i, ++count;
     }
 

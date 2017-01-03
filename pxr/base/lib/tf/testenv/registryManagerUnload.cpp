@@ -39,7 +39,7 @@ _LoadAndUnloadSharedLibrary(const std::string & libraryPath)
     void * handle = TfDlopen(libraryPath.c_str(), RTLD_NOW, &dlErrorMsg);
     TF_AXIOM(handle);
     TF_AXIOM(dlErrorMsg.empty());
-    TF_AXIOM(not TfDlclose(handle));
+    TF_AXIOM(!TfDlclose(handle));
 }
 
 static bool

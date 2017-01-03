@@ -104,7 +104,7 @@ operator<<(std::ostream &out, const std::list<T> &l)
 /// \ingroup group_tf_DebuggingOutput
 template <class K, class M, class H, class C, class A>
 typename std::enable_if<
-    Tf_IsOstreamable<K>() and Tf_IsOstreamable<M>(), std::ostream &>::type
+    Tf_IsOstreamable<K>() && Tf_IsOstreamable<M>(), std::ostream &>::type
 operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
 {
     out << "< ";
@@ -118,7 +118,7 @@ operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
 /// \ingroup group_tf_DebuggingOutput
 template <class K, class M>
 typename std::enable_if<
-    Tf_IsOstreamable<K>() and Tf_IsOstreamable<M>(), std::ostream &>::type
+    Tf_IsOstreamable<K>() && Tf_IsOstreamable<M>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::map<K, M> &h)
 {
     out << "< ";

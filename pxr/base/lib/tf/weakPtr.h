@@ -213,13 +213,13 @@ private:
     }
 
     T *_FetchPointer() const {
-        if (ARCH_LIKELY(_remnant and _remnant->_IsAlive()))
+        if (ARCH_LIKELY(_remnant && _remnant->_IsAlive()))
             return _rawPtr;
         return 0;
     }
 
     bool _IsInvalid() const {
-        return _remnant and not _remnant->_IsAlive();
+        return _remnant && !_remnant->_IsAlive();
     }
 
     void const *_GetUniqueIdentifier() const {

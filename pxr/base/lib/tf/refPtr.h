@@ -524,7 +524,7 @@ struct Tf_RefPtr_Counter {
     static inline bool
     RemoveRef(const TfRefBase* ptr,
               TfRefBase::UniqueChangedListener const &) {
-        return (ptr and (ptr->GetRefCount()._DecrementAndTestIfZero()));
+        return (ptr && (ptr->GetRefCount()._DecrementAndTestIfZero()));
     }
 };
 
@@ -1042,23 +1042,23 @@ private:
 template <class T>
 inline bool operator== (const TfRefPtr<T> &p, std::nullptr_t)
 {
-    return not p;
+    return !p;
 }
 template <class T>
 inline bool operator== (std::nullptr_t, const TfRefPtr<T> &p)
 {
-    return not p;
+    return !p;
 }
 
 template <class T>
 inline bool operator!= (const TfRefPtr<T> &p, std::nullptr_t)
 {
-    return not (p == nullptr);
+    return !(p == nullptr);
 }
 template <class T>
 inline bool operator!= (std::nullptr_t, const TfRefPtr<T> &p)
 {
-    return not (nullptr == p);
+    return !(nullptr == p);
 }
 
 template <class T>
@@ -1075,12 +1075,12 @@ inline bool operator< (std::nullptr_t, const TfRefPtr<T> &p)
 template <class T>
 inline bool operator<= (const TfRefPtr<T> &p, std::nullptr_t)
 {
-    return not (nullptr < p);
+    return !(nullptr < p);
 }
 template <class T>
 inline bool operator<= (std::nullptr_t, const TfRefPtr<T> &p)
 {
-    return not (p < nullptr);
+    return !(p < nullptr);
 }
 
 template <class T>
@@ -1097,12 +1097,12 @@ inline bool operator> (std::nullptr_t, const TfRefPtr<T> &p)
 template <class T>
 inline bool operator>= (const TfRefPtr<T> &p, std::nullptr_t)
 {
-    return not (p < nullptr);
+    return !(p < nullptr);
 }
 template <class T>
 inline bool operator>= (std::nullptr_t, const TfRefPtr<T> &p)
 {
-    return not (nullptr < p);
+    return !(nullptr < p);
 }
 
 

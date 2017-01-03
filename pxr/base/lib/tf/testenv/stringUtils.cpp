@@ -489,7 +489,7 @@ TestGetXmlEscapedString()
 static bool
 Test_TfStringUtils()
 {
-    return TestNumbers() and TestPreds() and TestStrings() and TestTokens() and
+    return TestNumbers() && TestPreds() && TestStrings() && TestTokens() &&
            TestGetXmlEscapedString();
 }
 

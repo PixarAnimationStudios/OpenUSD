@@ -169,7 +169,7 @@ TfGetEnvSetting(TfEnvSetting<T>& setting) {
     Tf_InitEnvSettings();
 
     T *val = setting._value->load();
-    if (ARCH_UNLIKELY(not val)) {
+    if (ARCH_UNLIKELY(!val)) {
         Tf_InitializeEnvSetting(&setting);
         val = setting._value->load();
     }

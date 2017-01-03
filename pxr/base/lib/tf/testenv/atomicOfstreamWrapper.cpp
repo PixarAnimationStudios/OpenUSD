@@ -53,23 +53,23 @@ static void
 TestErrorCases()
 {
     // Empty file path.
-    TF_AXIOM(not TfAtomicOfstreamWrapper("").Open());
+    TF_AXIOM(!TfAtomicOfstreamWrapper("").Open());
     // Can't create destination directory.
-    TF_AXIOM(not TfAtomicOfstreamWrapper("/var/run/a/testTf_file_").Open());
+    TF_AXIOM(!TfAtomicOfstreamWrapper("/var/run/a/testTf_file_").Open());
     // Insufficient permission to create destination file.
-    TF_AXIOM(not TfAtomicOfstreamWrapper("/var/run/testTf_file_").Open());
+    TF_AXIOM(!TfAtomicOfstreamWrapper("/var/run/testTf_file_").Open());
     // Unwritable file.
-    TF_AXIOM(not TfAtomicOfstreamWrapper("/etc/passwd").Open());
+    TF_AXIOM(!TfAtomicOfstreamWrapper("/etc/passwd").Open());
     // wrapper not open.
-    TF_AXIOM(not TfAtomicOfstreamWrapper("").Commit());
-    TF_AXIOM(not TfAtomicOfstreamWrapper("").Cancel());
+    TF_AXIOM(!TfAtomicOfstreamWrapper("").Commit());
+    TF_AXIOM(!TfAtomicOfstreamWrapper("").Cancel());
 
     {
         TfAtomicOfstreamWrapper wrapper("");
-        TF_AXIOM(not wrapper.GetStream().is_open());
+        TF_AXIOM(!wrapper.GetStream().is_open());
         TF_AXIOM(wrapper.GetStream().good());
         wrapper.GetStream() << "Into the bit bucket..." << endl;
-        TF_AXIOM(not wrapper.GetStream().good());
+        TF_AXIOM(!wrapper.GetStream().good());
     }
 }
 
@@ -81,7 +81,7 @@ TestCommitToNewFile()
     TF_AXIOM(wrapper.Open());
 
     // Destination file doesn't exist yet.
-    TF_AXIOM(not TfIsFile("testTf_NewFileCommit.txt"));
+    TF_AXIOM(!TfIsFile("testTf_NewFileCommit.txt"));
 
     // Temporary file exists.
     TF_AXIOM(Tf_CountFileMatches("testTf_NewFileCommit.*") == 1);
@@ -92,7 +92,7 @@ TestCommitToNewFile()
 
     // Commit.
     TF_AXIOM(wrapper.Commit());
-    TF_AXIOM(not wrapper.GetStream().is_open());
+    TF_AXIOM(!wrapper.GetStream().is_open());
 
     // Temporary file is gone.
     TF_AXIOM(Tf_CountFileMatches("testTf_NewFileCommit.*") == 1);
@@ -127,7 +127,7 @@ TestCommitToExistingFile()
 
     // Commit.
     TF_AXIOM(wrapper.Commit());
-    TF_AXIOM(not wrapper.GetStream().is_open());
+    TF_AXIOM(!wrapper.GetStream().is_open());
 
     // Temporary file is gone.
     TF_AXIOM(Tf_CountFileMatches("testTf_ExFileCommit.*") == 1);
@@ -143,7 +143,7 @@ static void
 TestCommitSymlink()
 {
     // Create destination directory.
-    if (not TfIsDir("a/b/c/d")) {
+    if (!TfIsDir("a/b/c/d")) {
         TF_AXIOM(TfMakeDirs("a/b/c/d"));
     }
 
@@ -176,7 +176,7 @@ TestCommitSymlink()
 
     // Commit the wrapper.
     TF_AXIOM(wrapper.Commit());
-    TF_AXIOM(not wrapper.GetStream().is_open());
+    TF_AXIOM(!wrapper.GetStream().is_open());
 
     // Temporary file is removed.
     TF_AXIOM(Tf_CountFileMatches("a/b/c/d/testTf_File.*") == 1);
@@ -197,7 +197,7 @@ TestCancel()
     TF_AXIOM(wrapper.Open());
 
     // Destination file not there yet.
-    TF_AXIOM(not TfIsFile("testTf_Cancel.txt"));
+    TF_AXIOM(!TfIsFile("testTf_Cancel.txt"));
 
     // Temporary file exists.
     TF_AXIOM(Tf_CountFileMatches("testTf_Cancel.*") == 1);
@@ -206,7 +206,7 @@ TestCancel()
     TF_AXIOM(wrapper.Cancel());
 
     // Destination and temporary files are not on disk.
-    TF_AXIOM(not TfIsFile("testTf_Cancel.txt"));
+    TF_AXIOM(!TfIsFile("testTf_Cancel.txt"));
     TF_AXIOM(Tf_CountFileMatches("testTf_Cancel.*") == 0);
 }
 
@@ -219,7 +219,7 @@ TestAutoCancel()
         TF_AXIOM(wrapper.Open());
 
         // Destination file not there yet.
-        TF_AXIOM(not TfIsFile("testTf_AutoCancel.txt"));
+        TF_AXIOM(!TfIsFile("testTf_AutoCancel.txt"));
 
         // Temporary file exists.
         TF_AXIOM(Tf_CountFileMatches("testTf_AutoCancel.*") == 1);
@@ -228,7 +228,7 @@ TestAutoCancel()
     }
 
     // Destination and temporary files are not on disk.
-    TF_AXIOM(not TfIsFile("testTf_AutoCancel.txt"));
+    TF_AXIOM(!TfIsFile("testTf_AutoCancel.txt"));
     TF_AXIOM(Tf_CountFileMatches("testTf_AutoCancel.*") == 0);
 }
 
@@ -269,7 +269,7 @@ TestFilePermissions()
         TF_AXIOM(stat("testTf_ExistingFilePerm.txt", &st) != -1);
         mode_t fileMode = st.st_mode & ACCESSPERMS;
         fprintf(stderr, "testTf_ExistingFilePerm: fileMode = 0%03o\n", fileMode);
-        TF_AXIOM(not (fileMode & (S_IRGRP|S_IWGRP)));
+        TF_AXIOM(!(fileMode & (S_IRGRP|S_IWGRP)));
     }
 
     // Restore umask to whatever it was.

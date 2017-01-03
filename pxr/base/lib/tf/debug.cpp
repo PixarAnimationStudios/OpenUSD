@@ -369,7 +369,7 @@ TfDebug::GetDebugSymbolDescription(const string& name)
 void
 TfDebug::SetOutputFile(FILE *file)
 {
-    if (file == stdout or file == stderr) {
+    if (file == stdout || file == stderr) {
         tbb::spin_mutex::scoped_lock lock(*_outputFileMutex);
         _GetOutputFile() = file;
     } else {

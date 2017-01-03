@@ -110,20 +110,20 @@ Setup()
         unlink(topDir.c_str());
 
     TF_FOR_ALL(i, *_SetupData) {
-        if (not (TfIsDir(i->dirpath) or TfMakeDirs(i->dirpath)))
+        if (!(TfIsDir(i->dirpath) || TfMakeDirs(i->dirpath)))
             TF_FATAL_ERROR("Failed to create directory '%s'",
                 i->dirpath.c_str());
 
         TF_FOR_ALL(d, i->dirnames) {
             string dirPath = TfStringCatPaths(i->dirpath, *d);
-            if (not (TfIsDir(dirPath) or TfMakeDirs(dirPath)))
+            if (!(TfIsDir(dirPath) || TfMakeDirs(dirPath)))
                 TF_FATAL_ERROR("Failed to create directory '%s'",
                     dirPath.c_str());
         }
 
         TF_FOR_ALL(f, i->filenames) {
             string filePath = TfStringCatPaths(i->dirpath, *f);
-            if (not (TfIsFile(filePath) or TfTouchFile(filePath)))
+            if (!(TfIsFile(filePath) || TfTouchFile(filePath)))
                 TF_FATAL_ERROR("Failed to create file '%s'",
                     filePath.c_str());
         }
@@ -145,13 +145,13 @@ TestTfPathExists()
     cout << "Testing TfPathExists" << endl;
 
     TF_AXIOM(TfPathExists("/tmp"));
-    TF_AXIOM(not TfPathExists("no/such/path"));
-    TF_AXIOM(not TfPathExists(""));
+    TF_AXIOM(!TfPathExists("no/such/path"));
+    TF_AXIOM(!TfPathExists(""));
 
     unlink("link-to-file");
     symlink("/no/such/file", "link-to-file");
     TF_AXIOM(TfPathExists("link-to-file"));
-    TF_AXIOM(not TfPathExists("link-to-file", true));
+    TF_AXIOM(!TfPathExists("link-to-file", true));
 
     return true;
 }
@@ -162,12 +162,12 @@ TestTfIsDir()
     cout << "Testing TfIsDir" << endl;
 
     TF_AXIOM(TfIsDir("/etc"));
-    TF_AXIOM(not TfIsDir("/etc/passwd"));
-    TF_AXIOM(not TfIsDir(""));
+    TF_AXIOM(!TfIsDir("/etc/passwd"));
+    TF_AXIOM(!TfIsDir(""));
 
     unlink("link-to-dir");
     symlink("/etc", "link-to-dir");
-    TF_AXIOM(not TfIsDir("link-to-dir"));
+    TF_AXIOM(!TfIsDir("link-to-dir"));
     TF_AXIOM(TfIsDir("link-to-dir", true));
 
     return true;
@@ -179,12 +179,12 @@ TestTfIsFile()
     cout << "Testing TfIsFile" << endl;
 
     TF_AXIOM(TfIsFile("/etc/passwd"));
-    TF_AXIOM(not TfIsFile("/etc"));
-    TF_AXIOM(not TfIsFile(""));
+    TF_AXIOM(!TfIsFile("/etc"));
+    TF_AXIOM(!TfIsFile(""));
 
     unlink("link-to-file");
     symlink("/etc/passwd", "link-to-file");
-    TF_AXIOM(not TfIsFile("link-to-file"));
+    TF_AXIOM(!TfIsFile("link-to-file"));
     TF_AXIOM(TfIsFile("link-to-file", true));
 
     return true;
@@ -196,9 +196,9 @@ TestTfIsWritable()
     cout << "Testing TfIsWritable" << endl;
 
     TF_AXIOM(TfIsWritable("/tmp"));
-    TF_AXIOM(not TfIsWritable(""));
-    TF_AXIOM(not TfIsWritable("/etc"));
-    TF_AXIOM(not TfIsWritable("/etc/passwd"));
+    TF_AXIOM(!TfIsWritable(""));
+    TF_AXIOM(!TfIsWritable("/etc"));
+    TF_AXIOM(!TfIsWritable("/etc/passwd"));
 
     TfTouchFile("testTfIsWritable.txt");
     TF_AXIOM(TfIsWritable("testTfIsWritable.txt"));
@@ -212,9 +212,9 @@ TestTfIsDirEmpty()
 {
     cout << "Testing TfIsDirEmpty" << endl;
 
-    TF_AXIOM(not TfIsDirEmpty("/etc/passwd"));
-    TF_AXIOM(not TfIsDirEmpty("/etc"));
-    TF_AXIOM(TfIsDir("empty") or TfMakeDirs("empty"));
+    TF_AXIOM(!TfIsDirEmpty("/etc/passwd"));
+    TF_AXIOM(!TfIsDirEmpty("/etc"));
+    TF_AXIOM(TfIsDir("empty") || TfMakeDirs("empty"));
     TF_AXIOM(TfIsDirEmpty("empty"));
     (void) rmdir("empty");
     return true;
@@ -227,9 +227,9 @@ TestTfSymlink()
 
     (void) unlink("test-symlink");
 
-    TF_AXIOM(not TfIsLink("/no/such/file"));
-    TF_AXIOM(not TfIsLink("/etc/passwd"));
-    TF_AXIOM(not TfIsLink(""));
+    TF_AXIOM(!TfIsLink("/no/such/file"));
+    TF_AXIOM(!TfIsLink("/etc/passwd"));
+    TF_AXIOM(!TfIsLink(""));
     TF_AXIOM(TfSymlink("/etc/passwd", "test-symlink"));
     TF_AXIOM(TfIsLink("test-symlink"));
     TF_AXIOM(TfReadLink("test-symlink") == "/etc/passwd");
@@ -251,7 +251,7 @@ TestTfDeleteFile()
     // Can't delete (file doesn't exist)
     cerr << "=== BEGIN EXPECTED ERROR ===" << endl;
     TfErrorMark m;
-    TF_AXIOM(not TfDeleteFile(t_file));
+    TF_AXIOM(!TfDeleteFile(t_file));
     m.Clear();
     cerr << "=== END EXPECTED ERROR ===" << endl;
 
@@ -291,7 +291,7 @@ TestTfMakeDir()
     (void) rmdir("test-directory-2");
 
     // Parent directories don't exist
-    TF_AXIOM(not TfMakeDir("parents/do/not/exist"));
+    TF_AXIOM(!TfMakeDir("parents/do/not/exist"));
 
     return true;
 }
@@ -316,7 +316,7 @@ TestTfMakeDirs()
 
     // Just a slash
     cout << "+ only a slash" << endl;
-    TF_AXIOM(not TfMakeDirs("/"));
+    TF_AXIOM(!TfMakeDirs("/"));
 
     // Begins with a dot
     if (TfIsDir("testTfMakeDirs-3"))
@@ -331,7 +331,7 @@ TestTfMakeDirs()
 
     // Whole path already exists
     cout << "+ whole path already exists" << endl;
-    TF_AXIOM(not TfMakeDirs("testTfMakeDirs-3/bar/baz/leaf"));
+    TF_AXIOM(!TfMakeDirs("testTfMakeDirs-3/bar/baz/leaf"));
 
     // Dots in path
     if (TfIsDir("testTfMakeDirs-4"))
@@ -352,7 +352,7 @@ TestTfMakeDirs()
     TF_AXIOM(TfTouchFile("testTfMakeDirs-5/bar/a"));
     cerr << "=== BEGIN EXPECTED ERROR ===" << endl;
     TfErrorMark m;
-    TF_AXIOM(not TfMakeDirs("./testTfMakeDirs-5/bar/a/b/c/d"));
+    TF_AXIOM(!TfMakeDirs("./testTfMakeDirs-5/bar/a/b/c/d"));
     m.Clear();
     cerr << "=== END EXPECTED ERROR ===" << endl;
 
@@ -383,12 +383,12 @@ struct Tf_WalkLogger
         std::sort(dirnames->begin(), dirnames->end());
         std::sort(filenames.begin(), filenames.end());
 
-        if (not dirnames->empty())
+        if (!dirnames->empty())
             *_ostr << "['" << TfStringJoin(*dirnames, "', '") << "'], ";
         else
             *_ostr << "[], ";
 
-        if (not filenames.empty())
+        if (!filenames.empty())
             *_ostr << "['" << TfStringJoin(filenames, "', '") << "'])" << endl;
         else
             *_ostr << "[])" << endl;
@@ -424,7 +424,7 @@ TestTfWalkDirs()
     TF_AXIOM(TfIsDir("a"));
 
     std::ofstream logstr("TestTfWalkDirs-log.txt");
-    if (not logstr) {
+    if (!logstr) {
         cerr << "Failed to open TestTfWalkDirs-log.txt" << endl;
         return false;
     }
@@ -491,7 +491,7 @@ TestTfListDir()
     {
         vector<string> result = TfListDir("a");
         TF_AXIOM("listing the sample directory works" &&
-                 not result.empty());
+                 !result.empty());
 
         cout << "entries = " << result.size() << endl;
         for (vector<string>::const_iterator it = result.begin();
@@ -506,7 +506,7 @@ TestTfListDir()
     {
         vector<string> result = TfListDir("a", true);
         TF_AXIOM("listing the sample directory recursively works" &&
-                 not result.empty());
+                 !result.empty());
 
         cout << "entries = " << result.size() << endl;
         for (vector<string>::const_iterator it = result.begin();
@@ -546,7 +546,7 @@ TestTfRmTree()
     cerr << "=== BEGIN EXPECTED ERROR ===" << endl;
     TfRmTree("nosuchdirectory");
     cerr << "=== END EXPECTED ERROR ===" << endl;
-    TF_AXIOM(not m.IsClean());
+    TF_AXIOM(!m.IsClean());
     m.Clear();
 
     cout << "+ no such directory, handle errors" << endl;
@@ -560,7 +560,7 @@ TestTfRmTree()
 
     cout << "+ removing a typical directory structure" << endl;
     TfRmTree("a");
-    TF_AXIOM(not TfIsDir("a"));
+    TF_AXIOM(!TfIsDir("a"));
 
     return true;
 }
@@ -574,8 +574,8 @@ TestTfTouchFile()
     (void) unlink(fileName.c_str());
 
     // Touch non-existent file, create = false -> fail...
-    TF_AXIOM(not TfTouchFile(fileName, false));
-    TF_AXIOM(not TfIsFile(fileName));
+    TF_AXIOM(!TfTouchFile(fileName, false));
+    TF_AXIOM(!TfIsFile(fileName));
 
     // Touch non-existent file, create = true -> succeed
     TF_AXIOM(TfTouchFile(fileName, true));

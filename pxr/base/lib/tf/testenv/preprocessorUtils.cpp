@@ -86,32 +86,32 @@ TestTF_PP_EAT_PARENS()
     #define _STR BOOST_PP_STRINGIZE
     #define _EAT TF_PP_EAT_PARENS
 
-    TF_AXIOM(not strcmp(_STR(), ""));
-    TF_AXIOM(not strcmp(_STR(_EAT()), ""));
-    TF_AXIOM(not strcmp(_STR(_EAT(())), ""));
-    TF_AXIOM(not strcmp(_STR(_EAT(a)), "a"));
-    TF_AXIOM(not strcmp(_STR(_EAT(a)), "a"));
-    TF_AXIOM(not strcmp(_STR(_EAT((a))), "a"));
-    TF_AXIOM(not strcmp(_STR(_EAT(((a)))), "(a)"));
-    TF_AXIOM(not strcmp(_STR(_EAT(_EAT(((a))))), "a"));
-    TF_AXIOM(not strcmp(_STR(_EAT(_EAT((((a)))))), "(a)"));
-    TF_AXIOM(not strcmp(_STR(_EAT(_EAT(_EAT((((a))))))), "a"));
+    TF_AXIOM(!strcmp(_STR(), ""));
+    TF_AXIOM(!strcmp(_STR(_EAT()), ""));
+    TF_AXIOM(!strcmp(_STR(_EAT(())), ""));
+    TF_AXIOM(!strcmp(_STR(_EAT(a)), "a"));
+    TF_AXIOM(!strcmp(_STR(_EAT(a)), "a"));
+    TF_AXIOM(!strcmp(_STR(_EAT((a))), "a"));
+    TF_AXIOM(!strcmp(_STR(_EAT(((a)))), "(a)"));
+    TF_AXIOM(!strcmp(_STR(_EAT(_EAT(((a))))), "a"));
+    TF_AXIOM(!strcmp(_STR(_EAT(_EAT((((a)))))), "(a)"));
+    TF_AXIOM(!strcmp(_STR(_EAT(_EAT(_EAT((((a))))))), "a"));
 
-    TF_AXIOM(not strcmp(_STR((_EAT((<a, b>)))), "(<a, b>)"));
-    TF_AXIOM(not strcmp(_STR((_EAT(_EAT(((<a, b>)))))), "(<a, b>)"));
-    TF_AXIOM(not strcmp(_STR((_EAT(_EAT(_EAT((((<a, b>)))))))), "(<a, b>)"));
+    TF_AXIOM(!strcmp(_STR((_EAT((<a, b>)))), "(<a, b>)"));
+    TF_AXIOM(!strcmp(_STR((_EAT(_EAT(((<a, b>)))))), "(<a, b>)"));
+    TF_AXIOM(!strcmp(_STR((_EAT(_EAT(_EAT((((<a, b>)))))))), "(<a, b>)"));
 
-    TF_AXIOM(not strcmp(_STR(_EAT(f(a))), "f(a)"));
+    TF_AXIOM(!strcmp(_STR(_EAT(f(a))), "f(a)"));
 
     //XXX: This isn't quite what we want; we would only expect _EAT()
     //     to remove the outermost _matching_ parentheses.
     //     See bug 8584.
-    TF_AXIOM(not strcmp(_STR(_EAT((x)(x))), "x(x)"));
-    TF_AXIOM(not strcmp(_STR(_EAT((x)f(x))), "xf(x)"));
-    TF_AXIOM(not strcmp(_STR(_EAT((x)(x)(x))), "x(x)(x)"));
-    //TF_AXIOM(not strcmp(_STR(_EAT((x)(x))), "(x)(x)"));
-    //TF_AXIOM(not strcmp(_STR(_EAT((x)f(x))), "(x)f(x)"));
-    //TF_AXIOM(not strcmp(_STR(_EAT((x)(x)(x))), "(x)(x)(x)"));
+    TF_AXIOM(!strcmp(_STR(_EAT((x)(x))), "x(x)"));
+    TF_AXIOM(!strcmp(_STR(_EAT((x)f(x))), "xf(x)"));
+    TF_AXIOM(!strcmp(_STR(_EAT((x)(x)(x))), "x(x)(x)"));
+    //TF_AXIOM(!strcmp(_STR(_EAT((x)(x))), "(x)(x)"));
+    //TF_AXIOM(!strcmp(_STR(_EAT((x)f(x))), "(x)f(x)"));
+    //TF_AXIOM(!strcmp(_STR(_EAT((x)(x)(x))), "(x)(x)(x)"));
 
     #undef _STR
     #undef _EAT
@@ -125,19 +125,19 @@ TestTF_PP_IS_TUPLE()
 {
     #define _STR BOOST_PP_STRINGIZE
 
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE(())), "1"));
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE((a))), "1"));
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE(((a)))), "1"));
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE((a, b))), "1"));
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE((a, b, c))), "1"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(())), "1"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE((a))), "1"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(((a)))), "1"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE((a, b))), "1"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE((a, b, c))), "1"));
 
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE(a)), "0"));
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE(f(a))), "0"));
-    TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE(This is a test)), "0"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(a)), "0"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(f(a))), "0"));
+    TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(This is a test)), "0"));
 
     // XXX: TF_PP_IS_TUPLE() should expand to 0 for sequences of size
     //      greater than 1...  See bug 8584.
-    //TF_AXIOM(not strcmp(_STR(TF_PP_IS_TUPLE(()())), "0"));
+    //TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(()())), "0"));
 
     #undef _STR
 
@@ -148,8 +148,8 @@ TestTF_PP_IS_TUPLE()
 static bool
 Test_TfPreprocessorUtils()
 {
-    return TestTF_NUM_ARGS() and
-           TestTF_PP_EAT_PARENS() and
+    return TestTF_NUM_ARGS() &&
+           TestTF_PP_EAT_PARENS() &&
            TestTF_PP_IS_TUPLE()
            ;
 }

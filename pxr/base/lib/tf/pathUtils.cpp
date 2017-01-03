@@ -49,7 +49,7 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
         return string();
 
     string localError;
-    if (not error)
+    if (!error)
         error = &localError;
     else
         error->clear();
@@ -58,7 +58,7 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
 
     if (allowInaccessibleSuffix) {
         string::size_type split = TfFindLongestAccessiblePrefix(path, error);
-        if (not error->empty())
+        if (!error->empty())
             return string();
 
         prefix = string(path, 0, split);
@@ -82,7 +82,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
             if (lhs == rhs)
                 return false;
             if (lhs == npos)
-                return not Accessible(str, rhs, err);
+                return !Accessible(str, rhs, err);
             if (rhs == npos)
                 return Accessible(str, lhs, err);
             return lhs < rhs;
@@ -92,7 +92,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
             string checkPath(str, 0, index);
             struct stat st;
             if (lstat(checkPath.c_str(), &st) == -1) {
-                if (errno != ENOENT and err->empty())
+                if (errno != ENOENT && err->empty())
                     *err = strerror(errno);
                 return false;
             }
@@ -157,9 +157,9 @@ _NextToken(Iter i, Iter end)
 {
     pair<Iter, Iter> t;
     for (t.first = i;
-         t.first != end and *t.first == '/'; ++t.first) {}
+         t.first != end && *t.first == '/'; ++t.first) {}
     for (t.second = t.first;
-         t.second != end and *t.second != '/'; ++t.second) {}
+         t.second != end && *t.second != '/'; ++t.second) {}
     return t;
 }
 
@@ -167,9 +167,9 @@ template <class Iter>
 inline TokenType
 _GetTokenType(pair<Iter, Iter> t) {
     size_t len = distance(t.first, t.second);
-    if (len == 1 and t.first[0] == '.')
+    if (len == 1 && t.first[0] == '.')
         return Dot;
-    if (len == 2 and t.first[0] == '.' and t.first[1] == '.')
+    if (len == 2 && t.first[0] == '.' && t.first[1] == '.')
         return DotDot;
     return Elem;
 }
@@ -272,7 +272,7 @@ TfNormPath(string const &inPath)
             // If there are no more Elems to consume with DotDots and this is a
             // relative path, or this token is already a DotDot, then copy it to
             // the output.
-            if ((rstart == path.rend() and backToken.first == rstart) or
+            if ((rstart == path.rend() && backToken.first == rstart) ||
                 _GetTokenType(backToken) == DotDot) {
                 path[writeIdx++] = '.';
                 path[writeIdx++] = '.';
@@ -291,7 +291,7 @@ TfNormPath(string const &inPath)
     // Remove a trailing slash if we wrote one.  We're careful to use const
     // iterators here to avoid incurring a string copy if it's not necessary (in
     // the case of libstdc++'s copy-on-write basic_string)
-    if (writeIdx > firstWriteIdx and cbegin(path)[writeIdx-1] == '/')
+    if (writeIdx > firstWriteIdx && cbegin(path)[writeIdx-1] == '/')
         --writeIdx;
 
     // Trim the string to length if necessary.

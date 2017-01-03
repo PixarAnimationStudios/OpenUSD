@@ -58,7 +58,7 @@ static void Run()
         TF_AXIOM(_map.count(i) == 1);
     }
 
-    TF_AXIOM(not _map.empty());
+    TF_AXIOM(!_map.empty());
     TF_AXIOM(_map.size() == 10000);
 
     printf("Exercise assignment operator and swap.\n");
@@ -93,12 +93,12 @@ static void Run()
     for(size_t i = 1000; i < 9000; ++i)
         TF_AXIOM(_map.erase(i) == 0);
 
-    TF_AXIOM(not _map.empty());
+    TF_AXIOM(!_map.empty());
     TF_AXIOM(_map.size() == 2000);
 
     printf("checking containment\n");
     for(size_t i = 1; i <= 10000; ++i) {
-        if (i < 1000 or i >= 9000)
+        if (i < 1000 || i >= 9000)
             TF_AXIOM(_map.count(i) == 1);
         else
             TF_AXIOM(_map.count(i) == 0);
@@ -107,12 +107,12 @@ static void Run()
     printf("testing shrink to fit\n");
     _map.shrink_to_fit();
 
-    TF_AXIOM(not _map.empty());
+    TF_AXIOM(!_map.empty());
     TF_AXIOM(_map.size() == 2000);
 
     printf("checking containment\n");
     for(size_t i = 1; i <= 10000; ++i) {
-        if (i < 1000 or i >= 9000)
+        if (i < 1000 || i >= 9000)
             TF_AXIOM(_map.count(i) == 1);
         else
             TF_AXIOM(_map.count(i) == 0);
@@ -123,7 +123,7 @@ static void Run()
     for(size_t i = 1000; i < 9000; ++i)
         _map[i] = TfStringify(i);
 
-    TF_AXIOM(not _map.empty());
+    TF_AXIOM(!_map.empty());
     TF_AXIOM(_map.size() == 10000);
 
     printf("checking containment\n");
@@ -139,12 +139,12 @@ static void Run()
     for(size_t i = 1000; i < 9000; ++i)
         _map.erase(i);
 
-    TF_AXIOM(not _map.empty());
+    TF_AXIOM(!_map.empty());
     TF_AXIOM(_map.size() == 2000);
 
     printf("checking containment\n");
     for(size_t i = 1; i <= 10000; ++i) {
-        TF_AXIOM(_map.count(i) == (i < 1000 or i >= 9000));
+        TF_AXIOM(_map.count(i) == (i < 1000 || i >= 9000));
     }
 
     // iterate
@@ -152,7 +152,7 @@ static void Run()
     size_t count = 0;
     for(_Map::iterator i = _map.begin(); i != _map.end(); ++i, ++count) {
         TF_AXIOM(TfStringify(i->first) == i->second);
-        TF_AXIOM(i->first < 1000 or i->first >= 9000);
+        TF_AXIOM(i->first < 1000 || i->first >= 9000);
     }
     TF_AXIOM(count == 2000);
 
@@ -161,7 +161,7 @@ static void Run()
     count = 0;
     for(_Map::const_iterator i = _map.begin(); i != _map.end(); ++i, ++count) {
         TF_AXIOM(TfStringify(i->first) == i->second);
-        TF_AXIOM(i->first < 1000 or i->first >= 9000);
+        TF_AXIOM(i->first < 1000 || i->first >= 9000);
     }
     TF_AXIOM(count == 2000);
             
@@ -230,7 +230,7 @@ static void Run()
     }
 
     printf("expecting only two elements\n");
-    TF_AXIOM(not _map2.empty());
+    TF_AXIOM(!_map2.empty());
     TF_AXIOM(_map2.size() == 2);
 }
 

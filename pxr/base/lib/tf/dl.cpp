@@ -88,7 +88,7 @@ TfDlopen(
 
     // If we successfully opened the shared library, load any script bindings if
     // scripting is initialized.
-    if (handle and loadScriptBindings)
+    if (handle && loadScriptBindings)
         TfScriptModuleLoader::GetInstance().LoadModules();
     
     return handle;

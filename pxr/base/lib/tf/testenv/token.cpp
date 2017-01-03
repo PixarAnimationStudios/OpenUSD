@@ -47,13 +47,13 @@ Test_TfToken()
     // Test swapping.
     empty1.Swap(nonEmpty3);
     TF_AXIOM(nonEmpty3.IsEmpty());
-    TF_AXIOM(not empty1.IsEmpty());
+    TF_AXIOM(!empty1.IsEmpty());
     TF_AXIOM(empty1 == "nonEmpty");
     TF_AXIOM(nonEmpty3 == "");
 
     std::swap(nonEmpty3, empty1);
     TF_AXIOM(empty1.IsEmpty());
-    TF_AXIOM(not nonEmpty3.IsEmpty());
+    TF_AXIOM(!nonEmpty3.IsEmpty());
     TF_AXIOM(empty1 == "");
     TF_AXIOM(nonEmpty3 == "nonEmpty");
     

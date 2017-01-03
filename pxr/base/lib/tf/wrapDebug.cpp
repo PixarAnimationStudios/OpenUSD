@@ -34,7 +34,7 @@ static void
 _SetOutputFile(object const &file)
 {
     FILE *fp = PyFile_AsFile(file.ptr());
-    if (not fp)
+    if (!fp)
         TfPyThrowTypeError("expected file object");
     TfDebug::SetOutputFile(fp);
 }

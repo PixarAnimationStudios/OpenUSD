@@ -43,7 +43,7 @@ bool
 TfErrorMark::_IsCleanImpl(TfDiagnosticMgr &mgr) const
 {
     Iterator b = mgr.GetErrorBegin(), e = mgr.GetErrorEnd();
-    return b == e or boost::prior(e)->_data->_serial < _mark;
+    return b == e || boost::prior(e)->_data->_serial < _mark;
 }
 
 void
@@ -69,7 +69,7 @@ TfErrorMark::TfErrorMark()
     TfDiagnosticMgr::GetInstance()._CreateErrorMark();
     SetMark();
 
-    if (_enableTfErrorMarkStackTraces and
+    if (_enableTfErrorMarkStackTraces &&
         TfDebug::IsEnabled(TF_ERROR_MARK_TRACKING)) {
         vector<uintptr_t> trace;
         trace.reserve(64);
@@ -81,14 +81,14 @@ TfErrorMark::TfErrorMark()
 
 TfErrorMark::~TfErrorMark()
 {
-    if (_enableTfErrorMarkStackTraces and
+    if (_enableTfErrorMarkStackTraces &&
         TfDebug::IsEnabled(TF_ERROR_MARK_TRACKING)) {
         tbb::spin_mutex::scoped_lock lock(_activeMarkStacksLock);
         _activeMarkStacks.erase(this);
     }
 
     TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-    if (mgr._DestroyErrorMark() and not IsClean())
+    if (mgr._DestroyErrorMark() && !IsClean())
         _ReportErrors(mgr);
 }
 
@@ -97,16 +97,16 @@ TfReportActiveErrorMarks()
 {
     string msg;
 
-    if (not _enableTfErrorMarkStackTraces) {
+    if (!_enableTfErrorMarkStackTraces) {
         msg += "- Set _enableTfErrorMarkStackTraces and recompile "
             "tf/errorMark.cpp.\n";
     }
 
-    if (not TfDebug::IsEnabled(TF_ERROR_MARK_TRACKING)) {
+    if (!TfDebug::IsEnabled(TF_ERROR_MARK_TRACKING)) {
         msg += "- Enable the TF_ERROR_MARK_TRACKING debug code.\n";
     }
 
-    if (not msg.empty()) {
+    if (!msg.empty()) {
         printf("Active error mark stack traces are disabled.  "
                "To enable, please do the following:\n%s", msg.c_str());
         return;

@@ -167,7 +167,7 @@ Test_TfDiagnosticNotices()
     TF_ERROR(info, MEDIUM, "const char *, %s", "...");
     TF_ERROR(info, MEDIUM, errString);
 
-    TF_AXIOM(not m.IsClean());
+    TF_AXIOM(!m.IsClean());
 
     // Assert that 12 errors got issued.
     TF_AXIOM(std::distance(m.GetBegin(), m.GetEnd()) == 12);

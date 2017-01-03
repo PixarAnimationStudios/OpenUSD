@@ -227,7 +227,7 @@ inline void Tf_RefPtrTracker_Assign(const void* owner, T* obj, T* oldObj);
 
 #define TF_DEFINE_REFPTR_TRACK(T, COND)                                     \
 inline void Tf_RefPtrTracker_FirstRef(const void*, T* obj) {                \
-    if (obj and COND(obj)) Tf_RefPtrTrackerUtil::Watch(obj);                \
+    if (obj && COND(obj)) Tf_RefPtrTrackerUtil::Watch(obj);                \
 }                                                                           \
 inline void Tf_RefPtrTracker_LastRef(const void*, T* obj) {                 \
     Tf_RefPtrTrackerUtil::Unwatch(obj);                                     \

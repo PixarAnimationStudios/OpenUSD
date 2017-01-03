@@ -133,7 +133,7 @@ private:
         _StackHolder() : _initialized(false) { }
 
         Stack &Get() {
-            if (not _initialized) {
+            if (!_initialized) {
                 _initialized = true;
                 Access::InitializeStack<Derived>();
             }
@@ -184,7 +184,7 @@ private:
 
     static Stack &_GetStack() {
         // Technically unsafe double-checked lock to intitialize the stack.
-        if (ARCH_UNLIKELY(not _stackStorage)) {
+        if (ARCH_UNLIKELY(!_stackStorage)) {
             // Make a new stack and try to set it.
             _StackStorage *old = nullptr;
             _StackStorage *tmp = new _StackStorage;

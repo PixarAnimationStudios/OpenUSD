@@ -131,7 +131,7 @@ MemCheck()
     printf("Expected max of about %zd, actual is %zd: %s\n",
            m, current, maxOk ? "[close enough]" : "[not good]");
 
-    return ok and maxOk;
+    return ok && maxOk;
 }
 
 static void
@@ -269,7 +269,7 @@ Test_TfMallocTag()
     runme = true;
 #endif
 
-    if (not ArchIsPtmallocActive()) {
+    if (!ArchIsPtmallocActive()) {
         printf("ptmalloc is not the active allocator. Skipping tests for "
                 "TfMallocTag.\n");
         runme = false; 

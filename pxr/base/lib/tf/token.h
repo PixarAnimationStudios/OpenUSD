@@ -288,7 +288,7 @@ private:
     void _AddRef() const {
         if (_rep.BitsAs<bool>()) {
             // We believe this rep is refCounted.
-            if (not _rep->IncrementIfCounted()) {
+            if (!_rep->IncrementIfCounted()) {
                 // Our belief is wrong, update our cache of countedness.
                 _rep.SetBits(false);
             }

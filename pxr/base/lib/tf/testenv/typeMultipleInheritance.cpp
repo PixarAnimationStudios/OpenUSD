@@ -80,7 +80,7 @@ Test_TfType_MultipleInheritance()
 
     TfType::Find<Z>().GetAllAncestorTypes(&types);
 
-    assert(not m.IsClean());
+    assert(!m.IsClean());
     m.Clear();
 
     return true;

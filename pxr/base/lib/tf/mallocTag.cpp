@@ -213,12 +213,12 @@ Tf_MallocTagStringMatchTable::_MatchString::_MatchString(const std::string& s) :
     allow(true),
     wildcard(false)
 {
-    if (not str.empty()) {
+    if (!str.empty()) {
         if (str[str.size() - 1] == '*') {
             wildcard = true;
             str.resize(str.size() - 1);
         }
-        if (not str.empty()) {
+        if (!str.empty()) {
             if (str[0] == '-') {
                 allow = false;
                 str.erase(0, 1);
@@ -260,7 +260,7 @@ Tf_MallocTagStringMatchTable::Match(const char* s) const
         if (i->wildcard) {
             // Check prefix match.
             const char* m = i->str.c_str();
-            while (*m and *m == *s) {
+            while (*m && *m == *s) {
                 ++m, ++s;
             }
             if (*m != '\0') {
@@ -658,7 +658,7 @@ _MallocStackDataLessThan(
 void
 Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
 {
-    if (not _callStackTable.empty()) {
+    if (!_callStackTable.empty()) {
         // Create a map from malloc stacks to the malloc stack data.
         typedef TfHashMap<
             vector<uintptr_t>, _MallocStackData, _HashMallocStack> _Map;
@@ -890,7 +890,7 @@ TfMallocTag::_ShouldNotTag(TfMallocTag::_ThreadData** tptr, _Tagging* statePtr)
 inline Tf_MallocPathNode*
 TfMallocTag::_GetCurrentPathNodeNoLock(const TfMallocTag::_ThreadData* tptr)
 {
-    if (not tptr->_tagStack.empty()) {
+    if (!tptr->_tagStack.empty()) {
         return tptr->_tagStack.back();
     }
 
@@ -923,7 +923,7 @@ TfMallocTag::GetCapturedMallocStacks()
 {
     vector<vector<uintptr_t> > result;
     
-    if (not TfMallocTag::IsInitialized())
+    if (!TfMallocTag::IsInitialized())
         return result;
 
     // Push some malloc tags, so what we do here doesn't pollute the root
@@ -951,7 +951,7 @@ TfMallocTag::_MallocWrapper(size_t nBytes, const void*)
     void* ptr = _mallocHook.Malloc(nBytes);
 
     _ThreadData* td;
-    if (_ShouldNotTag(&td) or ARCH_UNLIKELY(not ptr))
+    if (_ShouldNotTag(&td) || ARCH_UNLIKELY(!ptr))
         return ptr;
 
     {
@@ -1045,7 +1045,7 @@ TfMallocTag::_ReallocWrapper(void* oldPtr, size_t nBytes, const void*)
 
         newPtr = _mallocHook.Realloc(oldPtr, nBytes);
 
-        if (shouldNotTag or ARCH_UNLIKELY(not newPtr))
+        if (shouldNotTag || ARCH_UNLIKELY(!newPtr))
             return newPtr;
 
         Tf_MallocPathNode* newNode = _GetCurrentPathNodeNoLock(td);
@@ -1087,7 +1087,7 @@ TfMallocTag::_MemalignWrapper(size_t alignment, size_t nBytes, const void*)
     void* ptr = _mallocHook.Memalign(alignment, nBytes);
 
     _ThreadData* td;
-    if (_ShouldNotTag(&td) or ARCH_UNLIKELY(not ptr))
+    if (_ShouldNotTag(&td) || ARCH_UNLIKELY(!ptr))
         return ptr;
 
     tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
@@ -1124,7 +1124,7 @@ TfMallocTag::_FreeWrapper(void* ptr, const void*)
     // Tf_MallocGlobalData::_pathNodeTable.
     _ThreadData* td;
     _Tagging tagState;
-    if (_ShouldNotTag(&td, &tagState) and tagState == _TaggingDisabled) {
+    if (_ShouldNotTag(&td, &tagState) && tagState == _TaggingDisabled) {
         _mallocHook.Free(ptr);
         return;
     }
@@ -1532,7 +1532,7 @@ _GetAsCommaSeparatedString(size_t number)
     size_t n = str.size();
 
     TF_FOR_ALL(it, str) {
-        if (n < str.size() and n%3 == 0) {
+        if (n < str.size() && n%3 == 0) {
             result.push_back(',');
         }
         result.push_back(*it);
@@ -1698,7 +1698,7 @@ _MallocPathNodeLessThan(
     return lhs->siteName < rhs->siteName;
 }
 
-#if not (_DECREMENT_ALLOCATION_COUNTS)
+#if !(_DECREMENT_ALLOCATION_COUNTS)
 // Returns the total number of allocations in the given sub-tree.
 //
 static int64_t
@@ -1746,7 +1746,7 @@ _ReportMallocNode(
         node.nAllocations);
 
     out << indent
-        << (rootName and not rootName->empty() ? *rootName : node.siteName)
+        << (rootName && !rootName->empty() ? *rootName : node.siteName)
         << std::endl;
 
     // Sort the children by name.  The reason for doing this is that it is
@@ -1838,7 +1838,7 @@ TfMallocTag::CallTree::GetPrettyPrintString(PrintSetting setting,
             _PrintMallocNode(&rpt, this->root, 0, 0, 0, printedNodes,
                              maxPrintedNodes);
         if (printedNodes >= maxPrintedNodes
-            and reportedMem != GetTotalBytes()) {
+            && reportedMem != GetTotalBytes()) {
             rpt += TfStringPrintf("\nWARNING: limit of %zu nodes visted, but "
                                   "only %zu bytes of %zu accounted for.  "
                                   "Running with a larger maxPrintedNodes will "
@@ -1871,7 +1871,7 @@ TfMallocTag::CallTree::Report(
     out << GetPrettyPrintString(CALLSITES);
 
     // And the captured malloc stacks if there are any.
-    if (not this->capturedCallStacks.empty()) {
+    if (!this->capturedCallStacks.empty()) {
         _ReportCapturedMallocStacks(out, this->capturedCallStacks);
     }
 }

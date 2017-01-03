@@ -101,7 +101,7 @@ _InvokeWithErrorHandling(tuple const &args, dict const &kw)
     handle<> ret(PyObject_Call(callable, args_tail.get(), kw.ptr()));
     // if the call completed successfully, then we need to see if any tf errors
     // occurred, and if so, convert them to python exceptions.
-    if (not m.IsClean() and TfPyConvertTfErrorsToPythonException(m))
+    if (!m.IsClean() && TfPyConvertTfErrorsToPythonException(m))
         throw_error_already_set();
     // if we made it this far, we return the result.
     return ret;
@@ -140,7 +140,7 @@ _RepostErrors(boost::python::object exc)
     const bool TF_ERROR_MARK_TRACKING =
         TfDebug::IsDebugSymbolNameEnabled("TF_ERROR_MARK_TRACKING");
 
-    if (TF_ERROR_MARK_TRACKING and
+    if (TF_ERROR_MARK_TRACKING &&
         TfDiagnosticMgr::GetInstance().HasActiveErrorMark()) {
         if (TF_ERROR_MARK_TRACKING)
             printf("Tf.RepostErrors called with active marks\n");
@@ -198,9 +198,9 @@ static void
 _SetPythonExceptionDebugTracingEnabled(bool enable)
 {
     static TfPyTraceFnId traceFnId;
-    if (not enable) {
+    if (!enable) {
         traceFnId.reset();
-    } else if (not traceFnId) {
+    } else if (!traceFnId) {
         traceFnId = TfPyRegisterTraceFn(_PythonExceptionDebugTracer);
     }
 }

@@ -155,7 +155,7 @@ struct Tf_TokenRegistry
             if (--rep->_refCount != 0)
                 return;
             
-            if (not _sets[setNum].erase(*rep)) {
+            if (!_sets[setNum].erase(*rep)) {
                 repFoundInSet = false;
                 repString = rep->_str;
             }            
@@ -220,11 +220,11 @@ private:
             // No entry present, add a new entry.
             TfAutoMallocTag noname("TfToken");
             _RepPtr rep = &(*_sets[setNum].insert(TfToken::_Rep(s)).first);
-            rep->_isCounted = not makeImmortal;
+            rep->_isCounted = !makeImmortal;
             rep->_setNum = setNum;
-            if (not makeImmortal)
+            if (!makeImmortal)
                 rep->_refCount = 1;
-            return _RepPtrAndBits(rep, not makeImmortal);
+            return _RepPtrAndBits(rep, !makeImmortal);
         }
     }
 

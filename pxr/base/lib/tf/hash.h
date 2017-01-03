@@ -133,7 +133,7 @@ public:
     // TfHashCString if you want to hash the string.
     template <class T>
     size_t operator()(const T* ptr) const {
-        BOOST_STATIC_ASSERT((not boost::is_same<T, char>::value));
+        BOOST_STATIC_ASSERT((!boost::is_same<T, char>::value));
         return _Mix((size_t) ptr);
     }
 

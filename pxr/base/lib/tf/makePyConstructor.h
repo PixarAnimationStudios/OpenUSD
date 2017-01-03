@@ -226,7 +226,7 @@ void Install(object const &self, T const &t, TfErrorMark const &m) {
             bp::throw_error_already_set();
         // If no TfError, but object construction failed, raise a generic error
         // back to python.
-        if (not held)
+        if (!held)
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
         bp::detail::initialize_wrapper(self.ptr(), &(*(held.operator->())));
@@ -260,7 +260,7 @@ struct _RefPtrFactoryConverter {
                     (get_pointer(p)));
 
         // If resulting pointer is null, return None.
-        if (not ptr)
+        if (!ptr)
             return bp::incref(Py_None);
 
         // The to-python converter will set identity here.

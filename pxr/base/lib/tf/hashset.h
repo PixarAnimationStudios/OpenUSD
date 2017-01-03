@@ -643,7 +643,7 @@ inline bool
 operator!=(const TfHashSet<Key, HashFn, EqualKey, Alloc>& lhs,
            const TfHashSet<Key, HashFn, EqualKey, Alloc>& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 template<class Key, class HashFn, class EqualKey, class Alloc>
@@ -668,7 +668,7 @@ inline bool
 operator!=(const TfHashMultiSet<Key, HashFn, EqualKey, Alloc>& lhs,
            const TfHashMultiSet<Key, HashFn, EqualKey, Alloc>& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 #endif

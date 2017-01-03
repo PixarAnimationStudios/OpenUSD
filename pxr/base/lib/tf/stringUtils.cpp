@@ -104,7 +104,7 @@ _StringToNegative(const char *p, bool *outOfRange)
 {
     const Int M = std::numeric_limits<Int>::min();
     Int result = 0;
-    while (*p >= '0' and *p <= '9') {
+    while (*p >= '0' && *p <= '9') {
         int digit = (*p++ - '0');
         // If the new digit would exceed the range, bail.  The expression below
         // is equivalent to 'result < (M + digit) / 10', but it avoids division.
@@ -131,7 +131,7 @@ _StringToPositive(const char *p, bool *outOfRange)
 {
     const Int M = std::numeric_limits<Int>::max();
     Int result = 0;
-    while (*p >= '0' and *p <= '9') {
+    while (*p >= '0' && *p <= '9') {
         int digit = (*p++ - '0');
         // If the new digit would exceed the range, bail.  The expression below
         // is equivalent to 'result > (M - digit) / 10', but it avoids division.
@@ -347,7 +347,7 @@ TfStringTrim(const string &s, const char* trimChars)
 string
 TfStringReplace(const string& source, const string& from, const string& to)
 {
-    if (from.empty() or from == to) {
+    if (from.empty() || from == to) {
         return source;
     }
 
@@ -675,8 +675,8 @@ TfMatchedStringTokenize(const string& source,
 
 namespace { // helpers for DictionaryLess
 
-inline bool IsDigit(char ch) { return '0' <= ch and ch <= '9'; }
-inline char Lower(char ch) { return ('A' <= ch and ch <= 'Z') ? ch | 32 : ch; }
+inline bool IsDigit(char ch) { return '0' <= ch && ch <= '9'; }
+inline char Lower(char ch) { return ('A' <= ch && ch <= 'Z') ? ch | 32 : ch; }
 
 inline long
 AtoL(char const * &s)
@@ -696,14 +696,14 @@ DictionaryLess(char const *l, char const *r)
     int caseCmp = 0;
     int leadingZerosCmp = 0;
 
-    while (*l and *r) {
-        if (ARCH_UNLIKELY(IsDigit(*l) and IsDigit(*r))) {
+    while (*l && *r) {
+        if (ARCH_UNLIKELY(IsDigit(*l) && IsDigit(*r))) {
             char const *oldL = l, *oldR = r;
             long lval = AtoL(l), rval = AtoL(r);
             if (lval != rval)
                 return lval < rval;
             // Leading zeros difference only, record for later use.
-            if (not leadingZerosCmp)
+            if (!leadingZerosCmp)
                 leadingZerosCmp = (l-oldL) - (r-oldR);
             continue;
         }
@@ -714,7 +714,7 @@ DictionaryLess(char const *l, char const *r)
                 return lowL < lowR;
 
             // Case difference only, record that for later use.
-            if (not caseCmp)
+            if (!caseCmp)
                 caseCmp = (lowL != *l) ? -1 : 1;
         }
 
@@ -723,12 +723,12 @@ DictionaryLess(char const *l, char const *r)
 
     // We are at the end of either one or both strings.  If not both, the
     // shorter is considered less.
-    if (*l or *r)
-        return not *l;
+    if (*l || *r)
+        return !*l;
 
     // Otherwise we look to differences in case or leading zeros, preferring
     // leading zeros.
-    return (leadingZerosCmp < 0) or (caseCmp < 0);
+    return (leadingZerosCmp < 0) || (caseCmp < 0);
 }
 
 bool
@@ -921,19 +921,19 @@ TfMakeValidIdentifier(const std::string &in)
 
     result.reserve(in.size());
     char const *p = in.c_str();
-    if (not (('a' <= *p and *p <= 'z') or
-             ('A' <= *p and *p <= 'Z') or 
-             *p == '_')) {
+    if (!(('a' <= *p && *p <= 'z') || 
+          ('A' <= *p && *p <= 'Z') || 
+          *p == '_')) {
         result.push_back('_');
     } else {
         result.push_back(*p);
     }
 
     for (++p; *p; ++p) {
-        if (not (('a' <= *p and *p <= 'z') or
-                 ('A' <= *p and *p <= 'Z') or
-                 ('0' <= *p and *p <= '9') or
-                 *p == '_')) {
+        if (!(('a' <= *p && *p <= 'z') ||    
+              ('A' <= *p && *p <= 'Z') ||  
+              ('0' <= *p && *p <= '9') ||  
+              *p == '_')) {
             result.push_back('_');
         } else {
             result.push_back(*p);

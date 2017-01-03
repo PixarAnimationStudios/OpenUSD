@@ -51,7 +51,7 @@ _GetSingletonInstance(object const &classObj) {
         setattr(classObj, "__instance", instance);
 
         // If there's an 'init' method, call it.
-        if (not TfPyIsNone(getattr(instance, "init", object())))
+        if (!TfPyIsNone(getattr(instance, "init", object())))
             instance.attr("init")();
     }
 

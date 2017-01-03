@@ -655,7 +655,7 @@ inline bool
 operator!=(const TfHashMap<Key, Mapped, HashFn, EqualKey, Alloc>& lhs,
            const TfHashMap<Key, Mapped, HashFn, EqualKey, Alloc>& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 template<class Key, class Mapped, class HashFn, class EqualKey, class Alloc>
@@ -680,7 +680,7 @@ inline bool
 operator!=(const TfHashMultiMap<Key, Mapped, HashFn, EqualKey, Alloc>& lhs,
            const TfHashMultiMap<Key, Mapped, HashFn, EqualKey, Alloc>& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 #endif

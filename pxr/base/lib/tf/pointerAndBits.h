@@ -29,7 +29,7 @@
 
 // Return true if \p val is a power of two.
 constexpr bool Tf_IsPow2(uintptr_t val) {
-    return val && not (val & (val - 1));
+    return val && !(val & (val - 1));
 }
 
 /// \class TfPointerAndBits
@@ -47,7 +47,7 @@ template <class T>
 class TfPointerAndBits
 {
     static constexpr bool _SupportsAtLeastOneBit() {
-        return alignof(T) > 1 and Tf_IsPow2(alignof(T));
+        return alignof(T) > 1 && Tf_IsPow2(alignof(T));
     }
 
 public:

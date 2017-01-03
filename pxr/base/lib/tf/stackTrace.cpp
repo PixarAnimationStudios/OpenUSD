@@ -130,7 +130,7 @@ TfLogCrash(
         ArchGetProgramNameForErrors(), reason.c_str(), message.c_str(),
         context.GetFunction(), context.GetLine(), context.GetFile());
 
-    if (not additionalInfo.empty()) {
+    if (!additionalInfo.empty()) {
         fullMessage += additionalInfo + "\n";
     }
 

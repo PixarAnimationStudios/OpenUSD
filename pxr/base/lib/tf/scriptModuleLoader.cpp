@@ -104,7 +104,7 @@ TfScriptModuleLoader::GetModuleNames() const
 dict
 TfScriptModuleLoader::GetModulesDict() const
 {
-    if (not TfPyIsInitialized()) {
+    if (!TfPyIsInitialized()) {
         TF_CODING_ERROR("Python is not initialized!");
         return dict();
     }
@@ -124,7 +124,7 @@ TfScriptModuleLoader::GetModulesDict() const
     _TopologicalSort(&order);
     TF_FOR_ALL(lib, order) {
         _TokenToTokenMap::const_iterator i = _libsToModules.find(*lib);
-        if (i != _libsToModules.end() and
+        if (i != _libsToModules.end() &&
             modulesDict.has_key(i->second.GetText())) {
             handle<> modHandle(PyImport_ImportModule(const_cast<char *>
                                                      (i->second.GetText())));
@@ -164,7 +164,7 @@ void
 TfScriptModuleLoader::WriteDotFile(string const &file) const
 {
     FILE *out = fopen(file.c_str(), "wt");
-    if (not out) {
+    if (!out) {
         TF_RUNTIME_ERROR("Could not open '%s' for writing.\n", file.c_str());
         return;
     }
@@ -203,7 +203,7 @@ TfScriptModuleLoader::_HasTransitiveSuccessor(TfToken const &predecessor,
     vector<TfToken> predStack(1, predecessor);
     TfToken::HashSet seenPreds;
 
-    while (not predStack.empty()) {
+    while (!predStack.empty()) {
         TfToken pred = predStack.back();
         predStack.pop_back();
 
@@ -246,7 +246,7 @@ TfScriptModuleLoader::_LoadUpTo(TfToken const &name)
 
     // Don't do anything if the name isn't empty and it's not a name we know
     // about.
-    if (not name.IsEmpty() and not _libInfo.count(name)) {
+    if (!name.IsEmpty() && !_libInfo.count(name)) {
         TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
             .Msg("%s*** Not loading modules for unknown lib '%s'\n",
                  indentTxt, name.GetText());
@@ -270,7 +270,7 @@ TfScriptModuleLoader::_LoadUpTo(TfToken const &name)
         if (*lib == name)
             break;
 
-        if (_libsToModules.count(*lib) and not _loadedSet.count(*lib)) {
+        if (_libsToModules.count(*lib) && !_loadedSet.count(*lib)) {
             TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
                 .Msg("%s  Load('%s');\n", indentTxt, lib->GetText());
             _loadedSet.insert(*lib);
@@ -292,7 +292,7 @@ void
 TfScriptModuleLoader::_LoadModulesFor(TfToken const &inName)
 {
     // Don't load anything if python isn't initialized.
-    if (not TfPyIsInitialized())
+    if (!TfPyIsInitialized())
         return;
     if (_DidPyErrorOccur())
         return;
@@ -338,7 +338,7 @@ TfScriptModuleLoader::_LoadModulesFor(TfToken const &inName)
     // If this is the outermost caller initiating loading, start processing the
     // queue.
     if (_remainingLoadWork.size() == 1) {
-        while (not _remainingLoadWork.empty() and not _DidPyErrorOccur()) {
+        while (!_remainingLoadWork.empty() && !_DidPyErrorOccur()) {
             // Note: we copy the front of the deque here, since _LoadUpTo may
             // add items into the deque.  _LoadUpTo currently doesn't access the
             // reference-to-token it's passed after it might have modified the
@@ -356,9 +356,9 @@ TfScriptModuleLoader::_LoadModulesFor(TfToken const &inName)
         // request is not to load everything (empty token) and it's also not a
         // (transitive) dependency of the library we're currently working on,
         // then load it immediately.
-    } else if (not _remainingLoadWork.back().IsEmpty() and
-               not _HasTransitiveSuccessor(_remainingLoadWork.front(),
-                                           _remainingLoadWork.back())) {
+    } else if (!_remainingLoadWork.back().IsEmpty() &&
+               !_HasTransitiveSuccessor(_remainingLoadWork.front(),
+                                        _remainingLoadWork.back())) {
         TfToken name = _remainingLoadWork.back();
         _remainingLoadWork.pop_back();
         _LoadUpTo(name);

@@ -37,7 +37,7 @@ _RealPath(string const &path, bool allowInaccessibleSuffix, bool raiseOnError)
 {
     string error;
     string realPath = TfRealPath(path, allowInaccessibleSuffix, &error);
-    if (raiseOnError and not error.empty()) {
+    if (raiseOnError && !error.empty()) {
         TF_RUNTIME_ERROR(error);
     }
     return realPath;
@@ -51,7 +51,7 @@ _FindLongestAccessiblePrefix(string const &path)
     string error;
     string::size_type result = TfFindLongestAccessiblePrefix(path, &error);
 
-    if (not error.empty()) {
+    if (!error.empty()) {
         PyErr_SetString(PyExc_OSError, error.c_str());
         throw_error_already_set();
     }

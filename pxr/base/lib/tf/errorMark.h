@@ -94,7 +94,7 @@ class TfErrorMark : boost::noncopyable
     /// diagnostics are not being issued.
     inline bool IsClean() const {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-        return _mark >= mgr._nextSerial or _IsCleanImpl(mgr);
+        return _mark >= mgr._nextSerial || _IsCleanImpl(mgr);
     }
 
     /// Remove all errors in this mark from the error system.  Return true if

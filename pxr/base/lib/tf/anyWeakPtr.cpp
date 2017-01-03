@@ -125,7 +125,7 @@ TfAnyWeakPtr::operator bool() const
 bool
 TfAnyWeakPtr::operator !() const
 {
-    return not bool(*this);
+    return !bool(*this);
 
 }
 

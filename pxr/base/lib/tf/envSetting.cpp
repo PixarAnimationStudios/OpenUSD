@@ -57,7 +57,7 @@ public:
                 }
                 ++lineNo;
 
-                if (TfStringTrim(buffer).empty() or buffer[0] == '#')
+                if (TfStringTrim(buffer).empty() || buffer[0] == '#')
                     continue;
 
                 if (char* eqPtr = strchr(buffer, '=')) {
@@ -127,7 +127,7 @@ public:
             }
         }
 
-        if (not inserted) {
+        if (!inserted) {
             TF_CODING_ERROR("Multiple definitions of TfEnvSetting variable "
                             "detected.  This is usually due to software "
                             "misconfiguration.  Contact the build team for "
@@ -150,9 +150,9 @@ public:
                 std::atomic<void*>* cachedValue, void** potentialCachedValue) {
         constexpr bool reportError = true;
         return _Define(ptrKey, varName,
-                       boost::bind(&TfPyObject<U>, defValue, not reportError),
+                       boost::bind(&TfPyObject<U>, defValue, !reportError),
                        description,
-                       boost::bind(&TfPyObject<U>, value, not reportError),
+                       boost::bind(&TfPyObject<U>, value, !reportError),
                        cachedValue, potentialCachedValue);
     }
 

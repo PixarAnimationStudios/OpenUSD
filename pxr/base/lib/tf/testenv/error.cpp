@@ -100,12 +100,12 @@ Test_TfError()
     TF_CODING_ERROR("test error");
 
     // It should be the case that m is not clean.
-    TF_AXIOM(TF_VERIFY(not m.IsClean()));
+    TF_AXIOM(TF_VERIFY(!m.IsClean()));
 
     // It should not be the case that m is clean.
-    TF_AXIOM(not TF_VERIFY(m.IsClean()));
+    TF_AXIOM(!TF_VERIFY(m.IsClean()));
 
-    TF_AXIOM(not TF_VERIFY(m.IsClean(), "With a %s", "message."));
+    TF_AXIOM(!TF_VERIFY(m.IsClean(), "With a %s", "message."));
 
     // Should issue a failed expect error.
     TF_VERIFY(m.IsClean());
@@ -136,7 +136,7 @@ Test_TfError()
     TF_ERROR(info, MEDIUM, "const char *, %s", "...");
     TF_ERROR(info, MEDIUM, errString);
 
-    TF_AXIOM(not m.IsClean());
+    TF_AXIOM(!m.IsClean());
     m.Clear();
 
     // Issue a few different warnings.
@@ -181,7 +181,7 @@ _ThreadTask(TfErrorTransport *transport)
     TfErrorMark m;
     printf("Thread issuing error\n");
     TF_RUNTIME_ERROR("Cross-thread transfer test error");
-    TF_AXIOM(not m.IsClean());
+    TF_AXIOM(!m.IsClean());
     m.TransportTo(*transport);
     TF_AXIOM(m.IsClean());
 }
@@ -199,7 +199,7 @@ Test_TfErrorThreadTransport()
     printf("Thread completed, posting error.\n");
     TF_AXIOM(m.IsClean());
     transport.Post();
-    TF_AXIOM(not m.IsClean());
+    TF_AXIOM(!m.IsClean());
     m.Clear();
 
     return true;
