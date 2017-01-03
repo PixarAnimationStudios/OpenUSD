@@ -65,7 +65,7 @@ _GetConnectedSources(const UsdShadeParameter &self)
     vector<TfToken>         outputNames;
     
     self.GetConnectedSources(&sources, &outputNames);
-    if (not sources.empty()){
+    if (!sources.empty()){
         return make_tuple(TfPyCopySequenceToList(sources), 
                           TfPyCopySequenceToList(outputNames));
     }

@@ -131,13 +131,13 @@ bool UsdShdIsShaderBinding(const UsdRelationship &rel)
     }
 
     std::string riType = _GetRiType(rel);
-    return (riType == _tokens->binding or riType == _tokens->attribute);
+    return (riType == _tokens->binding || riType == _tokens->attribute);
 }
 
 std::string UsdShdGetSloArgName(const UsdAttribute &prop)
 {
     std::string riType = _GetRiType(prop);
-    if (riType == _tokens->parameter or
+    if (riType == _tokens->parameter || 
         riType == _tokens->coshaderInstance) {
         return _GetRiName(prop);
     }
@@ -147,7 +147,7 @@ std::string UsdShdGetSloArgName(const UsdAttribute &prop)
 std::string UsdShdGetSloArgName(const UsdRelationship &prop)
 {
     std::string riType = _GetRiType(prop);
-    if (riType == _tokens->parameter or
+    if (riType == _tokens->parameter || 
         riType == _tokens->coshaderInstance) {
         return _GetRiName(prop);
     }
@@ -226,7 +226,7 @@ string ShdGetPath(const UsdPrim &obj)
 string ShdGetShaderHandle(const UsdPrim &obj)
 {
     std::string riName = _GetRiName(obj);
-    return not riName.empty() ? riName : _GetPath(obj);
+    return !riName.empty() ? riName : _GetPath(obj);
 }
 
 //////////////////////////////////////////////////////////////////////////////

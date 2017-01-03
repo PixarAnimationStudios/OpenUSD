@@ -90,7 +90,7 @@ UsdShadeInterfaceAttribute::UsdShadeInterfaceAttribute(
 {
     TfToken attrName = _GetName(interfaceAttrName);
     _attr = prim.GetAttribute(attrName);
-    if (not _attr) {
+    if (!_attr) {
         _attr = prim.CreateAttribute(attrName, typeName, /* custom = */ false);
     }
 }
@@ -100,7 +100,7 @@ UsdShadeInterfaceAttribute::Get(
         VtValue* value,
         UsdTimeCode time) const
 {
-    if (not _attr) {
+    if (!_attr) {
         return false;
     }
 
@@ -144,7 +144,7 @@ UsdShadeInterfaceAttribute::Set(
         const VtValue& value,
         UsdTimeCode time) const
 {
-    if (not _attr) {
+    if (!_attr) {
         return false;
     }
 
@@ -180,7 +180,7 @@ bool
 UsdShadeInterfaceAttribute::SetDocumentation(
         const std::string& docs) const
 {
-    if (not _attr) {
+    if (!_attr) {
         return false;
     }
 
@@ -190,7 +190,7 @@ UsdShadeInterfaceAttribute::SetDocumentation(
 std::string 
 UsdShadeInterfaceAttribute::GetDocumentation() const
 {
-    if (not _attr) {
+    if (!_attr) {
         return "";
     }
 
@@ -201,7 +201,7 @@ bool
 UsdShadeInterfaceAttribute::SetDisplayGroup(
         const std::string& docs) const
 {
-    if (not _attr) {
+    if (!_attr) {
         return false;
     }
 
@@ -211,7 +211,7 @@ UsdShadeInterfaceAttribute::SetDisplayGroup(
 std::string 
 UsdShadeInterfaceAttribute::GetDisplayGroup() const
 {
-    if (not _attr) {
+    if (!_attr) {
         return "";
     }
 

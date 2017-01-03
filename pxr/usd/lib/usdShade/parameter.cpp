@@ -111,7 +111,7 @@ _IsArrayConnection(UsdProperty const &prop)
     // array connection rel names will always look like
     // connectedSourceFor:someParameter:_##
     // ...where ## is one or more digits
-    if (not prop.Is<UsdRelationship>())
+    if (!prop.Is<UsdRelationship>())
         return false;
     string name = prop.GetName();
     size_t  lastSep = name.rfind(':');
@@ -120,7 +120,7 @@ _IsArrayConnection(UsdProperty const &prop)
     if (name[++lastSep] != '_')
         return false;
     while (++lastSep < name.size()){
-        if (not isdigit(name[lastSep]))
+        if (!isdigit(name[lastSep]))
             return false;
     }
     return true;
@@ -168,7 +168,7 @@ UsdShadeParameter::UsdShadeParameter(
     // XXX what do we do if the type name doesn't match and it exists already?
 
     _attr = prim.GetAttribute(name);
-    if (not _attr) {
+    if (!_attr) {
         _attr = prim.CreateAttribute(name, typeName, /* custom = */ false);
     }
 }
@@ -222,7 +222,7 @@ UsdShadeParameter::_Connect(
     // XXX it WBN to be able to validate source itself, guaranteeing
     // that the source is, in fact, a shader.  However, it remains useful to
     // be able to target a pure-over.
-    if (rel and sourcePrim) {
+    if (rel && sourcePrim) {
         TfToken sourceName = outputIsParameter ? outputName :
             TfToken(_tokens->outputs.GetString() + outputName.GetString());
         UsdAttribute  sourceAttr = sourcePrim.GetAttribute(sourceName);
@@ -252,7 +252,7 @@ UsdShadeParameter::_Connect(
         SdfPathVector  target(1, sourceAttr.GetPath());
         success = rel.SetTargets(target);
     }
-    else if (not sourceShader){
+    else if (!sourceShader){
         TF_CODING_ERROR("Failed connecting parameter <%s>. "
                         "The given source shader prim <%s> is not defined", 
                         _attr.GetPath().GetText(),
@@ -260,7 +260,7 @@ UsdShadeParameter::_Connect(
                         "invalid-prim");
         return false;
     }
-    else if (not rel){
+    else if (!rel){
         TF_CODING_ERROR("Failed connecting parameter <%s>. "
                         "Unable to make the connection to source <%s>.", 
                         _attr.GetPath().GetText(),
@@ -289,7 +289,7 @@ UsdShadeParameter::ConnectElementToSource(
         TfToken const &outputName,
         bool outputIsParameter) const
 {
-    if (not IsArray())
+    if (!IsArray())
         return false;
     
     UsdRelationship rel = _GetElementParameterConnection(*this, 
@@ -301,17 +301,17 @@ UsdShadeParameter::ConnectElementToSource(
 bool 
 UsdShadeParameter::DisconnectElement(size_t elementIndex) const
 {
-    if (not IsArray())
+    if (!IsArray())
         return false;
     
     UsdRelationship rel = _GetElementParameterConnection(*this, 
                                                          elementIndex,
                                                          true);
-    if (not rel){
+    if (!rel){
         return false;
     }
     
-    return rel.SetMetadata(_tokens->outputName, TfToken()) and
+    return rel.SetMetadata(_tokens->outputName, TfToken()) && 
         rel.BlockTargets();
 }
     
@@ -330,7 +330,7 @@ UsdShadeParameter::DisconnectSources() const
     for (size_t i=0; i<numElements; ++i){
         UsdRelationship elt = _GetElementParameterConnection(*this, i, true);
         if (elt){
-            success = elt.BlockTargets() and success;
+            success = elt.BlockTargets() && success;
         }
         else {
             success = false;
@@ -349,7 +349,7 @@ UsdShadeParameter::ClearSources() const
     }
 
     for (auto elt : _GetElementConnections(_attr)) {
-        success = elt.ClearTargets(/* removeSpec = */ true) and success;
+        success = elt.ClearTargets(/* removeSpec = */ true) && success;
     }
 
     return success;
@@ -386,7 +386,7 @@ _EvaluateConnection(
             // XXX validation error
             if ( TfGetEnvSetting(USD_SHADE_BACK_COMPAT) ) {
                 return connection.GetMetadata(_tokens->outputName, outputName)
-                    and *source;
+                    && *source;
             }
         }
     }
@@ -398,7 +398,7 @@ UsdShadeParameter::GetConnectedSource(
         UsdShadeShader *source, 
         TfToken *outputName) const
 {
-    if (not (source and outputName)){
+    if (!(source && outputName)){
         TF_CODING_ERROR("GetConnectedSource() requires non-NULL "
                         "output parameters");
         return false;
@@ -417,7 +417,7 @@ UsdShadeParameter::GetConnectedSources(
     vector<UsdShadeShader> *sources, 
     vector<TfToken> *outputNames) const
 {
-    if (not (sources and outputNames)){
+    if (!(sources && outputNames)){
         TF_CODING_ERROR("GetConnectedSources() requires non-NULL "
                         "output parameters");
         return false;
@@ -433,16 +433,16 @@ UsdShadeParameter::GetConnectedSources(
         outputNames->push_back(outputName);
         return true;
     }
-    else if (not IsArray()){
+    else if (!IsArray()){
         return false;
     }
 
     bool connected = false;
     vector<UsdRelationship> connections = _GetElementConnections(_attr);
     int numElts = -1;
-    if (((not _attr.GetMetadata(_tokens->arrayConnectionSize, &numElts)) or
-         (numElts < 0)) and
-        not connections.empty()){
+    if (((!_attr.GetMetadata(_tokens->arrayConnectionSize, &numElts)) ||
+         (numElts < 0)) &&
+        !connections.empty()){
         numElts = 1 + _ElementIndexFromConnection(connections.back());
     }
     if (numElts <= 0){
@@ -496,11 +496,11 @@ UsdShadeParameter::SetConnectedArraySize(size_t numElts) const
 size_t
 UsdShadeParameter::GetConnectedArraySize() const
 {
-    if (not IsArray())
+    if (!IsArray())
         return 0;
     
     int  explicitNumElts = -1;
-    if (_attr.GetMetadata(_tokens->arrayConnectionSize, &explicitNumElts) and
+    if (_attr.GetMetadata(_tokens->arrayConnectionSize, &explicitNumElts) &&
         explicitNumElts > -1){
         return size_t(explicitNumElts);
     }
@@ -508,7 +508,7 @@ UsdShadeParameter::GetConnectedArraySize() const
     // connected-as-unit-to-another-array case
     UsdShadeShader  source;
     TfToken  outputName;
-    if (GetConnectedSource(&source, &outputName) and source){
+    if (GetConnectedSource(&source, &outputName) && source){
         return 1;
     }
     
