@@ -139,7 +139,7 @@ class {{ QUAT }}
 
     /// Hash.
     friend inline size_t hash_value(const {{ QUAT }} &q) {
-        size_t h = hash_value(q.GetReal());
+        size_t h = boost::hash<ScalarType>()(q.GetReal());
         boost::hash_combine(h, q.GetImaginary());
         return h;
     }
