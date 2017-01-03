@@ -377,25 +377,17 @@ SdfPath::GetAllTargetPathsRecursively(SdfPathVector *result) const {
     }
 }
 
-const pair<string, string>
+pair<string, string>
 SdfPath::GetVariantSelection() const
 {
-    TRACE_FUNCTION();
-
-    if (not ContainsPrimVariantSelection())
-        return pair<string, string>();
-
-    // Find nearest variant selection node
-    Sdf_PathNodeConstRefPtr curNode = _pathNode;
-    while (curNode and curNode->GetNodeType() !=
-                Sdf_PathNode::PrimVariantSelectionNode) {
-        curNode = curNode->GetParentNode();
+    pair<string, string> result;
+    if (IsPrimVariantSelectionPath()) {
+        const Sdf_PathNode::VariantSelectionType& sel =
+            _pathNode->GetVariantSelection();
+        result.first = sel.first.GetString();
+        result.second = sel.second.GetString();
     }
-    if (not curNode)
-        return pair<string, string>();
-    const Sdf_PathNode::VariantSelectionType& sel =
-        curNode->GetVariantSelection();
-    return pair<string, string>(sel.first.GetString(), sel.second.GetString());
+    return result;
 }
 
 bool
