@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 {
     for (int i = -1; i < 10; i++) {
         const std::string msg = ArchStrerror(i);
-        assert(not msg.empty());
+        assert(!msg.empty());
         printf("%d -> '%s'\n", i, msg.c_str());
     }
 

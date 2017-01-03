@@ -52,7 +52,7 @@ _GetFunctionName(string function, string prettyFunction)
     // First search to see if function is a member function.  If it's not,
     // then we bail out early, returning 'function'.
     std::string::size_type functionStart = prettyFunction.find(memberFunction);
-    if (functionStart == string::npos or functionStart == 0)
+    if (functionStart == string::npos || functionStart == 0)
         return function;
 
     // The +2 is because of the '::' we prepended.

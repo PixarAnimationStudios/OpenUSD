@@ -312,7 +312,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
 
     // Invoke callback.  If this calls execve() then ready[1] will close
     // automatically without us writing to it, indicating success.
-    if (not cb(data)) {
+    if (!cb(data)) {
         result = errno;
         write(ready[1], &result, sizeof(result));
 	_exit(6);
@@ -363,7 +363,7 @@ Arch_DebuggerIsAttachedPosix()
 
         // Wait for the parent to stop as a result of the attach.
         int status;
-        while (waitpid(parent, &status, 0) == -1 and errno == EINTR) {
+        while (waitpid(parent, &status, 0) == -1 && errno == EINTR) {
             // Do nothing
         }
 
@@ -376,7 +376,7 @@ Arch_DebuggerIsAttachedPosix()
 
     // Parent process
     int status;
-    while (waitpid(pid, &status, 0) == -1 and errno == EINTR) {
+    while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
         // Do nothing
     }
     if (WIFEXITED(status)) {
@@ -452,17 +452,17 @@ Arch_InitDebuggerAttach()
     // store the result.  This way we can avoid using the heap or tricky
     // stack allocations when launching the debugger.
     char* e = getenv("ARCH_DEBUGGER");
-    if (e and e[0]) {
+    if (e && e[0]) {
         std::string link;
 
         // Compute the length of the string.
         size_t n = 0;
         for (char* i = e; *i; ++i) {
-            if (i[0] == '%' and i[1] == 'p') {
+            if (i[0] == '%' && i[1] == 'p') {
                 n += _decimalPidLength;
                 ++i;
             }
-            else if (i[0] == '%' and i[1] == 'e') {
+            else if (i[0] == '%' && i[1] == 'e') {
                 // Get the symlink in the proc filesystem if we haven't
                 // yet.
                 if (link.empty()) {
@@ -487,7 +487,7 @@ Arch_InitDebuggerAttach()
         // Build the command string.
         char* a = _archDebuggerAttachArgs[2];
         for (char* i = e; *i; ++i) {
-            if (i[0] == '%' and i[1] == 'p') {
+            if (i[0] == '%' && i[1] == 'p') {
                 // Write the process id.
                 sprintf(a, "%d", (int)getpid());
 
@@ -499,7 +499,7 @@ Arch_InitDebuggerAttach()
                 // Skip over the '%p'.
                 ++i;
             }
-            else if (i[0] == '%' and i[1] == 'e') {
+            else if (i[0] == '%' && i[1] == 'e') {
                 // Write the process id.
                 strcat(a, link.c_str());
 
@@ -534,7 +534,7 @@ ArchDebuggerTrap()
       (defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG))
         // Send a trap if a debugger is attached or we fail to start one.
         // If we start one we assume it will automatically stop this process.
-        if (Arch_DebuggerIsAttachedPosix() or not Arch_DebuggerAttach()) {
+        if (Arch_DebuggerIsAttachedPosix() || !Arch_DebuggerAttach()) {
             asm("int $3");
         }
 #endif
@@ -552,7 +552,7 @@ ArchDebuggerAttach()
 {
     return 
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-		Arch_DebuggerIsAttachedPosix() or 
+		Arch_DebuggerIsAttachedPosix() ||
 #endif
 		Arch_DebuggerAttach();
 }

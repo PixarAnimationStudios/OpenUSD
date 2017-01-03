@@ -45,7 +45,7 @@ main(int argc, char** argv)
     std::string error;
 #ifdef _WIN32
     HMODULE plugin = LoadLibrary(".\\libtestArchAbiPlugin.dll");
-    if (not plugin) {
+    if (!plugin) {
         error = ArchStringPrintf("%ld", (long)GetLastError());
     }
 #else
@@ -54,17 +54,17 @@ main(int argc, char** argv)
     path = path.substr(0, path.rfind('/', path.rfind('/') - 1));
     path += "/tests/lib/libtestArchAbiPlugin.so";
     void* plugin = dlopen(path.c_str(), RTLD_LAZY);
-    if (not plugin) {
+    if (!plugin) {
         error += dlerror();
     }
 #endif
-    if (not plugin) {
+    if (!plugin) {
         std::cerr << "Failed to load plugin: " << error << std::endl;
         assert(plugin);
     }
 
     NewDerived newPluginDerived = (NewDerived)GETSYM(plugin, "newDerived");
-    if (not newPluginDerived) {
+    if (!newPluginDerived) {
         std::cerr << "Failed to find factory symbol" << std::endl;
         assert(newPluginDerived);
     }

@@ -48,10 +48,10 @@ int main()
     std::string path;
 
     // Invalid pointer.
-    assert(not _GetLibraryPath(0, &path));
+    assert(!_GetLibraryPath(0, &path));
 
     // Pointer to a local non-function.
-    assert(not _GetLibraryPath(&path, &path));
+    assert(!_GetLibraryPath(&path, &path));
 
     // Pointer into the DATA section.
     assert(_GetLibraryPath(&data, &path));

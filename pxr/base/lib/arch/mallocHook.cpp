@@ -34,9 +34,9 @@
 #include <malloc.h>
 #endif /* defined(ARCH_OS_DARWIN) */
 
-#if not defined(__MALLOC_HOOK_VOLATILE)
+#if !defined(__MALLOC_HOOK_VOLATILE)
 #define __MALLOC_HOOK_VOLATILE
-#endif /* not defined(__MALLOC_HOOK_VOLATILE) */
+#endif /* !defined(__MALLOC_HOOK_VOLATILE) */
 
 using std::string;
 
@@ -87,7 +87,7 @@ _MallocProvidedBySameLibraryAs(const char* functionName,
     }
 
     Dl_info functionInfo, mallocInfo;
-    if (!dladdr(function, &functionInfo) or
+    if (!dladdr(function, &functionInfo) || 
         !dladdr((void *)malloc, &mallocInfo)) {
         return false;
     }
@@ -183,8 +183,8 @@ static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
 static bool
 _MallocHookAvailable()
 {
-    return (ArchIsPxmallocActive() or
-            ArchIsPtmallocActive() or
+    return (ArchIsPxmallocActive() ||
+            ArchIsPtmallocActive() ||
             ArchIsJemallocActive());
 }
 

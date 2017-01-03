@@ -64,9 +64,9 @@ ArchStatIsWritable(const struct stat *st)
 {
 #if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
     if (st) {
-        return (st->st_mode & S_IWOTH) or
-            ((getegid() == st->st_gid) and (st->st_mode & S_IWGRP)) or
-            ((geteuid() == st->st_uid) and (st->st_mode & S_IWUSR))
+        return (st->st_mode & S_IWOTH) || 
+            ((getegid() == st->st_gid) && (st->st_mode & S_IWGRP)) ||
+            ((geteuid() == st->st_uid) && (st->st_mode & S_IWUSR))
             ;
     }
     return false;
@@ -343,7 +343,7 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
     // follow suit.
     int64_t signedCount = static_cast<int64_t>(count);
     int64_t nread = pread(fd, buffer, signedCount, offset);
-    if (ARCH_LIKELY(nread == signedCount or nread == 0))
+    if (ARCH_LIKELY(nread == signedCount || nread == 0))
         return nread;
 
     // Track a total and retry until we read everything or hit EOF or an error.
@@ -357,7 +357,7 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
             buffer = static_cast<char *>(buffer) + nread;
         }
         nread = pread(fd, buffer, signedCount, offset);
-        if (ARCH_LIKELY(nread == signedCount or nread == 0))
+        if (ARCH_LIKELY(nread == signedCount || nread == 0))
             return total + nread;
     }
     
