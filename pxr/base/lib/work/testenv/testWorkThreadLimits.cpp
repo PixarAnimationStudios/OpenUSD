@@ -151,7 +151,7 @@ main(int argc, char **argv)
     // tbb is initialized by default (by just using its API) then there doesn't
     // seem to be a way to limit it again.  That's why we test this
     // functionality by itself.
-    if ((argc == 2) and (strcmp(argv[1], "--rawtbb") == 0)) {
+    if ((argc == 2) && (strcmp(argv[1], "--rawtbb") == 0)) {
         TF_AXIOM(WorkGetPhysicalConcurrencyLimit() >= 4);
 
         std::cout << "Testing that libWork automatically limits tbb "
@@ -186,7 +186,7 @@ main(int argc, char **argv)
         limit = WorkGetConcurrencyLimit();
     }
     
-    TF_AXIOM(limit > 0 and limit <= WorkGetPhysicalConcurrencyLimit());
+    TF_AXIOM(limit > 0 && limit <= WorkGetPhysicalConcurrencyLimit());
 
     // Make sure that we get the default thread limit
     std::cout << "Testing that the thread limit defaults to "

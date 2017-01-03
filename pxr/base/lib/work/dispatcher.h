@@ -143,7 +143,7 @@ private:
         virtual tbb::task* execute() {
             TfErrorMark m;
             _fn();
-            if (not m.IsClean())
+            if (!m.IsClean())
                 WorkDispatcher::_TransportErrors(m, _errors);
             return NULL;
         }

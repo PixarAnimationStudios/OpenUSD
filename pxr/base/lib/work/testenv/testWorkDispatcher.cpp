@@ -423,7 +423,7 @@ main(int argc, char **argv)
         graph.reset(LoadGraph(argv[1]));
     }
 
-    if (not graph) {
+    if (!graph) {
         std::cerr << "Error getting a graph" << std::endl;
         return 1;
     }
@@ -431,11 +431,11 @@ main(int argc, char **argv)
     // Test the general dispatcher.
     {
         std::cout << "Using the general dispatcher" << std::endl;
-        if (not _TestDispatcher<WorkDispatcher>(graph.get())) {
+        if (!_TestDispatcher<WorkDispatcher>(graph.get())) {
             return 1;
         }
 
-        if (not _TestDispatcherCancellation<WorkDispatcher>(graph.get())) {
+        if (!_TestDispatcherCancellation<WorkDispatcher>(graph.get())) {
             return 1;
         }
     }
@@ -443,11 +443,11 @@ main(int argc, char **argv)
     // Test the arena dispatcher.
     {
         std::cout << "Using the arena dispatcher" << std::endl;
-        if (not _TestDispatcher<WorkArenaDispatcher>(graph.get())) {
+        if (!_TestDispatcher<WorkArenaDispatcher>(graph.get())) {
             return 1;
         }
 
-        if (not _TestDispatcherCancellation<WorkArenaDispatcher>(graph.get())) {
+        if (!_TestDispatcherCancellation<WorkArenaDispatcher>(graph.get())) {
             return 1;
         }
     }

@@ -162,7 +162,7 @@ _DoSignatureTest()
 int
 main(int argc, char **argv)
 {
-    const bool perfMode = ((argc > 1) and !strcmp(argv[1], "--perf")); 
+    const bool perfMode = ((argc > 1) && !strcmp(argv[1], "--perf")); 
     const size_t arraySize = 1000000;
     const size_t numIterations = perfMode ? 1000 : 1;
 
@@ -172,14 +172,14 @@ main(int argc, char **argv)
         WorkGetPhysicalConcurrencyLimit() << " cores..." << std::endl;
 
 
-    double tbbSeconds = _DoTBBTest(not perfMode, arraySize, numIterations);
+    double tbbSeconds = _DoTBBTest(!perfMode, arraySize, numIterations);
 
     std::cout << "TBB parallel_for took: " << tbbSeconds << " seconds" 
         << std::endl;
 
 
     double tbbForEachSeconds = _DoTBBTestForEach(
-        not perfMode, arraySize, numIterations);
+        !perfMode, arraySize, numIterations);
 
     std::cout << "TBB parallel_for_each took: " << tbbForEachSeconds
         << " seconds" << std::endl;
