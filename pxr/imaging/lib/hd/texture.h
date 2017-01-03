@@ -74,6 +74,8 @@ private:
     HdSceneDelegate* _delegate;
     SdfPath _id;
 
+    // Make sure we have a reference to the texture resource, so its
+    // life time exists at least as long as this object.
     HdTextureResourceSharedPtr _textureResource;
 };
 

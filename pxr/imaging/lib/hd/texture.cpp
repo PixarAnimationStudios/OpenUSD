@@ -71,17 +71,16 @@ HdTexture::Sync()
                 resourceRegistry->RegisterTextureResource(texID, &texInstance);
 
             if (texInstance.IsFirstInstance()) {
-                HdTextureResourceSharedPtr texResource;
                 if (texID == HdTextureResource::ComputeFallbackUVHash()) {
                     GlfUVTextureStorageRefPtr texPtr = 
                         GlfUVTextureStorage::New(1,1,VtValue(GfVec3d(0.0, 0.0, 0.0))); 
                     GlfTextureHandleRefPtr texture =
                         GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
                     texture->AddMemoryRequest(0); 
-                    texResource = HdTextureResourceSharedPtr(
+                    _textureResource = HdTextureResourceSharedPtr(
                         new HdSimpleTextureResource(texture, false));
                 } else if (texID == HdTextureResource::ComputeFallbackPtexHash()) {
-                    texResource = delegate->GetTextureResource(id);
+                    _textureResource = delegate->GetTextureResource(id);
                     // Hacky Ptex Fallback Implementation (nonfunctional)
                     // For future reference
                     /*if (texResource->GetTexelsTextureId() == 0) {
@@ -98,11 +97,17 @@ HdTexture::Sync()
                         }
                     }*/
                 } else {
-                    texResource =
+                    _textureResource =
                         delegate->GetTextureResource(id);
                 }
 
-                texInstance.SetValue(texResource);
+                texInstance.SetValue(_textureResource);
+            }
+            else
+            {
+                // Take a reference to the texture to ensure it lives as long
+                // as this class.
+                _textureResource = texInstance.GetValue();
             }
         }
     }
