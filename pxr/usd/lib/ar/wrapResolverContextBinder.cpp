@@ -26,7 +26,7 @@
 
 #include "pxr/usd/ar/resolverContextBinder.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 using namespace boost::python;
 
@@ -59,7 +59,7 @@ public:
 
 private:
     ArResolverContext _context;
-    boost::scoped_ptr<ArResolverContextBinder> _binder;
+    std::unique_ptr<ArResolverContextBinder> _binder;
 };
 
 };

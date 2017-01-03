@@ -27,9 +27,9 @@
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 
-#include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include <memory>
 #include <string>
 #include <typeinfo>
 
@@ -223,7 +223,7 @@ private:
         Context _context;
     };
 
-    boost::shared_ptr<_Untyped> _context;
+    std::shared_ptr<_Untyped> _context;
 };
 
 

@@ -26,7 +26,7 @@
 
 #include "pxr/usd/ar/resolverScopedCache.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 using namespace boost::python;
 
@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    boost::scoped_ptr<ArResolverScopedCache> _scopedCache;
+    std::unique_ptr<ArResolverScopedCache> _scopedCache;
 };
 
 };
