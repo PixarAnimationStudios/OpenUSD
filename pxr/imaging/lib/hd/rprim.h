@@ -100,8 +100,6 @@ public:
 
     int GetInitialDirtyBitsMask() const;
 
-    /// Returns the SceneDelegate object that is backing this Rprim.
-    HdSceneDelegate* GetDelegate();
 
     /// Returns the SceneDelegate object that is backing this Rprim.
     /// Note: The scene delegate returned is non-const as the scene

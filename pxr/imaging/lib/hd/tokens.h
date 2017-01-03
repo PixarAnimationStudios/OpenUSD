@@ -179,6 +179,11 @@
 #define HD_DELEGATE_TOKENS                      \
     (none)
 
+#define HD_PRIMTYPE_TOKENS                      \
+    (mesh)                                      \
+    (basisCurves)                               \
+    (points)
+
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
@@ -186,6 +191,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdGLSLProgramTokens, HD_GLSL_PROGRAM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdDelegateTokens, HD_DELEGATE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_PRIMTYPE_TOKENS);
 
 
 #endif //HD_TOKENS_H

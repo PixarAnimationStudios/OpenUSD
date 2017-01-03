@@ -224,9 +224,9 @@ HdEngine::CreateContextWithDefaults()
         return nullptr;
     }
 
-    // We know we created the render index, so set the render delegate type,
-    // so we can check compatibility later.
-    index->SetRenderDelegateType(defaultRenderDelegateId);
+    // Provide the Render Index with the Render Delegate, so it can create
+    // prims using the delegate
+    index->SetRenderDelegate(renderDelegate);
 
     return context;
 }
@@ -354,12 +354,12 @@ HdEngine::CreateContext(const TfToken &renderDelegateId,
         return nullptr;
     }
 
-    // Set the render delegate type on the render index,
-    // so we can check for additional compatibility later.
-    // This will either set the type for the first time or
-    // set the type to the same type, so that's ok (and should be
+    // Provide the Render Index with the Render Delegate, so it can create
+    // prims using the delegate.
+    // This will either set the delegate for the first time or
+    // set the delegate to the same, so that's ok (and should be
     // cheaper than doing the if).
-    index->SetRenderDelegateType(renderDelegateId);
+    index->SetRenderDelegate(renderDelegate);
 
     return context;
 }

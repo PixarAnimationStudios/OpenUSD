@@ -38,6 +38,12 @@ public:
 
     virtual TfToken GetDefaultGalId() const override;
 
+    virtual HdRprim *CreateRprim(TfToken const& typeId,
+                                 HdSceneDelegate* delegate,
+                                 SdfPath const& rprimId,
+                                 SdfPath const& instancerId) override;
+    virtual void DestroyRprim(HdRprim *rPrim) override;
+
 private:
     HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
     HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;

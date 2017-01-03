@@ -33,6 +33,8 @@
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -72,7 +74,8 @@ HdRenderIndex::HdRenderIndex()
     , _instancerMap()
     , _surfaceFallback()
     , _syncQueue()
-   , _renderDelegateTypeId()
+    , _renderDelegate(nullptr)
+    , _ownsDelegateXXX(false)
 {
     // Creating the fallback shader
     ReloadFallbackShader();
@@ -167,6 +170,92 @@ HdRenderIndex::~HdRenderIndex()
 {
     HD_TRACE_FUNCTION();
     Clear();
+
+    {
+        // XXX: Transitional Code - to be removed.
+        // If the render index created the render delegate, it needs
+        // to release it.
+        if (_ownsDelegateXXX)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+            renderRegistry.ReleaseDelegate(_renderDelegate);
+            _renderDelegate = nullptr;
+        }
+    }
+
+}
+
+void
+HdRenderIndex::InsertRprim(TfToken const& typeId,
+                 HdSceneDelegate* delegate,
+                 SdfPath const& rprimId,
+                 SdfPath const& instancerId /*= SdfPath()*/)
+{
+    HD_TRACE_FUNCTION();
+    HD_MALLOC_TAG_FUNCTION();
+
+#if 0
+    // TODO: enable this after patching.
+    if (not id.IsAbsolutePath()) {
+        TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
+                id.GetText());
+        return;
+    }
+#endif
+
+    if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, rprimId)))
+        return;
+
+    {
+        // XXX: Transitional code.
+        // If the application didn't use the new context api to
+        // create a render delegate, create one on its behalf.
+        //
+        // In the future, this would be an error condition as the context api
+        // would create the delegate and provide it to the render index..
+        if (_renderDelegate == nullptr)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+            const TfToken &defaultRenderDelegateId =
+                                          renderRegistry.GetDefaultDelegateId();
+             _renderDelegate =
+                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
+             _ownsDelegateXXX = true;
+        }
+    }
+
+    HdRprim *rprim = _renderDelegate->CreateRprim(typeId,
+                                                  delegate,
+                                                  rprimId,
+                                                  instancerId);
+    if (rprim == nullptr) {
+        return;
+    }
+
+    SdfPath const &delegateId = delegate->GetDelegateID();
+
+    _rprimIDSet.insert(rprimId);
+    _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
+    _AllocatePrimId(rprim);
+
+    SdfPathVector* vec = &_delegateRprimMap[delegateId];
+    vec->push_back(rprimId);
+
+    _RprimInfo info = {
+      delegate->GetDelegateID(),
+      vec->size()-1,
+      rprim
+    };
+    _rprimMap[rprimId] = std::move(info);
+
+    SdfPath instanceId = rprim->GetInstancerId();
+
+    if (not instanceId.IsEmpty()) {
+        _tracker.InstancerRPrimInserted(instanceId, rprimId);
+    }
 }
 
 void
@@ -217,8 +306,8 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 
     _tracker.RprimRemoved(id);
 
-    // Delete the actual rprim
-    delete rprimInfo.rprim;
+    // Ask delegate to actually delete the rprim
+    _renderDelegate->DestroyRprim(rprimInfo.rprim);
     rprimInfo.rprim = nullptr;
 
     _rprimIDSet.erase(id);
@@ -232,7 +321,7 @@ HdRenderIndex::Clear()
     TF_FOR_ALL(it, _rprimMap) {
         _tracker.RprimRemoved(it->first);
         _RprimInfo &rprimInfo = it->second;
-        delete rprimInfo.rprim;
+        _renderDelegate->DestroyRprim(rprimInfo.rprim);
         rprimInfo.rprim = nullptr;
     }
     // Clear Rprims, Rprim IDs, and delegate mappings.
@@ -305,32 +394,6 @@ HdRenderIndex::GetDelegateRprimIDs(SdfPath const& delegateID) const
         return EMPTY;
 
     return it->second;
-}
-
-void 
-HdRenderIndex::_TrackDelegateRprim(HdSceneDelegate* delegate, 
-                                   SdfPath const& rprimID,
-                                   HdRprim * rprim)
-{
-    _rprimIDSet.insert(rprimID);
-    _tracker.RprimInserted(rprimID, rprim->GetInitialDirtyBitsMask());
-    _AllocatePrimId(rprim);
-
-    SdfPathVector* vec = &_delegateRprimMap[delegate->GetDelegateID()];
-    vec->push_back(rprimID);
-
-    _RprimInfo info = {
-      delegate->GetDelegateID(),
-      vec->size()-1,
-      rprim
-    };
-    _rprimMap[rprimID] = std::move(info);
-
-    SdfPath instanceId = rprim->GetInstancerId();
-
-    if (not instanceId.IsEmpty()) {
-        _tracker.InstancerRPrimInserted(instanceId, rprimID);
-    }
 }
 
 // -------------------------------------------------------------------------- //
@@ -524,15 +587,28 @@ HdRenderIndex::GetSprimSubtree(SdfPath const& rootPath) const
 }
 
 void
-HdRenderIndex::SetRenderDelegateType(const TfToken &typeId)
+HdRenderIndex::SetRenderDelegate(HdRenderDelegate *renderDelegate)
 {
-    _renderDelegateTypeId = typeId;
+    if (_renderDelegate != nullptr && _renderDelegate != renderDelegate) {
+        TF_CODING_ERROR("Render Delegate already set on render index and "
+                        "switching render delegates is not supported");
+        return;
+    }
+
+    _renderDelegate = renderDelegate;
 }
 
-const TfToken &
+TfToken
 HdRenderIndex::GetRenderDelegateType() const
 {
-    return _renderDelegateTypeId;
+    if (_renderDelegate == nullptr) {
+        return TfToken();
+    }
+
+    TfType const &type = TfType::Find(_renderDelegate);
+
+    const std::string &typeName  = type.GetTypeName();
+    return TfToken(typeName);
 }
 
 // -------------------------------------------------------------------------- //

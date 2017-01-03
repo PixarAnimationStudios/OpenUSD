@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hdStream/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
+#include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/points.h"
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -35,3 +38,30 @@ HdStreamRenderDelegate::GetDefaultGalId() const
 {
     return TfToken();
 }
+
+HdRprim *
+HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
+                                    HdSceneDelegate* delegate,
+                                    SdfPath const& rprimId,
+                                    SdfPath const& instancerId)
+{
+    if (typeId == HdPrimTypeTokens->mesh) {
+        return new HdMesh(delegate, rprimId, instancerId);
+    } else if (typeId == HdPrimTypeTokens->basisCurves) {
+        return new HdBasisCurves(delegate, rprimId, instancerId);
+    } else  if (typeId == HdPrimTypeTokens->points) {
+        return new HdPoints(delegate, rprimId, instancerId);
+    } else {
+        TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
+    }
+
+    return nullptr;
+}
+
+
+void
+HdStreamRenderDelegate::DestroyRprim(HdRprim *rPrim)
+{
+    delete rPrim;
+}
+

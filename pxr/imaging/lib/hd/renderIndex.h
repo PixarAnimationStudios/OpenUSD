@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/gf/vec4i.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -42,6 +43,7 @@ class HdRprim;
 class HdDrawItem;
 class HdRprimCollection;
 class HdSceneDelegate;
+class HdRenderDelegate;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
@@ -113,6 +115,17 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Insert a rprim into index
+    void InsertRprim(TfToken const& typeId,
+                     HdSceneDelegate* delegate,
+                     SdfPath const& rprimId,
+                     SdfPath const& instancerId = SdfPath());
+
+    /// \deprecated {
+    ///   Old templated mathod of inserting a rprim into the index.
+    ///   This API has been superseeded by passing the typeId token.
+    ///   XXX: This method still exists to aid transition but may be
+    ///   removed at any time.
+    /// }
     template <typename T>
     void InsertRprim(HdSceneDelegate* delegate,
                      SdfPath const& id,
@@ -241,13 +254,13 @@ public:
 
 
     // ---------------------------------------------------------------------- //
-    /// \name Render Delegate Types
+    /// \name Render Delegate
     // ---------------------------------------------------------------------- //
     /// Currently, a render index only supports connection to one type of
     /// render delegate.  Due to the inserted information and change tracking
     /// being specific to that delegate type.
-    void SetRenderDelegateType(const TfToken &typeId);
-    const TfToken &GetRenderDelegateType() const;
+    void SetRenderDelegate(HdRenderDelegate *renderDelegate);
+    TfToken GetRenderDelegateType() const;
 
 private:
     // ---------------------------------------------------------------------- //
@@ -261,11 +274,6 @@ private:
     // Allocate the next available instance id to the prim
     void _AllocatePrimId(HdRprim* prim);
     
-    // Insert rprimID into the delegateRprimMap.
-    void _TrackDelegateRprim(HdSceneDelegate* delegate, 
-                             SdfPath const& rprimID,
-                             HdRprim* rprim);
-
     // Inserts the shader into the index and updates tracking state.
     void _TrackDelegateShader(HdSceneDelegate* delegate, 
                               SdfPath const& shaderId,
@@ -332,34 +340,20 @@ private:
     typedef std::vector<HdDirtyListSharedPtr> _DirtyListVector;
     _DirtyListVector _syncQueue;
 
-    TfToken _renderDelegateTypeId;
+    HdRenderDelegate *_renderDelegate;
 
+    // XXX: This is a temporary variable to aid in transition to the new
+    // context api.  Under the new API, the render delegate is owned by
+    // the context.  However, as clients are not creating the delegate
+    // yet, the render index will create one on their behalf.
+    //
+    // It was preferred to add this variable than use the reference counting
+    // mechanism.  As that impacted the new code path, rather than explicitly
+    // calling out the transitional elements.
+    bool _ownsDelegateXXX;
 
 };
 
-template <typename T>
-void
-HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
-                           SdfPath const&,
-                           SdfPath const& instancerId)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-#if 0
-    // TODO: enable this after patching.
-    if (not id.IsAbsolutePath()) {
-        TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
-                id.GetText());
-        return;
-    }
-#endif
-
-    if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, id)))
-        return;
-    
-    HdRprim *rprim = new T(delegate, id, instancerId);
-    _TrackDelegateRprim(delegate, id, rprim);
-}
 
 template <typename T>
 void
@@ -403,6 +397,61 @@ HdRenderIndex::InsertSprim(HdSceneDelegate* delegate, SdfPath const& id)
 
     boost::shared_ptr<T> sprim = boost::make_shared<T>(delegate, id);
     _TrackDelegateSprim(delegate, id, sprim, T::AllDirty);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Transitional support routines to convert from the templated InsertRprim()
+// to the one that takes a typeId token.
+//
+// XXX: To be removed with the InsertRprim<> API.
+//
+///////////////////////////////////////////////////////////////////////////////
+class HdMesh;
+class HdBasisCurves;
+class HdPoints;
+
+namespace HdRenderIndexInternal
+{  
+    template <typename T>
+    static inline const TfToken & _GetTypeId();
+
+    template <>
+    //static
+    inline
+    const TfToken &
+    _GetTypeId<HdMesh>()
+    {
+        return HdPrimTypeTokens->mesh;
+    }
+    
+    template <>
+    //static
+    inline
+    const TfToken &
+    _GetTypeId<HdBasisCurves>()
+    {
+        return HdPrimTypeTokens->basisCurves;
+    }
+    
+    template <>
+    //static
+    inline
+    const TfToken &
+    _GetTypeId<HdPoints>()
+    {
+        return HdPrimTypeTokens->points;
+    }
+} 
+
+template <typename T>
+void
+HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
+                           SdfPath const&,
+                           SdfPath const& instancerId)
+{
+    InsertRprim(HdRenderIndexInternal::_GetTypeId<T>(), delegate, id, instancerId);
 }
 
 #endif //HD_RENDER_INDEX_H

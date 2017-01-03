@@ -25,7 +25,12 @@
 #define HD_RENDER_DELEGATE_H
 
 #include "pxr/base/tf/token.h"
+
 #include "pxr/imaging/hf/pluginDelegateBase.h"
+
+class SdfPath;
+class HdRprim;
+class HdSceneDelegate;
 
 /// \class HdRenderDelegate
 ///
@@ -36,8 +41,27 @@ public:
     /// Allows the delegate an opinion on the default Gal to use.
     /// Return an empty token for no opinion.
     /// Return HdDelegateTokens->None for no Gal.
+    ///
     virtual TfToken GetDefaultGalId() const = 0;
 
+    ///
+    /// Request to Allocate and Construct a new Rprim.
+    /// \param typeId the type identifier of the prim to allocate
+    /// \param delegate the scene delegate that provides the data for the prim
+    /// \param rprimId a unique identifier for the prim
+    /// \param instancerId the unique identifier for the instancer that uses
+    ///                    the prim (optional: May be empty).
+    /// \return A pointer to the new prim or nullptr on error.
+    ///                     
+    virtual HdRprim *CreateRprim(TfToken const& typeId,
+                                 HdSceneDelegate* delegate,
+                                 SdfPath const& rprimId,
+                                 SdfPath const& instancerId) = 0;
+
+    ///
+    /// Request to Destruct and deallocate the prim.
+    /// 
+    virtual void DestroyRprim(HdRprim *rPrim) = 0;
 
 protected:
     /// This class must be derived from
