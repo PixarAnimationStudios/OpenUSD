@@ -61,21 +61,21 @@ int
 UsdRiConvertToRManFaceVaryingLinearInterpolation(TfToken const& token)
 { 
     if(token == UsdGeomTokens->bilinear 
-       or token == UsdGeomTokens->all) {
+       || token == UsdGeomTokens->all) {
         return 0;
     }
     else if(token == UsdGeomTokens->edgeAndCorner 
-            or token == UsdGeomTokens->cornersOnly
-            or token == UsdGeomTokens->cornersPlus1
-            or token == UsdGeomTokens->cornersPlus2) {
+            || token == UsdGeomTokens->cornersOnly
+            || token == UsdGeomTokens->cornersPlus1
+            || token == UsdGeomTokens->cornersPlus2) {
         return 1;
     }
     else if(token == UsdGeomTokens->edgeOnly
-            or token == UsdGeomTokens->none) {
+            || token == UsdGeomTokens->none) {
         return 2;
     }
     else if(token == UsdGeomTokens->alwaysSharp
-            or token == UsdGeomTokens->boundaries) {
+            || token == UsdGeomTokens->boundaries) {
         return 3;
     }
 
