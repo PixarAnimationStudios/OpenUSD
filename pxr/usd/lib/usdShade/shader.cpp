@@ -51,7 +51,7 @@ UsdShadeShader::~UsdShadeShader()
 UsdShadeShader
 UsdShadeShader::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeShader();
     }
@@ -64,7 +64,7 @@ UsdShadeShader::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Shader");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeShader();
     }

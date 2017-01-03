@@ -51,7 +51,7 @@ UsdRiRslShader::~UsdRiRslShader()
 UsdRiRslShader
 UsdRiRslShader::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiRslShader();
     }
@@ -64,7 +64,7 @@ UsdRiRslShader::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("RslShader");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiRslShader();
     }

@@ -51,7 +51,7 @@ UsdGeomCapsule::~UsdGeomCapsule()
 UsdGeomCapsule
 UsdGeomCapsule::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCapsule();
     }
@@ -64,7 +64,7 @@ UsdGeomCapsule::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Capsule");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCapsule();
     }

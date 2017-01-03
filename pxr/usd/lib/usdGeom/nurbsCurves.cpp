@@ -51,7 +51,7 @@ UsdGeomNurbsCurves::~UsdGeomNurbsCurves()
 UsdGeomNurbsCurves
 UsdGeomNurbsCurves::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomNurbsCurves();
     }
@@ -64,7 +64,7 @@ UsdGeomNurbsCurves::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("NurbsCurves");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomNurbsCurves();
     }

@@ -51,7 +51,7 @@ UsdGeomMesh::~UsdGeomMesh()
 UsdGeomMesh
 UsdGeomMesh::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomMesh();
     }
@@ -64,7 +64,7 @@ UsdGeomMesh::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Mesh");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomMesh();
     }

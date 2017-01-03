@@ -51,7 +51,7 @@ UsdKatanaLookAPI::~UsdKatanaLookAPI()
 UsdKatanaLookAPI
 UsdKatanaLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdKatanaLookAPI();
     }
@@ -64,7 +64,7 @@ UsdKatanaLookAPI::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("LookAPI");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdKatanaLookAPI();
     }

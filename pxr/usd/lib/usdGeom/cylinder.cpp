@@ -51,7 +51,7 @@ UsdGeomCylinder::~UsdGeomCylinder()
 UsdGeomCylinder
 UsdGeomCylinder::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCylinder();
     }
@@ -64,7 +64,7 @@ UsdGeomCylinder::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Cylinder");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCylinder();
     }

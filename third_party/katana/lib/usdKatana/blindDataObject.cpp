@@ -51,7 +51,7 @@ UsdKatanaBlindDataObject::~UsdKatanaBlindDataObject()
 UsdKatanaBlindDataObject
 UsdKatanaBlindDataObject::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdKatanaBlindDataObject();
     }
@@ -64,7 +64,7 @@ UsdKatanaBlindDataObject::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("BlindDataObject");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdKatanaBlindDataObject();
     }

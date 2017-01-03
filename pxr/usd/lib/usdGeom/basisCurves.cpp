@@ -51,7 +51,7 @@ UsdGeomBasisCurves::~UsdGeomBasisCurves()
 UsdGeomBasisCurves
 UsdGeomBasisCurves::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomBasisCurves();
     }
@@ -64,7 +64,7 @@ UsdGeomBasisCurves::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("BasisCurves");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomBasisCurves();
     }

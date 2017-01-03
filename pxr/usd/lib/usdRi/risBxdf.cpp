@@ -51,7 +51,7 @@ UsdRiRisBxdf::~UsdRiRisBxdf()
 UsdRiRisBxdf
 UsdRiRisBxdf::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiRisBxdf();
     }
@@ -64,7 +64,7 @@ UsdRiRisBxdf::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("RisBxdf");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiRisBxdf();
     }

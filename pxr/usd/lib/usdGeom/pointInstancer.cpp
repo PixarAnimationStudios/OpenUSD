@@ -51,7 +51,7 @@ UsdGeomPointInstancer::~UsdGeomPointInstancer()
 UsdGeomPointInstancer
 UsdGeomPointInstancer::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPointInstancer();
     }
@@ -64,7 +64,7 @@ UsdGeomPointInstancer::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("PointInstancer");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPointInstancer();
     }

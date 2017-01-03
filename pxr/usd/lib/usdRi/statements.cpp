@@ -45,7 +45,7 @@ UsdRiStatements::~UsdRiStatements()
 UsdRiStatements
 UsdRiStatements::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiStatements();
     }
@@ -245,7 +245,7 @@ std::string
 UsdRiStatements::MakeRiAttributePropertyName(const std::string &attrName)
 {
     std::vector<string> names = TfStringTokenize(attrName, ":");
-    if (names.size() == 4 and TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
+    if (names.size() == 4 && TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
         return attrName;
     }
     if (names.size() == 1) {
@@ -277,8 +277,8 @@ UsdRiStatements::SetCoordinateSystem(const std::string &coordSysName)
         attr.Set(coordSysName);
 
         UsdPrim currPrim = GetPrim();
-        while (currPrim and currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
-            if (currPrim.IsModel() and not currPrim.IsGroup() and
+        while (currPrim && currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
+            if (currPrim.IsModel() && !currPrim.IsGroup() &&
                 currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
                 UsdRelationship rel =
                     currPrim.CreateRelationship(_tokens->modelCoordsys,
@@ -327,7 +327,7 @@ UsdRiStatements::SetScopedCoordinateSystem(const std::string &coordSysName)
 
         UsdPrim currPrim = GetPrim();
         while (currPrim) {
-            if (currPrim.IsModel() and not currPrim.IsGroup() and
+            if (currPrim.IsModel() && !currPrim.IsGroup() &&
                 currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
                 UsdRelationship rel =
                     currPrim.CreateRelationship(_tokens->modelScopedCoordsys,
@@ -371,7 +371,7 @@ UsdRiStatements::GetModelCoordinateSystems(SdfPathVector *targets) const
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
             GetPrim().GetRelationship(_tokens->modelCoordsys);
-        return rel and rel.GetForwardedTargets(targets);
+        return rel && rel.GetForwardedTargets(targets);
     }
 
     return true;
@@ -383,7 +383,7 @@ UsdRiStatements::GetModelScopedCoordinateSystems(SdfPathVector *targets) const
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
             GetPrim().GetRelationship(_tokens->modelScopedCoordsys);
-        return rel and rel.GetForwardedTargets(targets);
+        return rel && rel.GetForwardedTargets(targets);
     }
 
     return true;

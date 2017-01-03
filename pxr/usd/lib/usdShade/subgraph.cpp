@@ -51,7 +51,7 @@ UsdShadeSubgraph::~UsdShadeSubgraph()
 UsdShadeSubgraph
 UsdShadeSubgraph::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeSubgraph();
     }
@@ -64,7 +64,7 @@ UsdShadeSubgraph::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Subgraph");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeSubgraph();
     }
@@ -192,7 +192,7 @@ UsdShadeSubgraph::CreateTerminal(
     const TfToken& terminalName,
     const SdfPath& targetPath) const
 {
-    if (not targetPath.IsPropertyPath()) {
+    if (!targetPath.IsPropertyPath()) {
         TF_CODING_ERROR("A terminal needs to be pointing to a property");
         return UsdRelationship();
     }

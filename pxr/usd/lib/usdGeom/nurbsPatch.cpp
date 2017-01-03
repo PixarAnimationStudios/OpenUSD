@@ -51,7 +51,7 @@ UsdGeomNurbsPatch::~UsdGeomNurbsPatch()
 UsdGeomNurbsPatch
 UsdGeomNurbsPatch::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomNurbsPatch();
     }
@@ -64,7 +64,7 @@ UsdGeomNurbsPatch::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("NurbsPatch");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomNurbsPatch();
     }

@@ -45,7 +45,7 @@ UsdGeomCurves::~UsdGeomCurves()
 UsdGeomCurves
 UsdGeomCurves::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCurves();
     }

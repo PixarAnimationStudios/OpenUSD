@@ -51,7 +51,7 @@ UsdGeomCone::~UsdGeomCone()
 UsdGeomCone
 UsdGeomCone::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCone();
     }
@@ -64,7 +64,7 @@ UsdGeomCone::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Cone");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCone();
     }

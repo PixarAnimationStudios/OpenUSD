@@ -53,7 +53,7 @@ TF_REGISTRY_FUNCTION(TfType)
 {{ cls.cppClassName }}
 {{ cls.cppClassName }}::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return {{ cls.cppClassName }}();
     }
@@ -67,7 +67,7 @@ TF_REGISTRY_FUNCTION(TfType)
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("{{ cls.usdPrimTypeName }}");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return {{ cls.cppClassName }}();
     }

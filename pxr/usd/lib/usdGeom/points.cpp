@@ -51,7 +51,7 @@ UsdGeomPoints::~UsdGeomPoints()
 UsdGeomPoints
 UsdGeomPoints::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPoints();
     }
@@ -64,7 +64,7 @@ UsdGeomPoints::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Points");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPoints();
     }

@@ -51,7 +51,7 @@ UsdShadeLook::~UsdShadeLook()
 UsdShadeLook
 UsdShadeLook::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeLook();
     }
@@ -64,7 +64,7 @@ UsdShadeLook::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Look");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeLook();
     }
@@ -174,7 +174,7 @@ UsdShadeLook::GetBoundLook(const UsdPrim &prim)
     if (UsdRelationship rel = UsdShadeLook::GetBindingRel(prim)) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
-        if ((targetPaths.size() == 1) and targetPaths.front().IsPrimPath()) {
+        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
             return UsdShadeLook(
                 prim.GetStage()->GetPrimAtPath(targetPaths.front()));
         }
@@ -192,7 +192,7 @@ UsdShadeLook::GetEditContextForVariant(const TfToken &lookVariation,
     
     UsdVariantSet lookVariant = prim.GetVariantSet(_tokens->lookVariantName);
     UsdEditTarget target = stage->GetEditTarget();
-    if (lookVariant.FindOrCreateVariant(lookVariation) and
+    if (lookVariant.FindOrCreateVariant(lookVariation) && 
         lookVariant.SetVariantSelection(lookVariation)) {
         target = lookVariant.GetVariantEditTarget(layer);
     }
@@ -211,7 +211,7 @@ _GetRootPath(const UsdPrim & prim)
     if (path == SdfPath::AbsoluteRootPath())
         return path;
 
-    while (not path.IsRootPrimPath())
+    while (!path.IsRootPrimPath())
         path = path.GetParentPath();
 
     return path;
@@ -229,7 +229,7 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
                                       const std::vector<UsdPrim> &looks,
                                       const TfToken &masterVariantSetName)
 {
-    if (not masterPrim){
+    if (!masterPrim){
         TF_CODING_ERROR("MasterPrim is not a valid UsdPrim.");
         return false;
     }
@@ -244,7 +244,7 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
         return false;
     }
     TF_FOR_ALL(look, looks){
-        if (not *look){
+        if (!*look){
             TF_CODING_ERROR("Unable to process invalid look: %s",
                             look->GetDescription().c_str());
             return false;
@@ -282,7 +282,7 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
 
     UsdVariantSet masterSet = masterPrim.GetVariantSet(masterSetName);
     TF_FOR_ALL(varName, allLookVariants){
-        if (not masterSet.FindOrCreateVariant(*varName)){
+        if (!masterSet.FindOrCreateVariant(*varName)){
             TF_RUNTIME_ERROR("Unable to create Look variant %s on prim %s. "
                              "Aborting master lookVariant creation.",
                              varName->c_str(),
@@ -295,7 +295,7 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
             UsdEditContext  ctxt(masterSet.GetVariantEditContext());
             
             TF_FOR_ALL(look, looks){
-                if (not *look){
+                if (!*look){
                     // Somehow, switching the variant caused this prim
                     // to expire.
                     TF_RUNTIME_ERROR("Switching master variant %s to %s "
@@ -427,5 +427,5 @@ UsdShadeLook::HasLookFaceSet(const UsdPrim &prim)
 {
     UsdGeomFaceSetAPI faceSet(prim, _tokens->look);
     bool isPartition=false;
-    return faceSet.GetIsPartitionAttr().Get(&isPartition) and isPartition;
+    return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
 }

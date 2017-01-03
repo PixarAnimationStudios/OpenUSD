@@ -51,7 +51,7 @@ UsdGeomCamera::~UsdGeomCamera()
 UsdGeomCamera
 UsdGeomCamera::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCamera();
     }
@@ -64,7 +64,7 @@ UsdGeomCamera::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Camera");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCamera();
     }

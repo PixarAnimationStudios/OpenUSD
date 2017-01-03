@@ -45,7 +45,7 @@ UsdHydraLookAPI::~UsdHydraLookAPI()
 UsdHydraLookAPI
 UsdHydraLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdHydraLookAPI();
     }

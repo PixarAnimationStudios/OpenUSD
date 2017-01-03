@@ -51,7 +51,7 @@ UsdGeomCube::~UsdGeomCube()
 UsdGeomCube
 UsdGeomCube::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCube();
     }
@@ -64,7 +64,7 @@ UsdGeomCube::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Cube");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomCube();
     }

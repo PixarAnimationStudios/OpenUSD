@@ -51,7 +51,7 @@ UsdGeomXform::~UsdGeomXform()
 UsdGeomXform
 UsdGeomXform::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomXform();
     }
@@ -64,7 +64,7 @@ UsdGeomXform::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Xform");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomXform();
     }

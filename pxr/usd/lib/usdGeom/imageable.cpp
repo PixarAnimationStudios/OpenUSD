@@ -45,7 +45,7 @@ UsdGeomImageable::~UsdGeomImageable()
 UsdGeomImageable
 UsdGeomImageable::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomImageable();
     }

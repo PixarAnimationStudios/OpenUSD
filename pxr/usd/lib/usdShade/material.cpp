@@ -51,7 +51,7 @@ UsdShadeMaterial::~UsdShadeMaterial()
 UsdShadeMaterial
 UsdShadeMaterial::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeMaterial();
     }
@@ -64,7 +64,7 @@ UsdShadeMaterial::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Material");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeMaterial();
     }
@@ -189,7 +189,7 @@ UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 {
     UsdRelationship rel = prim.GetRelationship(_tokens->bindingRelationshipName);
     if (TfGetEnvSetting(USD_HONOR_LEGACY_USD_LOOK)) {
-        if (not rel) {
+        if (!rel) {
             // honor legacy assets using UsdShadeLook
             return prim.GetRelationship(_tokens->legacyBindingRelationshipName);
         }
@@ -203,7 +203,7 @@ UsdShadeMaterial::GetBoundMaterial(const UsdPrim &prim)
     if (UsdRelationship rel = UsdShadeMaterial::GetBindingRel(prim)) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
-        if ((targetPaths.size() == 1) and targetPaths.front().IsPrimPath()) {
+        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
             return UsdShadeMaterial(
                 prim.GetStage()->GetPrimAtPath(targetPaths.front()));
         }
@@ -221,7 +221,7 @@ UsdShadeMaterial::GetEditContextForVariant(const TfToken &materialVariation,
     
     UsdVariantSet materialVariant = prim.GetVariantSet(_tokens->materialVariantName);
     UsdEditTarget target = stage->GetEditTarget();
-    if (materialVariant.FindOrCreateVariant(materialVariation) and
+    if (materialVariant.FindOrCreateVariant(materialVariation) && 
         materialVariant.SetVariantSelection(materialVariation)) {
         target = materialVariant.GetVariantEditTarget(layer);
     }
@@ -240,7 +240,7 @@ _GetRootPath(const UsdPrim & prim)
     if (path == SdfPath::AbsoluteRootPath())
         return path;
 
-    while (not path.IsRootPrimPath())
+    while (!path.IsRootPrimPath())
         path = path.GetParentPath();
 
     return path;
@@ -258,7 +258,7 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
                                       const std::vector<UsdPrim> &materials,
                                       const TfToken &masterVariantSetName)
 {
-    if (not masterPrim){
+    if (!masterPrim){
         TF_CODING_ERROR("MasterPrim is not a valid UsdPrim.");
         return false;
     }
@@ -273,7 +273,7 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
         return false;
     }
     TF_FOR_ALL(material, materials){
-        if (not *material){
+        if (!*material){
             TF_CODING_ERROR("Unable to process invalid material: %s",
                             material->GetDescription().c_str());
             return false;
@@ -311,7 +311,7 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
 
     UsdVariantSet masterSet = masterPrim.GetVariantSet(masterSetName);
     TF_FOR_ALL(varName, allMaterialVariants){
-        if (not masterSet.FindOrCreateVariant(*varName)){
+        if (!masterSet.FindOrCreateVariant(*varName)){
             TF_RUNTIME_ERROR("Unable to create Material variant %s on prim %s. "
                              "Aborting master materialVariant creation.",
                              varName->c_str(),
@@ -324,7 +324,7 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
             UsdEditContext  ctxt(masterSet.GetVariantEditContext());
             
             TF_FOR_ALL(material, materials){
-                if (not *material){
+                if (!*material){
                     // Somehow, switching the variant caused this prim
                     // to expire.
                     TF_RUNTIME_ERROR("Switching master variant %s to %s "
@@ -456,7 +456,7 @@ UsdShadeMaterial::HasMaterialFaceSet(const UsdPrim &prim)
 {
     UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
     bool isPartition=false;
-    return faceSet.GetIsPartitionAttr().Get(&isPartition) and isPartition;
+    return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
 }
 
 UsdRelationship

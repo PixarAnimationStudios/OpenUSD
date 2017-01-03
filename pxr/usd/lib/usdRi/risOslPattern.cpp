@@ -51,7 +51,7 @@ UsdRiRisOslPattern::~UsdRiRisOslPattern()
 UsdRiRisOslPattern
 UsdRiRisOslPattern::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiRisOslPattern();
     }
@@ -64,7 +64,7 @@ UsdRiRisOslPattern::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("RisOslPattern");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiRisOslPattern();
     }

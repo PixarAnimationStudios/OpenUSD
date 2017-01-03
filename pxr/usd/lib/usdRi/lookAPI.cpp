@@ -45,7 +45,7 @@ UsdRiLookAPI::~UsdRiLookAPI()
 UsdRiLookAPI
 UsdRiLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiLookAPI();
     }
@@ -187,7 +187,7 @@ UsdRiLookAPI_GetSingleTargetShaderObject(const UsdRelationship &rel)
     if (rel) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
-        if ((targetPaths.size() == 1) and targetPaths.front().IsPrimPath()) {
+        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
             return UsdRiRslShader(
                 rel.GetStage()->GetPrimAtPath(targetPaths.front()));
         }
@@ -240,7 +240,7 @@ UsdRiLookAPI::GetBxdf()
     if (UsdRelationship rel = GetBxdfRel()) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
-        if (targetPaths.size() == 1 and targetPaths.front().IsPrimPath()) {
+        if (targetPaths.size() == 1 && targetPaths.front().IsPrimPath()) {
             return UsdRiRisBxdf(
                 GetPrim().GetStage()->GetPrimAtPath(targetPaths.front()));
         }

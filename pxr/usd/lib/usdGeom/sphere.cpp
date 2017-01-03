@@ -51,7 +51,7 @@ UsdGeomSphere::~UsdGeomSphere()
 UsdGeomSphere
 UsdGeomSphere::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomSphere();
     }
@@ -64,7 +64,7 @@ UsdGeomSphere::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Sphere");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomSphere();
     }

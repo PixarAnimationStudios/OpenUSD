@@ -24,6 +24,8 @@
 #ifndef USDSHADE_GENERATED_MATERIAL_H
 #define USDSHADE_GENERATED_MATERIAL_H
 
+/// \file usdShade/material.h
+
 #include "pxr/usd/usdShade/subgraph.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -47,6 +49,8 @@ class SdfAssetPath;
 // MATERIAL                                                                   //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeMaterial
+///
 /// A Material provides a container into which multiple "render targets"
 /// can add data that defines a "shading material" for a renderer.  Typically
 /// this consists of one or more UsdRelationship properties that target
@@ -126,7 +130,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeMaterial holding the prim adhering to this
+    /// Return a UsdShadeMaterial holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -138,7 +142,7 @@ public:
     static UsdShadeMaterial
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
