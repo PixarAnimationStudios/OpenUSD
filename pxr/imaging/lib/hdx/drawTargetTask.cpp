@@ -64,7 +64,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     if (bits & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;
 
-        if (not _GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
             return;
         }
 
@@ -280,7 +280,7 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
     glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
     if (GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
-        if (not TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
+        if (!TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
         } else {
             glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -354,25 +354,25 @@ std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
 bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
 {
     return 
-        lhs.overrideColor == rhs.overrideColor and 
-        lhs.wireframeColor == rhs.wireframeColor and
-        lhs.enableLighting == rhs.enableLighting and
-        lhs.alphaThreshold == rhs.alphaThreshold and
-        lhs.tessLevel == rhs.tessLevel and
-        lhs.drawingRange == rhs.drawingRange and
-        lhs.depthBiasUseDefault == rhs.depthBiasUseDefault and
-        lhs.depthBiasEnable == rhs.depthBiasEnable and
-        lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor and
-        lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor and
-        lhs.depthFunc == rhs.depthFunc and
-        lhs.cullStyle == rhs.cullStyle and
-        lhs.geomStyle == rhs.geomStyle and
-        lhs.complexity == rhs.complexity and
-        lhs.hullVisibility == rhs.hullVisibility and
+        lhs.overrideColor == rhs.overrideColor                      && 
+        lhs.wireframeColor == rhs.wireframeColor                    &&  
+        lhs.enableLighting == rhs.enableLighting                    && 
+        lhs.alphaThreshold == rhs.alphaThreshold                    && 
+        lhs.tessLevel == rhs.tessLevel                              && 
+        lhs.drawingRange == rhs.drawingRange                        && 
+        lhs.depthBiasUseDefault == rhs.depthBiasUseDefault          && 
+        lhs.depthBiasEnable == rhs.depthBiasEnable                  && 
+        lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor  && 
+        lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor        && 
+        lhs.depthFunc == rhs.depthFunc                              && 
+        lhs.cullStyle == rhs.cullStyle                              &&
+        lhs.geomStyle == rhs.geomStyle                              && 
+        lhs.complexity == rhs.complexity                            && 
+        lhs.hullVisibility == rhs.hullVisibility                    && 
         lhs.surfaceVisibility == rhs.surfaceVisibility;
 }
 
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
 {
-    return not(lhs == rhs);
+    return !(lhs == rhs);
 }

@@ -51,7 +51,7 @@ HdxLight::Sync()
     SdfPath const &id = GetID();
     HdSceneDelegate *delegate = GetDelegate();
 
-    if (not TF_VERIFY(delegate)) {
+    if (!TF_VERIFY(delegate)) {
         return;
     }
 

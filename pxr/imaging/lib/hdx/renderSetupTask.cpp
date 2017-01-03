@@ -76,7 +76,7 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
         HdxRenderTaskParams params;
 
         // if HdxRenderTaskParams is set, it's using old API
-        if (not _GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
             return;
         }
 
@@ -126,7 +126,7 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     _renderPassState->SetAlphaToCoverageUseDefault(
         GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
     _renderPassState->SetAlphaToCoverageEnabled(
-        not TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
+        !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
 
@@ -139,7 +139,7 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
 void
 HdxRenderSetupTask::SyncCamera()
 {
-    if (_camera and _renderPassState) {
+    if (_camera && _renderPassState) {
         GfMatrix4d modelViewMatrix, projectionMatrix;
 
         // XXX This code will be removed when we drop support for
@@ -150,7 +150,7 @@ HdxRenderSetupTask::SyncCamera()
 
             // Extract the window policy to adjust the frustum correctly
             VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
-            if (not TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
+            if (!TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
                 return;
             }
 
@@ -222,28 +222,28 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
 
 bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 
 {
-    return lhs.overrideColor           == rhs.overrideColor           and
-           lhs.wireframeColor          == rhs.wireframeColor          and
-           lhs.enableLighting          == rhs.enableLighting          and
-           lhs.enableIdRender          == rhs.enableIdRender          and
-           lhs.alphaThreshold          == rhs.alphaThreshold          and
-           lhs.tessLevel               == rhs.tessLevel               and
-           lhs.drawingRange            == rhs.drawingRange            and
-           lhs.enableHardwareShading   == rhs.enableHardwareShading   and
-           lhs.depthBiasEnable         == rhs.depthBiasEnable         and
-           lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor and
-           lhs.depthBiasSlopeFactor    == rhs.depthBiasSlopeFactor    and
-           lhs.depthFunc               == rhs.depthFunc               and
-           lhs.cullStyle               == rhs.cullStyle               and
-           lhs.geomStyle               == rhs.geomStyle               and
-           lhs.complexity              == rhs.complexity              and
-           lhs.hullVisibility          == rhs.hullVisibility          and
-           lhs.surfaceVisibility       == rhs.surfaceVisibility       and
-           lhs.camera                  == rhs.camera                  and
+    return lhs.overrideColor           == rhs.overrideColor           && 
+           lhs.wireframeColor          == rhs.wireframeColor          && 
+           lhs.enableLighting          == rhs.enableLighting          && 
+           lhs.enableIdRender          == rhs.enableIdRender          && 
+           lhs.alphaThreshold          == rhs.alphaThreshold          && 
+           lhs.tessLevel               == rhs.tessLevel               && 
+           lhs.drawingRange            == rhs.drawingRange            && 
+           lhs.enableHardwareShading   == rhs.enableHardwareShading   && 
+           lhs.depthBiasEnable         == rhs.depthBiasEnable         && 
+           lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor && 
+           lhs.depthBiasSlopeFactor    == rhs.depthBiasSlopeFactor    && 
+           lhs.depthFunc               == rhs.depthFunc               && 
+           lhs.cullStyle               == rhs.cullStyle               && 
+           lhs.geomStyle               == rhs.geomStyle               && 
+           lhs.complexity              == rhs.complexity              && 
+           lhs.hullVisibility          == rhs.hullVisibility          && 
+           lhs.surfaceVisibility       == rhs.surfaceVisibility       && 
+           lhs.camera                  == rhs.camera                  && 
            lhs.viewport                == rhs.viewport;
 }
 
 bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 
 {
-    return not(lhs == rhs);
+    return !(lhs == rhs);
 }

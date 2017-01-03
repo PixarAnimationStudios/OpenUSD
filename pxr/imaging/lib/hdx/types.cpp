@@ -29,15 +29,15 @@
 bool
 operator==(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
 {
-    return  lhs.parameters == rhs.parameters and
-            lhs.textures == rhs.textures and
+    return  lhs.parameters == rhs.parameters && 
+            lhs.textures == rhs.textures     && 
             lhs.attributes == rhs.attributes;
 }
 
 bool
 operator!=(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 std::ostream&
@@ -55,22 +55,22 @@ operator<<(std::ostream& out, const HdxShaderInputs& pv)
 bool
 operator==(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs)
 {
-    return  lhs.wrapS == rhs.wrapS and
-            lhs.wrapT == rhs.wrapT and
-            lhs.minFilter == rhs.minFilter and
-            lhs.magFilter == rhs.magFilter and
-            lhs.cropTop == rhs.cropTop and
-            lhs.cropBottom == rhs.cropBottom and
-            lhs.cropLeft == rhs.cropLeft and
-            lhs.cropRight == rhs.cropRight and
-            lhs.textureMemory == rhs.textureMemory and
+    return  lhs.wrapS == rhs.wrapS                  && 
+            lhs.wrapT == rhs.wrapT                  && 
+            lhs.minFilter == rhs.minFilter          && 
+            lhs.magFilter == rhs.magFilter          && 
+            lhs.cropTop == rhs.cropTop              && 
+            lhs.cropBottom == rhs.cropBottom        && 
+            lhs.cropLeft == rhs.cropLeft            && 
+            lhs.cropRight == rhs.cropRight          && 
+            lhs.textureMemory == rhs.textureMemory  && 
             lhs.isPtex == rhs.isPtex;
 }
 
 bool
 operator!=(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 std::ostream&

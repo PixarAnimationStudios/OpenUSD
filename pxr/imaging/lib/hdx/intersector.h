@@ -115,7 +115,7 @@ public:
         float ndcDepth;
 
         inline bool IsValid() const {
-            return not objectId.IsEmpty();
+            return !objectId.IsEmpty();
         }
 
         size_t GetHash() const;
@@ -160,7 +160,7 @@ public:
 
         inline bool IsValid() const
         {
-            return _viewport[2] > 0 and _viewport[3] > 0;
+            return _viewport[2] > 0 && _viewport[3] > 0;
         }
 
         /// Return the nearest single hit point. Not that this method may be

@@ -49,7 +49,7 @@ HdxCamera::Sync()
 
     SdfPath const &id = GetID();
     HdSceneDelegate *delegate = GetDelegate();
-    if (not TF_VERIFY(delegate)) {
+    if (!TF_VERIFY(delegate)) {
         return;
     }
 
@@ -75,7 +75,7 @@ HdxCamera::Sync()
         // use view/projection matrices from Phd too.
 
         VtValue vfrustum = delegate->Get(id, HdxCameraTokens->cameraFrustum);
-        if (not vfrustum.IsEmpty()) {
+        if (!vfrustum.IsEmpty()) {
             // XXX This branch can be removed once we only support 
             //     camera matrices
             TF_VERIFY(vfrustum.IsHolding<GfFrustum>());
@@ -98,7 +98,7 @@ HdxCamera::Sync()
             VtValue vProjMatrix
                 = delegate->Get(id, HdxCameraTokens->projectionMatrix);
 
-            TF_VERIFY(vViewMatrix.IsHolding<GfMatrix4d>() and
+            TF_VERIFY(vViewMatrix.IsHolding<GfMatrix4d>() && 
                       vProjMatrix.IsHolding<GfMatrix4d>());
 
             worldToViewMatrix        = vViewMatrix.Get<GfMatrix4d>();

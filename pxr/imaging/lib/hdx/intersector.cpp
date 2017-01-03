@@ -114,7 +114,7 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
         return;
     }
 
-    if (not _drawTarget) {
+    if (!_drawTarget) {
         // Initialize the shared draw target late to ensure there is a valid GL
         // context, which may not be the case at constructon time.
         _Init(widthHeight);
@@ -149,11 +149,11 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         return false;
     }
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (not TF_VERIFY(context)) {
+    if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
         return false;
     }
-    if (not _drawTarget) {
+    if (!_drawTarget) {
         // Initialize the shared draw target late to ensure there is a valid GL
         // context, which may not be the case at constructon time.
         _Init(GfVec2i(128,128));
@@ -162,7 +162,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     GfVec2i size(_drawTarget->GetSize());
     GfVec4i viewport(0, 0, size[0], size[1]);
 
-    if (not TF_VERIFY(_renderPass)) {
+    if (!TF_VERIFY(_renderPass)) {
         return false;
     }
     _renderPass->SetRprimCollection(col);
@@ -398,7 +398,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     hit->objectId = _index->GetPrimPathFromPrimIdColor(primIdColor,
                         instanceIdColor, &instanceIndex);
 
-    if (not hit->IsValid()) {
+    if (!hit->IsValid()) {
         return false;
     }
 
@@ -410,7 +410,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
                     ((elementIds[idIndex+2] & 0xff) << 16);
 
     HdRprim const* rprim = _index->GetRprim(hit->objectId);
-    if (not TF_VERIFY(rprim, "%s\n", hit->objectId.GetText())) {
+    if (!TF_VERIFY(rprim, "%s\n", hit->objectId.GetText())) {
         return false;
     }
 
@@ -466,7 +466,7 @@ HdxIntersector::Result::ResolveNearest(HdxIntersector::Hit* hit) const
 {
     TRACE_FUNCTION();
 
-    if (not IsValid()) {
+    if (!IsValid()) {
         return false;
     }
 
@@ -500,7 +500,7 @@ HdxIntersector::Result::ResolveAll(HdxIntersector::HitVector* allHits) const
 {
     TRACE_FUNCTION();
 
-    if (not IsValid()) { return false; }
+    if (!IsValid()) { return false; }
 
     float const* depths = _depths.get();
 
@@ -525,7 +525,7 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
 {
     TRACE_FUNCTION();
 
-    if (not IsValid()) { return false; }
+    if (!IsValid()) { return false; }
 
     int width = _viewport[2];
     int height = _viewport[3];
@@ -541,7 +541,7 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
             // Adjacent indices are likely enough to have the same prim,
             // instance and element ids that this can be a significant
             // improvement.
-            if (hitIndices.empty() or hash != previousHash) {
+            if (hitIndices.empty() || hash != previousHash) {
                 hitIndices.insert(std::make_pair(hash, i));
                 previousHash = hash;
             }
@@ -609,13 +609,13 @@ bool
 HdxIntersector::Hit::HitSetEq::operator()(Hit const& a, Hit const& b) const
 {
     return a.delegateId == b.delegateId
-       and a.objectId == b.objectId
-       and a.instancerId == b.instancerId
-       and a.instanceIndex == b.instanceIndex;
+       && a.objectId == b.objectId
+       && a.instancerId == b.instancerId
+       && a.instanceIndex == b.instanceIndex;
     // XXX: a workaround of a performance issue
     // of getting unnecessary detailed selection in ResolveUnique
     //
-    // and a.elementIndex == b.elementIndex;
+    // && a.elementIndex == b.elementIndex;
 }
 
 bool
@@ -628,12 +628,12 @@ bool
 HdxIntersector::Hit::operator==(Hit const& lhs) const
 {
     return objectId == lhs.objectId
-       and delegateId == lhs.delegateId
-       and instancerId == lhs.instancerId
-       and instanceIndex == lhs.instanceIndex
-       and elementIndex == lhs.elementIndex
-       and worldSpaceHitPoint == lhs.worldSpaceHitPoint
-       and ndcDepth == lhs.ndcDepth;
+       && delegateId == lhs.delegateId
+       && instancerId == lhs.instancerId
+       && instanceIndex == lhs.instanceIndex
+       && elementIndex == lhs.elementIndex
+       && worldSpaceHitPoint == lhs.worldSpaceHitPoint
+       && ndcDepth == lhs.ndcDepth;
 }
 
 std::ostream&

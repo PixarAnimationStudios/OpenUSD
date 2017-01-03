@@ -142,7 +142,7 @@ HdxSimpleLightingShader::SetLightingState(
 {
     if (src) {
         _useLighting = true;
-        _lightingContext->SetUseLighting(not src->GetLights().empty());
+        _lightingContext->SetUseLighting(!src->GetLights().empty());
         _lightingContext->SetLights(src->GetLights());
         _lightingContext->SetMaterial(src->GetMaterial());
         _lightingContext->SetSceneAmbient(src->GetSceneAmbient());

@@ -434,7 +434,7 @@ Hdx_UnitTestDelegate::AddInstancer(SdfPath const &id,
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
-    if (not parentId.IsEmpty()) {
+    if (!parentId.IsEmpty()) {
         _instancers[parentId].prototypes.push_back(id);
     }
 }
@@ -448,9 +448,9 @@ Hdx_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
 {
     HD_TRACE_FUNCTION();
 
-    if (not TF_VERIFY(prototypeIndex.size() == scale.size()) or
-        not TF_VERIFY(prototypeIndex.size() == rotate.size()) or
-        not TF_VERIFY(prototypeIndex.size() == translate.size())) {
+    if (!TF_VERIFY(prototypeIndex.size() == scale.size())  ||
+        !TF_VERIFY(prototypeIndex.size() == rotate.size()) || 
+        !TF_VERIFY(prototypeIndex.size() == translate.size())) {
         return;
     }
 
@@ -473,7 +473,7 @@ Hdx_UnitTestDelegate::AddGrid(SdfPath const &id, GfMatrix4d const &transform,
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
     GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -512,7 +512,7 @@ Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
     GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -564,7 +564,7 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
     GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -624,7 +624,7 @@ Hdx_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
     // tasks
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
-    if (vcache and TfMapLookup(*vcache, key, &ret)) {
+    if (vcache && TfMapLookup(*vcache, key, &ret)) {
         return ret;
     }
 
@@ -707,7 +707,7 @@ Hdx_UnitTestDelegate::IsInCollection(SdfPath const& id,
     // Visible collection.
     if (collectionName == HdTokens->geometry) {
         if (_Mesh *mesh = TfMapLookupPtr(_meshes, id)) {
-            return not mesh->guide;
+            return !mesh->guide;
         }
     } else if (collectionName == Hdx_UnitTestTokens->geometryAndGuides) {
         return (_meshes.count(id));

@@ -52,7 +52,7 @@ HdxDrawTargetResolveTask::_Execute(HdTaskContext* ctx)
     // Extract the list of render pass for draw targets from the task context.
     // This list is set from drawTargetTask.cpp during Sync phase.
     std::vector< std::unique_ptr<HdxDrawTargetRenderPass> >  *passes;
-    if (not _GetTaskContextData(ctx, HdxTokens->drawTargetRenderPasses, &passes)) {
+    if (!_GetTaskContextData(ctx, HdxTokens->drawTargetRenderPasses, &passes)) {
         return;
     }
 
