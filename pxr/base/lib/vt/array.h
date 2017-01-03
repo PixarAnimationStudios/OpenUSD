@@ -225,7 +225,7 @@ class VtArray {
     /// Append an element to array.
     void push_back(ElementType const &elem) {
         if (Vt_ArrayStackCheck(size(), _GetReserved())) {
-            if (not _data)
+            if (!_data)
                 _data.reset(new _Data());
             else
                 _Detach();
@@ -254,7 +254,7 @@ class VtArray {
     /// Ensure enough memory is allocated to hold \p num elements.
     void reserve(size_t num) {
         if (num >= size()) {
-            if (not _data)
+            if (!_data)
                 _data.reset(new _Data);
             else
                 _Detach();
@@ -292,7 +292,7 @@ class VtArray {
 
         TfAutoMallocTag tag("VtArray::reshape");
 
-        if (not _data)
+        if (!_data)
             _data.reset(new _Data);
 
         if (_data->IsUnique()) {
@@ -364,15 +364,15 @@ class VtArray {
 
     /// Tests two arrays for equality.  See also IsIdentical().
     bool operator == (VtArray const & other) const {
-        return IsIdentical(other) or 
+        return IsIdentical(other) || 
             (Vt_ArrayCompareSize(size(), _GetReserved(),
-                                 other.size(), other._GetReserved()) and
+                                 other.size(), other._GetReserved()) &&
              std::equal(begin(), end(), other.begin()));
     }
 
     /// Tests two arrays for inequality.
     bool operator != (VtArray const &other) const {
-        return not (*this == other);
+        return !(*this == other);
     }
 
     VTOPERATOR_CPPARRAY(+)
@@ -385,7 +385,7 @@ class VtArray {
   public:
     // XXX -- Public so VtValue::_ArrayHelper<T,U>::GetReserved() has access.
     Vt_Reserved* _GetReserved() {
-        if (not _data) {
+        if (!_data) {
             _data.reset(new _Data);
         }
         return &_data->reserved;
@@ -421,7 +421,7 @@ class VtArray {
     }
 
     void _Detach() {
-        if (_data and not _data->IsUnique())
+        if (_data && !_data->IsUnique())
             _data.reset(new _Data(*_data));
     }
 

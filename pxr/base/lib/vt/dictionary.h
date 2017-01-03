@@ -419,7 +419,7 @@ T VtDictionaryGet( const VtDictionary &dictionary,
                    Vt_DefaultHolder<U> const &def )
 {
     VtDictionary::const_iterator i = dictionary.find(key);
-    if (i == dictionary.end() or not i->second.IsHolding<T>())
+    if (i == dictionary.end() || !i->second.IsHolding<T>())
         return def.val;
     return i->second.Get<T>();
 }

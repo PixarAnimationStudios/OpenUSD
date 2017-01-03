@@ -130,7 +130,7 @@ class Vt_CastRegistry {
 
         std::lock_guard<std::mutex> lock(_mutex);
         _Conversions::iterator c = _conversions.find(dst);
-        return c != _conversions.end() and
+        return c != _conversions.end() &&
             c->second.find(src) != c->second.end();
     }
 
@@ -292,7 +292,7 @@ TF_EXECUTE_AT_STARTUP() {
 bool
 VtValue::IsArrayValued() const {
     VtValue const *v = _ResolveProxy();
-    return v->_info and v->_info->isArray;
+    return v->_info && v->_info->isArray;
 }
 
 const Vt_Reserved*
@@ -402,12 +402,12 @@ VtValue::_EqualityImpl(VtValue const &rhs) const
         VtValue const *proxy = _IsProxy() ? this : &rhs;
         VtValue const *nonProxy = _IsProxy() ? &rhs : this;
         VtValue const *resolvedProxy = proxy->_ResolveProxy();
-        return not resolvedProxy->IsEmpty() and
+        return !resolvedProxy->IsEmpty() &&
             nonProxy->_info->Equal(nonProxy->_storage, resolvedProxy->_storage);
     }
 
     // Otherwise compare typeids and if they match dispatch to the held type.
-    return TfSafeTypeCompare(GetTypeid(), rhs.GetTypeid()) and
+    return TfSafeTypeCompare(GetTypeid(), rhs.GetTypeid()) &&
         _info->Equal(_storage, rhs._storage);
 }
 

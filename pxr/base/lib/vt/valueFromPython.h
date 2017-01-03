@@ -46,15 +46,15 @@ class Vt_ValueFromPythonRegistry : boost::noncopyable {
 public:
 
     static bool HasConversions() {
-	return not _GetInstance()._lvalueExtractors.empty() and
-            not _GetInstance()._rvalueExtractors.empty();
+	return !_GetInstance()._lvalueExtractors.empty() &&
+           !_GetInstance()._rvalueExtractors.empty();
     }
     
     static VtValue Invoke(PyObject *obj);
 
     template <class T>
     static void Register(bool registerRvalue) {
-	if (not TfPyIsInitialized()) {
+	if (!TfPyIsInitialized()) {
 	    TF_FATAL_ERROR("Tried to register a VtValue from python conversion "
 			   "but python is not initialized!");
 	}

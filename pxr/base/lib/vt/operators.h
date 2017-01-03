@@ -168,7 +168,7 @@
         }                                                                    \
         VtArray<rettype> ret(vec.size());                                \
         for (int i = 0; i < length; ++i) {                                   \
-            if (not extract<T>(obj[i]).check())                              \
+            if (!extract<T>(obj[i]).check())                              \
                 TfPyThrowValueError("Element is of incorrect type.");        \
             ret[i] = expr;                                                   \
         }                                                                    \
@@ -227,7 +227,7 @@
         }                                                             \
         VtArray<bool> ret(vec.size());                            \
         for (int i = 0; i < length; ++i) {                            \
-            if (not extract<T>(obj[i]).check())                       \
+            if (!extract<T>(obj[i]).check())                       \
                 TfPyThrowValueError("Element is of incorrect type."); \
             ret[i] = expr;                                            \
         }                                                             \

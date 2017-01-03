@@ -49,14 +49,14 @@ Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
     if (i != self._lvalueExtractorCache.end()) {
         // attempt conversion.
         VtValue result = i->second.Invoke(obj);
-        if (not result.IsEmpty())
+        if (!result.IsEmpty())
             return result;
     }
 
     // Fall back to trying extractors in reverse registration order.
     for (size_t i = self._lvalueExtractors.size(); i != 0; --i) {
         VtValue result = self._lvalueExtractors[i-1].Invoke(obj);
-        if (not result.IsEmpty()) {
+        if (!result.IsEmpty()) {
             // Cache the result.
             self._lvalueExtractorCache[PyObject_Type(obj)] =
                 self._lvalueExtractors[i-1];
@@ -67,7 +67,7 @@ Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
     // No lvalue extraction worked -- try rvalue conversions.
     for (size_t i = self._rvalueExtractors.size(); i != 0; --i) {
         VtValue result = self._rvalueExtractors[i-1].Invoke(obj);
-        if (not result.IsEmpty())
+        if (!result.IsEmpty())
             return result;
     }
     return VtValue();

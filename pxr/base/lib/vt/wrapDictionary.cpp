@@ -179,7 +179,7 @@ struct _VtDictionaryFromPython {
     // Returns p if p can convert to a dictionary, NULL otherwise.
     // If result is non-NULL, does the conversion into *result.
     static PyObject *convert(PyObject *p, VtDictionary *result) {
-        if (not PyDict_Check(p)) {
+        if (!PyDict_Check(p)) {
             return NULL;
         }
 
@@ -275,7 +275,7 @@ _CanVtValueFromPython(object pVal)
         return true;
 
     extract<VtValue> e(pVal);
-    return e.check() and not e().IsHolding<TfPyObjWrapper>();
+    return e.check() && !e().IsHolding<TfPyObjWrapper>();
 }
 
 
