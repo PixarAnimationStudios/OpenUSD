@@ -3277,7 +3277,8 @@ _EvalNodeVariants(
         // Determine this by checking node children.
         bool vsetAlreadyEvaluated = false;
         TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-            if (child->GetArcType() == PcpArcTypeVariant) {
+            if (child->GetArcType() == PcpArcTypeVariant and
+                !child->IsDueToAncestor()) {
                 std::pair<std::string, std::string> vsel =
                     child->GetPath().GetVariantSelection();
                 if (vsel.first == vset) {
