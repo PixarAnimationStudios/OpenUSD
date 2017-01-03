@@ -176,7 +176,7 @@ function(pxr_shared_library LIBRARY_NAME)
 	# XXX: Only do this on Linux for now, since $ORIGIN only exists
 	# on that platform. We will need to figure out the correct thing
 	# to do here for other platforms.
-	if (LINUX)
+	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             file(RELATIVE_PATH
                 PYTHON_RPATH
                 "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
@@ -577,7 +577,7 @@ function(pxr_plugin PLUGIN_NAME)
         # packages), add an rpath pointing to lib/ within it.
 	#
 	# XXX: See comment about $ORIGIN in pxr_shared_library
-	if (LINUX)
+	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             if (PXR_INSTALL_SUBDIR)
                 file(RELATIVE_PATH
                     PLUGIN_RPATH
