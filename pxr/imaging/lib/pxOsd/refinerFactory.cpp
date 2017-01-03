@@ -59,7 +59,7 @@ Converter::GetType() const {
 
     SchemeType type = SCHEME_CATMARK;
     if (scheme==PxOsdOpenSubdivTokens->catmark
-                              or scheme==PxOsdOpenSubdivTokens->catmullClark) {
+                              || scheme==PxOsdOpenSubdivTokens->catmullClark) {
         type = SCHEME_CATMARK;
     } else if (scheme==PxOsdOpenSubdivTokens->loop) {
         type = SCHEME_LOOP;
@@ -102,7 +102,7 @@ Converter::GetOptions() const {
         PxOsdOpenSubdivTokens->edgeAndCorner :
         topology.GetSubdivTags().GetVertexInterpolationRule();
 
-    if (not interpolateBoundary.IsEmpty()) {
+    if (!interpolateBoundary.IsEmpty()) {
                if (interpolateBoundary==PxOsdOpenSubdivTokens->none) {
             options.SetVtxBoundaryInterpolation(Options::VTX_BOUNDARY_NONE);
         } else if (interpolateBoundary==PxOsdOpenSubdivTokens->edgeOnly) {
@@ -127,7 +127,7 @@ Converter::GetOptions() const {
     TfToken const faceVaryingLinearInterpolation =
         topology.GetSubdivTags().GetFaceVaryingInterpolationRule();
 
-    if (not faceVaryingLinearInterpolation.IsEmpty()) {
+    if (!faceVaryingLinearInterpolation.IsEmpty()) {
         if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->all) {
             options.SetFVarLinearInterpolation(Options::FVAR_LINEAR_ALL);
         } else if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->cornersPlus1) {
@@ -154,7 +154,7 @@ Converter::GetOptions() const {
     TfToken const creaseMethod =
         topology.GetSubdivTags().GetCreaseMethod();
 
-    if (not creaseMethod.IsEmpty()) {
+    if (!creaseMethod.IsEmpty()) {
                if (creaseMethod==PxOsdOpenSubdivTokens->uniform) {
             options.SetCreasingMethod(Options::CREASE_UNIFORM);
         } else if (creaseMethod==PxOsdOpenSubdivTokens->chaikin) {
@@ -172,8 +172,8 @@ Converter::GetOptions() const {
     TfToken const trianglesSubdivision =
         topology.GetSubdivTags().GetTriangleSubdivision();
 
-    if (not trianglesSubdivision.IsEmpty()) {
-        if (trianglesSubdivision==PxOsdOpenSubdivTokens->catmark or
+    if (!trianglesSubdivision.IsEmpty()) {
+        if (trianglesSubdivision==PxOsdOpenSubdivTokens->catmark || 
                 trianglesSubdivision==PxOsdOpenSubdivTokens->catmullClark) {
             options.SetTriangleSubdivision(Options::TRI_SUB_CATMARK);
         } else if (trianglesSubdivision==PxOsdOpenSubdivTokens->smooth) {
@@ -313,7 +313,7 @@ TopologyRefinerFactory<Converter>::assignComponentTags(
 
             if (perEdgeCrease) ++sindex;
         }
-        if (not perEdgeCrease) ++sindex;
+        if (!perEdgeCrease) ++sindex;
         cindex += creaseLengths[i];
     }
 
@@ -333,7 +333,7 @@ TopologyRefinerFactory<Converter>::assignComponentTags(
     }
     for (size_t i=0; i < numCorners; ++i) {
         int vert = cornerIndices[i];
-        if (vert >= 0 and vert < refiner.GetLevel(0).GetNumVertices()) {
+        if (vert >= 0 && vert < refiner.GetLevel(0).GetNumVertices()) {
             setBaseVertexSharpness(refiner,
                 vert, std::max(0.0f, cornerWeights[i]));
         } else {
@@ -352,7 +352,7 @@ TopologyRefinerFactory<Converter>::assignComponentTags(
 
     for (int i=0; i < numHoles; ++i) {
         int face = holeIndices[i];
-        if (face >= 0 and face < refiner.GetLevel(0).GetNumFaces()) {
+        if (face >= 0 && face < refiner.GetLevel(0).GetNumFaces()) {
             setBaseFaceHole(refiner, face, true);
         } else {
             TF_WARN("Set hole cannot find face (%d) (%s)",
@@ -391,7 +391,7 @@ TopologyRefinerFactory<Converter>::assignFaceVaryingTopology(
             Far::IndexArray faceIndices = getBaseFaceFVarValues(refiner, i, channel);
             size_t numVerts = faceIndices.size();
 
-            if (not TF_VERIFY(ofs + numVerts <= fvIndices.size())) {
+            if (!TF_VERIFY(ofs + numVerts <= fvIndices.size())) {
                 return false;
             }
 

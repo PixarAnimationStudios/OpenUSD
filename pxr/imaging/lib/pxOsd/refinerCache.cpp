@@ -100,7 +100,7 @@ PxOsdRefinerCache::CacheEntry::CreateRefiner()
             *refiner, patchTableOptions);        
     patchTable = PatchTableSharedPtr(patchTableRaw);
 
-    if (not bilinearStencils) {    
+    if (!bilinearStencils) {    
         // Append endcap stencils
         OpenSubdiv::Far::StencilTable const* localPointStencilTable =
             patchTableRaw->GetLocalPointStencilTable();
@@ -131,8 +131,8 @@ PxOsdRefinerCache::GetOrCreateRefiner(
     std::lock_guard<std::mutex> lock(_mutex);    
 
     if ((topology.GetScheme() != PxOsdOpenSubdivTokens->catmullClark
-                and topology.GetScheme() != PxOsdOpenSubdivTokens->catmark)
-          and not bilinearStencils) {
+         && topology.GetScheme() != PxOsdOpenSubdivTokens->catmark)
+         && !bilinearStencils) {
         // XXX: This refiner will be adaptively refined, so we need to ensure
         // we're using catmull-clark subdivision scheme, since that's the only
         // option currently. Once OpenSubdiv supports adaptive loop subdivision,

@@ -88,7 +88,7 @@ PxOsdUniformEvaluator::Initialize(
     Far::PatchTable const *patchTable  =
         Far::PatchTableFactory::Create(*refiner);
 
-    if (not (TF_VERIFY(_vertexStencils) and TF_VERIFY(patchTable))) {
+    if (!(TF_VERIFY(_vertexStencils) && TF_VERIFY(patchTable))) {
         return false;
     }
     

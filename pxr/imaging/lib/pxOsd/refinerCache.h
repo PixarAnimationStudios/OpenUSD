@@ -108,8 +108,8 @@ private:
 
         bool operator==(CacheEntry const& x) const
             {
-                return ((x.topology == topology) and
-                        (x.bilinearStencils == bilinearStencils) and
+                return ((x.topology == topology)                 &&
+                        (x.bilinearStencils == bilinearStencils) &&
                         (x.level == level));
             }
         CacheEntry& operator=(CacheEntry const& x) 

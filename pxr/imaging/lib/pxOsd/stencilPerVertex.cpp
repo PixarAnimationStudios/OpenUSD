@@ -56,7 +56,7 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
         PxOsdRefinerCache::GetInstance().GetOrCreateRefiner(
             topology, bilinearStencils, level, &cvStencils, &patchTable);
 
-    if (not refiner) {
+    if (!refiner) {
         return boost::shared_ptr<OpenSubdiv::Far::LimitStencilTable>();
     }
 
@@ -117,7 +117,7 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
                 *refiner, locs, cvStencils.get(), patchTable.get());
     }
 
-    if (not stencilTablePtr) {
+    if (!stencilTablePtr) {
         TF_WARN("Failed to get valid stencilTablePtr");
         return boost::shared_ptr<OpenSubdiv::Far::LimitStencilTable>();
     }
