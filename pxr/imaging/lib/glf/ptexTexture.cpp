@@ -82,7 +82,7 @@ GlfPtexTexture::~GlfPtexTexture()
 bool
 GlfPtexTexture::IsPtexTexture(std::string const & imageFilePath)
 {
-    return (TfStringEndsWith(imageFilePath, ".ptx") or TfStringEndsWith(imageFilePath, ".ptex"));
+    return (TfStringEndsWith(imageFilePath, ".ptx") || TfStringEndsWith(imageFilePath, ".ptex"));
 }
 
 //------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ GlfPtexTexture::_ReadImage(size_t targetMemory)
     // (required to build guttering pixels efficiently)
     static const int PTEX_MAX_CACHE_SIZE = 128*1024*1024;
     PtexCache *cache = PtexCache::create(1, PTEX_MAX_CACHE_SIZE);
-    if (not cache) {
+    if (!cache) {
         TF_WARN("Unable to create PtexCache");
         return false;
     }
@@ -121,7 +121,7 @@ GlfPtexTexture::_ReadImage(size_t targetMemory)
     Ptex::String ptexError;
     PtexTexture *reader = cache->get(filename.c_str(), ptexError);
     //PtexTexture *reader = PtexTexture::open(filename.c_str(), ptexError, true);
-    if (not reader) {
+    if (!reader) {
         TF_WARN("Unable to open ptex %s : %s",
                 filename.c_str(), ptexError.c_str());
         cache->release();

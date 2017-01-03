@@ -119,7 +119,7 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
     // in that case 
     for (int mipCounter = 1; mipCounter < 32; mipCounter++) {
         GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, mipCounter);
-        if (not image) {
+        if (!image) {
             potentialMipLevels = mipCounter;
             break;
         }
@@ -129,7 +129,7 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
         
         // If previous mip and current mip are equal we have found the end of
         // the chain.
-        if (previousWidth == currentWidth and
+        if (previousWidth == currentWidth && 
             previousHeight == currentHeight) {
             potentialMipLevels = mipCounter;
             break;
@@ -137,7 +137,7 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
 
         // We need to make sure that the previous mip and the current mip
         // are consecutives powers of two.
-        if (previousWidth >> 1 != currentWidth or 
+        if (previousWidth >> 1 != currentWidth || 
             previousHeight>> 1 != currentHeight) {
             potentialMipLevels = 1;
             break;
@@ -161,7 +161,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     const GlfImageSharedPtr nullImage;
 
     // Bail if image file could not be opened.
-    if (not fullImage) {
+    if (!fullImage) {
         return _DegradedImageInput(1.0, 1.0, nullImage);
     }
 
@@ -170,7 +170,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
 
     // Return full resolution if the targetMemory and the degradeLevel are not
     // set, i.e., equal to 0.
-    if (not (targetMemory > 0 or degradeLevel > 0)) {
+    if (!(targetMemory > 0 || degradeLevel > 0)) {
         return _GetDegradedImageInputChain(1.0, 1.0, 0, numMipLevels);
     }
 
@@ -180,7 +180,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
 
     // If targetMemory is set and more than required for full resolution,
     // return full resolution.
-    if (targetMemory > 0 and fullSize <= targetMemory) {
+    if (targetMemory > 0 && fullSize <= targetMemory) {
         return _GetDegradedImageInputChain(1.0, 1.0, 0, numMipLevels);
     }
     
@@ -188,7 +188,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
     if (targetMemory == 0) {
         GlfImageSharedPtr image =
 		GlfImage::OpenForReading(_filePath, degradeLevel);
-        if (not image) {
+        if (!image) {
             return _DegradedImageInput(1.0, 1.0, nullImage);
         }
 
@@ -217,7 +217,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
         // If mipLevel could not be opened, return fullImage. We are
         // not supposed to hit this. GlfImage will return the last
         // down-sampled image if the subimageIndex is beyond the range.
-        if (not image) {
+        if (!image) {
             return _GetDegradedImageInputChain(1.0, 1.0, 0, 1);
         }
 
@@ -233,7 +233,7 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
                 i, numMipLevels);
         }
         
-        if (not (size < prevSize)) {
+        if (!(size < prevSize)) {
             // GlfImage stopped providing more further-downsampled
             // images, no point to continue, return image from last
             // iteration.
@@ -260,7 +260,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
 {   
     TRACE_FUNCTION();
 
-    if (not TfPathExists(_filePath)) {
+    if (!TfPathExists(_filePath)) {
         TF_CODING_ERROR("Unable to find Texture '%s'.", _filePath.c_str());
         return false;
     }
@@ -288,8 +288,8 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
     _nativeHeight = _resizedHeight = image->GetHeight();
 
     bool isCompressed = GlfIsCompressedFormat(image->GetFormat());
-    bool needsCropping = _params.cropTop or _params.cropBottom or 
-                         _params.cropLeft or _params.cropRight;
+    bool needsCropping = _params.cropTop || _params.cropBottom ||
+                         _params.cropLeft || _params.cropRight;
     bool needsResizeOnLoad = false;
     int cropTop = 0, cropBottom = 0, cropLeft = 0, cropRight = 0;
 
@@ -328,7 +328,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         int sizeAprox = _resizedWidth * _resizedHeight * _bytesPerPixel * scale;
 
         while ((_targetMemory > 0) 
-               and (static_cast<size_t>(sizeAprox) > _targetMemory)) {
+               && (static_cast<size_t>(sizeAprox) > _targetMemory)) {
             _resizedWidth >>= 1;
             _resizedHeight >>= 1;
             sizeAprox = _resizedWidth * _resizedHeight * _bytesPerPixel * scale;
@@ -347,7 +347,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
     // Check if the image is providing a mip chain and check if it is valid
     // Also, if the user wants cropping/resize then the mip chain 
     // will be discarded.
-    bool usePregeneratedMips = not needsResizeOnLoad and generateMipmap;
+    bool usePregeneratedMips = !needsResizeOnLoad && generateMipmap;
     int numMipLevels = usePregeneratedMips ? degradedImage.images.size() : 1;
 
     // If rawbuffer has any memory let's clean it now before we load the 
@@ -359,7 +359,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
     // track of all the mips
     for(int i = 0 ; i < numMipLevels; i++) {
         GlfImageSharedPtr image = degradedImage.images[i];
-        if (not image) {
+        if (!image) {
             TF_RUNTIME_ERROR("Unable to load mip from Texture '%s'.", 
                 _filePath.c_str());
             return false;
@@ -379,7 +379,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
     }
 
     _rawBuffer.reset(new unsigned char[_size]);
-    if (not _rawBuffer) {
+    if (!_rawBuffer) {
         TF_RUNTIME_ERROR("Unable to allocate memory for the mip levels.");
         return false;
     }
@@ -388,7 +388,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
     // contiguous memory.
     for(int i = 0 ; i < numMipLevels; i++) {
         GlfImageSharedPtr image = degradedImage.images[i];
-        if (not image) {
+        if (!image) {
             TF_RUNTIME_ERROR("Unable to load mip from Texture '%s'.", 
                 _filePath.c_str());
             return false;
@@ -402,7 +402,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap)
         storage.type = _glType;
         storage.data = _rawBuffer.get() + mip.offset;
 
-        if (not image->ReadCropped(cropTop, cropBottom, cropLeft, cropRight, storage)) {
+        if (!image->ReadCropped(cropTop, cropBottom, cropLeft, cropRight, storage)) {
             TF_CODING_ERROR("Unable to read Texture '%s'.", _filePath.c_str());
             return false;
         }
@@ -435,7 +435,7 @@ GlfUVTextureData::HasRawBuffer(int mipLevel) const
 unsigned char * 
 GlfUVTextureData::GetRawBuffer(int mipLevel) const
 {
-    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size() or not _rawBuffer) {
+    if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size() || !_rawBuffer) {
         return 0;
     }
     return _rawBuffer.get() + _rawBufferMips[mipLevel].offset;

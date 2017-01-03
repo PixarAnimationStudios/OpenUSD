@@ -154,7 +154,7 @@ bool
 GlfImage::GetMetadata(TfToken const & key, T * value) const
 {
     VtValue any;
-    if (not GetMetadata(key, &any) or not any.IsHolding<T>()) {
+    if (!GetMetadata(key, &any) || !any.IsHolding<T>()) {
         return false;
     }
     *value = any.UncheckedGet<T>();
@@ -166,7 +166,7 @@ bool
 GlfImage::GetSamplerMetadata(GLenum pname, T * param) const
 {
     VtValue any;
-    if (not GetSamplerMetadata(pname, &any) or not any.IsHolding<T>()) {
+    if (!GetSamplerMetadata(pname, &any) || !any.IsHolding<T>()) {
         return false;
     }
     *param = any.UncheckedGet<T>();

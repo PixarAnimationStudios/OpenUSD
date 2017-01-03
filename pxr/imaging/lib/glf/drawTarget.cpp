@@ -150,7 +150,7 @@ GlfDrawTarget::AddAttachment( std::string const & name,
                               GLenum format, GLenum type,
                               GLenum internalFormat )
 {
-    if (not IsBound()) {
+    if (!IsBound()) {
         TF_CODING_ERROR("Cannot change the size of an unbound GlfDrawTarget");
     }
 
@@ -215,7 +215,7 @@ GlfDrawTarget::ClearAttachments()
 void
 GlfDrawTarget::CloneAttachments( GlfDrawTargetPtr const & drawtarget )
 {
-    if (not drawtarget) {
+    if (!drawtarget) {
         TF_CODING_ERROR( "Cannot clone TfNullPtr attachments." );
     }
 
@@ -250,7 +250,7 @@ GlfDrawTarget::SetSize( GfVec2i size )
         return;
     }
 
-    if (not IsBound()) {
+    if (!IsBound()) {
         TF_CODING_ERROR( "Cannot change the size of an unbound DrawTarget" );
     }
 
@@ -276,7 +276,7 @@ GlfDrawTarget::_DeleteAttachments()
     // own the methods over their data (with casccading calls coming from the
     // DrawTarget API). Checking for the RefPtr uniqueness is somewhat working
     // against the nature of RefPtr..
-    if (not _attachmentsPtr->IsUnique()) {
+    if (!_attachmentsPtr->IsUnique()) {
         return;
     }
 
@@ -403,7 +403,7 @@ GlfDrawTarget::Bind()
     // code may have setup other gl state and not expect a context switch here.
     // Also the switch may be expensive, so we want to be explict about when
     // they can occur.
-    if (not TF_VERIFY(_owningContext->IsCurrent())) {
+    if (!TF_VERIFY(_owningContext->IsCurrent())) {
         return;
     }
 
@@ -471,7 +471,7 @@ GlfDrawTarget::IsValid(std::string * reason)
 bool
 GlfDrawTarget::_Validate(std::string * reason)
 {
-    if (not _framebuffer) {
+    if (!_framebuffer) {
         return false;
     }
 
@@ -495,7 +495,7 @@ GlfDrawTarget::WriteToFile(std::string const & name,
 
     AttachmentRefPtr const & a = it->second;
 
-    if (not _framebuffer) {
+    if (!_framebuffer) {
         TF_CODING_ERROR( "DrawTarget has no framebuffer" );
         return false;
     }
@@ -535,7 +535,7 @@ GlfDrawTarget::WriteToFile(std::string const & name,
     VtDictionary metadata;
 
     std::string ext = TfStringGetSuffix(filename);
-    if (name == "depth" and ext == "zfile") {
+    if (name == "depth" && ext == "zfile") {
         // transform depth value from normalized to camera space length
         float *p = (float*)buf;
         for (size_t i = 0; i < bufsize/sizeof(float); ++i){
@@ -562,11 +562,11 @@ GlfDrawTarget::WriteToFile(std::string const & name,
     storage.data = buf;
 
     GlfImageSharedPtr image = GlfImage::OpenForWriting(filename);
-    bool writeSuccess = image and image->Write(storage, metadata);
+    bool writeSuccess = image && image->Write(storage, metadata);
 
     free(buf);
 
-    if (not writeSuccess) {
+    if (!writeSuccess) {
         TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
         return false;
     }

@@ -62,7 +62,7 @@ public:
     {
         if (type) {
             auto i = _typeMap.find(key);
-            if (i == _typeMap.end() or i->second.precedence < precedence) {
+            if (i == _typeMap.end() || i->second.precedence < precedence) {
                 _typeMap[key] = { type, precedence };
             }
         }
@@ -106,7 +106,7 @@ GlfRankedTypeMap::Add(
     for (auto type: types) {
         // Get the plugin.
         PlugPluginPtr plugin = plugReg.GetPluginForType(type);
-        if (not plugin) {
+        if (!plugin) {
             TF_DEBUG(debugType).Msg(
 	            "[PluginDiscover] Plugin could not be loaded "
 		    "for TfType '%s'\n",
@@ -115,14 +115,14 @@ GlfRankedTypeMap::Add(
         }
 
         // Check the whitelist.
-        if (not restrictions.empty()) {
+        if (!restrictions.empty()) {
             bool goodPlugin = false;
             for (const auto& restriction: restrictions) {
                 if (type.GetTypeName() == restriction) {
                     goodPlugin = true;
                 }
             }
-            if (not goodPlugin) {
+            if (!goodPlugin) {
                 TF_DEBUG(debugType).Msg(	
                     "[PluginDiscover] Skipping restricted plugin: '%s'\n", 
                     type.GetTypeName().c_str());
@@ -146,7 +146,7 @@ GlfRankedTypeMap::Add(
 
         JsObject::const_iterator precedenceIt = metadata.find("precedence");
         if (precedenceIt != metadata.end()) {
-            if (not precedenceIt->second.Is<int>()) {
+            if (!precedenceIt->second.Is<int>()) {
                 TF_RUNTIME_ERROR("[PluginDiscover] 'precedence' metadata "
                         "can not be read for plugin '%s'\n", 
                         type.GetTypeName().c_str());

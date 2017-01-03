@@ -49,16 +49,16 @@ public:
 
         bool operator==(const Params& rhs) const
         {
-            return (targetMemory == rhs.targetMemory and
-                    cropTop == rhs.cropTop and
-                    cropBottom == rhs.cropBottom and
-                    cropLeft == rhs.cropLeft and
+            return (targetMemory == rhs.targetMemory &&
+                    cropTop == rhs.cropTop           && 
+                    cropBottom == rhs.cropBottom     && 
+                    cropLeft == rhs.cropLeft         && 
                     cropRight == rhs.cropRight);
         }
 
         bool operator!=(const Params& rhs) const
         {
-            return not (*this == rhs);
+            return !(*this == rhs);
         }
 
         size_t targetMemory;

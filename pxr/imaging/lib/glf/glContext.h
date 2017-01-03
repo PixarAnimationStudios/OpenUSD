@@ -206,7 +206,7 @@ private:
         if (GlfGLContext::IsInitialized()
 #ifdef MENV30
             // XXX skip this test for globaltrees until shared_code lands
-            and ArchIsMainThread()
+            && ArchIsMainThread()
 #endif
             ) {
             return GlfGLContext::GetSharedGLContext();

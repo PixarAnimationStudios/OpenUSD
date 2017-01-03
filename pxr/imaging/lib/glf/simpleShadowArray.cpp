@@ -87,7 +87,7 @@ GlfSimpleShadowArray::SetNumLayers(size_t numLayers)
 GfMatrix4d
 GlfSimpleShadowArray::GetViewMatrix(size_t index) const
 {
-    if (not TF_VERIFY(index < _viewMatrix.size())) {
+    if (!TF_VERIFY(index < _viewMatrix.size())) {
         return GfMatrix4d(1.0);
     }
 
@@ -97,7 +97,7 @@ GlfSimpleShadowArray::GetViewMatrix(size_t index) const
 void
 GlfSimpleShadowArray::SetViewMatrix(size_t index, GfMatrix4d const & matrix)
 {
-    if (not TF_VERIFY(index < _viewMatrix.size())) {
+    if (!TF_VERIFY(index < _viewMatrix.size())) {
         return;
     }
 
@@ -107,7 +107,7 @@ GlfSimpleShadowArray::SetViewMatrix(size_t index, GfMatrix4d const & matrix)
 GfMatrix4d
 GlfSimpleShadowArray::GetProjectionMatrix(size_t index) const
 {
-    if (not TF_VERIFY(index < _projectionMatrix.size())) {
+    if (!TF_VERIFY(index < _projectionMatrix.size())) {
         return GfMatrix4d(1.0);
     }
 
@@ -117,7 +117,7 @@ GlfSimpleShadowArray::GetProjectionMatrix(size_t index) const
 void
 GlfSimpleShadowArray::SetProjectionMatrix(size_t index, GfMatrix4d const & matrix)
 {
-    if (not TF_VERIFY(index < _projectionMatrix.size())) {
+    if (!TF_VERIFY(index < _projectionMatrix.size())) {
         return;
     }
 
@@ -291,7 +291,7 @@ GlfSimpleShadowArray::_BindFramebuffer(size_t index)
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,
                   (GLint*)&_unbindRestoreReadFramebuffer);
 
-    if (not _framebuffer or not _texture) {
+    if (!_framebuffer || !_texture) {
         _AllocTextureArray();
     }
 

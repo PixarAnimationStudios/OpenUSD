@@ -74,7 +74,7 @@ _Glf_GetDictionaryFromJSON(
     JsValue jsdict = JsParseString(TfStringJoin(filtered, "\n"), &error);
 
     if (jsdict.IsNull()) {
-        if (errorStr or TfDebug::IsEnabled(GLF_DEBUG_DICTIONARY)) {
+        if (errorStr || TfDebug::IsEnabled(GLF_DEBUG_DICTIONARY)) {
             std::string errorMessageStr = TfStringPrintf(
                 "Failed to extract dictionary from input (line %d, col %d): %s",
                 error.line, error.column, error.reason.c_str());
@@ -86,8 +86,8 @@ _Glf_GetDictionaryFromJSON(
         return VtDictionary();
     }
 
-    if (not jsdict.IsObject()) {
-        if (errorStr or TfDebug::IsEnabled(GLF_DEBUG_DICTIONARY)) {
+    if (!jsdict.IsObject()) {
+        if (errorStr || TfDebug::IsEnabled(GLF_DEBUG_DICTIONARY)) {
             std::string errorMessageStr = TfStringPrintf(
                 "Input string did not evaluate to a JSON dictionary:\n%s\n",
                 input.c_str());

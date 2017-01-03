@@ -155,7 +155,7 @@ _FindAttribute(ImageSpec const & spec, std::string const & metadataKey)
     std::string key = _TranslateMetadataKey(metadataKey, &convertMatrixTypes);
 
     ImageIOParameter const * param = spec.find_attribute(key);
-    if (not param) {
+    if (!param) {
         return VtValue();
     }
 
@@ -316,8 +316,8 @@ Glf_OIIOImage::GetBytesPerPixel() const
 bool
 Glf_OIIOImage::IsColorSpaceSRGB() const
 {
-    return ((_imagebuf.spec().nchannels == 3 or
-             _imagebuf.spec().nchannels == 4) and
+    return ((_imagebuf.spec().nchannels == 3  ||
+             _imagebuf.spec().nchannels == 4) &&
             _imagebuf.spec().format == TypeDesc::UINT8);
 }
 
@@ -326,7 +326,7 @@ bool
 Glf_OIIOImage::GetMetadata(TfToken const & key, VtValue * value) const
 {
     VtValue result = _FindAttribute(_imagebuf.spec(), key.GetString());
-    if (not result.IsEmpty()) {
+    if (!result.IsEmpty()) {
         *value = result;
         return true;
     }
@@ -355,14 +355,14 @@ Glf_OIIOImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
     switch (pname) {
         case GL_TEXTURE_WRAP_S: {
                 VtValue smode = _FindAttribute(_imagebuf.spec(), "s mode");
-                if (not smode.IsEmpty() and smode.IsHolding<std::string>()) {
+                if (!smode.IsEmpty() && smode.IsHolding<std::string>()) {
                     *param = VtValue(_TranslateWrap(smode.Get<std::string>()));
                     return true;
                 }
             } return false;
         case GL_TEXTURE_WRAP_T: {
                 VtValue tmode = _FindAttribute(_imagebuf.spec(), "t mode");
-                if (not tmode.IsEmpty() and tmode.IsHolding<std::string>()) {
+                if (!tmode.IsEmpty() && tmode.IsHolding<std::string>()) {
                     *param = VtValue(_TranslateWrap(tmode.Get<std::string>()));
                     return true;
                 }
@@ -388,7 +388,7 @@ Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage)
     _subimage = subimage;
     _imagebuf.clear();
     return _imagebuf.init_spec(_filename, subimage, /*mipmap*/0)
-           and (_imagebuf.nsubimages() > subimage);
+           && (_imagebuf.nsubimages() > subimage);
 }
 
 /* virtual */
@@ -411,13 +411,13 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
 
     // Convert double precision images to float
     if (image->spec().format == TypeDesc::DOUBLE) {
-        if (not image->read(_subimage, /*miplevel*/0, /*force*/false,
+        if (!image->read(_subimage, /*miplevel*/0, /*force*/false,
                             TypeDesc::FLOAT)) {
             TF_CODING_ERROR("unable to read image (as float)");
             return false;
         }
     } else {
-        if (not image->read(_subimage)) {
+        if (!image->read(_subimage)) {
             TF_CODING_ERROR("unable to read image");
             return false;
         }
@@ -428,7 +428,7 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
 
     // Crop 
     ImageBuf cropped;
-    if (cropTop or cropBottom or cropLeft or cropRight) {
+    if (cropTop || cropBottom || cropLeft || cropRight) {
         ImageBufAlgo::cut(cropped, *image,
                 ROI(cropLeft, image->spec().width - cropRight,
                     cropTop, image->spec().height - cropBottom));
@@ -437,7 +437,7 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
 
     // Reformat
     ImageBuf scaled;
-    if (image->spec().width != storage.width or
+    if (image->spec().width != storage.width || 
         image->spec().height != storage.height) {
         ImageBufAlgo::resample(scaled, *image, /*interpolate=*/false,
                 ROI(0, storage.width, 0, storage.height));
@@ -446,7 +446,7 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
 
     // Read pixel data
     TypeDesc type = _GetOIIOBaseType(storage.type);
-    if (not image->get_pixels(0, storage.width, 0, storage.height, 0, 1,
+    if (!image->get_pixels(0, storage.width, 0, storage.height, 0, 1,
                               type, storage.data)) {
         TF_CODING_ERROR("unable to get_pixels");
         return false;
@@ -491,7 +491,7 @@ Glf_OIIOImage::Write(StorageSpec const & storage,
     }
 
     // Write pixel data
-    if (not image->write(_filename)) {
+    if (!image->write(_filename)) {
         TF_RUNTIME_ERROR("unable to write");
         image->clear();
         return false;

@@ -69,7 +69,7 @@ GlfHasExtensions(string const & queryExtensions)
 
     // Return false if any queried extension is not available.
     TF_FOR_ALL(i, extensionsList) {
-        if (not availableExtensions->count(*i)) {
+        if (!availableExtensions->count(*i)) {
             return false;
         }
     }
@@ -88,5 +88,5 @@ GlfHasLegacyGraphics()
     // then we must have very limited graphics.  In
     // common usage, this should only be true for NX
     // clients.
-    return not GLEW_VERSION_2_0;
+    return !GLEW_VERSION_2_0;
 }

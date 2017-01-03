@@ -116,8 +116,8 @@ private:
                        unsigned char *pptr, int bpp, int stride);
 
         static bool sort(const Block *a, const Block *b) {
-            return (a->height > b->height) or
-                   ((a->height == b->height) and (a->width > b->width));
+            return (a->height > b->height) ||
+                   ((a->height == b->height) && (a->width > b->width));
         }
     };
 

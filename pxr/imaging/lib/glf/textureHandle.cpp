@@ -83,7 +83,7 @@ GlfTextureHandle::_ComputeMemoryRequirement()
 {
     // adjust resolution to the maximum requirement
     size_t maxTargetMemory = 0;
-    if (not _requestedMemories.empty()) {
+    if (!_requestedMemories.empty()) {
         maxTargetMemory = _requestedMemories.rbegin()->first;
     }
 

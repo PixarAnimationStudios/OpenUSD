@@ -53,7 +53,7 @@ void
 GlfUniformBlock::Bind(GlfBindingMapPtr const & bindingMap,
                        std::string const & identifier)
 {
-    if (not bindingMap) return;
+    if (!bindingMap) return;
     int binding = bindingMap->GetUniformBinding(identifier);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, binding, _buffer);

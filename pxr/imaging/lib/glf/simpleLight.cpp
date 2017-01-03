@@ -275,28 +275,28 @@ bool
 GlfSimpleLight::operator==(const GlfSimpleLight& other) const
 {
     return  _ambient == other._ambient
-        and _diffuse == other._diffuse
-        and _specular == other._specular
-        and _position == other._position
-        and _spotDirection == other._spotDirection
-        and _spotCutoff == other._spotCutoff
-        and _spotFalloff == other._spotFalloff
-        and _attenuation == other._attenuation
-        and _hasShadow == other._hasShadow
-        and _shadowResolution == other._shadowResolution
-        and _shadowBias == other._shadowBias
-        and _shadowBlur == other._shadowBlur
-        and _shadowIndex == other._shadowIndex
-        and _transform == other._transform
-        and _shadowMatrix == other._shadowMatrix
-        and _isCameraSpaceLight == other._isCameraSpaceLight
-        and _id == other._id;
+        &&  _diffuse == other._diffuse
+        &&  _specular == other._specular
+        &&  _position == other._position
+        &&  _spotDirection == other._spotDirection
+        &&  _spotCutoff == other._spotCutoff
+        &&  _spotFalloff == other._spotFalloff
+        &&  _attenuation == other._attenuation
+        &&  _hasShadow == other._hasShadow
+        &&  _shadowResolution == other._shadowResolution
+        &&  _shadowBias == other._shadowBias
+        &&  _shadowBlur == other._shadowBlur
+        &&  _shadowIndex == other._shadowIndex
+        &&  _transform == other._transform
+        &&  _shadowMatrix == other._shadowMatrix
+        &&  _isCameraSpaceLight == other._isCameraSpaceLight
+        &&  _id == other._id;
 }
 
 bool
 GlfSimpleLight::operator!=(const GlfSimpleLight& other) const
 {
-    return not(*this == other);
+    return !(*this == other);
 }
 
 std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)

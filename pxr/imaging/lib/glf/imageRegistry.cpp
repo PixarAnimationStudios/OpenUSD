@@ -62,7 +62,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
 
     TfType const & pluginType = _typeMap->Find(fileExtension);
 
-    if (not pluginType) {
+    if (!pluginType) {
         // Unknown prim type.
         TF_DEBUG(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
                 "[PluginLoad] Unknown image type '%s'\n",
@@ -72,7 +72,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtr plugin = plugReg.GetPluginForType(pluginType);
-    if (not plugin or not plugin->Load()) {
+    if (!plugin || !plugin->Load()) {
         TF_CODING_ERROR("[PluginLoad] PlugPlugin could not be loaded for "
                 "TfType '%s'\n",
                 pluginType.GetTypeName().c_str());
@@ -80,7 +80,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
     }
 
     GlfImageFactoryBase* factory = pluginType.GetFactory<GlfImageFactoryBase>();
-    if (not factory) {
+    if (!factory) {
         TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' "
                 "for image type '%s'\n",
                 pluginType.GetTypeName().c_str(),
@@ -90,7 +90,7 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
     }
 
     GlfImageSharedPtr instance = factory->New();
-    if (not instance) {
+    if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s' "
                 "for image type '%s'\n",
                 pluginType.GetTypeName().c_str(),

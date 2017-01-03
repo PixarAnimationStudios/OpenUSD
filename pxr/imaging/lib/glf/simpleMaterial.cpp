@@ -121,14 +121,14 @@ bool
 GlfSimpleMaterial::operator ==(GlfSimpleMaterial const & other) const
 {
     return (_ambient == other._ambient
-        and _diffuse == other._diffuse
-        and _specular == other._specular
-        and _emission == other._emission
-        and _shininess == other._shininess);
+        && _diffuse == other._diffuse
+        && _specular == other._specular
+        && _emission == other._emission
+        && _shininess == other._shininess);
 }
 
 bool
 GlfSimpleMaterial::operator !=(GlfSimpleMaterial const & other) const
 {
-    return not (*this == other);
+    return !(*this == other);
 }
