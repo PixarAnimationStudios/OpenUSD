@@ -79,7 +79,7 @@ _ParsePoint(string const &str)
     // 1-based in the file, but we store them 0-based in the data structure.
     int *indexes[] = {&result.vertIndex, &result.uvIndex, &result.normalIndex};
     for (int i = 0; i != numRanges; ++i) {
-        if (not ranges[i].empty())
+        if (!ranges[i].empty())
             *indexes[i] = lexical_cast<int>(ranges[i]) - 1;
     }
 

@@ -50,13 +50,13 @@ UsdObjStream::Face::Face()
 
 bool operator==(UsdObjStream::Face const &lhs, UsdObjStream::Face const &rhs)
 {
-    return lhs.pointsBegin == rhs.pointsBegin and
+    return lhs.pointsBegin == rhs.pointsBegin && 
         lhs.pointsEnd == rhs.pointsEnd;
 }
 
 bool operator!=(UsdObjStream::Face const &lhs, UsdObjStream::Face const &rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 
@@ -150,7 +150,7 @@ UsdObjStream::GetPoints() const
 bool
 UsdObjStream::AddGroup(string const &name)
 {
-    if (not FindGroup(name)) {
+    if (!FindGroup(name)) {
         Group g;
         g.name = name;
         _groups.push_back(g);
@@ -274,7 +274,7 @@ UsdObjStream::_AddSequence(SequenceElem::ElemType type, int repeat)
 {
     // Check to see if we can add to an existing sequence, otherwise add a new
     // sequence element.
-    if (not _sequence.empty() and _sequence.back().type == type) {
+    if (!_sequence.empty() && _sequence.back().type == type) {
         _sequence.back().repeat += repeat;
     } else {
         _sequence.push_back(SequenceElem(type, repeat));
@@ -286,7 +286,7 @@ UsdObjStream::_PrependSequence(SequenceElem::ElemType type, int repeat)
 {
     // Check to see if we can add to an existing sequence, otherwise add a new
     // sequence element.
-    if (not _sequence.empty() and _sequence.front().type == type) {
+    if (!_sequence.empty() && _sequence.front().type == type) {
         _sequence.front().repeat += repeat;
     } else {
         _sequence.insert(_sequence.begin(), SequenceElem(type, repeat));

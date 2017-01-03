@@ -72,7 +72,7 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
 
     // Make a poly mesh for each group in the obj.
     for (const auto& group : objStream.GetGroups()) {
-        if (not TfIsValidIdentifier(group.name)) {
+        if (!TfIsValidIdentifier(group.name)) {
             TF_WARN("Omitting OBJ group with invalid name '%s'",
                     group.name.c_str());
             continue;

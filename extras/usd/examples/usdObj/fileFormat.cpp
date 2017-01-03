@@ -75,18 +75,18 @@ UsdObjFileFormat::_ReadFromStream(
     string *outErr) const
 {
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     // Read Obj data stream.
     UsdObjStream objStream;
-    if (not UsdObjReadDataFromStream(input, &objStream, outErr))
+    if (!UsdObjReadDataFromStream(input, &objStream, outErr))
         return false;
 
     // Translate obj to usd schema.
     SdfLayerRefPtr objAsUsd = UsdObjTranslateObjToUsd(objStream);
-    if (not objAsUsd)
+    if (!objAsUsd)
         return false;
     
     // Move generated content into final layer.
@@ -108,7 +108,7 @@ UsdObjFileFormat::Read(
     }
 
     string error;
-    if (not _ReadFromStream(layerBase, fin, metadataOnly, &error)) {
+    if (!_ReadFromStream(layerBase, fin, metadataOnly, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ from file \"%s\": %s",
                          resolvedPath.c_str(), error.c_str());
         return false;
@@ -123,7 +123,7 @@ UsdObjFileFormat::ReadFromString(
 {
     string error;
     std::stringstream ss(str);
-    if (not _ReadFromStream(layerBase, ss, /*metadataOnly=*/false, &error)) {
+    if (!_ReadFromStream(layerBase, ss, /*metadataOnly=*/false, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ data from string: %s",
                          error.c_str());
         return false;
