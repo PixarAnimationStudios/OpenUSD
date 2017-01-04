@@ -1408,7 +1408,7 @@
     <addaction name="actionFind_Prims"/>
     <addaction name="actionJump_to_Stage_Root"/>
     <addaction name="actionJump_to_Model_Root"/>
-    <addaction name="actionJump_to_Bound_Look"/>
+    <addaction name="actionJump_to_Bound_Material"/>
     <addaction name="actionJump_to_Master"/>
     <addaction name="separator"/>
     <addaction name="actionMake_Visible"/>
@@ -2449,9 +2449,9 @@
     <string>Unload</string>
    </property>
   </action>
-  <action name="actionJump_to_Bound_Look">
+  <action name="actionJump_to_Bound_Material">
    <property name="text">
-    <string>Jump to Bound Look</string>
+    <string>Jump to Bound Material</string>
    </property>
    <property name="shortcut">
     <string>Shift+L</string>

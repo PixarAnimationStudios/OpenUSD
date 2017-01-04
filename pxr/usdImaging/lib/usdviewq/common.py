@@ -273,10 +273,10 @@ def GetEnclosingModelPrim(prim):
 
     return prim
 
-# This should be codified in UsdShadeLook API
-def GetClosestBoundLook(prim):
-    """If 'prim' or any of its ancestors are bound to a Look, return the
-    *closest in namespace* bound Look prim, as well as the prim on which the
+# This should be codified in UsdShadeMaterial API
+def GetClosestBoundMaterial(prim):
+    """If 'prim' or any of its ancestors are bound to a Material, return the
+    *closest in namespace* bound Material prim, as well as the prim on which the
     binding was found.  If none of 'prim's ancestors has a binding, return
     (None, None)"""
     from pxr import UsdShade
@@ -286,12 +286,9 @@ def GetClosestBoundLook(prim):
     # bug/122473 is addressed
     psr = prim.GetStage().GetPseudoRoot()
     while prim and prim != psr:
-        # We use Kind here instead of prim.IsModel because point instancer
-        # prototypes currently don't register as models in IsModel. See
-        # bug: http://bugzilla.pixar.com/show_bug.cgi?id=117137 
-        look = UsdShade.Look.GetBoundLook(prim)
-        if look:
-            return (look.GetPrim(), prim)
+        material = UsdShade.Material.GetBoundMaterial(prim)
+        if material:
+            return (material.GetPrim(), prim)
         prim = prim.GetParent()
 
     return (None, None)

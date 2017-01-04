@@ -34,7 +34,7 @@ import sys
 #
 def _GetContextMenuItems(mainWindow, item):
     return [JumpToEnclosingModelItem(mainWindow, item),
-            JumpToBoundLookMenuItem(mainWindow, item),
+            JumpToBoundMaterialMenuItem(mainWindow, item),
             JumpToMasterMenuItem(mainWindow, item),
             SeparatorMenuItem(mainWindow, item),
             ToggleVisibilityMenuItem(mainWindow, item),
@@ -104,25 +104,25 @@ class JumpToEnclosingModelItem(NodeContextMenuItem):
         self._mainWindow.jumpToEnclosingModelSelectedPrims()
 
 #
-# Replace each selected prim with the Look it or its closest ancestor is
+# Replace each selected prim with the Material it or its closest ancestor is
 # bound to. 
 #
-class JumpToBoundLookMenuItem(NodeContextMenuItem):
+class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
 
     def IsEnabled(self):
-        from common import GetClosestBoundLook
+        from common import GetClosestBoundMaterial
 
         for p in self._currentNodes:
-            look, bound = GetClosestBoundLook(p)
-            if look is not None:
+            material, bound = GetClosestBoundMaterial(p)
+            if material is not None:
                 return True
         return False
 
     def GetText(self):
-        return "Jump to Bound Look"
+        return "Jump to Bound Material"
 
     def RunCommand(self):
-        self._mainWindow.jumpToBoundLookSelectedPrims()
+        self._mainWindow.jumpToBoundMaterialSelectedPrims()
 
 #
 # Replace each selected instance prim with its master prim.

@@ -930,9 +930,9 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self.jumpToEnclosingModelSelectedPrims)
 
-        QtCore.QObject.connect(self._ui.actionJump_to_Bound_Look,
+        QtCore.QObject.connect(self._ui.actionJump_to_Bound_Material,
                                QtCore.SIGNAL('triggered()'),
-                               self.jumpToBoundLookSelectedPrims)
+                               self.jumpToBoundMaterialSelectedPrims)
 
         QtCore.QObject.connect(self._ui.actionJump_to_Master,
                                QtCore.SIGNAL('triggered()'),
@@ -3614,7 +3614,7 @@ class MainWindow(QtGui.QMainWindow):
         """Make the Edit Prim menu items enabled or disabled depending on the
         selected prim."""
         from common import HasSessionVis, GetEnclosingModelPrim, \
-            GetPrimsLoadability, GetClosestBoundLook
+            GetPrimsLoadability, GetClosestBoundMaterial
 
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
@@ -3622,7 +3622,7 @@ class MainWindow(QtGui.QMainWindow):
         removeEnabled = False
         anyImageable = False
         anyModels = False
-        anyBoundLooks = False
+        anyBoundMaterials = False
         anyActive = False
         anyInactive = False
         anyInstances = False
@@ -3632,8 +3632,8 @@ class MainWindow(QtGui.QMainWindow):
                 anyImageable = anyImageable or bool(imageable)
                 removeEnabled = removeEnabled or HasSessionVis(prim)
             anyModels = anyModels or GetEnclosingModelPrim(prim) is not None
-            look, bound = GetClosestBoundLook(prim)
-            anyBoundLooks = anyBoundLooks or look is not None
+            material, bound = GetClosestBoundMaterial(prim)
+            anyBoundMaterials = anyBoundMaterials or material is not None
             anyInstances = anyInstances or prim.IsInstance()
             if prim.IsActive():
                 anyActive = True
@@ -3641,7 +3641,7 @@ class MainWindow(QtGui.QMainWindow):
                 anyInactive = True
 
         self._ui.actionJump_to_Model_Root.setEnabled(anyModels)
-        self._ui.actionJump_to_Bound_Look.setEnabled(anyBoundLooks)
+        self._ui.actionJump_to_Bound_Material.setEnabled(anyBoundMaterials)
         self._ui.actionJump_to_Master.setEnabled(anyInstances)
 
         self._ui.actionRemove_Session_Visibility.setEnabled(removeEnabled)
@@ -3680,16 +3680,16 @@ class MainWindow(QtGui.QMainWindow):
                 newSel.append(prim)
         self._setSelectionFromPrimList(newSel)
 
-    def jumpToBoundLookSelectedPrims(self):
-        from common import GetClosestBoundLook
+    def jumpToBoundMaterialSelectedPrims(self):
+        from common import GetClosestBoundMaterial
         newSel = []
         added = set()
         # We don't expect this to take long, so no BusyContext
         for prim in self._currentNodes:
-            look, bound = GetClosestBoundLook(prim)
-            if not (look in added):
-                added.add(look)
-                newSel.append(look)
+            material, bound = GetClosestBoundMaterial(prim)
+            if not (material in added):
+                added.add(material)
+                newSel.append(material)
         self._setSelectionFromPrimList(newSel)
 
     def jumpToMasterSelectedPrims(self):
@@ -3845,13 +3845,13 @@ class MainWindow(QtGui.QMainWindow):
                 QtGui.QApplication.sendEvent(self._stageView, mrEvent)
 
     def onRollover(self, path, instanceIndex, modifiers):
-        from common import GetEnclosingModelPrim, GetClosestBoundLook
+        from common import GetEnclosingModelPrim, GetClosestBoundMaterial
         
         prim = self._stage.GetPrimAtPath(path)
         if prim:
             headerStr = ""
             propertyStr = ""
-            lookStr = ""
+            materialStr = ""
             aiStr = ""
             vsStr = ""
             model = GetEnclosingModelPrim(prim)
@@ -3938,20 +3938,20 @@ class MainWindow(QtGui.QMainWindow):
                 propertyStr += "<br> -- <em>subdivisionScheme</em> = %s" %\
                     mesh.GetSubdivisionSchemeAttr().Get()
     
-            # Look info - this IS expected
-            lookStr = "<hr><b>Look assignment:</b><br>"
-            look, bound = GetClosestBoundLook(prim)
-            if look:
-                lookPath = look.GetPath()
-                # if the look is in the same model, make path model-relative
-                lookStr += _MakeModelRelativePath(lookPath, model)
+            # Material info - this IS expected
+            materialStr = "<hr><b>Material assignment:</b><br>"
+            material, bound = GetClosestBoundMaterial(prim)
+            if material:
+                materialPath = material.GetPath()
+                # if the material is in the same model, make path model-relative
+                materialStr += _MakeModelRelativePath(materialPath, model)
                 
                 if bound != prim:
                     boundPath = _MakeModelRelativePath(bound.GetPath(),
                                                        model)
-                    lookStr += "<br><small><em>Look binding inherited from ancestor:</em></small><br> %s" % str(boundPath)
+                    materialStr += "<br><small><em>Material binding inherited from ancestor:</em></small><br> %s" % str(boundPath)
             else:
-                lookStr += "<small><em>No assigned Look!</em></small>"
+                materialStr += "<small><em>No assigned Material!</em></small>"
 
             # Instance / master info, if this prim is an instance
             instanceStr = ""
@@ -3964,7 +3964,7 @@ class MainWindow(QtGui.QMainWindow):
             # non-default purpose, doubleSided)
 
             # Then put it all together
-            tip = headerStr + propertyStr + lookStr + instanceStr + aiStr + vsStr
+            tip = headerStr + propertyStr + materialStr + instanceStr + aiStr + vsStr
             
         else:
             tip = ""
