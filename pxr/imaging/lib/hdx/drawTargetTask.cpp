@@ -23,6 +23,8 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
@@ -198,17 +200,25 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
+        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
+
         VtValue viewMatrixVt  = camera->Get(HdxCameraTokens->worldToViewMatrix);
         VtValue projMatrixVt  = camera->Get(HdxCameraTokens->projectionMatrix);
         GfMatrix4d viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
+
+        // XXX : If you need to change the following code that generates a 
+        //       draw target capture, remember you will also need to change
+        //       how draw target camera matrices are passed to shaders. 
         const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
-        GfMatrix4d projectionMatrix = projMatrix * yflip;
+        GfMatrix4d projectionMatrix = CameraUtilConformedWindow(projMatrix, 
+            CameraUtilFit,
+            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
+        projectionMatrix = projectionMatrix * yflip;
 
         const VtValue &vClipPlanes = camera->Get(HdxCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
                         vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 
-        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
         GfVec4d viewport(0, 0, resolution[0], resolution[1]);
 
         // Update Raster States
