@@ -58,23 +58,6 @@ _GetConnectedSource(const UsdShadeParameter &self)
     }
 }
 
-static object
-_GetConnectedSources(const UsdShadeParameter &self)
-{
-    vector<UsdShadeShader>  sources;
-    vector<TfToken>         outputNames;
-    
-    self.GetConnectedSources(&sources, &outputNames);
-    if (!sources.empty()){
-        return make_tuple(TfPyCopySequenceToList(sources), 
-                          TfPyCopySequenceToList(outputNames));
-    }
-    else {
-        return object();
-    }
-}
-
-
 void wrapUsdShadeParameter()
 {
     typedef UsdShadeParameter Parameter;
@@ -84,29 +67,20 @@ void wrapUsdShadeParameter()
         .def(!self)
 
         .def("GetName", &Parameter::GetName)
+        .def("GetTypeName", &Parameter::GetTypeName)
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Parameter::SetRenderType,
              (arg("renderType")))
         .def("GetRenderType", &Parameter::GetRenderType)
         .def("HasRenderType", &Parameter::HasRenderType)
 
-        .def("IsArray", &Parameter::IsArray)
         .def("IsConnected", &Parameter::IsConnected)
-        .def("SetConnectedArraySize", &Parameter::SetConnectedArraySize,
-             (arg("numElements")))
-        .def("GetConnectedArraySize", &Parameter::GetConnectedArraySize)
         .def("ConnectToSource", &Parameter::ConnectToSource,
              (arg("source"), arg("outputName"), arg("outputIsParameter")=false))
-        .def("ConnectElementToSource", &Parameter::ConnectElementToSource,
-             (arg("elementIndex"), arg("source"), arg("outputName"), 
-              arg("outputIsParameter")=false))
-        .def("DisconnectElement", &Parameter::DisconnectElement,
-             (arg("elementIndex")))
-        .def("DisconnectSources", &Parameter::DisconnectSources)
-        .def("ClearSources", &Parameter::ClearSources)
+        .def("DisconnectSource", &Parameter::DisconnectSource)
+        .def("ClearSource", &Parameter::ClearSource)
 
         .def("GetConnectedSource", _GetConnectedSource)
-        .def("GetConnectedSources", _GetConnectedSources)
         .def("GetAttr", &Parameter::GetAttr,
                 return_value_policy<return_by_value>())
         ;

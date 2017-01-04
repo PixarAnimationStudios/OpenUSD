@@ -234,25 +234,6 @@ _ImportAttr(
     return mayaAttrPlug;
 }
 
-static void
-_GetParameterConnections(
-        const UsdShadeParameter& param,
-        std::vector<UsdShadeShader>* sources,
-        std::vector<TfToken>* sourceOutputNames)
-{
-    if (!param.IsArray()) {
-        UsdShadeShader source;
-        TfToken sourceOutputName;
-        if (param.GetConnectedSource(&source, &sourceOutputName)) {
-            sources->push_back(source);
-            sourceOutputNames->push_back(sourceOutputName);
-        }
-    }
-    else {
-        param.GetConnectedSources(sources, sourceOutputNames);
-    }
-}
-
 // Should only be called by _GetOrCreateShaderObject, no one else.
 MObject
 _CreateShaderObject(
@@ -298,15 +279,10 @@ _CreateShaderObject(
             continue;
         }
 
-        std::vector<UsdShadeShader> sources;
-        std::vector<TfToken> sourceOutputNames;
-        _GetParameterConnections(param, &sources, &sourceOutputNames);
-
+        UsdShadeShader source;
+        TfToken sourceOutputName;
         // follow shader connections and recurse.
-        for (size_t i = 0; i < sources.size(); ++i) {
-            const UsdShadeShader& source = sources[i];
-            const TfToken& sourceOutputName = sourceOutputNames[i];
-
+        if (param.GetConnectedSource(&source, &sourceOutputName)) {
             if (UsdRiRisObject sourceRisObj = UsdRiRisObject(source.GetPrim())) {
                 MObject sourceObj = _GetOrCreateShaderObject(sourceRisObj, context);
                 MFnDependencyNode sourceDep(sourceObj, &status);

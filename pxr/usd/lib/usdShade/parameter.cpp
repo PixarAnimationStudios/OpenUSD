@@ -48,18 +48,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((connectedSourceFor, "connectedSourceFor:"))
     (outputName)
     ((outputs, "outputs:"))
-    (arrayConnectionSize)
 );
 
-static size_t
-_ElementIndexFromConnection(UsdRelationship const &connection)
-{
-    string  eltName = connection.GetName();
-    return size_t(atoi(&eltName[eltName.rfind('_')+1]));
-}
-
 static UsdRelationship
-_GetCompleteParameterConnection(
+_GetParameterConnection(
         const UsdShadeParameter &param,
         bool create)
 {
@@ -78,80 +70,11 @@ _GetCompleteParameterConnection(
     }
 }
 
-static UsdRelationship
-_GetElementParameterConnection(
-        const UsdShadeParameter &param,
-        size_t element,
-        bool create)
-{
-    const UsdAttribute& attr = param.GetAttr();
-    const UsdPrim& prim = attr.GetPrim();
-    const TfToken& relName = param.GetConnectionRelName(element);
-    if (UsdRelationship rel = prim.GetRelationship(relName)) {
-        return rel;
-    }
-
-    if (create) {
-        return prim.CreateRelationship(relName, /* custom = */ false);
-    }
-    else {
-        return UsdRelationship();
-    }
-}
-
 struct _PropertyLessThan {
     bool operator()(UsdProperty const &p1, UsdProperty const &p2){
         return TfDictionaryLessThan()(p1.GetName(), p2.GetName());
     }
 };
-
-static bool
-_IsArrayConnection(UsdProperty const &prop)
-{
-    // array connection rel names will always look like
-    // connectedSourceFor:someParameter:_##
-    // ...where ## is one or more digits
-    if (!prop.Is<UsdRelationship>())
-        return false;
-    string name = prop.GetName();
-    size_t  lastSep = name.rfind(':');
-    if (ARCH_UNLIKELY(lastSep == string::npos))
-        return false;
-    if (name[++lastSep] != '_')
-        return false;
-    while (++lastSep < name.size()){
-        if (!isdigit(name[lastSep]))
-            return false;
-    }
-    return true;
-}
-
-// Returns connections in element order... may be sparse if not all 
-// elements have been connected or disconnected
-static vector<UsdRelationship>
-_GetElementConnections(UsdAttribute const &attr)
-{
-    string arrayPrefix = TfStringPrintf("%s%s", 
-                                        _tokens->connectedSourceFor.GetText(),
-                                        attr.GetName().GetText());
-    vector<UsdProperty> props = 
-        attr.GetPrim().GetPropertiesInNamespace(arrayPrefix);
-    vector<UsdRelationship> rels;
-    if (props.empty())
-        return rels;
-    rels.reserve(props.size());
-
-    TF_FOR_ALL(p, props){
-        if (_IsArrayConnection(*p)){
-            rels.push_back(p->As<UsdRelationship>());
-        }
-    }
-    // Unfortunate as they will probably 99.99% of the time already be
-    // sorted, but the data model cannot guarantee it.
-    std::sort(rels.begin(), rels.end(), _PropertyLessThan());
-    return rels;
-}
-
 
 UsdShadeParameter::UsdShadeParameter(
         const UsdAttribute &attr)
@@ -171,12 +94,6 @@ UsdShadeParameter::UsdShadeParameter(
     if (!_attr) {
         _attr = prim.CreateAttribute(name, typeName, /* custom = */ false);
     }
-}
-
-bool
-UsdShadeParameter::IsArray() const
-{
-    return _attr.GetTypeName().IsArray();
 }
 
 bool
@@ -277,81 +194,28 @@ UsdShadeParameter::ConnectToSource(
         TfToken const &outputName,
         bool outputIsParameter) const
 {
-    UsdRelationship rel = _GetCompleteParameterConnection(*this, true);
+    UsdRelationship rel = _GetParameterConnection(*this, true);
 
     return _Connect(rel, source, outputName, outputIsParameter);
 }
-
-bool 
-UsdShadeParameter::ConnectElementToSource(
-        size_t elementIndex, 
-        UsdShadeShader const &source, 
-        TfToken const &outputName,
-        bool outputIsParameter) const
-{
-    if (!IsArray())
-        return false;
-    
-    UsdRelationship rel = _GetElementParameterConnection(*this, 
-                                                         elementIndex,
-                                                         true);
-    return _Connect(rel, source, outputName, outputIsParameter);
-}
-
-bool 
-UsdShadeParameter::DisconnectElement(size_t elementIndex) const
-{
-    if (!IsArray())
-        return false;
-    
-    UsdRelationship rel = _GetElementParameterConnection(*this, 
-                                                         elementIndex,
-                                                         true);
-    if (!rel){
-        return false;
-    }
-    
-    return rel.SetMetadata(_tokens->outputName, TfToken()) && 
-        rel.BlockTargets();
-}
     
 bool 
-UsdShadeParameter::DisconnectSources() const
+UsdShadeParameter::DisconnectSource() const
 {
     bool success = true;
-    if (UsdRelationship rel = _GetCompleteParameterConnection(*this, false)) {
+    if (UsdRelationship rel = _GetParameterConnection(*this, false)) {
         success = rel.BlockTargets();
     }
-
-    // For an array that is connected as a whole, we will wind up making
-    // a redundant, ignored connectedSourceFor:attr:_0 connection here,
-    // shouldn't be an issue.
-    size_t numElements = GetConnectedArraySize();
-    for (size_t i=0; i<numElements; ++i){
-        UsdRelationship elt = _GetElementParameterConnection(*this, i, true);
-        if (elt){
-            success = elt.BlockTargets() && success;
-        }
-        else {
-            success = false;
-        }
-    }
     return success;
-
 }
 
 bool
-UsdShadeParameter::ClearSources() const
+UsdShadeParameter::ClearSource() const
 {
     bool success = true;
-    if (UsdRelationship rel = _GetCompleteParameterConnection(*this, false)) {
+    if (UsdRelationship rel = _GetParameterConnection(*this, false)) {
         success = rel.ClearTargets(/* removeSpec = */ true);
     }
-
-    for (auto elt : _GetElementConnections(_attr)) {
-        success = elt.ClearTargets(/* removeSpec = */ true) && success;
-    }
-
     return success;
 }
 
@@ -403,7 +267,7 @@ UsdShadeParameter::GetConnectedSource(
                         "output parameters");
         return false;
     }
-    if (UsdRelationship rel = _GetCompleteParameterConnection(*this, false)) {
+    if (UsdRelationship rel = _GetParameterConnection(*this, false)) {
         return _EvaluateConnection(rel, source, outputName);
     }
     else {
@@ -413,121 +277,19 @@ UsdShadeParameter::GetConnectedSource(
 }
 
 bool 
-UsdShadeParameter::GetConnectedSources(
-    vector<UsdShadeShader> *sources, 
-    vector<TfToken> *outputNames) const
-{
-    if (!(sources && outputNames)){
-        TF_CODING_ERROR("GetConnectedSources() requires non-NULL "
-                        "output parameters");
-        return false;
-    }
-    sources->clear();
-    outputNames->clear();
-    
-    // Single connection always wins
-    UsdShadeShader source;
-    TfToken outputName;
-    if (GetConnectedSource(&source, &outputName)){
-        sources->push_back(source);
-        outputNames->push_back(outputName);
-        return true;
-    }
-    else if (!IsArray()){
-        return false;
-    }
-
-    bool connected = false;
-    vector<UsdRelationship> connections = _GetElementConnections(_attr);
-    int numElts = -1;
-    if (((!_attr.GetMetadata(_tokens->arrayConnectionSize, &numElts)) ||
-         (numElts < 0)) &&
-        !connections.empty()){
-        numElts = 1 + _ElementIndexFromConnection(connections.back());
-    }
-    if (numElts <= 0){
-        return false;
-    }
-
-    *sources = vector<UsdShadeShader>(numElts, UsdShadeShader());
-    *outputNames = vector<TfToken>(numElts, TfToken());
-    
-    TF_FOR_ALL(connection, connections){
-        size_t  eltIndex = _ElementIndexFromConnection(*connection);
-        // numElts may have been explicitly authored smaller than the
-        // number of authored connections
-        if (eltIndex >= static_cast<size_t>(numElts))
-            break;
-        
-        if (_EvaluateConnection(*connection, 
-                                &(*sources)[eltIndex],
-                                &(*outputNames)[eltIndex])){
-            connected = true;
-        }
-    }
-        
-    return connected;
-}
-
-bool 
 UsdShadeParameter::IsConnected() const
 {
     /// This MUST have the same semantics as GetConnectedSource(s).
     /// XXX someday we might make this more efficient through careful
     /// refactoring, but safest to just call the exact same code.
-    if (IsArray()){
-        std::vector<UsdShadeShader> sources;
-        std::vector<TfToken> outputNames;
-        return GetConnectedSources(&sources, &outputNames);
-    }
-    else {
-        UsdShadeShader source;
-        TfToken        outputName;
-        return GetConnectedSource(&source, &outputName);
-    }
-}
-
-bool 
-UsdShadeParameter::SetConnectedArraySize(size_t numElts) const
-{
-    return _attr.SetMetadata(_tokens->arrayConnectionSize, int(numElts));
-}
-    
-size_t
-UsdShadeParameter::GetConnectedArraySize() const
-{
-    if (!IsArray())
-        return 0;
-    
-    int  explicitNumElts = -1;
-    if (_attr.GetMetadata(_tokens->arrayConnectionSize, &explicitNumElts) &&
-        explicitNumElts > -1){
-        return size_t(explicitNumElts);
-    }
-
-    // connected-as-unit-to-another-array case
-    UsdShadeShader  source;
-    TfToken  outputName;
-    if (GetConnectedSource(&source, &outputName) && source){
-        return 1;
-    }
-    
-    vector<UsdRelationship> connections = _GetElementConnections(_attr);
-    if (connections.empty())
-        return 0;
-    return 1 + _ElementIndexFromConnection(connections.back());
+    UsdShadeShader source;
+    TfToken        outputName;
+    return GetConnectedSource(&source, &outputName);
 }
 
 TfToken 
-UsdShadeParameter::GetConnectionRelName(int element) const
+UsdShadeParameter::GetConnectionRelName() const
 {
-    if (element == -1){
-        return TfToken(_tokens->connectedSourceFor.GetString() + _attr.GetName().GetString());
-    } else {
-        string fullName = TfStringPrintf("%s%s:_%0d",
-                                         _tokens->connectedSourceFor.GetText(),
-                                         _attr.GetName().GetText(),
-                                         element);
-        return TfToken(fullName);
-    }
+    return TfToken(_tokens->connectedSourceFor.GetString() + 
+           _attr.GetName().GetString());
 }

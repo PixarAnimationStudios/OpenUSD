@@ -133,47 +133,28 @@ _GatherShadingParameters(
         // only material interface attributes should bother recording such.
         
         if (shaderParam.IsConnected()) {
+            UsdShadeShader source;
+            TfToken outputName;
 
-            std::vector<UsdShadeShader> sources;
-            std::vector<TfToken> outputNames;
-            if (shaderParam.GetConnectedSources(&sources, &outputNames)) {
+            if (shaderParam.GetConnectedSource(&source, &outputName)) {
+                std::string targetHandle = _CreateShadingNode(
+                        source.GetPrim(), 
+                        currentTime,
+                        nodesBuilder, 
+                        interfaceBuilder,
+                        targetName);
 
-                if (shaderParam.IsArray() && sources.size() > 1) {
-                    FnLogWarn("ShaderParam " 
-                            << shaderParam.GetAttr().GetPath()
-                            << " IsArray() but has "
-                            << sources.size()
-                            << " (>1) sources.");
-                }
-
-                for (size_t i = 0; i < sources.size(); i++) {
-                    const UsdShadeShader& source = sources[i];
-                    const TfToken& outputName = outputNames[i];
-
-                    std::string targetHandle = _CreateShadingNode(
-                            source.GetPrim(), 
-                            currentTime,
-                            nodesBuilder, 
-                            interfaceBuilder,
-                            targetName);
-
-                    std::string which;
-                    if (shaderParam.IsArray()) {
-                        which = TfStringPrintf(":%zu", i);
-                    }
-
-                    // Check the relationship representing this connection
-                    // to see if the targets come from a base material.
-                    // Ignore them if so.
-                    const TfToken relName = shaderParam.GetConnectionRelName(i);
-                    const UsdRelationship rel = prim.GetRelationship(relName);
-                    if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(rel)) {
-                        // These targets are local, so include them.
-                        connectionsBuilder.set(
-                            inputParamId + which, 
-                            FnKat::StringAttribute(
-                                outputName.GetString() + "@" + targetHandle));
-                    }
+                // Check the relationship representing this connection
+                // to see if the targets come from a base material.
+                // Ignore them if so.
+                const TfToken relName = shaderParam.GetConnectionRelName();
+                const UsdRelationship rel = prim.GetRelationship(relName);
+                if (!PxrUsdKatana_AreRelTargetsFromBaseMaterial(rel)) {
+                    // These targets are local, so include them.
+                    connectionsBuilder.set(
+                        inputParamId, 
+                        FnKat::StringAttribute(
+                            outputName.GetString() + "@" + targetHandle));
                 }
             }
         }
