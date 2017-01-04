@@ -77,6 +77,7 @@ void wrapRange{{ SUFFIX }}()
         .def("GetMax", getMax)
 
         .def("GetSize", &{{ RNG }}::GetSize)
+        .def("GetMidpoint", &{{ RNG }}::GetMidpoint)
     
         .def("SetMin", &{{ RNG }}::SetMin)
         .def("SetMax", &{{ RNG }}::SetMax)

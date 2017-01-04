@@ -93,6 +93,14 @@ public:
     /// Returns the size of the range.
     GfVec2d GetSize() const { return _max - _min; }
 
+    /// Returns the midpoint of the range, that is, 0.5*(min+max).
+    /// Note: this returns zero in the case of default-constructed ranges,
+    /// or ranges set via SetEmpty().
+    GfVec2d GetMidpoint() const {
+        return static_cast<ScalarType>(0.5) * _min
+               + static_cast<ScalarType>(0.5) * _max;
+    }
+
     /// Sets the minimum value of the range.
     void SetMin(const GfVec2d &min) { _min = min; }
 

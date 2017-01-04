@@ -91,6 +91,14 @@ public:
     /// Returns the size of the range.
     double GetSize() const { return _max - _min; }
 
+    /// Returns the midpoint of the range, that is, 0.5*(min+max).
+    /// Note: this returns zero in the case of default-constructed ranges,
+    /// or ranges set via SetEmpty().
+    double GetMidpoint() const {
+        return static_cast<ScalarType>(0.5) * _min
+               + static_cast<ScalarType>(0.5) * _max;
+    }
+
     /// Sets the minimum value of the range.
     void SetMin(double min) { _min = min; }
 

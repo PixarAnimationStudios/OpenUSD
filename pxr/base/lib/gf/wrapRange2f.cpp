@@ -75,6 +75,7 @@ void wrapRange2f()
         .def("GetMax", getMax)
 
         .def("GetSize", &GfRange2f::GetSize)
+        .def("GetMidpoint", &GfRange2f::GetMidpoint)
     
         .def("SetMin", &GfRange2f::SetMin)
         .def("SetMax", &GfRange2f::SetMax)
