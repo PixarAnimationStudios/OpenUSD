@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file gl.h
+/// \file usdImagingGL/gl.h
 
 #pragma once
 

@@ -1014,6 +1014,8 @@ private:
     TfPointerAndBits<const _TypeInfo> _info;
 };
 
+#if !defined(doxygen)
+
 /// Make a default value.  VtValue uses this to create values to be returned
 /// from failed calls to \a Get.  Clients may specialize this for their own
 /// types.
@@ -1087,5 +1089,7 @@ inline bool
 VtValue::IsHolding<void>() const {
     return false;
 }
+
+#endif // !doxygen
 
 #endif // VT_VALUE_H

@@ -35,8 +35,8 @@ SDF_DECLARE_HANDLES(SdfLayer);
 
 /// Given two layers \p source and \p destination, copy the authored metadata
 /// from one to the other.  By default, copy **all** authored metadata;
-/// however, you can skip certain classes of metadata with the parameters:
-/// \param skipSublayers - do not copy subLayers or subLayerOffsets
+/// however, you can skip certain classes of metadata with the parameter
+/// \p skipSublayers, which will prevent copying subLayers or subLayerOffsets
 ///
 /// Makes no attempt to clear metadata that may already be authored in
 /// \p destination, but any fields that are already in \p destination but also

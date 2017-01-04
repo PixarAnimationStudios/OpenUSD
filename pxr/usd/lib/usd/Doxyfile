@@ -51,7 +51,7 @@ PROJECT_BRIEF          =
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           = src/pxr/usd/lib/usd/images/USDLogoDocs.png
+PROJECT_LOGO           = src/modules/usd/images/USDLogoDocs.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -714,7 +714,15 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = 
+EXCLUDE                = src/modules/gf/matrix.template.h \
+                         src/modules/gf/matrix2.template.h \
+                         src/modules/gf/matrix3.template.h \
+                         src/modules/gf/matrix4.template.h \
+                         src/modules/gf/matrixData.h \
+                         src/modules/gf/quat.template.h \
+                         src/modules/gf/range.template.h \
+                         src/modules/gf/vec.template.h \
+                         src/modules/usd/crateDataTypes.h
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -960,7 +968,7 @@ HTML_STYLESHEET        =
 # robust against future updates. Doxygen will copy the style sheet file to
 # the output directory.
 
-HTML_EXTRA_STYLESHEET  = src/usd/usd_style.css
+HTML_EXTRA_STYLESHEET  = src/modules/usd/usd_style.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note

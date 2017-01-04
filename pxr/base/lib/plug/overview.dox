@@ -32,80 +32,8 @@ GUI components such as editor plug-ins.
 \section Plugin Metadata
 
 Plugins are found and described using plugInfo.json files that may be read
-without loading the plugin.  A plugInfo.json must contain a single object
-with the following structure:
+without loading the plugin.  The structure of a plugInfo.json file is described
+in detail in the \ref plug_plugInfo "PlugRegistry class".
 
-\code
-{
-    # Comments are allowed and indicated by a hash at the start of a
-    # line or after spaces and tabs.  They continue to the end of line.
-    # Blank lines are okay, too.
-
-    # This is optional.  It may contain any number of strings.
-    #   Paths may be absolute or relative.
-    #   Paths ending with slash have plugInfo.json appended automatically.
-    #   '*' may be used anywhere to match any character except slash.
-    #   '**' may be used anywhere to match any character including slash.
-    "Includes": [
-        "/absolute/path/to/plugInfo.json",
-        "/absolute/path/to/custom.filename",
-        "/absolute/path/to/directory/with/plugInfo/",
-        "relative/path/to/plugInfo.json",
-        "relative/path/to/directory/with/plugInfo/",
-        "glob*/pa*th/*to*/*/plugInfo.json",
-        "recursive/pa**th/**/"
-    ],
-
-    # This is optional.  It may contain any number of objects.
-    "Plugins": [
-        {
-            # Type is required and may be "library", "python" or "resource".
-            "Type": "library",
-
-            # Name is required.  It should be the Python module name,
-            # the shared library name, or a unique resource name.
-            "Name": "myplugin",
-
-            # Root is optional.  It defaults to ".".
-            # This gives the path to the plugin as a whole if the plugin
-            # has substructure.  For Python it should be the directory
-            # with the __init__.py file.  The path is usually relative.
-            "Root": ".",
-
-            # LibraryPath is required by Type "library" and unused
-            # otherwise.  It gives the path to the shared library
-            # object, either absolute or relative to Root.
-            "LibraryPath": "libmyplugin.so",
-
-            # ResourcePath is option.  It defaults to ".".
-            # This gives the path to the plugin's resources directory.
-            # The path is either absolute or relative to Root.
-            "ResourcePath": "resources",
-
-            # Info is required.  It's described below.
-            "Info": {
-                # Plugin contents.
-                "Types": {
-                    "Foo": {
-                        "bases": ["Bar"],
-                        "displayName": "Fu",
-                        "iconPackage": "Ext",
-                        "iconPaletteEntry": "Foo",
-                        "iconPath": "icons/Foo"
-                    }
-                }
-            }
-        }
-    ]
-}
-\endcode
-
-The "Info" object has a key "Types" holding a single object providing metadata
-about the types that the plugin provides. The example above declares the type
-Foo.  Foo has a single base class, Bar (defined in another library). Foo also
-has an icon and a display name.
-
-MetaData other than 'Types' may be included as additional entries in the
-"Info" dictionary.
 
 */

@@ -63,7 +63,7 @@
 ///     classification that any renderer should use to locate potential
 ///     overrides.  Do please note that primvars override parameters on
 ///     UsdShadeShader objects, \em not 
-///     \ref UsdShadeLook_Interfaces "Interface Attributes" on UsdShadeLook
+///     \ref UsdShadeSubgraph_Interfaces "Interface Attributes" on UsdShadeMaterial
 ///     prims.
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars

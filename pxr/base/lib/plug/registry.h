@@ -65,13 +65,13 @@ struct Plug_RegistrationMetadata;
 /// want to support plug-ins that implement image filters.  You can define
 /// an abstract base class for image filters that declares the API your 
 /// application will require image filters to implement; perhaps something
-/// simple like \ref cppcode_PlugRegistry1 "C++ Code Example 1" (Doxygen only).
+/// simple like \ref plug_cppcode_PlugRegistry1 "C++ Code Example 1" (Doxygen only).
 ///
 /// People writing custom filters would write a subclass of ImageFilter that
 /// overrides the two methods, implementing their own special filtering 
 /// behavior.
 ///
-/// <h2>Enabling Plug-in Loading for the Base Class</h2>
+/// \section plug_EnablingPlugins Enabling Plug-in Loading for the Base Class
 ///
 /// In order for ImageFilter to be able to load plug-ins that implement
 /// these custom subclasses, it must be registered with the TfType system.
@@ -81,7 +81,7 @@ struct Plug_RegistrationMetadata;
 /// so that plug-ins that want to provide ImageFilters can also link with
 /// the library allowing them to subclass ImageFilter.
 ///
-/// <h2>Registering Plug-ins</h2>
+/// \section plug_RegisteringPlugins Registering Plug-ins
 ///
 /// A plug-in developer can now write plug-ins with ImageFilter subclasses.
 /// Plug-ins can be implemented either as native dynamic libraries (either
@@ -100,7 +100,7 @@ struct Plug_RegistrationMetadata;
 /// The plug-in facility is lazy.  It does not dynamically load code from 
 /// plug-in bundles until that code is required. 
 ///
-/// <h2>plugInfo.json</h2>
+/// \section plug_plugInfo plugInfo.json
 ///
 /// A plugInfo.json file has the following structure:
 ///
@@ -164,7 +164,7 @@ struct Plug_RegistrationMetadata;
 /// have either the "Includes" or "Plugins" keys then it's as if the object
 /// was in a "Plugins" array.
 ///
-/// <h2>Advertising a Plug-in's Contents</h2>
+/// \section plug_Advertising Advertising a Plug-in's Contents
 ///
 /// Once the the plug-ins are registered, the plug-in facility must also be 
 /// able to tell what they contain.  Specifically, it must be able to find 
@@ -206,7 +206,7 @@ struct Plug_RegistrationMetadata;
 /// you can do that.  Or, if a plug-in writer wants to define their own keys
 /// that their code will look for at runtime, that is OK as well.
 ///
-/// <h2>Working with Subclasses of a Plug-in Base Class</h2>
+/// \section plug_subClasses Working with Subclasses of a Plug-in Base Class
 ///
 /// Most code with uses types defined in plug-ins doesn't deal with
 /// the Plug API directly.  Instead, the TfType interface is used
@@ -217,18 +217,18 @@ struct Plug_RegistrationMetadata;
 /// ImageFilter plug-ins would probably do a couple of things.  First, it
 /// would get a list of available ImageFilters to present to the user.
 /// This could be accomplished as shown in
-/// \ref cppcode_PlugRegistry2 "Python Code Example 2" (Doxygen only).
+/// \ref plug_cppcode_PlugRegistry2 "Python Code Example 2" (Doxygen only).
 ///
 /// Then, when the user picks a filter from the list, it would manufacture
 /// and instance of the filter as shown in
-/// \ref cppcode_PlugRegistry3 "Python Code Example 3" (Doxygen only).
+/// \ref plug_cppcode_PlugRegistry3 "Python Code Example 3" (Doxygen only).
 ///
 /// As was mentioned earlier, this plug-in facility tries to be as lazy 
 /// as possible about loading the code associated with plug-ins.  To that end,
 /// loading of a plugin will be deferred until an instance of a type
 /// is manufactured which requires the plugin.
 ///
-/// <h2>Multiple Subclasses of Multiple Plug-in Base Classes</h2>
+/// \section plug_MultipleSubclasses Multiple Subclasses of Multiple Plug-in Base Classes
 ///
 /// It is possible for a bundle to implement multiple subclasses
 /// for a plug-in base class if desired.  If you want to package half a dozen
@@ -271,7 +271,7 @@ struct Plug_RegistrationMetadata;
 /// }
 /// \endcode
 ///
-/// <h2>Dependencies on Other Plug-ins</h2>
+/// \section plug_Dependencies Dependencies on Other Plug-ins
 ///
 /// If you write a plug-in that has dependencies on another plug-in that you
 /// cannot (or do not want to) link against statically, you can declare
@@ -304,7 +304,7 @@ struct Plug_RegistrationMetadata;
 /// Before loading this plug-in, the plug-in facility will ensure that those
 /// two classes are present, loading the plug-in that contains them if needed.
 ///
-/// \section cppcode_PlugRegistry1 C++ Code Example 1
+/// \section plug_cppcode_PlugRegistry1 C++ Code Example 1
 /// \code
 /// // Declare a base class interface
 /// class ImageFilter {
@@ -314,7 +314,7 @@ struct Plug_RegistrationMetadata;
 /// };
 /// \endcode
 ///
-/// \section cppcode_PlugRegistry2 Python Code Example 2
+/// \section plug_cppcode_PlugRegistry2 Python Code Example 2
 /// \code
 /// # Get the names of derived types
 /// baseType = Tf.Type.Find(ImageFilter)
@@ -323,7 +323,7 @@ struct Plug_RegistrationMetadata;
 ///     derivedTypeNames = [ derived.typeName for derived in derivedTypes ]
 /// \endcode
 ///
-/// \section cppcode_PlugRegistry3 Python Code Example 3
+/// \section plug_cppcode_PlugRegistry3 Python Code Example 3
 /// \code
 /// # Manufacture an instance of a derived type
 /// imageFilterType = Tf.Type.Find(ImageFilter)

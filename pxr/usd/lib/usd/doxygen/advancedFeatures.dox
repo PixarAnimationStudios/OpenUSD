@@ -93,7 +93,7 @@ takes, there are also a set of "universal" metadata common to both.
         - A list of pairs of the form (stageTime, clipAssetIndex)
           representing when, in terms of stage time, a particular clip in
           clipAssetPaths is active. For example, given a clipAssetPaths of
-          [@foo.usd@, @bar.usd@] and a clipActive of [(101, 0), (102, 0)],
+          [ \@foo.usd\@, \@bar.usd\@ ] and a clipActive of [ (101, 0), (102, 0) ],
           foo.usd would be the only clip ever examined for attribute values
           under this particular prim.
     - clipTimes 
