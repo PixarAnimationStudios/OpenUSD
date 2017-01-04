@@ -50,7 +50,7 @@ TF_REGISTRY_FUNCTION(AttributeConverterRegistry) {
             // We only author hidden if it's to set it to true.
             bool hidden = false;
             if (PxrUsdMayaUtil::getPlugValue(srcNode,
-                        _tokens->USD_hidden.GetText(), &hidden) and hidden) {
+                        _tokens->USD_hidden.GetText(), &hidden) && hidden) {
                 destPrim.SetHidden(hidden);
             }
             return true;

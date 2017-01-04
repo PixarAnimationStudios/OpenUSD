@@ -47,11 +47,11 @@ PxrUsdMayaTranslatorUtil::CreateTransformNode(
 {
     static const MString _defaultTypeName("transform");
 
-    if (not usdPrim or not usdPrim.IsA<UsdGeomXformable>()) {
+    if (!usdPrim || !usdPrim.IsA<UsdGeomXformable>()) {
         return false;
     }
 
-    if (not CreateNode(usdPrim,
+    if (!CreateNode(usdPrim,
                        _defaultTypeName,
                        parentNode,
                        context,
@@ -77,7 +77,7 @@ PxrUsdMayaTranslatorUtil::CreateNode(
         MStatus* status,
         MObject* mayaNodeObj)
 {
-    if (not CreateNode(MString(usdPrim.GetName().GetText()),
+    if (!CreateNode(MString(usdPrim.GetName().GetText()),
                        nodeTypeName,
                        parentNode,
                        status,
@@ -116,5 +116,5 @@ PxrUsdMayaTranslatorUtil::CreateNode(
     *status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(*status, false);
 
-    return TF_VERIFY(not mayaNodeObj->isNull());
+    return TF_VERIFY(!mayaNodeObj->isNull());
 }

@@ -41,7 +41,7 @@ PxrUsdMayaTranslatorPrim::Read(
         PxrUsdMayaPrimReaderContext* context)
 {
     UsdGeomImageable primSchema(prim);
-    if (not primSchema) {
+    if (!primSchema) {
         TF_CODING_ERROR("Prim %s is not UsdGeomImageable.", 
                 prim.GetPath().GetText());
         return;

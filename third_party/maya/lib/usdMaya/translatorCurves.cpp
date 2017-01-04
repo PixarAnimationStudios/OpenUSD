@@ -49,7 +49,7 @@ PxrUsdMayaTranslatorCurves::Create(
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context)
 {
-    if (not curves) {
+    if (!curves) {
         return false;
     }
 
@@ -59,7 +59,7 @@ PxrUsdMayaTranslatorCurves::Create(
 
     // Create node (transform)
     MObject mayaNodeTransformObj;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,

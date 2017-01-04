@@ -69,7 +69,7 @@ bool PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh)
     if (plug.isNull()) {
         plug = mesh.findPlug(MString("mjtoMeshVtxNormals"));
     }
-    if (not plug.isNull() and plug.asBool()) {
+    if (!plug.isNull() && plug.asBool()) {
         return true;
     }
 
@@ -276,12 +276,12 @@ TfToken PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
         sdFVLinearInterpolation = _getSubdivFVInterpBoundary(mesh);
     }
 
-    if (not sdFVLinearInterpolation.IsEmpty() and
-            sdFVLinearInterpolation != UsdGeomTokens->all and
-            sdFVLinearInterpolation != UsdGeomTokens->none and
-            sdFVLinearInterpolation != UsdGeomTokens->boundaries and
-            sdFVLinearInterpolation != UsdGeomTokens->cornersOnly and
-            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 and
+    if (!sdFVLinearInterpolation.IsEmpty()                      && 
+            sdFVLinearInterpolation != UsdGeomTokens->all          && 
+            sdFVLinearInterpolation != UsdGeomTokens->none         && 
+            sdFVLinearInterpolation != UsdGeomTokens->boundaries   && 
+            sdFVLinearInterpolation != UsdGeomTokens->cornersOnly  && 
+            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 && 
             sdFVLinearInterpolation != UsdGeomTokens->cornersPlus2) {
         MGlobal::displayError("Unsupported Face Varying Linear Interpolation Attribute: " +
             MString(sdFVLinearInterpolation.GetText()) + " on mesh: " + MString(mesh.fullPathName()));

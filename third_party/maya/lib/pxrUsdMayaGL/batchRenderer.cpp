@@ -86,7 +86,7 @@ UsdMayaGLBatchRenderer::Init()
 UsdMayaGLBatchRenderer&
 UsdMayaGLBatchRenderer::GetGlobalRenderer()
 {
-    if (not _sGlobalRendererPtr) {
+    if (!_sGlobalRendererPtr) {
         Reset();
     }
     return *_sGlobalRendererPtr;
@@ -201,17 +201,17 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus& displayStatus)
 {
     // these enums are equivalent, but statically checking just in case.
     static_assert(((int)M3dView::kActive == (int)MHWRender::kActive) 
-            and ((int)M3dView::kLive == (int)MHWRender::kLive) 
-            and ((int)M3dView::kDormant == (int)MHWRender::kDormant)
-            and ((int)M3dView::kInvisible == (int)MHWRender::kInvisible)
-            and ((int)M3dView::kHilite == (int)MHWRender::kHilite)
-            and ((int)M3dView::kTemplate == (int)MHWRender::kTemplate)
-            and ((int)M3dView::kActiveTemplate == (int)MHWRender::kActiveTemplate)
-            and ((int)M3dView::kActiveComponent == (int)MHWRender::kActiveComponent)
-            and ((int)M3dView::kLead == (int)MHWRender::kLead)
-            and ((int)M3dView::kIntermediateObject == (int)MHWRender::kIntermediateObject)
-            and ((int)M3dView::kActiveAffected == (int)MHWRender::kActiveAffected)
-            and ((int)M3dView::kNoStatus == (int)MHWRender::kNoStatus),
+            && ((int)M3dView::kLive == (int)MHWRender::kLive) 
+            && ((int)M3dView::kDormant == (int)MHWRender::kDormant)
+            && ((int)M3dView::kInvisible == (int)MHWRender::kInvisible)
+            && ((int)M3dView::kHilite == (int)MHWRender::kHilite)
+            && ((int)M3dView::kTemplate == (int)MHWRender::kTemplate)
+            && ((int)M3dView::kActiveTemplate == (int)MHWRender::kActiveTemplate)
+            && ((int)M3dView::kActiveComponent == (int)MHWRender::kActiveComponent)
+            && ((int)M3dView::kLead == (int)MHWRender::kLead)
+            && ((int)M3dView::kIntermediateObject == (int)MHWRender::kIntermediateObject)
+            && ((int)M3dView::kActiveAffected == (int)MHWRender::kActiveAffected)
+            && ((int)M3dView::kNoStatus == (int)MHWRender::kNoStatus),
             "M3dView::DisplayStatus == MHWRender::DisplayStatus");
     return MHWRender::DisplayStatus((int)displayStatus);
 }
@@ -228,8 +228,8 @@ _GetWireframeColor(
     if (displayStatus == MHWRender::kDormant) {
         return softSelectHelper.GetFalloffColor(objPath, mayaWireColor);
     }
-    else if ((displayStatus == MHWRender::kActive) or 
-            (displayStatus == MHWRender::kLead) or 
+    else if ((displayStatus == MHWRender::kActive) ||
+            (displayStatus == MHWRender::kLead)    || 
             (displayStatus == MHWRender::kHilite)) {
         *mayaWireColor = MHWRender::MGeometryUtilities::wireframeColor(objPath);
         return true;
@@ -552,7 +552,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::Get(
 {
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
-    if( vcache and TfMapLookup(*vcache, key, &ret) )
+    if( vcache && TfMapLookup(*vcache, key, &ret) )
         return ret;
 
     TF_CODING_ERROR("%s:%s doesn't exist in the value cache\n",
@@ -731,7 +731,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
 {
     // select bucket
     SdfPath renderTaskId;
-    if( not TfMapLookup(_renderTaskIdMap, hash, &renderTaskId) )
+    if( !TfMapLookup(_renderTaskIdMap, hash, &renderTaskId) )
     {
         // create new render task if not exists
         renderTaskId = _rootId.AppendChild(
@@ -993,7 +993,7 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
     const GfMatrix4d &localToWorldSpace)
 {
     // Guard against user clicking in viewer before renderer is setup
-    if( not _renderIndex )
+    if( !_renderIndex )
         return NULL;
 
     // Selection only occurs once per display refresh, with all usd objects
@@ -1048,16 +1048,16 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             HdxIntersector::Result result;
             HdxIntersector::HitVector hits;
 
-            if( not _intersector->Query(qparams, rprims, &_hdEngine, &result) )
+            if( !_intersector->Query(qparams, rprims, &_hdEngine, &result) )
                 continue;
             
             if( singleSelection )
             {
                 hits.resize(1);
-                if( not result.ResolveNearest(&hits.front()) )
+                if( !result.ResolveNearest(&hits.front()) )
                     continue;
             }
-            else if( not result.ResolveAll(&hits) )
+            else if( !result.ResolveAll(&hits) )
             {
                 continue;
             }

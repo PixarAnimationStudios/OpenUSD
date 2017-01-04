@@ -57,7 +57,7 @@ PxrUsdExport_PluginPrimWriter::write(
     _pruneChildren = ctx.GetPruneChildren();
 
     UsdPrim prim = stage->GetPrimAtPath(authorPath);
-    if (not prim) {
+    if (!prim) {
         return prim;
     }
 

@@ -295,7 +295,7 @@ PxrUsdMayaWriteUtil::GetOrCreateUsdAttr(
 {
     UsdAttribute usdAttr;
 
-    if (not usdPrim) {
+    if (!usdPrim) {
         return usdAttr;
     }
 
@@ -338,7 +338,7 @@ UsdGeomPrimvar PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
 {
     UsdGeomPrimvar primvar;
 
-    if (not imageable) {
+    if (!imageable) {
         return primvar;
     }
 
@@ -383,7 +383,7 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
 {
     UsdAttribute usdAttr;
 
-    if (not usdPrim) {
+    if (!usdPrim) {
         return usdAttr;
     }
 
@@ -399,7 +399,7 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     UsdRiStatements riStatements(usdPrim);
-    if (not riStatements) {
+    if (!riStatements) {
         return usdAttr;
     }
 
@@ -446,7 +446,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
         const UsdTimeCode& usdTime,
         const bool translateMayaDoubleToUsdSinglePrecision)
 {
-    if (not usdAttr or attrPlug.isNull()) {
+    if (!usdAttr || attrPlug.isNull()) {
         return false;
     }
 
@@ -793,7 +793,7 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
         if (usdAttrType ==
                     PxrUsdMayaUserTaggedAttributeTokens->USDAttrTypePrimvar) {
             UsdGeomImageable imageable(usdPrim);
-            if (not imageable) {
+            if (!imageable) {
                 MGlobal::displayError(
                     TfStringPrintf(
                         "Cannot create primvar for non-UsdGeomImageable USD prim: '%s'",
@@ -828,7 +828,7 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
         }
 
         if (usdAttr) {
-            if (not PxrUsdMayaWriteUtil::SetUsdAttr(attrPlug,
+            if (!PxrUsdMayaWriteUtil::SetUsdAttr(attrPlug,
                                                     usdAttr,
                                                     usdTime,
                                                     translateMayaDoubleToUsdSinglePrecision)) {

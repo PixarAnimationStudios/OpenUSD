@@ -91,7 +91,7 @@ _ShouldImportAsSubAssembly(const UsdPrim& prim)
     UsdModelAPI usdModel(prim);
     usdModel.GetKind(&kind);
 
-    if (KindRegistry::IsA(kind, KindTokens->component) or
+    if (KindRegistry::IsA(kind, KindTokens->component) ||
             KindRegistry::IsA(kind, KindTokens->assembly)) {
         return true;
     }
@@ -121,8 +121,8 @@ static
 bool
 _IsPxrGeomRoot(const UsdPrim& prim)
 {
-    if (prim.GetName() == _tokens->GeomRootName and
-            prim.GetParent() and prim.GetParent().IsModel()) {
+    if (prim.GetName() == _tokens->GeomRootName &&
+            prim.GetParent() && prim.GetParent().IsModel()) {
         return true;
     }
 
@@ -142,7 +142,7 @@ _CreateParentTransformNodes(const UsdPrim& usdPrim,
                             PxrUsdMayaPrimReaderContext* context)
 {
     const UsdPrim parentPrim = usdPrim.GetParent();
-    if (not parentPrim or
+    if (!parentPrim ||
             parentPrim == usdPrim.GetStage()->GetPseudoRoot()) {
         return true;
     }
@@ -156,7 +156,7 @@ _CreateParentTransformNodes(const UsdPrim& usdPrim,
     // usdPrim's parent does not have a Maya node yet, so create all of *its*
     // parents before we create a node for the parent itself.
     bool success = _CreateParentTransformNodes(parentPrim, args, context);
-    if (not success) {
+    if (!success) {
         return false;
     }
 
@@ -191,12 +191,12 @@ usdReadJob::_ProcessProxyPrims(
                                       mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
-        if (not _CreateParentTransformNodes(proxyPrim, args, &ctx)) {
+        if (!_CreateParentTransformNodes(proxyPrim, args, &ctx)) {
             return false;
         }
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
-        if (not PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
+        if (!PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
                                                                mVariants,
                                                                parentNode,
                                                                args,
@@ -208,7 +208,7 @@ usdReadJob::_ProcessProxyPrims(
 
     // Author exclude paths on the top-level proxy using the list of collapse
     // points we found.
-    if (not collapsePointPathStrings.empty()) {
+    if (!collapsePointPathStrings.empty()) {
         MStatus status;
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
@@ -256,12 +256,12 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
         std::string subAssemblyUsdFilePath = mFileName;
         SdfPath subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
 
-        if (not _CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {
+        if (!_CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {
             return false;
         }
 
         MObject parentNode = ctx.GetMayaNode(subAssemblyPrim.GetPath().GetParentPath(), false);
-        if (not PxrUsdMayaTranslatorModelAssembly::Read(subAssemblyPrim,
+        if (!PxrUsdMayaTranslatorModelAssembly::Read(subAssemblyPrim,
                                                         subAssemblyUsdFilePath,
                                                         subAssemblyUsdPrimPath,
                                                         parentNode,
@@ -290,7 +290,7 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
                                       mArgs.endTime);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
-        if (not _CreateParentTransformNodes(cameraPrim, args, &ctx)) {
+        if (!_CreateParentTransformNodes(cameraPrim, args, &ctx)) {
             return false;
         }
 
@@ -364,19 +364,19 @@ usdReadJob::_DoImportWithProxies(UsdTreeIterator& primIt)
     }
 
     // Create the proxy nodes and author exclude paths on the geom root proxy.
-    if (not _ProcessProxyPrims(proxyPrims,
+    if (!_ProcessProxyPrims(proxyPrims,
                                pxrGeomRoot,
                                collapsePointPathStrings)) {
         return false;
     }
 
     // Create all sub-assembly nodes.
-    if (not _ProcessSubAssemblyPrims(subAssemblyPrims)) {
+    if (!_ProcessSubAssemblyPrims(subAssemblyPrims)) {
         return false;
     }
 
     // Create all camera nodes.
-    if (not _ProcessCameraPrims(cameraPrims)) {
+    if (!_ProcessCameraPrims(cameraPrims)) {
         return false;
     }
 

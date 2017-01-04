@@ -116,21 +116,21 @@ _SetMeshesSubDivisionScheme(
     for (const auto& p: dagToUsd) {
         const MDagPath& dag = p.first;
         const SdfPath& usdPrimPath = p.second;
-        if (not dag.isValid()) {
+        if (!dag.isValid()) {
             continue;
         }
 
         MStatus status;
         MFnMesh meshFn(dag, &status);
-        if (not status) {
+        if (!status) {
             continue;
         }
 
         if (UsdGeomMesh usdMesh = UsdGeomMesh::Get(stage, usdPrimPath)) {
             MPlug plug = meshFn.findPlug("SubDivisionMesh");
-            bool isSubDivisionMesh = (not plug.isNull() and plug.asBool());
+            bool isSubDivisionMesh = (!plug.isNull() && plug.asBool());
 
-            if (not isSubDivisionMesh) {
+            if (!isSubDivisionMesh) {
                 usdMesh.GetSubdivisionSchemeAttr().Set(UsdGeomTokens->none);
             }
         }
@@ -155,7 +155,7 @@ public:
             const SdfPath& usdPrimPath = p.second;
 
             UsdPrim usdPrim = stage->GetPrimAtPath(usdPrimPath);
-            if (not dag.isValid() or not usdPrim) {
+            if (!dag.isValid() || !usdPrim) {
                 continue;
             }
 

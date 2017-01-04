@@ -102,7 +102,7 @@ UsdMayaProxyDrawOverride::getShape(const MDagPath& objPath)
     }
 
     UsdMayaProxyShape* pShape = static_cast<UsdMayaProxyShape*>(dnNode.userNode());
-    if (not pShape) {
+    if (!pShape) {
         MGlobal::displayError("Failed getting userNode");
         return NULL;
     }

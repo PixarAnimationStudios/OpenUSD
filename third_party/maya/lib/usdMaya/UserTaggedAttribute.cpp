@@ -154,7 +154,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
 
     JsParseError jsError;
     JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
-    if (not jsValue) {
+    if (!jsValue) {
         MString errorMsg(TfStringPrintf(
             "Failed to parse USD exported attributes JSON on node at"
             " dagPath '%s' at line %d, column %d: %s",
@@ -213,7 +213,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
         if (usdAttrName.empty()) {
             const auto& tokens = PxrUsdMayaUserTaggedAttributeTokens;
-            if (usdAttrType == tokens->USDAttrTypePrimvar or
+            if (usdAttrType == tokens->USDAttrTypePrimvar || 
                     usdAttrType == tokens->USDAttrTypeUsdRi) {
                 // Primvars and UsdRi attributes will be given a type-specific
                 // namespace, so just use the Maya attribute name.
@@ -228,7 +228,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         }
 
         const auto& insertIter = processedAttributeNames.emplace(usdAttrName);
-        if (not insertIter.second) {
+        if (!insertIter.second) {
             MString errorMsg(TfStringPrintf(
                 "Ignoring duplicate USD export tag for attribute '%s' on node"
                 " at dagPath '%s'",

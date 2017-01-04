@@ -198,14 +198,14 @@ usdTranslatorExport::identifyFile(
     const int lastIndex = fileName.length() - 1;
 
     const int periodIndex = fileName.rindex('.');
-    if (periodIndex < 0 or periodIndex >= lastIndex) {
+    if (periodIndex < 0 || periodIndex >= lastIndex) {
         return retValue;
     }
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() or
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() or
+    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
+        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()   || 
         fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
         retValue = kIsMyFileType;
     }

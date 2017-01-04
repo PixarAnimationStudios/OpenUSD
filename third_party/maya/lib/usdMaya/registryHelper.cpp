@@ -41,7 +41,7 @@ template <typename T>
 bool
 _GetData(const JsValue& any, T* val)
 {
-    if (not any.Is<T>()) {
+    if (!any.Is<T>()) {
         TF_CODING_ERROR("bad plugInfo.json");
         return false;
     }
@@ -54,7 +54,7 @@ template <typename T>
 bool
 _GetData(const JsValue& any, std::vector<T>* val)
 {
-    if (not any.IsArrayOf<T>()) {
+    if (!any.IsArrayOf<T>()) {
         TF_CODING_ERROR("bad plugInfo.json");
         return false;
     }
@@ -73,11 +73,11 @@ _ReadNestedDict(
     TF_FOR_ALL(iter, keys) {
         const TfToken& currKey = *iter;
         JsValue any;
-        if (not TfMapLookup(currDict, currKey, &any)) {
+        if (!TfMapLookup(currDict, currKey, &any)) {
             return false;
         }
 
-        if (not any.IsObject()) {
+        if (!any.IsObject()) {
             TF_CODING_ERROR("bad plugInfo data.");
             return false;
         }
@@ -97,16 +97,16 @@ _ProvidesForType(
 
     JsObject metadata = plug->GetMetadata();
     JsObject mayaTranslatorMetadata;
-    if (not _ReadNestedDict(metadata, scope, &mayaTranslatorMetadata)) {
+    if (!_ReadNestedDict(metadata, scope, &mayaTranslatorMetadata)) {
         return false;
     }
 
     JsValue any;
-    if (not TfMapLookup(mayaTranslatorMetadata, _tokens->providesTranslator, &any)) {
+    if (!TfMapLookup(mayaTranslatorMetadata, _tokens->providesTranslator, &any)) {
         return false;
     }
     std::vector<std::string> usdTypes;
-    if (not _GetData(any, &usdTypes)) {
+    if (!_GetData(any, &usdTypes)) {
         return false;
     }
 
@@ -145,7 +145,7 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
     TF_FOR_ALL(plugIter, plugins) {
         PlugPluginPtr plug = *plugIter;
         if (_ProvidesForType(plug, scope, value, &mayaPlugin)) {
-            if (not mayaPlugin.empty()) {
+            if (!mayaPlugin.empty()) {
                 TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
                         "Found usdMaya plugin %s:  %s = %s.  Loading maya plugin %s.\n", 
                         plug->GetName().c_str(),
@@ -154,7 +154,7 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
                         mayaPlugin.c_str());
                 std::string loadPluginCmd = TfStringPrintf(
                         "loadPlugin -quiet %s", mayaPlugin.c_str());
-                if (not MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                if (!MGlobal::executeCommand(loadPluginCmd.c_str())) {
                     TF_CODING_ERROR("Unable to load mayaplugin %s\n",
                             mayaPlugin.c_str());
                 }

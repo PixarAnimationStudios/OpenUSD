@@ -34,12 +34,12 @@ PxrUsdMayaShadingModeImportContext::GetCreatedObject(
         const UsdPrim& prim,
         MObject* obj) const
 {
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
     MObject node = _context->GetMayaNode(prim.GetPath(), false);
-    if (not node.isNull()) {
+    if (!node.isNull()) {
         *obj = node;
         return true;
     }
@@ -63,7 +63,7 @@ PxrUsdMayaShadingModeImportContext::AddCreatedObject(
         const SdfPath& path,
         const MObject& obj)
 {
-    if (not path.IsEmpty()) {
+    if (!path.IsEmpty()) {
         _context->RegisterNewMayaNode(path.GetString(), obj);
     }
 

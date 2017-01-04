@@ -77,7 +77,7 @@ UsdMayaGLSoftSelectHelper::_PopulateWeights()
         iter.getDagPath(dagPath, component);
         // component.isNull() indcates that we're selecting a whole object, as
         // opposed to a component.
-        if (not component.isNull()) {
+        if (!component.isNull()) {
             continue;
         }
 
@@ -111,7 +111,7 @@ UsdMayaGLSoftSelectHelper::_PopulateSoftSelectColorRamp()
         }
     }
 
-    if (not success) {
+    if (!success) {
         _wireColor = MColor(0.f, 0.f, 1.f);
     }
 }

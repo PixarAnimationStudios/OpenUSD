@@ -55,7 +55,7 @@ _GetMayaFaceVertexAssignmentIds(
 
     MItMeshFaceVertex itFV(meshFn.object());
     unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         int valueId = 0;
         if (interpolation == UsdGeomTokens->constant) {
             valueId = 0;
@@ -94,7 +94,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
 
     // Get the raw data before applying any indexing.
     VtVec2fArray uvValues;
-    if (not primvar.Get(&uvValues) or uvValues.empty()) {
+    if (!primvar.Get(&uvValues) || uvValues.empty()) {
         MGlobal::displayWarning(
             TfStringPrintf("Could not read UV values from primvar '%s' on mesh: %s",
                            primvarName.GetText(),
@@ -242,9 +242,9 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // Note that if BOTH displayColor and displayOpacity are authored, they will
     // be imported as separate color sets. We do not attempt to combine them
     // into a single color set.
-    if (primvarName == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName and
+    if (primvarName == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
             typeName == SdfValueTypeNames->FloatArray) {
-        if (not PxrUsdMayaUtil::GetBoolCustomData(primSchema.GetDisplayColorPrimvar(),
+        if (!PxrUsdMayaUtil::GetBoolCustomData(primSchema.GetDisplayColorPrimvar(),
                                                   PxrUsdMayaMeshColorSetTokens->Authored,
                                                   false)) {
             colorSetName = PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
@@ -269,23 +269,23 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     if (typeName == SdfValueTypeNames->FloatArray) {
         colorRep = MFnMesh::kAlpha;
-        if (not primvar.Get(&alphaArray) or alphaArray.empty()) {
+        if (!primvar.Get(&alphaArray) || alphaArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = alphaArray.size();
         }
-    } else if (typeName == SdfValueTypeNames->Float3Array or
+    } else if (typeName == SdfValueTypeNames->Float3Array || 
                typeName == SdfValueTypeNames->Color3fArray) {
         colorRep = MFnMesh::kRGB;
-        if (not primvar.Get(&rgbArray) or rgbArray.empty()) {
+        if (!primvar.Get(&rgbArray) || rgbArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = rgbArray.size();
         }
-    } else if (typeName == SdfValueTypeNames->Float4Array or
+    } else if (typeName == SdfValueTypeNames->Float4Array || 
                typeName == SdfValueTypeNames->Color4fArray) {
         colorRep = MFnMesh::kRGBA;
-        if (not primvar.Get(&rgbaArray) or rgbaArray.empty()) {
+        if (!primvar.Get(&rgbaArray) || rgbaArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = rgbaArray.size();
@@ -299,7 +299,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         return false;
     }
 
-    if (status != MS::kSuccess or numValues == 0) {
+    if (status != MS::kSuccess || numValues == 0) {
         MGlobal::displayWarning(
             TfStringPrintf("Could not read color set values from primvar '%s' on mesh: %s",
                            primvarName.GetText(),

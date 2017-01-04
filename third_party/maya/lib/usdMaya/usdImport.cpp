@@ -180,7 +180,7 @@ MStatus usdImport::doIt(const MArgList & args)
         MString stringVal;
         argData.getFlagArgument("assemblyRep", 0, stringVal);
         std::string assemblyRep = stringVal.asChar();
-        if (not assemblyRep.empty()) {
+        if (!assemblyRep.empty()) {
             jobArgs.assemblyRep = TfToken(assemblyRep);
         }
     }

@@ -74,7 +74,7 @@ PxrUsdMayaTranslatorLook::Read(
         // validation up front.
     }
 
-    if (not outColorPlug.isNull()) {
+    if (!outColorPlug.isNull()) {
         MFnSet fnSet;
         MSelectionList tmpSelList;
         shadingEngine = fnSet.create(tmpSelList, MFnSet::kRenderableOnly, &status);
@@ -87,7 +87,7 @@ PxrUsdMayaTranslatorLook::Read(
             (shadeLook ? shadeLook.GetPrim() : boundPrim.GetPrim()
                 ).GetName().GetString();
 
-        if (not status) {
+        if (!status) {
             MGlobal::displayError(TfStringPrintf(
                         "Failed to make shadingEngine for %s\n", 
                         shadingEngineName.c_str()).c_str());
@@ -118,7 +118,7 @@ _AssignLookFaceSet(const MObject &shadingEngine,
     MFnSingleIndexedComponent compFn;
     MObject faceComp = compFn.create(
         MFn::kMeshPolygonComponent, &status);
-    if (not status) {
+    if (!status) {
         MGlobal::displayError("Failed to create face component.");
         return false;
     }
@@ -132,7 +132,7 @@ _AssignLookFaceSet(const MObject &shadingEngine,
     MFnSet seFnSet(shadingEngine, &status);
     if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
         status = seFnSet.addMember(shapeDagPath, faceComp);
-        if (not status) {
+        if (!status) {
             MGlobal::displayError(TfStringPrintf("Could not"
                 " add component to shadingEngine %s.", 
                 seFnSet.name().asChar()).c_str());
@@ -154,7 +154,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
     // make sure we don't duplicate shading nodes within a look.
     PxrUsdMayaPrimReaderContext::ObjectRegistry tmpRegistry;
     PxrUsdMayaPrimReaderContext tmpContext(&tmpRegistry);
-    if (not context) {
+    if (!context) {
         context = &tmpContext;
     }
 
@@ -168,8 +168,8 @@ PxrUsdMayaTranslatorLook::AssignLook(
             primSchema, 
             context);
 
-    bool foundShader = not shadingEngine.isNull();
-    if (not foundShader) {
+    bool foundShader = !shadingEngine.isNull();
+    if (!foundShader) {
         MSelectionList selList;
         selList.add("initialShadingGroup");
         if (selList.isEmpty()) {
@@ -184,11 +184,11 @@ PxrUsdMayaTranslatorLook::AssignLook(
 
     // If the gprim does not have a look faceSet which represents per-face 
     // shader assignments, assign the shading engine to the entire gprim.
-    if (not UsdShadeLook::HasLookFaceSet(primSchema.GetPrim())) {
+    if (!UsdShadeLook::HasLookFaceSet(primSchema.GetPrim())) {
         MFnSet seFnSet(shadingEngine, &status);
         if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
             status = seFnSet.addMember(shapeObj);
-            if (not status) {
+            if (!status) {
                 MGlobal::displayError("Could not add shapeObj to shadingEngine.\n");
             }
         }
@@ -201,7 +201,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
         primSchema.GetPrim());
 
     SdfPathVector bindingTargets;
-    if (not lookFaceSet.GetBindingTargets(&bindingTargets) or
+    if (!lookFaceSet.GetBindingTargets(&bindingTargets) ||
         bindingTargets.empty()) {
             
         MGlobal::displayWarning(TfStringPrintf("No bindings found on look "
@@ -211,7 +211,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
     }
 
     std::string reason;
-    if (not lookFaceSet.Validate(&reason)) {
+    if (!lookFaceSet.Validate(&reason)) {
         MGlobal::displayWarning(TfStringPrintf("Invalid faceSet data "
             "found on <%s>: %s", primSchema.GetPath().GetText(), 
             reason.c_str()).c_str());
@@ -223,7 +223,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
     lookFaceSet.GetFaceCounts(&faceCounts);
     lookFaceSet.GetFaceIndices(&faceIndices);
 
-    if (not isPartition) {
+    if (!isPartition) {
         MGlobal::displayWarning(TfStringPrintf("Invalid faceSet data "
             "found on <%s>: Not a partition.", 
             primSchema.GetPath().GetText()).c_str());
@@ -256,8 +256,8 @@ PxrUsdMayaTranslatorLook::AssignLook(
             // faceSet to the look that the mesh is bound to or 
             // to the initialShadingGroup if it doesn't have a look 
             // binding.
-            if (not unassignedIndices.empty()) {
-                if (not _AssignLookFaceSet(shadingEngine, shapeDagPath, 
+            if (!unassignedIndices.empty()) {
+                if (!_AssignLookFaceSet(shadingEngine, shapeDagPath, 
                                            unassignedIndices)) {
                     return false;
                 }
@@ -274,8 +274,8 @@ PxrUsdMayaTranslatorLook::AssignLook(
         MObject faceGroupShadingEngine = PxrUsdMayaTranslatorLook::Read(
             shadingMode, look, UsdGeomGprim(), context);
  
-       bool foundShader = not faceGroupShadingEngine.isNull();
-        if (not foundShader) {
+       bool foundShader = !faceGroupShadingEngine.isNull();
+        if (!foundShader) {
             MSelectionList selList;
             selList.add("initialShadingGroup");
             if (selList.isEmpty()) {
@@ -300,7 +300,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
         ++setIndex;
         currentFaceIndex += numFaces;
 
-        if (not _AssignLookFaceSet(faceGroupShadingEngine, shapeDagPath, 
+        if (!_AssignLookFaceSet(faceGroupShadingEngine, shapeDagPath, 
                                    faceGroupIndices)) {
             return false;
         }
@@ -325,7 +325,7 @@ PxrUsdMayaTranslatorLook::ExportShadingEngines(
     if (PxrUsdMayaShadingModeExporter exporter =
             PxrUsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
         MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
-        for (; not shadingEngineIter.isDone(); shadingEngineIter.next()) {
+        for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
             MObject shadingEngine(shadingEngineIter.thisNode());
             MFnDependencyNode seDepNode(shadingEngine);
 

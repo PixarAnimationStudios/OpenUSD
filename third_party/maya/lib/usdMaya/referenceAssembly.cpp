@@ -512,7 +512,7 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
         const MFnDependencyNode& depNodeFn)
 {
     const auto& regVarSets = UsdUtilsGetRegisteredVariantSets();
-    if (not regVarSets.empty()) {
+    if (!regVarSets.empty()) {
         std::set<std::string> ret;
         for (const auto& regVarSet: regVarSets) {
             ret.insert(regVarSet.name);
@@ -533,7 +533,7 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
         }
 
         std::string attrName(attrPlug.partialName().asChar());
-        if (not TfStringStartsWith(attrName, USD_VARIANT_SET_PREFIX)) {
+        if (!TfStringStartsWith(attrName, USD_VARIANT_SET_PREFIX)) {
             continue;
         }
 
@@ -605,7 +605,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                     MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
                     variantSetPlugName += variantSet->c_str();
                     MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
-                    if (not varSetPlg.isNull()) {
+                    if (!varSetPlg.isNull()) {
                         MString varSetVal = varSetPlg.asString();
                         if (varSetVal.length() > 0) {
                             varSelsVec.push_back(
@@ -626,7 +626,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                 // set of edits in order to make that worthwhile.
                 MObject assemObj = thisMObject();
                 MItEdits assemEdits(_GetEdits(assemObj));
-                if (not assemEdits.isDone()) {
+                if (!assemEdits.isDone()) {
                     _hasEdits = true;
                     SdfLayerRefPtr unsharedSessionLayer = SdfLayer::CreateAnonymous();
                     unsharedSessionLayer->TransferContent(sessionLayer);
@@ -716,10 +716,10 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
     // If no primPath string specified, then use the pseudo-root.
     UsdPrim usdPrim;
     std::string primPathStr = aPrimPath.asChar();
-    if (primPathStr.empty() and usdStage->GetDefaultPrim()) {
+    if (primPathStr.empty() && usdStage->GetDefaultPrim()) {
         usdPrim = usdStage->GetDefaultPrim();
     }
-    if (not usdPrim and not primPathStr.empty()) {
+    if (!usdPrim && !primPathStr.empty()) {
         SdfPath primPath(primPathStr);
 
         // Validate assumption: primPath is descendent of passed-in stage primPath
@@ -740,7 +740,7 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
     // Handle UsdPrim variant overrides for subassemblies (i.e., assemblies
     // brought in by aggregate models).
     MFnAssembly assemblyFn(thisMObject());
-    if (usdPrim and not assemblyFn.isTopLevel()) {
+    if (usdPrim && !assemblyFn.isTopLevel()) {
         std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
         MFnDependencyNode depNodeFn(thisMObject());
         TF_FOR_ALL(variantSet, variantSetNames) {
@@ -804,7 +804,7 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
 
     bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), USD_VARIANT_SET_PREFIX);
 
-    if ( varSelChanged or
+    if ( varSelChanged || 
          (std::find(_psData.attrsAffectingRepresentation.begin(), 
                     _psData.attrsAffectingRepresentation.end(), 
                     plug.attribute())
@@ -877,7 +877,7 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
     std::map<std::string, std::string> result;
 
     UsdPrim usdPrim = this->usdPrim();
-    if (not usdPrim) {
+    if (!usdPrim) {
         return result;
     }
 
@@ -888,7 +888,7 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
         MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
         variantSetPlugName += variantSetName.c_str();
         MPlug variantSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
-        if (not variantSetPlg.isNull()) {
+        if (!variantSetPlg.isNull()) {
             MString variantSelection = variantSetPlg.asString();
             if (variantSelection.length() > 0) {
                 result[variantSetName] = variantSelection.asChar();
@@ -1014,7 +1014,7 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     MFnAssembly assemblyFn(assemObj);
     MString assemblyPathStr = assemblyFn.partialPathName();
     MItEdits assemEdits(_GetEdits(assemObj));
-    bool hasEdits = not assemEdits.isDone();
+    bool hasEdits = !assemEdits.isDone();
     if (usdAssem->HasEdits() != hasEdits) {
         usdAssem->SetHasEdits(hasEdits);
 
@@ -1025,7 +1025,7 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
     }
 
     UsdPrim proxyRootPrim = dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly())->usdPrim();
-    if (not proxyRootPrim) {
+    if (!proxyRootPrim) {
         return;
     }
     UsdStagePtr stage = proxyRootPrim.GetStage();
@@ -1227,7 +1227,7 @@ bool UsdMayaRepresentationHierBase::activate()
     readJob.setMayaRootDagPath(assemblyDagPath);
 
     std::vector<MDagPath> addedDagPaths;
-    if (not readJob.doIt(&addedDagPaths)) {
+    if (!readJob.doIt(&addedDagPaths)) {
         return false;
     }
 

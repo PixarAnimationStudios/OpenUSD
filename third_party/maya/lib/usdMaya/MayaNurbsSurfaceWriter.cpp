@@ -135,7 +135,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                     dispColor.SetInterpolation(interpolation);
                 }
                 dispColor.Set(RGBData);
-                if (not assignmentIndices.empty()) {
+                if (!assignmentIndices.empty()) {
                     dispColor.SetIndices(assignmentIndices);
                 }
             }
@@ -146,7 +146,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                     dispOpacity.SetInterpolation(interpolation);
                 }
                 dispOpacity.Set(AlphaData);
-                if (not assignmentIndices.empty()) {
+                if (!assignmentIndices.empty()) {
                     dispOpacity.SetIndices(assignmentIndices);
                 }
             }

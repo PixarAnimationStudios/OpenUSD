@@ -39,7 +39,7 @@ PxrUsdMayaPrimReaderContext::GetMayaNode(
     // Get Node parent
     if (_pathNodeMap) {
         for (SdfPath parentPath = path;
-                not parentPath.IsEmpty();
+                !parentPath.IsEmpty();
                 parentPath = parentPath.GetParentPath()) {
             // retrieve from a registry since nodes have not yet been put into DG
             ObjectRegistry::iterator it = _pathNodeMap->find(parentPath.GetString());
@@ -47,7 +47,7 @@ PxrUsdMayaPrimReaderContext::GetMayaNode(
                 return it->second;
             }
 
-            if (not findAncestors) {
+            if (!findAncestors) {
                 break;
             }
         }

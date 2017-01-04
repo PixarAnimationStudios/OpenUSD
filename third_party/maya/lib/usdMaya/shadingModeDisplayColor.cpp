@@ -57,11 +57,11 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
 {
     MStatus status;
     MFnDependencyNode ssDepNode(context->GetSurfaceShader(), &status);
-    if (not status) {
+    if (!status) {
         return;
     }
     MFnLambertShader lambertFn(ssDepNode.object(), &status );
-    if (not status) {
+    if (!status) {
         return;
     }
 
@@ -98,7 +98,7 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
     TF_FOR_ALL(iter, assignments) {
         const SdfPath &boundPrimPath = iter->first;
         const VtIntArray &faceIndices = iter->second;
-        if (not faceIndices.empty())
+        if (!faceIndices.empty())
             continue;
 
         UsdPrim boundPrim = stage->GetPrimAtPath(boundPrimPath);
@@ -109,13 +109,13 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
             // XXX: Note that this will not update the display color
             // in the presence of a SdfValueBlock which is a valid 
             // 'authored value opinion' in the eyes of Usd.
-            if (not primSchema.GetDisplayColorAttr()
+            if (!primSchema.GetDisplayColorAttr()
                               .HasAuthoredValueOpinion()) {
                 // not animatable
                 primSchema.GetDisplayColorPrimvar().Set(displayColorAry); 
             }
-            if (transparencyAvg > 0 and
-                not primSchema.GetDisplayOpacityAttr()
+            if (transparencyAvg > 0 && 
+                !primSchema.GetDisplayOpacityAttr()
                               .HasAuthoredValueOpinion()) {
                 // not animatable
                 primSchema.GetDisplayOpacityPrimvar().Set(displayOpacityAry); 
@@ -201,17 +201,17 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
 
     // Get Display Color from USD (linear) and convert to Display
     GfVec3f linearDisplayColor(.5,.5,.5), linearTransparency(0, 0, 0);
-    if (not shadeLook or
-        not shadeLook.GetInterfaceAttribute(_tokens->displayColor).GetAttr().Get(&linearDisplayColor)) {
+    if (!shadeLook || 
+        !shadeLook.GetInterfaceAttribute(_tokens->displayColor).GetAttr().Get(&linearDisplayColor)) {
         VtArray<GfVec3f> gprimDisplayColor(1);
-        if (primSchema and 
+        if (primSchema && 
             primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) 
         {
             linearDisplayColor=gprimDisplayColor[0];
             VtArray<float> gprimDisplayOpacity(1);
             if (primSchema.GetDisplayOpacityPrimvar().GetAttr()
                                                      .HasAuthoredValueOpinion()
-                and primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
+                && primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
                 float trans = 1.0 - gprimDisplayOpacity[0];
                 linearTransparency = GfVec3f(trans, trans, trans);
             }

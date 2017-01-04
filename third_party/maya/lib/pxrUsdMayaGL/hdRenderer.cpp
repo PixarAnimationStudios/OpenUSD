@@ -50,7 +50,7 @@ UsdMayaGLHdRenderer::CheckRendererSetup(
         const UsdPrim& usdPrim,
         const SdfPathVector& excludePaths)
 {
-    if (usdPrim != _renderedPrim or excludePaths != _excludePrimPaths) {
+    if (usdPrim != _renderedPrim || excludePaths != _excludePrimPaths) {
         _excludePrimPaths = excludePaths;
         boost::scoped_ptr<UsdImagingGL> tmpRenderer( new UsdImagingGL(usdPrim.GetPath(), _excludePrimPaths) );
 
@@ -263,7 +263,7 @@ UsdMayaGLHdRenderer::Render(
         M3dView& view,
         UsdImagingGL::RenderParams params) const
 {
-    if (not _renderedPrim.IsValid()) {
+    if (!_renderedPrim.IsValid()) {
         return;
     }
     view.beginGL();
@@ -329,7 +329,7 @@ UsdMayaGLHdRenderer::Render(
             const MPxSurfaceShape* shape = static_cast<const MPxSurfaceShape*>(
                     drawData.geometry());
 
-            if (not shape) {
+            if (!shape) {
                 break;
             }
             if( !shape->isBounded() )
@@ -365,11 +365,11 @@ UsdMayaGLHdRenderer::TestIntersection(
         GfVec3d* hitPoint) const
 {
     // Guard against user clicking in viewer before renderer is setup
-    if (not _renderer) {
+    if (!_renderer) {
         return false;
     }
 
-    if (not _renderedPrim.IsValid()) {
+    if (!_renderedPrim.IsValid()) {
         return false;
     }
 

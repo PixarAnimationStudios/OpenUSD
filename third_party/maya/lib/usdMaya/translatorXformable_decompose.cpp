@@ -86,12 +86,12 @@ _MatrixToVectorsWithPivotInvariant(
 
     GfMatrix4d rotMat = factoredRotMat * poInv;
 
-    if(not rotMat.Orthonormalize(/* issueWarning */ false))
+    if(!rotMat.Orthonormalize(/* issueWarning */ false))
         TF_WARN("Failed to orthonormalize rotMat.");
 
     _RotMatToRotTriplet(rotMat, rotation);
 
-    if(not scaleOrientMat.Orthonormalize(/* issueWarning */ false))
+    if(!scaleOrientMat.Orthonormalize(/* issueWarning */ false))
         TF_WARN("Failed to orthonormalize scaleOrientMat.");
 
     _RotMatToRotTriplet(scaleOrientMat, scaleOrientation);

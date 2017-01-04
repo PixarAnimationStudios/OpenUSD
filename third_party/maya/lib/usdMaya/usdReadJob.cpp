@@ -90,7 +90,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     MStatus status;
 
     SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(mFileName);
-    if (not rootLayer) {
+    if (!rootLayer) {
         return false;
     }
 
@@ -111,7 +111,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     // Layer and Stage used to Read in the USD file
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr stage = UsdStage::Open(rootLayer, sessionLayer);
-    if (not stage) {
+    if (!stage) {
         return false;
     }
 
@@ -148,13 +148,13 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     // Use the primPath to get the root usdNode
     UsdPrim usdRootPrim = mPrimPath.empty() ? stage->GetDefaultPrim() :
         stage->GetPrimAtPath(SdfPath(mPrimPath));
-    if (not usdRootPrim and not (mPrimPath.empty() or mPrimPath == "/")) {
+    if (!usdRootPrim && !(mPrimPath.empty() || mPrimPath == "/")) {
         usdRootPrim = stage->GetPseudoRoot();
     }
 
     bool isImportingPsuedoRoot = (usdRootPrim == stage->GetPseudoRoot());
 
-    if (not usdRootPrim) {
+    if (!usdRootPrim) {
         std::string errorMsg = TfStringPrintf(
             "No default prim found in USD file \"%s\"",
             mFileName.c_str());
@@ -164,7 +164,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 
     SdfPrimSpecHandle usdRootPrimSpec =
         SdfCreatePrimInLayer(sessionLayer, usdRootPrim.GetPrimPath());
-    if (not usdRootPrimSpec) {
+    if (!usdRootPrimSpec) {
         return false;
     }
 
@@ -185,7 +185,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     // usdRootPrim's path.
     SdfPath rootPathToRegister = usdRootPrim.GetPath();
 
-    if (isImportingPsuedoRoot or isSceneAssembly) {
+    if (isImportingPsuedoRoot || isSceneAssembly) {
         // Skip the root prim if it is the pseudoroot, or if we are importing
         // on behalf of a scene assembly.
         ++primIt;

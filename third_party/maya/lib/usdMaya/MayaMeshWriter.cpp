@@ -83,7 +83,7 @@ _GetMeshNormals(
 
     // Sanity check first to make sure we can get this mesh's normals.
     int numNormals = mesh.numNormals(&status);
-    if (status != MS::kSuccess or numNormals == 0) {
+    if (status != MS::kSuccess || numNormals == 0) {
         return false;
     }
 
@@ -97,7 +97,7 @@ _GetMeshNormals(
 
     MItMeshFaceVertex itFV(mesh.object());
     unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         MVector normal;
         status = itFV.getNormal(normal);
         if (status != MS::kSuccess) {
@@ -199,7 +199,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         TfToken sdFVLinearInterpolation =
             PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(lMesh);
 
-        if (not sdFVLinearInterpolation.IsEmpty()) {
+        if (!sdFVLinearInterpolation.IsEmpty()) {
             primSchema.CreateFaceVaryingLinearInterpolationAttr(
                 VtValue(sdFVLinearInterpolation), true);
         }
@@ -228,7 +228,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         TfToken interpolation;
         VtArray<int> assignmentIndices;
 
-        if (not _GetMeshUVSetData(lMesh,
+        if (!_GetMeshUVSetData(lMesh,
                                   uvSetNames[i],
                                   &uvValues,
                                   &interpolation,
@@ -274,7 +274,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     // opacities from the shaders assigned to the mesh and/or its faces.
     // If we find a displayColor color set, the shader colors and opacities
     // will be used to fill in unauthored/unpainted faces in the color set.
-    if (getArgs().exportDisplayColor or colorSetNames.length() > 0) {
+    if (getArgs().exportDisplayColor || colorSetNames.length() > 0) {
         PxrUsdMayaUtil::GetLinearShaderColor(lMesh,
                                              &shadersRGBData,
                                              &shadersAlphaData,
@@ -287,7 +287,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         bool isDisplayColor = false;
 
         if (colorSetNames[i] == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText()) {
-            if (not getArgs().exportDisplayColor) {
+            if (!getArgs().exportDisplayColor) {
                 continue;
             }
             isDisplayColor=true;
@@ -309,7 +309,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         MFnMesh::MColorRepresentation colorSetRep;
         bool clamped = false;
 
-        if (not _GetMeshColorSetData(lMesh,
+        if (!_GetMeshColorSetData(lMesh,
                                      colorSetNames[i],
                                      isDisplayColor,
                                      shadersRGBData,

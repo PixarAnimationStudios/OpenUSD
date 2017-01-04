@@ -54,7 +54,7 @@ _GetVariantSetSelections(const std::string& assemblyName) {
 
     UsdMayaReferenceAssembly* assembly =
         dynamic_cast<UsdMayaReferenceAssembly*>(assemblyFn.userNode());
-    if (not assembly) {
+    if (!assembly) {
         return emptyResult;
     }
 

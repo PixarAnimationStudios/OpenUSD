@@ -55,7 +55,7 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context)
 {
-    if (not usdNurbsPatch) {
+    if (!usdNurbsPatch) {
         return false;
     }
 
@@ -65,12 +65,12 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
 
     // Create the transform node for the patch.
     MObject mayaNode;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                          parentNode,
-                                                          args,
-                                                          context,
-                                                          &status,
-                                                          &mayaNode)) {
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+                                                       parentNode,
+                                                       args,
+                                                       context,
+                                                       &status,
+                                                       &mayaNode)) {
         return false;
     }
 

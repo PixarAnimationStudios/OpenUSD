@@ -83,8 +83,8 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
         if ( dagT.isValid() ) {
             bool isVis, isAnim;
             if (PxrUsdMayaUtil::getPlugValue(depFnT, "visibility", &isVis, &isAnim)){
-                isVisible = isVisible and isVis;
-                isAnimated = isAnimated or isAnim;
+                isVisible = isVisible && isVis;
+                isAnimated = isAnimated || isAnim;
             }
         }
 
@@ -103,7 +103,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     // There is no Gprim abstraction in this module, so process the few
     // gprim attrs here.
     UsdGeomGprim gprim = UsdGeomGprim(usdPrim);
-    if (gprim and usdTime.IsDefault()){
+    if (gprim && usdTime.IsDefault()){
 
         PxrUsdMayaPrimWriterContext* unused = NULL;
         PxrUsdMayaTranslatorGprim::Write(
@@ -125,7 +125,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     // first, and then attributes on the shape node. This means that attribute
     // name collisions will always be handled by taking the shape node's value
     // if we're merging transforms and shapes.
-    if (dagT.isValid() and !(dagT == getDagPath())) {
+    if (dagT.isValid() && !(dagT == getDagPath())) {
         PxrUsdMayaWriteUtil::WriteUserExportedAttributes(dagT, usdPrim, usdTime);
     }
     PxrUsdMayaWriteUtil::WriteUserExportedAttributes(getDagPath(), usdPrim, usdTime);

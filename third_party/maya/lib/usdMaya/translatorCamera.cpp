@@ -80,7 +80,7 @@ _CheckUsdTypeAndResizeArrays(
         return false;
     }
 
-    if (not PxrUsdMayaTranslatorUtil::GetTimeSamples(usdAttr, args,
+    if (!PxrUsdMayaTranslatorUtil::GetTimeSamples(usdAttr, args,
             timeSamples)) {
         return false;
     }
@@ -108,7 +108,7 @@ _GetTimeAndValueArrayForUsdAttribute(
     static const TfType& floatType = TfType::Find<float>();
     std::vector<double> timeSamples;
 
-    if (not _CheckUsdTypeAndResizeArrays(usdAttr,
+    if (!_CheckUsdTypeAndResizeArrays(usdAttr,
                                          floatType,
                                          args,
                                          &timeSamples,
@@ -122,7 +122,7 @@ _GetTimeAndValueArrayForUsdAttribute(
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
         float attrValue;
-        if (not usdAttr.Get(&attrValue, timeSample)) {
+        if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
         if (millimetersToInches) {
@@ -150,7 +150,7 @@ _GetTimeAndValueArraysForUsdAttribute(
     static const TfType& vec2fType = TfType::Find<GfVec2f>();
     std::vector<double> timeSamples;
 
-    if (not _CheckUsdTypeAndResizeArrays(usdAttr,
+    if (!_CheckUsdTypeAndResizeArrays(usdAttr,
                                          vec2fType,
                                          args,
                                          &timeSamples,
@@ -165,7 +165,7 @@ _GetTimeAndValueArraysForUsdAttribute(
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
         GfVec2f attrValue;
-        if (not usdAttr.Get(&attrValue, timeSample)) {
+        if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
         timeArray->set(MTime(timeSample), i);
@@ -209,13 +209,13 @@ _TranslateAnimatedUsdAttributeToPlug(
         PxrUsdMayaPrimReaderContext* context,
         bool millimetersToInches=false)
 {
-    if (not args.GetReadAnimData()) {
+    if (!args.GetReadAnimData()) {
         return false;
     }
 
     MTimeArray timeArray;
     MDoubleArray valueArray;
-    if (not _GetTimeAndValueArrayForUsdAttribute(usdAttr,
+    if (!_GetTimeAndValueArrayForUsdAttribute(usdAttr,
                                                  args,
                                                  &timeArray,
                                                  &valueArray,
@@ -223,7 +223,7 @@ _TranslateAnimatedUsdAttributeToPlug(
         return false;
     }
 
-    if (not _CreateAnimCurveForPlug(plug, timeArray, valueArray, context)) {
+    if (!_CreateAnimCurveForPlug(plug, timeArray, valueArray, context)) {
         return false;
     }
 
@@ -239,14 +239,14 @@ _TranslateAnimatedUsdAttributeToPlugs(
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context)
 {
-    if (not args.GetReadAnimData()) {
+    if (!args.GetReadAnimData()) {
         return false;
     }
 
     MTimeArray timeArray;
     MDoubleArray valueArray1;
     MDoubleArray valueArray2;
-    if (not _GetTimeAndValueArraysForUsdAttribute(usdAttr,
+    if (!_GetTimeAndValueArraysForUsdAttribute(usdAttr,
                                                   args,
                                                   &timeArray,
                                                   &valueArray1,
@@ -254,11 +254,11 @@ _TranslateAnimatedUsdAttributeToPlugs(
         return false;
     }
 
-    if (not _CreateAnimCurveForPlug(plug1, timeArray, valueArray1, context)) {
+    if (!_CreateAnimCurveForPlug(plug1, timeArray, valueArray1, context)) {
         return false;
     }
 
-    if (not _CreateAnimCurveForPlug(plug2, timeArray, valueArray2, context)) {
+    if (!_CreateAnimCurveForPlug(plug2, timeArray, valueArray2, context)) {
         return false;
     }
 
@@ -281,7 +281,7 @@ _TranslateUsdAttributeToPlug(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // First check for and translate animation if there is any.
-    if (not _TranslateAnimatedUsdAttributeToPlug(usdAttr,
+    if (!_TranslateAnimatedUsdAttributeToPlug(usdAttr,
                                                  plug,
                                                  args,
                                                  context,
@@ -308,7 +308,7 @@ PxrUsdMayaTranslatorCamera::Read(
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context)
 {
-    if (not usdCamera) {
+    if (!usdCamera) {
         return false;
     }
 
@@ -319,7 +319,7 @@ PxrUsdMayaTranslatorCamera::Read(
 
     // Create the transform node for the camera.
     MObject transformObj;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,
@@ -336,7 +336,7 @@ PxrUsdMayaTranslatorCamera::Read(
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
-    TF_VERIFY(not cameraObj.isNull());
+    TF_VERIFY(!cameraObj.isNull());
     MFnCamera cameraFn(cameraObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     const std::string cameraShapeName = prim.GetName().GetString() +
@@ -364,7 +364,7 @@ PxrUsdMayaTranslatorCamera::Read(
     // Setup the aperture.
     usdAttr = usdCamera.GetHorizontalApertureAttr();
     plugName = _tokens->MayaCameraAttrNameHorizontalAperture;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context,
                                          /* millimetersToInches */ true)) {
         return false;
@@ -372,7 +372,7 @@ PxrUsdMayaTranslatorCamera::Read(
 
     usdAttr = usdCamera.GetVerticalApertureAttr();
     plugName = _tokens->MayaCameraAttrNameVerticalAperture;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context,
                                          /* millimetersToInches */ true)) {
         return false;
@@ -385,7 +385,7 @@ PxrUsdMayaTranslatorCamera::Read(
 
     usdAttr = usdCamera.GetHorizontalApertureOffsetAttr();
     plugName = _tokens->MayaCameraAttrNameHorizontalApertureOffset;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context,
                                          /* millimetersToInches */ true)) {
         return false;
@@ -393,7 +393,7 @@ PxrUsdMayaTranslatorCamera::Read(
 
     usdAttr = usdCamera.GetVerticalApertureOffsetAttr();
     plugName = _tokens->MayaCameraAttrNameVerticalApertureOffset;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context,
                                          /* millimetersToInches */ true)) {
         return false;
@@ -402,21 +402,21 @@ PxrUsdMayaTranslatorCamera::Read(
     // Set the lens parameters.
     usdAttr = usdCamera.GetFocalLengthAttr();
     plugName = _tokens->MayaCameraAttrNameFocalLength;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context)) {
         return false;
     }
 
     usdAttr = usdCamera.GetFocusDistanceAttr();
     plugName = _tokens->MayaCameraAttrNameFocusDistance;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context)) {
         return false;
     }
 
     usdAttr = usdCamera.GetFStopAttr();
     plugName = _tokens->MayaCameraAttrNameFStop;
-    if (not _TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
                                          args, context)) {
         return false;
     }
@@ -431,7 +431,7 @@ PxrUsdMayaTranslatorCamera::Read(
     MPlug farClipPlug = cameraFn.findPlug(
         _tokens->MayaCameraAttrNameFarClippingPlane.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    if (not _TranslateAnimatedUsdAttributeToPlugs(usdAttr,
+    if (!_TranslateAnimatedUsdAttributeToPlugs(usdAttr,
                                                   nearClipPlug,
                                                   farClipPlug,
                                                   args,

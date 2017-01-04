@@ -36,7 +36,7 @@ void px_LegacyViewportUtils::GetViewSelectionMatrices(
         GfMatrix4d* viewMatrix,
         GfMatrix4d* projectionMatrix)
 {
-    if (not viewMatrix and not projectionMatrix) {
+    if (!viewMatrix && !projectionMatrix) {
         return;
     }
 

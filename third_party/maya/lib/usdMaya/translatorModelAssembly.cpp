@@ -94,7 +94,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     context->SetPruneChildren(true);
 
     UsdPrim prim = stage->DefinePrim(authorPath);
-    if (not prim) {
+    if (!prim) {
         MString errorMsg("Failed to create prim for USD reference assembly at path: ");
         errorMsg += MString(authorPath.GetText());
         MGlobal::displayError(errorMsg);
@@ -102,7 +102,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     }
 
     // only write references when time is default
-    if (not usdTime.IsDefault()) {
+    if (!usdTime.IsDefault()) {
         return true;
     }
 
@@ -123,7 +123,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
         std::string resolvedRefPath =
             stage->ResolveIdentifierToEditTarget(refAssetPath);
 
-        if (not resolvedRefPath.empty()) {
+        if (!resolvedRefPath.empty()) {
             std::string refPrimPathStr;
             MPlug usdRefPrimPathPlg = assemblyNode.findPlug(
                 _tokens->PrimPathPlugName.GetText(), &status);
@@ -158,7 +158,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     }
 
     auto registeredVariantSets = UsdUtilsGetRegisteredVariantSets();
-    if (not registeredVariantSets.empty()) {
+    if (!registeredVariantSets.empty()) {
         // import variant selections: we only import the "persistent" ones.
         for (const auto& regVarSet: registeredVariantSets) {
             switch (regVarSet.selectionExportPolicy) {
@@ -201,8 +201,8 @@ PxrUsdMayaTranslatorModelAssembly::Create(
         // on the referenceAssembly!
         TfToken kind;
         UsdModelAPI(prim).GetKind(&kind);
-        if (not prim.HasAuthoredInstanceable() and
-            not KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
+        if (!prim.HasAuthoredInstanceable() &&
+            !KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
             prim.SetInstanceable(true);
         }
     }
@@ -216,7 +216,7 @@ _HasAssetInfo(const UsdPrim& prim)
 {
     UsdModelAPI usdModel(prim);
     SdfAssetPath identifier;
-    if (not usdModel.GetAssetIdentifier(&identifier)) {
+    if (!usdModel.GetAssetIdentifier(&identifier)) {
         return false;
     }
 
@@ -231,10 +231,10 @@ _HasReferenceInfo(const UsdPrim& prim)
     prim.GetMetadata(SdfFieldKeys->References, &refs);
 
     // this logic is not robust.  awaiting bug 99278.
-    if (not refs.GetAddedItems().empty()) {
+    if (!refs.GetAddedItems().empty()) {
         return true;
     }
-    if (not refs.GetExplicitItems().empty()) {
+    if (!refs.GetExplicitItems().empty()) {
         return true;
     }
 
@@ -247,11 +247,11 @@ PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
     const UsdPrim& usdImportRootPrim,
     const UsdPrim& prim)
 {
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
-    if (not prim.IsModel()) {
+    if (!prim.IsModel()) {
         return false;
     }
 
@@ -283,7 +283,7 @@ _GetVariantSelections(const UsdPrim& prim)
     TF_FOR_ALL(iter, varSetNames) {
         const std::string& varSetName = *iter;
         std::string varSel = varSets.GetVariantSelection(varSetName);
-        if (not varSel.empty()) {
+        if (!varSel.empty()) {
             varSels[varSetName] = varSel;
         }
     }
@@ -304,20 +304,20 @@ PxrUsdMayaTranslatorModelAssembly::Read(
 {
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr usdStage = UsdStage::Open(assetIdentifier);
-    if (not usdStage) {
+    if (!usdStage) {
         MGlobal::displayError("Cannot open USD file " +
             MString(assetIdentifier.c_str()));
         return false;
     }
 
     UsdPrim modelPrim;
-    if (not assetPrimPath.IsEmpty()) {
+    if (!assetPrimPath.IsEmpty()) {
         modelPrim = usdStage->GetPrimAtPath(assetPrimPath);
     } else {
         modelPrim = usdStage->GetDefaultPrim();
     }
 
-    if (not modelPrim) {
+    if (!modelPrim) {
         MGlobal::displayError("Could not find model prim in USD file " +
             MString(assetIdentifier.c_str()));
         return false;
@@ -372,7 +372,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     // Set the kind attribute.
     TfToken modelKind;
     UsdModelAPI usdModel(modelPrim);
-    if (not usdModel.GetKind(&modelKind) or modelKind.IsEmpty()) {
+    if (!usdModel.GetKind(&modelKind) || modelKind.IsEmpty()) {
         modelKind = KindTokens->component;
     }
 
@@ -416,7 +416,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     }
 
     // If a representation was supplied, activate it.
-    if (not assemblyRep.empty()) {
+    if (!assemblyRep.empty()) {
         MFnAssembly assemblyFn(assemblyObj, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         if (assemblyFn.canActivate(&status)) {
@@ -442,7 +442,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
     PxrUsdMayaPrimReaderContext* context,
     const std::string& proxyShapeTypeName)
 {
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
@@ -452,7 +452,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create a transform node for the proxy node under its parent node.
     MObject transformObj;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,
@@ -469,7 +469,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
-    TF_VERIFY(not proxyObj.isNull());
+    TF_VERIFY(!proxyObj.isNull());
     const std::string proxyShapeNodeName = TfStringPrintf("%s%s",
             prim.GetName().GetText(), _tokens->MayaProxyShapeNameSuffix.GetText());
     status = dagMod.renameNode(proxyObj, proxyShapeNodeName.c_str());
