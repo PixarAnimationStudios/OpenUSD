@@ -81,11 +81,11 @@ struct Usd_Shared
     // \code
     // if (not shared.IsUnique()) { shared.Clone(); }
     // \endcode
-    void MakeUnique() { if (not IsUnique()) Clone(); }
+    void MakeUnique() { if (!IsUnique()) Clone(); }
 
     // Equality and inequality.
     bool operator==(Usd_Shared const &other) const {
-        return _held == other._held or _held->data == other._held->data;
+        return _held == other._held || _held->data == other._held->data;
     }
     bool operator!=(Usd_Shared const &other) const { return *this != other; }
 

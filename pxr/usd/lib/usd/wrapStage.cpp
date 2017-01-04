@@ -49,7 +49,7 @@ _Export(const UsdStagePtr &self, const std::string& filename,
 {
     SdfLayer::FileFormatArguments args;
     std::string errMsg;
-    if (not SdfFileFormatArgumentsFromPython(dict, &args, &errMsg)) {
+    if (!SdfFileFormatArgumentsFromPython(dict, &args, &errMsg)) {
         TF_CODING_ERROR(errMsg.c_str());
         return false;
     }
@@ -73,7 +73,7 @@ __repr__(const UsdStagePtr &self)
         TfPyRepr(self->GetRootLayer()).c_str(),
         TfPyRepr(self->GetSessionLayer()).c_str());
         
-    if (not self->GetPathResolverContext().IsEmpty()) {
+    if (!self->GetPathResolverContext().IsEmpty()) {
         result += TfStringPrintf(
             ", pathResolverContext=%s",
             TfPyRepr(self->GetPathResolverContext()).c_str());
@@ -95,7 +95,7 @@ _GetMetadata(const UsdStagePtr &self, const TfToken &key)
 static bool _SetMetadata(const UsdStagePtr &self, const TfToken& key,
                          object obj) {
     VtValue value;
-    return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) and
+    return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) &&
         self->SetMetadata(key, value);
 }
 
@@ -113,7 +113,7 @@ _GetMetadataByDictKey(const UsdStagePtr &self,
 static bool _SetMetadataByDictKey(const UsdStagePtr &self, const TfToken& key,
                                   const TfToken &keyPath, object obj) {
     VtValue value;
-    return UsdPythonToMetadataValue(key, keyPath, obj, &value) and
+    return UsdPythonToMetadataValue(key, keyPath, obj, &value) &&
         self->SetMetadataByDictKey(key, keyPath, value);
 }
 

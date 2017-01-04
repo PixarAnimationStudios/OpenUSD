@@ -84,15 +84,15 @@ public:
 
     bool IsPostVisit() const { return _iter.IsPostVisit(); }
     void PruneChildren() { _iter.PruneChildren(); }
-    bool IsValid() const { return _curPrim and _iter; }
+    bool IsValid() const { return _curPrim && _iter; }
     UsdPrim GetCurrentPrim() const { return _curPrim; }
 
     operator bool() const { return IsValid(); }
     bool operator==(Usd_PyTreeIterator other) const {
-        return _curPrim == other._curPrim and _iter == other._iter;
+        return _curPrim == other._curPrim && _iter == other._iter;
     }
     bool operator!=(Usd_PyTreeIterator other) const {
-        return not (*this == other);
+        return !(*this == other);
     }
 
     // Intentionally does nothing -- simply bound with a return_self policy.
@@ -102,7 +102,7 @@ public:
         // If the current prim is invalid, we can't use _iter and must raise an
         // exception.
         _RaiseIfAtEnd();
-        if (not _curPrim) {
+        if (!_curPrim) {
             PyErr_SetString(
                 PyExc_RuntimeError,
                 TfStringPrintf("Iterator points to %s",
@@ -146,7 +146,7 @@ private:
         {}
 
     void _RaiseIfAtEnd() const {
-        if (not _iter) {
+        if (!_iter) {
             PyErr_SetString(PyExc_StopIteration, "TreeIterator at end");
             throw_error_already_set();
         }

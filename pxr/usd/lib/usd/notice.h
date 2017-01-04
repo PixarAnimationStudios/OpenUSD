@@ -114,7 +114,7 @@ public:
         /// ResyncedObject(obj) or ChangedInfoOnly(obj)
         /// \endcode
         bool AffectedObject(const UsdObject &obj) const {
-            return ResyncedObject(obj) or ChangedInfoOnly(obj);
+            return ResyncedObject(obj) || ChangedInfoOnly(obj);
         }
 
         /// Return true if \p obj was resynced by the layer changes that

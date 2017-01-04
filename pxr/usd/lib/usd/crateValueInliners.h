@@ -41,7 +41,7 @@ template <class Src, class Dst>
 inline bool _IsExactlyRepresented(Src const &src, Dst *dst) {
     Src min = static_cast<Src>(std::numeric_limits<Dst>::min());
     Src max = static_cast<Src>(std::numeric_limits<Dst>::max());
-    if (min <= src and src <= max and
+    if (min <= src && src <= max &&
         static_cast<Src>(static_cast<Dst>(src)) == src) {
         *dst = static_cast<Dst>(src);
         return true;
@@ -109,7 +109,7 @@ _EncodeInline(T vec, uint32_t *out) {
     static_assert(T::dimension <= 4, "Vec dimension cannot exceed 4.");
     int8_t ivec[T::dimension];
     for (int i = 0; i != T::dimension; ++i) {
-        if (not _IsExactlyRepresented(vec[i], &ivec[i]))
+        if (!_IsExactlyRepresented(vec[i], &ivec[i]))
             return false;
     }
     // All components exactly represented as int8_t, can inline.
@@ -140,8 +140,8 @@ _EncodeInline(Matrix m, uint32_t *out) {
     int8_t diag[Matrix::numRows];
     for (int i = 0; i != Matrix::numRows; ++i) {
         for (int j = 0; j != Matrix::numColumns; ++j) {
-            if (((i != j) and m[i][j] != 0) or
-                ((i == j) and not _IsExactlyRepresented(m[i][j], &diag[i]))) {
+            if (((i != j) && m[i][j] != 0) ||
+                ((i == j) && !_IsExactlyRepresented(m[i][j], &diag[i]))) {
                 return false;
             }
         }

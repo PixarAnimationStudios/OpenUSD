@@ -41,7 +41,7 @@ UsdAttributeQuery::UsdAttributeQuery(
     const UsdPrim& prim, const TfToken& attrName)
 {
     UsdAttribute attr = prim.GetAttribute(attrName);
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR(
             "Invalid attribute '%s' on prim <%s>",
             attrName.GetText(), prim.GetPath().GetString().c_str());
@@ -73,7 +73,7 @@ UsdAttributeQuery::_Initialize(const UsdAttribute& attr)
 {
     TRACE_FUNCTION();
 
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR("Invalid attribute");
         return;
     }
@@ -136,7 +136,7 @@ UsdAttributeQuery::Get(VtValue* value, UsdTimeCode time) const
     bool foundValue = stage->_GetValueFromResolveInfo(_resolveInfo, time, 
                                                       _attr, value);
 
-    if (foundValue and value) {
+    if (foundValue && value) {
         stage->_MakeResolvedAssetPaths(time, _attr, value);
     }
 

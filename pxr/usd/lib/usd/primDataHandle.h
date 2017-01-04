@@ -90,7 +90,7 @@ public:
     element_type *operator->() const {
         element_type *p = _p.get();
 #ifdef USD_CHECK_ALL_PRIM_ACCESSES
-        if (not p or Usd_IsDead(p))
+        if (!p || Usd_IsDead(p))
             Usd_IssueFatalPrimAccessError(p);
 #endif
         return p;
@@ -100,7 +100,7 @@ public:
     // instance that is not marked dead, false otherwise.
     operator _UnspecifiedBoolType() const {
         element_type *p = _p.get();
-        return p and not Usd_IsDead(p) ? &Usd_PrimDataHandle::_p : NULL;
+        return p && !Usd_IsDead(p) ? &Usd_PrimDataHandle::_p : NULL;
     }
 
     // Return a text description of this prim data, used primarily for
@@ -117,7 +117,7 @@ private:
     // Inequality comparison.
     friend bool operator!=(const Usd_PrimDataHandle &lhs,
                            const Usd_PrimDataHandle &rhs) {
-        return not (lhs == rhs);
+        return !(lhs == rhs);
     }
 
     // Swap \p lhs and \p rhs.

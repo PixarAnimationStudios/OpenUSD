@@ -397,7 +397,7 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer,
         (result ? FMT("found %s", UsdDescribe(result).c_str())
                 : "failed to find stage"),
         (result ? "" : FMT(" @%s@", rootLayer->GetIdentifier().c_str())),
-        (result ? "" : (not sessionLayer ? " <null>" :
+        (result ? "" : (!sessionLayer ? " <null>" :
                         FMT(" @%s@", sessionLayer->GetIdentifier().c_str()))),
         UsdDescribe(*this).c_str());
 
@@ -443,7 +443,7 @@ UsdStageCache::FindOneMatching(
         auto range = byRootLayer.equal_range(rootLayer);
         for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
             const auto& entry = *entryIt;
-            if (entry.stage->GetSessionLayer() == sessionLayer and
+            if (entry.stage->GetSessionLayer() == sessionLayer &&
                 entry.stage->GetPathResolverContext() == pathResolverContext) {
                 result = entry.stage;
                 break;
@@ -455,7 +455,7 @@ UsdStageCache::FindOneMatching(
         (result ? FMT("found %s", UsdDescribe(result).c_str())
                 : "failed to find stage"),
         (result ? "" : FMT(" @%s@", rootLayer->GetIdentifier().c_str())),
-        (result ? "" : (not sessionLayer ? " <null>" :
+        (result ? "" : (!sessionLayer ? " <null>" :
                         FMT(" @%s@", sessionLayer->GetIdentifier().c_str()))),
         UsdDescribe(*this).c_str());
 
@@ -521,7 +521,7 @@ UsdStageCache::FindAllMatching(
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
-        if (entry.stage->GetSessionLayer() == sessionLayer and
+        if (entry.stage->GetSessionLayer() == sessionLayer &&
             entry.stage->GetPathResolverContext() == pathResolverContext) {
             result.push_back(entry.stage);
         }
@@ -541,7 +541,7 @@ UsdStageCache::GetId(const UsdStageRefPtr &stage) const
 UsdStageCache::Id
 UsdStageCache::Insert(const UsdStageRefPtr &stage)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Inserted null stage in cache");
         return Id();
     }
@@ -552,7 +552,7 @@ UsdStageCache::Insert(const UsdStageRefPtr &stage)
     { LockGuard lock(_mutex);
         StagesByStage &byStage = _impl->stages.get<ByStage>();
         auto iresult = byStage.insert(Entry(stage, GetNextId()));
-        if (iresult.second and debug.IsEnabled())
+        if (iresult.second && debug.IsEnabled())
             debug.AddEntry(*iresult.first);
         ret = iresult.first->id;
     }
@@ -629,7 +629,7 @@ UsdStageCache::EraseAll(const SdfLayerHandle &rootLayer,
         numErased =
             EraseIf(byRootLayer, byRootLayer.equal_range(rootLayer),
                     (bind(&UsdStage::GetSessionLayer,
-                          bind(&Entry::stage, _1)) == sessionLayer) and
+                          bind(&Entry::stage, _1)) == sessionLayer) &&
                     (bind(&UsdStage::GetPathResolverContext,
                           bind(&Entry::stage, _1)) == pathResolverContext),
                     debug.GetEntryVec());

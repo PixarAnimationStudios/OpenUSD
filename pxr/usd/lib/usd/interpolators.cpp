@@ -65,7 +65,7 @@ Usd_UntypedInterpolator::_Interpolate(
     // value.
 
     const TfType attrValueType = attr.GetTypeName().GetType();
-    if (not attrValueType) {
+    if (!attrValueType) {
         TF_RUNTIME_ERROR(
             "Unknown value type '%s' for attribute '%s'",
             attr.GetTypeName().GetAsToken().GetText(),

@@ -60,17 +60,17 @@ struct Usd_ResolvedClipInfo
     bool operator==(const Usd_ResolvedClipInfo& rhs) const
     {
         return (clipAssetPaths == rhs.clipAssetPaths
-            and clipManifestAssetPath == rhs.clipManifestAssetPath
-            and clipPrimPath == rhs.clipPrimPath
-            and clipActive == rhs.clipActive
-            and clipTimes == rhs.clipTimes
-            and indexOfLayerWhereAssetPathsFound 
+            && clipManifestAssetPath == rhs.clipManifestAssetPath
+            && clipPrimPath == rhs.clipPrimPath
+            && clipActive == rhs.clipActive
+            && clipTimes == rhs.clipTimes
+            && indexOfLayerWhereAssetPathsFound 
                     == rhs.indexOfLayerWhereAssetPathsFound);
     }
 
     bool operator!=(const Usd_ResolvedClipInfo& rhs) const
     {
-        return not (*this == rhs);
+        return !(*this == rhs);
     }
 
     size_t GetHash() const

@@ -62,7 +62,7 @@ _GetFileFormat(const TfToken& formatId)
     const SdfFileFormatConstPtr fileFormat = SdfFileFormat::FindById(formatId);
     // XXX: Usdb does not exist in open source builds so we can't
     // verify in that case.
-    TF_VERIFY(fileFormat or formatId == UsdUsdbFileFormatTokens->Id);
+    TF_VERIFY(fileFormat || formatId == UsdUsdbFileFormatTokens->Id);
     return fileFormat;
 }
 
@@ -88,7 +88,7 @@ _GetUnderlyingFileFormat(const string& filePath)
     // XXX: Explicitly check if the Usdb format exists because it may not
     // in open source builds.
     auto usdbFormat = _GetFileFormat(UsdUsdbFileFormatTokens->Id);
-    if (usdbFormat and usdbFormat->CanRead(filePath)) {
+    if (usdbFormat && usdbFormat->CanRead(filePath)) {
         return usdbFormat;
     }
 
@@ -117,7 +117,7 @@ _GetUnderlyingFileFormat(const SdfAbstractDataConstPtr& data)
 
     // XXX -- Magic knowledge of non-local format.
     static SdfAbstractDataRefPtr usdbData = _NewUsdbData();
-    if (usdbData and 
+    if (usdbData && 
         typeid(*boost::get_pointer(data)) ==
                 typeid(*boost::get_pointer(usdbData))) {
         return _GetFileFormat(UsdUsdbFileFormatTokens->Id);
@@ -141,8 +141,8 @@ _GetDefaultFileFormat()
 {
     TfToken defaultFormatId(TfGetEnvSetting(USD_DEFAULT_FILE_FORMAT));
     if (defaultFormatId != UsdUsdaFileFormatTokens->Id
-        and defaultFormatId != UsdUsdbFileFormatTokens->Id
-        and defaultFormatId != UsdUsdcFileFormatTokens->Id) {
+        && defaultFormatId != UsdUsdbFileFormatTokens->Id
+        && defaultFormatId != UsdUsdcFileFormatTokens->Id) {
         TF_WARN("Default file format '%s' set in USD_DEFAULT_FILE_FORMAT "
                 "must be one of 'usda', 'usdb', or 'usdc'. "
                 "Falling back to 'usdc'", defaultFormatId.GetText());
@@ -150,7 +150,7 @@ _GetDefaultFileFormat()
     }
 
     SdfFileFormatConstPtr defaultFormat = _GetFileFormat(defaultFormatId);
-    if (not defaultFormat) {
+    if (!defaultFormat) {
         // Fallback to the built-in .usdc binary file format if we can't
         // find the format specified in the env setting. This protects
         // against the case where the deprecated .usdb format is specified
@@ -172,8 +172,8 @@ TfToken
 _GetFormatArgumentForFileFormat(const SdfFileFormatConstPtr& fileFormat)
 {
     TfToken formatArg = fileFormat ? fileFormat->GetFormatId() : TfToken();
-    TF_VERIFY(formatArg == UsdUsdaFileFormatTokens->Id or
-              formatArg == UsdUsdbFileFormatTokens->Id or
+    TF_VERIFY(formatArg == UsdUsdaFileFormatTokens->Id ||
+              formatArg == UsdUsdbFileFormatTokens->Id ||
               formatArg == UsdUsdcFileFormatTokens->Id,
               "Unhandled file format '%s'",
               fileFormat ? formatArg.GetText() : "<null>");
@@ -233,7 +233,7 @@ SdfAbstractDataRefPtr
 UsdUsdFileFormat::InitData(const FileFormatArguments& args) const
 {
     SdfFileFormatConstPtr fileFormat = _GetFileFormatForArguments(args);
-    if (not fileFormat) {
+    if (!fileFormat) {
         fileFormat = _GetDefaultFileFormat();
     }
     
@@ -256,7 +256,7 @@ UsdUsdFileFormat::Read(
 
     auto underlyingFileFormat = _GetUnderlyingFileFormat(resolvedPath);
 
-    return underlyingFileFormat and
+    return underlyingFileFormat && 
         underlyingFileFormat->Read(layerBase, resolvedPath, metadataOnly);
 }
 
@@ -266,7 +266,7 @@ UsdUsdFileFormat::_GetUnderlyingFileFormatForLayer(
 {
     // XXX: Blergh. Really need to clean up SdfFileFormat.
     const SdfLayer* layer = dynamic_cast<const SdfLayer*>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return _GetDefaultFileFormat();
     }
 
@@ -297,7 +297,7 @@ UsdUsdFileFormat::WriteToFile(
     // we use the default underlying format for .usd. This ensures consistent
     // behavior -- creating a new .usd layer always uses the default format
     // unless otherwise specified.
-    if (not fileFormat) {
+    if (!fileFormat) {
         // XXX: Blergh. Really need to clean up SdfFileFormat.
         auto l = dynamic_cast<const SdfLayer*>(layerBase);
 
@@ -315,7 +315,7 @@ UsdUsdFileFormat::WriteToFile(
         }
     }
 
-    if (not fileFormat) {
+    if (!fileFormat) {
         fileFormat = _GetDefaultFileFormat();
     }
 

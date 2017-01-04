@@ -85,7 +85,7 @@ UsdSpecializes::SetItems(const SdfPathVector& items)
 SdfPrimSpecHandle
 UsdSpecializes::_CreatePrimSpecForEditing()
 {
-    if (not _prim) {
+    if (!_prim) {
         TF_CODING_ERROR("Invalid prim.");
         return SdfPrimSpecHandle();
     }

@@ -87,10 +87,10 @@ UsdStageCacheContext::_GetWritableCaches()
     caches.reserve(stack.size());
     for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
         const auto& ctx = *ctxIter;
-        if (ctx->_blockType == UsdBlockStageCaches or
+        if (ctx->_blockType == UsdBlockStageCaches ||
             ctx->_blockType == UsdBlockStageCachePopulation) {
             break;
-        } else if (not ctx->_isReadOnlyCache) {
+        } else if (!ctx->_isReadOnlyCache) {
             caches.push_back(ctx->_rwCache);
         }
     }

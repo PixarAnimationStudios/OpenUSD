@@ -226,10 +226,10 @@ private:
         // because the provided time samples should all have valid values.
         // So this call fails because our <T> is not an SdfValueBlock,
         // which is the type of the contained value.
-        if (not src->QueryTimeSample(specId, lower, &lowerValue)) {
+        if (!src->QueryTimeSample(specId, lower, &lowerValue)) {
             return false;
         } 
-        else if (not src->QueryTimeSample(specId, upper, &upperValue)) {
+        else if (!src->QueryTimeSample(specId, upper, &upperValue)) {
             upperValue = lowerValue; 
         }
 
@@ -283,10 +283,10 @@ private:
         // because the provided time samples should all have valid values.
         // So this call fails because our <T> is not an SdfValueBlock,
         // which is the type of the contained value.
-        if (not src->QueryTimeSample(specId, lower, &lowerValue)) {
+        if (!src->QueryTimeSample(specId, lower, &lowerValue)) {
             return false;
         } 
-        else if (not src->QueryTimeSample(specId, upper, &upperValue)) {
+        else if (!src->QueryTimeSample(specId, upper, &upperValue)) {
             upperValue = lowerValue;
         }
 

@@ -70,7 +70,7 @@ UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
     // the given value.  Deeper in the 'Set()' implementation, we'll issue a
     // detailed type mismatch error.
     VtValue cast = VtValue::CastToTypeOf(val, defVal);
-    if (not cast.IsEmpty())
+    if (!cast.IsEmpty())
         cast.Swap(val);
 
     return val;
@@ -84,11 +84,11 @@ UsdPythonToMetadataValue(
     using namespace boost::python;
 
     VtValue fallback;
-    if (not SdfSchema::GetInstance().IsRegistered(key, &fallback)) {
+    if (!SdfSchema::GetInstance().IsRegistered(key, &fallback)) {
         TF_CODING_ERROR("Unregistered metadata key: %s", key.GetText());
         return false;
     }
-    if (not keyPath.IsEmpty() and fallback.IsHolding<VtDictionary>()) {
+    if (!keyPath.IsEmpty() && fallback.IsHolding<VtDictionary>()) {
         // Extract fallback element from fallback dict if present.
         if (VtValue const *fb = fallback.UncheckedGet<VtDictionary>().
             GetValueAtPath(keyPath.GetString())) {
@@ -104,7 +104,7 @@ UsdPythonToMetadataValue(
     }
     // We have to handle a few things as special cases to disambiguate
     // types from Python.
-    if (not fallback.IsEmpty()) {
+    if (!fallback.IsEmpty()) {
         if (fallback.IsHolding<SdfPath>()) {
             value = extract<SdfPath>(pyVal.Get())();
         }

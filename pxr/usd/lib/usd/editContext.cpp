@@ -53,7 +53,7 @@ UsdEditContext::UsdEditContext(
 UsdEditContext::~UsdEditContext()
 {
     // Stage should never allow an invalid EditTarget to be set...
-    if (_stage and TF_VERIFY(_originalEditTarget.IsValid()))
+    if (_stage && TF_VERIFY(_originalEditTarget.IsValid()))
         _stage->SetEditTarget(_originalEditTarget);
 }
 

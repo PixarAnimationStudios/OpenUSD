@@ -88,13 +88,13 @@ UsdUsdcFileFormat::Read(const SdfLayerBasePtr& layerBase,
     TRACE_FUNCTION();
 
     auto layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer))
+    if (!TF_VERIFY(layer))
         return false;
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
     auto crateData = TfDynamic_cast<Usd_CrateDataRefPtr>(data);
 
-    if (not crateData or not crateData->Open(resolvedPath))
+    if (!crateData || !crateData->Open(resolvedPath))
         return false;
 
     // Just swap out the data - unlike text layers fully populated into memory,
@@ -122,7 +122,7 @@ UsdUsdcFileFormat::WriteToFile(const SdfLayerBase* layerBase,
 {
     auto layer = dynamic_cast<const SdfLayer*>(layerBase);
 
-    if (not TF_VERIFY(layer))
+    if (!TF_VERIFY(layer))
         return false;
 
     SdfAbstractDataConstPtr dataSource =

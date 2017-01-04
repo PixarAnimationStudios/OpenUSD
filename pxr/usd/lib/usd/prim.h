@@ -825,7 +825,7 @@ public:
     /// instanceable data.
     bool IsInstanceable() const { 
         bool instanceable = false;
-        return GetMetadata(SdfFieldKeys->Instanceable, &instanceable) and
+        return GetMetadata(SdfFieldKeys->Instanceable, &instanceable) &&
             instanceable;
     }
 
@@ -1045,15 +1045,15 @@ private:
         , _end(end)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
-        if (base() != end and not _predicate(base()))
+        if (base() != end && !_predicate(base()))
             increment();
     }
 
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSiblingIterator &other) const {
-        return base() == other.base() and
-            _end == other._end and _predicate == other._predicate;
+        return base() == other.base() &&
+            _end == other._end && _predicate == other._predicate;
     }
 
     void increment() {
@@ -1061,7 +1061,7 @@ private:
         // Advance base until end is encountered or the predicate succeeds.
         do {
             base = base->GetNextSibling();
-        } while (base != _end and not _predicate(base));
+        } while (base != _end && !_predicate(base));
     }
 
     reference dereference() const {
@@ -1101,8 +1101,8 @@ UsdPrim::GetAllChildren() const
 UsdPrimSiblingRange
 UsdPrim::GetChildren() const
 {
-    return GetFilteredChildren(UsdPrimIsActive and UsdPrimIsDefined and
-                               UsdPrimIsLoaded and not UsdPrimIsAbstract);
+    return GetFilteredChildren(UsdPrimIsActive && UsdPrimIsDefined &&
+                               UsdPrimIsLoaded && !UsdPrimIsAbstract);
 }
 
 // Helper to make a sibling range.
@@ -1230,7 +1230,7 @@ private:
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
         base_type &base = base_reference();
-        if (base != _end and not _predicate(base)) {
+        if (base != _end && !_predicate(base)) {
             if (Usd_MoveToNextSiblingOrParent(base, _end, _predicate))
                 base = _end;
         }
@@ -1239,13 +1239,13 @@ private:
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSubtreeIterator &other) const {
-        return base() == other.base() and
-            _end == other._end and _predicate == other._predicate;
+        return base() == other.base() && 
+            _end == other._end && _predicate == other._predicate;
     }
 
     void increment() {
         base_type &base = base_reference();
-        if (not Usd_MoveToChild(base, _end, _predicate)) {
+        if (!Usd_MoveToChild(base, _end, _predicate)) {
             while (Usd_MoveToNextSiblingOrParent(base, _end, _predicate)) {}
         }
     }
@@ -1286,8 +1286,8 @@ UsdPrim::GetAllDescendants() const
 UsdPrimSubtreeRange
 UsdPrim::GetDescendants() const
 {
-    return GetFilteredDescendants(UsdPrimIsActive and UsdPrimIsDefined and
-                                  UsdPrimIsLoaded and not UsdPrimIsAbstract);
+    return GetFilteredDescendants(UsdPrimIsActive && UsdPrimIsDefined &&
+                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
 }
 
 // Helper to make a sibling range.

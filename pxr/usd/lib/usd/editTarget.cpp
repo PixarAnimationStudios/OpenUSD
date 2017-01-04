@@ -122,7 +122,7 @@ UsdEditTarget
 UsdEditTarget::ForLocalDirectVariant(const SdfLayerHandle &layer,
                                      const SdfPath &varSelPath)
 {
-    if (not varSelPath.IsPrimVariantSelectionPath()) {
+    if (!varSelPath.IsPrimVariantSelectionPath()) {
         TF_CODING_ERROR("Provided varSelPath <%s> must be a prim variant "
                         "selection path.", varSelPath.GetText());
         return UsdEditTarget();
@@ -140,7 +140,7 @@ UsdEditTarget::ForLocalDirectVariant(const SdfLayerHandle &layer,
 bool
 UsdEditTarget::operator==(const UsdEditTarget &o) const
 {
-    return _layer == o._layer and _mapping == o._mapping;
+    return _layer == o._layer && _mapping == o._mapping;
 }
 
 SdfPath
@@ -194,6 +194,6 @@ UsdEditTarget
 UsdEditTarget::ComposeOver(const UsdEditTarget &weaker) const
 {
     return UsdEditTarget(
-        not _layer ? weaker._layer : _layer,
+        !_layer ? weaker._layer : _layer,
         _mapping.Compose(weaker._mapping));
 }

@@ -262,7 +262,7 @@ protected:
     template<typename T>
     bool _GetAssetInfoByKey(const TfToken &key, T *val) const {
         VtValue vtVal = GetPrim().GetAssetInfoByKey(key);
-        if (not vtVal.IsEmpty() and vtVal.IsHolding<T>()) {
+        if (!vtVal.IsEmpty() && vtVal.IsHolding<T>()) {
             *val = vtVal.UncheckedGet<T>();
             return true;
         }

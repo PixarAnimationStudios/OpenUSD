@@ -51,7 +51,7 @@ Usd_InstanceCache::RegisterInstancePrimIndex(const PcpPrimIndex& index)
 {
     TfAutoMallocTag tag("InstanceCache::RegisterIndex");
 
-    if (not TF_VERIFY(index.IsInstanceable())) {
+    if (!TF_VERIFY(index.IsInstanceable())) {
         return false;
     }
 
@@ -76,7 +76,7 @@ Usd_InstanceCache::RegisterInstancePrimIndex(const PcpPrimIndex& index)
     // already exist and this instance is the first one registered for
     // this key.
     const bool needsNewMaster = 
-        (not masterAlreadyExists and pendingIndexes.size() == 1);
+        (!masterAlreadyExists && pendingIndexes.size() == 1);
     return needsNewMaster;
 }
 
@@ -89,12 +89,12 @@ Usd_InstanceCache::UnregisterInstancePrimIndexesUnder(
     for (_PrimIndexToMasterMap::const_iterator 
              it = _primIndexToMasterMap.lower_bound(primIndexPath),
              end = _primIndexToMasterMap.end();
-         it != end and it->first.HasPrefix(primIndexPath); ++it) {
+         it != end && it->first.HasPrefix(primIndexPath); ++it) {
 
         const SdfPath& masterPath = it->second;
         _MasterToInstanceKeyMap::const_iterator masterToKeyIt = 
             _masterToInstanceKeyMap.find(masterPath);
-        if (not TF_VERIFY(masterToKeyIt != _masterToInstanceKeyMap.end())) {
+        if (!TF_VERIFY(masterToKeyIt != _masterToInstanceKeyMap.end())) {
             continue;
         }
 
@@ -148,7 +148,7 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
                  _pendingAddedPrimIndexes) {
             const Usd_InstanceKey& key = v.first;
             const _PrimIndexPaths& primIndexes = v.second;
-            if (TF_VERIFY(not primIndexes.empty())) {
+            if (TF_VERIFY(!primIndexes.empty())) {
                 keysToProcess[*std::min_element(
                         primIndexes.begin(), primIndexes.end())] = key;
             }
@@ -306,7 +306,7 @@ Usd_InstanceCache::_RemoveInstances(
     // Otherwise, do nothing; we defer removal of this master until
     // the end of instance change processing (see _RemoveMasterIfNoInstances)
     // in case a new instance for this master was registered.
-    if (masterNeedsNewPrimIndex and not primIndexesForMaster.empty()) {
+    if (masterNeedsNewPrimIndex && !primIndexesForMaster.empty()) {
         const SdfPath& newSourceIndexPath = primIndexesForMaster.front();
 
         TF_DEBUG(USD_INSTANCING).Msg(
@@ -333,7 +333,7 @@ Usd_InstanceCache::_RemoveMasterIfNoInstances(
 
     const SdfPath& masterPath = keyToMasterIt->second;
     auto masterToPrimIndexesIt = _masterToPrimIndexesMap.find(masterPath);
-    if (not TF_VERIFY(masterToPrimIndexesIt != _masterToPrimIndexesMap.end())) {
+    if (!TF_VERIFY(masterToPrimIndexesIt != _masterToPrimIndexesMap.end())) {
         return;
     }
 
@@ -370,7 +370,7 @@ Usd_InstanceCache::IsPathMasterOrInMaster(const SdfPath& path)
     }
 
     SdfPath rootPath = path;
-    while (not rootPath.IsRootPrimPath()) {
+    while (!rootPath.IsRootPrimPath()) {
         rootPath = rootPath.GetParentPath();
     }
 
@@ -497,7 +497,7 @@ Usd_InstanceCache::_IsPrimInMasterUsingPrimIndexAtPath(
         // by a descendent of that master.
         _MasterToSourcePrimIndexMap::const_iterator masterToSourceIt =
             _masterToSourcePrimIndexMap.find(it->second);
-        if (not TF_VERIFY(
+        if (!TF_VERIFY(
                 masterToSourceIt != _masterToSourcePrimIndexMap.end())) {
             break;
         }
@@ -587,7 +587,7 @@ Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
     // computed in this example!
 
     SdfPath curPrimIndexPath = primIndexPath;
-    while (not curPrimIndexPath.IsEmpty()) {
+    while (!curPrimIndexPath.IsEmpty()) {
         // Find the instance prim index that is closest to the current
         // prim index path. If there isn't one, this prim index isn't a 
         // descendent of an instance.
@@ -612,7 +612,7 @@ Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
         // instance's master (if one exists).
         _MasterToSourcePrimIndexMap::const_iterator masterToSourceIt =
             _masterToSourcePrimIndexMap.find(it->second);
-        if (not TF_VERIFY(
+        if (!TF_VERIFY(
                 masterToSourceIt != _masterToSourcePrimIndexMap.end())) {
             break;
         }

@@ -381,7 +381,7 @@ public:
     ///       some recomposition cost. Similarly, unloading an unloaded prim
     ///       is legal.
     ///     - Specifying a path that does not target a prim is legal as long it
-    ///       has at least one ancestor in the scene graph (not including the
+    ///       has at least one ancestor in the scene graph (!including the
     ///       absolute root). If the given path has no ancestors, it is an
     ///       error.
     ///     - Loading an inactive prim is an error.
@@ -1700,7 +1700,7 @@ bool
 UsdStage::GetMetadata(const TfToken& key, T* value) const
 {
     VtValue result;
-    if (not GetMetadata(key, &result)){
+    if (!GetMetadata(key, &result)){
         return false;
     }
 
@@ -1731,7 +1731,7 @@ UsdStage::GetMetadataByDictKey(const TfToken& key, const TfToken &keyPath,
                                T* value) const
 {
     VtValue result;
-    if (not GetMetadataByDictKey(key, keyPath, &result)){
+    if (!GetMetadataByDictKey(key, keyPath, &result)){
         return false;
     }
 

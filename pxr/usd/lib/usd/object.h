@@ -75,8 +75,8 @@ template <> struct GetObjType<UsdRelationship> : Const<UsdTypeRelationship> {};
 /// otherwise.
 inline bool
 UsdIsSubtype(UsdObjType baseType, UsdObjType subType) {
-    return (baseType == UsdTypeObject) or (baseType == subType) or
-        (baseType == UsdTypeProperty and subType > UsdTypeProperty);
+    return (baseType == UsdTypeObject) || (baseType == subType) ||
+        (baseType == UsdTypeProperty && subType > UsdTypeProperty);
 }
 
 /// Return true if \a from is convertible to \a to, false otherwise.  Equivalent
@@ -90,8 +90,8 @@ UsdIsConvertible(UsdObjType from, UsdObjType to) {
 /// Attribute, or Relationship.
 inline bool
 UsdIsConcrete(UsdObjType type) {
-    return type == UsdTypePrim or
-        type == UsdTypeAttribute or
+    return type == UsdTypePrim   ||
+        type == UsdTypeAttribute ||
         type == UsdTypeRelationship;
 }
 
@@ -135,14 +135,14 @@ public:
 
     /// Return true if this is a valid object, false otherwise.
     bool IsValid() const {
-        if (not UsdIsConcrete(_type) or not _prim)
+        if (!UsdIsConcrete(_type) || !_prim)
             return false;
         if (_type == UsdTypePrim)
             return true;
         SdfSpecType specType = _GetDefiningSpecType();
-        return (_type == UsdTypeAttribute and
-                specType == SdfSpecTypeAttribute) or
-            (_type == UsdTypeRelationship and
+        return (_type == UsdTypeAttribute &&
+                specType == SdfSpecTypeAttribute) ||
+            (_type == UsdTypeRelationship &&
              specType == SdfSpecTypeRelationship);
     }
 
@@ -160,15 +160,15 @@ public:
     /// Equality comparison.  Return true if \a lhs and \a rhs represent the
     /// same UsdObject, false otherwise.
     friend bool operator==(const UsdObject &lhs, const UsdObject &rhs) {
-        return lhs._type == rhs._type and
-            lhs._prim == rhs._prim and
+        return lhs._type == rhs._type &&
+            lhs._prim == rhs._prim    &&
             lhs._propName == rhs._propName;
     }
 
     /// Inequality comparison. Return false if \a lhs and \a rhs represent the
     /// same UsdObject, true otherwise.
     friend bool operator!=(const UsdObject &lhs, const UsdObject &rhs) {
-        return not (lhs == rhs);
+        return !(lhs == rhs);
     }
 
     // hash_value overload for std/boost hash.

@@ -33,8 +33,8 @@
 bool
 _ValidateNoSubRootReferences(const SdfReference &ref)
 {
-    if (not ref.GetPrimPath().IsEmpty() and 
-        not ref.GetPrimPath().IsRootPrimPath()) {
+    if (!ref.GetPrimPath().IsEmpty() &&
+        !ref.GetPrimPath().IsRootPrimPath()) {
         TF_CODING_ERROR("Cannot make a reference to a non-root prim: "
                         "@%s@<%s>",
                         ref.GetAssetPath().c_str(), ref.GetPrimPath().GetText());
@@ -49,7 +49,7 @@ _ValidateNoSubRootReferences(const SdfReference &ref)
 bool
 UsdReferences::Add(const SdfReference& ref)
 {
-    if (not _ValidateNoSubRootReferences(ref))
+    if (!_ValidateNoSubRootReferences(ref))
         return false;
     
     SdfChangeBlock block;
@@ -115,7 +115,7 @@ UsdReferences::Clear()
 
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfReferencesProxy refs = spec->GetReferenceList();
-        success = refs.ClearEdits() and mark.IsClean();
+        success = refs.ClearEdits() && mark.IsClean();
     }
     mark.Clear();
     return success;
@@ -132,7 +132,7 @@ UsdReferences::SetItems(const SdfReferenceVector& items)
     // call, so instead, just set the field directly.
     SdfReferenceListOp refs;
     refs.SetExplicitItems(items);
-    success = GetPrim().SetMetadata(SdfFieldKeys->References, refs) and 
+    success = GetPrim().SetMetadata(SdfFieldKeys->References, refs) && 
         mark.IsClean();
 
     mark.Clear();
@@ -147,7 +147,7 @@ UsdReferences::SetItems(const SdfReferenceVector& items)
 SdfPrimSpecHandle
 UsdReferences::_CreatePrimSpecForEditing()
 {
-    if (not _prim) {
+    if (!_prim) {
         TF_CODING_ERROR("Invalid prim.");
         return SdfPrimSpecHandle();
     }

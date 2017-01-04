@@ -491,7 +491,7 @@ Usd_Clip::Usd_Clip(
 { 
     // Sort the time mappings and add sentinel values to the beginning and
     // end for convenience in other functions.
-    if (not times.empty()) {
+    if (!times.empty()) {
         std::sort(times.begin(), times.end(), Usd_SortByExternalTime());
         times.insert(times.begin(), times.front());
         times.insert(times.end(), times.back());
@@ -548,8 +548,8 @@ _GetBracketingTimeSegment(
     }
 
     TF_VERIFY(*m1 < *m2);
-    TF_VERIFY(0 <= *m1 and *m1 < times.size());
-    TF_VERIFY(0 <= *m2 and *m2 < times.size());
+    TF_VERIFY(0 <= *m1 && *m1 < times.size());
+    TF_VERIFY(0 <= *m2 && *m2 < times.size());
     
     return true;
 }
@@ -561,7 +561,7 @@ _GetBracketingTimeSegment(
     Usd_Clip::TimeMapping* m1, Usd_Clip::TimeMapping* m2)
 {
     size_t index1, index2;
-    if (not _GetBracketingTimeSegment(times, time, &index1, &index2)) {
+    if (!_GetBracketingTimeSegment(times, time, &index1, &index2)) {
         return false;
     }
 
@@ -580,7 +580,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     const InternalTime timeInClip = _TranslateTimeToInternal(time);
 
     InternalTime lowerInClip, upperInClip;
-    if (not clip->GetBracketingTimeSamplesForPath(
+    if (!clip->GetBracketingTimeSamplesForPath(
             idInClip.id, timeInClip, &lowerInClip, &upperInClip)) { 
         return false;
     }
@@ -622,7 +622,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     // s2, since s2 is in the range of (m2, m3), we use those mappings to map
     // s2 to e2. So, our final answer is (e1, e2).
     size_t m1, m2;
-    if (not _GetBracketingTimeSegment(times, time, &m1, &m2)) {
+    if (!_GetBracketingTimeSegment(times, time, &m1, &m2)) {
         *tLower = lowerInClip;
         *tUpper = upperInClip;
         return true;
@@ -640,7 +640,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         const double lower = std::min(map1.internalTime, map2.internalTime);
         const double upper = std::max(map1.internalTime, map2.internalTime);
 
-        if (lower <= timeInClip and timeInClip <= upper) {
+        if (lower <= timeInClip && timeInClip <= upper) {
             if (map1.internalTime != map2.internalTime) {
                 translated.reset(
                     this->_TranslateTimeToExternal(timeInClip, map1, map2));
@@ -662,21 +662,21 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         return static_cast<bool>(translated);
     };
 
-    for (int i1 = m1, i2 = m2; i1 >= 0 and i2 >= 0; --i1, --i2) {
+    for (int i1 = m1, i2 = m2; i1 >= 0 && i2 >= 0; --i1, --i2) {
          if (_CanTranslate(times[i1], times[i2], /*lower=*/true)) { break; }
     }
         
-    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz and i2 < sz; ++i1, ++i2) {
+    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz && i2 < sz; ++i1, ++i2) {
          if (_CanTranslate(times[i1], times[i2], /*lower=*/false)) { break; }
     }
 
-    if (translatedLower and not translatedUpper) {
+    if (translatedLower && !translatedUpper) {
         translatedUpper = translatedLower;
     }
-    else if (not translatedLower and translatedUpper) {
+    else if (!translatedLower && translatedUpper) {
         translatedLower = translatedUpper;
     }
-    else if (not translatedLower and not translatedUpper) {
+    else if (!translatedLower && !translatedUpper) {
         // If we haven't been able to translate either internal time, it's
         // because they are outside the range of the clip time mappings. We
         // clamp them to the nearest external time to match the behavior of
@@ -738,7 +738,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
 
-            if (m1.internalTime <= t and t <= m2.internalTime) {
+            if (m1.internalTime <= t && t <= m2.internalTime) {
                 if (m1.internalTime == m2.internalTime) {
                     timeSamples.insert(m1.externalTime);
                     timeSamples.insert(m2.externalTime);
@@ -865,7 +865,7 @@ Usd_Clip::_GetLayerForClip() const
             &resolvedPath);
     }
 
-    if (not layer) {
+    if (!layer) {
         // If we failed to open the specified layer, report an error
         // and use a dummy anonymous layer instead, to avoid having
         // to check layer validity everywhere and to avoid reissuing
@@ -879,7 +879,7 @@ Usd_Clip::_GetLayerForClip() const
     }
 
     std::lock_guard<std::mutex> lock(_layerMutex);
-    if (not _layer) { 
+    if (!_layer) { 
         _layer = layer;
         _hasLayer = true;
     }

@@ -65,14 +65,14 @@ _GetMetadataByDictKey(
 static bool _SetMetadata(const UsdObject &self, const TfToken& key,
                          object obj) {
     VtValue value;
-    return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) and
+    return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) &&
         self.SetMetadata(key, value);
 }
 
 static bool _SetMetadataByDictKey(const UsdObject &self, const TfToken& key,
                                   const TfToken &keyPath, object obj) {
     VtValue value;
-    return UsdPythonToMetadataValue(key, keyPath, obj, &value) and
+    return UsdPythonToMetadataValue(key, keyPath, obj, &value) &&
         self.SetMetadataByDictKey(key, keyPath, value);
 }
 
@@ -88,7 +88,7 @@ static TfPyObjWrapper _GetCustomDataByKey(
 static void _SetCustomData(UsdObject &self, object obj) {
     VtValue value;
     if (UsdPythonToMetadataValue(
-            SdfFieldKeys->CustomData, TfToken(), obj, &value) and
+            SdfFieldKeys->CustomData, TfToken(), obj, &value) &&
         value.IsHolding<VtDictionary>()) {
         self.SetCustomData(value.UncheckedGet<VtDictionary>());
     }
@@ -115,7 +115,7 @@ static TfPyObjWrapper _GetAssetInfoByKey(
 static void _SetAssetInfo(UsdObject &self, object obj) {
     VtValue value;
     if (UsdPythonToMetadataValue(
-            SdfFieldKeys->AssetInfo, TfToken(), obj, &value) and
+            SdfFieldKeys->AssetInfo, TfToken(), obj, &value) &&
         value.IsHolding<VtDictionary>()) {
         self.SetAssetInfo(value.UncheckedGet<VtDictionary>());
     }
@@ -145,8 +145,8 @@ __getattribute__(object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', if the
     // object's prim is valid, or if the attribute is one of a specific
     // whitelist.
-    if ((name[0] == '_' and name[1] == '_') or
-        extract<UsdObject &>(selfObj)().GetPrim().IsValid() or
+    if ((name[0] == '_' && name[1] == '_') ||
+        extract<UsdObject &>(selfObj)().GetPrim().IsValid() ||
         strcmp(name, "IsValid") == 0 or
         strcmp(name, "IsDefined") == 0 or
         strcmp(name, "GetDescription") == 0 or

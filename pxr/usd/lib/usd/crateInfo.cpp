@@ -48,7 +48,7 @@ UsdCrateInfo::SummaryStats
 UsdCrateInfo::GetSummaryStats() const
 {
     SummaryStats stats;
-    if (not *this) {
+    if (!*this) {
         TF_CODING_ERROR("Invalid UsdCrateInfo object");
     }
     else {
@@ -66,7 +66,7 @@ vector<UsdCrateInfo::Section>
 UsdCrateInfo::GetSections() const
 {
     vector<Section> result;
-    if (not *this) {
+    if (!*this) {
         TF_CODING_ERROR("Invalid UsdCrateInfo object");
     }
     else {
@@ -81,7 +81,7 @@ UsdCrateInfo::GetSections() const
 TfToken
 UsdCrateInfo::GetFileVersion() const
 {
-    if (not *this) {
+    if (!*this) {
         TF_CODING_ERROR("Invalid UsdCrateInfo object");
         return TfToken();
     }

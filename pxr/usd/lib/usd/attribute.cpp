@@ -158,7 +158,7 @@ UsdAttribute::Get(VtValue* value, UsdTimeCode time) const
     bool foundValue = stage->_GetValue(time, *this, value);
 
     // Special case for SdfAssetPath -- compute the resolved asset path.
-    if (foundValue and value) {
+    if (foundValue && value) {
         stage->_MakeResolvedAssetPaths(time, *this, value);
     }
 
@@ -220,7 +220,7 @@ bool
 UsdAttribute::Clear() const
 {
     return ClearDefault() 
-       and ClearMetadata(SdfFieldKeys->TimeSamples);
+       && ClearMetadata(SdfFieldKeys->TimeSamples);
 }
 
 bool
@@ -241,7 +241,7 @@ UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
 {
     UsdStage *stage = _GetStage();
     
-    if (variability != SdfVariabilityVarying and 
+    if (variability != SdfVariabilityVarying && 
         variability != SdfVariabilityUniform){
         TF_CODING_ERROR("UsdAttributes can only possess variability "
                         "varying or uniform.  Cannot create attribute %s.%s",

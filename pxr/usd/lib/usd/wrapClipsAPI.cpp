@@ -102,7 +102,7 @@ static VtArray<SdfAssetPath> _GetClipAssetPaths(const UsdClipsAPI &self) {
 
 static void _SetClipAssetPaths(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->AssetArray);
-    if (not v.IsHolding<VtArray<SdfAssetPath> >()) {
+    if (!v.IsHolding<VtArray<SdfAssetPath> >()) {
         TF_CODING_ERROR("Invalid value for 'clipAssetPaths' on %s",
                         UsdDescribe(self.GetPrim()).c_str());
         return;
@@ -125,7 +125,7 @@ static TfPyObjWrapper _GetClipActive(const UsdClipsAPI &self) {
 
 static void _SetClipActive(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->Double2Array);
-    if (not v.IsHolding<VtVec2dArray>()) {
+    if (!v.IsHolding<VtVec2dArray>()) {
         TF_CODING_ERROR("Invalid value for 'clipActive' on %s",
                         UsdDescribe(self.GetPrim()).c_str());
         return;
@@ -142,7 +142,7 @@ static TfPyObjWrapper _GetClipTimes(const UsdClipsAPI &self) {
 
 static void _SetClipTimes(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->Double2Array);
-    if (not v.IsHolding<VtVec2dArray>()) {
+    if (!v.IsHolding<VtVec2dArray>()) {
         TF_CODING_ERROR("Invalid value for 'clipTimes' on %s",
                         UsdDescribe(self.GetPrim()).c_str());
         return;
@@ -159,7 +159,7 @@ static SdfAssetPath _GetClipManifestAssetPath(UsdClipsAPI &self) {
 
 static void _SetClipTemplateAssetPath(UsdClipsAPI& self, TfPyObjWrapper pyVal) {
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->String);
-    if (not v.IsHolding<std::string>()) {
+    if (!v.IsHolding<std::string>()) {
         TF_CODING_ERROR("Invalid value for 'clipTemplateAssetPath' on %s",
                         UsdDescribe(self.GetPrim()).c_str());
         return;

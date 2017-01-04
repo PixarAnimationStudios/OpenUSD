@@ -27,7 +27,7 @@
 
 TF_MAKE_STATIC_DATA(TfType, _schemaBaseTfType) {
     *_schemaBaseTfType = TfType::Find<UsdSchemaBase>();
-    TF_VERIFY(not _schemaBaseTfType->IsUnknown());
+    TF_VERIFY(!_schemaBaseTfType->IsUnknown());
 }
 
 // Register the schema with the TfType system.
@@ -45,7 +45,7 @@ UsdTyped::~UsdTyped()
 UsdTyped
 UsdTyped::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdTyped();
     }

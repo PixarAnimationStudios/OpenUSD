@@ -119,7 +119,7 @@ public:
     /// Return true if this time represents a numeric value, false otherwise.
     /// This is equivalent to !IsDefault().
     bool IsNumeric() const {
-        return not IsDefault();
+        return !IsDefault();
     }
 
     /// Return the numeric value for this time.  If this time \a IsDefault(),
@@ -132,40 +132,40 @@ public:
 
     /// Equality comparison.
     friend bool operator==(const UsdTimeCode &lhs, const UsdTimeCode& rhs) {
-        return lhs.IsDefault() == rhs.IsDefault() and
-            (lhs.IsDefault() or (lhs.GetValue() == rhs.GetValue()));
+        return lhs.IsDefault() == rhs.IsDefault() &&
+            (lhs.IsDefault() || (lhs.GetValue() == rhs.GetValue()));
     }
 
     /// Inequality comparison.
     friend bool operator!=(const UsdTimeCode &lhs, const UsdTimeCode& rhs) {
-        return not (lhs == rhs);
+        return !(lhs == rhs);
     }
 
     /// Less-than.  Default() times are less than all numeric times,
     /// \em including EarliestTime()
     friend bool operator<(const UsdTimeCode &lhs, const UsdTimeCode &rhs) {
-        return (lhs.IsDefault() and rhs.IsNumeric()) or
-            (lhs.IsNumeric() and rhs.IsNumeric() and
+        return (lhs.IsDefault() && rhs.IsNumeric()) ||
+            (lhs.IsNumeric() && rhs.IsNumeric() &&
              lhs.GetValue() < rhs.GetValue());
     }
 
     /// Greater-equal.  Default() times are less than all numeric times,
     /// \em including EarliestTime().
     friend bool operator>=(const UsdTimeCode &lhs, const UsdTimeCode &rhs) {
-        return not (lhs < rhs);
+        return !(lhs < rhs);
     }
 
     /// Less-equal.  Default() times are less than all numeric times,
     /// \em including EarliestTime().
     friend bool operator<=(const UsdTimeCode &lhs, const UsdTimeCode &rhs) {
-        return lhs.IsDefault() or
-            (rhs.IsNumeric() and lhs.GetValue() <= rhs.GetValue());
+        return lhs.IsDefault() || 
+            (rhs.IsNumeric() && lhs.GetValue() <= rhs.GetValue());
     }
 
     /// Greater-than.  Default() times are less than all numeric times,
     /// \em including EarliestTime().
     friend bool operator>(const UsdTimeCode &lhs, const UsdTimeCode &rhs) {
-        return not (lhs <= rhs);
+        return !(lhs <= rhs);
     }
 
     /// Hash function.

@@ -107,7 +107,7 @@ public:
     operator unspecified-bool-type() const();
 #else
     operator _UnspecifiedBoolType() const {
-        return (_primData and
+        return (_primData &&
                 _IsCompatible(_primData)) ? &UsdSchemaBase::_primData : NULL;
     }
 #endif // doxygen

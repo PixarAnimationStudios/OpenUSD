@@ -37,7 +37,7 @@ UsdProperty::GetBaseName() const
     std::string const &fullName = _PropName().GetString();
     size_t delim = fullName.rfind(GetNamespaceDelimiter());
 
-    if (not TF_VERIFY(delim != fullName.size()-1))
+    if (!TF_VERIFY(delim != fullName.size()-1))
         return TfToken();
 
     return ((delim == std::string::npos) ?
@@ -51,7 +51,7 @@ UsdProperty::GetNamespace() const
     std::string const &fullName = _PropName().GetString();
     size_t delim = fullName.rfind(GetNamespaceDelimiter());
 
-    if (not TF_VERIFY(delim != fullName.size()-1))
+    if (!TF_VERIFY(delim != fullName.size()-1))
         return TfToken();
 
     return ((delim == std::string::npos) ?
@@ -166,7 +166,7 @@ UsdProperty::IsAuthoredAt(const UsdEditTarget &editTarget) const
 {
     if (editTarget.IsValid()) {
         SdfPath mappedPath = editTarget.MapToSpecPath(GetPrimPath());
-        return not mappedPath.IsEmpty() and
+        return !mappedPath.IsEmpty() &&
             editTarget.GetLayer()->HasSpec(
                 SdfAbstractDataSpecId(&mappedPath, &_PropName()));
     }

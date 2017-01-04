@@ -47,7 +47,7 @@ UsdTreeIterator::Stage(const UsdStagePtr &stage,
 void
 UsdTreeIterator::PruneChildren()
 {
-    if (not *this) {
+    if (!*this) {
         TF_CODING_ERROR("Iterator past-the-end");
         return;
     }
@@ -74,7 +74,7 @@ UsdTreeIterator::increment()
                 base = _end;
             }
         }
-    } else if (not _pruneChildrenFlag and
+    } else if (!_pruneChildrenFlag &&
                Usd_MoveToChild(base, _end, _predicate)) {
         ++_depth;
     } else {

@@ -113,7 +113,7 @@ UsdVariantSet::HasAuthoredVariantSelection(std::string *value) const
          ++nodeIter) 
     {
         string sel;
-        if (not value) {
+        if (!value) {
             value = &sel;
         }
         if (PcpComposeSiteVariantSelection(
@@ -159,7 +159,7 @@ UsdVariantSet::GetVariantEditTarget(const SdfLayerHandle &layer) const
     const SdfLayerHandle &lyr = layer ? layer : 
         _prim.GetStage()->GetEditTarget().GetLayer();
     
-    if (not stage->HasLocalLayer(lyr)){
+    if (!stage->HasLocalLayer(lyr)){
         TF_CODING_ERROR("Layer %s is not a local layer of stage rooted at "
                         "layer %s", lyr->GetIdentifier().c_str(),
                         stage->GetRootLayer()->GetIdentifier().c_str());
@@ -227,7 +227,7 @@ UsdVariantSet::_FindOrCreateVariantSet()
 UsdVariantSet
 UsdVariantSets::GetVariantSet(const std::string& variantSetName) const
 {
-    if (not _prim) {
+    if (!_prim) {
         TF_CODING_ERROR("Invalid prim");
 
         // XXX:

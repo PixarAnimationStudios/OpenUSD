@@ -89,7 +89,7 @@ bool
 UsdObject::_SetMetadataImpl(const TfToken& key, const T& value,
                             const TfToken &keyPath) const
 {
-    if (not SdfSchema::GetInstance().IsRegistered(key)) {
+    if (!SdfSchema::GetInstance().IsRegistered(key)) {
         TF_CODING_ERROR("Unregistered metadata key: %s", key.GetText());
         return false;
     }
@@ -370,7 +370,7 @@ UsdObject::_GetDefiningSpecType() const
 std::string
 UsdObject::_GetObjectDescription(const std::string &preface) const
 {
-    if (_type == UsdTypePrim or _type == UsdTypeObject) {
+    if (_type == UsdTypePrim || _type == UsdTypeObject) {
         return _Prim().GetDescription();
     } else if (_type == UsdTypeAttribute) {
         return TfStringPrintf("%sattribute '%s' on ", 

@@ -169,8 +169,8 @@ public:
     static UsdTreeIterator
     Stage(const UsdStagePtr &stage,
           const Usd_PrimFlagsPredicate &predicate=
-          (UsdPrimIsActive and UsdPrimIsDefined and
-           UsdPrimIsLoaded and not UsdPrimIsAbstract));
+          (UsdPrimIsActive && UsdPrimIsDefined &&
+           UsdPrimIsLoaded && !UsdPrimIsAbstract));
 
 #ifdef doxygen
     /// Safe bool-conversion operator.  Convertible to true if this iterator is
@@ -209,8 +209,8 @@ private:
     UsdTreeIterator(Usd_PrimDataConstPtr start,
                     Usd_PrimDataConstPtr end,
                     const Usd_PrimFlagsPredicate &predicate =
-                    (UsdPrimIsActive and UsdPrimIsDefined and
-                     UsdPrimIsLoaded and not UsdPrimIsAbstract))
+                    (UsdPrimIsActive && UsdPrimIsDefined &&
+                     UsdPrimIsLoaded && !UsdPrimIsAbstract))
         : iterator_adaptor_(start) {
         _Init(start, end, predicate);
     }
@@ -220,8 +220,8 @@ private:
     void _Init(const Usd_PrimData *start,
                const Usd_PrimData *end,
                const Usd_PrimFlagsPredicate &predicate = 
-               (UsdPrimIsActive and UsdPrimIsDefined and
-                UsdPrimIsLoaded and not UsdPrimIsAbstract)) {
+               (UsdPrimIsActive && UsdPrimIsDefined &&
+                UsdPrimIsLoaded && !UsdPrimIsAbstract)) {
         _end = end;
         _predicate = predicate;
         _depth = 0;
@@ -230,7 +230,7 @@ private:
         _isPost = false;
 
         // Advance to the first prim that passes the predicate.
-        if (base() != _end and not _predicate(base())) {
+        if (base() != _end && !_predicate(base())) {
             _pruneChildrenFlag = true;
             increment();
         }
@@ -241,12 +241,12 @@ private:
     friend class boost::iterator_core_access;
     bool equal(const UsdTreeIterator &other) const {
         return
-            base() == other.base() and
-            _end == other._end and 
-            _predicate == other._predicate and
-            _depth == other._depth and
-            _postOrder == other._postOrder and
-            _pruneChildrenFlag == other._pruneChildrenFlag and
+            base() == other.base()                          &&
+            _end == other._end                              &&
+            _predicate == other._predicate                  &&
+            _depth == other._depth                          &&
+            _postOrder == other._postOrder                  &&
+            _pruneChildrenFlag == other._pruneChildrenFlag  &&
             _isPost == other._isPost;
     }
 

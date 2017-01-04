@@ -62,11 +62,11 @@ UsdPrim::GetPrimDefinition() const
     const TfToken &typeName = GetTypeName();
     SdfPrimSpecHandle definition;
 
-    if (not typeName.IsEmpty()) {
+    if (!typeName.IsEmpty()) {
         // Look up definition from prim type name.
         definition = UsdSchemaRegistry::GetPrimDefinition(typeName);
 
-        if (not definition) {
+        if (!definition) {
             // Issue a diagnostic for unknown prim types.
             TF_WARN("No definition for prim type '%s', <%s>",
                     typeName.GetText(), GetPath().GetText());
@@ -88,7 +88,7 @@ UsdPrim::_IsA(const TfType& schemaType) const
     // Get Prim TfType
     const std::string &typeName = GetTypeName().GetString();
 
-    return not typeName.empty() and
+    return !typeName.empty() &&
         PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).
         IsA(schemaType);
 }
@@ -119,7 +119,7 @@ static void
 _ApplyOrdering(const TfTokenVector &order, TfTokenVector *names)
 {
     // If order is empty or names is empty, nothing to do.
-    if (order.empty() or names->empty())
+    if (order.empty() || names->empty())
         return;
 
     // Perf note: this walks 'order' and linear searches 'names' to find each
@@ -186,7 +186,7 @@ UsdPrim::_GetPropertyNames(bool onlyAuthored, bool applyOrder) const
 
     // If we're including unauthored properties, take names from definition, if
     // present.
-    if (not onlyAuthored) {
+    if (!onlyAuthored) {
         UsdSchemaRegistry::HasField(GetTypeName(), TfToken(),
                                     SdfChildrenKeys->PropertyChildren, &names);
     }
@@ -247,8 +247,8 @@ UsdPrim::_GetPropertiesInNamespace(const std::string &namespaces,
     size_t insertionPt = 0;
     for (const auto& name : names) {
         const std::string &s = name.GetString();
-        if (s.size() > terminator and
-            TfStringStartsWith(s, namespaces) and
+        if (s.size() > terminator               &&
+            TfStringStartsWith(s, namespaces)   && 
             s[terminator] == delim) {
 
             names[insertionPt++] = name;
@@ -455,7 +455,7 @@ private:
                                  /*includeForwardingRels=*/true,
                                  /*forwardToObjectsInMasters=*/true);
         
-        if (not targets.empty()) {
+        if (!targets.empty()) {
             for (SdfPath const &p: targets) {
                 _workQueue.push(p);
             }
@@ -653,15 +653,15 @@ UsdPrim::Unload() const
 UsdPrim
 UsdPrim::GetNextSibling() const
 {
-    return GetFilteredNextSibling(UsdPrimIsActive and UsdPrimIsDefined and
-                                  UsdPrimIsLoaded and not UsdPrimIsAbstract);
+    return GetFilteredNextSibling(UsdPrimIsActive && UsdPrimIsDefined &&
+                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
 }
 
 UsdPrim
 UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &pred) const
 {
     Usd_PrimDataPtr s = _Prim()->GetNextSibling();
-    while (s and not pred(s))
+    while (s && !pred(s))
         s = s->GetNextSibling();
 
     return UsdPrim(s);

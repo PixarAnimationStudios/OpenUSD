@@ -114,7 +114,7 @@ UsdRelationship::AddTarget(const SdfPath& target) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().Add(targetToAuthor);
@@ -141,7 +141,7 @@ UsdRelationship::RemoveTarget(const SdfPath& target) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().Remove(targetToAuthor);
@@ -160,7 +160,7 @@ UsdRelationship::BlockTargets() const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
@@ -192,7 +192,7 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
@@ -215,7 +215,7 @@ UsdRelationship::ClearTargets(bool removeSpec) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     if (removeSpec){
@@ -267,7 +267,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
         SdfPath masterPath;
         if (relationshipInMaster) {
             masterPath = _Prim()->GetPath();
-            while (not masterPath.IsRootPrimPath()) { 
+            while (!masterPath.IsRootPrimPath()) { 
                 masterPath = masterPath.GetParentPath();
             }
         }
@@ -277,7 +277,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
             const SdfPath& primPath = path.GetPrimPath();
             const SdfPath& primInMasterPath = 
                 instanceCache->GetPrimInMasterForPrimIndexAtPath(primPath);
-            const bool pathIsObjectInMaster = not primInMasterPath.IsEmpty();
+            const bool pathIsObjectInMaster = !primInMasterPath.IsEmpty();
 
             if (pathIsObjectInMaster) {
                 path = path.ReplacePrefix(primPath, primInMasterPath);
@@ -316,7 +316,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
     }
 
     // TODO: handle errors
-    const bool hasErrors = not (pcpErrors.empty() and otherErrors.empty());
+    const bool hasErrors = !(pcpErrors.empty() && otherErrors.empty());
     if (hasErrors) {
         stage->_ReportErrors(
             pcpErrors, otherErrors,
@@ -324,7 +324,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
                            GetPath().GetText()));
     }
 
-    return not hasErrors;
+    return !hasErrors;
 }
 
 bool
@@ -381,11 +381,11 @@ bool
 UsdRelationship::GetForwardedTargets(SdfPathVector* targets,
                                      bool forwardToObjectsInMasters) const
 {
-    if (not targets) {
+    if (!targets) {
         TF_CODING_ERROR("Received null target pointer while processing <%s>\n",
                 GetPath().GetText());
         return false;
-    } else if (not targets->empty()) {
+    } else if (!targets->empty()) {
         TF_CODING_ERROR("Received non-empty targets while processing <%s>\n",
                 GetPath().GetText());
         targets->clear();

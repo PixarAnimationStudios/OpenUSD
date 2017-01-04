@@ -113,7 +113,7 @@ public:
 
     /// Inequality comparison.
     bool operator!=(const UsdEditTarget &other) const {
-        return not (*this == other);
+        return !(*this == other);
     }
 
     /// Return true if this EditTarget is null.  Null EditTargets map

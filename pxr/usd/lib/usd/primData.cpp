@@ -51,7 +51,7 @@ Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
     , _firstChild(NULL)
     , _refCount(0)
 {
-    if (not stage)
+    if (!stage)
         TF_FATAL_ERROR("Attempted to construct with null stage");
 
     TF_DEBUG(USD_PRIM_LIFETIMES).Msg(
@@ -109,7 +109,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
 
     // Special-case the root (the only prim which has no parent) and
     // instancing masters.
-    if (ARCH_UNLIKELY(not parent or isMasterPrim)) {
+    if (ARCH_UNLIKELY(!parent || isMasterPrim)) {
         _flags[Usd_PrimActiveFlag] = true;
         _flags[Usd_PrimLoadedFlag] = true;
         _flags[Usd_PrimModelFlag] = true;
@@ -145,9 +145,9 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
             TfToken kind;
             self.GetMetadata(kindToken, &kind);
             // Use the kind registry to determine model/groupness.
-            if (not kind.IsEmpty()) {
+            if (!kind.IsEmpty()) {
                 isGroup = KindRegistry::IsA(kind, KindTokens->group);
-                isModel = isGroup or KindRegistry::IsA(kind, KindTokens->model);
+                isModel = isGroup || KindRegistry::IsA(kind, KindTokens->model);
             }
         }
         _flags[Usd_PrimGroupFlag] = isGroup;
@@ -158,7 +158,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
 
         // This prim is abstract if its parent is or if it's a class.
         _flags[Usd_PrimAbstractFlag] =
-            parent->IsAbstract() or specifier == SdfSpecifierClass;
+            parent->IsAbstract() || specifier == SdfSpecifierClass;
 
         // Cache whether or not this prim has an authored defining specifier.
         const bool isDefiningSpec = SdfIsDefiningSpecifier(specifier);
@@ -173,7 +173,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
 
         // These flags indicate whether this prim is an instance or an
         // instance master.
-        _flags[Usd_PrimInstanceFlag] = active and _primIndex->IsInstanceable();
+        _flags[Usd_PrimInstanceFlag] = active && _primIndex->IsInstanceable();
         _flags[Usd_PrimMasterFlag] = parent->IsInMaster();
     }
 }
@@ -191,7 +191,7 @@ Usd_PrimData::_ComposePrimChildNames(TfTokenVector* nameOrder)
 std::string
 Usd_DescribePrimData(const Usd_PrimData *p)
 {
-    if (not p)
+    if (!p)
         return "null prim";
 
     return TfStringPrintf(
