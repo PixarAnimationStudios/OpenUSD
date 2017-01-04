@@ -60,7 +60,7 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     , _forcedRepr(forcedRepr)
     , _dirtyBitsMask(HdChangeTracker::Clean)
 {
-    if (not rootPath.IsAbsolutePath()) {
+    if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Root path must be absolute");
         _rootPaths.push_back(SdfPath::AbsoluteRootPath());
     } else {
@@ -96,7 +96,7 @@ void
 HdRprimCollection::SetRootPaths(SdfPathVector const& rootPaths)
 {
     TF_FOR_ALL(pit, rootPaths) {
-        if (not pit->IsAbsolutePath()) {
+        if (!pit->IsAbsolutePath()) {
             TF_CODING_ERROR("Root path must be absolute (<%s>)",
                     pit->GetText());
             return;
@@ -110,7 +110,7 @@ HdRprimCollection::SetRootPaths(SdfPathVector const& rootPaths)
 void 
 HdRprimCollection::SetRootPath(SdfPath const& rootPath)
 {
-    if (not rootPath.IsAbsolutePath()) {
+    if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Root path must be absolute");
         return;
     }
@@ -122,7 +122,7 @@ void
 HdRprimCollection::SetExcludePaths(SdfPathVector const& excludePaths)
 {
     TF_FOR_ALL(pit, excludePaths) {
-        if (not pit->IsAbsolutePath()) {
+        if (!pit->IsAbsolutePath()) {
             TF_CODING_ERROR("Exclude path must be absolute (<%s>)",
                     pit->GetText());
             return;
@@ -158,15 +158,15 @@ HdRprimCollection::ComputeHash() const
 bool HdRprimCollection::operator==(HdRprimCollection const & other) const 
 {
     return _name == other._name
-       and _reprName == other._reprName
-       and _forcedRepr == other._forcedRepr
-       and _rootPaths == other._rootPaths
-       and _excludePaths == other._excludePaths;
+       && _reprName == other._reprName
+       && _forcedRepr == other._forcedRepr
+       && _rootPaths == other._rootPaths
+       && _excludePaths == other._excludePaths;
 }
 
 bool HdRprimCollection::operator!=(HdRprimCollection const & other) const 
 {
-    return not(*this == other);
+    return !(*this == other);
 }
 
 // -------------------------------------------------------------------------- //

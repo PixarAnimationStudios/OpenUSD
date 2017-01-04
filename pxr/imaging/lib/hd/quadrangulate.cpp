@@ -45,7 +45,7 @@ Hd_QuadInfoBuilderComputation::Hd_QuadInfoBuilderComputation(
 bool
 Hd_QuadInfoBuilderComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
 
@@ -73,7 +73,7 @@ Hd_QuadInfoBuilderComputation::Resolve()
     for (int i = 0; i < numFaces; ++i) {
         int nv = numVertsPtr[i];
 
-        if (holeIndex < numHoleFaces and
+        if (holeIndex < numHoleFaces &&
             holeFacesPtr[holeIndex] == i) {
             // skip hole faces.
             vertIndex += nv;
@@ -148,9 +148,9 @@ Hd_QuadIndexBuilderComputation::Resolve()
 {
     // quadInfoBuilder may or may not exists, depending on how we switched
     // the repr of the mesh. If it exists, we have to wait.
-    if (_quadInfoBuilder and not _quadInfoBuilder->IsResolved()) return false;
+    if (_quadInfoBuilder && !_quadInfoBuilder->IsResolved()) return false;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     // generate quad index buffer
 
@@ -192,7 +192,7 @@ Hd_QuadIndexBuilderComputation::Resolve()
         if (nv < 3) {
             continue; // skip degenerated face
         }
-        if (holeIndex < numHoleFaces and
+        if (holeIndex < numHoleFaces &&
             holeFacesPtr[holeIndex] == i) {
             // skip hole faces.
             ++holeIndex;
@@ -310,14 +310,14 @@ Hd_QuadrangulateTableComputation::Hd_QuadrangulateTableComputation(
 bool
 Hd_QuadrangulateTableComputation::Resolve()
 {
-    if (not TF_VERIFY(_quadInfoBuilder)) return false;
-    if (not _quadInfoBuilder->IsResolved()) return false;
-    if (not _TryLock()) return false;
+    if (!TF_VERIFY(_quadInfoBuilder)) return false;
+    if (!_quadInfoBuilder->IsResolved()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
 
     Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
-    if (not quadInfo) {
+    if (!quadInfo) {
         TF_CODING_ERROR("Hd_QuadInfo is null.");
         return true;
     }
@@ -326,7 +326,7 @@ Hd_QuadrangulateTableComputation::Resolve()
     // for the same reason as cpu quadrangulation, we need a check
     // of IsAllQuads here.
     // see the comment on HdMeshTopology::Quadrangulate()
-    if (not quadInfo->IsAllQuads()) {
+    if (!quadInfo->IsAllQuads()) {
         int quadInfoStride = quadInfo->maxNumVert + 2;
         int numNonQuads = quadInfo->numVerts.size();
 
@@ -449,18 +449,18 @@ Hd_QuadrangulateComputation::Hd_QuadrangulateComputation(
 bool
 Hd_QuadrangulateComputation::Resolve()
 {
-    if (not TF_VERIFY(_source)) return false;
-    if (not _source->IsResolved()) return false;
-    if (_quadInfoBuilder and not _quadInfoBuilder->IsResolved()) return false;
+    if (!TF_VERIFY(_source)) return false;
+    if (!_source->IsResolved()) return false;
+    if (_quadInfoBuilder && !_quadInfoBuilder->IsResolved()) return false;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->quadrangulateCPU);
 
     Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
-    if (not TF_VERIFY(quadInfo)) return true;
+    if (!TF_VERIFY(quadInfo)) return true;
 
     // If the topology is all quads, just return source.
     // This check is needed since if the topology changes, we don't know
@@ -556,7 +556,7 @@ _QuadrangulateFaceVarying(HdBufferSourceSharedPtr const &source,
         if (nVerts < 3) {
             // skip degenerated face
             invalidTopology = true;
-        } else if (holeIndex < numHoleFaces and holeFaces[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
             // skip hole face
             ++holeIndex;
         } else if (nVerts == 4) {
@@ -579,7 +579,7 @@ _QuadrangulateFaceVarying(HdBufferSourceSharedPtr const &source,
         int nVerts = faceVertexCounts[i];
         if (nVerts < 3) {
             // skip degenerated faces.
-        } else if (holeIndex < numHoleFaces and holeFaces[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
             // skip hole faces.
             ++holeIndex;
         } else if (nVerts == 4) {
@@ -647,10 +647,10 @@ Hd_QuadrangulateFaceVaryingComputation::Hd_QuadrangulateFaceVaryingComputation(
 bool
 Hd_QuadrangulateFaceVaryingComputation::Resolve()
 {
-    if (not TF_VERIFY(_source)) return false;
-    if (not _source->IsResolved()) return false;
+    if (!TF_VERIFY(_source)) return false;
+    if (!_source->IsResolved()) return false;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->quadrangulateFaceVarying);
@@ -726,7 +726,7 @@ Hd_QuadrangulateComputationGPU::Hd_QuadrangulateComputationGPU(
     SdfPath const &id)
     : _id(id), _topology(topology), _name(sourceName), _dataType(dataType)
 {
-    if (dataType != GL_FLOAT and dataType != GL_DOUBLE) {
+    if (dataType != GL_FLOAT && dataType != GL_DOUBLE) {
         TF_CODING_ERROR("Unsupported primvar type for quadrangulation [%s]",
                         _id.GetText());
     }
@@ -735,7 +735,7 @@ Hd_QuadrangulateComputationGPU::Hd_QuadrangulateComputationGPU(
 void
 Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
 {
-    if (not TF_VERIFY(_topology))
+    if (!TF_VERIFY(_topology))
         return;
 
     HD_TRACE_FUNCTION();
@@ -745,18 +745,18 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
     // if this topology doesn't contain non-quad faces, quadInfoRange is null.
     HdBufferArrayRangeSharedPtr const &quadrangulateTableRange =
         _topology->GetQuadrangulateTableRange();
-    if (not quadrangulateTableRange) return;
+    if (!quadrangulateTableRange) return;
 
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
     Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
-    if (not quadInfo) {
+    if (!quadInfo) {
         TF_CODING_ERROR("Hd_QuadInfo is null.");
         return;
     }
 
-    if (not glDispatchCompute)
+    if (!glDispatchCompute)
         return;
 
     // select shader by datatype
@@ -766,7 +766,7 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
 
     HdGLSLProgramSharedPtr computeProgram =
         HdGLSLProgram::GetComputeProgram(shaderToken);
-    if (not computeProgram) return;
+    if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();
 
@@ -808,7 +808,7 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     // XXX: workaround for 319.xx driver bug of glNamedBufferDataEXT on UBO
     // XXX: move this workaround to renderContextCaps
-    if (false and caps.directStateAccessEnabled) {
+    if (false && caps.directStateAccessEnabled) {
         glNamedBufferDataEXT(ubo, sizeof(uniform), &uniform, GL_STATIC_DRAW);
     } else {
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
@@ -851,7 +851,7 @@ Hd_QuadrangulateComputationGPU::GetNumOutputElements() const
 {
     Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
 
-    if (not quadInfo) {
+    if (!quadInfo) {
         TF_CODING_ERROR("Hd_QuadInfo is null [%s]", _id.GetText());
         return 0;
     }

@@ -80,7 +80,7 @@ inline bool isAggregated(HdBufferArrayRangeSharedPtr const &rangeA,
     if (rangeA) {
         return rangeA->IsAggregatedWith(rangeB);
     } else {
-        if (not rangeB) {
+        if (!rangeB) {
             // can batch together if both ranges are empty.
             return true;
         }
@@ -92,7 +92,7 @@ inline bool isAggregated(HdBufferArrayRangeSharedPtr const &rangeA,
 bool
 Hd_DrawBatch::Append(HdDrawItemInstance * drawItemInstance)
 {
-    if (not TF_VERIFY(not _drawItemInstances.empty())) {
+    if (!TF_VERIFY(!_drawItemInstances.empty())) {
         return false;
     }
 
@@ -119,27 +119,27 @@ bool
 Hd_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
                             HdDrawItem const *drawItem1)
 {
-    if (not HdSurfaceShader::CanAggregate(drawItem0->GetSurfaceShader(),
+    if (!HdSurfaceShader::CanAggregate(drawItem0->GetSurfaceShader(),
                                           drawItem1->GetSurfaceShader())) {
         return false;
     }
 
     if (drawItem0->GetGeometricShader() == drawItem1->GetGeometricShader()
-        and drawItem0->GetInstancePrimVarNumLevels() ==
+        && drawItem0->GetInstancePrimVarNumLevels() ==
             drawItem1->GetInstancePrimVarNumLevels()
-        and isAggregated(drawItem0->GetTopologyRange(),
+        && isAggregated(drawItem0->GetTopologyRange(),
                          drawItem1->GetTopologyRange())
-        and isAggregated(drawItem0->GetVertexPrimVarRange(),
+        && isAggregated(drawItem0->GetVertexPrimVarRange(),
                          drawItem1->GetVertexPrimVarRange())
-        and isAggregated(drawItem0->GetElementPrimVarRange(),
+        && isAggregated(drawItem0->GetElementPrimVarRange(),
                          drawItem1->GetElementPrimVarRange())
-        and isAggregated(drawItem0->GetConstantPrimVarRange(),
+        && isAggregated(drawItem0->GetConstantPrimVarRange(),
                          drawItem1->GetConstantPrimVarRange())
-        and isAggregated(drawItem0->GetInstanceIndexRange(),
+        && isAggregated(drawItem0->GetInstanceIndexRange(),
                          drawItem1->GetInstanceIndexRange())) {
         int numLevels = drawItem0->GetInstancePrimVarNumLevels();
         for (int i = 0; i < numLevels; ++i) {
-            if (not isAggregated(drawItem0->GetInstancePrimVarRange(i),
+            if (!isAggregated(drawItem0->GetInstancePrimVarRange(i),
                                  drawItem1->GetInstancePrimVarRange(i))) {
                 return false;
             }
@@ -162,8 +162,8 @@ Hd_DrawBatch::Rebuild()
 
     // Start this loop at i=1 because the 0th element was pushed via _Init
     for (size_t i = 1; i < instances.size(); ++i) {
-        if (TF_VERIFY(not _drawItemInstances.empty())) {
-            if (not Append(const_cast<HdDrawItemInstance*>(instances[i]))) {
+        if (TF_VERIFY(!_drawItemInstances.empty())) {
+            if (!Append(const_cast<HdDrawItemInstance*>(instances[i]))) {
                 return false;
             }
         } else {
@@ -204,13 +204,13 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 
     // XXX: if this function appears to be expensive, we might consider caching
     //      programs by shaderHash.
-    if (not _program.GetGLSLProgram() or shaderChanged) {
+    if (!_program.GetGLSLProgram() || shaderChanged) {
         
         _program.SetSurfaceShader(surfaceShader);
 
         // Try to compile the shader and if it fails to compile we go back
         // to use the specified fallback surface shader.
-        if (not _program.CompileShader(firstDrawItem, indirect)) {
+        if (!_program.CompileShader(firstDrawItem, indirect)) {
 
             // If we failed to compile the surface shader, replace it with the
             // fallback surface shader and try again.
@@ -254,11 +254,11 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
     HD_MALLOC_TAG_FUNCTION();
 
     // glew has to be intialized
-    if (not glLinkProgram) {
+    if (!glLinkProgram) {
         return false;
     }
 
-    if (not _geometricShader) {
+    if (!_geometricShader) {
         TF_CODING_ERROR("Can not compile a shader without a geometric shader");
         return false;
     }
@@ -323,7 +323,7 @@ Hd_DrawBatch::_DrawingProgram::_GetCustomBindings(
     HdBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
-    if (not TF_VERIFY(enableInstanceDraw)) return;
+    if (!TF_VERIFY(enableInstanceDraw)) return;
 
     // set enableInstanceDraw true by default, which means the shader is
     // expected to be invoked by instanced-draw call.
@@ -336,7 +336,7 @@ bool
 Hd_DrawBatch::_DrawingProgram::_Link(
         HdGLSLProgramSharedPtr const & glslProgram)
 {
-    if (not TF_VERIFY(glslProgram)) return false;
+    if (!TF_VERIFY(glslProgram)) return false;
 
     return glslProgram->Link();
 }

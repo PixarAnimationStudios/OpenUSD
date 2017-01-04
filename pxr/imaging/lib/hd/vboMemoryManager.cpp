@@ -205,7 +205,7 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
-    if (not TF_VERIFY(GetResources().size() ==
+    if (!TF_VERIFY(GetResources().size() ==
                       curRangeOwner->GetResources().size())) {
         TF_CODING_ERROR("Resource mismatch when reallocating buffer array");
         return;
@@ -226,7 +226,7 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
 
     TF_FOR_ALL (it, ranges) {
         HdBufferArrayRangeSharedPtr const &range = *it;
-        if (not range) {
+        if (!range) {
             TF_CODING_ERROR("Expired range found in the reallocation list");
             continue;
         }
@@ -294,7 +294,7 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
                 TF_FOR_ALL (it, ranges) {
                     _StripedBufferArrayRangeSharedPtr range =
                         boost::static_pointer_cast<_StripedBufferArrayRange>(*it);
-                    if (not range) {
+                    if (!range) {
                         TF_CODING_ERROR("_StripedBufferArrayRange "
                                         "expired unexpectedly.");
                         continue;
@@ -349,7 +349,7 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
     for (size_t idx = 0; idx < ranges.size(); ++idx) {
         _StripedBufferArrayRangeSharedPtr range =
             boost::static_pointer_cast<_StripedBufferArrayRange>(ranges[idx]);
-        if (not range) {
+        if (!range) {
             TF_CODING_ERROR("_StripedBufferArrayRange expired unexpectedly.");
             continue;
         }
@@ -435,7 +435,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_stripedBufferArray)) return false;
+    if (!TF_VERIFY(_stripedBufferArray)) return false;
 
     bool needsReallocation = false;
 
@@ -493,24 +493,24 @@ HdVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_stripedBufferArray)) return;
+    if (!TF_VERIFY(_stripedBufferArray)) return;
 
     HdBufferResourceSharedPtr VBO =
         _stripedBufferArray->GetResource(bufferSource->GetName());
 
-    if (not TF_VERIFY((VBO and VBO->GetId()),
+    if (!TF_VERIFY((VBO && VBO->GetId()),
                       "VBO doesn't exist for %s",
                       bufferSource->GetName().GetText())) {
         return;
     }
 
     // datatype of bufferSource has to match with bufferResource
-    if (not TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType(),
+    if (!TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType(),
                       "%s: 0x%x != 0x%x\n",
                       bufferSource->GetName().GetText(),
                       bufferSource->GetGLComponentDataType(),
-                      VBO->GetGLDataType()) or
-        not TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents(),
+                      VBO->GetGLDataType()) ||
+        !TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents(),
                       "%s: %d != %d\n",
                       bufferSource->GetName().GetText(),
                       bufferSource->GetNumComponents(),
@@ -559,11 +559,11 @@ HdVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) cons
     HD_MALLOC_TAG_FUNCTION();
 
     VtValue result;
-    if (not TF_VERIFY(_stripedBufferArray)) return result;
+    if (!TF_VERIFY(_stripedBufferArray)) return result;
 
     HdBufferResourceSharedPtr VBO = _stripedBufferArray->GetResource(name);
 
-    if (not VBO or (VBO->GetId() == 0 and _numElements > 0)) {
+    if (!VBO || (VBO->GetId() == 0 && _numElements > 0)) {
         TF_CODING_ERROR("VBO doesn't exist for %s", name.GetText());
         return result;
     }
@@ -592,7 +592,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
 HdBufferResourceSharedPtr
 HdVBOMemoryManager::_StripedBufferArrayRange::GetResource() const
 {
-    if (not TF_VERIFY(_stripedBufferArray)) return HdBufferResourceSharedPtr();
+    if (!TF_VERIFY(_stripedBufferArray)) return HdBufferResourceSharedPtr();
 
     return _stripedBufferArray->GetResource();
 }
@@ -600,7 +600,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::GetResource() const
 HdBufferResourceSharedPtr
 HdVBOMemoryManager::_StripedBufferArrayRange::GetResource(TfToken const& name)
 {
-    if (not TF_VERIFY(_stripedBufferArray)) return HdBufferResourceSharedPtr();
+    if (!TF_VERIFY(_stripedBufferArray)) return HdBufferResourceSharedPtr();
 
     return _stripedBufferArray->GetResource(name);
 }
@@ -608,7 +608,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::GetResource(TfToken const& name)
 HdBufferResourceNamedList const&
 HdVBOMemoryManager::_StripedBufferArrayRange::GetResources() const
 {
-    if (not TF_VERIFY(_stripedBufferArray)) {
+    if (!TF_VERIFY(_stripedBufferArray)) {
         static HdBufferResourceNamedList empty;
         return empty;
     }

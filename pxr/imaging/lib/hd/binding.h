@@ -158,7 +158,7 @@ public:
     /// buffer will be bound individually and exposed as independent arrays in
     /// the shader.
     bool IsBufferArray() const {
-        return _bar and not _isInterleaved;
+        return _bar && !_isInterleaved;
     }
 
     /// Like BufferArray binding requests, struct bindings have several buffers,
@@ -166,13 +166,13 @@ public:
     /// This type of binding request is exposed in the shader an array of
     ///  structs.
     bool IsInterleavedBufferArray() const {
-        return _bar and _isInterleaved;
+        return _bar && _isInterleaved;
     }
 
     /// This binding is typelss. CodeGen only allocate location and
     /// skip emitting declarations and accessors.
     bool IsTypeless() const {
-        return (not _bar) and (not _resource) and _glTypeName.IsEmpty();
+        return (!_bar) && (!_resource) && _glTypeName.IsEmpty();
     }
 
     // ---------------------------------------------------------------------- //

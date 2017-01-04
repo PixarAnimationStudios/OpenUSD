@@ -98,7 +98,7 @@ namespace {
 
     static inline GLboolean _ShouldBeNormalized(int GLdataType)
     {
-        if (GLdataType == GL_INT_2_10_10_10_REV or
+        if (GLdataType == GL_INT_2_10_10_10_REV ||
             GLdataType == GL_UNSIGNED_INT_2_10_10_10_REV) {
             return GL_TRUE;
         }
@@ -106,7 +106,7 @@ namespace {
     }
     static inline int _GetNumComponents(int numComponents, int GLdataType)
     {
-        if (GLdataType == GL_INT_2_10_10_10_REV or
+        if (GLdataType == GL_INT_2_10_10_10_REV ||
             GLdataType == GL_UNSIGNED_INT_2_10_10_10_REV) {
             return 4;
         } else {
@@ -131,7 +131,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(metaDataOut)) return;
+    if (!TF_VERIFY(metaDataOut)) return;
 
     // GL context caps
     const bool ssboEnabled
@@ -584,7 +584,7 @@ Hd_ResourceBinder::BindBuffer(TfToken const &name,
     case HdBinding::BINDLESS_UNIFORM:
         // at least in nvidia driver 346.59, this query call doesn't show
         // any pipeline stall.
-        if (not glIsNamedBufferResidentNV(buffer->GetId())) {
+        if (!glIsNamedBufferResidentNV(buffer->GetId())) {
             glMakeNamedBufferResidentNV(buffer->GetId(), GL_READ_WRITE);
         }
         glUniformui64NV(loc, buffer->GetGPUAddress());
@@ -692,7 +692,7 @@ void
 Hd_ResourceBinder::BindConstantBuffer(
     HdBufferArrayRangeSharedPtr const &constantBar) const
 {
-    if (not constantBar) return;
+    if (!constantBar) return;
 
     // constant buffer is interleaved. we just need to bind a buffer.
     BindBuffer(HdTokens->constantPrimVars, constantBar->GetResource());
@@ -702,7 +702,7 @@ void
 Hd_ResourceBinder::UnbindConstantBuffer(
     HdBufferArrayRangeSharedPtr const &constantBar) const
 {
-    if (not constantBar) return;
+    if (!constantBar) return;
 
     UnbindBuffer(HdTokens->constantPrimVars, constantBar->GetResource());
 }
@@ -711,7 +711,7 @@ void
 Hd_ResourceBinder::BindInstanceBufferArray(
     HdBufferArrayRangeSharedPtr const &bar, int level) const
 {
-    if (not bar) return;
+    if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
         BindBuffer(it->first, it->second, it->second->GetOffset(), level);
@@ -722,7 +722,7 @@ void
 Hd_ResourceBinder::UnbindInstanceBufferArray(
     HdBufferArrayRangeSharedPtr const &bar, int level) const
 {
-    if (not bar) return;
+    if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
         UnbindBuffer(it->first, it->second, level);
@@ -750,7 +750,7 @@ Hd_ResourceBinder::BindShaderResources(HdShader const *shader) const
             // nothing? or make it resident?? but it only binds the first one.
             // XXX: it looks like this function should take all textures in the batch.
 
-//            if (not glIsTextureHandleResidentNV(it->handle)) {
+//            if (!glIsTextureHandleResidentNV(it->handle)) {
 //                glMakeTextureHandleResidentNV(it->handle);
 //            }
         }
@@ -782,7 +782,7 @@ Hd_ResourceBinder::UnbindShaderResources(HdShader const *shader) const
 void
 Hd_ResourceBinder::BindBufferArray(HdBufferArrayRangeSharedPtr const &bar) const
 {
-    if (not bar) return;
+    if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
         BindBuffer(it->first, it->second);
@@ -823,7 +823,7 @@ void
 Hd_ResourceBinder::UnbindBufferArray(
     HdBufferArrayRangeSharedPtr const &bar) const
 {
-    if (not bar) return;
+    if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
         UnbindBuffer(it->first, it->second);
@@ -896,8 +896,8 @@ Hd_ResourceBinder::BindUniformf(TfToken const &name,
     HdBinding uniformLocation = GetBinding(name);
     if (uniformLocation.GetLocation() == HdBinding::NOT_EXIST) return;
 
-    if (not TF_VERIFY(uniformLocation.IsValid())) return;
-    if (not TF_VERIFY(uniformLocation.GetType() == HdBinding::UNIFORM)) return;
+    if (!TF_VERIFY(uniformLocation.IsValid())) return;
+    if (!TF_VERIFY(uniformLocation.GetType() == HdBinding::UNIFORM)) return;
     GLint location = uniformLocation.GetLocation();
 
     if (count == 1) {
@@ -920,7 +920,7 @@ Hd_ResourceBinder::IntrospectBindings(GLuint program)
 {
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
-    if (ARCH_UNLIKELY(not caps.shadingLanguage420pack)) {
+    if (ARCH_UNLIKELY(!caps.shadingLanguage420pack)) {
         GLint numUBO = 0;
         glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numUBO);
 
@@ -940,7 +940,7 @@ Hd_ResourceBinder::IntrospectBindings(GLuint program)
         }
     }
 
-    if (ARCH_UNLIKELY(not caps.explicitUniformLocation)) {
+    if (ARCH_UNLIKELY(!caps.explicitUniformLocation)) {
         TF_FOR_ALL(it, _bindingMap) {
             HdBinding binding = it->second;
             HdBinding::Type type = binding.GetType();
@@ -952,8 +952,8 @@ Hd_ResourceBinder::IntrospectBindings(GLuint program)
                 n << name << "_" << level;
                 name = n.str();
             }
-            if (type == HdBinding::UNIFORM or
-                type == HdBinding::UNIFORM_ARRAY or
+            if (type == HdBinding::UNIFORM       ||
+                type == HdBinding::UNIFORM_ARRAY ||
                 type == HdBinding::TBO) {
                 GLint loc = glGetUniformLocation(program, name.c_str());
                 // update location in resource binder.

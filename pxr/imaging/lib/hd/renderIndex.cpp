@@ -198,7 +198,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
 
 #if 0
     // TODO: enable this after patching.
-    if (not id.IsAbsolutePath()) {
+    if (!id.IsAbsolutePath()) {
         TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
                 id.GetText());
         return;
@@ -253,7 +253,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
 
     SdfPath instanceId = rprim->GetInstancerId();
 
-    if (not instanceId.IsEmpty()) {
+    if (!instanceId.IsEmpty()) {
         _tracker.InstancerRPrimInserted(instanceId, rprimId);
     }
 }
@@ -300,7 +300,7 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
         _delegateRprimMap.erase(dit);
     }
 
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _tracker.InstancerRPrimRemoved(instancerId, id);
     }
 
@@ -387,7 +387,7 @@ HdRenderIndex::GetDelegateIDsWithDirtyRprims(int dirtyMask,
     TF_FOR_ALL(delegateIt, _delegateRprimMap) {
         SdfPathVector const& rprimChildren = delegateIt->second;
         TF_FOR_ALL(rprimIt, rprimChildren) {
-            if (dirtyMask == 0 or tracker.GetRprimDirtyBits(*rprimIt) & dirtyMask) {
+            if (dirtyMask == 0 || tracker.GetRprimDirtyBits(*rprimIt) & dirtyMask) {
                 SdfPath const& delegateID = delegateIt->first;
                 IDs->push_back(delegateID);
                 break;
@@ -856,7 +856,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         SdfPathVector const* children = 
                                 TfMapLookupPtr(_delegateRprimMap, rootPath);
 
-        if (not children) {
+        if (!children) {
             remainingRootPaths.push_back(rootPath);
             continue;
         }
@@ -909,7 +909,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     while (pathIt != _rprimIDSet.end()) {
         // Precondition: rootIt is either a prefix of the current prim or we've
         // passed that prefix in the iteration.
-        if (not pathIt->HasPrefix(*rootIt)) {
+        if (!pathIt->HasPrefix(*rootIt)) {
             // continue to next root prefix
             rootIt++;
             if (rootIt == remainingRootPaths.end())
@@ -958,7 +958,7 @@ HdRenderIndex::IsInCollection(SdfPath const& id,
                               TfToken const& collectionName) const 
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
-    return info and info->rprim->IsInCollection(collectionName);
+    return info && info->rprim->IsInCollection(collectionName);
 }
 
 SdfPathVector
@@ -969,7 +969,7 @@ HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath) const
     SdfPathVector paths;
     paths.reserve(1024);
     for (auto p = _rprimIDSet.lower_bound(rootPath); 
-            p != _rprimIDSet.end() and p->HasPrefix(rootPath); ++p)
+            p != _rprimIDSet.end() && p->HasPrefix(rootPath); ++p)
     {
         paths.push_back(*p);
     }
@@ -1037,11 +1037,11 @@ namespace {
         bool forcedRepr;
 
         bool operator < (_ReprSpec const &other) const {
-            return reprName < other.reprName or
-                (reprName == other.reprName and (forcedRepr and (not other.forcedRepr)));
+            return reprName < other.reprName ||
+                (reprName == other.reprName && (forcedRepr && (!other.forcedRepr)));
         }
         bool operator == (_ReprSpec const &other) const {
-            return  (reprName == other.reprName) and
+            return  (reprName == other.reprName) &&
                     (forcedRepr == other.forcedRepr);
         }
     };
@@ -1132,7 +1132,7 @@ HdRenderIndex::SyncAll()
             // XXX: WBN to iterate SyncAll if there are more than 64 reprs
             //      in the extreme case.
             //
-            if (not TF_VERIFY(reprIndex < 64)) {
+            if (!TF_VERIFY(reprIndex < 64)) {
                 break;
             }
 
@@ -1185,7 +1185,7 @@ HdRenderIndex::SyncAll()
         int numSkipped = 0;
         TF_FOR_ALL(idIt, dirtyIds) {
             _RprimMap::const_iterator it = _rprimMap.find(idIt->first);
-            if (not TF_VERIFY(it != _rprimMap.end())) {
+            if (!TF_VERIFY(it != _rprimMap.end())) {
                 continue;
             }
 
@@ -1214,7 +1214,7 @@ HdRenderIndex::SyncAll()
         // list.  This leads to performance improvements after many rprims
         // get dirty and then cleaned one, and the steady state becomes a 
         // small number of dirty items.
-        if (not dirtyIds.empty()) {
+        if (!dirtyIds.empty()) {
             resetVaryingState = 
                 ((float )numSkipped / (float)dirtyIds.size()) > 0.25f;
 
@@ -1248,7 +1248,7 @@ HdRenderIndex::SyncAll()
 
         TF_FOR_ALL(textureID, r.request.textureIDs) {
             HdBprim* const*tex = TfMapLookupPtr(textureMap, *textureID);
-            if (not tex)
+            if (!tex)
                 continue;
 
             (*tex)->Sync();
@@ -1258,7 +1258,7 @@ HdRenderIndex::SyncAll()
         TF_FOR_ALL(shaderID, r.request.surfaceShaderIDs) {
             HdSurfaceShaderSharedPtr const* shd = 
                                           TfMapLookupPtr(_shaderMap, *shaderID);
-            if (not shd)
+            if (!shd)
                 continue;
 
             (*shd)->Sync();
@@ -1268,7 +1268,7 @@ HdRenderIndex::SyncAll()
         {
             _SyncRPrims workerState(r, reprs, _tracker);
 
-            if (not TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) and
+            if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
                        delegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
                 TRACE_SCOPE("Parallel Rprim Sync");
                 dispatcher.Run([&r, workerState]() {
@@ -1391,7 +1391,7 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
 
 #if 0
     // TODO: enable this after patching.
-    if (not id.IsAbsolutePath()) {
+    if (!id.IsAbsolutePath()) {
         TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
                 id.GetText());
         return;

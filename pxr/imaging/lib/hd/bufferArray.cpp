@@ -116,7 +116,7 @@ HdBufferArray::_AddResource(TfToken const& name,
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // duplication check
         HdBufferResourceSharedPtr bufferRes = GetResource(name);
-        if (not TF_VERIFY(not bufferRes)) {
+        if (!TF_VERIFY(!bufferRes)) {
             return bufferRes;
         }
     }

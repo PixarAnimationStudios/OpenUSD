@@ -79,17 +79,17 @@ Hd_SmoothNormalsComputation::Resolve()
 {
     // dependency check first
     if (_adjacencyBuilder) {
-        if (not _adjacencyBuilder->IsResolved()) return false;
+        if (!_adjacencyBuilder->IsResolved()) return false;
     }
     if (_points) {
-        if (not _points->IsResolved()) return false;
+        if (!_points->IsResolved()) return false;
     }
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_adjacency)) return true;
+    if (!TF_VERIFY(_adjacency)) return true;
 
     int numPoints = _points->GetNumElements();
 
@@ -161,7 +161,7 @@ Hd_SmoothNormalsComputationGPU::Hd_SmoothNormalsComputationGPU(
     : _adjacency(adjacency), _srcName(srcName), _dstName(dstName),
       _dstDataType(dstDataType)
 {
-    if (dstDataType != GL_FLOAT and dstDataType != GL_DOUBLE) {
+    if (dstDataType != GL_FLOAT && dstDataType != GL_DOUBLE) {
         TF_CODING_ERROR("Unsupported points type for computing smooth normals");
     }
 }
@@ -173,7 +173,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not glDispatchCompute)
+    if (!glDispatchCompute)
         return;
 
     // XXX: workaround until the shading stuff is implemeted.
@@ -194,7 +194,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
                            HdGLSLProgramTokens->smoothNormalsDouble);
 
     HdGLSLProgramSharedPtr computeProgram = HdGLSLProgram::GetComputeProgram(shaderToken);
-    if (not computeProgram) return;
+    if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();
 
@@ -237,7 +237,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     // XXX: workaround for 319.xx driver bug of glNamedBufferDataEXT on UBO
     // XXX: move this workaround to renderContextCaps
-    if (false and caps.directStateAccessEnabled) {
+    if (false && caps.directStateAccessEnabled) {
         glNamedBufferDataEXT(ubo, sizeof(uniform), &uniform, GL_STATIC_DRAW);
     } else {
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);

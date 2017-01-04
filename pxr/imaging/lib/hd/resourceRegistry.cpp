@@ -132,14 +132,14 @@ HdResourceRegistry::MergeBufferArrayRange(
 {
     HD_TRACE_FUNCTION();
 
-    if (not TF_VERIFY(range)) return HdBufferArrayRangeSharedPtr();
+    if (!TF_VERIFY(range)) return HdBufferArrayRangeSharedPtr();
 
     // get existing buffer specs
     HdBufferSpecVector oldBufferSpecs;
     range->AddBufferSpecs(&oldBufferSpecs);
 
     // compare bufferspec
-    if (not HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
+    if (!HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
         // create / moveto the new buffer array.
 
         HdComputationVector computations;
@@ -165,7 +165,7 @@ HdResourceRegistry::MergeBufferArrayRange(
             strategy, role, bufferSpecs);
 
         // register copy computation.
-        if (not computations.empty()) {
+        if (!computations.empty()) {
             TF_FOR_ALL(it, computations) {
                 AddComputation(result, *it);
             }
@@ -237,7 +237,7 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     }
 
     // range has to be valid
-    if (ARCH_UNLIKELY(not (range and range->IsValid())))
+    if (ARCH_UNLIKELY(!(range && range->IsValid())))
     {
         TF_RUNTIME_ERROR("range is null or invalid");
         return;
@@ -267,7 +267,7 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     }
 
     // Check for no-valid buffer case
-    if (not sources.empty()) {
+    if (!sources.empty()) {
         _PendingSourceList::iterator it = _pendingSources.emplace_back(range);
         TF_VERIFY(range.use_count() >=2);
 
@@ -281,21 +281,21 @@ void
 HdResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
                               HdBufferSourceSharedPtr const &source)
 {
-    if (ARCH_UNLIKELY((not source) or (not range)))
+    if (ARCH_UNLIKELY((!source) || (!range)))
     {
         TF_RUNTIME_ERROR("An input pointer is null");
         return;
     }
 
     // range has to be valid
-    if (ARCH_UNLIKELY(not range->IsValid()))
+    if (ARCH_UNLIKELY(!range->IsValid()))
     {
         TF_RUNTIME_ERROR("range is invalid");
         return;
     }
 
     // Buffer has to be valid
-    if (ARCH_UNLIKELY(not source->IsValid()))
+    if (ARCH_UNLIKELY(!source->IsValid()))
     {
         TF_RUNTIME_ERROR("source buffer for %s is invalid", source->GetName().GetText());
         return;
@@ -310,7 +310,7 @@ HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
-    if (ARCH_UNLIKELY(not source))
+    if (ARCH_UNLIKELY(!source))
     {
         TF_RUNTIME_ERROR("source pointer is null");
         return;
@@ -318,7 +318,7 @@ HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 
 
     // Buffer has to be valid
-    if (ARCH_UNLIKELY(not source->IsValid()))
+    if (ARCH_UNLIKELY(!source->IsValid()))
     {
         TF_RUNTIME_ERROR("source buffer for %s is invalid", source->GetName().GetText());
         return;
@@ -378,14 +378,14 @@ HdResourceRegistry::Commit()
                         // execute computation.
                         // call IsResolved first since Resolve is virtual and
                         // could be costly.
-                        if (not (*sourceIt)->IsResolved()) {
+                        if (!(*sourceIt)->IsResolved()) {
                             if ((*sourceIt)->Resolve()) {
                                 TF_VERIFY((*sourceIt)->IsResolved());
 
                                 ++numBufferSourcesResolved;
 
                                 // call resize if it's the first source in sources.
-                                if (reqIt->range and
+                                if (reqIt->range &&
                                     (sourceIt.base() == reqIt->sources.begin())) {
                                     reqIt->range->Resize(
                                         (*sourceIt)->GetNumElements());
@@ -454,7 +454,7 @@ HdResourceRegistry::Commit()
 
         TF_FOR_ALL(reqIt, _pendingSources) {
             // CPU computation may not have a range. (e.g. adjacency)
-            if (not reqIt->range) continue;
+            if (!reqIt->range) continue;
 
             // CPU computation may result in an empty buffer source
             // (e.g. GPU quadrangulation table could be empty for quad only
@@ -593,7 +593,7 @@ HdResourceRegistry::GetResourceAllocation() const
     // glsl program & ubo allocation
     TF_FOR_ALL (progIt, _glslProgramRegistry) {
         HdGLSLProgramSharedPtr const &program = progIt->second;
-        if (not program) continue;
+        if (!program) continue;
         size_t size =
             program->GetProgram().GetSize() +
             program->GetGlobalUniformBuffer().GetSize();
@@ -613,7 +613,7 @@ HdResourceRegistry::GetResourceAllocation() const
     // dispatch buffers
     TF_FOR_ALL (bufferIt, _dispatchBufferRegistry) {
         HdDispatchBufferSharedPtr buffer = (*bufferIt);
-        if (not TF_VERIFY(buffer)) {
+        if (!TF_VERIFY(buffer)) {
             continue;
         }
 
@@ -633,7 +633,7 @@ HdResourceRegistry::GetResourceAllocation() const
     // persistent buffers
     TF_FOR_ALL (bufferIt, _persistentBufferRegistry) {
         HdPersistentBufferSharedPtr buffer = (*bufferIt);
-        if (not TF_VERIFY(buffer)) {
+        if (!TF_VERIFY(buffer)) {
             continue;
         }
 

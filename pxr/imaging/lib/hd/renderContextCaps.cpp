@@ -127,7 +127,7 @@ HdRenderContextCaps::_LoadCaps()
     if (glVersionStr == NULL) return;
 
     const char *dot = strchr(glVersionStr, '.');
-    if (TF_VERIFY((dot and dot != glVersionStr),
+    if (TF_VERIFY((dot && dot != glVersionStr),
                   "Can't parse GL_VERSION %s", glVersionStr)) {
         // GL_VERSION = "4.5.0 <vendor> <version>"
         //              "4.1 <vendor-os-ver> <version>"
@@ -139,7 +139,7 @@ HdRenderContextCaps::_LoadCaps()
     const char *glslVersionStr =
         (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
     dot = strchr(glslVersionStr, '.');
-    if (TF_VERIFY((dot and dot != glslVersionStr),
+    if (TF_VERIFY((dot && dot != glslVersionStr),
                   "Can't parse GL_SHADING_LANGUAGE_VERSION %s",
                   glslVersionStr)) {
         // GL_SHADING_LANGUAGE_VERSION = "4.10"
@@ -176,10 +176,10 @@ HdRenderContextCaps::_LoadCaps()
     }
 
     // initialize by individual exntention.
-    if (GLEW_ARB_bindless_texture and glMakeTextureHandleResidentNV) {
+    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentNV) {
         bindlessTextureEnabled = true;
     }
-    if (GLEW_NV_shader_buffer_load and glMakeNamedBufferResidentNV) {
+    if (GLEW_NV_shader_buffer_load && glMakeNamedBufferResidentNV) {
         bindlessBufferEnabled = true;
     }
     if (GLEW_ARB_explicit_uniform_location) {
@@ -201,19 +201,19 @@ HdRenderContextCaps::_LoadCaps()
     }
 
     // Environment variable overrides (only downgrading is possible)
-    if (not TfGetEnvSetting(HD_ENABLE_SHADER_STORAGE_BUFFER)) {
+    if (!TfGetEnvSetting(HD_ENABLE_SHADER_STORAGE_BUFFER)) {
         shaderStorageBufferEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_BINDLESS_TEXTURE)) {
+    if (!TfGetEnvSetting(HD_ENABLE_BINDLESS_TEXTURE)) {
         bindlessTextureEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_BINDLESS_BUFFER)) {
+    if (!TfGetEnvSetting(HD_ENABLE_BINDLESS_BUFFER)) {
         bindlessBufferEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_MULTI_DRAW_INDIRECT)) {
+    if (!TfGetEnvSetting(HD_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_DIRECT_STATE_ACCESS)) {
+    if (!TfGetEnvSetting(HD_ENABLE_DIRECT_STATE_ACCESS)) {
         directStateAccessEnabled = false;
     }
 
@@ -232,7 +232,7 @@ HdRenderContextCaps::_LoadCaps()
     }
 
     // For driver issues workaround
-    if (not TfGetEnvSetting(HD_ENABLE_COPY_BUFFER)) {
+    if (!TfGetEnvSetting(HD_ENABLE_COPY_BUFFER)) {
         copyBufferEnabled = false;
     }
 
@@ -269,7 +269,7 @@ HdRenderContextCaps::_LoadCaps()
             <<    bindlessBufferEnabled << "\n"
             ;
 
-        if (not copyBufferEnabled) {
+        if (!copyBufferEnabled) {
             std::cout << "  CopyBuffer : disabled\n";
         }
     }

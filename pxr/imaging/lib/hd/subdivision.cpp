@@ -142,7 +142,7 @@ Hd_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
     HD_MALLOC_TAG_FUNCTION();
 
     Hd_Subdivision *subdivision = _topology->GetSubdivision();
-    if (not TF_VERIFY(subdivision)) return;
+    if (!TF_VERIFY(subdivision)) return;
 
     subdivision->RefineGPU(range, _name);
 
@@ -154,6 +154,6 @@ Hd_OsdRefineComputationGPU::GetNumOutputElements() const
 {
     // returns the total number of vertices, including coarse and refined ones.
     Hd_Subdivision const *subdivision = _topology->GetSubdivision();
-    if (not TF_VERIFY(subdivision)) return 0;
+    if (!TF_VERIFY(subdivision)) return 0;
     return subdivision->GetNumVertices();
 }

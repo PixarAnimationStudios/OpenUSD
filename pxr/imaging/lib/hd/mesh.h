@@ -90,7 +90,7 @@ public:
     static bool IsEnabledQuadrangulationGPU();
 
     static bool IsEnabledQuadrangulation() {
-        return IsEnabledQuadrangulationCPU() or IsEnabledQuadrangulationGPU();
+        return IsEnabledQuadrangulationCPU() || IsEnabledQuadrangulationGPU();
     }
 
     /// Returns whether GPU refinement is enabled or not.

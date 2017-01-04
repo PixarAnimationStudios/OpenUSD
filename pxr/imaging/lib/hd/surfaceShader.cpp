@@ -68,7 +68,7 @@ public:
         specs->push_back(HdBufferSpec(_name, _type, 1));
     }
     virtual bool Resolve() {
-        if (not _TryLock()) return false;
+        if (!_TryLock()) return false;
         _SetResolved();
         return true;
     }
@@ -103,7 +103,7 @@ HdSurfaceShader::Sync()
  
     // _delegate might be null in certain conditions including when
     // Hydra is using a fallback surface shader
-    if (not _delegate) {
+    if (!_delegate) {
         return;  
     }
 
@@ -153,14 +153,14 @@ HdSurfaceShader::Sync()
                     std::unique_lock<std::mutex> regLock =
                         resourceRegistry->FindTextureResource
                         (texID, &texInstance, &textureResourceFound);
-                    if (not TF_VERIFY(textureResourceFound, 
+                    if (!TF_VERIFY(textureResourceFound, 
                             "No texture resource found with path %s",
                             paramIt->GetConnection().GetText())) {
                         continue;
                     }
 
                     texResource = texInstance.GetValue();
-                    if (not TF_VERIFY(texResource, 
+                    if (!TF_VERIFY(texResource, 
                             "Incorrect texture resource with path %s",
                             paramIt->GetConnection().GetText())) {
                         continue;
@@ -224,7 +224,7 @@ HdSurfaceShader::Sync()
             return;
 
         // Allocate a new uniform buffer if not exists.
-        if (not _paramArray) {
+        if (!_paramArray) {
             // establish a buffer range
             HdBufferSpecVector bufferSpecs;
             TF_FOR_ALL(srcIt, sources) {
@@ -234,12 +234,12 @@ HdSurfaceShader::Sync()
             HdBufferArrayRangeSharedPtr range =
                             resourceRegistry->AllocateShaderStorageBufferArrayRange(
                                         HdTokens->surfaceShaderParams, bufferSpecs);
-            if (not TF_VERIFY(range->IsValid()))
+            if (!TF_VERIFY(range->IsValid()))
                 return;
             _paramArray = range;
         }
 
-        if (not (TF_VERIFY(_paramArray->IsValid())))
+        if (!(TF_VERIFY(_paramArray->IsValid())))
             return;
 
         resourceRegistry->AddSources(_paramArray, sources);

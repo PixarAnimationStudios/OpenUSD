@@ -112,7 +112,7 @@ HdPoints::_GetRepr(TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBit
     }
 
     // points don't have multiple draw items (for now)
-    if (isNew or HdChangeTracker::IsDirty(*dirtyBits)) {
+    if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
             _UpdateDrawItem(it->second->GetDrawItem(0), dirtyBits);
         }
@@ -143,7 +143,7 @@ HdPoints::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     int pointsIndexInSourceArray = -1;
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         // TODO: We don't need to pull primvar metadata every time a value
@@ -171,8 +171,8 @@ HdPoints::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     if (sources.empty())
         return;
 
-    if (not drawItem->GetVertexPrimVarRange() or
-        not drawItem->GetVertexPrimVarRange()->IsValid()) {
+    if (!drawItem->GetVertexPrimVarRange() ||
+        !drawItem->GetVertexPrimVarRange()->IsValid()) {
         // initialize buffer array
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(it, sources) {

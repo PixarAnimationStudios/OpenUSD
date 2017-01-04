@@ -225,7 +225,7 @@ int
 Hd_Osd3Subdivision::GetNumVertices() const
 {
     // returns the total number of vertices, including coarse and refined ones.
-    if (not TF_VERIFY(_vertexStencils)) return 0;
+    if (!TF_VERIFY(_vertexStencils)) return 0;
 
     return _vertexStencils->GetNumStencils() +
         _vertexStencils->GetNumControlVertices();
@@ -240,7 +240,7 @@ Hd_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
     OpenSubdiv::Far::StencilTable const *stencilTable =
         varying ? _varyingStencils : _vertexStencils;
 
-    if (not TF_VERIFY(stencilTable)) return;
+    if (!TF_VERIFY(stencilTable)) return;
 
     OpenSubdiv::Osd::CpuVertexBuffer *osdVertexBuffer =
         static_cast<OpenSubdiv::Osd::CpuVertexBuffer*>(vertexBuffer);
@@ -372,7 +372,7 @@ Hd_Osd3Subdivision::_GetGpuStencilTable()
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not _gpuStencilTable) {
+    if (!_gpuStencilTable) {
         _gpuStencilTable = Hd_OsdGpuStencilTable::Create(
             _vertexStencils, NULL);
     }
@@ -397,7 +397,7 @@ Hd_Osd3TopologyComputation::Resolve()
 {
     using namespace OpenSubdiv;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
@@ -407,7 +407,7 @@ Hd_Osd3TopologyComputation::Resolve()
     // create topology refiner
     PxOsdTopologyRefinerSharedPtr refiner;
 
-    if (not TF_VERIFY(_topology)) {
+    if (!TF_VERIFY(_topology)) {
         _SetResolved();
         return true;
     }
@@ -421,7 +421,7 @@ Hd_Osd3TopologyComputation::Resolve()
                                               TfToken(_id.GetText()));
     }
 
-    if (not TF_VERIFY(_subdivision)) {
+    if (!TF_VERIFY(_subdivision)) {
         _SetResolved();
         return true;
     }
@@ -469,7 +469,7 @@ Hd_Osd3TopologyComputation::Resolve()
     }
 
     // merge endcap
-    if (patchTable and patchTable->GetLocalPointStencilTable()) {
+    if (patchTable && patchTable->GetLocalPointStencilTable()) {
         // append stencils
         if (Far::StencilTable const *vertexStencilsWithLocalPoints =
             Far::StencilTableFactory::AppendLocalPointStencilTable(
@@ -520,12 +520,12 @@ Hd_Osd3IndexComputation::Resolve()
 {
     using namespace OpenSubdiv;
 
-    if (_osdTopology and not _osdTopology->IsResolved()) return false;
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     Hd_Subdivision *subdivision = _topology->GetSubdivision();
-    if (not TF_VERIFY(subdivision)) {
+    if (!TF_VERIFY(subdivision)) {
         _SetResolved();
         return true;
     }
@@ -553,7 +553,7 @@ Hd_Osd3IndexComputation::Resolve()
         _SetResult(triIndices);
 
         _PopulateUniformPrimitiveBuffer(patchTable);
-    } else if (_subdivision->IsAdaptive() and
+    } else if (_subdivision->IsAdaptive() &&
                Hd_Subdivision::RefinesToBSplinePatches(scheme)) {
 
         VtArray<Hd_BSplinePatchIndex> indices(ptableSize/16);
@@ -588,7 +588,7 @@ Hd_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(result)) return;
+    if (!TF_VERIFY(result)) return;
 
     int const * numVertsPtr =
         _topology->GetFaceVertexCounts().cdata();

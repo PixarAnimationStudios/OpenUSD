@@ -185,7 +185,7 @@ HdMeshTopology::ComputeNumQuads(VtIntArray const &numVerts,
         if (nv < 3) {
             // skip degenerated face
             if (invalidFaceFound) *invalidFaceFound = true;
-        } else if (holeIndex < numHoleFaces and holeFacesPtr[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
             // skip hole face
             ++holeIndex;
         } else {
@@ -244,7 +244,7 @@ HdMeshTopology::GetQuadInfoBuilderComputation(
     _quadInfoBuilder = builder;
 
     if (gpu) {
-        if (not TF_VERIFY(resourceRegistry)) {
+        if (!TF_VERIFY(resourceRegistry)) {
             TF_CODING_ERROR("resource registry must be non-null "
                             "if gpu quadinfo is requested.");
             return builder;
@@ -278,7 +278,7 @@ HdMeshTopology::GetQuadrangulateComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
     // check if the quad table is already computed as all-quads.
-    if (_quadInfo and _quadInfo->IsAllQuads()) {
+    if (_quadInfo && _quadInfo->IsAllQuads()) {
         // no need of quadrangulation.
         return HdBufferSourceSharedPtr();
     }
@@ -300,7 +300,7 @@ HdMeshTopology::GetQuadrangulateComputationGPU(
     TfToken const &name, GLenum dataType, SdfPath const &id)
 {
     // check if the quad table is already computed as all-quads.
-    if (_quadInfo and _quadInfo->IsAllQuads()) {
+    if (_quadInfo && _quadInfo->IsAllQuads()) {
         // no need of quadrangulation.
         return HdComputationSharedPtr();
     }
@@ -333,7 +333,7 @@ HdMeshTopology::RefinesToTriangles() const
 bool
 HdMeshTopology::RefinesToBSplinePatches() const
 {
-    return (IsEnabledAdaptive() and
+    return (IsEnabledAdaptive() &&
             Hd_Subdivision::RefinesToBSplinePatches(_topology.GetScheme()));
 }
 
@@ -345,12 +345,12 @@ HdMeshTopology::GetOsdTopologyComputation(SdfPath const &id)
     }
 
     // this has to be the first instance.
-    if (not TF_VERIFY(not _subdivision)) return HdBufferSourceSharedPtr();
+    if (!TF_VERIFY(!_subdivision)) return HdBufferSourceSharedPtr();
 
     // create Hd_Subdivision
     _subdivision = Hd_Osd3Factory::CreateSubdivision();
 
-    if (not TF_VERIFY(_subdivision)) return HdBufferSourceSharedPtr();
+    if (!TF_VERIFY(_subdivision)) return HdBufferSourceSharedPtr();
 
     bool adaptive = RefinesToBSplinePatches();
 
@@ -384,7 +384,7 @@ HdMeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
     // source will be scheduled at the caller
     if (_topology.GetFaceVertexCounts().size() == 0) return source;
 
-    if (not TF_VERIFY(_subdivision)) {
+    if (!TF_VERIFY(_subdivision)) {
         TF_CODING_ERROR("GetOsdTopologyComputation should be called before "
                         "GetOsdRefineComputation.");
         return source;
@@ -409,7 +409,7 @@ HdMeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
         return HdComputationSharedPtr();
     }
 
-    if (not TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
+    if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
 
     return _subdivision->CreateRefineComputationGPU(
         this, name, dataType, numComponents);

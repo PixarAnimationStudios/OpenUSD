@@ -175,7 +175,7 @@ public:
 
     /// Prepare the access of GetData().
     virtual bool Resolve() {
-        if (not _TryLock()) return false;
+        if (!_TryLock()) return false;
 
         // nothing. just marks as resolved, and returns _data in GetData()
         _SetResolved();

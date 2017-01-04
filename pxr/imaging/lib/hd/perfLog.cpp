@@ -56,7 +56,7 @@ HdPerfLog::AddCacheHit(TfToken const& name,
                  SdfPath const& id,
                  TfToken const& tag)
 {
-    if (ARCH_LIKELY(not _enabled))
+    if (ARCH_LIKELY(!_enabled))
         return;
     _Lock lock(_mutex);
     _cacheMap[name].AddHit();
@@ -72,7 +72,7 @@ HdPerfLog::AddCacheMiss(TfToken const& name,
                   SdfPath const& id,
                   TfToken const& tag)
 {
-    if (ARCH_LIKELY(not _enabled))
+    if (ARCH_LIKELY(!_enabled))
         return;
     _Lock lock(_mutex);
     _cacheMap[name].AddMiss();
@@ -86,7 +86,7 @@ HdPerfLog::AddCacheMiss(TfToken const& name,
 void
 HdPerfLog::ResetCache(TfToken const& name)
 {
-    if (ARCH_LIKELY(not _enabled))
+    if (ARCH_LIKELY(!_enabled))
         return;
     _Lock lock(_mutex);
     _cacheMap[name].Reset();
@@ -149,7 +149,7 @@ HdPerfLog::GetCounterNames()
 void
 HdPerfLog::IncrementCounter(TfToken const& name)
 {
-    if (ARCH_LIKELY(not _enabled)) 
+    if (ARCH_LIKELY(!_enabled)) 
         return;
     _Lock lock(_mutex);
     TF_DEBUG(HD_COUNTER_CHANGED).Msg("Counter changed %s: %f -> %f\n",
@@ -162,7 +162,7 @@ HdPerfLog::IncrementCounter(TfToken const& name)
 void
 HdPerfLog::DecrementCounter(TfToken const& name)
 {
-    if (ARCH_LIKELY(not _enabled)) 
+    if (ARCH_LIKELY(!_enabled)) 
         return;
     _Lock lock(_mutex);
     TF_DEBUG(HD_COUNTER_CHANGED).Msg("Counter changed %s: %f -> %f\n",
@@ -175,7 +175,7 @@ HdPerfLog::DecrementCounter(TfToken const& name)
 void
 HdPerfLog::SetCounter(TfToken const& name, double value)
 {
-    if (ARCH_LIKELY(not _enabled)) 
+    if (ARCH_LIKELY(!_enabled)) 
         return;
     _Lock lock(_mutex);
     TF_DEBUG(HD_COUNTER_CHANGED).Msg("Counter changed %s: %f -> %f\n",
@@ -188,7 +188,7 @@ HdPerfLog::SetCounter(TfToken const& name, double value)
 void
 HdPerfLog::AddCounter(TfToken const &name, double value)
 {
-    if (ARCH_LIKELY(not _enabled))
+    if (ARCH_LIKELY(!_enabled))
         return;
     _Lock lock(_mutex);
     TF_DEBUG(HD_COUNTER_CHANGED).Msg("Counter changed %s %f -> %f\n",
@@ -201,7 +201,7 @@ HdPerfLog::AddCounter(TfToken const &name, double value)
 void
 HdPerfLog::SubtractCounter(TfToken const &name, double value)
 {
-    if (ARCH_LIKELY(not _enabled))
+    if (ARCH_LIKELY(!_enabled))
         return;
     _Lock lock(_mutex);
     TF_DEBUG(HD_COUNTER_CHANGED).Msg("Counter changed %s %f -> %f\n",
@@ -221,7 +221,7 @@ HdPerfLog::GetCounter(TfToken const& name)
 void
 HdPerfLog::ResetCounters()
 {
-    if (ARCH_LIKELY(not _enabled))
+    if (ARCH_LIKELY(!_enabled))
         return;
     _Lock lock(_mutex);
     TF_FOR_ALL(counterIt, _counterMap) {

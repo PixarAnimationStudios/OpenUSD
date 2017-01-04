@@ -69,10 +69,10 @@ public:
     SdfPath const& GetConnection() const { return _connection; }
 
     bool IsTexture() const {
-        return not IsFallback() and _connection.IsAbsolutePath();
+        return !IsFallback() && _connection.IsAbsolutePath();
     }
     bool IsPrimvar() const {
-        return not IsFallback() and not IsTexture();
+        return !IsFallback() && !IsTexture();
     }
     bool IsFallback() const {
         return _connection.IsEmpty();

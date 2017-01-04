@@ -119,14 +119,14 @@ HdBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
 {
     if (drawItem->GetGeometricShader()) return;
 
-    if (not TF_VERIFY(_topology)) return;
+    if (!TF_VERIFY(_topology)) return;
 
     // Check for authored normals, we could leverage dirtyBits here as an
     // optimization, however the BAR is the ground truth, so until there is a
     // known peformance issue, we just check them explicitly.
     bool hasAuthoredNormals = false;
 
-    if (not hasAuthoredNormals) {
+    if (!hasAuthoredNormals) {
         // Check if we picked up normals on a previous update.
         typedef HdBufferArrayRangeSharedPtr HdBarPtr;
         if (HdBarPtr const& bar = drawItem->GetConstantPrimVarRange())
@@ -202,12 +202,12 @@ HdBasisCurves::_GetRepr(TfToken const &reprName,
             if (desc.geomStyle == HdBasisCurvesGeomStyleLine) {
                 HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 drawingCoord->SetTopologyIndex(HdBasisCurves::HullTopology);
-                if (not (_customDirtyBitsInUse & DirtyHullIndices)) {
+                if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
                     _customDirtyBitsInUse |= DirtyHullIndices;
                     *dirtyBits |= DirtyHullIndices;
                 }
             } else {
-                if (not (_customDirtyBitsInUse & DirtyIndices)) {
+                if (!(_customDirtyBitsInUse & DirtyIndices)) {
                     _customDirtyBitsInUse |= DirtyIndices;
                     *dirtyBits |= DirtyIndices;
                 }
@@ -229,7 +229,7 @@ HdBasisCurves::_GetRepr(TfToken const &reprName,
     }
 
     // curves don't have multiple draw items (for now)
-    if (isNew or HdChangeTracker::IsDirty(*dirtyBits)) {
+    if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
             HdDrawItem *drawItem = it->second->GetDrawItem(0);
             _UpdateDrawItem(drawItem, dirtyBits, descs[0]);
@@ -288,7 +288,7 @@ HdBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
     }
 
     // XXX: is it safe to get topology even if it's not dirty?
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id) or
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id) ||
         HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
 
         HdBasisCurvesTopologySharedPtr topology(
@@ -386,7 +386,7 @@ HdBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     sources.reserve(primVarNames.size());
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         // TODO: We don't need to pull primvar metadata every time a value
@@ -399,12 +399,12 @@ HdBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                 // We want to validate the topology by making sure the number of
                 // verts is equal or greater than the number of verts the topology
                 // references
-                if (not _topology) {
+                if (!_topology) {
                     TF_CODING_ERROR("No topology set for BasisCurve %s",
                                     id.GetName().c_str());
                 }
-                else if(not value.IsHolding<VtVec3fArray>() ||
-                        (not _topology->HasIndices() &&
+                else if(!value.IsHolding<VtVec3fArray>() ||
+                        (!_topology->HasIndices() &&
                         value.Get<VtVec3fArray>().size() != _topology->CalculateNeededNumberOfControlPoints())) {
                     TF_WARN("Topology and vertices do not match for "
                             "BasisCurve %s",id.GetName().c_str());
@@ -432,8 +432,8 @@ HdBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
         return;
     }
 
-    if (not drawItem->GetVertexPrimVarRange() or
-        not drawItem->GetVertexPrimVarRange()->IsValid()) {
+    if (!drawItem->GetVertexPrimVarRange() ||
+        !drawItem->GetVertexPrimVarRange()->IsValid()) {
         // initialize buffer array
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(it, sources) {
@@ -469,7 +469,7 @@ HdBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
     sources.reserve(primVarNames.size());
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         VtValue value = delegate->Get(id, *nameIt);
@@ -484,8 +484,8 @@ HdBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
         return;
 
     // element primvars exist.
-    if (not drawItem->GetElementPrimVarRange() or
-        not drawItem->GetElementPrimVarRange()->IsValid()) {
+    if (!drawItem->GetElementPrimVarRange() ||
+        !drawItem->GetElementPrimVarRange()->IsValid()) {
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(it, sources) {
             (*it)->AddBufferSpecs(&bufferSpecs);
@@ -505,7 +505,7 @@ HdBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
 bool
 HdBasisCurves::_SupportsSmoothCurves(HdBasisCurvesReprDesc desc, int refineLevel)
 {
-    if(not _topology) {
+    if(!_topology) {
         TF_CODING_ERROR("Calling _SupportsSmoothCurves before topology is set");
         return false;
     }
@@ -522,7 +522,7 @@ HdBasisCurves::_SupportsSmoothCurves(HdBasisCurvesReprDesc desc, int refineLevel
         curveBasis == HdTokens->bSpline || 
         curveBasis == HdTokens->catmullRom)) {
 
-        if (refineLevel > 0 or IsEnabledForceRefinedCurves()) {
+        if (refineLevel > 0 || IsEnabledForceRefinedCurves()) {
             return true;
         }
     }

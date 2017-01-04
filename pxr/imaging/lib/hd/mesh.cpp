@@ -113,12 +113,12 @@ HdMesh::IsEnabledPackedNormals()
 int
 HdMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
 {
-    if (desc.geomStyle == HdMeshGeomStyleHull or
-        desc.geomStyle == HdMeshGeomStyleHullEdgeOnly or
+    if (desc.geomStyle == HdMeshGeomStyleHull         ||
+        desc.geomStyle == HdMeshGeomStyleHullEdgeOnly || 
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
         return 0;
     }
-    if (not TF_VERIFY(_topology)) return 0;
+    if (!TF_VERIFY(_topology)) return 0;
     return _topology->GetRefineLevel();
 }
 
@@ -143,8 +143,8 @@ HdMesh::_PopulateTopology(HdDrawItem *drawItem,
     // for the time being. In other words, each range of index buffer is
     // immutable.
 
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id) or
-        HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id) or
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)    || 
+        HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id) || 
         HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
         // make a shallow copy
         // note: if we add topologyId computation in delegate,
@@ -307,7 +307,7 @@ HdMesh::_PopulateAdjacency()
     HD_MALLOC_TAG_FUNCTION();
 
     // The topology may be null in the event that it has zero faces.
-    if (not _topology) return;
+    if (!_topology) return;
 
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
     {
@@ -355,9 +355,9 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
                       HdMeshTopologySharedPtr const &topology,
                       SdfPath const &id)
 {
-    if (not TF_VERIFY(computations)) return source;
+    if (!TF_VERIFY(computations)) return source;
 
-    if (not HdMesh::IsEnabledQuadrangulationGPU()) {
+    if (!HdMesh::IsEnabledQuadrangulationGPU()) {
         // CPU quadrangulation
         HdResourceRegistry *resourceRegistry =
             &HdResourceRegistry::GetInstance();
@@ -429,9 +429,9 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
                HdComputationVector *computations,
                HdMeshTopologySharedPtr const &topology)
 {
-    if (not TF_VERIFY(computations)) return source;
+    if (!TF_VERIFY(computations)) return source;
 
-    if (not HdMesh::IsEnabledRefineGPU()) {
+    if (!HdMesh::IsEnabledRefineGPU()) {
         // CPU subdivision
         // note: if the topology is empty, the source will be returned
         //       without change. We still need the type of buffer
@@ -486,7 +486,7 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     int numPoints = _topology ? _topology->ComputeNumPoints() : 0;
 
     bool cpuSmoothNormals =
-        requireSmoothNormals and (not IsEnabledSmoothNormalsGPU());
+        requireSmoothNormals && (!IsEnabledSmoothNormalsGPU());
 
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
     // Don't call _GetRefineLevelForDesc(desc) instead of GetRefineLevel(). Why?
@@ -525,12 +525,12 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
         // If the index is greater than the last vertex index, isVarying=true.
         bool isVarying = i++ > vertexPartitionIndex;
 
-        if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt)) {
+        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt)) {
             // one exception: if smoothNormals=true and DirtyNormals set,
             // we need points even if they are clean.
-            if (cpuSmoothNormals == false or
-                *nameIt != HdTokens->points or
-                not (HdChangeTracker::IsPrimVarDirty(
+            if (cpuSmoothNormals == false   ||
+                *nameIt != HdTokens->points ||
+                !(HdChangeTracker::IsPrimVarDirty(
                          *dirtyBits, id, HdTokens->normals))) {
                 continue;
             }
@@ -565,13 +565,13 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
 
             // save the point buffer source for smooth normal computation.
             if (requireSmoothNormals
-                and *nameIt == HdTokens->points) {
+                && *nameIt == HdTokens->points) {
                 points = source;
             }
         }
     }
 
-    if (requireSmoothNormals and
+    if (requireSmoothNormals &&
         HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->normals)) {
         // note: normals gets dirty when points are marked as dirty,
         // at changetracker.
@@ -589,7 +589,7 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                 bool doRefine = (refineLevel > 0);
                 bool doQuadrangulate = _UsePtexIndices();
 
-                if (doRefine or doQuadrangulate) {
+                if (doRefine || doQuadrangulate) {
                     if (_packedNormals) {
                         // we can't use packed normals for refined/quad,
                         // let's migrate the buffer to full precision
@@ -633,7 +633,7 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
 
 
 
-            if (not points) {
+            if (!points) {
                 VtValue value = delegate->Get(id, HdTokens->points);
 
                 points = HdBufferSourceSharedPtr(
@@ -675,12 +675,12 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     }
 
     // return before allocation if it's empty.
-    if (sources.empty() and computations.empty()) {
+    if (sources.empty() && computations.empty()) {
         return;
     }
 
     HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimVarRange();
-    if ((not bar) or (not bar->IsValid())) {
+    if ((!bar) || (!bar->IsValid())) {
         // new buffer specs
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
@@ -724,12 +724,12 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     }
 
     // schedule buffer sources
-    if (not sources.empty()) {
+    if (!sources.empty()) {
         // add sources to update queue
         resourceRegistry->AddSources(drawItem->GetVertexPrimVarRange(),
                                      sources);
     }
-    if (not computations.empty()) {
+    if (!computations.empty()) {
         // add gpu computations to queue.
         TF_FOR_ALL(it, computations) {
             resourceRegistry->AddComputation(
@@ -761,7 +761,7 @@ HdMesh::_PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
 
     TF_FOR_ALL(nameIt, primVarNames) {
         // note: facevarying primvars don't have to be refined.
-        if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id,*nameIt)) {
+        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id,*nameIt)) {
             continue;
         }
 
@@ -806,7 +806,7 @@ HdMesh::_PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
 
     // face varying primvars exist.
     // allocate new bar if not exists
-    if (not drawItem->GetFaceVaryingPrimVarRange()) {
+    if (!drawItem->GetFaceVaryingPrimVarRange()) {
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
@@ -841,7 +841,7 @@ HdMesh::_PopulateElementPrimVars(HdDrawItem *drawItem,
     int numFaces = _topology ? _topology->GetNumFaces() : 0;
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (not HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         VtValue value = delegate->Get(id, *nameIt);
@@ -868,7 +868,7 @@ HdMesh::_PopulateElementPrimVars(HdDrawItem *drawItem,
 
     // element primvars exist.
     // allocate new bar if not exists
-    if (not drawItem->GetElementPrimVarRange()) {
+    if (!drawItem->GetElementPrimVarRange()) {
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
@@ -947,7 +947,7 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
         requireSmoothNormals = false;
     }
 
-    if (requireSmoothNormals and not _vertexAdjacency) {
+    if (requireSmoothNormals && !_vertexAdjacency) {
         _PopulateAdjacency();
     }
 
@@ -957,7 +957,7 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
     }
 
     /* VERTEX PRIMVARS */
-    if (isNew or HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
+    if (isNew || HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
         _PopulateVertexPrimVars(drawItem, dirtyBits, isNew, desc, requireSmoothNormals);
     }
 
@@ -968,7 +968,7 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
         if (uniformPrimVarNames.empty()) {
             uniformPrimVarNames = delegate->GetPrimVarUniformNames(id);
         }
-        if (not uniformPrimVarNames.empty()) {
+        if (!uniformPrimVarNames.empty()) {
             _PopulateElementPrimVars(drawItem, dirtyBits, uniformPrimVarNames);
         }
     }
@@ -1029,7 +1029,7 @@ HdMesh::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem, HdMeshReprDesc desc
     // We need to use smoothNormals flag per repr (and not requireSmoothNormals)
     // here since the geometric shader needs to know if we are actually
     // using normals or not.
-    bool smoothNormals = desc.smoothNormals and
+    bool smoothNormals = desc.smoothNormals &&
         _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear;
 
     // if the prim doesn't have an opinion about cullstyle,
@@ -1109,12 +1109,12 @@ HdMesh::_GetRepr(TfToken const &reprName,
             HdDrawItem *drawItem = it->second->AddDrawItem(&_sharedData);
             HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
 
-            if (desc.geomStyle == HdMeshGeomStyleHull or
-                desc.geomStyle == HdMeshGeomStyleHullEdgeOnly or
+            if (desc.geomStyle == HdMeshGeomStyleHull         || 
+                desc.geomStyle == HdMeshGeomStyleHullEdgeOnly || 
                 desc.geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
 
                 drawingCoord->SetTopologyIndex(HdMesh::HullTopology);
-                if (not (_customDirtyBitsInUse & DirtyHullIndices)) {
+                if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
                     _customDirtyBitsInUse |= DirtyHullIndices;
                     *dirtyBits |= DirtyHullIndices;
                 }
@@ -1124,18 +1124,18 @@ HdMesh::_GetRepr(TfToken const &reprName,
                 // for points too, to draw a subset of vertex primvars
                 // (not that the points may be followed by the refined vertices)
                 drawingCoord->SetTopologyIndex(HdMesh::PointsTopology);
-                if (not (_customDirtyBitsInUse & DirtyPointsIndices)) {
+                if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
                     _customDirtyBitsInUse |= DirtyPointsIndices;
                     *dirtyBits |= DirtyPointsIndices;
                 }
             } else {
-                if (not (_customDirtyBitsInUse & DirtyIndices)) {
+                if (!(_customDirtyBitsInUse & DirtyIndices)) {
                     _customDirtyBitsInUse |= DirtyIndices;
                     *dirtyBits |= DirtyIndices;
                 }
             }
             if (desc.smoothNormals) {
-                if (not (_customDirtyBitsInUse & DirtySmoothNormals)) {
+                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
                     _customDirtyBitsInUse |= DirtySmoothNormals;
                     *dirtyBits |= DirtySmoothNormals;
                 }
@@ -1180,7 +1180,7 @@ HdMesh::_GetRepr(TfToken const &reprName,
     for (auto desc : descs) {
         if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
-        if (isNew or HdChangeTracker::IsDirty(*dirtyBits)) {
+        if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
             _UpdateDrawItem(drawItem, dirtyBits, isNew, desc, requireSmoothNormals);
             _UpdateDrawItemGeometricShader(drawItem, desc);

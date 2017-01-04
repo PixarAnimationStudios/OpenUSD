@@ -285,22 +285,22 @@ template <typename VERTEX_BUFFER>
 bool
 Hd_OsdRefineComputation<VERTEX_BUFFER>::Resolve()
 {
-    if (_source and not _source->IsResolved()) return false;
-    if (_osdTopology and not _osdTopology->IsResolved()) return false;
+    if (_source && !_source->IsResolved()) return false;
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
     Hd_Subdivision *subdivision = _topology->GetSubdivision();
-    if (not TF_VERIFY(subdivision)) {
+    if (!TF_VERIFY(subdivision)) {
         _SetResolved();
         return true;
     }
 
     // prepare cpu vertex buffer including refined vertices
-    TF_VERIFY(not _cpuVertexBuffer);
+    TF_VERIFY(!_cpuVertexBuffer);
     _cpuVertexBuffer = VERTEX_BUFFER::Create(_source->GetNumComponents(),
                                              subdivision->GetNumVertices());
 

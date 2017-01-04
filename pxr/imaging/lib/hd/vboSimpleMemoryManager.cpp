@@ -131,7 +131,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::GarbageCollect()
     HD_MALLOC_TAG_FUNCTION();
 
     // no range referring this buffer = empty
-    if (GetRangeCount() > 0 and GetRange(0).expired()) {
+    if (GetRangeCount() > 0 && GetRange(0).expired()) {
         _DeallocateResources();
         HD_PERF_COUNTER_INCR(HdPerfTokens->garbageCollectedVbo);
         return true;
@@ -177,7 +177,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
-    if (not TF_VERIFY(curRangeOwner == shared_from_this())) {
+    if (!TF_VERIFY(curRangeOwner == shared_from_this())) {
         TF_CODING_ERROR("HdVBOSimpleMemoryManager can't reassign ranges");
         return;
     }
@@ -190,7 +190,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
     _SimpleBufferArrayRangeSharedPtr range = _GetRangeSharedPtr();
 
-    if (not range) {
+    if (!range) {
         TF_CODING_ERROR("_SimpleBufferArrayRange expired unexpectedly.");
         return;
     }
@@ -315,14 +315,14 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_bufferArray)) return;
+    if (!TF_VERIFY(_bufferArray)) return;
 
     int offset = 0;
 
     HdBufferResourceSharedPtr VBO =
         _bufferArray->GetResource(bufferSource->GetName());
 
-    if (not VBO or VBO->GetId() == 0) {
+    if (!VBO || VBO->GetId() == 0) {
         TF_CODING_ERROR("VBO doesn't exist for %s",
                         bufferSource->GetName().GetText());
         return;
@@ -368,11 +368,11 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name)
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_bufferArray)) return VtValue();
+    if (!TF_VERIFY(_bufferArray)) return VtValue();
 
     HdBufferResourceSharedPtr VBO = _bufferArray->GetResource(name);
 
-    if (not VBO or (VBO->GetId() == 0 and _numElements > 0)) {
+    if (!VBO || (VBO->GetId() == 0 && _numElements > 0)) {
         TF_CODING_ERROR("VBO doesn't exist for %s", name.GetText());
         return VtValue();
     }
@@ -395,7 +395,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetMaxNumElements() const
 HdBufferResourceSharedPtr
 HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource() const
 {
-    if (not TF_VERIFY(_bufferArray)) return HdBufferResourceSharedPtr();
+    if (!TF_VERIFY(_bufferArray)) return HdBufferResourceSharedPtr();
 
     return _bufferArray->GetResource();
 }
@@ -403,14 +403,14 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource() const
 HdBufferResourceSharedPtr
 HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource(TfToken const& name)
 {
-    if (not TF_VERIFY(_bufferArray)) return HdBufferResourceSharedPtr();
+    if (!TF_VERIFY(_bufferArray)) return HdBufferResourceSharedPtr();
     return _bufferArray->GetResource(name);
 }
 
 HdBufferResourceNamedList const&
 HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResources() const
 {
-    if (not TF_VERIFY(_bufferArray)) {
+    if (!TF_VERIFY(_bufferArray)) {
         static HdBufferResourceNamedList empty;
         return empty;
     }

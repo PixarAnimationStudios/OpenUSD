@@ -110,7 +110,7 @@ private:
         _EntryIsNotEmpty(const _Entry &entry) : _entry(entry) {}
 
         bool operator()() {
-            return (not (_entry.bufferArrays.empty()));
+            return (!(_entry.bufferArrays.empty()));
         }
 
     private:

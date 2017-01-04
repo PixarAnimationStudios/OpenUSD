@@ -115,7 +115,7 @@ HdRenderPassState::Sync()
     }
 
     // allocate bar if not exists
-    if (not _renderPassStateBar) {
+    if (!_renderPassStateBar) {
         HdBufferSpecVector bufferSpecs;
 
         // note: InterleavedMemoryManager computes the offsets in the packed
@@ -206,7 +206,7 @@ HdRenderPassState::SetCamera(GfMatrix4d const &worldToViewMatrix,
     _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
                         (float)viewport[2], (float)viewport[3]);
 
-    if(not TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
+    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
         _cullMatrix = _worldToViewMatrix * _projectionMatrix;
     }
 }
@@ -261,7 +261,7 @@ HdRenderPassState::SetClipPlanes(ClipPlanesVector const & clipPlanes)
 {
     if (_clipPlanes != clipPlanes) {
         _clipPlanes = clipPlanes;
-        if (not TF_VERIFY(_clipPlanes.size() < GL_MAX_CLIP_PLANES)) {
+        if (!TF_VERIFY(_clipPlanes.size() < GL_MAX_CLIP_PLANES)) {
             _clipPlanes.resize(GL_MAX_CLIP_PLANES);
         }
         _renderPassStateBar.reset();

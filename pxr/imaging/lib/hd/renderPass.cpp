@@ -87,7 +87,7 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
     // update dirty list subscription for the new collection.
     // holding shared_ptr for the lifetime of the dirty list.
     bool isMinorChange = true;
-    if (not _dirtyList or not _dirtyList->ApplyEdit(col)) {
+    if (!_dirtyList || !_dirtyList->ApplyEdit(col)) {
         _dirtyList.reset(new HdDirtyList(_collection, *_renderIndex));
         isMinorChange = false;
     }
@@ -134,15 +134,15 @@ HdRenderPass::_PrepareCommandBuffer(
     const int shaderBindingsVersion = tracker.GetShaderBindingsVersion();
 
     const bool 
-       skipCulling = TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING) or
+       skipCulling = TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING) ||
            (caps.multiDrawIndirectEnabled
-               and Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
+               && Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
 
     const bool 
        cameraChanged = true,
        extentsChanged = true,
        collectionChanged = _collectionChanged 
-                           or (_collectionVersion != collectionVersion);
+                           || (_collectionVersion != collectionVersion);
 
     const bool cullingStateJustChanged = 
                                     skipCulling != _lastCullingDisabledState;
@@ -186,8 +186,8 @@ HdRenderPass::_PrepareCommandBuffer(
     else {
         // XXX: this process should be moved to Hd_DrawBatch::PrepareDraw
         //      to be consistent with GPU culling.
-        if((not freezeCulling)
-            and (collectionChanged or cameraChanged or extentsChanged)) {
+        if((!freezeCulling)
+            && (collectionChanged || cameraChanged || extentsChanged)) {
             // Re-cull the command buffer. 
             _cmdBuffer.FrustumCull(renderPassState->GetCullMatrix());
         }

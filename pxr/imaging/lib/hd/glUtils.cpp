@@ -168,7 +168,7 @@ bool
 HdGLUtils::GetShaderCompileStatus(GLuint shader, std::string * reason)
 {
     // glew has to be initialized
-    if (not glGetShaderiv) return true;
+    if (!glGetShaderiv) return true;
 
     GLint status = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
@@ -189,7 +189,7 @@ bool
 HdGLUtils::GetProgramLinkStatus(GLuint program, std::string * reason)
 {
     // glew has to be initialized
-    if (not glGetProgramiv) return true;
+    if (!glGetProgramiv) return true;
 
     GLint status = 0;
     glGetProgramiv(program, GL_LINK_STATUS, &status);
@@ -214,7 +214,7 @@ HdGLBufferRelocator::AddRange(GLintptr readOffset,
                               GLsizeiptr copySize)
 {
     _CopyUnit unit(readOffset, writeOffset, copySize);
-    if (_queue.empty() or (not _queue.back().Concat(unit))) {
+    if (_queue.empty() || (!_queue.back().Concat(unit))) {
         _queue.push_back(unit);
     }
 }
@@ -226,7 +226,7 @@ HdGLBufferRelocator::Commit()
 
     if (caps.copyBufferEnabled) {
         // glCopyBuffer
-        if (not caps.directStateAccessEnabled) {
+        if (!caps.directStateAccessEnabled) {
             glBindBuffer(GL_COPY_READ_BUFFER, _srcBuffer);
             glBindBuffer(GL_COPY_WRITE_BUFFER, _dstBuffer);
         }
@@ -249,7 +249,7 @@ HdGLBufferRelocator::Commit()
         HD_PERF_COUNTER_ADD(HdPerfTokens->glCopyBufferSubData,
                             (double)_queue.size());
 
-        if (not caps.directStateAccessEnabled) {
+        if (!caps.directStateAccessEnabled) {
             glBindBuffer(GL_COPY_READ_BUFFER, 0);
             glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
         }

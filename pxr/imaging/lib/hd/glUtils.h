@@ -55,9 +55,9 @@ struct HdVec4f_2_10_10_10_REV {
     }
 
     bool operator==(const HdVec4f_2_10_10_10_REV &other) const {
-        return (other.w == w and
-                other.z == z and
-                other.y == y and
+        return (other.w == w && 
+                other.z == z && 
+                other.y == y && 
                 other.x == x);
     }
 
@@ -115,7 +115,7 @@ private:
             : readOffset(read), writeOffset(write), copySize(size) {}
 
         bool Concat(_CopyUnit const &next) {
-            if (readOffset  + copySize == next.readOffset and
+            if (readOffset  + copySize == next.readOffset &&
                 writeOffset + copySize == next.writeOffset) {
                 copySize += next.copySize;
                 return true;

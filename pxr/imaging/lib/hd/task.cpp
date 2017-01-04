@@ -99,7 +99,7 @@ HdSceneTask::_SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children)
 
     if (bits & HdChangeTracker::DirtyChildren) {
         VtValue v = _delegate->Get(_id, HdTokens->children);
-        if (not TF_VERIFY(v.IsHolding<SdfPathVector>())) {
+        if (!TF_VERIFY(v.IsHolding<SdfPathVector>())) {
             return;
         }
 
@@ -110,7 +110,7 @@ HdSceneTask::_SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children)
 
         TF_FOR_ALL(i, childIds) {
             HdTaskSharedPtr const& task = _delegate->GetRenderIndex().GetTask(*i);
-            if (not TF_VERIFY(task)) {
+            if (!TF_VERIFY(task)) {
                 continue;
             }
             children->push_back(task);

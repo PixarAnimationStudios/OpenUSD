@@ -72,10 +72,10 @@ HdBasisCurvesTopology::operator==(HdBasisCurvesTopology const &other) const
     HD_TRACE_FUNCTION();
 
     // no need to compare _adajency and _quadInfo
-    return (_curveType == other._curveType and
-            _curveBasis == other._curveBasis and
-            _curveWrap == other._curveWrap and
-            _curveVertexCounts == other._curveVertexCounts and
+    return (_curveType == other._curveType                  &&
+            _curveBasis == other._curveBasis                &&
+            _curveWrap == other._curveWrap                  &&
+            _curveVertexCounts == other._curveVertexCounts  &&
             _curveIndices == other._curveIndices);
 }
 

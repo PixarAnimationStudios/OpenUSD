@@ -351,7 +351,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
 bool
 Hd_BasisCurvesIndexBuilderComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
 
@@ -402,7 +402,7 @@ Hd_BasisCurvesWidthsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *
 bool
 Hd_BasisCurvesWidthsInterpolaterComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     // We need to interpolate widths depending on the primvar type
@@ -470,7 +470,7 @@ Hd_BasisCurvesNormalsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector 
 bool
 Hd_BasisCurvesNormalsInterpolaterComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
 

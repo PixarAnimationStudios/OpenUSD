@@ -173,7 +173,7 @@ HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
     HdSceneDelegate* delegate = GetDelegate();
 
     VtValue valueVt = delegate->Get(taskId, valueId);
-    if (not valueVt.IsHolding<T>()) {
+    if (!valueVt.IsHolding<T>()) {
         TF_CODING_ERROR("Token %s from scene delegate is of mismatched type", valueId.GetText());
         return false;
     }

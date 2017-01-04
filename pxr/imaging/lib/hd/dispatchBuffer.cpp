@@ -188,7 +188,7 @@ HdDispatchBuffer::~HdDispatchBuffer()
 void
 HdDispatchBuffer::CopyData(std::vector<GLuint> const &data)
 {
-    if (not TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
+    if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();

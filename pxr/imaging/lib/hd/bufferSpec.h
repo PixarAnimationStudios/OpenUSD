@@ -74,20 +74,20 @@ struct HdBufferSpec {
 
     /// Equality checks.
     bool operator == (HdBufferSpec const &other) const {
-        return name == other.name and
-            glDataType == other.glDataType and
-            numComponents == other.numComponents and
+        return name == other.name                &&
+            glDataType == other.glDataType       &&
+            numComponents == other.numComponents &&
             arraySize == other.arraySize;
     }
     bool operator != (HdBufferSpec const &other) const {
-        return not (*this == other);
+        return !(*this == other);
     }
 
     /// Ordering.
     bool operator < (HdBufferSpec const &other) const {
-        return name < other.name or (name == other.name and
-              (glDataType < other.glDataType or (glDataType == other.glDataType and
-              (numComponents < other.numComponents or (numComponents == other.numComponents and
+        return name < other.name || (name == other.name &&
+              (glDataType < other.glDataType || (glDataType == other.glDataType &&
+              (numComponents < other.numComponents || (numComponents == other.numComponents &&
               (arraySize < other.arraySize))))));
     }
 

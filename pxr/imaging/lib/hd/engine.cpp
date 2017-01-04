@@ -463,7 +463,7 @@ HdEngine::SetTaskContextData(const TfToken &id, VtValue &data)
     // See if the token exists in the context and if not add it.
     std::pair<HdTaskContext::iterator, bool> result =
                                                  _taskContext.emplace(id, data);
-    if (not result.second) {
+    if (!result.second) {
         // Item wasn't new, so need to update it
         result.first->second = data;
     }
@@ -563,7 +563,7 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // could be in parallel... but how?
     // may be just gathering dirtyLists at first, and then index->sync()?
     TF_FOR_ALL(it, tasks) {
-        if (not TF_VERIFY(*it)) {
+        if (!TF_VERIFY(*it)) {
             continue;
         }
         (*it)->Sync(&_taskContext);

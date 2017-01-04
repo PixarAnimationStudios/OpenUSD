@@ -108,7 +108,7 @@ public:
 
     /// Returns true if the underlying buffer array is aggregated to other's
     bool IsAggregatedWith(HdBufferArrayRangeSharedPtr const &other) const {
-        return (other and (_GetAggregation() == other->_GetAggregation()));
+        return (other && (_GetAggregation() == other->_GetAggregation()));
     }
 
     /// Sets the bufferSpecs for all resources.

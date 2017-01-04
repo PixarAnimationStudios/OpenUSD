@@ -208,7 +208,7 @@ Hd_AdjacencyBuilderComputation::Hd_AdjacencyBuilderComputation(
 bool
 Hd_AdjacencyBuilderComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
@@ -231,7 +231,7 @@ Hd_AdjacencyBuilderComputation::Resolve()
         int nv = numVertsPtr[i];
         for (int j=0; j<nv; ++j) {
             int index = vertsPtr[vertIndex++];
-            if (index < 0 or index >= numPoints) {
+            if (index < 0 || index >= numPoints) {
                 TF_CODING_ERROR("vertex index out of range "
                                 "index: %d numPoints: %d", index, numPoints);
                 return false;
@@ -290,8 +290,8 @@ Hd_AdjacencyBuilderForGPUComputation::Hd_AdjacencyBuilderForGPUComputation(
 bool
 Hd_AdjacencyBuilderForGPUComputation::Resolve()
 {
-    if (not _adjacencyBuilder->IsResolved()) return false;
-    if (not _TryLock()) return false;
+    if (!_adjacencyBuilder->IsResolved()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();

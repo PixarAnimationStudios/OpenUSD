@@ -80,8 +80,8 @@ protected:
 
         /// Returns the relative offset in aggregated buffer
         virtual int GetOffset() const {
-            if (not TF_VERIFY(_stripedBuffer) or
-                not TF_VERIFY(_index != NOT_ALLOCATED)) return 0;
+            if (!TF_VERIFY(_stripedBuffer) ||
+                !TF_VERIFY(_index != NOT_ALLOCATED)) return 0;
             return _stripedBuffer->GetStride() * _index;
         }
 

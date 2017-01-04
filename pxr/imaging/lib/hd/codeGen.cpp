@@ -213,9 +213,9 @@ _GetPackedTypeAccessor(TfToken const &token)
 static TfToken const &
 _GetSamplerBufferType(TfToken const &token)
 {
-    if (token == _tokens->_int or
-        token == _tokens->ivec2 or
-        token == _tokens->ivec3 or
+    if (token == _tokens->_int  ||
+        token == _tokens->ivec2 ||
+        token == _tokens->ivec3 ||
         token == _tokens->ivec4) {
         return _tokens->isamplerBuffer;
     } else {
@@ -301,10 +301,10 @@ Hd_CodeGen::Compile()
     if (caps.bindlessTextureEnabled) {
         _genCommon << "#extension GL_ARB_bindless_texture : require\n";
     }
-    if (caps.glslVersion < 430 and caps.explicitUniformLocation) {
+    if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
         _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
     }
-    if (caps.glslVersion < 420 and caps.shadingLanguage420pack) {
+    if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
         _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
     }
 
@@ -426,7 +426,7 @@ Hd_CodeGen::Compile()
     // include Glf ptex utility (if needed)
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
         HdBinding::Type bindingType = it->first.GetType();
-        if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL or
+        if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL ||
             bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
             _genCommon << _GetPtexTextureShaderSource();
             break;
@@ -478,7 +478,7 @@ Hd_CodeGen::Compile()
     _procVS  << "void ProcessPrimVars() {\n";
     _procTCS << "void ProcessPrimVars() {\n";
     _procTES << "void ProcessPrimVars(float u, float v, int i0, int i1, int i2, int i3) {\n";
-    if (primType == PRIM_REFINED_QUAD or
+    if (primType == PRIM_REFINED_QUAD ||
         primType == PRIM_PATCH) {
         // patch interpolation
         _procGS  << "vec4 GetPatchCoord(int index);\n"
@@ -532,11 +532,11 @@ Hd_CodeGen::Compile()
     std::string fragmentShader =
         _geometricShader->GetSource(HdShaderTokens->fragmentShader);
 
-    bool hasVS  = (not vertexShader.empty());
-    bool hasTCS = (not tessControlShader.empty());
-    bool hasTES = (not tessEvalShader.empty());
-    bool hasGS  = (not geometryShader.empty());
-    bool hasFS  = (not fragmentShader.empty());
+    bool hasVS  = (!vertexShader.empty());
+    bool hasTCS = (!tessControlShader.empty());
+    bool hasTES = (!tessEvalShader.empty());
+    bool hasGS  = (!geometryShader.empty());
+    bool hasFS  = (!fragmentShader.empty());
 
     // other shaders (renderpass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
@@ -636,16 +636,16 @@ static void _EmitDeclaration(std::stringstream &str,
      */
     HdBinding::Type bindingType = binding.GetType();
 
-    if (not TF_VERIFY(not name.IsEmpty())) return;
-    if (not TF_VERIFY(not type.IsEmpty(),
+    if (!TF_VERIFY(!name.IsEmpty())) return;
+    if (!TF_VERIFY(!type.IsEmpty(),
                       "Unknown dataType for %s",
                       name.GetText())) return;
 
     if (arraySize > 0) {
-        if (not TF_VERIFY(bindingType == HdBinding::UNIFORM_ARRAY or
-                          bindingType == HdBinding::DRAW_INDEX_INSTANCE_ARRAY or
-                          bindingType == HdBinding::UBO or
-                          bindingType == HdBinding::SSBO or
+        if (!TF_VERIFY(bindingType == HdBinding::UNIFORM_ARRAY                 ||
+                          bindingType == HdBinding::DRAW_INDEX_INSTANCE_ARRAY  ||
+                          bindingType == HdBinding::UBO                        ||
+                          bindingType == HdBinding::SSBO                       ||
                           bindingType == HdBinding::BINDLESS_UNIFORM)) {
             // XXX: SSBO and BINDLESS_UNIFORM don't need arraySize, but for the
             // workaround of UBO allocation we're passing arraySize = 2
@@ -783,13 +783,13 @@ static void _EmitAccessor(std::stringstream &str,
         if (binding.GetType() == HdBinding::TBO) {
 
             std::string swizzle = "";
-            if (type == _tokens->vec4 or type == _tokens->ivec4) {
+            if (type == _tokens->vec4 || type == _tokens->ivec4) {
                 // nothing
-            } else if (type == _tokens->vec3 or type == _tokens->ivec3) {
+            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
                 swizzle = ".xyz";
-            } else if (type == _tokens->vec2 or type == _tokens->ivec2) {
+            } else if (type == _tokens->vec2 || type == _tokens->ivec2) {
                 swizzle = ".xy";
-            } else if (type == _tokens->_float or type == _tokens->_int) {
+            } else if (type == _tokens->_float || type == _tokens->_int) {
                 swizzle = ".x";
             }
             str << "  return texelFetch("
@@ -800,7 +800,7 @@ static void _EmitAccessor(std::stringstream &str,
         }
     } else {
         // non-indexed, only makes sense for uniform or vertex.
-        if (binding.GetType() == HdBinding::UNIFORM or
+        if (binding.GetType() == HdBinding::UNIFORM || 
             binding.GetType() == HdBinding::VERTEX_ATTR) {
             str << type
                 << " HdGet_" << name << "(int localIndex) { return ";
@@ -1122,7 +1122,7 @@ Hd_CodeGen::_GenerateConstantPrimVar()
         declarations << "struct " << typeName << " {\n";
 
         TF_FOR_ALL (dbIt, it->second.entries) {
-            if (not TF_VERIFY(not dbIt->dataType.IsEmpty(),
+            if (!TF_VERIFY(!dbIt->dataType.IsEmpty(),
                               "Unknown dataType for %s",
                               dbIt->name.GetText())) {
                 continue;
@@ -1232,7 +1232,7 @@ Hd_CodeGen::_GenerateElementPrimVar(int primType)
 {
     // XXX: We'd like to return here, but can't because stub functions
     //      must be generated (see XXX comment below).
-    //if (not (_metaData.primitiveParamBinding.binding.IsValid())) return;
+    //if (!(_metaData.primitiveParamBinding.binding.IsValid())) return;
 
     /*
       // --------- uniform (element) data delcaration ----------
@@ -1795,7 +1795,7 @@ Hd_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "  return texture(sampler2D(shaderData[shaderCoord]." << it->second.name << "), ";
 
-            if (not it->second.inPrimVars.empty()) {
+            if (!it->second.inPrimVars.empty()) {
                 accessors 
                     << "\n"
                     << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
@@ -1834,7 +1834,7 @@ Hd_CodeGen::_GenerateShaderParameters()
                 << it->second.dataType
                 << " HdGet_" << it->second.name
                 << "() { return HdGet_" << it->second.name << "(";
-            if (not it->second.inPrimVars.empty()) {
+            if (!it->second.inPrimVars.empty()) {
                 accessors
                     << "\n"
                     << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"

@@ -81,7 +81,7 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
         primitiveIndexSize = 1;
     }
 
-    if (geomStyle == HdMeshGeomStyleEdgeOnly or
+    if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
         polygonMode = HdPolygonModeLine;
     }
@@ -108,9 +108,9 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
     GS[1] = (primType == GL_PATCHES ? _tokens->limit
                                     : (smoothNormals ? _tokens->smooth
                                                      : _tokens->flat));
-    GS[2] = ((geomStyle == HdMeshGeomStyleEdgeOnly or
+    GS[2] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
               geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->edgeOnlyGS
-           : (geomStyle == HdMeshGeomStyleEdgeOnSurf or
+           : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
               geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
                                                           : _tokens->edgeNoneGS);
     GS[3] = (primType == GL_LINES_ADJACENCY ? _tokens->mainQuadGS
@@ -120,9 +120,9 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
     // mesh special optimization:
     //    there are some cases that we can skip the geometry shader.
     if (smoothNormals
-        and (geomStyle == HdMeshGeomStyleSurf or geomStyle == HdMeshGeomStyleHull)
-        and primType == GL_TRIANGLES
-        and (not faceVarying)) {
+        && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
+        && primType == GL_TRIANGLES
+        && (!faceVarying)) {
         GS[0] = TfToken();
     }
     if (primType == GL_POINTS) {
@@ -136,17 +136,17 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
     FS[2] = (doubleSided   ? _tokens->doubleSidedFS
                            : _tokens->singleSidedFS);
     if (primType == GL_PATCHES) {
-        FS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly or
+        FS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
                   geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->patchEdgeOnlyFS
-              : ((geomStyle == HdMeshGeomStyleEdgeOnSurf or
+              : ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
                                                               : _tokens->edgeNoneFS));
     } else {
-        if (geomStyle == HdMeshGeomStyleEdgeOnly or
+        if (geomStyle == HdMeshGeomStyleEdgeOnly ||
             geomStyle == HdMeshGeomStyleHullEdgeOnly) {
             FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
                                         : _tokens->edgeOnlyNoBlendFS;
-        } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf or
+        } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                    geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
             FS[3] = _tokens->edgeOnSurfFS;
         } else {

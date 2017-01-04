@@ -94,7 +94,7 @@ Hd_TriangleIndexBuilderComputation::AddBufferSpecs(
 bool
 Hd_TriangleIndexBuilderComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
 
@@ -114,7 +114,7 @@ Hd_TriangleIndexBuilderComputation::Resolve()
         if (nv < 1) {
             // skip degenerated face
             invalidTopology = true;
-        } else if (holeIndex < numHoleFaces and holeFacesPtr[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
             // skip hole face
             ++holeIndex;
         } else {
@@ -137,7 +137,7 @@ Hd_TriangleIndexBuilderComputation::Resolve()
         int nv = numVertsPtr[i];
         if (nv < 3) {
             // Skip degenerate faces.
-        } else if (holeIndex < numHoleFaces and holeFacesPtr[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
             // Skip hole faces.
             ++holeIndex;
         } else {
@@ -164,7 +164,7 @@ Hd_TriangleIndexBuilderComputation::Resolve()
                     else edgeFlag = 3;
                 }
 
-                if (not _FanTriangulate(
+                if (!_FanTriangulate(
                         trianglesFaceVertexIndices[tv],
                         vertsPtr, v, j, numVertIndices, flip)) {
                     invalidTopology = true;
@@ -241,7 +241,7 @@ _TriangulateFaceVarying(HdBufferSourceSharedPtr const &source,
         if (nv < 1) {
             // skip degenerated face
             invalidTopology = true;
-        } else if (holeIndex < numHoleFaces and holeFaces[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
             // skip hole face
             ++holeIndex;
         } else {
@@ -263,14 +263,14 @@ _TriangulateFaceVarying(HdBufferSourceSharedPtr const &source,
 
         if (nVerts < 3) {
             // Skip degenerate faces.
-        } else if (holeIndex < numHoleFaces and holeFaces[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
             // Skip hole faces.
             ++holeIndex;
         } else {
             // triangulate.
             // apply same triangulation as index does
             for (int j=0; j < nVerts-2; ++j) {
-                if (not _FanTriangulate(&results[dstIndex],
+                if (!_FanTriangulate(&results[dstIndex],
                                         srcPtr, v, j, numElements, flip)) {
                     invalidTopology = true;
                 }
@@ -298,10 +298,10 @@ Hd_TriangulateFaceVaryingComputation::Hd_TriangulateFaceVaryingComputation(
 bool
 Hd_TriangulateFaceVaryingComputation::Resolve()
 {
-    if (not TF_VERIFY(_source)) return false;
-    if (not _source->IsResolved()) return false;
+    if (!TF_VERIFY(_source)) return false;
+    if (!_source->IsResolved()) return false;
 
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->triangulateFaceVarying);
