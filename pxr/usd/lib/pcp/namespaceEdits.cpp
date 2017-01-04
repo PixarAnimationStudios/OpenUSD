@@ -853,9 +853,9 @@ PcpComputeNamespaceEdits(
                 TfStringify( cache->GetLayerStack()->GetIdentifier()).c_str());
             
             std::set<PcpLayerStackPtr> layerStacks;
-            for(const SdfLayerRefPtr &layer: primaryLayerStack->GetLayers()) { 
+            for (const SdfSite &site: primSites) {
                 const PcpLayerStackPtrVector& layerStackVec =
-                    cache->FindAllLayerStacksUsingLayer(layer);
+                    cache->FindAllLayerStacksUsingLayer(site.layer);
                 layerStacks.insert(layerStackVec.begin(), layerStackVec.end());
             }
 
