@@ -83,6 +83,8 @@ main(int argc, char **argv)
 {
     TfPyInitialize();
 
+    TfPyLock lock;
+
     // Import Tf to make sure that we get the function wrappings defined in
     // wrapFunction.cpp.
     object tfModule = import("pxr.Tf");

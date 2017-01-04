@@ -32,6 +32,8 @@
 #include <string>
 
 /// Starts up the python runtime.
+/// IMPORTANT: The GIL will NOT be held when this returns.
+/// (If Python is already initialized, the GIL will be unchanged)
 ///
 /// The program name and arguments are set automatically. sys.argv has no
 /// arguments other than an argv[0] matching the program name.

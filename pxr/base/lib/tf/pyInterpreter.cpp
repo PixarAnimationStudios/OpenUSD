@@ -101,8 +101,19 @@ TfPyInitialize()
         // TfPyInitialize().
         TfScriptModuleLoader::GetInstance().LoadModules();
 
-        // Release the GIL.
-        PyEval_ReleaseLock();
+        // Release the GIL and restore thread state.
+        // When TfPyInitialize returns, we expect GIL is released 
+        // and python's internal PyThreadState is NULL
+        // Previously this only released the GIL without resetting the ThreadState
+        // This can lead to a situation where python executes without the GIL
+        // PyGILState_Ensure checks the current thread state and decides
+        // to take the lock based on that; so if the GIL is released but the
+        // current thread is valid it leads to cases where python executes
+        // without holding the GIL and mismatched lock/release calls in TfPyLock 
+        // (See the discussion in 141041)
+        
+        PyThreadState* currentState = PyGILState_GetThisThreadState();
+        PyEval_ReleaseThread(currentState);
 
         // Say we're done initializing python.
         initialized = true;
