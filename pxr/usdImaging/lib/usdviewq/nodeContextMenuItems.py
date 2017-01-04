@@ -120,10 +120,13 @@ class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
                 self._material = material
 
     def IsEnabled(self):
-        return self._material != None
+        return self._material is not None
 
     def GetText(self):
-        return "Jump to Bound Material (%s)" % self._material.GetName()
+        text = "Jump to Bound Material"
+        if self._material is not None:
+            text += "(%s)" % self._material.GetName()
+        return text
 
     def RunCommand(self):
         self._mainWindow.jumpToBoundMaterialSelectedPrims()
