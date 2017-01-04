@@ -245,7 +245,13 @@ public:
         void SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport);
-        void SetLightingStateFromOpenGL(const MMatrix& viewMatForLights);
+
+        // VP 1.0 only.
+        void SetLightingStateFromVP1(const MMatrix& viewMatForLights);
+
+        // VP 2.0 only.
+        void SetLightingStateFromMayaDrawContext(
+                const MHWRender::MDrawContext& context);
 
         HdTaskSharedPtrVector GetSetupTasks();
 
@@ -255,6 +261,8 @@ public:
 
     protected:
         void _InsertRenderTask(SdfPath const &id);
+
+        void _SetLightingStateFromLightingContext();
 
         template <typename T>
         T const &_GetValue(SdfPath const &id, TfToken const &key) {
@@ -279,7 +287,7 @@ public:
         SdfPath _cameraId;
         GfVec4d _viewport;
 
-        GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
+        GlfSimpleLightingContextRefPtr _lightingContext;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

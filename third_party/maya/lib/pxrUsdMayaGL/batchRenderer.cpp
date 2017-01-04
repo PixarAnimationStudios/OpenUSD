@@ -487,7 +487,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
     HdRenderIndexSharedPtr const& renderIndex, SdfPath const& delegateID)
     : HdSceneDelegate(renderIndex, delegateID)
 {
-    _lightingContextForOpenGLState = GlfSimpleLightingContext::New();
+    _lightingContext = GlfSimpleLightingContext::New();
 
     // populate tasks in renderindex
 
@@ -613,37 +613,44 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 }
 
 void
-UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& viewMatForLights)
+UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromVP1(
+            const MMatrix& viewMatForLights)
 {
-    // XXX: this is a dumb copy of UsdImaging::HdEngine
-    // ideally we should directly suck the lightint parameter from
-    // maya API and put them into HdLight.
+    // This function should only be called in a VP1.0 context. In VP2.0, we can
+    // translate the lighting state from the MDrawContext directly into Glf,
+    // but there is no draw context in VP1.0, so we have to transfer the state
+    // through OpenGL.
+    
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadMatrixd(viewMatForLights.matrix[0]);
+    _lightingContext->SetStateFromOpenGL();
+    glPopMatrix();
 
-    // We only transform the light positions into view space if the view matrix
-    // is non-identity (the VP1.0 case). If the view matrix is identity (the
-    // VP2.0 case), the light positions have already been transformed, so don't
-    // doubly transform them.
-    if (viewMatForLights != MMatrix::identity) {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadMatrixd(viewMatForLights.matrix[0]);
-        _lightingContextForOpenGLState->SetStateFromOpenGL();
-        glPopMatrix();
-    } else {
-        _lightingContextForOpenGLState->SetStateFromOpenGL();
-    }
+    _SetLightingStateFromLightingContext();
+}
 
-    // cache the GlfSimpleLight vector
-    GlfSimpleLightVector const &lights
-        = _lightingContextForOpenGLState->GetLights();
+void
+UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromMayaDrawContext(
+        const MHWRender::MDrawContext& context)
+{
+    _lightingContext = px_vp20Utils::GetLightingContextFromDrawContext(context);
+
+    _SetLightingStateFromLightingContext();
+}
+
+void
+UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
+{
+    const GlfSimpleLightVector& lights = _lightingContext->GetLights();
 
     bool hasNumLightsChanged = false;
 
-    // Insert the light Ids into HdRenderIndex for those not yet exist.
-    while( _lightIds.size() < lights.size() )
-    {
+    // Insert light Ids into the render index for those that do not yet exist.
+    while (_lightIds.size() < lights.size()) {
         SdfPath lightId(
-            TfStringPrintf("%s/light%d", _rootId.GetText(),
+            TfStringPrintf("%s/light%d",
+                           _rootId.GetText(),
                            (int)_lightIds.size()));
         _lightIds.push_back(lightId);
 
@@ -654,9 +661,9 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& 
 #endif
         hasNumLightsChanged = true;
     }
+
     // Remove unused light Ids from HdRenderIndex
-    while( _lightIds.size() > lights.size() )
-    {
+    while (_lightIds.size() > lights.size()) {
 #if defined(HD_API) && HD_API > 25
         GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
 #else
@@ -667,8 +674,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& 
     }
 
     // invalidate HdLights
-    for( size_t i = 0; i < lights.size(); ++i )
-    {
+    for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache &cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
 #if defined(HD_API) && HD_API > 25
@@ -702,12 +708,11 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromOpenGL(const MMatrix& 
     HdxSimpleLightTaskParams taskParams
         = _GetValue<HdxSimpleLightTaskParams>(_simpleLightTaskId,
                                               HdTokens->params);
-    taskParams.sceneAmbient = _lightingContextForOpenGLState->GetSceneAmbient();
-    taskParams.material = _lightingContextForOpenGLState->GetMaterial();
+    taskParams.sceneAmbient = _lightingContext->GetSceneAmbient();
+    taskParams.material = _lightingContext->GetMaterial();
 
     // invalidate HdxSimpleLightTask too
-    if( hasNumLightsChanged )
-    {
+    if (hasNumLightsChanged) {
         _SetValue(_simpleLightTaskId, HdTokens->params, taskParams);
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
@@ -1210,17 +1215,11 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     glDisable(GL_BLEND);
     glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-    // With VP2.0, the utils method will take care of transforming the light
-    // positions from world space into view space when it loads them into GL.
-    // For VP1.0, we will need to transform the light positions ourselves.
-    MMatrix viewMatForLights;
     if (vp2Context) {
-        px_vp20Utils::setupLightingGL(*vp2Context);
+        _taskDelegate->SetLightingStateFromMayaDrawContext(*vp2Context);
     } else {
-        viewMatForLights = viewMat;
+        _taskDelegate->SetLightingStateFromVP1(viewMat);
     }
-
-    _taskDelegate->SetLightingStateFromOpenGL(viewMatForLights);
     
     // The legacy viewport does not support color management,
     // so we roll our own gamma correction by GL means (only in
@@ -1253,10 +1252,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     
     if( gammaCorrect )
         glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-    
-    if( vp2Context )
-        px_vp20Utils::unsetLightingGL(*vp2Context);
-    
+
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT
     
     // Selection is based on what we have last rendered to the display. The

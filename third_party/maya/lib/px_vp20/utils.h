@@ -21,23 +21,34 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+/// \file utils.h
+
 #ifndef __PX_VP20_UTILS_H__
 #define __PX_VP20_UTILS_H__
+
+#include "pxr/imaging/glf/simpleLightingContext.h"
+
 #include <maya/MDrawContext.h>
+
 
 class px_vp20Utils
 {
 public:
-	// Take VP2.0 lighting information and import it into opengl lights
-    static bool setupLightingGL( const MHWRender::MDrawContext& context);
-    static void unsetLightingGL( const MHWRender::MDrawContext& context);
+    /// Take VP2.0 lighting information and import it into opengl lights
+    static bool setupLightingGL(const MHWRender::MDrawContext& context);
+    static void unsetLightingGL(const MHWRender::MDrawContext& context);
+
+    /// Translate a Maya MDrawContext into a GlfSimpleLightingContext.
+    static GlfSimpleLightingContextRefPtr GetLightingContextFromDrawContext(
+            const MHWRender::MDrawContext& context);
 
 private:
-	// This class is all static methods.. You should never
-	// instantiate an actual object
-	px_vp20Utils();
-	~px_vp20Utils();
-
+    // This class is all static methods.. You should never
+    // instantiate an actual object
+    px_vp20Utils();
+    ~px_vp20Utils();
 };
+
 
 #endif //__PX_VP20_UTILS_H__
