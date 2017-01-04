@@ -48,7 +48,7 @@ class SdfAssetPath;
 
 /// \class UsdKatanaLookAPI
 ///
-/// Katana-specific extensions of UsdShadeLook.
+/// Katana-specific extensions of UsdShadeMaterial.
 ///
 class UsdKatanaLookAPI : public UsdSchemaBase
 {
@@ -136,19 +136,20 @@ public:
     // --------------------------------------------------------------------- //
     // PRIMNAME 
     // --------------------------------------------------------------------- //
-    /// When a Look derives from another, "base" Look (see
-    /// \ref UsdShadeLook::SetBaseLook() "SetBaseLook()"), it seems natural to
-    /// think about a "child" that inherits from its base Look "parent".
-    /// However, in USD, the derived Look cannot be a child of the base Look
-    /// because the \em derives relationship would cause an infinite
-    /// recursion in the composition graph (because the derived Look must
-    /// inherit not just the base Look prim itself, but all of the shader and
-    /// other prims scoped underneath it, which would include the derived Look
+    /// When a Material derives from another, "base" Material (see
+    /// \ref UsdShadeMaterial::SetBaseMaterial() "SetBaseMaterial()"), 
+    /// it seems natural to
+    /// think about a "child" that inherits from its base Material "parent".
+    /// However, in USD, the derived Material cannot be a child of the base 
+    /// Material because the \em derives relationship would cause an infinite
+    /// recursion in the composition graph (because the derived Material must
+    /// inherit not just the base Material prim itself, but all of the shader and
+    /// other prims scoped underneath it, which would include the derived Material
     /// itself).
     /// 
     /// For UI's that want to present the hierarchy that derivation implies,
-    /// we provide \em primName, which specifies the derived Look's 
-    /// "relative name" with respect to the base Look.
+    /// we provide \em primName, which specifies the derived Material's 
+    /// "relative name" with respect to the base Material.
     /// 
     /// For example, a structure that looks like:
     /// - Metal
