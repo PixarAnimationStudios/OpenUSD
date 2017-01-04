@@ -41,6 +41,18 @@ function(pxr_python_bins)
             DESTINATION ${installDir}
             RENAME ${file}
         )
+
+        # Windows by default cannot execute Python files so here
+        # we create a batch file wrapper that invokes the python
+        # files.
+        if(WIN32)
+            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@python \"%~dp0${file}\" %*")
+            install(PROGRAMS
+                "${CMAKE_BINARY_DIR}/${pyFile}.cmd"
+                DESTINATION ${installDir}
+                RENAME "${file}.cmd"
+            )
+        endif()
     endforeach()
 endfunction() # pxr_install_python_bins
 
@@ -138,6 +150,20 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
 
+    if(WIN32)
+        # If we're building a DLL we want to add a module entry point to it.
+        # We don't do this for Python PYDs though.
+        if (NOT sl_PYTHON_LIBRARY)
+            target_sources(${LIBRARY_NAME} PRIVATE "DllMain.cpp")
+        endif()
+
+        if(MSVC)
+            set_target_properties(
+                ${LIBRARY_NAME}
+                PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+        endif()
+    endif()
+
     # Set prefix  here after the library add; ahead of python so that python lib prefix is reset to correct
     set_target_properties(${LIBRARY_NAME} PROPERTIES PREFIX "${PXR_LIB_PREFIX}")
 
@@ -187,6 +213,7 @@ function(pxr_shared_library LIBRARY_NAME)
         # Python modules must be suffixed with .pyd on Windows and .so on
         # other platforms.
         if(WIN32)
+            add_definitions(-D_BUILDING_PYD=1)
             set_target_properties(${LIBRARY_NAME}
                 PROPERTIES
                     PREFIX ""
@@ -244,6 +271,11 @@ function(pxr_shared_library LIBRARY_NAME)
         PLUGIN_PLUGINFO_PATH
         ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}
         ${CMAKE_INSTALL_PREFIX}/plugin/usd)
+
+    # Convert backslash to slash for strings in compile definitions.
+    string(REGEX REPLACE "\\\\" "/" installLocation ${installLocation})
+    string(REGEX REPLACE "\\\\" "/" LIB_PLUGINFO_PATH ${LIB_PLUGINFO_PATH})
+    string(REGEX REPLACE "\\\\" "/" PLUGIN_PLUGINFO_PATH ${PLUGIN_PLUGINFO_PATH})
 
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
@@ -303,6 +335,7 @@ function(pxr_shared_library LIBRARY_NAME)
         EXPORT pxrTargets
         LIBRARY DESTINATION ${LIB_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${LIB_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${LIB_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 
@@ -542,6 +575,13 @@ function(pxr_plugin PLUGIN_NAME)
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
+    # MAYA plugins require .mll extension on Windows
+    if(WIN32)
+        if(${PLUGIN_NAME} STREQUAL "pxrUsd")
+            set_target_properties(${PLUGIN_NAME} PROPERTIES SUFFIX ".mll")
+        endif()
+    endif()
+
     if (PXR_INSTALL_SUBDIR)
         set(PLUGIN_INSTALL_PREFIX "${PXR_INSTALL_SUBDIR}/plugin")
         set(HEADER_INSTALL_PREFIX 
@@ -617,11 +657,15 @@ function(pxr_plugin PLUGIN_NAME)
         PREFIX ${PXR_PREFIX}
     )
 
+    string(TOUPPER ${PLUGIN_NAME} ucPluginName)
+
     set_target_properties(${PLUGIN_NAME}
         PROPERTIES
             PUBLIC_HEADER
                 "${sl_PUBLIC_HEADERS};${${PLUGIN_NAME}_PUBLIC_HEADERS}"
             INTERFACE_INCLUDE_DIRECTORIES ""
+            DEFINE_SYMBOL
+                "${ucPluginName}_EXPORTS"
     )
 
     # Install and include headers from the build directory.
@@ -651,6 +695,7 @@ function(pxr_plugin PLUGIN_NAME)
         EXPORT pxrTargets
         LIBRARY DESTINATION ${PLUGIN_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${PLUGIN_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 
@@ -927,9 +972,17 @@ function(pxr_register_test TEST_NAME)
             endforeach()
         endif()
 
-        # Ensure that Python imports the Python files built by this build
+        # Ensure that Python imports the Python files built by this build.
+        # On Windows convert backslash to slash and don't change semicolons
+        # to colons.
+	set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHON_PATH}")
+        if(WIN32)
+            string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
+        else()
+            string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
+        endif()
         set(testWrapperCmd ${testWrapperCmd}
-            --env-var=PYTHONPATH=${CMAKE_INSTALL_PREFIX}/lib/python:${PYTHON_PATH})
+            "--env-var=PYTHONPATH=${_testPythonPath}")
 
         # Ensure we run with the python executable known to the build
         if (bt_PYTHON)

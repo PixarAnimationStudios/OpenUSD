@@ -24,7 +24,7 @@
 
 include(gccclangshareddefaults)
 
-# Defining TF_NO_GNU_EXT disables using the gnu hash_set and 
-# hash_map containers on platforms where we can't. The implementation
-# will substitute C++11 containers with equivalent semantics in this case.
+# Defining TF_NO_GNU_EXT disables using the gnu hash_set and hash_map
+# containers on platforms where we can't. The implementation will
+# substitute C++11 containers with equivalent semantics in this case.
 set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -DTF_NO_GNU_EXT")

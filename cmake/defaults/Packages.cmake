@@ -30,20 +30,20 @@ find_package(PythonInterp 2.7 REQUIRED)
 # --Boost
 find_package(Boost
     COMPONENTS
+        date_time
         iostreams
+        program_options
         python
         regex
         system
-        program_options
     REQUIRED
 )
 # --Double Conversion
 find_package(DoubleConversion REQUIRED)
 
 # --TBB
-# Debug is the default in Release for some bizarro reason, turn it off.
-set(TBB_USE_DEBUG_BUILD OFF)
 find_package(TBB REQUIRED)
+add_definitions(${TBB_DEFINITIONS})
 
 # --OpenEXR
 find_package(OpenEXR REQUIRED)
@@ -63,7 +63,9 @@ endif()
 find_package(Jinja2)
 
 if (NOT PXR_MALLOC_LIBRARY)
-    message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified") 
+    if (NOT WIN32)
+        message(STATUS "Using default system allocator because PXR_MALLOC_LIBRARY is unspecified")
+    endif()
 endif()
 
 # Developer Options Package Requirements
@@ -90,8 +92,10 @@ if (PXR_BUILD_IMAGING)
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     find_package(PTex REQUIRED)
-    # --X11
-    find_package(X11)
+    if(UNIX)
+        # --X11
+        find_package(X11)
+    endif()
     # --PySide
     find_package(PySide)
     # --PyOpenGL
