@@ -131,7 +131,7 @@ UsdImagingGL::PrepareBatch(
     const std::vector<UsdTimeCode>& times,
     RenderParams params)
 {
-    if (not IsBatchingSupported()) {
+    if (!IsBatchingSupported()) {
         return;
     }
 

@@ -263,7 +263,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             }
         }
 
-        if (not GetClipPlanes().empty()) {
+        if (!GetClipPlanes().empty()) {
             params.clipPlanes = GetClipPlanes();
             for (size_t i=0; i<GetClipPlanes().size(); ++i) {
                 glEnable(GL_CLIP_PLANE0 + i);
@@ -275,7 +275,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         std::cout << "totalItemCount " << perfLog.GetCounter(HdTokens->totalItemCount) << std::endl;
 
         std::string imageFilePath = GetOutputFilePath();
-        if (not imageFilePath.empty()) {
+        if (!imageFilePath.empty()) {
             if (time != UsdTimeCode::Default()) {
                 std::stringstream suffix;
                 suffix << "_" << std::setw(3) << std::setfill('0') << params.frame << ".png";

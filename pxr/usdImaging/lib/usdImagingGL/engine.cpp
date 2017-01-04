@@ -178,19 +178,19 @@ UsdImagingGLEngine::TestIntersection(
     // that uses this renderer, but the drawTargets can share attachments.
     
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (not TF_VERIFY(context)) {
+    if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
         return false;
     }
 
     GfVec2i attachmentSize(width,height);
     GlfDrawTargetRefPtr drawTarget;
-    if (not TfMapLookup(_drawTargets, context, &drawTarget)) {
+    if (!TfMapLookup(_drawTargets, context, &drawTarget)) {
 
         // Create an instance for use with this GL context
         drawTarget = GlfDrawTarget::New(attachmentSize);
 
-        if (not _drawTargets.empty()) {
+        if (!_drawTargets.empty()) {
             // Share existing attachments
             drawTarget->Bind();
             drawTarget->CloneAttachments(_drawTargets.begin()->second);
@@ -210,7 +210,7 @@ UsdImagingGLEngine::TestIntersection(
         // This is a good time to clean up any drawTargets no longer in use.
         for (_DrawTargetPerContextMap::iterator
                 it = _drawTargets.begin(); it != _drawTargets.end(); ++it) {
-            if (not (it->first and it->first->IsValid())) {
+            if (!(it->first && it->first->IsValid())) {
                 _drawTargets.erase(it);
             }
         }
@@ -380,7 +380,7 @@ UsdImagingGLEngine::TestIntersectionBatch(
     HitBatch *outHit)
 {
     // outHit is not optional
-    if (not outHit) {
+    if (!outHit) {
         return false;
     }
     
@@ -403,19 +403,19 @@ UsdImagingGLEngine::TestIntersectionBatch(
     // that uses this renderer, but the drawTargets can share attachments.
     
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (not TF_VERIFY(context)) {
+    if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
         return false;
     }
 
     GfVec2i attachmentSize(width,height);
     GlfDrawTargetRefPtr drawTarget;
-    if (not TfMapLookup(_drawTargets, context, &drawTarget)) {
+    if (!TfMapLookup(_drawTargets, context, &drawTarget)) {
 
         // Create an instance for use with this GL context
         drawTarget = GlfDrawTarget::New(attachmentSize);
 
-        if (not _drawTargets.empty()) {
+        if (!_drawTargets.empty()) {
             // Share existing attachments
             drawTarget->Bind();
             drawTarget->CloneAttachments(_drawTargets.begin()->second);
@@ -435,7 +435,7 @@ UsdImagingGLEngine::TestIntersectionBatch(
         // This is a good time to clean up any drawTargets no longer in use.
         for (_DrawTargetPerContextMap::iterator
                 it = _drawTargets.begin(); it != _drawTargets.end(); ++it) {
-            if (not (it->first and it->first->IsValid())) {
+            if (!(it->first && it->first->IsValid())) {
                 _drawTargets.erase(it);
             }
         }

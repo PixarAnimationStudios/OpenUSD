@@ -366,7 +366,7 @@ static double ParseDouble(int& i, int argc, char *argv[], bool* invalid=0)
     }
     char* end;
     double result = strtod(argv[i + 1], &end);
-    if (end == argv[i + 1] or *end != '\0') {
+    if (end == argv[i + 1] || *end != '\0') {
         if (invalid) {
             *invalid = true;
             return 0.0;
@@ -515,7 +515,7 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
     }
 
-    if (not args.unresolvedStageFilePath.empty()) {
+    if (!args.unresolvedStageFilePath.empty()) {
         _stageFilePath = args.unresolvedStageFilePath;
     }
 
@@ -531,7 +531,7 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 
         TF_FOR_ALL(compIt, args.complexities) {
             _complexity = *compIt;
-            if (not imageFilePath.empty()) {
+            if (!imageFilePath.empty()) {
                 std::stringstream suffix;
                 suffix << "_" << _complexity << ".png";
                 _outputFilePath = TfStringReplace(imageFilePath, ".png", suffix.str());

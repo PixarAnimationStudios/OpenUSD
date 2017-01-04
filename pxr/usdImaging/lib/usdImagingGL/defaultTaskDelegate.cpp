@@ -61,7 +61,7 @@ _ShouldEnableLighting(UsdImagingGLEngine::RenderParams params)
     case UsdImagingGLEngine::DRAW_POINTS:
         return false;
     default:
-        return params.enableLighting and not params.enableIdRender;
+        return params.enableLighting && !params.enableIdRender;
     }
 }
 
@@ -195,7 +195,7 @@ UsdImagingGL_DefaultTaskDelegate::GetRenderTasks(
     tasks.reserve(3);
 
     // light
-    if (not _activeSimpleLightTaskId.IsEmpty()) {
+    if (!_activeSimpleLightTaskId.IsEmpty()) {
         tasks.push_back(GetRenderIndex().GetTask(_activeSimpleLightTaskId));
     }
 
@@ -207,7 +207,7 @@ UsdImagingGL_DefaultTaskDelegate::GetRenderTasks(
     }
 
     // selection highlighting (selectionTask comes after renderTask)
-    if (not params.enableIdRender) {
+    if (!params.enableIdRender) {
         tasks.push_back(GetRenderIndex().GetTask(_selectionTaskId));
     }
 
@@ -223,7 +223,7 @@ UsdImagingGL_DefaultTaskDelegate::SetCollectionAndRenderParams(
     TfToken repr = HdTokens->smoothHull;
     bool refined = params.complexity > 1.0;
 
-    if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT or
+    if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT ||
         params.drawMode == UsdImagingGLEngine::DRAW_SHADED_FLAT) {
         repr = HdTokens->hull;
     } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE) {
@@ -250,11 +250,11 @@ UsdImagingGL_DefaultTaskDelegate::SetCollectionAndRenderParams(
     TfToken colName = HdTokens->geometry;
 
     // Pickup guide geometry if requested:
-    if (params.showGuides and not params.showRenderGuides) {
+    if (params.showGuides && !params.showRenderGuides) {
         colName = UsdImagingCollectionTokens->geometryAndInteractiveGuides;
-    } else if (not params.showGuides and params.showRenderGuides) {
+    } else if (!params.showGuides && params.showRenderGuides) {
         colName = UsdImagingCollectionTokens->geometryAndRenderGuides;
-    } else if (params.showGuides and params.showRenderGuides) {
+    } else if (params.showGuides && params.showRenderGuides) {
         colName = UsdImagingCollectionTokens->geometryAndGuides;
     }
 
@@ -288,8 +288,8 @@ UsdImagingGL_DefaultTaskDelegate::_UpdateCollection(
     // inexpensive comparison first
     bool match
           = rprims->GetName() == colName
-        and oldRoots.size() == roots.size()
-        and rprims->GetReprName() == reprName;
+        && oldRoots.size() == roots.size()
+        && rprims->GetReprName() == reprName;
 
     // Only take the time to compare root paths if everything else matches.
     if (match) {
@@ -299,7 +299,7 @@ UsdImagingGL_DefaultTaskDelegate::_UpdateCollection(
             if (oldRoots[i] == roots[i])
                 continue;
             // Binary search to find the current root.
-            if (not std::binary_search(oldRoots.begin(), oldRoots.end(),
+            if (!std::binary_search(oldRoots.begin(), oldRoots.end(),
                                        roots[i])) 
             {
                 match = false;
@@ -406,7 +406,7 @@ void
 UsdImagingGL_DefaultTaskDelegate::SetLightingState(
     const GlfSimpleLightingContextPtr &src)
 {
-    if (not TF_VERIFY(src)) return;
+    if (!TF_VERIFY(src)) return;
 
     // cache the GlfSimpleLight vector
     GlfSimpleLightVector const &lights = src->GetLights();
@@ -544,7 +544,7 @@ UsdImagingGL_DefaultTaskDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
-    if (vcache and TfMapLookup(*vcache, key, &ret)) {
+    if (vcache && TfMapLookup(*vcache, key, &ret)) {
         return ret;
     }
     TF_CODING_ERROR("%s:%s doesn't exist in the value cache\n",

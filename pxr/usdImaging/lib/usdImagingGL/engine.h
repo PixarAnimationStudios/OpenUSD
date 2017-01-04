@@ -128,27 +128,27 @@ public:
 
         bool operator==(const RenderParams &other) const {
             return frame                        == other.frame
-                and complexity                  == other.complexity
-                and drawMode                    == other.drawMode
-                and showGuides                  == other.showGuides
-                and showRenderGuides            == other.showRenderGuides
-                and forceRefresh                == other.forceRefresh
-                and flipFrontFacing             == other.flipFrontFacing
-                and cullStyle                   == other.cullStyle
-                and enableIdRender              == other.enableIdRender
-                and enableLighting              == other.enableLighting
-                and enableSampleAlphaToCoverage == other.enableSampleAlphaToCoverage
-                and applyRenderState            == other.applyRenderState
-                and gammaCorrectColors          == other.gammaCorrectColors
-                and highlight                   == other.highlight
-                and overrideColor               == other.overrideColor
-                and wireframeColor              == other.wireframeColor
-                and alphaThreshold              == other.alphaThreshold
-                and clipPlanes                  == other.clipPlanes
-                and enableHardwareShading       == other.enableHardwareShading;
+                && complexity                  == other.complexity
+                && drawMode                    == other.drawMode
+                && showGuides                  == other.showGuides
+                && showRenderGuides            == other.showRenderGuides
+                && forceRefresh                == other.forceRefresh
+                && flipFrontFacing             == other.flipFrontFacing
+                && cullStyle                   == other.cullStyle
+                && enableIdRender              == other.enableIdRender
+                && enableLighting              == other.enableLighting
+                && enableSampleAlphaToCoverage == other.enableSampleAlphaToCoverage
+                && applyRenderState            == other.applyRenderState
+                && gammaCorrectColors          == other.gammaCorrectColors
+                && highlight                   == other.highlight
+                && overrideColor               == other.overrideColor
+                && wireframeColor              == other.wireframeColor
+                && alphaThreshold              == other.alphaThreshold
+                && clipPlanes                  == other.clipPlanes
+                && enableHardwareShading       == other.enableHardwareShading;
         }
         bool operator!=(const RenderParams &other) const {
-            return not (*this == other);
+            return !(*this == other);
         }
     };
 
