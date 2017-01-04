@@ -695,9 +695,11 @@ UsdImagingIndexProxy::InsertInstancer(SdfPath const& usdPath,
     _delegate->_instancerPrimPaths.insert(usdPath);
 
     TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-        "[Instancer Inserted] %s, parent = %s, adapter = %p\n",
+        "[Instancer Inserted] %s, parent = %s, adapter = %s\n",
         usdPath.GetText(), parentPath.GetText(),
-        (instancerContext ? instancerContext->instancerAdapter.get() : 0));
+        ((instancerContext && instancerContext->instancerAdapter)
+         ? TfType::GetCanonicalTypeName(typeid(*(instancerContext->instancerAdapter))).c_str()
+         : "none"));
 
     AddDependency(usdPath, instancerContext 
                           ? instancerContext->instancerAdapter
@@ -2230,7 +2232,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
         "(%s, %d, %s)\n", protoPrimPath.GetText(), protoInstanceIndex,
-        usdPath.GetText(), absIndex, 
+        usdPath.GetText(), absIndex,
+        resolvedInstanceContext.empty() ? "(empty)" :
         resolvedInstanceContext.back().GetText());
 
     if (absoluteInstanceIndex) {

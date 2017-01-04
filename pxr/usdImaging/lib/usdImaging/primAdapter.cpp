@@ -110,11 +110,25 @@ UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 /*virtual*/
 SdfPath 
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
-    SdfPath const &path,
+    SdfPath const &protoPath,
     int instanceIndex,
     int *instanceCount,
     int *absoluteInstanceIndex,
-    SdfPath * rprimPath,
+    SdfPath *resolvedPrimPath,
+    SdfPathVector *instanceContext)
+{
+    if (absoluteInstanceIndex) {
+        *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+    }
+    return SdfPath();
+}
+
+/*virtual*/
+SdfPath
+UsdImagingPrimAdapter::GetPathForInstanceIndex(
+    SdfPath const &instancerPath, SdfPath const &protoPath,
+    int instanceIndex, int *instanceCount,
+    int *absoluteInstanceIndex, SdfPath *resolvedPrimPath,
     SdfPathVector *instanceContext)
 {
     if (absoluteInstanceIndex) {
@@ -330,4 +344,21 @@ SdfPathVector
 UsdImagingPrimAdapter::GetDependPaths(SdfPath const &path) const
 {
     return SdfPathVector();
+}
+
+/*virtual*/
+VtIntArray
+UsdImagingPrimAdapter::GetInstanceIndices(SdfPath const &instancerPath,
+                                          SdfPath const &protoRprimPath)
+{
+    return VtIntArray();
+}
+
+/*virtual*/
+GfMatrix4d
+UsdImagingPrimAdapter::GetRelativeInstancerTransform(
+    SdfPath const &instancerPath,
+    SdfPath const &protoInstancerPath, UsdTimeCode time)
+{
+    return GfMatrix4d(1);
 }

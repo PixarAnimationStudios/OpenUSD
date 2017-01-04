@@ -111,6 +111,18 @@ public:
     virtual SdfPath GetInstancer(SdfPath const &cachePath);
 
     // ---------------------------------------------------------------------- //
+    /// \name Nested instancing support
+    // ---------------------------------------------------------------------- //
+
+    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
+                                          SdfPath const &protoRprimPath);
+
+    virtual GfMatrix4d GetRelativeInstancerTransform(
+        SdfPath const &parentInstancerPath,
+        SdfPath const &instancerPath,
+        UsdTimeCode time);
+
+    // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
     virtual bool PopulateSelection(SdfPath const &path,
@@ -124,7 +136,6 @@ public:
     /// Returns the depending rprim paths which don't exist in descendants.
     /// Used for change tracking over subtree boundary (e.g. instancing)
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
-
 
 private:
 

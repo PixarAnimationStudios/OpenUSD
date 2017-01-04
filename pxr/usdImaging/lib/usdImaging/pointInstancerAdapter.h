@@ -110,6 +110,25 @@ public:
                                             SdfPathVector *instanceContext=NULL);
 
     // ---------------------------------------------------------------------- //
+    /// \name Nested instancing support
+    // ---------------------------------------------------------------------- //
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerPath,
+                                            SdfPath const &protoPath,
+                                            int instanceIndex,
+                                            int *instanceCountForThisLevel,
+                                            int *absoluteInstanceIndex,
+                                            SdfPath *rprimPath,
+                                            SdfPathVector *instanceContext);
+
+    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
+                                          SdfPath const &protoRprimPath);
+
+    virtual GfMatrix4d GetRelativeInstancerTransform(
+        SdfPath const &instancerPath,
+        SdfPath const &protoInstancerPath,
+        UsdTimeCode time);
+
+    // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
     virtual bool PopulateSelection(SdfPath const &path,

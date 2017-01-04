@@ -1543,4 +1543,35 @@ UsdImagingInstanceAdapter::GetDependPaths(SdfPath const &instancerPath) const
     return result;
 }
 
+/*virtual*/
+VtIntArray
+UsdImagingInstanceAdapter::GetInstanceIndices(SdfPath const &instancerPath,
+                                              SdfPath const &protoRprimPath)
+{
+    if (not instancerPath.IsEmpty()) {
+        UsdImagingInstancerContext ctx;
+        _ProtoRprim const& rproto =
+            _GetProtoRprim(instancerPath, protoRprimPath, &ctx);
+        if (not rproto.protoGroup) {
+            TF_CODING_ERROR("NI: No prototype found for parent <%s> of <%s>\n",
+                    instancerPath.GetText(),
+                    protoRprimPath.GetText());
+        } else {
+            return rproto.protoGroup->indices;
+        }
+    }
 
+    return VtIntArray();
+}
+
+/*virtual*/
+GfMatrix4d
+UsdImagingInstanceAdapter::GetRelativeInstancerTransform(
+    SdfPath const &parentInstancerPath,
+    SdfPath const &instancerPath, UsdTimeCode time)
+{
+    // regardless the parentInstancerPath is empty or not,
+    // we subtract the root transform.
+    UsdPrim prim = _GetPrim(instancerPath.GetPrimPath());
+    return GetTransform(prim, time) * GetRootTransform().GetInverse();
+}
