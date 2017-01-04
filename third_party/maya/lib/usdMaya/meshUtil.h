@@ -47,7 +47,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
 namespace PxrUsdMayaMeshUtil
 {
 
-    bool getEmitNormals(const MFnMesh &mesh);
+    bool getEmitNormals(const MFnMesh &mesh, const TfToken& subdivScheme);
     TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
     
     TfToken getSubdivScheme(const MFnMesh &mesh, TfToken defaultValue);

@@ -63,17 +63,20 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // This can be customized for specific pipeline
 // We read the USD bool attribute, if not present we look for the mojito bool attribute
-bool PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh)
+bool PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh, const TfToken& subdivScheme)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (plug.isNull()) {
         plug = mesh.findPlug(MString("mjtoMeshVtxNormals"));
     }
-    if (!plug.isNull() && plug.asBool()) {
-        return true;
+    if (!plug.isNull()) { 
+        return plug.asBool();
     }
 
-    return false;
+    // We only emit normals by default if it wasn't explicitly set (above) and
+    // the subdiv scheme is "polygonal".  note, we currently only ever call this
+    // function with subdivScheme == none...
+    return subdivScheme == UsdGeomTokens->none;
 }
 
 TfToken PxrUsdMayaMeshUtil::setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue)

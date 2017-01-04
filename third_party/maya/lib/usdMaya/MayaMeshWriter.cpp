@@ -181,7 +181,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     // Polygonal Mesh Case
     if (sdScheme == UsdGeomTokens->none) {
         // Support for standard USD bool and Mojito bool tags.
-        if (PxrUsdMayaMeshUtil::getEmitNormals(lMesh)) {
+        if (PxrUsdMayaMeshUtil::getEmitNormals(lMesh, sdScheme)) {
             VtArray<GfVec3f> meshNormals;
             TfToken normalInterp;
 
