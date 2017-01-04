@@ -36,7 +36,7 @@ Pcp_TranslatePath(
     bool* pathWasTranslated)
 {
     bool localPathWasTranslated;
-    if (not pathWasTranslated) {
+    if (!pathWasTranslated) {
         pathWasTranslated = &localPathWasTranslated;
     }
 
@@ -53,7 +53,7 @@ Pcp_TranslatePath(
         return path;
     }
 
-    if (not path.IsAbsolutePath()) {
+    if (!path.IsAbsolutePath()) {
         TF_CODING_ERROR("Path to translate <%s> is not absolute.",
                         path.GetText());
         return SdfPath();

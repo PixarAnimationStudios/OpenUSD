@@ -142,7 +142,7 @@ PcpErrorArcCycle::ToString() const
             }
         }
         msg += TfStringPrintf("%s\n", TfStringify(segment.site).c_str());
-        if ((i > 0) and (i + 1 < cycle.size())) 
+        if ((i > 0) && (i + 1 < cycle.size())) 
             msg += "which ";
     }    
     return msg;
@@ -477,7 +477,7 @@ PcpErrorInvalidInstanceTargetPath::~PcpErrorInvalidInstanceTargetPath()
 std::string
 PcpErrorInvalidInstanceTargetPath::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf(
         "The %s <%s> from <%s> in layer @%s@ is authored in a class "
@@ -512,7 +512,7 @@ PcpErrorInvalidExternalTargetPath::~PcpErrorInvalidExternalTargetPath()
 std::string
 PcpErrorInvalidExternalTargetPath::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf("The %s <%s> from <%s> in layer @%s@ refers "
                           "to a path outside the scope of the %s from <%s>.  "
@@ -549,7 +549,7 @@ PcpErrorInvalidTargetPath::~PcpErrorInvalidTargetPath()
 std::string
 PcpErrorInvalidTargetPath::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf(
         "The %s <%s> from <%s> in layer @%s@ is invalid.  This may be "
@@ -848,7 +848,7 @@ PcpErrorTargetPermissionDenied::~PcpErrorTargetPermissionDenied()
 std::string
 PcpErrorTargetPermissionDenied::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf(
         "The %s <%s> from <%s> in layer @%s@ targets an object that is "

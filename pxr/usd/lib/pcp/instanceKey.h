@@ -94,8 +94,8 @@ private:
 
         bool operator==(const _Arc& rhs) const
         {
-            return _arcType == rhs._arcType and
-            _sourceSite == rhs._sourceSite and
+            return _arcType == rhs._arcType &&
+            _sourceSite == rhs._sourceSite  &&
             _timeOffset == rhs._timeOffset;
         }
 

@@ -67,7 +67,7 @@ void
 Pcp_Dependencies::Add(const PcpPrimIndex &primIndex)
 {
     TfAutoMallocTag2 tag("Pcp", "Pcp_Dependencies::Add");
-    if (not primIndex.GetRootNode()) {
+    if (!primIndex.GetRootNode()) {
         return;
     }
     const SdfPath& primIndexPath = primIndex.GetRootNode().GetPath();
@@ -103,7 +103,7 @@ Pcp_Dependencies::Add(const PcpPrimIndex &primIndex)
 void
 Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
 {
-    if (not primIndex.GetRootNode()) {
+    if (!primIndex.GetRootNode()) {
         return;
     }
     const SdfPath& primIndexPath = primIndex.GetRootNode().GetPath();
@@ -115,7 +115,7 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
     for (const PcpNodeRef &n: primIndex.GetNodeRange()) {
         const int curNodeIndex = nodeIndex++;
         const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(n);
-        if (not _ShouldStoreDependency(depFlags)) {
+        if (!_ShouldStoreDependency(depFlags)) {
             continue;
         }
 
@@ -134,7 +134,7 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
         // We are using the vector as an unordered set.
         std::vector<SdfPath>::iterator i =
             std::find(deps.begin(), deps.end(), primIndexPath);
-        if (not TF_VERIFY(i != deps.end())) {
+        if (!TF_VERIFY(i != deps.end())) {
             continue;
         }
         std::vector<SdfPath>::iterator last = --deps.end();
@@ -158,11 +158,11 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
 
                 // Now scan upwards to reap parent entries.
                 for (SdfPath p = n.GetPath().GetParentPath();
-                     not p.IsEmpty(); p = p.GetParentPath()) {
+                     !p.IsEmpty(); p = p.GetParentPath()) {
                     std::tie(iBegin, iEnd) = siteDepMap.FindSubtreeRange(p);
                     if (iBegin != iEnd
-                        and std::next(iBegin) == iEnd
-                        and iBegin->second.empty()) {
+                        && std::next(iBegin) == iEnd
+                        && iBegin->second.empty()) {
                     TF_DEBUG(PCP_DEPENDENCIES)
                         .Msg("    Removing empty parent entry <%s>\n",
                              p.GetText());

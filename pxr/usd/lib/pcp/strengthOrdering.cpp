@@ -113,11 +113,11 @@ PcpCompareSiblingNodeStrength(
         // has been propagated (i.e., copied) to the root node. In this
         // case, the implied arc -- the one whose opinions come from the
         // root layer stack -- is more local, and thus stronger
-        if (aOrigin == bOrigin and
-            aOrigin != a.GetParentNode() and 
+        if (aOrigin == bOrigin           &&
+            aOrigin != a.GetParentNode() &&
             bOrigin != b.GetParentNode()) {
 
-            TF_VERIFY(a.GetParentNode() == a.GetRootNode() and
+            TF_VERIFY(a.GetParentNode() == a.GetRootNode() &&
                       b.GetParentNode() == b.GetRootNode());
 
             if (a.GetLayerStack() == a.GetRootNode().GetLayerStack()) {
@@ -140,7 +140,7 @@ PcpCompareSiblingNodeStrength(
         // graph, there must be a specializes arc somewhere between the two.
         // Specializes means that opinions for the source of the arc must be
         // weaker than the target, regardless of the namespace depth.
-        if (not _OriginsAreNestedArcs(aOriginRoot.first, bOriginRoot.first)) {
+        if (!_OriginsAreNestedArcs(aOriginRoot.first, bOriginRoot.first)) {
             if (a.GetNamespaceDepth() > b.GetNamespaceDepth())
                 return -1;
             if (a.GetNamespaceDepth() < b.GetNamespaceDepth())
@@ -268,7 +268,7 @@ _CompareNodeStrength(
     }
 
     // Otherwise, compare the two sibling nodes to see which is stronger.
-    TF_VERIFY(nodesUnderCommonParent.first != aNodes.rend() and
+    TF_VERIFY(nodesUnderCommonParent.first != aNodes.rend() &&
               nodesUnderCommonParent.second != bNodes.rend());
     return PcpCompareSiblingNodeStrength(
         *nodesUnderCommonParent.first, *nodesUnderCommonParent.second);

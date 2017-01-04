@@ -76,7 +76,7 @@ public:
         bool culledNodesOnly)
     {
         for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
-            if (culledNodesOnly and not node.IsCulled()) {
+            if (culledNodesOnly && !node.IsCulled()) {
                 continue;
             }
 
@@ -110,7 +110,7 @@ public:
 
         TF_FOR_ALL(it, cache->_primIndexCache) {
             const PcpPrimIndex& primIndex = it->second;
-            if (not primIndex.IsValid()) {
+            if (!primIndex.IsValid()) {
                 continue;
             }
 

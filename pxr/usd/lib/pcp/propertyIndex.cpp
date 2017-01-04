@@ -83,7 +83,7 @@ PcpPropertyIndex::GetPropertyRange(bool localOnly) const
 
         size_t endIdx = startIdx;
         for (; endIdx < _propertyStack.size(); ++endIdx) {
-            if (not _propertyStack[endIdx].originatingNode.IsDirect())
+            if (!_propertyStack[endIdx].originatingNode.IsDirect())
                 break;
         }
 
@@ -160,7 +160,7 @@ private:
             return TfNullPtr;
 
         SdfPropertySpecHandle propSpec = layer->GetPropertyAtPath(propPath);
-        if (not propSpec)
+        if (!propSpec)
             return TfNullPtr;
 
         // See if it's an attribute.
@@ -189,8 +189,8 @@ private:
         }
 
         // For an attribute, check that its type and variability are consistent.
-        if (propType == SdfSpecTypeAttribute and
-            not _IsConsistentAttribute(propSpec)) {
+        if (propType == SdfSpecTypeAttribute &&
+            !_IsConsistentAttribute(propSpec)) {
             return TfNullPtr;
         }
         return propSpec;
@@ -205,15 +205,15 @@ private:
     {
         SdfPropertySpecHandle attr = layer->GetAttributeAtPath(relAttrPath);
 
-        if (not attr)
+        if (!attr)
             return TfNullPtr;
 
-        if (not _firstSpec) {
+        if (!_firstSpec) {
             _firstSpec = attr;
         }
 
         // Check that the type and variability are consistent.
-        if (not _IsConsistentAttribute(attr)) {
+        if (!_IsConsistentAttribute(attr)) {
             return TfNullPtr;
         }
         return attr;
@@ -280,7 +280,7 @@ private:
     // index's local errors vector and the allErrors vector.
     void _RecordError(const PcpErrorBasePtr &err) {
         _allErrors->push_back(err);
-        if (not _propIndex->_localErrors) {
+        if (!_propIndex->_localErrors) {
             _propIndex->_localErrors.reset(new PcpErrorVector);
         }
         _propIndex->_localErrors->push_back(err);
@@ -338,7 +338,7 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
     // Add properties in reverse strength order (weak-to-strong).
     std::vector<Pcp_PropertyInfo> propertyInfo;
 
-    if (not usd) {
+    if (!usd) {
         // We start with the permission from the last node we visited (or 
         // SdfPermissionPublic, if this is the first node). If the strongest
         // opinion about the property's permission from this node is private,
@@ -366,7 +366,7 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
         // populate the property index.
         TF_REVERSE_FOR_ALL(i, primIndex.GetNodeRange()) {
             PcpNodeRef curNode = *i;
-            if (not curNode.CanContributeSpecs()) {
+            if (!curNode.CanContributeSpecs()) {
                 continue;
             }
             const PcpLayerStackRefPtr& nodeLayerStack = curNode.GetLayerStack();
@@ -415,7 +415,7 @@ Pcp_PropertyIndexer::GatherRelationalAttributeSpecs(
         const SdfPath relAttrPathInNodeNS = 
             PcpTranslatePathFromRootToNode(curNode, relAttrPath);
 
-        for (; relIt != relItEnd and relIt.GetNode() == curNode; ++relIt) {
+        for (; relIt != relItEnd && relIt.GetNode() == curNode; ++relIt) {
             if (relAttrPathInNodeNS.IsEmpty())
                 continue;
 
@@ -423,7 +423,7 @@ Pcp_PropertyIndexer::GatherRelationalAttributeSpecs(
             const SdfPropertySpecHandle relAttrSpec = 
                 _GetRelationalAttribute(relSpec->GetLayer(),
                                        relAttrPathInNodeNS);
-            if (not relAttrSpec)
+            if (!relAttrSpec)
                 continue;
 
             if (usd) {
@@ -453,10 +453,10 @@ void PcpBuildPropertyIndex( const SdfPath &propertyPath,
                             PcpErrorVector *allErrors )
 {
     // Verify that the given path is for a property.
-    if (not TF_VERIFY(propertyPath.IsPropertyPath())) {
+    if (!TF_VERIFY(propertyPath.IsPropertyPath())) {
         return;
     }
-    if (not propertyIndex->IsEmpty()) {
+    if (!propertyIndex->IsEmpty()) {
         TF_CODING_ERROR("Cannot build property index for %s with a non-empty "
                         "property stack.", propertyPath.GetText());
         return;

@@ -46,7 +46,7 @@ PcpNodeIterator::PcpNodeIterator(PcpPrimIndex_Graph* graph, size_t nodeIdx)
 void 
 PcpNodeIterator::increment()
 {
-    if (not _graph) {
+    if (!_graph) {
         TF_CODING_ERROR("Cannot increment invalid iterator");
         return;
     }
@@ -57,7 +57,7 @@ PcpNodeIterator::increment()
 void 
 PcpNodeIterator::decrement()
 {
-    if (not _graph) {
+    if (!_graph) {
         TF_CODING_ERROR("Cannot decrement invalid iterator");
         return;
     }
@@ -68,7 +68,7 @@ PcpNodeIterator::decrement()
 void 
 PcpNodeIterator::advance(difference_type n)
 {
-    if (not _graph) {
+    if (!_graph) {
         TF_CODING_ERROR("Cannot advance invalid iterator");
         return;
     }
@@ -79,7 +79,7 @@ PcpNodeIterator::advance(difference_type n)
 PcpNodeIterator::difference_type 
 PcpNodeIterator::distance_to(const PcpNodeIterator& other) const
 {
-    if (not _graph or not other._graph) {
+    if (!_graph || !other._graph) {
         TF_CODING_ERROR("Invalid iterator");
         return 0;
     }
@@ -96,7 +96,7 @@ PcpNodeIterator::distance_to(const PcpNodeIterator& other) const
 bool 
 PcpNodeIterator::equal(const PcpNodeIterator& other) const
 {
-    return _graph == other._graph and
+    return _graph == other._graph &&
         _nodeIdx == other._nodeIdx;
 }
 
@@ -126,7 +126,7 @@ PcpPrimIterator::PcpPrimIterator(
 void 
 PcpPrimIterator::increment()
 {
-    if (not _primIndex) {
+    if (!_primIndex) {
         TF_CODING_ERROR("Cannot increment invalid iterator");
         return;
     }
@@ -137,7 +137,7 @@ PcpPrimIterator::increment()
 void 
 PcpPrimIterator::decrement()
 {
-    if (not _primIndex) {
+    if (!_primIndex) {
         TF_CODING_ERROR("Cannot decrement invalid iterator");
         return;
     }
@@ -148,7 +148,7 @@ PcpPrimIterator::decrement()
 void 
 PcpPrimIterator::advance(difference_type n)
 {
-    if (not _primIndex) {
+    if (!_primIndex) {
         TF_CODING_ERROR("Cannot advance invalid iterator");
         return;
     }
@@ -159,7 +159,7 @@ PcpPrimIterator::advance(difference_type n)
 PcpPrimIterator::difference_type 
 PcpPrimIterator::distance_to(const PcpPrimIterator& other) const
 {
-    if (not _primIndex or not other._primIndex) {
+    if (!_primIndex || !other._primIndex) {
         TF_CODING_ERROR("Invalid iterator");
         return 0;
     }
@@ -176,7 +176,7 @@ PcpPrimIterator::distance_to(const PcpPrimIterator& other) const
 bool 
 PcpPrimIterator::equal(const PcpPrimIterator& other) const
 {
-    return _primIndex == other._primIndex and _pos == other._pos;
+    return _primIndex == other._primIndex && _pos == other._pos;
 }
 
 PcpPrimIterator::reference 
@@ -215,7 +215,7 @@ PcpPropertyIterator::PcpPropertyIterator(
 void 
 PcpPropertyIterator::increment()
 {
-    if (not _propertyIndex) {
+    if (!_propertyIndex) {
         TF_CODING_ERROR("Cannot increment invalid iterator");
         return;
     }
@@ -226,7 +226,7 @@ PcpPropertyIterator::increment()
 void 
 PcpPropertyIterator::decrement()
 {
-    if (not _propertyIndex) {
+    if (!_propertyIndex) {
         TF_CODING_ERROR("Cannot decrement invalid iterator");
         return;
     }
@@ -237,7 +237,7 @@ PcpPropertyIterator::decrement()
 void 
 PcpPropertyIterator::advance(difference_type n)
 {
-    if (not _propertyIndex) {
+    if (!_propertyIndex) {
         TF_CODING_ERROR("Cannot advance invalid iterator");
         return;
     }
@@ -248,7 +248,7 @@ PcpPropertyIterator::advance(difference_type n)
 PcpPropertyIterator::difference_type 
 PcpPropertyIterator::distance_to(const PcpPropertyIterator& other) const
 {
-    if (not _propertyIndex or not other._propertyIndex) {
+    if (!_propertyIndex || !other._propertyIndex) {
         TF_CODING_ERROR("Invalid iterator");
         return 0;
     }
@@ -265,7 +265,7 @@ PcpPropertyIterator::distance_to(const PcpPropertyIterator& other) const
 bool 
 PcpPropertyIterator::equal(const PcpPropertyIterator& other) const
 {
-    return _propertyIndex == other._propertyIndex and
+    return _propertyIndex == other._propertyIndex && 
         _pos == other._pos;
 }
 

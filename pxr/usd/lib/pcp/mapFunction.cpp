@@ -101,12 +101,12 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
 
         // Find the closest enclosing mapping.  If the trailing name
         // components do not match, this pair cannot be redundant.
-        if (not redundant &&
+        if (!redundant &&
             i->first.GetNameToken() == i->second.GetNameToken()) {
             // The tail component matches.  Walk up the prefixes.
             for (SdfPath source = i->first, target = i->second;
-                 not source.IsEmpty() and not target.IsEmpty()
-                 and not redundant;
+                 !source.IsEmpty() && !target.IsEmpty()
+                 && !redundant;
                  source = source.GetParentPath(),
                  target = target.GetParentPath())
             {
@@ -115,7 +115,7 @@ _Canonicalize(PcpMapFunction::PathPairVector *vec)
                      j != vec->end(); ++j)
                 {
                     // *j makes *i redundant if *j maps source to target.
-                    if (i != j and j->first == source and j->second == target) {
+                    if (i != j && j->first == source && j->second == target) {
                         // Found the closest enclosing mapping, *j.
                         // It means *i is the same as *j plus the addition
                         // of an identical series of path components on both
@@ -255,7 +255,7 @@ PcpMapFunction::operator==(const PcpMapFunction &map) const
 bool
 PcpMapFunction::operator!=(const PcpMapFunction &map) const
 {
-    return not (*this == map);
+    return !(*this == map);
 }
 
 static SdfPath
@@ -281,7 +281,7 @@ _Map(const SdfPath& path,
     for (int i=0; i < numPairs; ++i) {
         const SdfPath &source = invert? pairs[i].second : pairs[i].first;
         const size_t count = source.GetPathElementCount();
-        if (count >= bestElemCount and path.HasPrefix(source)) {
+        if (count >= bestElemCount && path.HasPrefix(source)) {
             bestElemCount = count;
             bestIndex = i;
         }
@@ -344,7 +344,7 @@ _Map(const SdfPath& path,
         }
         const SdfPath &target = invert? pairs[i].first : pairs[i].second;
         const size_t count = target.GetPathElementCount();
-        if (count > bestElemCount and result.HasPrefix(target)) {
+        if (count > bestElemCount && result.HasPrefix(target)) {
             // There is a more-specific reverse mapping for this path.
             return SdfPath();
         }
@@ -394,7 +394,7 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     for (int i=0; i < data_inner._numPairs; ++i) {
         PathPair pair = data_inner._pairs[i];
         pair.second = MapSourceToTarget(pair.second);
-        if (not pair.second.IsEmpty()) {
+        if (!pair.second.IsEmpty()) {
             if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
                 pairs.push_back(pair);
             }
@@ -406,7 +406,7 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     for (int i=0; i < data_outer._numPairs; ++i) {
         PathPair pair = data_outer._pairs[i];
         pair.first = inner.MapTargetToSource(pair.first);
-        if (not pair.first.IsEmpty()) {
+        if (!pair.first.IsEmpty()) {
             if (std::find(pairs.begin(), pairs.end(), pair) == pairs.end()) {
                 pairs.push_back(pair);
             }
@@ -444,7 +444,7 @@ PcpMapFunction::GetString() const
 {
     std::vector<std::string> lines;
 
-    if (not GetTimeOffset().IsIdentity()) {
+    if (!GetTimeOffset().IsIdentity()) {
         lines.push_back(TfStringify(GetTimeOffset()));
     }
 
@@ -505,7 +505,7 @@ PcpMapFunction::_Data::~_Data()
 
 bool
 PcpMapFunction::_Data::operator==(const _Data &rhs) const {
-    if (_numPairs != rhs._numPairs or _offset != rhs._offset) {
+    if (_numPairs != rhs._numPairs || _offset != rhs._offset) {
         return false;
     }
     for (int i=0; i < _numPairs; ++i) {

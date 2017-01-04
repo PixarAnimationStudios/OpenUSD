@@ -49,7 +49,7 @@ struct Pcp_FindInstanceableDataVisitor
         // We're just looking for instanceable data anywhere in the prim
         // index, so if we've found we can return false to cut off the
         // traversal.
-        return not hasInstanceableData;
+        return !hasInstanceableData;
     }
 
     bool hasInstanceableData;
@@ -65,8 +65,8 @@ Pcp_PrimIndexIsInstanceable(
     // unless the special env var is set for testing.
     static const int instancing(TfGetEnvSetting(PCP_OVERRIDE_INSTANCEABLE));
 
-    if ((instancing == 0) or
-        ((not primIndex.IsUsd() and (instancing == -1)))) {
+    if ((instancing == 0) ||
+        ((!primIndex.IsUsd() && (instancing == -1)))) {
         return false;
     }
 
@@ -79,7 +79,7 @@ Pcp_PrimIndexIsInstanceable(
     // not introduce instanceable data.
     Pcp_FindInstanceableDataVisitor visitor;
     Pcp_TraverseInstanceableStrongToWeak(primIndex, &visitor);
-    if (not visitor.hasInstanceableData) {
+    if (!visitor.hasInstanceableData) {
         return false;
     }
 

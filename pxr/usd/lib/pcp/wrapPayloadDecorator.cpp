@@ -107,7 +107,7 @@ private:
     {
         SdfLayer::FileFormatArguments args;
         std::string errMsg;
-        if (not SdfFileFormatArgumentsFromPython(dict, &args, &errMsg)) {
+        if (!SdfFileFormatArgumentsFromPython(dict, &args, &errMsg)) {
             TF_CODING_ERROR(errMsg.c_str());
         }
         return args;

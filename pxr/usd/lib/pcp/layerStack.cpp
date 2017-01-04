@@ -75,7 +75,7 @@ public:
     // Returns true if a's layer has an owner equal to _sessionOwner.
     bool IsOwned(const Pcp_SublayerInfo& a) const
     {
-        return a.layer->HasOwner() and
+        return a.layer->HasOwner() && 
                a.layer->GetOwner() == _sessionOwner;
     }
 
@@ -84,7 +84,7 @@ public:
     bool operator()(const Pcp_SublayerInfo& a,
                     const Pcp_SublayerInfo& b) const
     {
-        return IsOwned(a) and not IsOwned(b);
+        return IsOwned(a) && !IsOwned(b);
     }
 
 private:
@@ -122,7 +122,7 @@ _ApplyOwnedSublayerOrder(
     // the intended result.
 
     // Sort if conditions 1 and 2 are met.
-    if (not sessionOwner.empty() and layer->GetHasOwnedSubLayers()) {
+    if (!sessionOwner.empty() && layer->GetHasOwnedSubLayers()) {
         // Stable sort against owned layer.
         Pcp_SublayerOrdering ordering(sessionOwner);
         std::stable_sort(subtrees->begin(), subtrees->end(), ordering);
@@ -130,7 +130,7 @@ _ApplyOwnedSublayerOrder(
         // Complain if there was more than one owned layer.  This is not
         // a problem for our algorithm but, for now, it's cause for
         // concern to the user.
-        if (not subtrees->empty() and ordering.IsOwned(subtrees->front())) {
+        if (!subtrees->empty() && ordering.IsOwned(subtrees->front())) {
             // The first layer is owned.  Get the range of layers that are
             // owned.
             Pcp_SublayerInfoVector::iterator first = subtrees->begin();
@@ -169,7 +169,7 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
         // Check for relocation arcs in this layer.
         SdfPrimSpecHandleVector stack;
         stack.push_back( (*layer)->GetPseudoRoot() );
-        while (not stack.empty()) {
+        while (!stack.empty()) {
             SdfPrimSpecHandle prim = stack.back();
             stack.pop_back();
             // Push back any children.
@@ -177,12 +177,12 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
                 stack.push_back(*child);
             }
             // Check for relocations.
-            if (not prim->HasField(field)) {
+            if (!prim->HasField(field)) {
                 // No opinion in this layer.
                 continue;
             }
             const VtValue& fieldValue = prim->GetField(field);
-            if (not fieldValue.IsHolding<SdfRelocatesMap>()) {
+            if (!fieldValue.IsHolding<SdfRelocatesMap>()) {
                 TF_CODING_ERROR("Field '%s' in <%s> in layer @%s@"
                                 "does not contain an SdfRelocatesMap", 
                                 field.GetText(), prim->GetPath().GetText(),
@@ -196,7 +196,7 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
                 // Absolutize source/target paths.
                 SdfPath source = reloc->first .MakeAbsolutePath(primPath);
                 SdfPath target = reloc->second.MakeAbsolutePath(primPath);
-                if (source == target or source.HasPrefix(target)) {
+                if (source == target || source.HasPrefix(target)) {
                     // Skip relocations from a path P back to itself and
                     // relocations from a path P to an ancestor of P.
                     // (The authoring code in Csd should never create these,
@@ -233,7 +233,7 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
             // Check for ancestral relocations.  The source path may have
             // ancestors that were themselves the target of an ancestral
             // relocate.
-            for (SdfPath p = source; not p.IsEmpty(); p = p.GetParentPath()) {
+            for (SdfPath p = source; !p.IsEmpty(); p = p.GetParentPath()) {
                 // We rely on the fact that relocatesPerPrim is stored
                 // and traversed in namespace order to ensure that we
                 // have already incoporated ancestral arcs into
@@ -264,7 +264,7 @@ _FilterRelocationsForPath(const SdfRelocatesMap & relocates,
     PcpMapFunction::PathMap siteRelocates;
     for (SdfRelocatesMap::const_iterator
          i = relocates.lower_bound(path), n = relocates.end();
-         (i != n) and (i->first.HasPrefix(path)); ++i) {
+         (i != n) && (i->first.HasPrefix(path)); ++i) {
         siteRelocates.insert(*i);
     }
     siteRelocates[SdfPath::AbsoluteRootPath()] = SdfPath::AbsoluteRootPath();
@@ -287,13 +287,13 @@ PcpLayerStack::PcpLayerStack(
     TfAutoMallocTag2 tag("Pcp", "PcpLayerStack::PcpLayerStack");
     TRACE_FUNCTION();
 
-    if (not TF_VERIFY(_identifier)) {
+    if (!TF_VERIFY(_identifier)) {
         return;
     }
 
     _Compute(targetSchema, mutedLayers);
 
-    if (not _isUsd) {
+    if (!_isUsd) {
         Pcp_ComputeRelocationsForLayerStack(_layers, 
                                             &_relocatesSourceToTarget,
                                             &_relocatesTargetToSource,
@@ -320,7 +320,7 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
     // e.g. it lets us examine the before/after chagnge to relocations.
     
     // Blow layer tree/offsets if necessary.
-    if (changes.didChangeLayers or changes.didChangeLayerOffsets) {
+    if (changes.didChangeLayers || changes.didChangeLayerOffsets) {
         // The following comment applies to didChangeLayerOffsets:
         // XXX: We should just blow the layer offsets but for now
         //      now it's easier to just blow the whole layer stack.
@@ -335,8 +335,8 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
     }
 
     // Update relocations if necessary.
-    if (not _isUsd and 
-        (changes.didChangeSignificantly or changes.didChangeRelocates)) {
+    if (!_isUsd &&
+        (changes.didChangeSignificantly || changes.didChangeRelocates)) {
         // Blow the relocations if they changed specifically, or if there's been
         // a significant change.
         // A significant change means the composed opinions of the layer stack
@@ -422,7 +422,7 @@ PcpLayerStack::GetLayerOffsetForLayer(size_t layerIdx) const
 {
     // XXX: Optimization: store a flag if all offsets are identity
     //      and just return NULL if it's set.
-    if (not TF_VERIFY(layerIdx < _mapFunctions.size())) {
+    if (!TF_VERIFY(layerIdx < _mapFunctions.size())) {
         return NULL;
     }
 
@@ -668,7 +668,7 @@ PcpLayerStack::_BuildLayerStack(
         SdfLayerRefPtr sublayer = SdfFindOrOpenRelativeToLayer(
             layer, &sublayerPath, layerArgs);
 
-        if (not sublayer) {
+        if (!sublayer) {
             PcpErrorInvalidSublayerPathPtr err = 
                 PcpErrorInvalidSublayerPath::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
@@ -690,8 +690,8 @@ PcpLayerStack::_BuildLayerStack(
 
         // Check sublayer offset.
         SdfLayerOffset sublayerOffset = sublayerOffsets[i];
-        if (not sublayerOffset.IsValid()
-            or not sublayerOffset.GetInverse().IsValid()) {
+        if (!sublayerOffset.IsValid()
+            || !sublayerOffset.GetInverse().IsValid()) {
             // Report error, but continue with an identity layer offset.
             PcpErrorInvalidSublayerOffsetPtr err =
                 PcpErrorInvalidSublayerOffset::New();

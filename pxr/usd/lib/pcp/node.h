@@ -76,12 +76,12 @@ public:
     /// Returns true if this is a valid node reference, false otherwise.
     typedef size_t PcpNodeRef::*UnspecifiedBoolType;
     inline operator UnspecifiedBoolType() const {
-        return (_graph and _nodeIdx != PCP_INVALID_INDEX) ? &PcpNodeRef::_nodeIdx : 0;
+        return (_graph && _nodeIdx != PCP_INVALID_INDEX) ? &PcpNodeRef::_nodeIdx : 0;
     }        
     
     /// Returns true if this references the same node as \p rhs.
     inline bool operator==(const PcpNodeRef& rhs) const {
-        return _nodeIdx == rhs._nodeIdx and _graph == rhs._graph;
+        return _nodeIdx == rhs._nodeIdx && _graph == rhs._graph;
     }
 
     /// Returns true if this node is 'less' than \p rhs. 
@@ -303,7 +303,7 @@ private:
     {
         // Note: The default constructed iterator is *not* equal to any
         //       other iterator.
-        return (_node == other._node and _index == other._index);
+        return (_node == other._node && _index == other._index);
     }
     reference dereference() const
     {
@@ -351,7 +351,7 @@ private:
     {
         // Note: The default constructed iterator is *not* equal to any
         //       other iterator.
-        return (_node == other._node and _index == other._index);
+        return (_node == other._node && _index == other._index);
     }
     reference dereference() const
     {

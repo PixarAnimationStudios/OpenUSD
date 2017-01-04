@@ -103,15 +103,15 @@ Pcp_TraverseInstanceableStrongToWeakHelper(
     // Locally-defined variant sets are exceptions to this rule, as the
     // variants they define cannot be shared among prim indexes.
     const bool nodeIsInstanceable = 
-        (not nodeIsLocallyDefinedVariant and not node.IsDueToAncestor());
-    if (not visitor->Visit(node, nodeIsInstanceable)) {
+        (!nodeIsLocallyDefinedVariant && !node.IsDueToAncestor());
+    if (!visitor->Visit(node, nodeIsInstanceable)) {
         return;
     }
 
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
         const bool childNodeIsLocallyDefinedVariant = 
-            (nodeIsLocallyDefinedVariant and 
+            (nodeIsLocallyDefinedVariant &&
                 childNode.GetArcType() == PcpArcTypeVariant);
 
         Pcp_TraverseInstanceableStrongToWeakHelper(
@@ -126,7 +126,7 @@ Pcp_TraverseInstanceableStrongToWeak(
     Visitor* visitor)
 {
     const PcpNodeRef& rootNode = primIndex.GetRootNode();
-    if (not visitor->Visit(rootNode, /* nodeIsInstanceable = */ false)) {
+    if (!visitor->Visit(rootNode, /* nodeIsInstanceable = */ false)) {
         return;
     }
 
@@ -157,8 +157,8 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
     TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
         const bool childNodeIsLocallyDefinedVariant = 
-            (nodeIsLocallyDefinedVariant and 
-                childNode.GetArcType() == PcpArcTypeVariant);
+            (nodeIsLocallyDefinedVariant &&
+             childNode.GetArcType() == PcpArcTypeVariant);
 
         Pcp_TraverseInstanceableWeakToStrongHelper(
             childNode, visitor, childNodeIsLocallyDefinedVariant);
@@ -166,7 +166,7 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
 
     // See comment in Pcp_TraverseInstanceableStrongToWeakHelper.
     const bool nodeIsInstanceable =
-        (not nodeIsLocallyDefinedVariant and not node.IsDueToAncestor());
+        (!nodeIsLocallyDefinedVariant && !node.IsDueToAncestor());
     visitor->Visit(node, nodeIsInstanceable);
 }
 

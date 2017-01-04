@@ -69,9 +69,9 @@ PcpLayerStackIdentifier::operator UnspecifiedBoolType() const
 bool
 PcpLayerStackIdentifier::operator==(const This &rhs) const
 {
-    return _hash           == rhs._hash and
-           rootLayer       == rhs.rootLayer and
-           sessionLayer    == rhs.sessionLayer and
+    return _hash           == rhs._hash         &&
+           rootLayer       == rhs.rootLayer     &&
+           sessionLayer    == rhs.sessionLayer  &&
            pathResolverContext == rhs.pathResolverContext;
 }
 
@@ -115,7 +115,7 @@ Pcp_IdentifierFormatIndex()
 static std::string
 Pcp_FormatIdentifier(std::ostream& os, const SdfLayerHandle& layer)
 {
-    if (not layer) {
+    if (!layer) {
         return std::string("<expired>");
     }
 

@@ -100,7 +100,7 @@ PcpComposeSitePayload( const PcpLayerStackSite & site,
     static const TfToken field = SdfFieldKeys->Payload;
 
     TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, result) and *result) {
+        if ((*layer)->HasField(site.path, field, result) && *result) {
             *sourceLayer = *layer;
             return;
         }
@@ -133,7 +133,7 @@ bool
 PcpComposeSiteHasSymmetry( const PcpLayerStackSite & site )
 {
     TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, SdfFieldKeys->SymmetryFunction) or
+        if ((*layer)->HasField(site.path, SdfFieldKeys->SymmetryFunction) ||
             (*layer)->HasField(site.path, SdfFieldKeys->SymmetryArguments)) {
             return true;
         }

@@ -134,7 +134,7 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
 {
     // Can only create layer stacks for valid identifiers so if the identifier
     // is invalid we can't have an entry for it.
-    if (not identifier) {
+    if (!identifier) {
         TF_CODING_ERROR("Cannot build layer stack with null rootLayer");
         return TfNullPtr;
     }
@@ -208,7 +208,7 @@ Pcp_LayerStackRegistry::_Remove(const PcpLayerStackIdentifier& identifier,
 {
     Pcp_LayerStackRegistryData::IdentifierToLayerStack::const_iterator i =
         _data->identifierToLayerStack.find(identifier);
-    if (TF_VERIFY(i != _data->identifierToLayerStack.end()) and
+    if (TF_VERIFY(i != _data->identifierToLayerStack.end()) &&
         TF_VERIFY(i->second.operator->() == layerStack)) {
         _data->identifierToLayerStack.erase(identifier);
     }
@@ -268,7 +268,7 @@ Pcp_LayerStackRegistry::_SetLayers(const PcpLayerStack* layerStack)
         }
     }
     else {
-        if (not mutedLayerIdentifiers) {
+        if (!mutedLayerIdentifiers) {
             mutedLayerIdentifiers = 
                 &_data->layerStackToMutedLayerIdentifiers[layerStackPtr];
         }
@@ -323,7 +323,7 @@ _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer,
     std::string canonicalPath = computedLayerId;
     if (resolver.IsSearchPath(canonicalPath)) {
         std::string resolvedSearchPath = resolver.Resolve(canonicalPath);
-        if (not resolvedSearchPath.empty()) {
+        if (!resolvedSearchPath.empty()) {
             canonicalPath.swap(resolvedSearchPath);
         }
     }
@@ -352,7 +352,7 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
-        if (layerIt == _layers.end() or *layerIt != canonicalId) {
+        if (layerIt == _layers.end() || *layerIt != canonicalId) {
             _layers.insert(layerIt, canonicalId);
             mutedLayers.push_back(canonicalId);
         }
@@ -364,7 +364,7 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
-        if (layerIt != _layers.end() and *layerIt == canonicalId) {
+        if (layerIt != _layers.end() && *layerIt == canonicalId) {
             _layers.erase(layerIt);
             unmutedLayers.push_back(canonicalId);
         }

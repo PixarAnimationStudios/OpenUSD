@@ -68,14 +68,14 @@ bool
 PcpSite::operator==(const PcpSite &rhs) const
 {
     return layerStackIdentifier == rhs.layerStackIdentifier
-        and path == rhs.path;
+        && path == rhs.path;
 }
 
 bool
 PcpSite::operator<(const PcpSite &rhs) const
 {
-    return (layerStackIdentifier < rhs.layerStackIdentifier) or
-           (layerStackIdentifier == rhs.layerStackIdentifier and
+    return (layerStackIdentifier < rhs.layerStackIdentifier) ||
+           (layerStackIdentifier == rhs.layerStackIdentifier && 
             path < rhs.path);
 }
 
@@ -106,14 +106,14 @@ PcpLayerStackSite::PcpLayerStackSite( const PcpLayerStackRefPtr & layerStack_,
 bool
 PcpLayerStackSite::operator==(const PcpLayerStackSite &rhs) const
 {
-    return layerStack == rhs.layerStack and path == rhs.path;
+    return layerStack == rhs.layerStack && path == rhs.path;
 }
 
 bool
 PcpLayerStackSite::operator<(const PcpLayerStackSite &rhs) const
 {
-    return (layerStack < rhs.layerStack) or
-           (layerStack == rhs.layerStack and path < rhs.path);
+    return (layerStack < rhs.layerStack) ||
+           (layerStack == rhs.layerStack && path < rhs.path);
 }
 
 size_t

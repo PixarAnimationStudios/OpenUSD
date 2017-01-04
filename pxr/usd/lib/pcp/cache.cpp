@@ -91,7 +91,7 @@ public:
     ~Pcp_CacheChangesHelper()
     {
         // Apply changes now immediately if _changes is NULL.
-        if (not _changes) {
+        if (!_changes) {
             _immediateChanges.Apply();
         }
     }
@@ -314,7 +314,7 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
         }
     }
 
-    if (finalLayersToMute.empty() and finalLayersToUnmute.empty()) {
+    if (finalLayersToMute.empty() && finalLayersToUnmute.empty()) {
         return;
     }
 
@@ -338,17 +338,17 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
     // computing those layer stacks altogether. So, find all prim indexes
     // that have the associated composition error and treat this as if
     // we're reloading the unmuted layer.
-    if (not finalLayersToUnmute.empty()) {
+    if (!finalLayersToUnmute.empty()) {
         for (const auto& primIndexEntry : _primIndexCache) {
             const PcpPrimIndex& primIndex = primIndexEntry.second;
-            if (not primIndex.IsValid()) {
+            if (!primIndex.IsValid()) {
                 continue;
             }
 
             for (const auto& error : primIndex.GetLocalErrors()) {
                 PcpErrorMutedAssetPathPtr typedError = 
                     dynamic_pointer_cast<PcpErrorMutedAssetPath>(error);
-                if (not typedError) {
+                if (!typedError) {
                     continue;
                 }
 
@@ -406,7 +406,7 @@ PcpCache::ComputeLayerStack(const PcpLayerStackIdentifier &id,
         _layerStackCache->FindOrCreate(id, allErrors);
 
     // Retain the cache's root layer stack.
-    if (not _layerStack and id == GetLayerStackIdentifier()) {
+    if (!_layerStack && id == GetLayerStackIdentifier()) {
         _layerStack = result;
     }
 
@@ -429,7 +429,7 @@ PcpCache::ComputeRelationshipTargetPaths(const SdfPath & relPath,
 {
     TRACE_FUNCTION();
 
-    if (not relPath.IsPropertyPath()) {
+    if (!relPath.IsPropertyPath()) {
         TF_CODING_ERROR(
             "Path <%s> must be a relationship path", relPath.GetText());
         return;
@@ -454,7 +454,7 @@ PcpCache::ComputeAttributeConnectionPaths(const SdfPath & attrPath,
 {
     TRACE_FUNCTION();
 
-    if (not attrPath.IsPropertyPath()) {
+    if (!attrPath.IsPropertyPath()) {
         TF_CODING_ERROR(
             "Path <%s> must be an attribute path", attrPath.GetText());
         return;
@@ -892,7 +892,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
                             break;
                         }
                     }
-                    if (not anyNodeHasSpecs) {
+                    if (!anyNodeHasSpecs) {
                         _RemovePrimAndPropertyCaches(path, lifeboat);
                     }
                 }
@@ -914,7 +914,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         //      paths here and there.
         // First blow all caches under the new names.
         TF_FOR_ALL(i, changes.didChangePath) {
-            if (not i->second.IsEmpty()) {
+            if (!i->second.IsEmpty()) {
                 _RemovePrimAndPropertyCaches(i->second, lifeboat);
             }
         }
@@ -947,7 +947,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
             // because there can't be any on a payload path.
             if (j->HasPrefix(i->first)) {
                 newIncludes.push_back(j->ReplacePrefix(i->first, i->second,
-                                                       not fixTargetPaths));
+                                                       !fixTargetPaths));
                 _includedPayloads.erase(j++);
             }
             else {
@@ -963,7 +963,7 @@ PcpCache::Reload(PcpChanges* changes)
 {
     TRACE_FUNCTION();
 
-    if (not _layerStack) {
+    if (!_layerStack) {
         return;
     }
 
@@ -1060,7 +1060,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     SdfLayerHandleSet layersToReload;
     for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
         for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
-            if (not _layerStack->HasLayer(layer)) {
+            if (!_layerStack->HasLayer(layer)) {
                 layersToReload.insert(layer);
             }
         }
@@ -1212,7 +1212,7 @@ struct Pcp_ParallelIndexer
 
     // Add an index to compute.
     void ComputeIndex(const PcpPrimIndex *parentIndex, const SdfPath &path) {
-        TF_AXIOM(parentIndex or path == SdfPath::AbsoluteRootPath());
+        TF_AXIOM(parentIndex || path == SdfPath::AbsoluteRootPath());
         _toCompute.push_back(make_pair(parentIndex, path));
     }
 
@@ -1251,7 +1251,7 @@ struct Pcp_ParallelIndexer
         }
 
         PcpPrimIndexOutputs *outputs = NULL;
-        if (not index) {
+        if (!index) {
             // We didn't find an index in the cache, so we must compute one.
 
             // Make space in the results for the output.
@@ -1261,7 +1261,7 @@ struct Pcp_ParallelIndexer
             PcpPrimIndexInputs inputs = _baseInputs;
             inputs.parentIndex = parentIndex;
 
-            TF_VERIFY(parentIndex or path == SdfPath::AbsoluteRootPath());
+            TF_VERIFY(parentIndex || path == SdfPath::AbsoluteRootPath());
         
             // Run indexing.
             PcpComputePrimIndex(
@@ -1292,7 +1292,7 @@ struct Pcp_ParallelIndexer
             // any children to process.  If we did have children to process
             // we'll let them wake the consumer later.
             _finishedOutputs.push(outputs);
-            if (not didChildren)
+            if (!didChildren)
                 _consumer.Wake();
         }
     }
@@ -1330,7 +1330,7 @@ struct Pcp_ParallelIndexer
         // writer starvation we'll avoid growing our working spaces too large.
         static const size_t PendingSizeThreshold = 20000;
 
-        if (not _consumerScratchPayloads.empty()) {
+        if (!_consumerScratchPayloads.empty()) {
             // Publish to _includedPayloads if possible.  If we're told to
             // flush, or if we're over a threshold number of pending results,
             // then take the write lock and publish.  Otherwise only attempt to
@@ -1357,7 +1357,7 @@ struct Pcp_ParallelIndexer
         }
             
         // Ok, publish the set of indexes.
-        if (not _consumerScratch.empty()) {
+        if (!_consumerScratch.empty()) {
             // If we're told to flush, or if we're over a threshold number of
             // pending results, then take the write lock and publish.  Otherwise
             // only attempt to take the write lock, and if we fail to do so then
@@ -1419,7 +1419,7 @@ PcpCache::_ComputePrimIndexesInParallel(
     const char *mallocTag1,
     const char *mallocTag2)
 {
-    if (not IsUsd()) {
+    if (!IsUsd()) {
         TF_CODING_ERROR("Computing prim indexes in parallel only supported "
                         "for USD caches.");
         return;
@@ -1432,7 +1432,7 @@ PcpCache::_ComputePrimIndexesInParallel(
     
     using Indexer = Pcp_ParallelIndexer<_UntypedIndexingChildrenPredicate>;
 
-    if (not _layerStack)
+    if (!_layerStack)
         ComputeLayerStack(GetLayerStackIdentifier(), allErrors);
 
     // General strategy: Compute indexes recursively starting from roots, in
@@ -1469,13 +1469,13 @@ PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors)
     // may live in the SdfPathTable for paths that haven't yet been computed,
     // so we have to explicitly check for that.
     _PrimIndexCache::const_iterator i = _primIndexCache.find(path);
-    if (i != _primIndexCache.end() and i->second.IsValid()) {
+    if (i != _primIndexCache.end() && i->second.IsValid()) {
         return i->second;
     }
 
     TRACE_FUNCTION();
 
-    if (not _layerStack) {
+    if (!_layerStack) {
         ComputeLayerStack(GetLayerStackIdentifier(), allErrors);
     }
 
@@ -1502,7 +1502,7 @@ PcpPropertyIndex*
 PcpCache::_GetPropertyIndex(const SdfPath& path)
 {
     _PropertyIndexCache::iterator i = _propertyIndexCache.find(path);
-    if (i != _propertyIndexCache.end() and not i->second.IsEmpty()) {
+    if (i != _propertyIndexCache.end() && !i->second.IsEmpty()) {
         return &i->second;
     }
 
@@ -1513,7 +1513,7 @@ const PcpPropertyIndex*
 PcpCache::_GetPropertyIndex(const SdfPath& path) const
 {
     _PropertyIndexCache::const_iterator i = _propertyIndexCache.find(path);
-    if (i != _propertyIndexCache.end() and not i->second.IsEmpty()) {
+    if (i != _propertyIndexCache.end() && !i->second.IsEmpty()) {
         return &i->second;
     }
     return NULL;
@@ -1525,7 +1525,7 @@ PcpCache::ComputePropertyIndex(const SdfPath & path, PcpErrorVector *allErrors)
     TRACE_FUNCTION();
 
     static PcpPropertyIndex nullIndex;
-    if (not path.IsPropertyPath()) {
+    if (!path.IsPropertyPath()) {
         TF_CODING_ERROR("Path <%s> must be a property path", path.GetText());
         return nullIndex;
     }

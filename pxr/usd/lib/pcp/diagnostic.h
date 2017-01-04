@@ -84,14 +84,14 @@ void PcpDumpDotGraph(const PcpNodeRef& node,
 /// Indicates that the prim index currently being constructed has been
 /// updated.
 #define PCP_GRAPH_UPDATE(...)                                           \
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
     else {                                                              \
         Pcp_GraphUpdate(__VA_ARGS__);                                   \
     }
 
 /// Annotates the current phase of prim indexing with the given message.
 #define PCP_GRAPH_MSG(...)                                              \
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
     else {                                                              \
         Pcp_GraphMsg(__VA_ARGS__);                                      \
     }

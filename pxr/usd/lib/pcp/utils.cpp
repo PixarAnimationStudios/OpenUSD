@@ -42,7 +42,7 @@ Pcp_GetArgumentsForTargetSchema(
     const std::string& targetSchema,
     SdfLayer::FileFormatArguments* args)
 {
-    if (not targetSchema.empty()) {
+    if (!targetSchema.empty()) {
         (*args)[SdfFileFormatTokens->TargetArg] = targetSchema;
     }
 }

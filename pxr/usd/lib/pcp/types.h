@@ -86,7 +86,7 @@ enum PcpRangeType {
 inline bool 
 PcpIsInheritArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalInherit or
+    return (arcType == PcpArcTypeLocalInherit ||
             arcType == PcpArcTypeGlobalInherit);
 }
 
@@ -95,7 +95,7 @@ PcpIsInheritArc(PcpArcType arcType)
 inline bool 
 PcpIsSpecializesArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalSpecializes or
+    return (arcType == PcpArcTypeLocalSpecializes ||
             arcType == PcpArcTypeGlobalSpecializes);
 }
 
@@ -108,7 +108,7 @@ PcpIsSpecializesArc(PcpArcType arcType)
 inline bool
 PcpIsClassBasedArc(PcpArcType arcType)
 {
-    return PcpIsInheritArc(arcType) or PcpIsSpecializesArc(arcType);
+    return PcpIsInheritArc(arcType) || PcpIsSpecializesArc(arcType);
 }
 
 /// Returns true if \p arcType represents a local class-based
@@ -116,7 +116,7 @@ PcpIsClassBasedArc(PcpArcType arcType)
 inline bool
 PcpIsLocalClassBasedArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalInherit or
+    return (arcType == PcpArcTypeLocalInherit ||
             arcType == PcpArcTypeLocalSpecializes);
 }
 
@@ -150,8 +150,8 @@ struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
 
     bool operator<(const Pcp_SdSiteRef& other) const
     {
-        return layer < other.layer or
-               (not (other.layer < layer) and path < other.path);
+        return layer < other.layer ||
+               (!(other.layer < layer) && path < other.path);
     }
 
     // These are held by reference for performance,

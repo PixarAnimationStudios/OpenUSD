@@ -68,7 +68,7 @@ void wrapLayerStackIdentifier()
 
         .def("__repr__", &::_Repr)
         .def("__hash__", &This::GetHash)
-        .def(not self)
+        .def(!self)
         .def(self == self)
         .def(self != self)
         .def(self <  self)

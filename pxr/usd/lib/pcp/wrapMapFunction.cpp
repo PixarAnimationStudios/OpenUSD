@@ -40,7 +40,7 @@ _Repr(const PcpMapFunction &f)
         return "Pcp.MapFunction.Identity()";
     }
     string s = "Pcp.MapFunction(";
-    if (not f.IsNull()) {
+    if (!f.IsNull()) {
         const boost::python::dict sourceToTargetMap = 
             TfPyCopyMapToDictionary(f.GetSourceToTargetMap());
 
