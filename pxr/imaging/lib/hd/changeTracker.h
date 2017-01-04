@@ -79,14 +79,13 @@ public:
         CustomBitsEnd         = 1 << 30,
     };
 
-    // Dirty bits for Tasks, Textures
+    // Dirty bits for Tasks
     enum NonRprimDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
         DirtyChildren         = 1 << 2,
         DirtyParams           = 1 << 3,
         DirtyCollection       = 1 << 4,
-        DirtyTexture          = 1 << 5,
     };
 
     typedef int DirtyBits;
@@ -306,27 +305,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name Texture Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Texture with the given \p id.
-    void TextureInserted(SdfPath const& id);
-
-    /// Stop tracking Texture with the given \p id.
-    void TextureRemoved(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkTextureDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Get the dirty bits for Texture with the given \p id.
-    DirtyBits GetTextureDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkTextureClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name Instancer State Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -490,7 +468,6 @@ private:
     _IDStateMap _instancerState;
     _IDStateMap _shaderState;
     _IDStateMap _taskState;
-    _IDStateMap _textureState;
     _IDStateMap _sprimState;
     _IDStateMap _bprimState;
     _GeneralStateMap _generalState;

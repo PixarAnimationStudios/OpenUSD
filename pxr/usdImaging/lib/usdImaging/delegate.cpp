@@ -158,7 +158,7 @@ UsdImagingDelegate::~UsdImagingDelegate()
     }
     // note texturePath has already been decorated by GetPathForIndex()
     TF_FOR_ALL(it, _texturePaths) {
-        index.RemoveTexture(*it);
+        index.RemoveBprim(HdPrimTypeTokens->texture, *it);
     }
     TF_FOR_ALL(it, _shaderMap) {
         index.RemoveShader(GetPathForIndex(it->first));
@@ -562,7 +562,7 @@ UsdImagingIndexProxy::_InsertRprim(SdfPath const& usdPath,
                     // note texturePath has already been decorated by
                     // GetPathForIndex()
                     _delegate->GetRenderIndex()
-                        .InsertTexture<HdTexture>(_delegate, *textureIt);
+                        .InsertBprim(HdPrimTypeTokens->texture, _delegate, *textureIt);
                     _delegate->_texturePaths.insert(*textureIt);
                 }
             }

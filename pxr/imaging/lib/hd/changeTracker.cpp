@@ -303,52 +303,6 @@ HdChangeTracker::MarkTaskClean(SdfPath const& id, DirtyBits newBits)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Texture Object Tracking
-// -------------------------------------------------------------------------- //
-
-void
-HdChangeTracker::TextureInserted(SdfPath const& id)
-{
-    TF_DEBUG(HD_TEXTURE_ADDED).Msg("Texture Added: %s\n", id.GetText());
-    _textureState[id] = AllDirty;
-}
-
-void
-HdChangeTracker::TextureRemoved(SdfPath const& id)
-{
-    TF_DEBUG(HD_TEXTURE_REMOVED).Msg("Texture Removed: %s\n", id.GetText());
-    _textureState.erase(id);
-}
-
-void
-HdChangeTracker::MarkTextureDirty(SdfPath const& id, DirtyBits bits)
-{
-    _IDStateMap::iterator it = _textureState.find(id);
-    if (not TF_VERIFY(it != _textureState.end()))
-        return;
-    it->second = it->second | bits;
-}
-
-HdChangeTracker::DirtyBits
-HdChangeTracker::GetTextureDirtyBits(SdfPath const& id)
-{
-    _IDStateMap::iterator it = _textureState.find(id);
-    if (not TF_VERIFY(it != _textureState.end()))
-        return Clean;
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkTextureClean(SdfPath const& id, DirtyBits newBits)
-{
-    _IDStateMap::iterator it = _textureState.find(id);
-    if (not TF_VERIFY(it != _textureState.end()))
-        return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
-}
-
-// -------------------------------------------------------------------------- //
 /// \name Instancer State Tracking
 // -------------------------------------------------------------------------- //
 

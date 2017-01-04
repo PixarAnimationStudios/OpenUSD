@@ -52,7 +52,6 @@ typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdInstancer> HdInstancerSharedPtr;
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
-typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
 
 /// \class HdRenderIndex
 ///
@@ -72,7 +71,7 @@ public:
     HdRenderIndex();
     ~HdRenderIndex();
 
-    /// Clear all rprims, instancers, shaders and textures.
+    /// Clear all r (render), s (state) and b (buffer) prims.
     void Clear();
 
     /// Given a prim id and instance id, returns the prim path of the owner
@@ -221,25 +220,6 @@ public:
     HdTaskSharedPtr const& GetTask(SdfPath const& id) const;
 
     // ---------------------------------------------------------------------- //
-    /// \name Texture Support
-    // ---------------------------------------------------------------------- //
-
-    /// Inserts a new texture into the RenderIndex with an identifier of \p id.
-    template <typename T>
-    void InsertTexture(HdSceneDelegate* delegate, SdfPath const& id);
-
-    /// Removes the given texture from the RenderIndex.
-    void RemoveTexture(SdfPath const& id);
-
-    /// Returns true if a texture exists in the index with the given \p id.
-    bool HasTexture(SdfPath const& id) {
-        return _textureMap.find(id) != _textureMap.end();
-    }
-
-    /// Returns the texture for the given \p id.
-    HdTextureSharedPtr const& GetTexture(SdfPath const& id) const;
-
-    // ---------------------------------------------------------------------- //
     /// \name Scene state prims (e.g. camera, light)
     // ---------------------------------------------------------------------- //
 
@@ -317,12 +297,6 @@ private:
                             SdfPath const& taskId,
                             HdTaskSharedPtr const& task);
 
-    // Inserts the texture into the index and updates tracking state.
-    void _TrackDelegateTexture(HdSceneDelegate* delegate, 
-                              SdfPath const& textureId,
-                              HdTextureSharedPtr const& texture);
-
-
     template <typename T>
     static inline const TfToken & _GetTypeId();
 
@@ -339,7 +313,6 @@ private:
 
     typedef TfHashMap<SdfPath, HdSurfaceShaderSharedPtr, SdfPath::Hash> _ShaderMap;
     typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
-    typedef TfHashMap<SdfPath, HdTextureSharedPtr, SdfPath::Hash> _TextureMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
     typedef TfHashMap<SdfPath, HdSprim *, SdfPath::Hash> _SprimMap;
@@ -378,7 +351,6 @@ private:
 
     _ShaderMap _shaderMap;
     _TaskMap _taskMap;
-    _TextureMap _textureMap;
 
     _SprimTypeMap   _sprimTypeMap;
     _SprimIDSet _sprimIDSet;
@@ -431,18 +403,6 @@ HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
     HdTaskSharedPtr task = boost::make_shared<T>(delegate, id);
     _TrackDelegateTask(delegate, id, task);
 }
-
-template <typename T>
-void
-HdRenderIndex::InsertTexture(HdSceneDelegate* delegate, SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    HdTextureSharedPtr texture = boost::make_shared<T>(delegate, id);
-    _TrackDelegateTexture(delegate, id, texture);
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //

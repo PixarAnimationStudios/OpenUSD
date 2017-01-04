@@ -254,7 +254,7 @@ Hd_UnitTestDelegate::AddTexture(SdfPath const& id,
                                 GlfTextureRefPtr const& texture)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertTexture<HdTexture>(this, id);
+    index.InsertBprim(HdPrimTypeTokens->texture, this, id);
     _textures[id] = _Texture(texture);
 }
 

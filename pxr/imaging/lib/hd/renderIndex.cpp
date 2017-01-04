@@ -67,7 +67,6 @@ HdRenderIndex::HdRenderIndex()
     , _rprimPrimIdMap()
     , _shaderMap()
     , _taskMap()
-    , _textureMap()
     , _sprimTypeMap()
     , _bprimTypeMap()
     , _tracker()
@@ -369,12 +368,6 @@ HdRenderIndex::Clear()
     }
     _taskMap.clear();
 
-    // Clear textures.
-    TF_FOR_ALL(it, _textureMap) {
-        _tracker.TextureRemoved(it->first);
-    }
-    _textureMap.clear();
-
     // After clearing the index, all collections must be invalidated to force
     // any dependent state to be updated.
     _tracker.MarkAllCollectionsDirty();
@@ -501,45 +494,6 @@ HdRenderIndex::RemoveTask(SdfPath const& id)
 
     _tracker.TaskRemoved(id);
     _taskMap.erase(it);
-}
-
-// -------------------------------------------------------------------------- //
-/// \name Texture Support
-// -------------------------------------------------------------------------- //
-
-void 
-HdRenderIndex::_TrackDelegateTexture(HdSceneDelegate* delegate, 
-                                    SdfPath const& textureId,
-                                    HdTextureSharedPtr const& texture)
-{
-    if (textureId == SdfPath())
-        return;
-    _tracker.TextureInserted(textureId);
-    _textureMap.insert(std::make_pair(textureId, texture));
-}
-
-HdTextureSharedPtr const& 
-HdRenderIndex::GetTexture(SdfPath const& id) const {
-    _TextureMap::const_iterator it = _textureMap.find(id);
-    if (it != _textureMap.end())
-        return it->second;
-
-    static HdTextureSharedPtr EMPTY;
-    return EMPTY;
-}
-
-void
-HdRenderIndex::RemoveTexture(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    _TextureMap::iterator it = _textureMap.find(id);
-    if (it == _textureMap.end())
-        return;
-
-    _tracker.TextureRemoved(id);
-    _textureMap.erase(it);
 }
 
 // -------------------------------------------------------------------------- //
@@ -1191,6 +1145,8 @@ HdRenderIndex::SyncAll()
 
     _RprimSyncRequestMap syncMap;
     bool resetVaryingState = false;
+    const _BprimMap &textureMap =
+                              _bprimTypeMap[HdPrimTypeTokens->texture].bprimMap;
 
     {
         TRACE_SCOPE("Build Sync Map: Textures");
@@ -1198,12 +1154,15 @@ HdRenderIndex::SyncAll()
         // We could/should try to be more sparse here, however finding the
         // intersection of textures used by prims in this RenderPass is currently
         // more expensive than just updating all textures.
-        TF_FOR_ALL(it, _textureMap) {
-            if (HdChangeTracker::IsClean(_tracker.GetTextureDirtyBits(it->first)))
+
+        TF_FOR_ALL(it, textureMap) {
+            if (HdChangeTracker::IsClean(_tracker.GetBprimDirtyBits(it->first)))
                 continue;
             syncMap[it->second->GetDelegate()].PushBackTexture(it->first);
         }
-    } {
+    }
+
+    {
         TRACE_SCOPE("Build Sync Map: Shaders");
         // Collect dirty shader IDs.
         // We could/should try to be more sparse here, however finding the
@@ -1214,7 +1173,9 @@ HdRenderIndex::SyncAll()
                 continue;
             syncMap[it->second->GetDelegate()].PushBackShader(it->first);
         }
-    } {
+    }
+
+    {
         TRACE_SCOPE("Build Sync Map: Rprims");
         // Collect dirty Rprim IDs.
         HdSceneDelegate* curdel = nullptr;
@@ -1284,14 +1245,14 @@ HdRenderIndex::SyncAll()
         HdSceneDelegate* delegate = dlgIt->first;
         _RprimSyncRequestVector& r = dlgIt->second;
 
+
         TF_FOR_ALL(textureID, r.request.textureIDs) {
-            HdTextureSharedPtr const* tex = 
-                                      TfMapLookupPtr(_textureMap, *textureID);
+            HdBprim* const*tex = TfMapLookupPtr(textureMap, *textureID);
             if (not tex)
                 continue;
 
             (*tex)->Sync();
-            _tracker.MarkTextureClean(*textureID, HdChangeTracker::Clean);
+            _tracker.MarkBprimClean(*textureID, HdTexture::Clean);
         }
 
         TF_FOR_ALL(shaderID, r.request.surfaceShaderIDs) {

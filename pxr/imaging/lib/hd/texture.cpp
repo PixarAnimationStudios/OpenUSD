@@ -33,8 +33,8 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 HdTexture::HdTexture(HdSceneDelegate* delegate, SdfPath const& id)
-    : _delegate(delegate)
-    , _id(id)
+  : HdBprim(delegate, id)
+  , _textureResource()
 {
 }
 
@@ -52,14 +52,12 @@ HdTexture::Sync()
     HdSceneDelegate* delegate = GetDelegate();
     HdChangeTracker& changeTracker = 
                                 delegate->GetRenderIndex().GetChangeTracker();    
-    HdChangeTracker::DirtyBits bits = changeTracker.GetTextureDirtyBits(id);
+    HdChangeTracker::DirtyBits bits = changeTracker.GetBprimDirtyBits(id);
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
     //       can be separated functionally and have different 
     //       delegate methods.
-    if (bits & HdChangeTracker::DirtyParams or 
-        bits & HdChangeTracker::DirtyTexture) {
-
+    if ((bits & (DirtyParams | DirtyTexture)) != 0) {
         HdResourceRegistry *resourceRegistry = 
                                             &HdResourceRegistry::GetInstance();
         HdTextureResource::ID texID = delegate->GetTextureResourceID(id);
@@ -111,6 +109,12 @@ HdTexture::Sync()
             }
         }
     }
+}
+
+int
+HdTexture::GetInitialDirtyBitsMask() const
+{
+    return AllDirty;
 }
 
 bool

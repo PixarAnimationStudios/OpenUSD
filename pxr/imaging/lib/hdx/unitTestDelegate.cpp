@@ -288,7 +288,7 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
     cache[HdxDrawTargetTokens->collection]      =
         VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
 
-    GetRenderIndex().InsertTexture<HdTexture>(this, id);
+    GetRenderIndex().InsertBprim(HdPrimTypeTokens->texture, this, id);
     _drawTargets[id] = _DrawTarget();
 
     GetRenderIndex().GetChangeTracker().MarkStateDirty(

@@ -38,7 +38,6 @@
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
 typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
-typedef boost::shared_ptr<class HdTexture> HdTextureSharedPtr;
 typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
 typedef std::vector<HdShaderSharedPtr> HdTextureSharedPtrVector;
 

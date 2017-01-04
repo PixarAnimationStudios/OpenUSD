@@ -189,8 +189,9 @@
     (camera)                                    \
     (light)                                     \
     (drawTarget)                                \
-
-
+                                                \
+    /* Bprims */                                \
+    (texture)
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
