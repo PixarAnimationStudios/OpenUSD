@@ -45,9 +45,13 @@
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_TOKENS);
 
 #define USDIMAGING_COLLECTION_TOKENS                    \
+    (geometryAllPurposes)                               \
     (geometryAndGuides)                                 \
-    (geometryAndInteractiveGuides)                      \
-    (geometryAndRenderGuides)
+    (geometryAndProxy)                                  \
+    (geometryAndProxyAndGuides)                         \
+    (geometryAndProxyAndRender)                         \
+    (geometryAndRenderAndGuides)                        \
+    (geometryAndRender)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionTokens, USDIMAGING_COLLECTION_TOKENS);
 

@@ -1185,7 +1185,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>27</height>
+     <height>26</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1327,10 +1327,12 @@
     </widget>
     <widget class="QMenu" name="menuDisplay">
      <property name="title">
-      <string>Display</string>
+      <string>Display Purposes...</string>
      </property>
-     <addaction name="actionDisplay_Guides"/>
-     <addaction name="actionDisplay_Rendering_Guides"/>
+     <addaction name="actionDisplay_Guide"/>
+     <addaction name="actionDisplay_Proxy"/>
+     <addaction name="actionDisplay_Render"/>
+     <addaction name="separator"/>
      <addaction name="actionDisplay_Camera_Oracles"/>
     </widget>
     <widget class="QMenu" name="menuBBox">
@@ -2062,20 +2064,20 @@
     <string>Ctrl+D</string>
    </property>
   </action>
-  <action name="actionDisplay_Guides">
+  <action name="actionDisplay_Guide">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Guides</string>
+    <string>Guide</string>
    </property>
   </action>
-  <action name="actionDisplay_Rendering_Guides">
+  <action name="actionDisplay_Render">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Rendering Guides</string>
+    <string>Render</string>
    </property>
   </action>
   <action name="actionDisplay_PrimId">
@@ -2504,6 +2506,14 @@
    </property>
    <property name="text">
     <string>Camera Oracles</string>
+   </property>
+  </action>
+  <action name="actionDisplay_Proxy">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Proxy</string>
    </property>
   </action>
  </widget>

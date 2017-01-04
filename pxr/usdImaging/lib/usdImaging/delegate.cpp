@@ -78,6 +78,38 @@ TF_DEFINE_PRIVATE_TOKENS(
 // -------------------------------------------------------------------------- //
 constexpr int UsdImagingDelegate::ALL_INSTANCES;
 
+void
+UsdImagingDelegate::_InitializeCollectionsByPurpose(HdChangeTracker &tracker)
+{
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAllPurposes);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndProxy);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndProxyAndGuides);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndProxyAndRender);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndRenderAndGuides);
+    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndRender);
+
+    // initialize pre-defined collections for compatibility
+    SetInCollection(HdTokens->geometry,
+                    PurposeDefault);
+    SetInCollection(UsdImagingCollectionTokens->geometryAllPurposes,
+                    PurposeDefault|PurposeGuide|PurposeProxy|PurposeRender);
+    SetInCollection(UsdImagingCollectionTokens->geometryAndGuides,
+                    PurposeDefault|PurposeGuide);
+    SetInCollection(UsdImagingCollectionTokens->geometryAndProxy,
+                    PurposeDefault|PurposeProxy);
+    SetInCollection(UsdImagingCollectionTokens->geometryAndProxyAndGuides,
+                    PurposeDefault|PurposeGuide|PurposeProxy);
+    SetInCollection(UsdImagingCollectionTokens->geometryAndProxyAndRender,
+                    PurposeDefault|PurposeProxy|PurposeRender);
+    SetInCollection(UsdImagingCollectionTokens->geometryAndRenderAndGuides,
+                    PurposeDefault|PurposeGuide|PurposeRender);
+    SetInCollection(UsdImagingCollectionTokens->geometryAndRender,
+                    PurposeDefault|PurposeRender);
+}
+
+
 UsdImagingDelegate::UsdImagingDelegate()
     : HdSceneDelegate()
     , _valueCache()
@@ -95,19 +127,7 @@ UsdImagingDelegate::UsdImagingDelegate()
 {
     // this constructor create a new render index.
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndInteractiveGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndRenderGuides);
-
-    // initialize pre-defined collections for compatibility
-    SetInCollection(HdTokens->geometry,
-                    PurposeDefault|PurposeProxy);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndGuides,
-                    PurposeDefault|PurposeGuide|PurposeProxy|PurposeRender);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndInteractiveGuides,
-                    PurposeDefault|PurposeGuide|PurposeProxy);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndRenderGuides,
-                    PurposeDefault|PurposeProxy|PurposeRender);
+    _InitializeCollectionsByPurpose(tracker);
 }
 
 UsdImagingDelegate::UsdImagingDelegate(
@@ -128,19 +148,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
 {
     HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndInteractiveGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndRenderGuides);
-
-    // initialize pre-defined collections for compatibility
-    SetInCollection(HdTokens->geometry,
-                    PurposeDefault|PurposeProxy);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndGuides,
-                    PurposeDefault|PurposeGuide|PurposeProxy|PurposeRender);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndInteractiveGuides,
-                    PurposeDefault|PurposeGuide|PurposeProxy);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndRenderGuides,
-                    PurposeDefault|PurposeProxy|PurposeRender);
+    _InitializeCollectionsByPurpose(tracker);
 }
 
 UsdImagingDelegate::~UsdImagingDelegate()

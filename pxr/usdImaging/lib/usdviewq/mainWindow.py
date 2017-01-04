@@ -715,13 +715,17 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self._adjustComplexity)
         
-        QtCore.QObject.connect(self._ui.actionDisplay_Guides,
+        QtCore.QObject.connect(self._ui.actionDisplay_Guide,
                                QtCore.SIGNAL('toggled(bool)'),
-                               self._toggleDisplayGuides)
+                               self._toggleDisplayGuide)
 
-        QtCore.QObject.connect(self._ui.actionDisplay_Rendering_Guides,
+        QtCore.QObject.connect(self._ui.actionDisplay_Proxy,
                                QtCore.SIGNAL('toggled(bool)'),
-                               self._toggleDisplayRenderingGuides)
+                               self._toggleDisplayProxy)
+
+        QtCore.QObject.connect(self._ui.actionDisplay_Render,
+                               QtCore.SIGNAL('toggled(bool)'),
+                               self._toggleDisplayRender)
 
         QtCore.QObject.connect(self._ui.actionDisplay_Camera_Oracles,
                                QtCore.SIGNAL('toggled(bool)'),
@@ -1857,13 +1861,17 @@ class MainWindow(QtGui.QMainWindow):
         self._stageView.showBBoxes = self._settings.get("ShowBBoxes", True) 
         self._ui.showBBoxes.setChecked(self._stageView.showBBoxes)
 
-        displayGuides = self._settings.get("DisplayGuides", False)
-        self._ui.actionDisplay_Guides.setChecked(displayGuides)
-        self._stageView.setDisplayGuides(displayGuides)
+        displayGuide = self._settings.get("DisplayGuide", False)
+        self._ui.actionDisplay_Guide.setChecked(displayGuide)
+        self._stageView.setDisplayGuide(displayGuide)
 
-        displayRenderingGuides = self._settings.get("DisplayRenderingGuides", False)
-        self._ui.actionDisplay_Rendering_Guides.setChecked(displayRenderingGuides)
-        self._stageView.setDisplayRenderingGuides(displayRenderingGuides)
+        displayProxy = self._settings.get("DisplayProxy", True)
+        self._ui.actionDisplay_Proxy.setChecked(displayProxy)
+        self._stageView.setDisplayProxy(displayProxy)
+
+        displayRender = self._settings.get("DisplayRender", False)
+        self._ui.actionDisplay_Render.setChecked(displayRender)
+        self._stageView.setDisplayRender(displayRender)
 
         displayCameraOracles = self._settings.get("DisplayCameraOracles", False)
         self._ui.actionDisplay_Camera_Oracles.setChecked(displayCameraOracles)
@@ -2179,16 +2187,23 @@ class MainWindow(QtGui.QMainWindow):
                                 self._currentFrame,
                                 forceComputeBBox=True)
 
-    def _toggleDisplayGuides(self, checked):
-        self._settings.setAndSave(DisplayGuides=checked)
-        self._stageView.setDisplayGuides(checked)
+    def _toggleDisplayGuide(self, checked):
+        self._settings.setAndSave(DisplayGuide=checked)
+        self._stageView.setDisplayGuide(checked)
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
 
-    def _toggleDisplayRenderingGuides(self, checked):
-        self._settings.setAndSave(DisplayRenderingGuides=checked)
-        self._stageView.setDisplayRenderingGuides(checked)
+    def _toggleDisplayProxy(self, checked):
+        self._settings.setAndSave(DisplayProxy=checked)
+        self._stageView.setDisplayProxy(checked)
+        self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+        self._updateAttributeView()
+        self._stageView.update()
+
+    def _toggleDisplayRender(self, checked):
+        self._settings.setAndSave(DisplayRender=checked)
+        self._stageView.setDisplayRender(checked)
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
@@ -2197,12 +2212,6 @@ class MainWindow(QtGui.QMainWindow):
         self._settings.setAndSave(DisplayCameraGuides=checked)
         self._stageView.setDisplayCameraOracles(checked)
         self._stageView.update()
-
-    def _IsDisplayGuidesEnabled(self):
-        return self._ui.actionDisplay_Guides.isChecked()
-
-    def _IsDisplayRenderingGuidesEnabled(self):
-        return self._ui.actionDisplay_Rendering_Guides.isChecked()
 
     def _toggleDisplayPrimId(self, checked):
         self._settings.setAndSave(DisplayPrimId=checked)

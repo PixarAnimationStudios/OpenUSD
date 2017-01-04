@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file engine.h
+/// \file usdImagingGL/engine.h
 
 #pragma once
 
@@ -87,7 +87,8 @@ public:
         float complexity;
         DrawMode drawMode;
         bool showGuides;
-        bool showRenderGuides;
+        bool showProxy;
+        bool showRender;
         bool forceRefresh;
         bool flipFrontFacing;
         CullStyle cullStyle;
@@ -108,7 +109,8 @@ public:
             complexity(1.0),
             drawMode(DRAW_SHADED_SMOOTH),
             showGuides(false),
-            showRenderGuides(false),
+            showProxy(true),
+            showRender(false),
             forceRefresh(false),
             flipFrontFacing(false),
             cullStyle(CULL_STYLE_NOTHING),
@@ -131,7 +133,8 @@ public:
                 && complexity                  == other.complexity
                 && drawMode                    == other.drawMode
                 && showGuides                  == other.showGuides
-                && showRenderGuides            == other.showRenderGuides
+                && showProxy                   == other.showProxy
+                && showRender                  == other.showRender
                 && forceRefresh                == other.forceRefresh
                 && flipFrontFacing             == other.flipFrontFacing
                 && cullStyle                   == other.cullStyle

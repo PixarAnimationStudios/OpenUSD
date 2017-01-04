@@ -633,15 +633,20 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
                 visible = false;
             }
 
-            // Guides and Rendering Guides are not displayed by default.
+            // Treat only the purposes we've been asked to show as visible
             TfToken purpose;
             if (*primIt != pseudoRoot
                 && primIt->GetAttribute(UsdGeomTokens->purpose)
                                             .Get(&purpose, _params.frame)
-                && ((
-                   (purpose == UsdGeomTokens->guide && !_params.showGuides))
-                || (purpose == UsdGeomTokens->render
-                        && !_params.showRenderGuides))) {
+                && purpose != UsdGeomTokens->default_  // fast/common out
+                && (
+                     (purpose == UsdGeomTokens->guide 
+                       && !_params.showGuides)
+                     || (purpose == UsdGeomTokens->render
+                         && !_params.showRender)
+                     || (purpose == UsdGeomTokens->proxy
+                         && !_params.showProxy))
+                ) {
                 visible = false;
             }
 

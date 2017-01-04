@@ -532,6 +532,9 @@ private:
     // This will never return a nullptr.  
     _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
 
+    // Innitialization shared by ctors
+    void _InitializeCollectionsByPurpose(HdChangeTracker &tracker);
+
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
     tbb::spin_rw_mutex _indexToUsdPathMapMutex;

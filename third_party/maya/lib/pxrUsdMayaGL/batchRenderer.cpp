@@ -158,14 +158,16 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
     _baseParams.frame = time;
     _baseParams.refineLevel = refineLevel;
 
+    // XXX Not yet adding ability to turn off display of proxy geometry, but
+    // we should at some point, as in usdview
     if( showGuides )
         _baseParams.geometryCol =
-            showRenderGuides ? UsdImagingCollectionTokens->geometryAndGuides
-                             : UsdImagingCollectionTokens->geometryAndInteractiveGuides;
+            showRenderGuides ? UsdImagingCollectionTokens->geometryAllPurposes
+                             : UsdImagingCollectionTokens->geometryAndProxyAndGuides;
     else
         _baseParams.geometryCol =
-            showRenderGuides ? UsdImagingCollectionTokens->geometryAndRenderGuides
-                             : HdTokens->geometry;
+            showRenderGuides ? UsdImagingCollectionTokens->geometryAndProxyAndRender
+                             : UsdImagingCollectionTokens->geometryAndProxy;
     
     if( tint )
         _baseParams.overrideColor = tintColor;

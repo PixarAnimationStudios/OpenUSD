@@ -518,7 +518,7 @@ UsdImagingGLHdEngine::Render(HdRenderIndex& index, RenderParams params)
 
     // TODO:
     //  * forceRefresh
-    //  * showGuides, showRenderGuides
+    //  * showGuides, showRender, showProxy
     //  * gammaCorrectColors
 
     if (params.applyRenderState) {

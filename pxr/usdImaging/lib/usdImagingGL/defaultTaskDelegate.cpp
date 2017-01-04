@@ -244,16 +244,24 @@ UsdImagingGL_DefaultTaskDelegate::SetCollectionAndRenderParams(
         }
     }
 
-    // By default, don't show any guides.
+    // By default, show only default geometry, and default is *always* included
     TfToken colName = HdTokens->geometry;
 
-    // Pickup guide geometry if requested:
-    if (params.showGuides && !params.showRenderGuides) {
-        colName = UsdImagingCollectionTokens->geometryAndInteractiveGuides;
-    } else if (!params.showGuides && params.showRenderGuides) {
-        colName = UsdImagingCollectionTokens->geometryAndRenderGuides;
-    } else if (params.showGuides && params.showRenderGuides) {
-        colName = UsdImagingCollectionTokens->geometryAndGuides;
+    // Pickup proxy, guide, and render geometry if requested:
+    if (params.showGuides && !params.showRender) {
+        colName = params.showProxy ?
+            UsdImagingCollectionTokens->geometryAndProxyAndGuides :
+            UsdImagingCollectionTokens->geometryAndGuides;
+    } else if (!params.showGuides && params.showRender) {
+        colName = params.showProxy ?
+            UsdImagingCollectionTokens->geometryAndProxyAndRender :
+            UsdImagingCollectionTokens->geometryAndRender;
+    } else if (params.showGuides && params.showRender) {
+        colName = params.showProxy ?
+            UsdImagingCollectionTokens->geometryAllPurposes :
+            UsdImagingCollectionTokens->geometryAndRenderAndGuides;
+    } else if (params.showProxy){
+        colName = UsdImagingCollectionTokens->geometryAndProxy;
     }
 
     _UpdateCollection(&_rprims, colName, repr, roots,

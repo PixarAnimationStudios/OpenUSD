@@ -1066,8 +1066,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._upperHUDInfo = dict()
         self._HUDStatKeys = list()
 
-        self._displayGuides = False
-        self._displayRenderingGuides = False
+        self._displayGuide = False
+        self._displayProxy  = True
+        self._displayRender = False
         self._displayCameraOracles = False
         self._displayPrimId = False
         self._cullBackfaces = True
@@ -1296,15 +1297,20 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glUseProgram(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def _updateBboxGuides(self):
+    def _updateBboxPurposes(self):
         includedPurposes =  set(self._bboxCache.GetIncludedPurposes())
 
-        if self._displayGuides:
+        if self._displayGuide:
             includedPurposes.add(UsdGeom.Tokens.guide)
         elif UsdGeom.Tokens.guide in includedPurposes:
             includedPurposes.remove(UsdGeom.Tokens.guide)
 
-        if self._displayRenderingGuides:
+        if self._displayProxy:
+            includedPurposes.add(UsdGeom.Tokens.proxy)
+        elif UsdGeom.Tokens.proxy in includedPurposes:
+            includedPurposes.remove(UsdGeom.Tokens.proxy)
+
+        if self._displayRender:
             includedPurposes.add(UsdGeom.Tokens.render)
         elif UsdGeom.Tokens.render in includedPurposes:
             includedPurposes.remove(UsdGeom.Tokens.render)
@@ -1314,13 +1320,17 @@ class StageView(QtOpenGL.QGLWidget):
         self._bbox = Gf.BBox3d()
 
     # XXX Why aren't these @properties?
-    def setDisplayGuides(self, enabled):
-        self._displayGuides = enabled
-        self._updateBboxGuides()
+    def setDisplayGuide(self, enabled):
+        self._displayGuide = enabled
+        self._updateBboxPurposes()
 
-    def setDisplayRenderingGuides(self, enabled):
-        self._displayRenderingGuides = enabled
-        self._updateBboxGuides()
+    def setDisplayProxy(self, enabled):
+        self._displayProxy = enabled
+        self._updateBboxPurposes()
+
+    def setDisplayRender(self, enabled):
+        self._displayRender = enabled
+        self._updateBboxPurposes()
 
     def setDisplayCameraOracles(self, enabled):
         self._displayCameraOracles = enabled
@@ -1455,8 +1465,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.frame = self._currentFrame
         self._renderParams.complexity = self.complexity
         self._renderParams.drawMode = renderMode
-        self._renderParams.showGuides = self._displayGuides
-        self._renderParams.showRenderGuides = self._displayRenderingGuides
+        self._renderParams.showGuides = self._displayGuide
+        self._renderParams.showProxy = self._displayProxy
+        self._renderParams.showRender = self._displayRender
         self._renderParams.forceRefresh = self._forceRefresh
         self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
                                                if self._cullBackfaces
@@ -2012,8 +2023,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.frame = self._currentFrame
         self._renderParams.complexity = self.complexity
         self._renderParams.drawMode = self._renderModeDict[self.renderMode]
-        self._renderParams.showGuides = self._displayGuides
-        self._renderParams.showRenderGuides = self._displayRenderingGuides
+        self._renderParams.showGuides = self._displayGuide
+        self._renderParams.showProxy = self._displayProxy
+        self._renderParams.showRender = self._displayRender
         self._renderParams.forceRefresh = self._forceRefresh
         self._renderParams.cullStyle =  (UsdImagingGL.GL.CullStyle.CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
                                                if self._cullBackfaces
