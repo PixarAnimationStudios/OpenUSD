@@ -121,7 +121,7 @@ def CreateModelStage(assetName,
         # If we didn't specify a default selection, choose the first one
         if not defaultVariantSelection:
             defaultVariantSelection = variantName
-        varSet.FindOrCreateVariant(variantName)
+        varSet.AppendVariant(variantName)
         varSet.SetVariantSelection(variantName)
         # The context object makes all edits "go inside" the variant we
         # just created.

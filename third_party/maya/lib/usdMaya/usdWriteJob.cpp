@@ -431,8 +431,8 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
         if (!tableOfActivePaths.empty()) {
             { // == BEG: Scope for Variant EditContext
                 // Create the variantSet and variant
-                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().FindOrCreate("modelingVariant");
-                modelingVariantSet.FindOrCreateVariant(variantName);
+                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().AppendVariantSet("modelingVariant");
+                modelingVariantSet.AppendVariant(variantName);
                 modelingVariantSet.SetVariantSelection(variantName);
                 // Set the Edit Context
                 UsdEditTarget editTarget = modelingVariantSet.GetVariantEditTarget();

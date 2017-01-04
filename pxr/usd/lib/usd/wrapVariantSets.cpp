@@ -64,7 +64,7 @@ _GetVariantEditContext(const UsdVariantSet &self, const SdfLayerHandle &layer) {
 void wrapUsdVariantSets()
 {
     class_<UsdVariantSet>("VariantSet", no_init)
-        .def("FindOrCreateVariant", &UsdVariantSet::FindOrCreateVariant,
+        .def("AppendVariant", &UsdVariantSet::AppendVariant,
              arg("variantName"))
         .def("GetVariantNames", &UsdVariantSet::GetVariantNames,
              return_value_policy<TfPySequenceToList>())
@@ -87,7 +87,7 @@ void wrapUsdVariantSets()
         ;
 
     class_<UsdVariantSets>("VariantSets", no_init)
-        .def("FindOrCreate", &UsdVariantSets::FindOrCreate,
+        .def("AppendVariantSet", &UsdVariantSets::AppendVariantSet,
              arg("variantSetName"))
         .def("GetNames", _GetNames, return_value_policy<TfPySequenceToList>())
         .def("GetVariantSet", &UsdVariantSets::GetVariantSet,

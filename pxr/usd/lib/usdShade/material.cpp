@@ -221,7 +221,7 @@ UsdShadeMaterial::GetEditContextForVariant(const TfToken &materialVariation,
     
     UsdVariantSet materialVariant = prim.GetVariantSet(_tokens->materialVariantName);
     UsdEditTarget target = stage->GetEditTarget();
-    if (materialVariant.FindOrCreateVariant(materialVariation) && 
+    if (materialVariant.AppendVariant(materialVariation) && 
         materialVariant.SetVariantSelection(materialVariation)) {
         target = materialVariant.GetVariantEditTarget(layer);
     }
@@ -311,7 +311,7 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
 
     UsdVariantSet masterSet = masterPrim.GetVariantSet(masterSetName);
     TF_FOR_ALL(varName, allMaterialVariants){
-        if (!masterSet.FindOrCreateVariant(*varName)){
+        if (!masterSet.AppendVariant(*varName)){
             TF_RUNTIME_ERROR("Unable to create Material variant %s on prim %s. "
                              "Aborting master materialVariant creation.",
                              varName->c_str(),

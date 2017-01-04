@@ -46,9 +46,9 @@ using std::vector;
 // ---------------------------------------------------------------------- //
 
 bool
-UsdVariantSet::FindOrCreateVariant(const std::string& variantName)
+UsdVariantSet::AppendVariant(const std::string& variantName)
 {
-    if (SdfVariantSetSpecHandle varSet = _FindOrCreateVariantSet()){
+    if (SdfVariantSetSpecHandle varSet = _AppendVariantSet()){
         // If the variant spec already exists, we don't need to create it
         for (const auto& variant : varSet->GetVariants()) {
             if (variant->GetName() == variantName){
@@ -187,10 +187,10 @@ UsdVariantSet::_CreatePrimSpecForEditing(const SdfPath &path)
     return _prim.GetStage()->_CreatePrimSpecForEditing(path);
 }
 
-
 SdfVariantSetSpecHandle
-UsdVariantSet::_FindOrCreateVariantSet()
+UsdVariantSet::_AppendVariantSet()
 {
+    SdfVariantSetSpecHandle result;
     SdfPath const &primPath = _prim.GetPrimPath();
     SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(primPath); 
     if (primSpec){
@@ -200,25 +200,18 @@ UsdVariantSet::_FindOrCreateVariantSet()
         // the empty path
         SdfPath varSetPath = primSpec->GetPath()
             .AppendVariantSelection(_variantSetName, string());
-        if (varSetPath.IsEmpty())
-            return SdfVariantSetSpecHandle();
-        SdfLayerHandle layer = primSpec->GetLayer();
-        if (SdfSpecHandle spec = layer->GetObjectAtPath(varSetPath)){
-            return TfDynamic_cast<SdfVariantSetSpecHandle>(spec);
+        if (!varSetPath.IsEmpty()) {
+            SdfLayerHandle layer = primSpec->GetLayer();
+            if (SdfSpecHandle spec = layer->GetObjectAtPath(varSetPath)){
+                result = TfDynamic_cast<SdfVariantSetSpecHandle>(spec);
+            } else {
+                result = SdfVariantSetSpec::New(primSpec, _variantSetName);
+                primSpec->GetVariantSetNameList().Add(_variantSetName);
+            }
         }
-        // Otherwise, we must create a new spec, AND add it to the prim's
-        // list.  Not sure why these need to be two separate steps...
-        SdfVariantSetSpecHandle varSet = 
-            SdfVariantSetSpec::New(primSpec, _variantSetName);
-        SdfVariantSetNamesProxy  setsProxy = primSpec->GetVariantSetNameList();
-        setsProxy.Add(_variantSetName);
-        return varSet;
     }
-
-    return SdfVariantSetSpecHandle();
+    return result;
 }
-
-
 
 // ---------------------------------------------------------------------- //
 // UsdVariantSets: Public Methods
@@ -238,11 +231,11 @@ UsdVariantSets::GetVariantSet(const std::string& variantSetName) const
 }
 
 UsdVariantSet
-UsdVariantSets::FindOrCreate(const std::string& variantSetName)
+UsdVariantSets::AppendVariantSet(const std::string& variantSetName)
 {
-    UsdVariantSet   varSet = GetVariantSet(variantSetName);
+    UsdVariantSet varSet = GetVariantSet(variantSetName);
 
-    varSet._FindOrCreateVariantSet();
+    varSet._AppendVariantSet();
 
     // If everything went well, this will return a valid VariantSet.  If not,
     // you'll get an error when you try to use it, which seems good.
