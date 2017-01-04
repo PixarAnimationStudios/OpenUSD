@@ -42,7 +42,7 @@ void
 SdfData::EraseSpec(const SdfAbstractDataSpecId& id)
 {
     _HashTable::iterator i = _data.find(id.GetFullSpecPath());
-    if (not TF_VERIFY(i != _data.end(), 
+    if (!TF_VERIFY(i != _data.end(), 
             "No spec to erase at <%s>", id.GetString().c_str())) {
         return;
     }
@@ -57,12 +57,12 @@ SdfData::MoveSpec(const SdfAbstractDataSpecId& oldId,
     const SdfPath newPath = newId.GetFullSpecPath();
 
     _HashTable::iterator old = _data.find(oldPath);
-    if (not TF_VERIFY(old != _data.end(),
+    if (!TF_VERIFY(old != _data.end(),
             "No spec to move at <%s>", oldPath.GetString().c_str())) {
         return;
     }
     bool inserted = _data.insert(std::make_pair(newPath,old->second)).second;
-    if (not TF_VERIFY(inserted)) {
+    if (!TF_VERIFY(inserted)) {
         return;
     }
     _data.erase(old);
@@ -81,7 +81,7 @@ SdfData::GetSpecType(const SdfAbstractDataSpecId& id) const
 void
 SdfData::CreateSpec(const SdfAbstractDataSpecId& id, SdfSpecType specType)
 {
-    if (not TF_VERIFY(specType != SdfSpecTypeUnknown)) {
+    if (!TF_VERIFY(specType != SdfSpecTypeUnknown)) {
         return;
     }
     _data[id.GetFullSpecPath()].specType = specType;
@@ -91,7 +91,7 @@ void
 SdfData::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
 {
     TF_FOR_ALL(it, _data) {
-        if (not visitor->VisitSpec(*this, SdfAbstractDataSpecId(&it->first))) {
+        if (!visitor->VisitSpec(*this, SdfAbstractDataSpecId(&it->first))) {
             break;
         }
     }
@@ -181,7 +181,7 @@ SdfData::_GetOrCreateFieldValue(const SdfAbstractDataSpecId& id,
                                 const TfToken& field)
 {
     _HashTable::iterator i = _data.find(id.GetFullSpecPath());
-    if (not TF_VERIFY(i != _data.end(),
+    if (!TF_VERIFY(i != _data.end(),
                       "No spec at <%s> when trying to set field '%s'",
                       id.GetString().c_str(), field.GetText())) {
         return NULL;
@@ -375,7 +375,7 @@ SdfData::QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
         auto const &tsmap = fval->UncheckedGet<SdfTimeSampleMap>();
         auto iter = tsmap.find(time);
         if (iter != tsmap.end()) {
-            return not value or value->StoreValue(iter->second);
+            return !value || value->StoreValue(iter->second);
         }
     }
     return false;

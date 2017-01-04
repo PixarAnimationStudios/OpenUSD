@@ -363,7 +363,7 @@ public:
     /// \c true otherwise.
     bool operator!() const
     {
-        return not _view.IsValid();
+        return !_view.IsValid();
     }
 
 private:
@@ -400,7 +400,7 @@ private:
 
     bool _Validate(int permission)
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return false;
         }
         if ((_permission & permission) == permission) {
@@ -477,7 +477,7 @@ struct Tf_ShouldIterateOverCopy<SdfChildrenProxy<_View> > : boost::true_type
 template <class _View>
 struct Vt_DefaultValueFactory<SdfChildrenProxy<_View> > {
     static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false and "Failed VtValue::Get<SdfChildrenProxy> not allowed");
+        TF_AXIOM(false && "Failed VtValue::Get<SdfChildrenProxy> not allowed");
         return Vt_DefaultValueHolder::Create((void*)0);
     }
 };

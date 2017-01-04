@@ -44,7 +44,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    if (op != SdfListOpTypeAdded and op != SdfListOpTypeExplicit) {
+    if (op != SdfListOpTypeAdded && op != SdfListOpTypeExplicit) {
         return;
     }
 
@@ -59,7 +59,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
                         newItemSet.begin(), newItemSet.end(), 
                         std::back_inserter(childrenToRemove));
     TF_FOR_ALL(child, childrenToRemove) {
-        if (not Sdf_ChildrenUtils<ChildPolicy>::RemoveChild(
+        if (!Sdf_ChildrenUtils<ChildPolicy>::RemoveChild(
                 layer, propertyPath, *child)) {
 
             const SdfPath specPath = 
@@ -79,7 +79,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
             continue;
         }
 
-        if (not Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(layer, specPath,
+        if (!Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(layer, specPath,
                 specType)) {
             TF_CODING_ERROR("Failed to create spec at <%s>", specPath.GetText());
         }

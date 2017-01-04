@@ -146,16 +146,16 @@ SdfTextFileFormat::Read(
     TRACE_FUNCTION();
 
     Sdf_ScopedFilePointer fp(resolvedPath.c_str());
-    if (not *fp)
+    if (!*fp)
         return false;
 
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
-    if (not Sdf_ParseMenva(resolvedPath, *fp, 
+    if (!Sdf_ParseMenva(resolvedPath, *fp, 
                            GetFormatId(),
                            GetVersionString(),
                            metadataOnly,
@@ -184,7 +184,7 @@ struct Sdf_IsLayerMetadataField : public Sdf_IsMetadataField
     
     bool operator()(const TfToken& field) const
     { 
-        return (Sdf_IsMetadataField::operator()(field) or
+        return (Sdf_IsMetadataField::operator()(field) ||
             field == SdfFieldKeys->SubLayers);
     }
 };
@@ -223,7 +223,7 @@ _WriteLayerToMenva(
         std::partition(fields.begin(), fields.end(), Sdf_IsLayerMetadataField());
 
     // Write comment at the top of the metadata section for readability.
-    if (not comment.empty())
+    if (!comment.empty())
     {
         _WriteQuotedString(header, 1, comment);
         _Write(header, 0, "\n");
@@ -238,7 +238,7 @@ _WriteLayerToMenva(
         const TfToken& field = *fieldIt;
 
         if (field == SdfFieldKeys->Documentation) {
-            if (not l->GetDocumentation().empty()) {
+            if (!l->GetDocumentation().empty()) {
                 _Write(header, 1, "doc = ");
                 _WriteQuotedString(header, 0, l->GetDocumentation());
                 _Write(header, 0, "\n");
@@ -270,7 +270,7 @@ _WriteLayerToMenva(
 
     // Write header if not empty.
     string headerStr = header.str();
-    if (not headerStr.empty()) {
+    if (!headerStr.empty()) {
         _Write(out, 0, "(\n");
         _Write(out, 0, headerStr.c_str());
         _Write(out, 0, ")\n");
@@ -309,14 +309,14 @@ SdfTextFileFormat::WriteToFile(
     // open file
     string reason;
     TfAtomicOfstreamWrapper wrapper(filePath);
-    if (not wrapper.Open(&reason)) {
+    if (!wrapper.Open(&reason)) {
         TF_RUNTIME_ERROR(reason);
         return false;
     }
 
     bool ok = Write(layerBase, wrapper.GetStream(), comment);
 
-    if (ok and not wrapper.Commit(&reason)) {
+    if (ok && !wrapper.Commit(&reason)) {
         TF_RUNTIME_ERROR(reason);
         return false;
     }
@@ -330,12 +330,12 @@ SdfTextFileFormat::ReadFromString(
     const std::string& str) const
 {
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
-    if (not Sdf_ParseMenvaFromString(str, 
+    if (!Sdf_ParseMenvaFromString(str, 
                                      GetFormatId(),
                                      GetVersionString(),
                                      TfDynamic_cast<SdfDataRefPtr>(data))) {
@@ -362,7 +362,7 @@ SdfTextFileFormat::WriteToString(
     const std::string& comment) const
 {
     std::stringstream ostr;
-    if (not Write(layerBase, ostr, comment)) {
+    if (!Write(layerBase, ostr, comment)) {
         return false;
     }
 
@@ -387,7 +387,7 @@ SdfTextFileFormat::Write(
     TRACE_FUNCTION();
 
     const SdfLayer *layer = dynamic_cast<const SdfLayer *>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 

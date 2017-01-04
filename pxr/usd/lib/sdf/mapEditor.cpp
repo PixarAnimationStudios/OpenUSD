@@ -63,7 +63,7 @@ public:
         _field(field)
     {
         const VtValue& dataVal = _owner->GetField(_field);
-        if (not dataVal.IsEmpty()) {
+        if (!dataVal.IsEmpty()) {
             if (dataVal.IsHolding<T>()) {
                 _data = dataVal.Get<T>();
             }
@@ -87,7 +87,7 @@ public:
 
     virtual bool IsExpired() const
     {
-        return not _owner;
+        return !_owner;
     }
 
     virtual const T* GetData() const

@@ -195,7 +195,7 @@ template <typename T>
 void 
 SdfListOp<T>::ApplyOperations(ItemVector* vec, const ApplyCallback& cb) const
 {
-    if (not vec) {
+    if (!vec) {
         return;
     }
 
@@ -346,7 +346,7 @@ SdfListOp<T>::_ReorderKeys(
             typename _ApplyList::iterator e = j->second;
             do {
                 ++e;
-            } while (e != scratch.end() and orderSet.count(*e) == 0);
+            } while (e != scratch.end() && orderSet.count(*e) == 0);
 
             // Move the sequence to result.
             result->splice(result->end(), scratch, j->second, e);
@@ -370,7 +370,7 @@ _ModifyCallbackHelper(const typename SdfListOp<T>::ModifyCallback& cb,
     std::vector<T> modifiedVector;
     TF_FOR_ALL(item, *itemVector) {
         boost::optional<T> modifiedItem = cb(*item);
-        if (not modifiedItem) {
+        if (!modifiedItem) {
             didModify = true;
         }
         else if (*modifiedItem != *item) {
@@ -410,8 +410,8 @@ SdfListOp<T>::ReplaceOperations(const SdfListOpType op, size_t index, size_t n,
                                const ItemVector& newItems)
 {
     bool needsModeSwitch = 
-        (IsExplicit() and op != SdfListOpTypeExplicit) or
-        (not IsExplicit() and op == SdfListOpTypeExplicit);
+        (IsExplicit() && op != SdfListOpTypeExplicit) ||
+        (!IsExplicit() && op == SdfListOpTypeExplicit);
 
     // XXX: This behavior was copied from GdListEditor, which
     //      appears to have been copied from old Sd code...
@@ -421,7 +421,7 @@ SdfListOp<T>::ReplaceOperations(const SdfListOpType op, size_t index, size_t n,
     //      we insert into a list we should automatically change
     //      modes, but if we replace or remove then we should
     //      silently ignore the request.
-    if (needsModeSwitch and (n > 0 or newItems.empty())) {
+    if (needsModeSwitch && (n > 0 || newItems.empty())) {
         return false;
     }
 
@@ -499,7 +499,7 @@ template <class ItemType>
 void SdfApplyListOrdering(std::vector<ItemType>* v, 
                          const std::vector<ItemType>& order)
 {
-    if (not order.empty() and not v->empty()) {
+    if (!order.empty() && !v->empty()) {
         // XXX: This is lame, but just for now...
         SdfListOp<ItemType> tmp;
         tmp.SetOrderedItems(order);
@@ -518,7 +518,7 @@ _StreamOutItems(
     const std::vector<T> &items,
     bool *firstItems)
 {
-    if (not items.empty()) {
+    if (!items.empty()) {
         out << (*firstItems ? "" : ", ") << itemsName << " Items: [";
         *firstItems = false;
         TF_FOR_ALL(it, items) {
@@ -580,7 +580,7 @@ struct Sdf_ListOpTraits<SdfUnregisteredValue>
             if (xHash < yHash) {
                 return true;
             }
-            else if (xHash > yHash or x == y) {
+            else if (xHash > yHash || x == y) {
                 return false;
             }
 

@@ -63,7 +63,7 @@ SdfLayerOffset::SdfLayerOffset(double offset, double scale) :
 bool
 SdfLayerOffset::IsValid() const
 {
-    return std::isfinite(_offset) and std::isfinite(_scale);
+    return std::isfinite(_offset) && std::isfinite(_scale);
 }
 
 SdfLayerOffset SdfLayerOffset::GetInverse() const
@@ -98,18 +98,18 @@ bool
 SdfLayerOffset::operator==(const SdfLayerOffset &rhs) const
 {
     // Use EPSILON so that 0 == -0, for example.
-    return (not IsValid() and not rhs.IsValid()) or
-           (GfIsClose(_offset, rhs._offset, EPSILON) and
+    return (!IsValid() && !rhs.IsValid()) ||
+           (GfIsClose(_offset, rhs._offset, EPSILON) &&
             GfIsClose(_scale, rhs._scale, EPSILON));
 }
 
 bool
 SdfLayerOffset::operator<(const SdfLayerOffset &rhs) const
 {
-    if (not IsValid()) {
+    if (!IsValid()) {
         return false;
     }
-    if (not rhs.IsValid()) {
+    if (!rhs.IsValid()) {
         return true;
     }
     if (GfIsClose(_scale, rhs._scale, EPSILON)) {

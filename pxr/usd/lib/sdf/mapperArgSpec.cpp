@@ -49,12 +49,12 @@ SdfMapperArgSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner mapper");
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR("Cannot create mapper arg on %s with "
             "invalid name: '%s'", owner->GetPath().GetText(), name.c_str());
         return TfNullPtr;
@@ -76,7 +76,7 @@ SdfMapperArgSpec::New(
 
     SdfChangeBlock block;
 
-    if (not Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::CreateSpec(
 	    owner->GetLayer(), argPath, SdfSpecTypeMapperArg)) {
         return TfNullPtr;
     }

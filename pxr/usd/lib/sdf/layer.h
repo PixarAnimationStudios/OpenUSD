@@ -456,7 +456,7 @@ public:
     bool HasField(const SdfAbstractDataSpecId& id, const TfToken &name, 
         T* value) const
     {
-        if (not value) {
+        if (!value) {
             return HasField(id, name, static_cast<VtValue *>(NULL));
         }
 
@@ -465,10 +465,10 @@ public:
             id, name, static_cast<SdfAbstractDataValue *>(&outValue));
 
         if (std::is_same<T, SdfValueBlock>::value) {
-            return hasValue and outValue.isValueBlock;
+            return hasValue && outValue.isValueBlock;
         }
 
-        return hasValue and (not outValue.isValueBlock);
+        return hasValue && (!outValue.isValueBlock);
     }
 
     /// Return whether a value exists for the given \a id and \a fieldName and
@@ -491,7 +491,7 @@ public:
     bool HasFieldDictKey(const SdfAbstractDataSpecId& id, const TfToken &name,
                          const TfToken &keyPath, T* value) const
     {
-        if (not value) {
+        if (!value) {
             return HasFieldDictKey(id, name, keyPath,
                                    static_cast<VtValue *>(NULL));
         }
@@ -1114,7 +1114,7 @@ public:
     bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time, 
                          T* data) const
     {
-        if (not data) {
+        if (!data) {
             return QueryTimeSample(id, time);
         }
 
@@ -1123,10 +1123,10 @@ public:
             id, time, static_cast<SdfAbstractDataValue *>(&outValue));
 
         if (std::is_same<T, SdfValueBlock>::value) {
-            return hasValue and outValue.isValueBlock;
+            return hasValue && outValue.isValueBlock;
         }
 
-        return hasValue and (not outValue.isValueBlock);
+        return hasValue && (!outValue.isValueBlock);
     }
 
     void SetTimeSample(const SdfAbstractDataSpecId& id, double time, 
@@ -1221,7 +1221,7 @@ private:
     bool _WaitForInitializationAndCheckIfSuccessful();
 
     // Returns whether or not this menv layer should post change 
-    // notification.  This simply returns (not _GetIsLoading())
+    // notification.  This simply returns (!_GetIsLoading())
     bool _ShouldNotify() const;
 
     // This function keeps track of the last state of IsDirty() before

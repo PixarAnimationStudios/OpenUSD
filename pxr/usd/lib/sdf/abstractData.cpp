@@ -45,13 +45,13 @@ SdfAbstractDataSpecId::GetString() const
 bool 
 SdfAbstractDataSpecId::IsProperty() const
 {
-    return (_propertyName or _path->IsPropertyPath());
+    return (_propertyName || _path->IsPropertyPath());
 }
 
 const SdfPath&
 SdfAbstractDataSpecId::_ComputeFullSpecPath() const
 {
-    if (not _fullSpecPathBuffer) {
+    if (!_fullSpecPathBuffer) {
         _fullSpecPathBuffer.reset(
             (_path->IsTargetPath() ? 
                 _path->AppendRelationalAttribute(*_propertyName) :
@@ -64,7 +64,7 @@ SdfAbstractDataSpecId::_ComputeFullSpecPath() const
 const SdfPath&
 SdfAbstractDataSpecId::_ComputePropertyOwningSpecPath() const
 {
-    if (not _propertySpecPathBuffer) {
+    if (!_propertySpecPathBuffer) {
         _propertySpecPathBuffer.reset(_path->GetParentPath());
     }
 
@@ -159,7 +159,7 @@ struct SdfAbstractData_CheckAllSpecsExist : public SdfAbstractDataSpecVisitor
     virtual bool VisitSpec(
         const SdfAbstractData&, const SdfAbstractDataSpecId& id)
     {
-        if (not _data.HasSpec(id)) {
+        if (!_data.HasSpec(id)) {
             passed = false;
         }
         return passed;
@@ -233,12 +233,12 @@ SdfAbstractData::Equals(const SdfAbstractDataRefPtr &rhs) const
     SdfAbstractData_CheckAllSpecsExist 
         rhsHasAllSpecsInThis(*boost::get_pointer(rhs));
     VisitSpecs(&rhsHasAllSpecsInThis);
-    if (not rhsHasAllSpecsInThis.passed)
+    if (!rhsHasAllSpecsInThis.passed)
         return false;
 
     SdfAbstractData_CheckAllSpecsExist thisHasAllSpecsInRhs(*this);
     rhs->VisitSpecs(&thisHasAllSpecsInRhs);
-    if (not thisHasAllSpecsInRhs.passed)
+    if (!thisHasAllSpecsInRhs.passed)
         return false;
 
     // Check that every spec matches.
@@ -312,7 +312,7 @@ SdfAbstractData::HasDictKey(const SdfAbstractDataSpecId& id,
 {
     VtValue tmp;
     bool result = HasDictKey(id, fieldName, keyPath, value ? &tmp : NULL);
-    if (result and value) {
+    if (result && value) {
         value->StoreValue(tmp);
     }
     return result;
@@ -326,7 +326,7 @@ SdfAbstractData::HasDictKey(const SdfAbstractDataSpecId& id,
 {
     // Attempt to look up field.
     VtValue dictVal;
-    if (Has(id, fieldName, &dictVal) and dictVal.IsHolding<VtDictionary>()) {
+    if (Has(id, fieldName, &dictVal) && dictVal.IsHolding<VtDictionary>()) {
         // It's a dictionary -- attempt to find element at keyPath.
         if (VtValue const *v =
             dictVal.UncheckedGet<VtDictionary>().GetValueAtPath(keyPath)) {

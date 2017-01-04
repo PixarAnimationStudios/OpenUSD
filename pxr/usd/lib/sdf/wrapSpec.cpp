@@ -53,7 +53,7 @@ void
 _WrapSetInfo(SdfSpec &self, const TfToken &name, const object& pyObj)
 {
     VtValue fallback;
-    if (not self.GetSchema().IsRegistered(name, &fallback)) {
+    if (!self.GetSchema().IsRegistered(name, &fallback)) {
         TF_CODING_ERROR("Invalid info key: %s", name.GetText());
         return;
     }
@@ -92,7 +92,7 @@ static
 std::string
 _GetAsText(const SdfSpecHandle &self)
 {
-    if (not self) {
+    if (!self) {
         return TfPyRepr(self);
     }
     std::stringstream stream;

@@ -35,7 +35,7 @@ wrapValueType()
 {
     class_<SdfValueTypeName>("ValueTypeName", no_init)
         .def(init<>())
-        .def(not self)
+        .def(!self)
         .def(self == std::string())
         .def(self != std::string())
         .def(self == self)

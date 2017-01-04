@@ -346,7 +346,7 @@ struct SpecVisitor : bp::def_visitor<SpecVisitor<Abstract> > {
 
         static bool IsExpired(const HeldType& self)
         {
-            return not self;
+            return !self;
         }
 
         static bool NonZero(const HeldType& self)

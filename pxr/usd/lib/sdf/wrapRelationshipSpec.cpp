@@ -71,12 +71,12 @@ public:
 
     bool operator==(const This& other) const
     {
-        return _rel == other._rel and _key == other._key;
+        return _rel == other._rel && _key == other._key;
     }
 
     bool operator!=(const This& other) const
     {
-        return _rel != other._rel or _key != other._key;
+        return _rel != other._rel || _key != other._key;
     }
 
 private:
@@ -216,7 +216,7 @@ private:
 
     bool _Validate()
     {
-        if (not _GetView().IsValid()) {
+        if (!_GetView().IsValid()) {
             TF_CODING_ERROR("Modifying an expired relational attributes proxy");
             return false;
         }
@@ -225,7 +225,7 @@ private:
 
     bool _Validate() const
     {
-        if (not _GetView().IsValid()) {
+        if (!_GetView().IsValid()) {
             TF_CODING_ERROR("Accessing an expired relational attributes proxy");
             return false;
         }
@@ -243,7 +243,7 @@ private:
             const SdfRelationalAttributeSpecView& view = _GetView();
 
             // Check the index here and throw a python IndexError (expected)
-            if ((index < 0) or (static_cast<size_t>(index) >= view.size())) {
+            if ((index < 0) || (static_cast<size_t>(index) >= view.size())) {
                 TfPyThrowIndexError("Invalid index");
                 return value_type();
             }
@@ -308,7 +308,7 @@ private:
             const SdfRelationalAttributeSpecView& view = _GetView();
 
             // Check the index here and throw a python IndexError (expected)
-            if ((index < 0) or (static_cast<size_t>(index) >= view.size())) {
+            if ((index < 0) || (static_cast<size_t>(index) >= view.size())) {
                 TfPyThrowIndexError("Invalid index");
             }
             else {
@@ -322,7 +322,7 @@ private:
     void _SetItemSlice(const boost::python::slice& index,
                        const value_vector_type& values)
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return;
         }
 
@@ -440,7 +440,7 @@ private:
         if (_Validate()) {
             const SdfRelationalAttributeSpecView& view = _GetView();
             const_iterator i = view.find(value);
-            return (i != view.end() and *i == value);
+            return (i != view.end() && *i == value);
         }
         else {
             return false;
@@ -536,7 +536,7 @@ private:
         if (_Validate()) {
             const SdfRelationalAttributeSpecView& view = _GetView();
             const_iterator i = view.find(value);
-            return (i != view.end() and *i == value) ? i - view.begin() : -1;
+            return (i != view.end() && *i == value) ? i - view.begin() : -1;
         }
         else {
             return -1;
@@ -555,7 +555,7 @@ private:
         if (_Validate()) {
             // Check the index here to throw a python IndexError rather than
             // allowing _rel to pitch a TF_CODING_ERROR.
-            if ((index < -1) or (index > _GetSize())) {
+            if ((index < -1) || (index > _GetSize())) {
                 TfPyThrowIndexError("Invalid index");
             }
             else {
@@ -657,14 +657,14 @@ private:
     bool _ContainsItemWithKey(const key_type& key) const
     {
         return _CheckRelationshipValidity() ?
-                    not _rel->GetAttributesForTargetPath(key).empty() : false;
+               !_rel->GetAttributesForTargetPath(key).empty() : false;
     }
     
     boost::python::object _GetItemOrNone(const key_type& key) const
     {
         value_type value = _GetItemByKey(key);
         
-        if (not value.IsValid()) {
+        if (!value.IsValid()) {
             return boost::python::object();
         }
         else {
@@ -709,7 +709,7 @@ private:
     
     bool _CheckRelationshipValidity() const
     {
-        if (not _rel) {
+        if (!_rel) {
             TF_CODING_ERROR("Accessing an expired relationship");
             return false;
         }
@@ -877,7 +877,7 @@ private:
 
         if (_Validate()) {
             const SdfPathVector paths = _rel->GetAttributeOrderTargetPaths();
-            if (not paths.empty()) {
+            if (!paths.empty()) {
                 for (size_t i = 0; i < paths.size(); ++i) {
                     if (i != 0) {
                         result += ", ";
@@ -901,11 +901,11 @@ private:
 
     mapped_type _GetItemByKey(const key_type& key) const
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return mapped_type(SdfListOpTypeOrdered);
         }
 
-        if (not _rel->HasAttributeOrderForTargetPath(key)) {
+        if (!_rel->HasAttributeOrderForTargetPath(key)) {
             TfPyThrowKeyError(TfPyRepr(key));
         }
 
@@ -915,7 +915,7 @@ private:
     void _SetItemByKey(const key_type& key, 
                        const std::vector<std::string>& value)
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return;
         }
 
@@ -925,7 +925,7 @@ private:
 
     void _DelItemByKey(const key_type& key)
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return;
         }
 
@@ -935,7 +935,7 @@ private:
 
     void _Clear()
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return;
         }
 
@@ -948,8 +948,8 @@ private:
 
     boost::python::object _PyGet(const key_type& key) const
     {
-        if (not _Validate() or
-            not _rel->HasAttributeOrderForTargetPath(key)) {
+        if (!_Validate() ||
+            !_rel->HasAttributeOrderForTargetPath(key)) {
             return boost::python::object();
         }
 
@@ -1015,7 +1015,7 @@ private:
 
     bool _Validate() const
     {
-        if (not _rel) {
+        if (!_rel) {
             TF_CODING_ERROR("Accessing an expired relationship");
             return false;
         }

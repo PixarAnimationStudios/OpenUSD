@@ -187,7 +187,7 @@ _TranslateCanEdit(
             return false;
         }
     }
-    if (not extract<bool>(result)) {
+    if (!extract<bool>(result)) {
         // Need a string on failure.
         TfPyThrowValueError("expected a 2-tuple");
     }

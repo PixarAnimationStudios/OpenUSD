@@ -47,7 +47,7 @@ SdfRelocatesMapProxyValuePolicy::CanonicalizeType(
     const SdfSpecHandle& spec,
     const Type& x)
 {
-    if (not TF_VERIFY(spec)) {
+    if (!TF_VERIFY(spec)) {
         return x;
     }
 
@@ -81,7 +81,7 @@ SdfRelocatesMapProxyValuePolicy::CanonicalizePair(
     const SdfSpecHandle& spec,
     const value_type& x)
 {
-    if (not TF_VERIFY(spec)) {
+    if (!TF_VERIFY(spec)) {
         return x;
     }
 

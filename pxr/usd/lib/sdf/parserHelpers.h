@@ -194,7 +194,7 @@ struct _GetImpl<bool> : public boost::static_visitor<bool>
     bool operator()(const std::string &str) {
         bool parseOK = false;
         bool result = SdfBoolFromString(str, &parseOK);
-        if (not parseOK)
+        if (!parseOK)
             throw boost::bad_get();
         return result;
     }

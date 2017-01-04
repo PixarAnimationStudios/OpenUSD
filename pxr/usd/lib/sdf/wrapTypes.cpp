@@ -159,7 +159,7 @@ public:
         }
         else {
             std::pair<iterator, bool> i = x.insert(value_type(key, value));
-            if (not i.second and i.first != iterator()) {
+            if (!i.second && i.first != iterator()) {
                 i.first->second = value;
             }
         }
@@ -172,7 +172,7 @@ public:
         if (i != x.end()) {
             return i->second;
         }
-        else if (not def.empty()) {
+        else if (!def.empty()) {
             SdfChangeBlock block;
             return x[key] = def;
         }

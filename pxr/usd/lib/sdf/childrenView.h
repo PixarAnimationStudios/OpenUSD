@@ -351,7 +351,7 @@ public:
     /// Finds element \p x, if present in this view.
     const_iterator find(const value_type& x) const {
         const_iterator i = find(key(x));
-        return (i != end() and *i == x) ? i : end();
+        return (i != end() && *i == x) ? i : end();
     }
 
     /// Returns the key for an element.
@@ -456,7 +456,7 @@ public:
     /// list edits are not identical or the keys don't contain the same
     /// elements.
     bool operator!=(const This& other) const {
-        return not _children.IsEqualTo(other._children);
+        return !_children.IsEqualTo(other._children);
     }
 
     // Return true if this object is valid

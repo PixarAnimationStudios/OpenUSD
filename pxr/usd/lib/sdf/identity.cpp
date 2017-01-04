@@ -180,7 +180,7 @@ Sdf_IdentityRegistry::MoveIdentity(const SdfPath &oldPath,
     // already exists there, make sure we stomp it first.
     std::pair<_IdMap::iterator, bool> newIdStatus = 
         _ids.insert(std::make_pair(newPath, (Sdf_Identity*)NULL));
-    if (not newIdStatus.second) {
+    if (!newIdStatus.second) {
         if (TF_VERIFY(newIdStatus.first->second)) {
             newIdStatus.first->second->_Forget();
         }

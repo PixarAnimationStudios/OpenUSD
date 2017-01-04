@@ -360,7 +360,7 @@ struct _MakeFactoryMap {
 
         _ValueFactoryMap &f = *_factories;
         f[scalarName] =
-            ValueFactory(scalarName, scalar.GetDimensions(), not isShaped,
+            ValueFactory(scalarName, scalar.GetDimensions(), !isShaped,
                          boost::bind(MakeScalarValueTemplate<CppType>,
                                      _1, _2, _3, _4));
         f[arrayName] =

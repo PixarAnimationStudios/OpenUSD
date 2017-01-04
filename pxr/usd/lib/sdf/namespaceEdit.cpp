@@ -155,7 +155,7 @@ private:
         // Test if the node was removed.  This returns true for key nodes.
         bool IsRemoved() const
         {
-            return not _parent and _key.which() != 0;
+            return !_parent && _key.which() != 0;
         }
 
         // Remove the node from its parent.  After this call returns \c true
@@ -318,24 +318,24 @@ SdfNamespaceEdit_Namespace::_Node::FindOrCreateChild(
 bool
 SdfNamespaceEdit_Namespace::_Node::Remove(std::string* whyNot)
 {
-    if (not TF_VERIFY(not IsRemoved())) {
+    if (!TF_VERIFY(!IsRemoved())) {
         *whyNot = "Coding error: Node has no parent";
         return false;
     }
-    if (not TF_VERIFY(_parent)) {
+    if (!TF_VERIFY(_parent)) {
         *whyNot = "Coding error: Removing root";
         return false;
     }
 
     _Children::iterator i = _parent->_children->find(*this);
-    if (not TF_VERIFY(i != _parent->_children->end())) {
+    if (!TF_VERIFY(i != _parent->_children->end())) {
         *whyNot = "Coding error: Node not found under parent";
         return false;
     }
 
     // Release the node from the parent.  After this call node is not
     // owned by any object.
-    if (not TF_VERIFY(_parent->_children->release(i).release() == this)) {
+    if (!TF_VERIFY(_parent->_children->release(i).release() == this)) {
         *whyNot = "Coding error: Found wrong node by key";
 
         // Try to recover.
@@ -359,19 +359,19 @@ SdfNamespaceEdit_Namespace::_Node::Reparent(
     _Node keyNode(path);
 
     // Verify that no such key exists in our children.
-    if (not TF_VERIFY(_children->find(keyNode) == _children->end())) {
+    if (!TF_VERIFY(_children->find(keyNode) == _children->end())) {
         *whyNot = "Coding error: Object with new path already exists";
         return false;
     }
 
     // Verify that the node hasn't been removed.
-    if (not TF_VERIFY(not node->IsRemoved())) {
+    if (!TF_VERIFY(!node->IsRemoved())) {
         *whyNot = "Coding error: Object at path has been removed";
         return false;
     }
 
     // Remove the node from its parent.
-    if (not node->Remove(whyNot)) {
+    if (!node->Remove(whyNot)) {
         return false;
     }
 
@@ -428,7 +428,7 @@ SdfNamespaceEdit_Namespace::_UneditPath(const SdfPath& path) const
     const _Node* node = &_root;
     for (const auto& prefix : path.GetPrefixes()) {
         const _Node* child = node->GetChild(prefix);
-        if (not child) {
+        if (!child) {
             return path.ReplacePrefix(prefix.GetParentPath(),
                                       node->GetOriginalPath());
         }
@@ -444,7 +444,7 @@ SdfNamespaceEdit_Namespace::_GetNodeAtPath(const SdfPath& path)
     _Node* node = &_root;
     for (const auto& prefix : path.GetPrefixes()) {
         node = node->GetChild(prefix);
-        if (not node) {
+        if (!node) {
             break;
         }
     }
@@ -467,7 +467,7 @@ SdfNamespaceEdit_Namespace::_FindOrCreateNodeAtPath(const SdfPath& path)
             const SdfPath& target  = prefix.GetTargetPath();
             SdfPath originalTarget = _UneditPath(target);
             node = node->FindOrCreateChild(target, originalTarget, &created);
-            if (created and _fixBackpointers) {
+            if (created && _fixBackpointers) {
                 _AddBackpointer(target, node);
             }
         }
@@ -483,13 +483,13 @@ SdfNamespaceEdit_Namespace::_Remove(const SdfPath& path, std::string* whyNot)
 {
     // Get the node at path.
     _Node* node = _GetNodeAtPath(path);
-    if (not TF_VERIFY(node)) {
+    if (!TF_VERIFY(node)) {
         *whyNot = "Coding error: Object at path doesn't exist";
         return false;
     }
 
     // Remove the node from its parent.
-    if (not node->Remove(whyNot)) {
+    if (!node->Remove(whyNot)) {
         return false;
     }
 
@@ -515,20 +515,20 @@ SdfNamespaceEdit_Namespace::_Move(
 {
     // Get the node at currentPath.  We want to edit it.
     _Node* node = _GetNodeAtPath(currentPath);
-    if (not TF_VERIFY(node)) {
+    if (!TF_VERIFY(node)) {
         *whyNot = "Coding error: Object at path doesn't exist";
         return false;
     }
 
     // Get the new parent node.
     _Node* newParent = _GetNodeAtPath(newPath.GetParentPath());
-    if (not TF_VERIFY(newParent)) {
+    if (!TF_VERIFY(newParent)) {
         *whyNot = "Coding error: New parent object doesn't exist";
         return false;
     }
 
     // Reparent/rename the node.
-    if (not newParent->Reparent(node, newPath, whyNot)) {
+    if (!newParent->Reparent(node, newPath, whyNot)) {
         return false;
     }
 
@@ -552,7 +552,7 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
     // Find the extent of the subtree with currentPath as a prefix.
     _BackpointerMap::iterator i = _nodesWithPath.lower_bound(currentPath);
     _BackpointerMap::iterator n = i;
-    while (n != _nodesWithPath.end() and n->first.HasPrefix(currentPath)) {
+    while (n != _nodesWithPath.end() && n->first.HasPrefix(currentPath)) {
         ++n;
     }
 
@@ -562,7 +562,7 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
         for (auto node : j->second) {
             node->SetKey(
                 boost::get<SdfPath>(node->GetKey()).
-                    ReplacePrefix(currentPath, newPath, not fixTargetPaths));
+                    ReplacePrefix(currentPath, newPath, !fixTargetPaths));
         }
     }
 
@@ -575,8 +575,8 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
 
     // Put the entries back with the paths modified.
     i = _nodesWithPath.lower_bound(newPath);
-    if (TF_VERIFY(i == _nodesWithPath.end() or
-                  not i->first.HasPrefix(currentPath),
+    if (TF_VERIFY(i == _nodesWithPath.end() ||
+                  !i->first.HasPrefix(currentPath),
                   "Found backpointers under new path")) {
         for (auto& v : tmp) {
             _nodesWithPath[v.first.ReplacePrefix(currentPath, newPath)].
@@ -597,7 +597,7 @@ SdfNamespaceEdit_Namespace::_RemoveBackpointers(const SdfPath& path)
     // Find the extent of the subtree with path as a prefix.
     _BackpointerMap::iterator i = _nodesWithPath.lower_bound(path);
     _BackpointerMap::iterator n = i;
-    while (n != _nodesWithPath.end() and n->first.HasPrefix(path)) {
+    while (n != _nodesWithPath.end() && n->first.HasPrefix(path)) {
         ++n;
     }
 
@@ -609,7 +609,7 @@ void
 SdfNamespaceEdit_Namespace::_AddDeadspace(const SdfPath& path)
 {
     // Never add the absolute root path.
-    if (not TF_VERIFY(path != SdfPath::AbsoluteRootPath())) {
+    if (!TF_VERIFY(path != SdfPath::AbsoluteRootPath())) {
         return;
     }
 
@@ -621,14 +621,14 @@ void
 SdfNamespaceEdit_Namespace::_RemoveDeadspace(const SdfPath& path)
 {
     // Never remove the absolute root path.
-    if (not TF_VERIFY(path != SdfPath::AbsoluteRootPath())) {
+    if (!TF_VERIFY(path != SdfPath::AbsoluteRootPath())) {
         return;
     }
 
     // Find the extent of the subtree with path as a prefix.
     SdfPathSet::iterator i = _deadspace.lower_bound(path);
     SdfPathSet::iterator n = i;
-    while (n != _deadspace.end() and n->HasPrefix(path)) {
+    while (n != _deadspace.end() && n->HasPrefix(path)) {
         ++n;
     }
 
@@ -653,8 +653,8 @@ SdfNamespaceEdit_Namespace::_IsDeadspace(const SdfPath& path) const
 bool
 SdfNamespaceEdit::operator==(const SdfNamespaceEdit& rhs) const
 {
-    return currentPath == rhs.currentPath and
-           newPath     == rhs.newPath and
+    return currentPath == rhs.currentPath && 
+           newPath     == rhs.newPath     && 
            index       == rhs.index;
 }
 
@@ -703,8 +703,8 @@ SdfNamespaceEditDetail::SdfNamespaceEditDetail(
 bool
 SdfNamespaceEditDetail::operator==(const SdfNamespaceEditDetail& rhs) const
 {
-    return result == rhs.result and
-           edit   == rhs.edit and
+    return result == rhs.result  && 
+           edit   == rhs.edit    &&
            reason == rhs.reason;
 }
 
@@ -784,10 +784,10 @@ SdfBatchNamespaceEdit::Process(
         // Make sure paths are compatible.
         bool mismatch = false;
         if (edit.currentPath.IsPrimPath()) {
-            mismatch = not edit.newPath.IsPrimPath();
+            mismatch = !edit.newPath.IsPrimPath();
         }
         else if (edit.currentPath.IsPropertyPath()) {
-            mismatch = not edit.newPath.IsPropertyPath();
+            mismatch = !edit.newPath.IsPropertyPath();
         }
         else {
             // Unsupported path type.
@@ -799,7 +799,7 @@ SdfBatchNamespaceEdit::Process(
             }
             return false;
         }
-        if (mismatch and not edit.newPath.IsEmpty()) {
+        if (mismatch && !edit.newPath.IsEmpty()) {
             if (details) {
                 details->push_back(
                     SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,
@@ -831,7 +831,7 @@ SdfBatchNamespaceEdit::Process(
         }
 
         // Make sure there's an object at from.
-        if (hasObjectAtPath and not hasObjectAtPath(from)) {
+        if (hasObjectAtPath && !hasObjectAtPath(from)) {
             if (details) {
                 details->push_back(
                     SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,
@@ -843,10 +843,10 @@ SdfBatchNamespaceEdit::Process(
 
         // Extra checks if not removing.
         SdfPath to;
-        if (not edit.newPath.IsEmpty()) {
+        if (!edit.newPath.IsEmpty()) {
             // Ignore no-op.  Note that this doesn't catch the case where
             // then index isn't Same but has that effect.  
-            if (edit.currentPath == edit.newPath and
+            if (edit.currentPath == edit.newPath && 
                     edit.index == SdfNamespaceEdit::Same) {
                 continue;
             }
@@ -868,7 +868,7 @@ SdfBatchNamespaceEdit::Process(
             }
 
             // Make sure there is an object at to's parent.
-            if (hasObjectAtPath and not hasObjectAtPath(toParent)) {
+            if (hasObjectAtPath && !hasObjectAtPath(toParent)) {
                 if (details) {
                     details->push_back(
                         SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,
@@ -907,8 +907,8 @@ SdfBatchNamespaceEdit::Process(
             else {
                 // Can't move over an existing object.
                 to = ns.GetOriginalPath(edit.newPath);
-                if (not to.IsEmpty() and
-                        hasObjectAtPath and hasObjectAtPath(to)) {
+                if (!to.IsEmpty() && 
+                    hasObjectAtPath && hasObjectAtPath(to)) {
                     if (details) {
                         details->push_back(
                             SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,
@@ -923,13 +923,13 @@ SdfBatchNamespaceEdit::Process(
             to = edit.newPath.ReplacePrefix(newParent, toParent);
         }
 
-        if (not fixBackpointers) {
+        if (!fixBackpointers) {
             SdfPathVector targetPaths;
 
             edit.currentPath.GetAllTargetPathsRecursively(&targetPaths);
             for (const auto& targetPath : targetPaths) {
                 SdfPath originalPath = ns.GetOriginalPath(targetPath);
-                if (not originalPath.IsEmpty() and originalPath != targetPath) {
+                if (!originalPath.IsEmpty() && originalPath != targetPath) {
                     if (details) {
                         details->push_back(
                             SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,
@@ -943,7 +943,7 @@ SdfBatchNamespaceEdit::Process(
             edit.newPath.GetAllTargetPathsRecursively(&targetPaths);
             for (const auto& targetPath : targetPaths) {
                 SdfPath originalPath = ns.GetOriginalPath(targetPath);
-                if (not originalPath.IsEmpty() and originalPath != targetPath) {
+                if (!originalPath.IsEmpty() && originalPath != targetPath) {
                     if (details) {
                         details->push_back(
                             SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,
@@ -957,7 +957,7 @@ SdfBatchNamespaceEdit::Process(
 
         // Check if actual edit is allowed.
         std::string whyNot;
-        if (canEdit and not canEdit(SdfNamespaceEdit(from, to, edit.index),
+        if (canEdit && !canEdit(SdfNamespaceEdit(from, to, edit.index),
                                     &whyNot)) {
             if (details) {
                 details->push_back(
@@ -969,7 +969,7 @@ SdfBatchNamespaceEdit::Process(
         }
 
         // Apply edit to state.
-        if (not ns.Apply(edit, &whyNot)) {
+        if (!ns.Apply(edit, &whyNot)) {
             if (details) {
                 details->push_back(
                     SdfNamespaceEditDetail(SdfNamespaceEditDetail::Error,

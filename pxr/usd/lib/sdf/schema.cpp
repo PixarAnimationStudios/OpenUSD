@@ -275,7 +275,7 @@ SdfSchemaBase::SpecDefinition::_AddField(
 {
     std::pair<_FieldMap::iterator, bool> insertStatus = 
         _fields.insert(std::make_pair(name, fieldInfo));
-    if (not insertStatus.second) {
+    if (!insertStatus.second) {
         TF_CODING_ERROR("Duplicate registration for field '%s'", 
                         name.GetText());
     }
@@ -297,7 +297,7 @@ static
 SdfAllowed
 _ValidateFramesPerSecond(const SdfSchemaBase&, const VtValue& value)
 {
-    if (not value.IsHolding<double>()) {
+    if (!value.IsHolding<double>()) {
         return SdfAllowed("Expected value of type double");
     }
 
@@ -308,7 +308,7 @@ _ValidateFramesPerSecond(const SdfSchemaBase&, const VtValue& value)
 static SdfAllowed
 _ValidateIsString(const SdfSchemaBase&, const VtValue& value)
 {
-    if (not value.IsHolding<std::string>()) {
+    if (!value.IsHolding<std::string>()) {
         return SdfAllowed("Expected value of type string");
     }
     return true;
@@ -318,7 +318,7 @@ static SdfAllowed
 _ValidateIsNonEmptyString(const SdfSchemaBase& schema, const VtValue& value)
 {
     SdfAllowed result = _ValidateIsString(schema, value);
-    if (result and value.Get<std::string>().empty()) {
+    if (result && value.Get<std::string>().empty()) {
         result = SdfAllowed("Expected non-empty string");
     }
     return result;
@@ -327,7 +327,7 @@ _ValidateIsNonEmptyString(const SdfSchemaBase& schema, const VtValue& value)
 static SdfAllowed
 _ValidateIdentifierToken(const SdfSchemaBase&, const VtValue& value)
 {
-    if (not value.IsHolding<TfToken>()) {
+    if (!value.IsHolding<TfToken>()) {
         return SdfAllowed("Expected value of type TfToken");
     }
     return SdfSchemaBase::IsValidIdentifier(value.Get<TfToken>());
@@ -336,7 +336,7 @@ _ValidateIdentifierToken(const SdfSchemaBase&, const VtValue& value)
 static SdfAllowed
 _ValidateNamespacedIdentifierToken(const SdfSchemaBase&, const VtValue& value)
 {
-    if (not value.IsHolding<TfToken>()) {
+    if (!value.IsHolding<TfToken>()) {
         return SdfAllowed("Expected value of type TfToken");
     }
     return SdfSchemaBase::IsValidNamespacedIdentifier(value.Get<TfToken>());
@@ -352,7 +352,7 @@ _ValidateIsSceneDescriptionValue(const SdfSchemaBase& schema, const VtValue& val
 static SdfAllowed                                                       \
 _Validate ## name_(const SdfSchemaBase& schema, const VtValue& value)   \
 {                                                                       \
-    if (not value.IsHolding<expectedType_>()) {                         \
+    if (!value.IsHolding<expectedType_>()) {                         \
         return SdfAllowed("Expected value of type " # expectedType_);   \
     }                                                                   \
     return SdfSchemaBase::IsValid ## name_(value.Get<expectedType_>()); \
@@ -737,7 +737,7 @@ SdfSchemaBase::_CreateField(const TfToken &key, const VtValue &value, bool plugi
 
     const std::pair<_FieldDefinitionMap::iterator, bool> insertStatus = 
         _fieldDefinitions.insert(std::make_pair(key, def));
-    if (not insertStatus.second) {
+    if (!insertStatus.second) {
         TF_CODING_ERROR("Duplicate creation for field '%s'", key.GetText());
     }
     
@@ -760,7 +760,7 @@ SdfSchemaBase::_DoRegisterField(const TfToken &key, const VtValue &v)
     // The new fallback value's type must match the type of
     // the fallback value the field was created with. This ensures
     // we stay in sync with the fields in SchemaTypeRegistration.h.
-    if (not TfSafeTypeCompare(fieldDef.GetFallbackValue().GetTypeid(),
+    if (!TfSafeTypeCompare(fieldDef.GetFallbackValue().GetTypeid(),
                               v.GetTypeid())) {
         TF_FATAL_ERROR("Registered fallback value for field '%s' does "
                        "not match field type definition. "
@@ -778,7 +778,7 @@ SdfSchemaBase::_SpecDefiner
 SdfSchemaBase::_ExtendSpecDefinition(SdfSpecType specType)
 {
     SpecDefinition* specDef = TfMapLookupPtr(_specDefinitions, specType);
-    if (not specDef) {
+    if (!specDef) {
         TF_FATAL_ERROR("No definition for spec type %s",
                        TfEnum::GetName(specType).c_str());
     }
@@ -810,7 +810,7 @@ bool
 SdfSchemaBase::IsRegistered(const TfToken &fieldKey, VtValue *fallback) const
 {
     const FieldDefinition* def = GetFieldDefinition(fieldKey);
-    if (not def) {
+    if (!def) {
         return false;
     }
 
@@ -832,7 +832,7 @@ VtValue
 SdfSchemaBase::CastToTypeOf(const TfToken &fieldKey, const VtValue &value) const
 {
     VtValue fallback;
-    if (not SdfSchemaBase::IsRegistered(fieldKey, &fallback)) {
+    if (!SdfSchemaBase::IsRegistered(fieldKey, &fallback)) {
         return VtValue();
     }
     
@@ -847,7 +847,7 @@ const SdfSchemaBase::SpecDefinition*
 SdfSchemaBase::_CheckAndGetSpecDefinition(SdfSpecType specType) const
 {
     const SpecDefinition* def = GetSpecDefinition(specType);
-    if (not def) {
+    if (!def) {
         TF_CODING_ERROR("No definition for spec type %s", 
                         TfStringify(specType).c_str());
     }
@@ -919,7 +919,7 @@ SdfSchemaBase::IsValidValue(const VtValue& value) const
             }
         }
     }
-    else if (not FindType(value)) {
+    else if (!FindType(value)) {
         return SdfAllowed(
             "Value does not have a valid scene description type "
             "(" + value.GetTypeName() + ")");
@@ -967,7 +967,7 @@ SdfSchemaBase::_GetTypeRegistrar() const
 SdfAllowed
 SdfSchemaBase::IsValidIdentifier(const std::string& identifier)
 {
-    if (not SdfPath::IsValidIdentifier(identifier)) {
+    if (!SdfPath::IsValidIdentifier(identifier)) {
         return SdfAllowed("\"" + identifier +
                           "\" is not a valid identifier");
     }
@@ -977,7 +977,7 @@ SdfSchemaBase::IsValidIdentifier(const std::string& identifier)
 SdfAllowed
 SdfSchemaBase::IsValidNamespacedIdentifier(const std::string& identifier)
 {
-    if (not SdfPath::IsValidNamespacedIdentifier(identifier)) {
+    if (!SdfPath::IsValidNamespacedIdentifier(identifier)) {
         return SdfAllowed("\"" + identifier +
                           "\" is not a valid identifier");
     }
@@ -993,13 +993,13 @@ SdfSchemaBase::IsValidVariantIdentifier(const std::string& identifier)
     std::string::const_iterator last = identifier.end();
 
     // Allow optional leading dot.
-    if (first != last and *first == '.') {
+    if (first != last && *first == '.') {
         ++first;
     }
 
     for (; first != last; ++first) {
         char c = *first;
-        if (not (isalnum(c) or (c == '_') or (c == '|') or (c == '-'))) {
+        if (!(isalnum(c) || (c == '_') || (c == '|') || (c == '-'))) {
             return SdfAllowed(TfStringPrintf(
                     "\"%s\" is not a valid variant "
                     "name due to '%c' at index %d",
@@ -1025,7 +1025,7 @@ SdfSchemaBase::IsValidRelocatesPath(const SdfPath& path)
 SdfAllowed
 SdfSchemaBase::IsValidInheritPath(const SdfPath& path)
 {
-    if (not (path.IsAbsolutePath() and path.IsPrimPath())) {
+    if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Inherit paths must be an absolute prim path");
     }
     return true;
@@ -1034,7 +1034,7 @@ SdfSchemaBase::IsValidInheritPath(const SdfPath& path)
 SdfAllowed
 SdfSchemaBase::IsValidSpecializesPath(const SdfPath& path)
 {
-    if (not (path.IsAbsolutePath() and path.IsPrimPath())) {
+    if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Specializes paths must be absolute prim path");
     }
     return true;
@@ -1047,7 +1047,7 @@ SdfSchemaBase::IsValidAttributeConnectionPath(const SdfPath& path)
         return SdfAllowed("Attribute connection paths cannot contain "
                           "variant selections");
     }
-    if (path.IsAbsolutePath() and path.IsPropertyPath()) {
+    if (path.IsAbsolutePath() && path.IsPropertyPath()) {
         return true;
     }
     else {
@@ -1062,8 +1062,8 @@ SdfSchemaBase::IsValidRelationshipTargetPath(const SdfPath& path)
         return SdfAllowed("Relationship target paths cannot contain "
                           "variant selections");
     }
-    if (path.IsAbsolutePath() and
-        (path.IsPropertyPath() or path.IsPrimPath() or path.IsMapperPath())) {
+    if (path.IsAbsolutePath() && 
+        (path.IsPropertyPath() || path.IsPrimPath() || path.IsMapperPath())) {
         return true;
     }
     else {
@@ -1075,8 +1075,8 @@ SdfSchemaBase::IsValidRelationshipTargetPath(const SdfPath& path)
 SdfAllowed 
 SdfSchemaBase::IsValidReference(const SdfReference& ref)
 {
-    if (not ref.GetPrimPath().IsEmpty() and
-        not ref.GetPrimPath().IsRootPrimPath()) {
+    if (!ref.GetPrimPath().IsEmpty() &&
+        !ref.GetPrimPath().IsRootPrimPath()) {
         return SdfAllowed("Reference prim path <" +
                           ref.GetPrimPath().GetString() + "> must be either "
                           "empty or an absolute root prim path");
@@ -1088,14 +1088,14 @@ SdfSchemaBase::IsValidReference(const SdfReference& ref)
 SdfAllowed
 SdfSchemaBase::IsValidPayload(const SdfPayload& p)
 {
-    if (not p.GetPrimPath().IsEmpty()
-        and not p.GetPrimPath().IsRootPrimPath()) {
+    if (!p.GetPrimPath().IsEmpty()
+        && !p.GetPrimPath().IsRootPrimPath()) {
         return SdfAllowed("Payload prim path <" + p.GetPrimPath().GetString()
                           + "> must be either empty or an absolute root "
                           "prim path");
     }
 
-    if (p.GetAssetPath().empty() and not p.GetPrimPath().IsEmpty()) {
+    if (p.GetAssetPath().empty() && !p.GetPrimPath().IsEmpty()) {
         return SdfAllowed("Payload must specify an asset path and an optional "
                           "additional prim path, or nothing");
     }
@@ -1242,7 +1242,7 @@ _GetDefaultMetadataValue(const std::string& valueTypeName,
                          const JsValue& defaultValue)
 {
     if (valueTypeName == "dictionary") {
-        if (not defaultValue.IsNull()) {
+        if (!defaultValue.IsNull()) {
             // Defaults aren't allowed for dictionaries because we have
             // no way of parsing them at the moment
             TF_CODING_ERROR("Default values are not allowed on fields "
@@ -1254,8 +1254,8 @@ _GetDefaultMetadataValue(const std::string& valueTypeName,
     }
 
     const VtValue listOpValue = _GetDefaultValueForListOp(valueTypeName);
-    if (not listOpValue.IsEmpty()) {
-        if (not defaultValue.IsNull()) {
+    if (!listOpValue.IsEmpty()) {
+        if (!defaultValue.IsNull()) {
             // Defaults aren't allowed for list ops because we have
             // no way of parsing them at the moment
             TF_CODING_ERROR("Default values are not allowed on fields "
@@ -1310,7 +1310,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
         // Get the top-level dictionary key specified by the metadata tag.
         JsObject fields;
         const JsObject &metadata = (*plug)->GetMetadata();
-        if (not _GetKey(metadata, metadataTag, &fields))
+        if (!_GetKey(metadata, metadataTag, &fields))
             continue;
         
         // Register new fields
@@ -1319,7 +1319,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
 
             // Validate field
             JsObject fieldInfo;
-            if (not _GetKey(fields, fieldName, &fieldInfo)) {
+            if (!_GetKey(fields, fieldName, &fieldInfo)) {
                 TF_CODING_ERROR("Value must be a dictionary (at \"%s\" in "
                                 "plugin \"%s\")", 
                                 fieldName.GetText(),
@@ -1328,7 +1328,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             }
 
             std::string valueTypeName;
-            if (not _GetKey(fieldInfo, "type", &valueTypeName)) {
+            if (!_GetKey(fieldInfo, "type", &valueTypeName)) {
                 TF_CODING_ERROR("Could not read a string for \"type\" "
                                 "(at \"%s\" in plugin \"%s\")",
                                 fieldName.GetText(), (*plug)->GetPath().c_str());
@@ -1353,7 +1353,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
 
                 defaultValue = _GetDefaultMetadataValue(
                     valueTypeName, pluginDefault);
-                if (defaultValue.IsEmpty() and defFactory) {
+                if (defaultValue.IsEmpty() && defFactory) {
                     defaultValue = defFactory(valueTypeName, pluginDefault);
                 }
 
@@ -1415,29 +1415,29 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             // metadata
             _RegisterField(fieldName, defaultValue, /* plugin = */ true);
 
-            if (appliesTo.empty() or appliesTo.count("layers")) {
+            if (appliesTo.empty() || appliesTo.count("layers")) {
                 _ExtendSpecDefinition(SdfSpecTypePseudoRoot)
                     .MetadataField(fieldName, displayGroup);
             }
 
-            if (appliesTo.empty() or appliesTo.count("prims")) {
+            if (appliesTo.empty() || appliesTo.count("prims")) {
                 _ExtendSpecDefinition(SdfSpecTypePrim)
                     .MetadataField(fieldName, displayGroup);
             }
 
-            if (appliesTo.empty() or appliesTo.count("properties") or
+            if (appliesTo.empty() || appliesTo.count("properties") ||
                 appliesTo.count("attributes")) {
                 _ExtendSpecDefinition(SdfSpecTypeAttribute)
                     .MetadataField(fieldName, displayGroup);
             }
 
-            if (appliesTo.empty() or appliesTo.count("properties") or
+            if (appliesTo.empty() || appliesTo.count("properties") ||
                 appliesTo.count("relationships")) {
                 _ExtendSpecDefinition(SdfSpecTypeRelationship)
                     .MetadataField(fieldName, displayGroup);
             }
 
-            if (appliesTo.empty() or appliesTo.count("variants")) {
+            if (appliesTo.empty() || appliesTo.count("variants")) {
                 _ExtendSpecDefinition(SdfSpecTypeVariant)
                     .MetadataField(fieldName, displayGroup);
             }

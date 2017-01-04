@@ -82,9 +82,9 @@ Sdf_ParseExternalReferences(
         // comments, and may also incorrectly identify lines as comments,
         // although this is not typically a problem.
         const size_t c = line.find_first_not_of(' ');
-        if (c != string::npos and
-            ((line[c] == '"') or
-             (line[c] == '/') or
+        if (c != string::npos &&
+            ((line[c] == '"') ||
+             (line[c] == '/') ||
              (line[c] == '#')))
             continue;
 
@@ -98,7 +98,7 @@ Sdf_ParseExternalReferences(
         boost::sregex_token_iterator it(line.begin(), line.end(), assetRef, 1);
         boost::sregex_token_iterator end;
         for ( ; it != end ; ++it) {
-            if (not it->length())
+            if (!it->length())
                 continue;
 
             // If we extracted a type, put the path in the correct bucket. Put
@@ -113,7 +113,7 @@ Sdf_ParseExternalReferences(
                 references->push_back(*it);
         }
 
-        if (not type.empty() and line.find(']') != string::npos)
+        if (!type.empty() && line.find(']') != string::npos)
             type.clear();
     }
 }
@@ -130,23 +130,23 @@ SdfExtractExternalReferences(
         return;
     }
 
-    if (not subLayers) {
+    if (!subLayers) {
         TF_CODING_ERROR("Invalid subLayers pointer");
         return;
     }
 
-    if (not references) {
+    if (!references) {
         TF_CODING_ERROR("Invalid references pointer");
         return;
     }
 
-    if (not payloads) {
+    if (!payloads) {
         TF_CODING_ERROR("Invalid payloads pointer");
         return;
     }
 
     std::ifstream ifs(filePath.c_str());
-    if (not ifs) {
+    if (!ifs) {
         TF_RUNTIME_ERROR("Unable to open '%s' for reading.", filePath.c_str());
         return;
     }
@@ -164,17 +164,17 @@ SdfExtractExternalReferencesFromString(
     vector<string>* references,
     vector<string>* payloads)
 {
-    if (not subLayers) {
+    if (!subLayers) {
         TF_CODING_ERROR("Invalid subLayers pointer");
         return;
     }
 
-    if (not references) {
+    if (!references) {
         TF_CODING_ERROR("Invalid references pointer");
         return;
     }
 
-    if (not payloads) {
+    if (!payloads) {
         TF_CODING_ERROR("Invalid payloads pointer");
         return;
     }

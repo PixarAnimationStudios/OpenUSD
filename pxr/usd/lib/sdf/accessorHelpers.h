@@ -56,8 +56,8 @@
     {                                                                          \
         typedef Sdf_AccessorHelpers<SDF_ACCESSOR_CLASS> _Helper;               \
         const VtValue& value = _Helper::GetField(this, key_);                  \
-        if (value.IsEmpty() or not value.IsHolding<heldType_>()) {             \
-            const SdfSchemaBase& schema = _Helper::GetSchema(this);                \
+        if (value.IsEmpty() || !value.IsHolding<heldType_>()) {                \
+            const SdfSchemaBase& schema = _Helper::GetSchema(this);            \
             return schema.GetFallback(_GET_KEY_(key_)).Get<heldType_>();       \
         }                                                                      \
         else {                                                                 \
@@ -83,7 +83,7 @@ SDF_ACCESSOR_CLASS::Get ## name_() const                                       \
 bool                                                                           \
 SDF_ACCESSOR_CLASS::Is ## name_() const                                        \
 {                                                                              \
-    if (not SDF_ACCESSOR_READ_PREDICATE(_GET_KEY_(key_))) {                    \
+    if (!SDF_ACCESSOR_READ_PREDICATE(_GET_KEY_(key_))) {                       \
         return false;                                                          \
     }                                                                          \
                                                                                \

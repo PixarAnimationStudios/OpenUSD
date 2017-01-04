@@ -45,7 +45,7 @@ public:
 
     void Open()
     {
-        if (not TF_VERIFY(_block == 0)) {
+        if (!TF_VERIFY(_block == 0)) {
             return;
         }
         _block = new SdfChangeBlock;
@@ -53,7 +53,7 @@ public:
 
     void Close(object, object, object)
     {
-        if (not TF_VERIFY(_block != 0)) {
+        if (!TF_VERIFY(_block != 0)) {
             return;
         }
         delete _block;

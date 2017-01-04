@@ -147,17 +147,17 @@ struct _ListOpWriter<SdfReference>
     static constexpr bool ItemPerLine = true;
     static bool SingleItemRequiresBrackets(const SdfReference& ref)
     {
-        return not ref.GetCustomData().empty();
+        return !ref.GetCustomData().empty();
     }
     static void Write(ostream& out, size_t indent, const SdfReference& ref)
     {
-        bool multiLineRefMetaData = not ref.GetCustomData().empty();
+        bool multiLineRefMetaData = !ref.GetCustomData().empty();
     
         Sdf_FileIOUtility::Write(out, indent, "");
 
-        if (not ref.GetAssetPath().empty()) {
+        if (!ref.GetAssetPath().empty()) {
             Sdf_FileIOUtility::WriteAssetPath(out, 0, ref.GetAssetPath());
-            if (not ref.GetPrimPath().IsEmpty())
+            if (!ref.GetPrimPath().IsEmpty())
                 Sdf_FileIOUtility::WriteSdfPath(out, 0, ref.GetPrimPath());
         }
         else {
@@ -172,7 +172,7 @@ struct _ListOpWriter<SdfReference>
         }
         Sdf_FileIOUtility::WriteLayerOffset(
             out, indent+1, multiLineRefMetaData, ref.GetLayerOffset());
-        if (not ref.GetCustomData().empty()) {
+        if (!ref.GetCustomData().empty()) {
             Sdf_FileIOUtility::Puts(out, indent+1, "customData = ");
             Sdf_FileIOUtility::WriteDictionary(
                 out, indent+1, /* multiline = */ true, ref.GetCustomData());
@@ -198,8 +198,8 @@ _WriteListOpList(
     if (listOpList.empty()) {
         Sdf_FileIOUtility::Puts(out, 0, "None\n");
     }
-    else if (listOpList.size() == 1 and 
-             not _Writer::SingleItemRequiresBrackets(listOpList.front())) {
+    else if (listOpList.size() == 1 &&
+             !_Writer::SingleItemRequiresBrackets(listOpList.front())) {
         _Writer::Write(out, 0, listOpList.front());
         Sdf_FileIOUtility::Puts(out, 0, "\n");
     }
@@ -230,15 +230,15 @@ _WriteListOp(
         _WriteListOpList(out, indent, name, listOp.GetExplicitItems());
     } 
     else {
-        if (not listOp.GetDeletedItems().empty()) {
+        if (!listOp.GetDeletedItems().empty()) {
             _WriteListOpList(out, indent, name, 
                              listOp.GetDeletedItems(), "delete");
         }
-        if (not listOp.GetAddedItems().empty()) {
+        if (!listOp.GetAddedItems().empty()) {
             _WriteListOpList(out, indent, name, 
                              listOp.GetAddedItems(), "add"); 
         }
-        if (not listOp.GetOrderedItems().empty()) {
+        if (!listOp.GetOrderedItems().empty()) {
             _WriteListOpList(out, indent, name, 
                              listOp.GetOrderedItems(), "reorder");
         }
@@ -458,7 +458,7 @@ Sdf_FileIOUtility::_WriteDictionary(ostream &out,
         } else {
             // Put quotes around the keyName if it is not a valid identifier
             string keyName = *(i->first);
-            if (not TfIsValidIdentifier(keyName)) {
+            if (!TfIsValidIdentifier(keyName)) {
                 keyName = "\"" + keyName + "\"";
             }
             if (value.IsHolding<VtDictionary>()) {
@@ -481,7 +481,7 @@ Sdf_FileIOUtility::_WriteDictionary(ostream &out,
                 // XXX: The logic here is very similar to that in
                 //      WriteDefaultValue. WBN to refactor.
                 string str;
-                if (_StringFromVtStringValue<string>(&str, value) or
+                if (_StringFromVtStringValue<string>(&str, value) || 
                     _StringFromVtStringValue<TfToken>(&str, value)) {
                     Puts(out, 0, str);
                 } else {
@@ -492,7 +492,7 @@ Sdf_FileIOUtility::_WriteDictionary(ostream &out,
                 }
             }
         }
-        if (not multiLine and counter > 0) {
+        if (!multiLine && counter > 0) {
             // CODE_COVERAGE_OFF
             // See multiLine comment below.
             Puts(out, 0, "; ");
@@ -568,7 +568,7 @@ Sdf_FileIOUtility::WriteLayerOffset(ostream &out,
 {
     // If there's anything interesting to write, write it.
     if (layerOffset != SdfLayerOffset()) {
-        if (not multiLine) {
+        if (!multiLine) {
             Write(out, 0, " (");
         }
         double offset = layerOffset.GetOffset();
@@ -578,13 +578,13 @@ Sdf_FileIOUtility::WriteLayerOffset(ostream &out,
                   TfStringify(offset).c_str(), multiLine ? "\n" : "");
         }
         if (scale != 1.0) {
-            if (not multiLine and offset != 0) {
+            if (!multiLine && offset != 0) {
                 Write(out, 0, "; ");
             }
             Write(out, multiLine ? indent : 0, "scale = %s%s",
                   TfStringify(scale).c_str(), multiLine ? "\n" : "");
         }
-        if (not multiLine) {
+        if (!multiLine) {
             Write(out, 0, ")");
         }
     }
@@ -600,7 +600,7 @@ Sdf_FileIOUtility::Quote(const string &str)
 
     // Choose quotes, double quote preferred.
     char quote = '"';
-    if (str.find('"') != string::npos and str.find('\'') == string::npos) {
+    if (str.find('"') != string::npos && str.find('\'') == string::npos) {
         quote = '\'';
     }
 
@@ -646,7 +646,7 @@ Sdf_FileIOUtility::Quote(const string &str)
                 result += '\\';
                 result += quote;
             }
-            else if (not std::isprint(*i)) {
+            else if (!std::isprint(*i)) {
                 // Non-printable;  use two digit hex form.
                 result += "\\x";
                 result += hexdigit[(*i >> 4) & 15];
@@ -680,7 +680,7 @@ string
 Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
 {
     string s;
-    if (_StringFromVtStringValue<string>(&s, value) or
+    if (_StringFromVtStringValue<string>(&s, value) || 
         _StringFromVtStringValue<TfToken>(&s, value)) {
         return s;
     }

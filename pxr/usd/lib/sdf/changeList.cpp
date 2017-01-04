@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream &os, const SdfChangeList &cl)
             os << "    sublayer " << i->first << " "
                 << TfEnum::GetName(i->second) << "\n";
         }
-        if (not entry.oldPath.IsEmpty()) {
+        if (!entry.oldPath.IsEmpty()) {
             os << "   oldPath: <" << entry.oldPath << ">\n";
         }
 
@@ -146,7 +146,7 @@ SdfChangeList::DidChangeLayerIdentifier(const std::string &oldIdentifier)
 {
     SdfChangeList::Entry &entry = GetEntry(SdfPath::AbsoluteRootPath());
 
-    if (not entry.flags.didChangeIdentifier) {
+    if (!entry.flags.didChangeIdentifier) {
         entry.flags.didChangeIdentifier = true;
         entry.oldIdentifier = oldIdentifier;
     }

@@ -49,13 +49,13 @@ public:
 
     bool operator==(const SdfSite& other) const
     {
-        return layer == other.layer and path == other.path;
+        return layer == other.layer && path == other.path;
     }
 
     bool operator<(const SdfSite& other) const
     {
-        return layer < other.layer or
-               (not (other.layer < layer) and path < other.path);
+        return layer < other.layer ||
+               (!(other.layer < layer) && path < other.path);
     }
 
 #if !defined(doxygen)
@@ -66,7 +66,7 @@ public:
     /// This does NOT imply that there are opinions in the layer at that path.
     operator UnspecifiedBoolType() const
     {
-        return (layer and not path.IsEmpty()) ? &SdfSite::path : 0;
+        return (layer && !path.IsEmpty()) ? &SdfSite::path : 0;
     }
 
 public:

@@ -620,7 +620,7 @@ public:
     inline bool operator<(const SdfPath &rhs) const {
         if (_pathNode == rhs._pathNode)
             return false;
-        if (not _pathNode or not rhs._pathNode)
+        if (!_pathNode || !rhs._pathNode)
             return static_cast<bool>(rhs._pathNode);
         return _LessThanInternal(_pathNode, rhs._pathNode);
     }
@@ -758,7 +758,7 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
     BidirectionalIterator result = std::lower_bound(begin, end, path);
 
     // If we didn't get the end, check to see if we got the path exactly.
-    if (result != end and *result == path)
+    if (result != end && *result == path)
         return result;
 
     // If we got begin and didn't match then there's no prefix.

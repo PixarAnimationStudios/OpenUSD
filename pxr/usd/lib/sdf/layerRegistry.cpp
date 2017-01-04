@@ -69,12 +69,12 @@ Sdf_LayerRegistry::layer_repository_path::result_type
 Sdf_LayerRegistry::layer_repository_path::operator()(
     const SdfLayerHandle& layer) const
 {
-    if (not layer) {
+    if (!layer) {
         return std::string();
     }
 
     const string repoPath = layer->GetRepositoryPath();
-    if (not repoPath.empty()) {
+    if (!repoPath.empty()) {
         string layerPath, arguments;
         TF_VERIFY(Sdf_SplitIdentifier(
                 layer->GetIdentifier(), &layerPath, &arguments));
@@ -88,7 +88,7 @@ Sdf_LayerRegistry::layer_real_path::result_type
 Sdf_LayerRegistry::layer_real_path::operator()(
     const SdfLayerHandle& layer) const
 {
-    if (not layer) {
+    if (!layer) {
         return std::string();
     }
 
@@ -99,7 +99,7 @@ Sdf_LayerRegistry::layer_real_path::operator()(
     }
 
     const string realPath = layer->GetRealPath();
-    if (not realPath.empty()) {
+    if (!realPath.empty()) {
         string layerPath, arguments;
         TF_VERIFY(Sdf_SplitIdentifier(
                 layer->GetIdentifier(), &layerPath, &arguments));
@@ -123,7 +123,7 @@ Sdf_LayerRegistry::InsertOrUpdate(
 {
     TRACE_FUNCTION();
 
-    if (not layer) {
+    if (!layer) {
         TF_CODING_ERROR("Expired layer handle");
         return;
     }
@@ -135,7 +135,7 @@ Sdf_LayerRegistry::InsertOrUpdate(
     // Attempt to insert the layer into the registry. This may fail because
     // the new layer violates constraints of one of the registry indices.
     std::pair<_Layers::iterator, bool> result = _layers.insert(layer);
-    if (not result.second) {
+    if (!result.second) {
         SdfLayerHandle existingLayer = *result.first;
         if (layer == existingLayer) {
             // We failed to insert the layer into the registry because this
@@ -194,20 +194,20 @@ Sdf_LayerRegistry::Find(
 
         // If the layer path is not relative, and we haven't found a layer
         // yet, look up the layer using the normalized identifier.
-        if (not foundLayer and not isRelativePath)
+        if (!foundLayer && !isRelativePath)
             foundLayer = FindByIdentifier(layerPath);
 
         // If the layer path is in repository form and we haven't yet
         // found the layer via the identifier, attempt to look up the
         // layer by repository path.
         const bool isRepositoryPath = resolver.IsRepositoryPath(layerPath);
-        if (not foundLayer and isRepositoryPath)
+        if (!foundLayer && isRepositoryPath)
             foundLayer = FindByRepositoryPath(layerPath);
 
         // If the layer has not yet been found, this may be a search path
         // or some other form of path that requires path resolution and
         // lookup in the real path index in order to locate.
-        if (not foundLayer)
+        if (!foundLayer)
             foundLayer = FindByRealPath(layerPath, resolvedPath);
     }
 
@@ -279,10 +279,10 @@ Sdf_LayerRegistry::FindByRealPath(
         return foundLayer;
 
     string searchPath, arguments;
-    if (not Sdf_SplitIdentifier(layerPath, &searchPath, &arguments))
+    if (!Sdf_SplitIdentifier(layerPath, &searchPath, &arguments))
         return foundLayer;
 
-    searchPath = not resolvedPath.empty() ?
+    searchPath = !resolvedPath.empty() ?
         resolvedPath : Sdf_ComputeFilePath(searchPath);
     searchPath = Sdf_CreateIdentifier(searchPath, arguments);
 

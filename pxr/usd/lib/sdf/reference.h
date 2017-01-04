@@ -165,7 +165,7 @@ public:
     ///
     struct IdentityEqual {
         bool operator()(const SdfReference &lhs, const SdfReference &rhs) const {
-            return lhs._assetPath == rhs._assetPath and
+            return lhs._assetPath == rhs._assetPath &&
                    lhs._primPath  == rhs._primPath;
         }
     };
@@ -175,8 +175,8 @@ public:
     ///
     struct IdentityLessThan {
         bool operator()(const SdfReference &lhs, const SdfReference &rhs) const {
-            return lhs._assetPath <  rhs._assetPath or
-                  (lhs._assetPath == rhs._assetPath and
+            return lhs._assetPath <  rhs._assetPath ||
+                  (lhs._assetPath == rhs._assetPath &&
                    lhs._primPath  <  rhs._primPath);
         }
     };

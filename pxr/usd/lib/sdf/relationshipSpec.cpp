@@ -55,19 +55,19 @@ SdfRelationshipSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner prim");
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_RelationshipChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_RelationshipChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR("Cannot create a relationship on %s with "
             "invalid name: %s", owner->GetPath().GetText(), name.c_str());
         return TfNullPtr;
     }
 
     SdfPath relPath = owner->GetPath().AppendProperty(TfToken(name));
-    if (not relPath.IsPropertyPath()) {
+    if (!relPath.IsPropertyPath()) {
         TF_CODING_ERROR(
             "Cannot create relationship at invalid path <%s.%s>",
             owner->GetPath().GetText(), name.c_str());
@@ -76,11 +76,11 @@ SdfRelationshipSpec::New(
     
     // RelationshipSpecs are considered initially to have only required fields 
     // only if they are not custom.
-    bool hasOnlyRequiredFields = (not custom);
+    bool hasOnlyRequiredFields = (!custom);
 
     SdfChangeBlock block;
 
-    if (not Sdf_ChildrenUtils<Sdf_RelationshipChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_RelationshipChildPolicy>::CreateSpec(
             owner->GetLayer(), relPath, SdfSpecTypeRelationship, 
             hasOnlyRequiredFields)) {
         return TfNullPtr;
@@ -129,9 +129,9 @@ SdfRelationshipSpec::_FindOrCreateTargetSpec(const SdfPath& path)
     const SdfPath targetPath = _CanonicalizeTargetPath(path);
 
     SdfSpecHandle relTargetSpec = _GetTargetSpec(targetPath);
-    if (not relTargetSpec) {
+    if (!relTargetSpec) {
         SdfAllowed allowed;
-        if (not PermissionToEdit()) { 
+        if (!PermissionToEdit()) { 
             allowed = SdfAllowed("Permission denied");
         }
         else {
@@ -193,7 +193,7 @@ SdfRelationshipSpec::ReplaceTargetPath(
     // Check permissions; this is done here to catch the case where ChangePaths
     // is not called due to an erroneous oldPath being supplied, and ModifyEdits
     // won't check either if there are no changes made.
-    if (not PermissionToEdit()) {
+    if (!PermissionToEdit()) {
         TF_CODING_ERROR("ReplaceTargetPath: Permission denied.");
         return;
     }
@@ -244,7 +244,7 @@ SdfRelationshipSpec::ReplaceTargetPath(
             // We decide not to care.  If the target has no attributes
             // then we'll allow the replacement.  If it does have
             // attributes then we must refuse.
-            if (not GetAttributesForTargetPath(newTargetPath).empty()) {
+            if (!GetAttributesForTargetPath(newTargetPath).empty()) {
                 TF_CODING_ERROR("Can't replace target %s with target %s in "
                                 "relationship %s: %s",
                                 oldPath.GetText(),
@@ -257,11 +257,11 @@ SdfRelationshipSpec::ReplaceTargetPath(
             // Remove the existing spec at the new target path.
             _DeleteSpec(newTargetSpecPath);
 
-            TF_VERIFY (not layer->HasSpec(newTargetSpecPath));
+            TF_VERIFY (!layer->HasSpec(newTargetSpecPath));
         }
         
         // Move the spec and all the fields under it.
-        if (not _MoveSpec(oldTargetSpecPath, newTargetSpecPath)) {
+        if (!_MoveSpec(oldTargetSpecPath, newTargetSpecPath)) {
             TF_CODING_ERROR("Cannot move %s to %s", oldTargetPath.GetText(),
                 newTargetPath.GetText());
             return;
@@ -331,7 +331,7 @@ SdfRelationshipSpec::SetAttributesForTargetPath(
 
     // Create the relationship target if it doesn't already exist
     SdfTargetsProxy targets = GetTargetPathList();
-    if (not targets.ContainsItemEdit(absPath, true /*onlyAddOrExplicit*/)) {
+    if (!targets.ContainsItemEdit(absPath, true /*onlyAddOrExplicit*/)) {
         targets.Add(absPath);
     }
         
@@ -345,7 +345,7 @@ SdfRelationshipSpec::InsertAttributeForTargetPath(
     const SdfAttributeSpecHandle& attr,
     int index)
 {
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR("Invalid attribute spec");
         return false;
     }
@@ -357,7 +357,7 @@ SdfRelationshipSpec::InsertAttributeForTargetPath(
     const SdfPath targetPath = _CanonicalizeTargetPath(path);
 
     SdfSpecHandle relTargetSpec = _FindOrCreateTargetSpec(targetPath);
-    if (not relTargetSpec) {
+    if (!relTargetSpec) {
         TF_CODING_ERROR("Insert relational attribute: Failed to create "
             "target <%s>", targetPath.GetText());
         return false;
@@ -372,7 +372,7 @@ SdfRelationshipSpec::RemoveAttributeForTargetPath(
     const SdfPath& path,
     const SdfAttributeSpecHandle& attr)
 {
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR("Invalid attribute spec");
         return;
     }
@@ -382,7 +382,7 @@ SdfRelationshipSpec::RemoveAttributeForTargetPath(
     const SdfPath targetSpecPath = 
         GetPath().AppendTarget(_CanonicalizeTargetPath(path));
 
-    if (attr->GetLayer() != GetLayer() or
+    if (attr->GetLayer() != GetLayer() ||
         attr->GetPath().GetParentPath() != targetSpecPath) {
         TF_CODING_ERROR("'%s' is not an attribute for target <%s>",
             attr->GetName().c_str(),
@@ -419,14 +419,14 @@ SdfPath
 SdfRelationshipSpec::GetTargetPathForAttribute(
     const SdfAttributeSpecConstHandle& attr) const
 {
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR("Invalid attribute spec");
         return SdfPath::EmptyPath();
     }
 
     // Verify that the given attribute is actually a relational attribute
     // spec.
-    if (not attr->GetPath().IsRelationalAttributePath()) {
+    if (!attr->GetPath().IsRelationalAttributePath()) {
         TF_CODING_ERROR("<%s> is not a relational attribute",
             attr->GetPath().GetText());
         return SdfPath();
@@ -436,8 +436,8 @@ SdfRelationshipSpec::GetTargetPathForAttribute(
     // in this layer and that relationship target's parent is this object.
     const SdfSpecHandle relTargetSpec = 
         attr->GetLayer()->GetObjectAtPath(attr->GetPath().GetParentPath());
-    if (not relTargetSpec or
-        relTargetSpec->GetLayer() != GetLayer() or
+    if (!relTargetSpec ||
+        relTargetSpec->GetLayer() != GetLayer() ||
         relTargetSpec->GetPath().GetParentPath() != GetPath()) {
         TF_CODING_ERROR("<%s> is not an attribute of relationship '<%s>'",
             attr->GetPath().GetText(),
@@ -471,7 +471,7 @@ SdfRelationshipSpec::SetTargetAttributeOrders(
 {
     // Explicitly check permission here to ensure that any editing operation
     // (even no-ops) trigger an error.
-    if (not PermissionToEdit()) {
+    if (!PermissionToEdit()) {
         TF_CODING_ERROR("Set target attribute orders: Permission denied");
         return;
     }
@@ -498,13 +498,13 @@ SdfRelationshipSpec::HasAttributeOrderForTargetPath(const SdfPath& path) const
     const std::vector<TfToken> ordering = 
         GetLayer()->GetFieldAs<std::vector<TfToken> >(
             targetSpecPath, SdfFieldKeys->PropertyOrder);
-    return not ordering.empty();
+    return !ordering.empty();
 }
 
 SdfNameOrderProxy 
 SdfRelationshipSpec::GetAttributeOrderForTargetPath(const SdfPath& path) const
 {
-    if (not HasAttributeOrderForTargetPath(path)) {
+    if (!HasAttributeOrderForTargetPath(path)) {
         return SdfNameOrderProxy(SdfListOpTypeOrdered);
     }
 
@@ -516,7 +516,7 @@ SdfNameOrderProxy
 SdfRelationshipSpec::GetOrCreateAttributeOrderForTargetPath(
     const SdfPath& path)
 {
-    if (not PermissionToEdit()) {
+    if (!PermissionToEdit()) {
         TF_CODING_ERROR("Cannot create attribute order for target path <%s> in "
                         "relationship <%s>: Permission denied.", 
                         path.GetText(), GetPath().GetText());
@@ -525,7 +525,7 @@ SdfRelationshipSpec::GetOrCreateAttributeOrderForTargetPath(
 
     const bool specRetrievedOrCreated = (bool)_FindOrCreateTargetSpec(path);
 
-    if (not specRetrievedOrCreated) {
+    if (!specRetrievedOrCreated) {
         TF_CODING_ERROR("Can't create attribute ordering for target path "
                         "<%s> in relationship <%s>: Couldn't create target.",
                         path.GetText(), GetPath().GetText());

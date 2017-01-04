@@ -79,7 +79,7 @@ SdfSpecType
 SdfSpec::GetSpecType() const
 {
     // We can't retrieve an object type for a dormant spec.
-    if (not _id or not _id->GetLayer()) {
+    if (!_id || !_id->GetLayer()) {
 	return SdfSpecTypeUnknown;
     }
     const SdfPath & path = _id->GetPath();
@@ -93,7 +93,7 @@ bool
 SdfSpec::IsDormant() const
 {
     // If we have no id, we're dormant.
-    if (not _id)
+    if (!_id)
         return true;
 
     // If our path is invalid, we must be dormant.
@@ -104,7 +104,7 @@ SdfSpec::IsDormant() const
     // If our layer is invalid, we're dormant.  Otherwise we're dormant if the
     // layer has no spec at this path.
     SdfLayerHandle const &layer = _id->GetLayer();
-    return ARCH_UNLIKELY(not layer) or not layer->HasSpec(path);
+    return ARCH_UNLIKELY(!layer) || !layer->HasSpec(path);
 }
 
 bool
@@ -116,7 +116,7 @@ SdfSpec::PermissionToEdit() const
 std::vector<TfToken>
 SdfSpec::ListFields() const
 {
-    if (not _id) {
+    if (!_id) {
         return std::vector<TfToken>();
     }
     const SdfPath & path = _id->GetPath();
@@ -144,7 +144,7 @@ SdfSpec::GetField(const TfToken &name) const
 bool
 SdfSpec::SetField(const TfToken & name, const VtValue& value)
 {
-    if (not _id) {
+    if (!_id) {
 	return false;
     }
     _id->GetLayer()->SetField(_id->GetPath(), name, value);
@@ -154,7 +154,7 @@ SdfSpec::SetField(const TfToken & name, const VtValue& value)
 bool
 SdfSpec::ClearField(const TfToken & name)
 {
-    if (not _id) {
+    if (!_id) {
 	return false;
     }
 
@@ -216,7 +216,7 @@ _CanEditInfoOnSpec(
     const SdfSchema::FieldDefinition* fieldDef,
     const char* editType)
 {
-    if (not fieldDef) {
+    if (!fieldDef) {
         TF_CODING_ERROR("Cannot %s value for unknown field '%s'",
                         editType, key.GetText());
         return false;
@@ -228,7 +228,7 @@ _CanEditInfoOnSpec(
         return false;
     }
 
-    if (not schema.IsValidFieldForSpec(fieldDef->GetName(), specType)) {
+    if (!schema.IsValidFieldForSpec(fieldDef->GetName(), specType)) {
         TF_CODING_ERROR("Field '%s' is not valid for spec type %s",
                         key.GetText(),
                         TfStringify(specType).c_str());
@@ -246,7 +246,7 @@ SdfSpec::SetInfo( const TfToken & key, const VtValue &value )
     // coding errors as needed.
     const SdfSchemaBase& schema = GetSchema();
     const SdfSchema::FieldDefinition* fieldDef = schema.GetFieldDefinition(key);
-    if (not _CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "set")) {
+    if (!_CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "set")) {
         return;
     }
 
@@ -324,7 +324,7 @@ SdfSpec::ClearInfo( const TfToken & key )
     // via the Info API. Note this function will issue coding errors as needed.
     const SdfSchemaBase& schema = GetSchema();
     const SdfSchema::FieldDefinition* fieldDef = schema.GetFieldDefinition(key);
-    if (not _CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "clear")) {
+    if (!_CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "clear")) {
         return;
     }
 
@@ -350,7 +350,7 @@ SdfSpec::GetFallbackForInfo( const TfToken & key ) const
 
     const SdfSchemaBase& schema = GetSchema();
     const SdfSchema::FieldDefinition* def = schema.GetFieldDefinition(key);
-    if (not def) {
+    if (!def) {
         TF_CODING_ERROR("Unknown field '%s'", key.GetText());
         return empty;
     }
@@ -358,7 +358,7 @@ SdfSpec::GetFallbackForInfo( const TfToken & key ) const
     const SdfSpecType objType = GetSpecType();
     const SdfSchema::SpecDefinition* specDef =
         schema.GetSpecDefinition(objType);
-    if (not specDef or not specDef->IsMetadataField(key)) {
+    if (!specDef || !specDef->IsMetadataField(key)) {
         TF_CODING_ERROR("Non-metadata key '%s' for type %s",
             key.GetText(), TfStringify(objType).c_str());
         return empty;
@@ -384,13 +384,13 @@ VtValue
 SdfSpec::GetInfo(const TfToken& key) const
 {
     const SdfSchema::FieldDefinition* def = GetSchema().GetFieldDefinition(key);
-    if (not def) {
+    if (!def) {
         TF_CODING_ERROR("Invalid info key: %s",key.GetText());
         return VtValue();
     }
 
     VtValue value = GetField(key);
-    return not value.IsEmpty() ? value : def->GetFallbackValue();
+    return !value.IsEmpty() ? value : def->GetFallbackValue();
 }
 
 bool

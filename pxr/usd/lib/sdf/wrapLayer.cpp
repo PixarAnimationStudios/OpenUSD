@@ -188,7 +188,7 @@ private:
         if (index == -1) {
             index = size;
         }
-        if (index < 0 or index > size) {
+        if (index < 0 || index > size) {
             TfPyThrowIndexError("Index out of range");
         }
         GetLayer()->SetSubLayerOffset(value, index);
@@ -218,7 +218,7 @@ private:
 
         std::string result;
         TF_FOR_ALL(it, values) {
-            if (not result.empty()) {
+            if (!result.empty()) {
                 result += ", ";
             }
             result += TfPyRepr(*it);
@@ -244,7 +244,7 @@ _ExtractFileFormatArguments(
     SdfLayer::FileFormatArguments* args)
 {
     std::string errMsg;
-    if (not SdfFileFormatArgumentsFromPython(dict, args, &errMsg)) {
+    if (!SdfFileFormatArgumentsFromPython(dict, args, &errMsg)) {
         TF_CODING_ERROR(errMsg.c_str());
         return false;
     }
@@ -273,7 +273,7 @@ _Export(
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return false;
     }
 
@@ -375,7 +375,7 @@ _CreateNew(
     const boost::python::dict& dict = boost::python::dict())
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return SdfLayerRefPtr();
     }
 
@@ -390,7 +390,7 @@ _New(
     const boost::python::dict& dict = boost::python::dict())
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return SdfLayerRefPtr();
     }
 
@@ -403,7 +403,7 @@ _FindOrOpen(
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return SdfLayerRefPtr();
     }
 
@@ -416,7 +416,7 @@ _Find(
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return SdfLayerHandle();
     }
 
@@ -430,7 +430,7 @@ _FindRelativeToLayer(
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return SdfLayerHandle();
     }
 
@@ -444,7 +444,7 @@ _FindOrOpenRelativeToLayer(
     const boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
-    if (not _ExtractFileFormatArguments(dict, &args)) {
+    if (!_ExtractFileFormatArguments(dict, &args)) {
         return SdfLayerHandle();
     }
 

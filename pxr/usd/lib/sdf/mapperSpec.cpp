@@ -46,12 +46,12 @@ SdfMapperSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner attribute");
         return TfNullPtr;
     }
     SdfPath absPath = connPath.MakeAbsolutePath(owner->GetPath().GetPrimPath());
-    if (not absPath.IsPropertyPath()) {
+    if (!absPath.IsPropertyPath()) {
         TF_CODING_ERROR("A mapper must have a connection path that "
                         "identifies a property.");
         return TfNullPtr;
@@ -62,7 +62,7 @@ SdfMapperSpec::New(
 
     SdfChangeBlock block;
 
-    if (not Sdf_ChildrenUtils<Sdf_MapperChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_MapperChildPolicy>::CreateSpec(
             owner->GetLayer(), mapperPath, SdfSpecTypeMapper)) {
 	return TfNullPtr;
     }

@@ -62,7 +62,7 @@ Sdf_ParserValueContext::SetupFactory(const std::string &typeName)
 
         valueTypeName = typeName;
 
-        if (not valueTypeIsValid) {
+        if (!valueTypeIsValid) {
             valueFunc = Sdf_ParserHelpers::ValueFactoryFunc();
             valueIsShaped = false;
             valueTupleDimensions = SdfTupleDimensions();
@@ -87,7 +87,7 @@ Sdf_ParserValueContext::ProduceValue(std::string *errStrPtr)
         ret = SdfUnregisteredValue(GetRecordedString());
     }
     else {
-        if (not valueFunc) {
+        if (!valueFunc) {
             // CODE_COVERAGE_OFF
             // We will already have detected a bad typename as we tried to
             // create the attribute for this value.  We should not hit this
@@ -164,7 +164,7 @@ Sdf_ParserValueContext::AppendValue(const Value& value)
     }
 
     // if inside a list (dim>0) and not inside a tuple (tupleDepth==0)
-    if (tupleDepth == 0 and dim)
+    if (tupleDepth == 0 && dim)
         workingShape[dim-1] += 1;
 
     // If we're at the deepest level of the tuple, keep track of the number of
@@ -299,7 +299,7 @@ Sdf_ParserValueContext::EndTuple()
     }
     // If we're working on a shaped type and we popped out of a tuple,
     // add another element to the working shape here.
-    if (tupleDepth == 0 and dim)
+    if (tupleDepth == 0 && dim)
         ++workingShape[dim-1];
 }
 

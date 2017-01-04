@@ -379,7 +379,7 @@ public:
     /// Inequality comparison.
     template <class T2>
     bool operator!=(const SdfListProxy<T2>& y) const {
-        return not (*this == y);
+        return !(*this == y);
     }
 
     /// Less-than comparison.
@@ -397,13 +397,13 @@ public:
     /// Greater-than comparison.
     template <class T2>
     bool operator>(const SdfListProxy<T2>& y) const {
-        return not (*this <= y);
+        return !(*this <= y);
     }
 
     /// Greater-than-or-equal comparison.
     template <class T2>
     bool operator>=(const SdfListProxy<T2>& y) const {
-        return not (*this < y);
+        return !(*this < y);
     }
 
     /// Equality comparison.
@@ -430,7 +430,7 @@ public:
     /// \c false otherwise.
     operator UnspecifiedBoolType() const
     {
-        return _listEditor and _listEditor->IsValid() and _IsRelevant() ? 
+        return _listEditor && _listEditor->IsValid() && _IsRelevant() ? 
             &This::_listEditor : NULL;
     }
 
@@ -438,7 +438,7 @@ public:
     /// \c true otherwise.
     bool operator!() const 
     { 
-        return not _listEditor or not _listEditor->IsValid();
+        return !_listEditor || !_listEditor->IsValid();
     }
 
     // Extensions
@@ -458,7 +458,7 @@ public:
     /// Returns true if the list editor is expired.
     bool IsExpired() const
     {
-        return _listEditor and _listEditor->IsExpired();
+        return _listEditor && _listEditor->IsExpired();
     }
 
     size_t Count(const value_type& value) const
@@ -513,7 +513,7 @@ public:
     /// Applies the edits in the given list to this one.
     void ApplyList(const SdfListProxy &list) 
     {
-        if (_Validate() and list._Validate()) {
+        if (_Validate() && list._Validate()) {
             _listEditor->ApplyList(_op, *list._listEditor);
         }
     }
@@ -521,7 +521,7 @@ public:
 private:
     bool _Validate()
     {
-        if (not _listEditor) {
+        if (!_listEditor) {
             return false;
         }
 
@@ -534,7 +534,7 @@ private:
 
     bool _Validate() const
     {
-        if (not _listEditor) {
+        if (!_listEditor) {
             return false;
         }
 
@@ -583,9 +583,9 @@ private:
         if (_Validate()) {
             // Allow policy to raise an error even if we're not
             // doing anything.
-            if (n == 0 and elems.empty()) {
+            if (n == 0 && elems.empty()) {
                 SdfAllowed canEdit = _listEditor->PermissionToEdit(_op);
-                if (not canEdit) {
+                if (!canEdit) {
                     TF_CODING_ERROR("Editing list: %s", 
                                     canEdit.GetWhyNot().c_str());
                 }
@@ -594,7 +594,7 @@ private:
 
             bool valid = 
                 _listEditor->ReplaceEdits(_op, index, n, elems);
-            if (not valid) {
+            if (!valid) {
                 TF_CODING_ERROR("Inserting invalid value into list editor");
             }
         }

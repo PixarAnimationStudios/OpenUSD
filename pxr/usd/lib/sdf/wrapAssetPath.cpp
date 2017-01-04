@@ -46,7 +46,7 @@ _Repr(SdfAssetPath const &self)
          << TfPyRepr(self.GetAssetPath());
 
     const std::string & resolvedPath = self.GetResolvedPath();
-    if (not resolvedPath.empty()) {
+    if (!resolvedPath.empty()) {
         repr << ", " << TfPyRepr(resolvedPath);
     }
     repr << ")";
@@ -55,7 +55,7 @@ _Repr(SdfAssetPath const &self)
 
 static bool _Nonzero(SdfAssetPath const &self)
 {
-    return not self.GetAssetPath().empty();
+    return !self.GetAssetPath().empty();
 }
 
 static size_t _Hash(SdfAssetPath const &self)

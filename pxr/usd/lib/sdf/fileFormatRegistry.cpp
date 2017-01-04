@@ -63,7 +63,7 @@ Sdf_FileFormatRegistry::_Info::GetFileFormat() const
     
     if (newFormat) {
         std::lock_guard<std::mutex> lock(_formatMutex);
-        if (not _hasFormat) {
+        if (!_hasFormat) {
             _format = newFormat;
             _hasFormat = true;
         }
@@ -172,7 +172,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
 
     std::set<TfType> formatTypes;
     TfType formatBaseType = TfType::Find<SdfFileFormat>();
-    if (TF_VERIFY(not formatBaseType.IsUnknown()))
+    if (TF_VERIFY(!formatBaseType.IsUnknown()))
         PlugRegistry::GetAllDerivedTypes(formatBaseType, &formatTypes);
 
     for (auto formatType : formatTypes) {
@@ -181,7 +181,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             "Type '%s'\n", formatType.GetTypeName().c_str());
 
         PlugPluginPtr plugin = reg.GetPluginForType(formatType);
-        if (not plugin)
+        if (!plugin)
             continue;
 
         TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
@@ -196,7 +196,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        if (not aFormatId.IsString()) {
+        if (!aFormatId.IsString()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
                 _PlugInfoKeyTokens->FormatId.GetText(),
@@ -224,7 +224,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        if (not aExtensions.IsArrayOf<string>()) {
+        if (!aExtensions.IsArrayOf<string>()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
                 _PlugInfoKeyTokens->Extensions.GetText(),
@@ -250,7 +250,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             TF_FOR_ALL(type, typeHierarchy) {
                 aTarget = reg.GetDataFromPluginMetaData(
                     *type, _PlugInfoKeyTokens->Target);
-                if (not aTarget.IsNull()) {
+                if (!aTarget.IsNull()) {
                     TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
                         "    Found target for type '%s' from type '%s'\n",
                         formatType.GetTypeName().c_str(),
@@ -267,7 +267,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        if (not aTarget.IsString()) {
+        if (!aTarget.IsString()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
                 _PlugInfoKeyTokens->Target.GetText(),
@@ -340,7 +340,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
     TF_FOR_ALL(extIt, fullExtensionIndex) {
         const std::string& ext = extIt->first;
         const _InfoSharedPtrVector& infos = extIt->second;
-        TF_VERIFY(not infos.empty());
+        TF_VERIFY(!infos.empty());
 
         _InfoSharedPtr primaryFormatInfo;
         if (infos.size() == 1) {
@@ -354,7 +354,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
                     continue;
                 }
 
-                if (not aPrimary.IsBool()) {
+                if (!aPrimary.IsBool()) {
                     TF_CODING_ERROR("Unexpected value type for key '%s' "
                         "in plugin meta data for file format type '%s'",
                         _PlugInfoKeyTokens->Primary.GetText(),
@@ -364,7 +364,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
                 const bool isPrimary = aPrimary.GetBool();
 
                 if (isPrimary) {
-                    if (not primaryFormatInfo) {
+                    if (!primaryFormatInfo) {
                         primaryFormatInfo = *infoIt;
                         // Note we do not break out of this for loop after
                         // finding the primary format; allow the loop to
@@ -383,7 +383,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
                 }
             }
 
-            if (not primaryFormatInfo and errorExtensions.insert(ext).second) {
+            if (!primaryFormatInfo && errorExtensions.insert(ext).second) {
                 TF_CODING_ERROR(
                     "No primary file format specified for extension '%s', "
                     "skipping.", ext.c_str());
@@ -398,7 +398,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
     // Now take the lock and see if we're the thread that gets to set the real
     // state.  Another thread may have beaten us to it.
     std::lock_guard<std::mutex> lock(_mutex);
-    if (not _registeredFormatPlugins) {
+    if (!_registeredFormatPlugins) {
         // Publish.
         TF_VERIFY(_formatInfo.empty());
         TF_VERIFY(_extensionIndex.empty());
@@ -417,7 +417,7 @@ SdfFileFormatConstPtr
 Sdf_FileFormatRegistry::_GetFileFormat(
     const _InfoSharedPtr& info)
 {
-    if (not TF_VERIFY(info))
+    if (!TF_VERIFY(info))
         return TfNullPtr;
 
     return info->GetFileFormat();

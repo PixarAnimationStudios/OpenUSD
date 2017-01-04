@@ -138,7 +138,7 @@ static void _AddToUnitsMaps(const TfEnum &unit,
                             double scale,
                             const string &category)
 {
-    if (not _UnitsMap) {
+    if (!_UnitsMap) {
         _UnitsMap = new map<string, map<int, double> *>;
         _DefaultUnitsMap = new map<string, TfEnum>;
         _UnitCategoryToDefaultUnitMap = new map<string, TfEnum>;
@@ -155,7 +155,7 @@ static void _AddToUnitsMaps(const TfEnum &unit,
     const char *enumTypeName = unit.GetType().name();
     map<int, double> *scalesMap = (*_UnitsMap)[enumTypeName];
 
-    if (not scalesMap) {
+    if (!scalesMap) {
         scalesMap = (*_UnitsMap)[enumTypeName] = new map<int, double>;
     }
     (*scalesMap)[unit.GetValueAsInt()] = scale;
@@ -224,7 +224,7 @@ SdfDefaultUnit( const TfEnum &unit )
 {
     static TfEnum empty;
 
-    if (not _DefaultUnitsMap) {
+    if (!_DefaultUnitsMap) {
         // CODE_COVERAGE_OFF
         // This can only happen if someone calls this function from a
         // registry function, and that does not happen.
@@ -248,7 +248,7 @@ SdfUnitCategory( const TfEnum &unit )
 {
     static string empty;
 
-    if (not _UnitTypeNameToUnitCategoryMap) {
+    if (!_UnitTypeNameToUnitCategoryMap) {
         // CODE_COVERAGE_OFF
         // This can only happen if someone calls this function from a
         // registry function, and that does not happen.
@@ -276,7 +276,7 @@ Sdf_GetUnitIndices( const TfEnum &unit )
 
 double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit )
 {
-    if (not _UnitsMap) {
+    if (!_UnitsMap) {
         // CODE_COVERAGE_OFF
         // This can only happen if someone calls this function from a
         // registry function, and that does not happen.
@@ -284,7 +284,7 @@ double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit )
         return 0.0;
         // CODE_COVERAGE_ON
     }
-    if ( not toUnit.IsA(fromUnit.GetType()) ) {
+    if (!toUnit.IsA(fromUnit.GetType()) ) {
         TF_WARN("Can not convert from '%s' to '%s'.",
                 TfEnum::GetFullName(fromUnit).c_str(),
                 TfEnum::GetFullName(toUnit).c_str());
@@ -307,8 +307,8 @@ SdfGetNameForUnit( const TfEnum &unit )
 {
     static std::string empty;
 
-    if (not _UnitTypeIndicesTable or
-        not _UnitNameTable) {
+    if (!_UnitTypeIndicesTable ||
+        !_UnitNameTable) {
         // CODE_COVERAGE_OFF
         // This can only happen if someone calls this function from a
         // registry function, and that does not happen.
@@ -337,7 +337,7 @@ SdfGetUnitFromName( const std::string &name )
 {
     static TfEnum empty;
 
-    if (not _UnitNameToUnitMap) {
+    if (!_UnitNameToUnitMap) {
         // CODE_COVERAGE_OFF
         // This can only happen if someone calls this function from a
         // registry function, and that does not happen.
@@ -488,14 +488,14 @@ Sdf_ValueTypeNamesType::GetSerializationName(
     if (TfGetEnvSetting(SDF_WRITE_OLD_TYPENAMES)) {
         // Return the last registered alias, which is the old type name.
         const TfToken name = typeName.GetAliasesAsTokens().back();
-        if (not name.IsEmpty()) {
+        if (!name.IsEmpty()) {
             return name;
         }
     }
     if (TfGetEnvSetting(SDF_CONVERT_TO_NEW_TYPENAMES)) {
         // Return the first registered alias, which is the new type name.
         const TfToken name = typeName.GetAliasesAsTokens().front();
-        if (not name.IsEmpty()) {
+        if (!name.IsEmpty()) {
             return name;
         }
     }

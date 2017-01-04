@@ -40,7 +40,7 @@ _Repr(const SdfLayerOffset &self) {
 
     std::stringstream s;
     s << TF_PY_REPR_PREFIX + "LayerOffset(";
-    if (offset != 0.0 or scale != 1.0) {
+    if (offset != 0.0 || scale != 1.0) {
         s << offset;
         if (scale != 1.0)
             s << ", " << scale;

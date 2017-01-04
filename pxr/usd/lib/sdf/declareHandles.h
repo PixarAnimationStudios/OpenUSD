@@ -149,7 +149,7 @@ template <class T>
 T*
 get_pointer(const SdfHandle<T>& x)
 {
-    return not x ? 0 : x.operator->();
+    return !x ? 0 : x.operator->();
 }
 
 namespace boost {

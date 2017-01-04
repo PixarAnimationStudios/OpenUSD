@@ -53,12 +53,12 @@ SdfAttributeSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
 	TF_CODING_ERROR("Cannot create an SdfAttributeSpec with a null owner");
 	return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR(
             "Cannot create attribute on %s with invalid name: %s",
             owner->GetPath().GetText(), name.c_str());
@@ -66,7 +66,7 @@ SdfAttributeSpec::New(
     }
 
     SdfPath attributePath = owner->GetPath().AppendProperty(TfToken(name));
-    if (not attributePath.IsPropertyPath()) {
+    if (!attributePath.IsPropertyPath()) {
         TF_CODING_ERROR(
             "Cannot create attribute at invalid path <%s.%s>",
             owner->GetPath().GetText(), name.c_str());
@@ -87,7 +87,7 @@ SdfAttributeSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner relationship");
         return TfNullPtr;
     }
@@ -102,11 +102,11 @@ SdfAttributeSpec::_New(
     SdfVariability variability,
     bool custom)
 {
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner");
         return TfNullPtr;
     }
-    if (not typeName) {
+    if (!typeName) {
         TF_CODING_ERROR("Cannot create attribute spec <%s> with invalid type",
                         attrPath.GetText());
         return TfNullPtr;
@@ -116,9 +116,9 @@ SdfAttributeSpec::_New(
 
     // AttributeSpecs are considered initially to have only required fields 
     // only if they are not custom.
-    bool hasOnlyRequiredFields = (not custom);
+    bool hasOnlyRequiredFields = (!custom);
 
-    if (not Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
             owner->GetLayer(), attrPath, SdfSpecTypeAttribute, 
             hasOnlyRequiredFields)) {
         return TfNullPtr;
@@ -147,11 +147,11 @@ SdfAttributeSpec::_New(
     SdfVariability variability,
     bool custom)
 {
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner");
         return TfNullPtr;
     }
-    if (not typeName) {
+    if (!typeName) {
         TF_CODING_ERROR("Cannot create attribute spec <%s> with invalid type",
                         owner->GetPath().AppendTarget(path).
                             AppendProperty(TfToken(name)).GetText());
@@ -165,7 +165,7 @@ SdfAttributeSpec::_New(
     SdfPath targetPath = owner->GetPath().AppendTarget(absPath);
 
     // Check to make sure that the name is valid
-    if (not Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR(
             "Cannot create attribute on %s with invalid name: %s",
             targetPath.GetText(), name.c_str());
@@ -179,11 +179,11 @@ SdfAttributeSpec::_New(
 
     // AttributeSpecs are considered initially to have only required fields 
     // only if they are not custom.
-    bool hasOnlyRequiredFields = (not custom);
+    bool hasOnlyRequiredFields = (!custom);
 
     // Create the relational attribute spec
     SdfPath attrPath = targetPath.AppendRelationalAttribute(TfToken(name));
-    if (not Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
             owner->GetLayer(), attrPath, SdfSpecTypeAttribute, 
             hasOnlyRequiredFields)) {
         return TfNullPtr;
@@ -264,7 +264,7 @@ void
 SdfAttributeSpec::ChangeMapperPath(
     const SdfPath& oldPath, const SdfPath& newPath)
 {
-    if (not PermissionToEdit()) {
+    if (!PermissionToEdit()) {
         TF_CODING_ERROR("Change mapper path: Permission denied.");
         return;
     }
@@ -280,7 +280,7 @@ SdfAttributeSpec::ChangeMapperPath(
         // Nothing to do.
         return;
     }
-    if (not newAbsPath.IsPropertyPath()) {
+    if (!newAbsPath.IsPropertyPath()) {
         TF_CODING_ERROR("cannot change connection path for attribute %s's "
                         "mapper at connection path <%s> to <%s> because it's "
                         "not a property path",
@@ -338,7 +338,7 @@ SdfAttributeSpec::_FindOrCreateChildSpecForMarker(const SdfPath& key)
     const SdfPath connectionSpecPath = GetPath().AppendTarget(targetPath);
 
     SdfSpecHandle child = GetLayer()->GetObjectAtPath(connectionSpecPath);
-    if (not child) {
+    if (!child) {
         Sdf_ChildrenUtils<Sdf_AttributeConnectionChildPolicy>::CreateSpec(
             GetLayer(), connectionSpecPath, SdfSpecTypeConnection);
         child = GetLayer()->GetObjectAtPath(connectionSpecPath);

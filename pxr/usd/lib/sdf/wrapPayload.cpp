@@ -42,12 +42,12 @@ _Repr(const SdfPayload &self)
     string args;
     bool useKeywordArgs = false;
 
-    if (not self.GetAssetPath().empty()) {
+    if (!self.GetAssetPath().empty()) {
         args += TfPyRepr(self.GetAssetPath());
     } else {
         useKeywordArgs = true;
     }
-    if (not self.GetPrimPath().IsEmpty()) {
+    if (!self.GetPrimPath().IsEmpty()) {
         args += (args.empty() ? "": ", ");
         args += (useKeywordArgs ? "primPath=" : "") +
             TfPyRepr(self.GetPrimPath());

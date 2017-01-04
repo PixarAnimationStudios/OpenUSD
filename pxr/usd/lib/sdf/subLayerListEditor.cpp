@@ -54,8 +54,8 @@ Sdf_SubLayerListEditor::_OnEdit(
 
     // If this is ever the case, bad things will probably happen as code
     // in SdfLayer assumes the two vectors are in sync.
-    if (not TF_VERIFY(oldValues.size() == oldLayerOffsets.size(),
-                      "Sublayer offsets do not match sublayer paths")) {
+    if (!TF_VERIFY(oldValues.size() == oldLayerOffsets.size(),
+                  "Sublayer offsets do not match sublayer paths")) {
         return;
     }
 

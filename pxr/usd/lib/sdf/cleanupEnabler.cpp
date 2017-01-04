@@ -47,5 +47,5 @@ SdfCleanupEnabler::~SdfCleanupEnabler()
 bool
 SdfCleanupEnabler::IsCleanupEnabled()
 {
-    return not GetStack().empty();
+    return !GetStack().empty();
 }

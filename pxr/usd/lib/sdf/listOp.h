@@ -84,7 +84,7 @@ public:
         if (IsExplicit()) {
             return true;
         }
-        if (_addedItems.size() != 0 or
+        if (_addedItems.size() != 0 ||
             _deletedItems.size() != 0) {
             return true;
         }

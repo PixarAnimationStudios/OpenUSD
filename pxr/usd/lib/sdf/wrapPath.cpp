@@ -115,7 +115,7 @@ _WrapGetAllTargetPathsRecursively(SdfPath const self)
 static bool
 __nonzero__(SdfPath const &self)
 {
-    return not self.IsEmpty();
+    return !self.IsEmpty();
 }
 
 void wrapPath() {    

@@ -59,7 +59,7 @@ public:
 
     /// Equality, including the resolved path.
     bool operator==(const SdfAssetPath &rhs) const {
-        return _assetPath == rhs._assetPath and
+        return _assetPath == rhs._assetPath &&
                _resolvedPath == rhs._resolvedPath;
     }
 

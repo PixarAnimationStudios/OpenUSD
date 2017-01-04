@@ -56,9 +56,9 @@ operator==(
     const Sdf_AssetInfo& rhs)
 {
     return (lhs.identifier == rhs.identifier)
-        and (lhs.realPath == rhs.realPath)
-        and (lhs.resolverContext == rhs.resolverContext)
-        and (lhs.assetInfo == rhs.assetInfo);
+        && (lhs.realPath == rhs.realPath)
+        && (lhs.resolverContext == rhs.resolverContext)
+        && (lhs.assetInfo == rhs.assetInfo);
 }
 
 bool
@@ -119,7 +119,7 @@ Sdf_ComputeFilePath(
         // because otherwise we may compute a confusing real path
         // for these layers.
         ArResolver& resolver = ArGetResolver();
-        if (not resolver.IsSearchPath(layerPath)) {
+        if (!resolver.IsSearchPath(layerPath)) {
             resolvedPath = resolver.ComputeLocalPath(layerPath);
         }
     }

@@ -104,7 +104,7 @@ struct Sdf_SpecTypeInfo
 
         const std::pair<SpecTypeToBitmask::iterator, bool> mapStatus =
             specTypeToBitmask.insert(std::make_pair(specTfType, 0));
-        if (not mapStatus.second) {
+        if (!mapStatus.second) {
             TF_CODING_ERROR(
                 "Duplicate registration for spec type %s.",
                 specTfType.GetTypeName().c_str());
@@ -242,7 +242,7 @@ _CanCast(SdfSpecType fromType, const TfType& toType)
 
     const Sdf_SpecTypeInfo& specTypeInfo = Sdf_SpecTypeInfo::GetInstance();
     
-    while (not specTypeInfo.registrationsCompleted) {
+    while (!specTypeInfo.registrationsCompleted) {
         // spin until registration has completed.
     }
 
@@ -258,12 +258,12 @@ Sdf_SpecType::Cast(const SdfSpec& from, const std::type_info& to)
 
     const SdfSpecType fromType = from.GetSpecType();
     const TfType& toType = specTypeInfo.TfTypeFind(to);
-    if (not _CanCast(fromType, toType)) {
+    if (!_CanCast(fromType, toType)) {
         return TfType();
     }
 
     const TfType& schemaType = TfType::Find(typeid(from.GetSchema()));
-    if (not TF_VERIFY(not schemaType.IsUnknown())) {
+    if (!TF_VERIFY(!schemaType.IsUnknown())) {
         return TfType();
     }
 
@@ -301,14 +301,14 @@ Sdf_SpecType::CanCast(const SdfSpec& from, const std::type_info& to)
 
     const SdfSpecType fromType = from.GetSpecType();
     const TfType& toType = specTypeInfo.TfTypeFind(to);
-    if (not _CanCast(fromType, toType)) {
+    if (!_CanCast(fromType, toType)) {
         return false;
     }
 
     const TfType& fromSchemaType = TfType::Find(typeid(from.GetSchema()));
     const TfType* toSchemaType = 
         TfMapLookupPtr(specTypeInfo.specTypeToSchemaType, toType);
-    if (not toSchemaType or not fromSchemaType.IsA(*toSchemaType)) {
+    if (!toSchemaType || !fromSchemaType.IsA(*toSchemaType)) {
         return false;
     }
 

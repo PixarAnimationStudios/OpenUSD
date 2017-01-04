@@ -146,7 +146,7 @@ public:
     /// Returns \c true iff this is a valid type.
     operator _UnspecifiedBoolType() const
     {
-        return (not *this) ? 0 : &SdfValueTypeName::_impl;
+        return (!*this) ? 0 : &SdfValueTypeName::_impl;
     }
 
     /// Returns all aliases of the type name as tokens.  These should not
