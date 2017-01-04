@@ -350,11 +350,16 @@ public:
     /// '/E/F.a'
     void GetAllTargetPathsRecursively(SdfPathVector *result) const;
 
-    /// Returns the variant selection for this path, if this is a variant
-    /// selection path.
+    /// Returns the variant selection for this path.
+    ///
     /// Returns a pair of empty strings if this path is not a variant
     /// selection path.
-    std::pair<std::string, std::string> GetVariantSelection() const;
+    ///
+    /// Note that it is possible for a path to have more than one variant
+    /// selection, that is, when a variant prim spec defines a variant set.
+    /// In such cases, "deepest" or right-most variant selection will be
+    /// returned.
+    const std::pair<std::string, std::string> GetVariantSelection() const;
 
     /// Return true if both this path and \a prefix are not the empty
     /// path and this path has \a prefix as a prefix.  Return false otherwise.
