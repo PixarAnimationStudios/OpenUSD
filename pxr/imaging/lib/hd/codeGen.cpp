@@ -1082,7 +1082,7 @@ void
 Hd_CodeGen::_GenerateConstantPrimVar()
 {
     /*
-      // --------- constant data delcaration ----------
+      // --------- constant data declaration ----------
       struct ConstantData0 {
           mat4 transform;
           mat4 transformInverse;
@@ -1154,7 +1154,7 @@ void
 Hd_CodeGen::_GenerateInstancePrimVar()
 {
     /*
-      // --------- instance data delcaration ----------
+      // --------- instance data declaration ----------
       // bindless
       layout (location=X) uniform vec4 *data;
       // not bindless
@@ -1235,7 +1235,7 @@ Hd_CodeGen::_GenerateElementPrimVar(int primType)
     //if (!(_metaData.primitiveParamBinding.binding.IsValid())) return;
 
     /*
-      // --------- uniform (element) data delcaration ----------
+      // --------- uniform (element) data declaration ----------
       struct PrimitiveData { int elementID; }
       layout (std430, binding=?) buffer PrimitiveBuffer {
           PrimtiveData primitiveData[];
@@ -1441,7 +1441,7 @@ void
 Hd_CodeGen::_GenerateVertexPrimVar(int primType)
 {
     /*
-      // --------- vertex data delcaration (VS) ----------
+      // --------- vertex data declaration (VS) ----------
       layout (location = 0) in vec3 normals;
       layout (location = 1) in vec3 points;
 
