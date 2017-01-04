@@ -93,10 +93,10 @@ struct _GetImpl<
     T operator()(uint64_t in) { return _Cast(in); }
     T operator()(int64_t in) { return _Cast(in); }
 
-    // Static cast finite doubles, throw otherwise.
+    // Attempt to cast finite doubles, throw otherwise.
     T operator()(double in) {
         if (std::isfinite(in))
-            return static_cast<T>(in);
+            return _Cast(in);
         throw boost::bad_get();
     }
 

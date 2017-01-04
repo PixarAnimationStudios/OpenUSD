@@ -1519,36 +1519,50 @@ YY_RULE_SETUP
         return TOK_NUMBER;
    }
 	YY_BREAK
-/* Positive integers: store as unsigned long. */
+/* Positive integers: store as uint64_t if in range, otherwise double. */
 case 60:
 YY_RULE_SETUP
 #line 196 "pxr/usd/sdf/textFileFormat.ll"
 {
         bool outOfRange = false;
-        (*yylval_param) = TfStringToULong(yytext, &outOfRange);
-        if (outOfRange)
-            return TOK_SYNTAX_ERROR;
+        (*yylval_param) = TfStringToUInt64(yytext, &outOfRange);
+        if (outOfRange) {
+           TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
+                   "as double.  Consider exponential notation for large "
+                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   yyextra->fileContext.empty() ? "" : " in file ",
+                   yyextra->fileContext.empty() ? "" :
+                   yyextra->fileContext.c_str());
+           (*yylval_param) = TfStringToDouble(yytext);
+        }
         return TOK_NUMBER;
     }
 	YY_BREAK
 /* Negative integers: store as long. */
 case 61:
 YY_RULE_SETUP
-#line 205 "pxr/usd/sdf/textFileFormat.ll"
+#line 212 "pxr/usd/sdf/textFileFormat.ll"
 {
         bool outOfRange = false;
-        (*yylval_param) = TfStringToLong(yytext, &outOfRange);
-        if (outOfRange)
-            return TOK_SYNTAX_ERROR;
+        (*yylval_param) = TfStringToInt64(yytext, &outOfRange);
+        if (outOfRange) {
+           TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
+                   "as double.  Consider exponential notation for large "
+                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   yyextra->fileContext.empty() ? "" : " in file ",
+                   yyextra->fileContext.empty() ? "" :
+                   yyextra->fileContext.c_str());
+           (*yylval_param) = TfStringToDouble(yytext);
+        }
         return TOK_NUMBER;
     }
 	YY_BREAK
 /* Numbers with decimal places or exponents: store as double. */
 case 62:
-#line 215 "pxr/usd/sdf/textFileFormat.ll"
+#line 229 "pxr/usd/sdf/textFileFormat.ll"
 case 63:
 YY_RULE_SETUP
-#line 215 "pxr/usd/sdf/textFileFormat.ll"
+#line 229 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = TfStringToDouble(yytext);
         return TOK_NUMBER;
@@ -1560,7 +1574,7 @@ YY_RULE_SETUP
      * identifiers. */
 case 64:
 YY_RULE_SETUP
-#line 224 "pxr/usd/sdf/textFileFormat.ll"
+#line 238 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = -std::numeric_limits<double>::infinity();
         return TOK_NUMBER;
@@ -1571,7 +1585,7 @@ YY_RULE_SETUP
      */
 case 65:
 YY_RULE_SETUP
-#line 232 "pxr/usd/sdf/textFileFormat.ll"
+#line 246 "pxr/usd/sdf/textFileFormat.ll"
 {
         return yytext[0];
     }
@@ -1582,17 +1596,17 @@ YY_RULE_SETUP
      */
 case 66:
 YY_RULE_SETUP
-#line 240 "pxr/usd/sdf/textFileFormat.ll"
+#line 254 "pxr/usd/sdf/textFileFormat.ll"
 {
         return TOK_SYNTAX_ERROR;
     }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 244 "pxr/usd/sdf/textFileFormat.ll"
+#line 258 "pxr/usd/sdf/textFileFormat.ll"
 ECHO;
 	YY_BREAK
-#line 1573 "<stdout>"
+#line 1587 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(SLASHTERIX_COMMENT):
 	yyterminate();
@@ -2720,7 +2734,7 @@ void textFileFormatYyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 244 "pxr/usd/sdf/textFileFormat.ll"
+#line 258 "pxr/usd/sdf/textFileFormat.ll"
 
 
 

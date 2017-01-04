@@ -758,7 +758,7 @@ TfStringify(float val)
         "nan",
         'e',
         /* decimal_in_shortest_low */ -6,
-        /* deciaml_in_shortest_high */ 21,
+        /* decimal_in_shortest_high */ 15,
         /* max_leading_padding_zeroes_in_precision_mode */ 0,
         /* max_trailing_padding_zeroes_in_precision_mode */ 0);
     static const int bufSize = 128;
@@ -779,7 +779,7 @@ TfStringify(double val)
         "nan",
         'e',
         /* decimal_in_shortest_low */ -6,
-        /* deciaml_in_shortest_high */ 21,
+        /* decimal_in_shortest_high */ 15,
         /* max_leading_padding_zeroes_in_precision_mode */ 0,
         /* max_trailing_padding_zeroes_in_precision_mode */ 0);
     static const int bufSize = 128;

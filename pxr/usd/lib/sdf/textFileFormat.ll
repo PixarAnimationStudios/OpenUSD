@@ -192,21 +192,35 @@ using std::vector;
         return TOK_NUMBER;
    }
 
-    /* Positive integers: store as unsigned long. */
+    /* Positive integers: store as uint64_t if in range, otherwise double. */
 [[:digit:]]+ {
         bool outOfRange = false;
-        (*yylval_param) = TfStringToULong(yytext, &outOfRange);
-        if (outOfRange)
-            return TOK_SYNTAX_ERROR;
+        (*yylval_param) = TfStringToUInt64(yytext, &outOfRange);
+        if (outOfRange) {
+           TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
+                   "as double.  Consider exponential notation for large "
+                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   yyextra->fileContext.empty() ? "" : " in file ",
+                   yyextra->fileContext.empty() ? "" :
+                   yyextra->fileContext.c_str());
+           (*yylval_param) = TfStringToDouble(yytext);
+        }
         return TOK_NUMBER;
     }
 
     /* Negative integers: store as long. */
 -[[:digit:]]+ {
         bool outOfRange = false;
-        (*yylval_param) = TfStringToLong(yytext, &outOfRange);
-        if (outOfRange)
-            return TOK_SYNTAX_ERROR;
+        (*yylval_param) = TfStringToInt64(yytext, &outOfRange);
+        if (outOfRange) {
+           TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
+                   "as double.  Consider exponential notation for large "
+                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   yyextra->fileContext.empty() ? "" : " in file ",
+                   yyextra->fileContext.empty() ? "" :
+                   yyextra->fileContext.c_str());
+           (*yylval_param) = TfStringToDouble(yytext);
+        }
         return TOK_NUMBER;
     }
 
