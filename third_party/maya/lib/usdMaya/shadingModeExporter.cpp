@@ -27,7 +27,7 @@
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -222,7 +222,7 @@ PxrUsdMayaShadingModeExportContext::MakeStandardLookPrim(
     UsdStageRefPtr stage = GetUsdStage();
     if (UsdPrim lookParent = _GetLookParent(stage, assignmentsToBind)) {
         SdfPath lookPath = lookParent.GetPath().AppendChild(TfToken(lookName));
-        UsdShadeLook look = UsdShadeLook::Define(GetUsdStage(), lookPath);
+        UsdShadeMaterial look = UsdShadeMaterial::Define(GetUsdStage(), lookPath);
 
         UsdPrim lookPrim = look.GetPrim();
 
@@ -235,7 +235,7 @@ PxrUsdMayaShadingModeExportContext::MakeStandardLookPrim(
             if (faceIndices.empty()) {
                 look.Bind(boundPrim);
             } else {
-                UsdGeomFaceSetAPI faceSet = look.CreateLookFaceSet(boundPrim);
+                UsdGeomFaceSetAPI faceSet = look.CreateMaterialFaceSet(boundPrim);
                 faceSet.AppendFaceGroup(faceIndices, lookPath);
             }
         }

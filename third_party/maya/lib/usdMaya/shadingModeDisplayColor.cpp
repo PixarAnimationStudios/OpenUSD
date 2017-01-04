@@ -127,8 +127,8 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
 
     bool makeLookPrim = true;
     if (makeLookPrim) {
-        if (UsdShadeLook look = 
-            UsdShadeLook(context->MakeStandardLookPrim(assignments))) {
+        if (UsdShadeMaterial look = 
+            UsdShadeMaterial(context->MakeStandardLookPrim(assignments))) {
             // Create a Diffuse RIS shader for the Look.
             // Although Maya can't yet make use of it, downstream apps
             // can make use of Look interface attributes, so create one to
@@ -186,7 +186,7 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
         
 DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
 {
-    const UsdShadeLook& shadeLook = context->GetShadeLook();
+    const UsdShadeMaterial& shadeLook = context->GetShadeLook();
     const UsdGeomGprim& primSchema = context->GetBoundPrim();
 
     MStatus status;

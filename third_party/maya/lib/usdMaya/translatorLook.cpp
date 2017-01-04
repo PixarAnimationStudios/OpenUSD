@@ -45,7 +45,7 @@ TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorLookTokens,
 MObject
 PxrUsdMayaTranslatorLook::Read(
         const TfToken& shadingMode,
-        const UsdShadeLook& shadeLook,
+        const UsdShadeMaterial& shadeMaterial,
         const UsdGeomGprim& boundPrim,
         PxrUsdMayaPrimReaderContext* context)
 {
@@ -53,11 +53,11 @@ PxrUsdMayaTranslatorLook::Read(
         return MObject();
     }
 
-    PxrUsdMayaShadingModeImportContext c(shadeLook, boundPrim, context);
+    PxrUsdMayaShadingModeImportContext c(shadeMaterial, boundPrim, context);
 
     MObject shadingEngine;
 
-    if (c.GetCreatedObject(shadeLook.GetPrim(), &shadingEngine)) {
+    if (c.GetCreatedObject(shadeMaterial.GetPrim(), &shadingEngine)) {
         return shadingEngine;
     }
 
@@ -84,7 +84,7 @@ PxrUsdMayaTranslatorLook::Read(
         // objects into their own namespace.
         std::string shadingEngineName =
             PxrUsdMayaTranslatorLookTokens->LookNamespace.GetString() + std::string(":") +
-            (shadeLook ? shadeLook.GetPrim() : boundPrim.GetPrim()
+            (shadeMaterial ? shadeMaterial.GetPrim() : boundPrim.GetPrim()
                 ).GetName().GetString();
 
         if (!status) {
@@ -102,12 +102,12 @@ PxrUsdMayaTranslatorLook::Read(
                 true);
     }
 
-    return c.AddCreatedObject(shadeLook.GetPrim(), shadingEngine);
+    return c.AddCreatedObject(shadeMaterial.GetPrim(), shadingEngine);
 }
 
 static 
 bool 
-_AssignLookFaceSet(const MObject &shadingEngine,
+_AssignMaterialFaceSet(const MObject &shadingEngine,
                    const MDagPath &shapeDagPath,
                    const VtIntArray &faceIndices)
 {
@@ -151,7 +151,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
         PxrUsdMayaPrimReaderContext* context)
 {
     // if we don't have a valid context, we make one temporarily.  This is to
-    // make sure we don't duplicate shading nodes within a look.
+    // make sure we don't duplicate shading nodes within a material.
     PxrUsdMayaPrimReaderContext::ObjectRegistry tmpRegistry;
     PxrUsdMayaPrimReaderContext tmpContext(&tmpRegistry);
     if (!context) {
@@ -164,7 +164,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
     MStatus status;
     MObject shadingEngine = PxrUsdMayaTranslatorLook::Read(
             shadingMode,
-            UsdShadeLook::GetBoundLook(primSchema.GetPrim()), 
+            UsdShadeMaterial::GetBoundMaterial(primSchema.GetPrim()), 
             primSchema, 
             context);
 
@@ -182,9 +182,9 @@ PxrUsdMayaTranslatorLook::AssignLook(
         }
     } 
 
-    // If the gprim does not have a look faceSet which represents per-face 
+    // If the gprim does not have a material faceSet which represents per-face 
     // shader assignments, assign the shading engine to the entire gprim.
-    if (!UsdShadeLook::HasLookFaceSet(primSchema.GetPrim())) {
+    if (!UsdShadeMaterial::HasMaterialFaceSet(primSchema.GetPrim())) {
         MFnSet seFnSet(shadingEngine, &status);
         if (seFnSet.restriction() == MFnSet::kRenderableOnly) {
             status = seFnSet.addMember(shapeObj);
@@ -197,21 +197,21 @@ PxrUsdMayaTranslatorLook::AssignLook(
     } 
 
     // Import per-face-set shader bindings.    
-    UsdGeomFaceSetAPI lookFaceSet = UsdShadeLook::GetLookFaceSet(
+    UsdGeomFaceSetAPI materialFaceSet = UsdShadeMaterial::GetMaterialFaceSet(
         primSchema.GetPrim());
 
     SdfPathVector bindingTargets;
-    if (!lookFaceSet.GetBindingTargets(&bindingTargets) ||
+    if (!materialFaceSet.GetBindingTargets(&bindingTargets) or
         bindingTargets.empty()) {
             
-        MGlobal::displayWarning(TfStringPrintf("No bindings found on look "
+        MGlobal::displayWarning(TfStringPrintf("No bindings found on material "
             "faceSet at path <%s>.", primSchema.GetPath().GetText()).c_str());
-        // No bindings to export in the look faceSet.
+        // No bindings to export in the material faceSet.
         return false;
     }
 
     std::string reason;
-    if (!lookFaceSet.Validate(&reason)) {
+    if (!materialFaceSet.Validate(&reason)) {
         MGlobal::displayWarning(TfStringPrintf("Invalid faceSet data "
             "found on <%s>: %s", primSchema.GetPath().GetText(), 
             reason.c_str()).c_str());
@@ -219,9 +219,9 @@ PxrUsdMayaTranslatorLook::AssignLook(
     }
 
     VtIntArray faceCounts, faceIndices;
-    bool isPartition = lookFaceSet.GetIsPartition();
-    lookFaceSet.GetFaceCounts(&faceCounts);
-    lookFaceSet.GetFaceIndices(&faceIndices);
+    bool isPartition = materialFaceSet.GetIsPartition();
+    materialFaceSet.GetFaceCounts(&faceCounts);
+    materialFaceSet.GetFaceIndices(&faceIndices);
 
     if (!isPartition) {
         MGlobal::displayWarning(TfStringPrintf("Invalid faceSet data "
@@ -230,7 +230,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
         return false;
     }
 
-    // Check if there are faceIndices that aren't included in the look
+    // Check if there are faceIndices that aren't included in the material
     // face-set. 
     // Note: This won't occur if the shading was originally 
     // authored in maya and exported to the USD that we are importing, 
@@ -252,12 +252,12 @@ PxrUsdMayaTranslatorLook::AssignLook(
                 }
             }
 
-            // Assign the face face indices that aren't in the look
-            // faceSet to the look that the mesh is bound to or 
-            // to the initialShadingGroup if it doesn't have a look 
+            // Assign the face face indices that aren't in the material
+            // faceSet to the material that the mesh is bound to or 
+            // to the initialShadingGroup if it doesn't have a material 
             // binding.
             if (!unassignedIndices.empty()) {
-                if (!_AssignLookFaceSet(shadingEngine, shapeDagPath, 
+                if (!_AssignMaterialFaceSet(shadingEngine, shapeDagPath, 
                                            unassignedIndices)) {
                     return false;
                 }
@@ -268,11 +268,12 @@ PxrUsdMayaTranslatorLook::AssignLook(
     int setIndex = 0;
     int currentFaceIndex = 0;
     TF_FOR_ALL(bindingTargetsIt, bindingTargets) {
-        UsdShadeLook look(primSchema.GetPrim().GetStage()->GetPrimAtPath(
-            *bindingTargetsIt));
+        UsdShadeMaterial material(
+            primSchema.GetPrim().GetStage()->GetPrimAtPath(
+                *bindingTargetsIt));
 
         MObject faceGroupShadingEngine = PxrUsdMayaTranslatorLook::Read(
-            shadingMode, look, UsdGeomGprim(), context);
+            shadingMode, material, UsdGeomGprim(), context);
  
        bool foundShader = !faceGroupShadingEngine.isNull();
         if (!foundShader) {
@@ -300,7 +301,7 @@ PxrUsdMayaTranslatorLook::AssignLook(
         ++setIndex;
         currentFaceIndex += numFaces;
 
-        if (!_AssignLookFaceSet(faceGroupShadingEngine, shapeDagPath, 
+        if (!_AssignMaterialFaceSet(faceGroupShadingEngine, shapeDagPath, 
                                    faceGroupIndices)) {
             return false;
         }

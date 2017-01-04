@@ -29,7 +29,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -39,11 +39,11 @@ class PxrUsdMayaShadingModeImportContext
 {
 public:
 
-    const UsdShadeLook& GetShadeLook() const { return _shadeLook; }
+    const UsdShadeMaterial& GetShadeLook() const { return _shadeLook; }
     const UsdGeomGprim& GetBoundPrim() const { return _boundPrim; }
 
     PxrUsdMayaShadingModeImportContext(
-            const UsdShadeLook& shadeLook,
+            const UsdShadeMaterial& shadeLook,
             const UsdGeomGprim& boundPrim,
             PxrUsdMayaPrimReaderContext* context) :
         _shadeLook(shadeLook),
@@ -80,7 +80,7 @@ public:
     /// @}
 
 private:
-    const UsdShadeLook& _shadeLook;
+    const UsdShadeMaterial& _shadeLook;
     const UsdGeomGprim& _boundPrim;
     PxrUsdMayaPrimReaderContext* _context;
 };

@@ -29,7 +29,7 @@
 
 #include "pxr/usd/usd/prim.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include "pxr/usd/usdRi/lookAPI.h"
 #include "pxr/usd/usdRi/risBxdf.h"
@@ -329,7 +329,7 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
-    const UsdShadeLook& shadeLook = context->GetShadeLook();
+    const UsdShadeMaterial& shadeLook = context->GetShadeLook();
 
     MStatus status;
     UsdRiLookAPI riLookAPI(shadeLook);
