@@ -2740,12 +2740,18 @@ class MainWindow(QtGui.QMainWindow):
     def resetSelectionToPseudoroot(self):
         self.selectNodeByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
 
-    def selectNodeByPath(self, path, instanceIndex, updateMode):
+    def selectNodeByPath(self, path, instanceIndex, updateMode, 
+                         applyPickMode=False):
         """Modifies selection by a stage prim based on a prim path,
         which can be empty.
           path - Sdf.Path to select
+          instanceIndex - PointInstancer protoIndices index to select, if
+                          'applyPickMode' is True.
           updateMode - one of "add", "replace", or "toggle", determines
                        how path should modify current selection.
+          applyPickMode - consult the controller's "Pick Mode" to see if we
+                          should apply model or instance selection modes.  If
+                          False (the default), we will select the path given.
           If path is empty and updateMode is "replace", we reset the entire
           selection to the pseudoRoot.
           
@@ -2757,17 +2763,18 @@ class MainWindow(QtGui.QMainWindow):
                 return None
             path = self._stage.GetPseudoRoot().GetPath()
         
-        # If model picking on, find model and select instead
-        if self._ui.actionPick_Models.isChecked():
+        # If model picking on, find model and select instead, IFF we are
+        # requested to apply picking modes
+        if applyPickMode and self._ui.actionPick_Models.isChecked():
             from common import GetEnclosingModelPrim
-
+            
             prim = self._stage.GetPrimAtPath(str(path))
             model = prim if prim.IsModel() else GetEnclosingModelPrim(prim)
             if model:
                 path = model.GetPath()
 
         # If not in instances picking mode, select all instances.
-        if not self._ui.actionPick_Instances.isChecked():
+        if not (applyPickMode and self._ui.actionPick_Instances.isChecked()):
             self._stageView.clearInstanceSelection()
             instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
 
@@ -2862,7 +2869,7 @@ class MainWindow(QtGui.QMainWindow):
                 if self._primShouldBeShown(prim):
                     instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
                     item = self.selectNodeByPath(prim.GetPath(), instanceIndex,
-                                          "replace" if first else "add")
+                                                 "replace" if first else "add")
                     first = False
                     # selectNodeByPath expands all of item's parents,
                     # but that doesn't seem to work if you have manually closed
@@ -3822,7 +3829,8 @@ class MainWindow(QtGui.QMainWindow):
                         doSelection = False
                         break
             if doSelection:
-                item = self.selectNodeByPath(path, instanceIndex, updateMode)
+                item = self.selectNodeByPath(path, instanceIndex, updateMode,
+                                             applyPickMode=True)
                 if item and item.node.GetPath() != Sdf.Path.absoluteRootPath:
                     # Scroll the node view widget to show the newly selected
                     # item, unless it's the pseudoRoot, which represents "no

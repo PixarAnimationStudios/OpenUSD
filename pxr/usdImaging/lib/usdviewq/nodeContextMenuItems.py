@@ -109,17 +109,21 @@ class JumpToEnclosingModelItem(NodeContextMenuItem):
 #
 class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
 
-    def IsEnabled(self):
+    def __init__(self, mainWindow, item):
+        NodeContextMenuItem.__init__(self, mainWindow, item)
         from common import GetClosestBoundMaterial
 
+        self._material = None
         for p in self._currentNodes:
             material, bound = GetClosestBoundMaterial(p)
             if material is not None:
-                return True
-        return False
+                self._material = material
+
+    def IsEnabled(self):
+        return self._material != None
 
     def GetText(self):
-        return "Jump to Bound Material"
+        return "Jump to Bound Material (%s)" % self._material.GetName()
 
     def RunCommand(self):
         self._mainWindow.jumpToBoundMaterialSelectedPrims()
