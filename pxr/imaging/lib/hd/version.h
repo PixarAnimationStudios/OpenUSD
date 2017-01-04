@@ -34,8 +34,9 @@
 // 24 -> 25: move simpleLightingShader to Hdx.
 // 25 -> 26: move camera and light to Hdx.
 // 26 -> 27: move drawTarget to Hdx.
-// 27 -> 38: switch render index Sprim to take a typeId.
-#define HD_API  28
+// 27 -> 28: switch render index Sprim to take a typeId.
+// 28 -> 29: cameras only support matrices.
+#define HD_API 29
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

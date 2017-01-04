@@ -196,10 +196,9 @@ Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
                                 GfMatrix4d const &projMatrix)
 {
     _ValueCache &cache = _valueCacheMap[cameraId];
-    cache[HdxCameraTokens->cameraFrustum] = VtValue();
     cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdxCameraTokens->projectionMatrix] = VtValue(projMatrix);
+    cache[HdxCameraTokens->matrices] = 
+        VtValue(HdxCameraMatrices(viewMatrix, projMatrix));
 
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(cameraId,
                                                        HdxCamera::AllDirty);
@@ -211,11 +210,8 @@ Hdx_UnitTestDelegate::AddCamera(SdfPath const &id)
     // add a camera
     GetRenderIndex().InsertSprim<HdxCamera>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
-
-    cache[HdxCameraTokens->cameraFrustum] = VtValue();
     cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-    cache[HdxCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1));
+    cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices());
 }
 
 void

@@ -92,10 +92,8 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
     {
         renderIndex.InsertSprim<HdxCamera>(this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-        cache[HdxCameraTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
-        cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-        cache[HdxCameraTokens->windowPolicy] = VtValue();  // we don't use window policy.
+        cache[HdxCameraTokens->windowPolicy] = VtValue(); // no window policy.
+        cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices());
     }
 
     // selection task
@@ -491,10 +489,9 @@ UsdImagingGL_DefaultTaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdxCameraTokens->projectionMatrix]  = VtValue(projectionMatrix);
-    cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // we don't use window policy.
+    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // no window policy.
+    cache[HdxCameraTokens->matrices] = 
+        VtValue(HdxCameraMatrices(viewMatrix, projectionMatrix));
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,

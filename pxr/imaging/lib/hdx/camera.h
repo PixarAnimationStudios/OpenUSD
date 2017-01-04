@@ -31,12 +31,13 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/dictionary.h"
+#include "pxr/base/gf/matrix4d.h"
 
 #include <boost/shared_ptr.hpp>
 
 #define HDX_CAMERA_TOKENS                       \
     (clipPlanes)                                \
-    (cameraFrustum)                             \
+    (matrices)                                  \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)                  \
     (projectionMatrix)                          \
@@ -57,15 +58,15 @@ public:
     HdxCamera(HdSceneDelegate* delegate, SdfPath const & id);
     ~HdxCamera();  // note: not virtual (for now)
 
-    // change tracking for HdxLight
+    // change tracking for HdxCamera
     enum DirtyBits {
         Clean                 = 0,
-        DirtyParams           = 1 << 0,
+        DirtyMatrices         = 1 << 0,
         DirtyWindowPolicy     = 1 << 1,
         DirtyClipPlanes       = 1 << 2,
-        AllDirty              = (DirtyParams
-                                 |DirtyWindowPolicy
-                                 |DirtyClipPlanes)
+        AllDirty              = (DirtyMatrices
+                                |DirtyWindowPolicy
+                                |DirtyClipPlanes)
     };
 
     /// Synchronizes state from the delegate to this object.
@@ -82,5 +83,27 @@ public:
 private:
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;
 };
+
+struct HdxCameraMatrices
+{
+    HdxCameraMatrices() :
+          viewMatrix(1.0),
+          projMatrix(1.0)
+        {}
+
+    HdxCameraMatrices(GfMatrix4d const & view, GfMatrix4d const & proj) :
+          viewMatrix(view),
+          projMatrix(proj)
+        {}
+
+    // Matrices to create a camera
+    GfMatrix4d viewMatrix;
+    GfMatrix4d projMatrix;
+};
+
+// VtValue requirements
+std::ostream& operator<<(std::ostream& out,   const HdxCameraMatrices& pv);
+bool operator==(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs);
+bool operator!=(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs);
 
 #endif //HDX_CAMERA_H

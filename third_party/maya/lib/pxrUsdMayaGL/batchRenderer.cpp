@@ -500,7 +500,12 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
 
     // camera
     {
-#if defined(HD_API) && HD_API > 25
+#if defined(HD_API) && HD_API > 28
+        renderIndex->InsertSprim<HdxCamera>(this, _cameraId);
+        _ValueCache &cache = _valueCacheMap[_cameraId];
+        cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices()); 
+        cache[HdxCameraTokens->windowPolicy] = VtValue();  // no window policy.
+#elif defined(HD_API) && HD_API > 25
         renderIndex->InsertSprim<HdxCamera>(this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
         cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
@@ -508,12 +513,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
         cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
         cache[HdxCameraTokens->windowPolicy] = VtValue();  // we don't use window policy.
 #else
-        renderIndex->InsertCamera<HdCamera>(this, _cameraId);
-        _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdShaderTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-        cache[HdShaderTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
-        cache[HdTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-        cache[HdTokens->windowPolicy] = VtValue();  // we don't use window policy.
+        #error Not supported in Hydra anymore.
 #endif
     }
 
@@ -568,7 +568,15 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-#if defined(HD_API) && HD_API > 25
+#if defined(HD_API) && HD_API > 28
+    cache[HdxCameraTokens->matrices] = 
+        VtValue(HdxCameraMatrices(viewMatrix, projectionMatrix));
+    cache[HdxCameraTokens->windowPolicy] = VtValue(); // no window policy.
+
+    // invalidate the camera to be synced
+    GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
+                                                       HdxCamera::AllDirty);
+#elif defined(HD_API) && HD_API > 25
     cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
     cache[HdxCameraTokens->projectionMatrix]  = VtValue(projectionMatrix);
     cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
@@ -578,13 +586,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
                                                        HdxCamera::AllDirty);
 #else
-    cache[HdShaderTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdShaderTokens->projectionMatrix]  = VtValue(projectionMatrix);
-    cache[HdTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-    cache[HdTokens->windowPolicy]  = VtValue(); // we don't use window policy.
-
-    // invalidate the camera to be synced
-    GetRenderIndex().GetChangeTracker().MarkCameraDirty(_cameraId);
+    #error Not supported in Hydra anymore.
 #endif
 
     if( _viewport != viewport )

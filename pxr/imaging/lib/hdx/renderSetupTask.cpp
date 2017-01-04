@@ -37,8 +37,6 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
-#include "pxr/base/gf/frustum.h"
-
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
     , _viewport()
@@ -120,7 +118,7 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     _renderPassState->SetDepthFunc(params.depthFunc);
 
     // alpha to coverage
-    // XXX:  Long-term ALpha to Coverage will be a render style on the
+    // XXX:  Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
     // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
     _renderPassState->SetAlphaToCoverageUseDefault(
@@ -140,42 +138,20 @@ void
 HdxRenderSetupTask::SyncCamera()
 {
     if (_camera && _renderPassState) {
-        GfMatrix4d modelViewMatrix, projectionMatrix;
+        VtValue modelViewVt  = _camera->Get(HdxCameraTokens->worldToViewMatrix);
+        VtValue projectionVt = _camera->Get(HdxCameraTokens->projectionMatrix);
+        GfMatrix4d modelView = modelViewVt.Get<GfMatrix4d>();
+        GfMatrix4d projection= projectionVt.Get<GfMatrix4d>();
 
-        // XXX This code will be removed when we drop support for
-        // storing frustum in the render index
-        VtValue frustumVt = _camera->Get(HdxCameraTokens->cameraFrustum);
-
-        if(frustumVt.IsHolding<GfFrustum>()) {
-
-            // Extract the window policy to adjust the frustum correctly
-            VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
-            if (!TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
-                return;
-            }
-
+        // If there is a window policy available in this camera
+        // we will extract it and adjust the projection accordingly.
+        VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
+        if (windowPolicy.IsHolding<CameraUtilConformWindowPolicy>()) {
             const CameraUtilConformWindowPolicy policy = 
                 windowPolicy.Get<CameraUtilConformWindowPolicy>();
 
-            // Extract the frustum and calculate the correctly fitted/cropped
-            // viewport
-            GfFrustum frustum = frustumVt.Get<GfFrustum>();
-            CameraUtilConformWindow(
-                &frustum, policy,
+            projection = CameraUtilConformedWindow(projection, policy,
                 _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
-
-            // Now that we have the actual frustum let's calculate the matrices
-            // so we can upload them to the gpu via the raster state
-            modelViewMatrix = frustum.ComputeViewMatrix();;
-            projectionMatrix = frustum.ComputeProjectionMatrix();
-        } else {
-            VtValue modelViewMatrixVt
-                = _camera->Get(HdxCameraTokens->worldToViewMatrix);
-            VtValue projectionMatrixVt
-                = _camera->Get(HdxCameraTokens->projectionMatrix);
-
-            modelViewMatrix = modelViewMatrixVt.Get<GfMatrix4d>();
-            projectionMatrix = projectionMatrixVt.Get<GfMatrix4d>();
         }
 
         const VtValue &vClipPlanes = _camera->Get(HdxCameraTokens->clipPlanes);
@@ -183,7 +159,7 @@ HdxRenderSetupTask::SyncCamera()
             vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 
         // sync render pass state
-        _renderPassState->SetCamera(modelViewMatrix, projectionMatrix, _viewport);
+        _renderPassState->SetCamera(modelView, projection, _viewport);
         _renderPassState->SetClipPlanes(clipPlanes);
         _renderPassState->Sync();
     }
