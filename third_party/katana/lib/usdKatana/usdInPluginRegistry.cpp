@@ -122,7 +122,7 @@ PxrUsdKatanaUsdInPluginRegistry::_DoFindKind(
 {
     // can cache this if it becomes an issue.
     for (TfToken currKind = kind;
-            not currKind.IsEmpty();
+            !currKind.IsEmpty();
             currKind = KindRegistry::GetBaseKind(currKind)) {
         if (TfMapLookup(reg, currKind, opName)) {
             return true;

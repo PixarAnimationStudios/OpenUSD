@@ -138,7 +138,7 @@ _GatherShadingParameters(
             std::vector<TfToken> outputNames;
             if (shaderParam.GetConnectedSources(&sources, &outputNames)) {
 
-                if (shaderParam.IsArray() and sources.size() > 1) {
+                if (shaderParam.IsArray() && sources.size() > 1) {
                     FnLogWarn("ShaderParam " 
                             << shaderParam.GetAttr().GetPath()
                             << " IsArray() but has "
@@ -182,7 +182,7 @@ _GatherShadingParameters(
         // correctly..
         UsdAttribute attr = shaderParam.GetAttr();
         VtValue vtValue;
-        if (not attr.Get(&vtValue, currentTime)) {
+        if (!attr.Get(&vtValue, currentTime)) {
             continue;
         }
 
@@ -209,7 +209,7 @@ _GatherShadingParameters(
             if (UsdAttribute attr = prop.As<UsdAttribute>())
             {
                 VtValue vtValue;
-                if (not attr.Get(&vtValue, currentTime))
+                if (!attr.Get(&vtValue, currentTime))
                 {
                     continue;
                 }
@@ -381,7 +381,7 @@ _CreateShadingNode(
         }
     }
 
-    if (validData and !PxrUsdKatana_IsPrimDefFromBaseMaterial(shadingNode)) {
+    if (validData && !PxrUsdKatana_IsPrimDefFromBaseMaterial(shadingNode)) {
         shdNodeAttr.set("name", FnKat::StringAttribute(handle));
         shdNodeAttr.set("srcName", FnKat::StringAttribute(handle));
         shdNodeAttr.set("target", FnKat::StringAttribute(targetName));
@@ -583,7 +583,7 @@ _GetMaterialAttr(
     // into the schema?
     std::stack<UsdPrim> dfs;
     dfs.push(materialPrim);
-    while (not dfs.empty()) {
+    while (!dfs.empty()) {
         UsdPrim curr = dfs.top();
         dfs.pop();
 
@@ -600,7 +600,7 @@ _GetMaterialAttr(
                         nodesBuilder, interfaceBuilder, "prman");
             }
 
-            if (not curr.IsA<UsdGeomScope>()) {
+            if (!curr.IsA<UsdGeomScope>()) {
                 continue;
             }
 
@@ -697,7 +697,7 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
 
         // handle parameters with values 
         VtValue attrVal;
-        if (interfaceAttribute.Get(&attrVal) and not attrVal.IsEmpty()) {
+        if (interfaceAttribute.Get(&attrVal) && !attrVal.IsEmpty()) {
             materialBuilder.set(
                     TfStringPrintf("parameters.%s", renamedParam.c_str()),
                     PxrUsdKatanaUtils::ConvertVtValueToKatAttr(attrVal, true));
@@ -740,13 +740,13 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
         // USD's group delimeter is :, whereas Katana's is .
         std::string page = TfStringReplace(
                 interfaceAttribute.GetDisplayGroup(), ":", ".");
-        if (not page.empty()) {
+        if (!page.empty()) {
             std::string pageKey = renamedParam + ".hints.page";
             interfaceBuilder.set(pageKey, FnKat::StringAttribute(page), true);
         }
 
         std::string doc = interfaceAttribute.GetDocumentation();
-        if (not doc.empty()) {
+        if (!doc.empty()) {
             std::string docKey = renamedParam + ".hints.help";
 
             doc = TfStringReplace(doc, "'", "\"");

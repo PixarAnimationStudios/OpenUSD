@@ -92,7 +92,7 @@ _BuildMatrixAttr(
 {
     // Eval transform.
     UsdAttribute constraintAttr = constraintTarget.GetAttr();
-    if (not constraintAttr)
+    if (!constraintAttr)
         return FnKat::Attribute();
 
     double currentTime = data.GetUsdInArgs()->GetCurrentTime();
@@ -107,7 +107,7 @@ _BuildMatrixAttr(
         double time = currentTime + relSampleTime;
 
         GfMatrix4d mat;
-        if (not constraintAttr.Get(&mat, time))
+        if (!constraintAttr.Get(&mat, time))
             return FnKat::Attribute();
 
         // Convert to vector.

@@ -64,7 +64,7 @@ _CreateFaceSets(
 {
     UsdGeomFaceSetAPI faceSet = UsdShadeLook::GetLookFaceSet(prim);
     bool isPartition = faceSet.GetIsPartition();;
-    if (not isPartition) {
+    if (!isPartition) {
         TF_WARN("Found face set on prim <%s> that is not a partition.", 
                 prim.GetPath().GetText());
         // continue here?

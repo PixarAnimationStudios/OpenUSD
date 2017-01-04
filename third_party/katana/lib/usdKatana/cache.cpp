@@ -115,7 +115,7 @@ UsdKatanaCache::_SetMutedLayers(
     TF_FOR_ALL(stageLayer, stageLayers)
     {
         SdfLayerHandle layer = *stageLayer;
-        if (not layer) {
+        if (!layer) {
             continue;
         }
         std::string layerPath = layer->GetRepositoryPath();
@@ -134,14 +134,14 @@ UsdKatanaCache::_SetMutedLayers(
             }
         }
         
-        if (not match and stage->IsLayerMuted(layerIdentifier)) {
+        if (!match && stage->IsLayerMuted(layerIdentifier)) {
             TF_DEBUG(USDKATANA_CACHE_RENDERER).Msg("{USD RENDER CACHE} "
                                 "Unmuting Layer: '%s'\n",
                                 layerIdentifier.c_str());
             stage->UnmuteLayer(layerIdentifier);
         }
 
-        if (match and not stage->IsLayerMuted(layerIdentifier)) {
+        if (match && !stage->IsLayerMuted(layerIdentifier)) {
             TF_DEBUG(USDKATANA_CACHE_RENDERER).Msg("{USD RENDER CACHE} "
                     "Muting Layer: '%s'\n",
                     layerIdentifier.c_str());
@@ -207,7 +207,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
+    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
 
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating and caching UsdStage for "
@@ -267,7 +267,7 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
+    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
 
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating UsdStage for "

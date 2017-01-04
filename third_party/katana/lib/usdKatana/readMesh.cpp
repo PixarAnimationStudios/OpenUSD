@@ -106,7 +106,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     // efficient than doing IsAuthored() followed by Get()
     fvInterpolateBoundary = mesh.GetFaceVaryingLinearInterpolation(time);
     if (mesh.GetPrim().GetAttribute(UsdGeomTokens->faceVaryingLinearInterpolation).IsAuthored()
-        or mesh.GetPrim().GetAttribute(UsdGeomTokens->faceVaryingInterpolateBoundary).IsAuthored()){
+        || mesh.GetPrim().GetAttribute(UsdGeomTokens->faceVaryingInterpolateBoundary).IsAuthored()){
         TF_DEBUG(USDKATANA_MESH_IMPORT).
             Msg("\tfacevaryinginterpolateboundary = %s (%d)\n",
                 fvInterpolateBoundary.GetText(),
@@ -125,7 +125,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     // Holes
     VtIntArray holeIndices;
     if (mesh.GetHoleIndicesAttr().Get(&holeIndices, time)
-        and holeIndices.size() > 0) {
+        && holeIndices.size() > 0) {
         FnKat::IntBuilder holeIndicesBuilder(1);
         holeIndicesBuilder.set(std::vector<int>(holeIndices.begin(),
                                                 holeIndices.end()));
@@ -135,7 +135,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     // Creases
     VtIntArray creaseIndices;
     if (mesh.GetCreaseIndicesAttr().Get(&creaseIndices, time)
-        and creaseIndices.size() > 0) {
+        && creaseIndices.size() > 0) {
         FnKat::IntBuilder creasesBuilder(1);
         creasesBuilder.set(std::vector<int>(creaseIndices.begin(),
                                             creaseIndices.end()));
@@ -143,7 +143,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
 
         VtIntArray creaseLengths;
         if (mesh.GetCreaseLengthsAttr().Get(&creaseLengths, time)
-            and creaseLengths.size() > 0) {
+            && creaseLengths.size() > 0) {
             FnKat::IntBuilder creaseLengthsBuilder(1);
             creaseLengthsBuilder.set(std::vector<int>(creaseLengths.begin(),
                                                       creaseLengths.end()));
@@ -151,7 +151,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
         }
         VtFloatArray creaseSharpness;
         if (mesh.GetCreaseSharpnessesAttr().Get(&creaseSharpness, time)
-        and creaseSharpness.size() > 0) {
+            && creaseSharpness.size() > 0) {
             FnKat::FloatBuilder creaseSharpnessBuilder(1);
             FnKat::IntBuilder creaseSharpnessLengthsBuilder(1);
             creaseSharpnessBuilder.set(
@@ -179,7 +179,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     // Corners
     VtIntArray cornerIndices;
     if (mesh.GetCornerIndicesAttr().Get(&cornerIndices, time)
-        and cornerIndices.size() > 0) {
+        && cornerIndices.size() > 0) {
         FnKat::IntBuilder cornersBuilder(1);
         cornersBuilder.set(std::vector<int>(cornerIndices.begin(),
                                             cornerIndices.end()));
@@ -187,7 +187,7 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
     }
     VtFloatArray cornerSharpness;
     if (mesh.GetCornerSharpnessesAttr().Get(&cornerSharpness, time)
-        and cornerSharpness.size() > 0) {
+        && cornerSharpness.size() > 0) {
         FnKat::FloatBuilder cornerSharpnessBuilder(1);
         cornerSharpnessBuilder.set(std::vector<float>(cornerSharpness.begin(),
                                                       cornerSharpness.end()));
@@ -275,7 +275,7 @@ PxrUsdKatanaReadMesh(
     attrs.set("geometry.point.P", PxrUsdKatanaGeomGetPAttr(mesh, data));
 
     /// Only use custom normals if the object is a polymesh.
-    if (not isSubd){
+    if (!isSubd){
         // normals
         FnKat::Attribute normalsAttr = PxrUsdKatanaGeomGetNormalAttr(mesh, data);
         if (normalsAttr.isValid())
@@ -319,7 +319,7 @@ PxrUsdKatanaReadMesh(
     // This value will be one of 'catmullClark', 'loop', 'bilinear',
     // or 'none'.  'none' means this is a polymesh, and not
     // a subdiv, so don't set this.
-    if (mesh.GetSubdivisionSchemeAttr().Get(&scheme) and
+    if (mesh.GetSubdivisionSchemeAttr().Get(&scheme) && 
             scheme != UsdGeomTokens->none)
     {
         // USD deviates from Katana only in the 'catmullClark' token.

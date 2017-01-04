@@ -85,7 +85,7 @@ _UpdateMaterialHierarchyForChildPrims(const UsdPrim &parentPrim,
     // specialize other materials.
     for (const auto& childPrim : parentPrim.GetChildren()) {
         // If childPrim is not a material, skip it.
-        if (not UsdShadeMaterial(childPrim)) {
+        if (!UsdShadeMaterial(childPrim)) {
             continue;
         }
         // Check if childPrim has an immediate specializes arc,
@@ -105,7 +105,7 @@ _UpdateMaterialHierarchyForChildPrims(const UsdPrim &parentPrim,
                 const SdfPath basePath = node.GetPath();
                 const UsdPrim basePrim = stage->GetPrimAtPath(basePath);
                 // If the base is anything but a material, ignore it.
-                if (not UsdShadeMaterial(basePrim)) {
+                if (!UsdShadeMaterial(basePrim)) {
                     continue;
                 }
                 // The childPrim material derives from the basePrim material.
@@ -175,12 +175,12 @@ public:
                 .build();
         }
         // Validate usdInArgs.
-        if (not usdInArgs) {
+        if (!usdInArgs) {
             ERROR("Could not initialize PxrUsdIn usdInArgs.");
             return;
         }
         
-        if (not usdInArgs->GetErrorMessage().empty())
+        if (!usdInArgs->GetErrorMessage().empty())
         {
             ERROR(usdInArgs->GetErrorMessage().c_str());
             return;
@@ -191,7 +191,7 @@ public:
             ? usdInArgs->GetRootPrim()
             : privateData->GetUsdPrim();
         // Validate usd prim.
-        if (not prim) {
+        if (!prim) {
             ERROR("No prim at %s",
                   interface.getRelativeOutputLocationPath().c_str());
             return;
@@ -219,7 +219,7 @@ public:
         if (interface.atRoot()) {
             interface.stopChildTraversal();
 
-            if (not usdInArgs->GetIsolatePath().empty())
+            if (!usdInArgs->GetIsolatePath().empty())
             {
                 useDefaultMotion = GetDefaultMotionAtRoot(usdInArgs);
             }
@@ -306,12 +306,12 @@ public:
 
         bool verbose = usdInArgs->IsVerbose();
 
-        if (not prim.IsLoaded()) {
+        if (!prim.IsLoaded()) {
             SdfPath pathToLoad = prim.GetPath();
             UsdStageRefPtr stage = prim.GetStage();
             readerLock.unlock();
             prim = _LoadPrim(stage, pathToLoad, verbose);
-            if (not prim) {
+            if (!prim) {
                 ERROR("load prim %s failed", pathToLoad.GetText());
                 return;
             }
@@ -340,7 +340,7 @@ public:
             std::string opName;
             if (PxrUsdKatanaUsdInPluginRegistry::FindUsdType(
                     prim.GetTypeName(), &opName)) {
-                if (not opName.empty()) {
+                if (!opName.empty()) {
                     interface.execOp(opName, opArgs);
                 }
             }
@@ -354,7 +354,7 @@ public:
             std::string opName;
             if (PxrUsdKatanaUsdInPluginRegistry::FindUsdTypeForSite(
                     prim.GetTypeName(), &opName)) {
-                if (not opName.empty()) {
+                if (!opName.empty()) {
                     interface.execOp(opName, opArgs);
                 }
             }
@@ -373,7 +373,7 @@ public:
             if (UsdModelAPI(prim).GetKind(&kind)) {
                 std::string opName;
                 if (PxrUsdKatanaUsdInPluginRegistry::FindKind(kind, &opName)) {
-                    if (not opName.empty()) {
+                    if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
                     }
                 }
@@ -389,7 +389,7 @@ public:
             if (UsdModelAPI(prim).GetKind(&kind)) {
                 std::string opName;
                 if (PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(kind, &opName)) {
-                    if (not opName.empty()) {
+                    if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
                     }
                 }
@@ -471,7 +471,7 @@ public:
                 for (const SdfPath &derivedMaterialPath: derivedMaterialPaths) {
                     UsdPrim derivedMaterial =
                         prim.GetStage()->GetPrimAtPath(derivedMaterialPath);
-                    if (not TF_VERIFY(derivedMaterial)) {
+                    if (!TF_VERIFY(derivedMaterial)) {
                         // This shouldn't happen: we confirmed the prim
                         // exists when building the hierarchy.
                         continue;
@@ -491,7 +491,7 @@ public:
             }
         }
 
-        if (not skipAllChildren) {
+        if (!skipAllChildren) {
 
             std::set<std::string> childrenToSkip;
             FnKat::GroupAttribute childOps = interface.getOutputAttr("__UsdIn.skipChild");
@@ -509,10 +509,10 @@ public:
             // we replace the current prim with the master prim before 
             // iterating on the children.
             //
-            if (prim.IsInstance() and not privateData->GetMasterPath().IsEmpty())
+            if (prim.IsInstance() && !privateData->GetMasterPath().IsEmpty())
             {
                 const UsdPrim& masterPrim = prim.GetMaster();
-                if (not masterPrim)
+                if (!masterPrim)
                 {
                     ERROR("USD Prim is advertised as an instance but master prim cannot be found.");
                 }
@@ -523,7 +523,7 @@ public:
             }
 
             // create children
-            TF_FOR_ALL(childIter, prim.GetFilteredChildren(UsdPrimIsDefined and UsdPrimIsActive and not UsdPrimIsAbstract))
+            TF_FOR_ALL(childIter, prim.GetFilteredChildren(UsdPrimIsDefined && UsdPrimIsActive && !UsdPrimIsAbstract))
             {
                 const UsdPrim& child = *childIter;
                 const std::string& childName = child.GetName();
@@ -554,7 +554,7 @@ public:
         }
 
         // keep things around if we are verbose
-        if (not verbose) {
+        if (!verbose) {
             interface.deleteAttr("__UsdIn");
         }
     }
@@ -681,7 +681,7 @@ public:
         ArgsBuilder ab;
         
         FnKat::StringAttribute usdFileAttr = interface.getOpArg("fileName");
-        if (not usdFileAttr.isValid()) {
+        if (!usdFileAttr.isValid()) {
             return ab.buildWithError("PxrUsdIn: USD fileName not specified.");
         }
 
@@ -751,7 +751,7 @@ public:
         // If motion samples was specified, convert the string of values
         // into a vector of doubles to store with the root args.
         //
-        if (numSamples < 2 or motionSampleStr.empty())
+        if (numSamples < 2 || motionSampleStr.empty())
         {
             ab.motionSampleTimes.push_back(0);
         }
@@ -788,7 +788,7 @@ public:
                 ab.ignoreLayerRegex, 
                 true /* forcePopulate */);
 
-        if (not ab.stage) {
+        if (!ab.stage) {
             return ab.buildWithError("PxrUsdIn: USD Stage cannot be loaded.");
         }
 
@@ -804,7 +804,7 @@ public:
             interface.getOpArg("isolatePath")).getValue("", false);
 
         // if the specified isolatePath is not a valid prim, clear it out
-        if (not ab.isolatePath.empty() and not ab.stage->GetPrimAtPath(SdfPath(ab.isolatePath)))
+        if (!ab.isolatePath.empty() && !ab.stage->GetPrimAtPath(SdfPath(ab.isolatePath)))
         {
             std::ostringstream errorBuffer;
             errorBuffer << "PxrUsdIn: Invalid isolatePath: " << ab.isolatePath << ".";
@@ -964,12 +964,12 @@ public:
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs =
                 PxrUsdInOp::InitUsdInArgs(interface, additionalOpArgs);
         
-        if (not usdInArgs) {
+        if (!usdInArgs) {
             ERROR("Could not initialize PxrUsdIn usdInArgs.");
             return;
         }
         
-        if (not usdInArgs->GetErrorMessage().empty())
+        if (!usdInArgs->GetErrorMessage().empty())
         {
             ERROR(usdInArgs->GetErrorMessage().c_str());
             return;
@@ -1049,8 +1049,8 @@ public:
                         SdfPath(childPrimName));
                 TF_FOR_ALL(childIter, prim.GetFilteredChildren(
                         UsdPrimIsDefined
-                        and UsdPrimIsActive
-                        and not UsdPrimIsAbstract))
+                        && UsdPrimIsActive
+                        && !UsdPrimIsAbstract))
                 {
                     const UsdPrim& child = *childIter;
                     const std::string& childName = child.GetName();

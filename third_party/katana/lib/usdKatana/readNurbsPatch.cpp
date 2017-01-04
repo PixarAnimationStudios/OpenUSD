@@ -112,7 +112,7 @@ _GetPwAttr(
     UsdAttribute weightsAttr = nurbsPatch.GetPointWeightsAttr();
     UsdAttribute pointsAttr = nurbsPatch.GetPointsAttr();
 
-    if (not pointsAttr)
+    if (!pointsAttr)
     {
         return FnKat::FloatAttribute();
     }

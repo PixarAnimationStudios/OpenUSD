@@ -101,7 +101,7 @@ PxrUsdKatanaReadXformable(
 
     // Only set an 'xform' attribute if xform ops were found.
     //
-    if (not orderedXformOps.empty())
+    if (!orderedXformOps.empty())
     {
         FnKat::GroupBuilder xformGb;
         xformGb.setGroupInherit(false);

@@ -46,8 +46,8 @@ _GetProxyOverlayMode()
 {
     TfToken overlay(TfGetEnvSetting(USDVMP_PROXY_OVERLAY));
     if (overlay != _tokens->ghosted
-        and overlay != _tokens->none
-        and overlay != _tokens->wireframe)
+        && overlay != _tokens->none
+        && overlay != _tokens->wireframe)
     {
         TF_WARN("Invalid proxy USDVMP_PROXY_OVERLAY mode: %s\n", overlay.GetText());
         return _tokens->ghosted;
@@ -99,7 +99,7 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
     boost::shared_lock<boost::upgrade_mutex> readerLock(UsdKatanaGetStageLock());
 
     // Open stage if necessary.
-    if (not _stage) {
+    if (!_stage) {
 
         // Get usd file, node path, and current time, 
         // needed to call TidSceneRenderer
@@ -131,7 +131,7 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
                                                         ignoreLayerRegex,
                                                         forcePopulate);
 
-        if (not _stage) {
+        if (!_stage) {
             TF_DEBUG(KATANA_DEBUG_VMP_USD).Msg(
                 "Cannot resolve path %s", usdFile.c_str());
             return;
@@ -142,7 +142,7 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
         else
             _prim = _stage->GetPrimAtPath(SdfPath(usdReferencePath));
 
-        if (not _prim)
+        if (!_prim)
             FnLogWarn(std::string("Cannot compose ") + 
                 _prim.GetPath().GetString());
 
@@ -350,7 +350,7 @@ USDVMP::flush()
 void
 USDVMP::_loadSubtreeForCurrentPrim()
 {
-    if (not _prim) {
+    if (!_prim) {
         return;
     }
 
@@ -360,7 +360,7 @@ USDVMP::_loadSubtreeForCurrentPrim()
                                 readerLock(UsdKatanaGetStageLock());
 
     UsdPrimSiblingRange childrenToLoad = _prim.GetFilteredChildren(
-                not UsdPrimIsLoaded and UsdPrimIsActive);
+                !UsdPrimIsLoaded && UsdPrimIsActive);
 
     if(!childrenToLoad.empty()) {
         // We have to compose more of the usd stage, upgrade to a unique lock

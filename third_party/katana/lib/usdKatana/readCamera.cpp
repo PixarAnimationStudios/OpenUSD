@@ -144,7 +144,7 @@ PxrUsdKatanaReadCamera(
             fovBuilder.push_back(fov, isMotionBackward ?
                 PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
 
-            if (not isVarying)
+            if (!isVarying)
             {
                 break;
             }

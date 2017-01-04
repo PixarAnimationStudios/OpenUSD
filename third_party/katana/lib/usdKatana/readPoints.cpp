@@ -33,7 +33,7 @@ static FnKat::Attribute
 _GetWidthAttr(const UsdGeomPoints& points, double currentTime)
 {
     VtFloatArray widths;
-    if (not points.GetWidthsAttr().Get(&widths, currentTime))
+    if (!points.GetWidthsAttr().Get(&widths, currentTime))
     {
         return FnKat::Attribute();
     }

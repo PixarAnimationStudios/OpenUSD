@@ -101,7 +101,7 @@ _BuildGlobalCoordinateSystems(
         UsdRiStatements riStatements(prim);
         SdfPathVector coordSysPaths;
         if (riStatements.GetModelCoordinateSystems(&coordSysPaths)
-                and not coordSysPaths.empty())
+            && !coordSysPaths.empty())
         {
             TF_FOR_ALL(itr, coordSysPaths)
             {
@@ -120,7 +120,7 @@ _BuildGlobalCoordinateSystems(
 
     TF_FOR_ALL(itr, prim.GetFilteredChildren(UsdPrimIsModel))
     {
-        result = result or _BuildGlobalCoordinateSystems(
+        result = result || _BuildGlobalCoordinateSystems(
             *itr, rootLocation, coordSysBuilder);
     }
 
@@ -156,7 +156,7 @@ PxrUsdKatanaReadModel(
     // groups or kinds that need a proxy.
     //
 
-    if (not isGroup or PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim))
+    if (!isGroup || PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim))
     {
         attrs.set("proxies", _GetViewerProxyAttr(data));
     }
@@ -194,7 +194,7 @@ PxrUsdKatanaReadModel(
         if (UsdVariantSet variant = prim.GetVariantSet(varSetName)) {
             variantSel = variant.GetVariantSelection();
         }
-        if (not variantSel.empty()) {
+        if (!variantSel.empty()) {
             attrs.set(varSetName, FnKat::StringAttribute(variantSel));
         }
     }

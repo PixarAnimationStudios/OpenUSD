@@ -55,7 +55,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
     _verbose(verbose)
 {
-    _isMotionBackward = _motionSampleTimes.size() > 1 and
+    _isMotionBackward = _motionSampleTimes.size() > 1 &&
         _motionSampleTimes.front() > _motionSampleTimes.back();
 
     if (errorMessage)
@@ -102,7 +102,7 @@ PxrUsdKatanaUsdInArgs::ComputeBounds(
     FnKat::DoubleBuilder boundBuilder(6);
 
     // There must be one bboxCache per motion sample, for efficiency purposes.
-    if (not TF_VERIFY(bboxCaches.size() == _motionSampleTimes.size()))
+    if (!TF_VERIFY(bboxCaches.size() == _motionSampleTimes.size()))
     {
         return ret;
     }

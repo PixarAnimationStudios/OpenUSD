@@ -54,8 +54,8 @@ PxrUsdKatanaGeomGetDisplayColorAttr(
 {
     // Eval color.
     VtArray<GfVec3f> color;
-    if (not gprim.GetDisplayColorPrimvar().ComputeFlattened(
-            &color, data.GetUsdInArgs()->GetCurrentTime())) {
+    if (!gprim.GetDisplayColorPrimvar().ComputeFlattened(
+        &color, data.GetUsdInArgs()->GetCurrentTime())) {
         return FnKat::Attribute();
     }
 
@@ -118,7 +118,7 @@ _ConvertGeomAttr(
     const int tupleSize,
     const PxrUsdKatanaUsdInPrivateData& data)
 {
-    if (not usdAttr.HasValue())
+    if (!usdAttr.HasValue())
     {
         return FnKat::Attribute();
     }
