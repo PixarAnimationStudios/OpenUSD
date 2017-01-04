@@ -96,7 +96,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-        if (not _IsVarying(prim, 
+        if (!_IsVarying(prim, 
                    UsdGeomTokens->primvarsDisplayColor, 
                    HdChangeTracker::DirtyPrimVar,
                    UsdImagingTokens->usdVaryingPrimVar,
@@ -222,7 +222,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
         if (param.GetConnectedSource(&source, &outputName)) {
             UsdAttribute attr = source.GetIdAttr();
             TfToken id;
-            if (not attr or not attr.Get(&id)) {
+            if (!attr || !attr.Get(&id)) {
                 continue;
             }
             TF_DEBUG(USDIMAGING_SHADERS).Msg("\t\t Param <%s> connected <%s>(%s)\n",
@@ -272,7 +272,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
                                     = shaderPrim.GetProperties();
     TF_FOR_ALL(propIt, props) {
         UsdAttribute attr = propIt->As<UsdAttribute>();
-        if (not attr) {
+        if (!attr) {
             continue;
         }
         if (attr.GetPath().IsNamespacedPropertyPath()) {
@@ -373,13 +373,13 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         // If we're processing this gprim on behalf of an instancer,
         // use the shader binding specified by the instancer if we
         // aren't able to find a shader binding for this prim itself.
-        if (instancerContext and usdShaderPath.IsEmpty()) {
+        if (instancerContext && usdShaderPath.IsEmpty()) {
             usdShaderPath = instancerContext->instanceSurfaceShaderPath;
         }
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
                 prim.GetPath().GetText(), usdShaderPath.GetText());
 
-        if (not usdShaderPath.IsEmpty()) {
+        if (!usdShaderPath.IsEmpty()) {
             _DiscoverPrimvars(gprim, cachePath, usdShaderPath, time, valueCache);
         }
     }
@@ -407,7 +407,7 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       TfToken const& propertyName)
 {
     if(propertyName == UsdGeomTokens->visibility 
-          or propertyName == UsdGeomTokens->purpose)
+          || propertyName == UsdGeomTokens->purpose)
         return HdChangeTracker::DirtyVisibility;
 
     else if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName))
@@ -474,7 +474,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
     SdfPathVector matTargets;
     if (mat.GetForwardedTargets(&matTargets)) {
-        if (not matTargets.empty()) {
+        if (!matTargets.empty()) {
             if (matTargets.size() > 1) {
                 TF_WARN("<%s> has more than one material target; "\
                         "using first one found: <%s>",
@@ -484,13 +484,13 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
             UsdPrim matPrim(
                 prim.GetStage()->GetPrimAtPath(matTargets.front()));
 
-            if (matPrim and
+            if (matPrim &&
                 matPrim.GetAttribute(displayColorToken).Get(&color, time)) {
                 colorInterp = UsdGeomTokens->constant; 
                 result[0] = GfVec4f(color[0], color[1], color[2], opacity);
             }
 
-            if (matPrim and
+            if (matPrim &&
                 matPrim.GetAttribute(displayOpacityToken).Get(&opacity, time)) {
                 opacityInterp = UsdGeomTokens->constant;
                 result[0][3] = opacity;
@@ -508,7 +508,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
         UsdRelationship surface = prim.GetRelationship(surfaceToken);
         SdfPathVector surfaceTargets;
         if (surface.GetForwardedTargets(&surfaceTargets)) {
-            if (not surfaceTargets.empty()) {
+            if (!surfaceTargets.empty()) {
                 if (surfaceTargets.size() > 1) {
                     TF_WARN("<%s> has more than one surface target; "\
                         "using first one found: <%s>",
@@ -517,12 +517,12 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 }
                 UsdShadePShader shaderSchema(
                     prim.GetStage()->GetPrimAtPath(surfaceTargets.front()));
-                if (shaderSchema and
+                if (shaderSchema &&
                     shaderSchema.GetDisplayColorAttr().Get(&color, time)) {
                     colorInterp = UsdGeomTokens->constant; 
                     result[0] = GfVec4f(color[0], color[1], color[2], opacity);
                 }
-                if (shaderSchema and
+                if (shaderSchema &&
                     shaderSchema.GetDisplayOpacityAttr().Get(&opacity, time)) {
                     opacityInterp = UsdGeomTokens->constant;
                     result[0][3] = opacity;
@@ -551,7 +551,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
         if (primvar.ComputeFlattened(&opacityArray, time)) {
             opacityInterp = primvar.GetInterpolation();
             if (colorInterp == opacityInterp 
-                    or result.size() == opacityArray.size()) {
+                || result.size() == opacityArray.size()) {
                 if (TF_VERIFY(result.size() == opacityArray.size(),
                             "Color and Opacity have the same interpolation, "
                             "but different lengths (color:%lu, opacity:%lu) "
@@ -626,7 +626,7 @@ UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim)
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if(not TF_VERIFY(prim.IsA<UsdGeomGprim>(), "%s\n",
+    if(!TF_VERIFY(prim.IsA<UsdGeomGprim>(), "%s\n",
                 prim.GetPath().GetText()))
         return false;
 

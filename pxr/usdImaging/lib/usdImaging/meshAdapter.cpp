@@ -100,7 +100,7 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
 
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         // Discover time-varying topology.
-        if (not _IsVarying(prim,
+        if (!_IsVarying(prim,
                            UsdGeomTokens->faceVertexCounts,
                            HdChangeTracker::DirtyTopology,
                            UsdImagingTokens->usdVaryingTopology,
@@ -108,7 +108,7 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                            /*isInherited*/false)) {
             // Only do this check if the faceVertexCounts is not already known
             // to be varying.
-            if (not _IsVarying(prim,
+            if (!_IsVarying(prim,
                                UsdGeomTokens->faceVertexIndices,
                                HdChangeTracker::DirtyTopology,
                                UsdImagingTokens->usdVaryingTopology,
@@ -229,7 +229,7 @@ UsdImagingMeshAdapter::_GetPoints(UsdPrim const& prim,
 {
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
-    if (not prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
+    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
         *value = VtVec3fArray();
     }
 }
@@ -243,7 +243,7 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     HD_TRACE_FUNCTION();
     HD_MALLOC_TAG_FUNCTION();
 
-    if(not prim.IsA<UsdGeomMesh>())
+    if(!prim.IsA<UsdGeomMesh>())
         return;
 
     TfToken token; VtIntArray iarray; VtFloatArray farray;

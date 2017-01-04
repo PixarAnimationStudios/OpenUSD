@@ -205,8 +205,8 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
 
-    for (bool prime = true;prime or 
-          (isInherited and prim.GetPath() != SdfPath::AbsoluteRootPath());
+    for (bool prime = true;prime ||
+          (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());
           prime = false) 
     {
         UsdAttribute attr = prim.GetAttribute(attrName);
@@ -237,7 +237,7 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
 
     for (bool prime = true; 
-         prime or (prim.GetPath() != SdfPath::AbsoluteRootPath());
+         prime || (prim.GetPath() != SdfPath::AbsoluteRootPath());
          prime = false) 
     {
         bool mayXformVary = 
@@ -271,7 +271,7 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
     GfMatrix4d ctm(1.0);
 
-    if (_IsEnabledXformCache() and xfCache.GetTime() == time) {
+    if (_IsEnabledXformCache() && xfCache.GetTime() == time) {
         ctm = xfCache.GetValue(prim);
     } else {
         ctm = UsdImaging_XfStrategy::ComputeTransform(
@@ -290,7 +290,7 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time)
     if (_delegate->IsInInvisedPaths(prim.GetPath())) return false;
 
     UsdImaging_VisCache &visCache = _delegate->_visCache;
-    if (_IsEnabledVisCache() and visCache.GetTime() == time)
+    if (_IsEnabledVisCache() && visCache.GetTime() == time)
     {
         return visCache.GetValue(prim)
                     == UsdGeomTokens->inherited;

@@ -66,7 +66,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     TF_FOR_ALL(typeIt, types) {
 
         PlugPluginPtr plugin = plugReg.GetPluginForType(*typeIt);
-        if (not plugin) {
+        if (!plugin) {
             TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginDiscover] Plugin could "
                     "not be loaded for TfType '%s'\n",
                     typeIt->GetTypeName().c_str());
@@ -84,7 +84,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
         } else {
             JsObject::const_iterator it = metadata.find("isInternal");
             if (it != metadata.end()) {
-                if (not it->second.Is<bool>()) {
+                if (!it->second.Is<bool>()) {
                     TF_RUNTIME_ERROR("[PluginDiscover] isInternal metadata was "
                             "corrupted for plugin '%s'; not holding bool\n", 
                             typeIt->GetTypeName().c_str());
@@ -95,7 +95,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
             }
         }
 
-        if (not isEnabled) {
+        if (!isEnabled) {
             TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginDiscover] Plugin disabled "
                         "because external plugins were disabled '%s'\n", 
                         typeIt->GetTypeName().c_str());
@@ -110,7 +110,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
                     typeIt->GetTypeName().c_str());
             continue;
         }
-        if (not it->second.Is<std::string>()) {
+        if (!it->second.Is<std::string>()) {
             TF_RUNTIME_ERROR("[PluginDiscover] primTypeName metadata was "
                     "corrupted for plugin '%s'\n", 
                     typeIt->GetTypeName().c_str());
@@ -149,7 +149,7 @@ UsdImagingAdapterRegistry::ConstructAdapter(TfToken const& adapterKey)
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtr plugin = plugReg.GetPluginForType(typeIt->second);
-    if (not plugin or not plugin->Load()) {
+    if (!plugin || !plugin->Load()) {
         TF_CODING_ERROR("[PluginLoad] PlugPlugin could not be loaded for "
                 "TfType '%s'\n",
                 typeIt->second.GetTypeName().c_str());
@@ -158,7 +158,7 @@ UsdImagingAdapterRegistry::ConstructAdapter(TfToken const& adapterKey)
 
     UsdImagingPrimAdapterFactoryBase* factory =
         typeIt->second.GetFactory<UsdImagingPrimAdapterFactoryBase>();
-    if (not factory) {
+    if (!factory) {
         TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' "
                 "for Usd prim type '%s'\n",
                 typeIt->second.GetTypeName().c_str(),
@@ -168,7 +168,7 @@ UsdImagingAdapterRegistry::ConstructAdapter(TfToken const& adapterKey)
     }
 
     UsdImagingPrimAdapterSharedPtr instance = factory->New();
-    if (not instance) {
+    if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Failed to instantiate type '%s' "
                 "for Usd prim type '%s'\n",
                 typeIt->second.GetTypeName().c_str(),

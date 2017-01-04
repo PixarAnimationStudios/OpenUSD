@@ -179,7 +179,7 @@ UsdImagingPointsAdapter::_GetPoints(UsdPrim const& prim,
                                    UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    if (not prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
+    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
         *value = VtVec3fArray();
     }
 }

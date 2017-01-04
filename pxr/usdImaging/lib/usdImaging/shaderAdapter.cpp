@@ -60,12 +60,12 @@ std::string
 UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
 {
     std::string const EMPTY;
-    if (not TF_VERIFY(usdPath != SdfPath()))
+    if (!TF_VERIFY(usdPath != SdfPath()))
         return EMPTY;
 
     UsdPrim prim = _delegate->_GetPrim(usdPath);
 
-    if (not prim) {
+    if (!prim) {
         return EMPTY;
     }
 
@@ -79,7 +79,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
         // Deprecated
         // ------------------------------------------------------------------ //
         srcAttr = prim.GetAttribute(UsdImagingTokens->infoSource);
-        if (not srcAttr) {
+        if (!srcAttr) {
             TF_DEBUG(USDIMAGING_SHADERS).Msg("No shader source attribute: %s\n",
                     prim.GetPath().GetText());
             return EMPTY;
@@ -93,7 +93,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
     // like to share this in some sort of registry in the future.
     SdfAssetPath asset;
     std::string filePath;
-    if (not srcAttr.Get(&asset))
+    if (!srcAttr.Get(&asset))
         return EMPTY;
 
     filePath = asset.GetResolvedPath();
@@ -104,7 +104,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
 
     GlfGLSLFX gfx(filePath);
 
-    if (not gfx.IsValid())
+    if (!gfx.IsValid())
         return EMPTY;
 
     return gfx.GetSurfaceSource();
@@ -114,11 +114,11 @@ TfTokenVector
 UsdImagingShaderAdapter::GetSurfaceShaderParamNames(SdfPath const &usdPath) const
 {
     TfTokenVector names;
-    if (not TF_VERIFY(usdPath != SdfPath()))
+    if (!TF_VERIFY(usdPath != SdfPath()))
         return names;
 
     UsdPrim prim = _delegate->_GetPrim(usdPath);
-    if (not prim)
+    if (!prim)
         return names;
 
     if (UsdShadeShader shader = UsdShadeShader(prim)) {
@@ -139,7 +139,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderParamNames(SdfPath const &usdPath) cons
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Parameters found:\n");
         TF_FOR_ALL(propIt, props) {
             if (UsdAttribute attr = propIt->As<UsdAttribute>()) {
-                if (not attr.GetPath().IsNamespacedPropertyPath()) {
+                if (!attr.GetPath().IsNamespacedPropertyPath()) {
                     TF_DEBUG(USDIMAGING_SHADERS).Msg("\t - %s\n",
                         attr.GetName().GetText());
                     names.push_back(attr.GetName());
@@ -156,11 +156,11 @@ VtValue
 UsdImagingShaderAdapter::GetSurfaceShaderParamValue(SdfPath const &usdPath, 
                                                TfToken const &paramName) const
 {
-    if (not TF_VERIFY(usdPath != SdfPath()))
+    if (!TF_VERIFY(usdPath != SdfPath()))
         return VtValue();
 
     UsdPrim prim = _delegate->_GetPrim(usdPath);
-    if (not TF_VERIFY(prim)) {
+    if (!TF_VERIFY(prim)) {
         // XXX: hydra crashes with empty vt values, should fix
         VtFloatArray dummy;
         dummy.resize(1);
@@ -169,7 +169,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderParamValue(SdfPath const &usdPath,
 
     VtValue value;
     UsdAttribute attr = prim.GetAttribute(paramName);
-    if (not TF_VERIFY(attr)) {
+    if (!TF_VERIFY(attr)) {
         // XXX: hydra crashes with empty vt values, should fix
         VtFloatArray dummy;
         dummy.resize(1);
@@ -186,11 +186,11 @@ UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
 {
     HdShaderParamVector params;
 
-    if (not TF_VERIFY(usdPath != SdfPath()))
+    if (!TF_VERIFY(usdPath != SdfPath()))
         return params;
 
     UsdPrim prim = _delegate->_GetPrim(usdPath);
-    if (not prim)
+    if (!prim)
         return params;
 
     std::vector<UsdProperty> const& props = prim.GetProperties();
@@ -207,7 +207,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
             TfTokenVector samplerCoords;
             bool isPtex = false;
 
-            if (not TF_VERIFY(attr.Get(&fallbackValue),
+            if (!TF_VERIFY(attr.Get(&fallbackValue),
                             "No fallback value for: <%s>\n",
                             attr.GetPath().GetText())) {
                 continue;
@@ -284,7 +284,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
                         resolvedPath = TfToken(ap.GetAssetPath());
                     }
                     isPtex = GlfPtexTexture::IsPtexTexture(resolvedPath);
-                    if (not isPtex) {
+                    if (!isPtex) {
                         TF_VERIFY(texAttr.GetMetadata(
                                               UsdImagingTokens->uvPrimvar, &t),
                                 "<%s>", texAttr.GetPath().GetText());
@@ -323,19 +323,19 @@ UsdImagingShaderAdapter::GetSurfaceShaderTextures(SdfPath const &usdPath) const
 {
     SdfPathVector textureIDs;
 
-    if (not TF_VERIFY(usdPath != SdfPath())) {
+    if (!TF_VERIFY(usdPath != SdfPath())) {
         return textureIDs;
     }
 
     UsdPrim prim = _delegate->_GetPrim(usdPath);
-    if (not prim) {
+    if (!prim) {
         return textureIDs;
     }
 
     if (UsdShadeShader shader = UsdShadeShader(prim)) {
         SdfPathVector stack(1, shader.GetPath());
         TfToken t;
-        while (not stack.empty()) {
+        while (!stack.empty()) {
             SdfPath shaderPath = stack.back();
             stack.pop_back();
             shader = UsdShadeShader(prim.GetStage()->GetPrimAtPath(shaderPath));
@@ -344,8 +344,8 @@ UsdImagingShaderAdapter::GetSurfaceShaderTextures(SdfPath const &usdPath) const
                     shader.GetPath().GetText());
 
             if (shader.GetIdAttr().Get(&t)
-                    and (t == UsdHydraTokens->HwUvTexture_1
-                        or t == UsdHydraTokens->HwPtexTexture_1)) {
+                    && (t == UsdHydraTokens->HwUvTexture_1
+                        || t == UsdHydraTokens->HwPtexTexture_1)) {
                 TF_DEBUG(USDIMAGING_TEXTURES).Msg(
                     "  found texture: <%s>\n",
                     shader.GetPath().GetText());

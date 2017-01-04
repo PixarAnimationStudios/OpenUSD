@@ -88,8 +88,8 @@ public:
     value_type GetValue(const UsdPrim& prim) const
     {
         TRACE_FUNCTION();
-        if (not prim.GetPath().HasPrefix(_rootPath) 
-            and not prim.IsInMaster()) {
+        if (!prim.GetPath().HasPrefix(_rootPath) 
+            && !prim.IsInMaster()) {
             TF_CODING_ERROR("Attempt to get value for: %s "
                             "which is not within the specified root: %s",
                             prim.GetPath().GetString().c_str(),
@@ -136,7 +136,7 @@ public:
     /// Set the root ancestor path at which to stop inheritance.
     /// Note that values on the root are not inherited.
     void SetRootPath(const SdfPath& rootPath) {
-        if (not rootPath.IsAbsolutePath()) {
+        if (!rootPath.IsAbsolutePath()) {
             TF_CODING_ERROR("Invalid root path: %s", 
                             rootPath.GetString().c_str());
             return;
@@ -169,7 +169,7 @@ public:
     {
         TRACE_FUNCTION();
 
-        if (valueOverrides.empty() and overridesToRemove.empty())
+        if (valueOverrides.empty() && overridesToRemove.empty())
             return;
 
         ValueOverridesMap valueOverridesToProcess;
@@ -205,7 +205,7 @@ public:
 
             // Invalidate cache entries if the prim is not a descendant of a 
             // path that has already been processed.
-            if (not isDescendantOfProcessedOverride) {
+            if (!isDescendantOfProcessedOverride) {
                 for (UsdTreeIterator iter(prim); iter ; ++iter) {
                     if (_Entry* entry = _GetCacheEntryForPrim((*iter))) {
                         entry->version = _GetInvalidVersion();
@@ -239,7 +239,7 @@ public:
 
             // Invalidate cache entries if the prim is not a descendant of a 
             // path that has already been processed.
-            if (not isDescendantOfProcessedOverride) {
+            if (!isDescendantOfProcessedOverride) {
                 for (UsdTreeIterator iter(prim); iter ; ++iter) {
                     if (_Entry* entry = _GetCacheEntryForPrim((*iter))) {
                         entry->version = _GetInvalidVersion();
@@ -326,7 +326,7 @@ UsdImaging_InheritedCache<S>::_SetCacheEntryForPrim(const UsdPrim &prim,
     // Note: _cacheVersion is not allowed to change during cache access.
     unsigned v = entry->version;
     if (v < _cacheVersion 
-            and entry->version.compare_and_swap(_cacheVersion, v) == v)
+        && entry->version.compare_and_swap(_cacheVersion, v) == v)
     {
         entry->value = value;
         entry->version = _GetValidVersion();
@@ -365,7 +365,7 @@ UsdImaging_InheritedCache<S>::_GetValue(const UsdPrim& prim) const
     static value_type const default_ = S::MakeDefault();
 
     // Base case.
-    if (not prim or prim.IsMaster() or prim.GetPath() == _rootPath)
+    if (!prim || prim.IsMaster() || prim.GetPath() == _rootPath)
         return &default_;
 
     _Entry* entry = _GetCacheEntryForPrim(prim);
@@ -428,7 +428,7 @@ struct UsdImaging_XfStrategy {
         // support it.
         query->GetLocalTransformation(&xform, owner->GetTime());
 
-        return not query->GetResetXformStack() 
+        return !query->GetResetXformStack() 
                 ? (xform * (*owner->_GetValue(prim.GetParent())))
                 : xform;
     }
@@ -446,7 +446,7 @@ struct UsdImaging_XfStrategy {
         GfMatrix4d ctm(1.0);
         GfMatrix4d localXf(1.0);
         UsdPrim p = prim;
-        while (p and p.GetPath() != rootPath) {
+        while (p && p.GetPath() != rootPath) {
             const auto &overIt = ctmOverrides.find(p.GetPath());
             // If there's a ctm override, use it and break out of the loop.
             if (overIt != ctmOverrides.end()) {
@@ -550,7 +550,7 @@ struct UsdImaging_MaterialStrategy {
                       prim.GetPath().GetText());
         if (*query) {
             SdfPath binding = GetBinding(*query);
-            if (not binding.IsEmpty()) {
+            if (!binding.IsEmpty()) {
                 return binding;
             }
         }
@@ -569,7 +569,7 @@ struct UsdImaging_MaterialStrategy {
             UsdShadeMaterial mat = UsdShadeMaterial::GetBoundMaterial(parent);
             if (mat) {
                 binding = GetBinding(mat);
-                if (not binding.IsEmpty()) {
+                if (!binding.IsEmpty()) {
                     break;
                 }
             }

@@ -404,7 +404,7 @@ private:
     friend class UsdImagingShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
-        if (not (0 <= level and level <= 8)) {
+        if (!(0 <= level && level <= 8)) {
             TF_CODING_ERROR("Invalid refinement level(%d), "
                             "expected range is [0,8]",
                             level);
@@ -437,7 +437,7 @@ private:
     UsdPrim _GetPrim(SdfPath const& usdPath) {
         UsdPrim const& p = 
                     _stage->GetPrimAtPath(usdPath.GetAbsoluteRootOrPrimPath());
-        if (not TF_VERIFY(p))
+        if (!TF_VERIFY(p))
             TF_CODING_ERROR("No prim found for id: %s", 
                                 usdPath.GetAbsoluteRootOrPrimPath().GetText());
         return p;

@@ -34,7 +34,7 @@ UsdImaging_MaterialStrategy::GetTargetedShader(UsdPrim const& materialPrim,
                                         UsdRelationship const& materialRel)
 {
     SdfPathVector targets;
-    if (not materialRel.GetForwardedTargets(&targets))
+    if (!materialRel.GetForwardedTargets(&targets))
         return UsdPrim();
 
     if (targets.size() != 1) {
@@ -48,7 +48,7 @@ UsdImaging_MaterialStrategy::GetTargetedShader(UsdPrim const& materialPrim,
         return UsdPrim();
     }
 
-    if (not targets[0].IsPrimPath()) {
+    if (!targets[0].IsPrimPath()) {
         // XXX: This should really be a validation error once USD gets that
         // feature.
         TF_WARN("We expect the target of the relationship %s of prim <%s> "

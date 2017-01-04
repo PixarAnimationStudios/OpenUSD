@@ -89,7 +89,7 @@ UsdImagingSphereAdapter::TrackVariability(UsdPrim const& prim,
     
     UsdTimeCode time(1.0);
     if (requestedBits & HdChangeTracker::DirtyTransform) {
-        if (not (*dirtyBits & HdChangeTracker::DirtyTransform)) {
+        if (!(*dirtyBits & HdChangeTracker::DirtyTransform)) {
             _IsVarying(prim, UsdGeomTokens->radius,
                           HdChangeTracker::DirtyTransform,
                           UsdImagingTokens->usdVaryingXform,

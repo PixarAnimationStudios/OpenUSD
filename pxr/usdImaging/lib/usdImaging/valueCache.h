@@ -53,7 +53,7 @@ public:
         TfToken name;
         TfToken interpolation;
         bool operator==(PrimvarInfo const& rhs) {
-            return rhs.name == name and
+            return rhs.name == name &&
                    rhs.interpolation == interpolation;
         }
     };
@@ -71,10 +71,10 @@ public:
         {}
 
         inline bool operator==(Key const& rhs) const {
-            return _path == rhs._path and _attribute == rhs._attribute;
+            return _path == rhs._path && _attribute == rhs._attribute;
         }
         inline bool operator!=(Key const& rhs) const {
-            return not (*this == rhs);
+            return !(*this == rhs);
         }
 
         struct Hash {
@@ -192,7 +192,7 @@ private:
     /// value was passed into the first _Extract.
     template <typename T>
     bool _Extract(Key const& key, T* value) {
-        if (not TF_VERIFY(not _locked)) {
+        if (!TF_VERIFY(!_locked)) {
             return false;
         }
       
@@ -218,7 +218,7 @@ private:
     /// Not thread safe
     template <typename T>
     void _Erase(Key const& key) {
-        if (not TF_VERIFY(not _locked)) {
+        if (!TF_VERIFY(!_locked)) {
             return;
         }
 

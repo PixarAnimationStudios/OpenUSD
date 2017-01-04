@@ -91,7 +91,7 @@ UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
     // container during update.
 
     if (requestedBits & HdChangeTracker::DirtyPoints) {
-        if (not _IsVarying(prim, 
+        if (!_IsVarying(prim, 
                            UsdGeomTokens->radius,
                            HdChangeTracker::DirtyPoints,
                            UsdImagingTokens->usdVaryingPrimVar,
@@ -312,7 +312,7 @@ _GenerateCapsuleMeshTopology()
         indices[index++] = top;
     }
 
-    TF_VERIFY(face == numCounts and index == numIndices);
+    TF_VERIFY(face == numCounts && index == numIndices);
 
     return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
                           HdTokens->rightHanded,
