@@ -33,10 +33,12 @@ using namespace boost::python;
 void wrapUsdSpecializes()
 {
     class_<UsdSpecializes>("Specializes", no_init)
-        .def("Add", &UsdSpecializes::Add, arg("primPath"))
-        .def("Remove", &UsdSpecializes::Remove, arg("primPath"))
-        .def("Clear", &UsdSpecializes::Clear)
-        .def("SetItems", &UsdSpecializes::SetItems)
+        .def("AppendSpecialize", &UsdSpecializes::AppendSpecialize,
+             arg("primPath"))
+        .def("RemoveSpecialize", &UsdSpecializes::RemoveSpecialize,
+             arg("primPath"))
+        .def("ClearSpecializes", &UsdSpecializes::ClearSpecializes)
+        .def("SetSpecializes", &UsdSpecializes::SetSpecializes)
         .def("GetPrim", 
              (UsdPrim (UsdSpecializes::*)()) &UsdSpecializes::GetPrim)
         .def(!self)

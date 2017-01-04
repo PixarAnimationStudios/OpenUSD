@@ -189,7 +189,7 @@ UsdGeomCollectionAPI::AppendTarget(
     {
         // We can simply add the target here to the relationship here since 
         // there are no companion non-list-edited integer arrays.
-        return CreateTargetsRel().AddTarget(target);
+        return CreateTargetsRel().AppendTarget(target);
     }
 
     if (targetFaceCounts.empty() && !targetFaceIndices.empty()) {

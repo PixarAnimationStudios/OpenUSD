@@ -47,7 +47,7 @@ _ValidateNoSubRootReferences(const SdfReference &ref)
 // UsdReferences
 // ------------------------------------------------------------------------- //
 bool
-UsdReferences::Add(const SdfReference& ref)
+UsdReferences::AppendReference(const SdfReference& ref)
 {
     if (!_ValidateNoSubRootReferences(ref))
         return false;
@@ -69,29 +69,29 @@ UsdReferences::Add(const SdfReference& ref)
 }
 
 bool
-UsdReferences::Add(const std::string &assetPath,
-                   const SdfPath &primPath,
-                   const SdfLayerOffset &layerOffset)
+UsdReferences::AppendReference(const std::string &assetPath,
+                               const SdfPath &primPath,
+                               const SdfLayerOffset &layerOffset)
 {
-    return Add(SdfReference(assetPath, primPath, layerOffset));
+    return AppendReference(SdfReference(assetPath, primPath, layerOffset));
 }
 
 bool
-UsdReferences::Add(const std::string &assetPath,
-                   const SdfLayerOffset &layerOffset)
+UsdReferences::AppendReference(const std::string &assetPath,
+                               const SdfLayerOffset &layerOffset)
 {
-    return Add(assetPath, SdfPath(), layerOffset);
+    return AppendReference(assetPath, SdfPath(), layerOffset);
 }
 
 bool 
-UsdReferences::AddInternal(const SdfPath &primPath,
-                           const SdfLayerOffset &layerOffset)
+UsdReferences::AppendInternalReference(const SdfPath &primPath,
+                                       const SdfLayerOffset &layerOffset)
 {
-    return Add(std::string(), primPath, layerOffset);
+    return AppendReference(std::string(), primPath, layerOffset);
 }
 
 bool
-UsdReferences::Remove(const SdfReference& ref)
+UsdReferences::RemoveReference(const SdfReference& ref)
 {
     SdfChangeBlock block;
     TfErrorMark mark;
@@ -107,7 +107,7 @@ UsdReferences::Remove(const SdfReference& ref)
 }
 
 bool
-UsdReferences::Clear()
+UsdReferences::ClearReferences()
 {
     SdfChangeBlock block;
     TfErrorMark mark;
@@ -122,7 +122,7 @@ UsdReferences::Clear()
 }
 
 bool 
-UsdReferences::SetItems(const SdfReferenceVector& items)
+UsdReferences::SetReferences(const SdfReferenceVector& items)
 {
     SdfChangeBlock block;
     TfErrorMark mark;

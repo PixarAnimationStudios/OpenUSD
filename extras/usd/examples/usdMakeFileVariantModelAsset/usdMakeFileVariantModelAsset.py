@@ -100,7 +100,7 @@ def CreateModelStage(assetName,
     # extremely useful for non-destructively editing many referenced or
     # instanced assets of the same type.
     classPrim = stage.CreateClassPrim(rootPath.AppendChild("_class_"+assetName))
-    modelRootPrim.GetInherits().Add(classPrim.GetPath())
+    modelRootPrim.GetInherits().AppendInherit(classPrim.GetPath())
     
     if not filesToReference:
         # weird edge case... we're done

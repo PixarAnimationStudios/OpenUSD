@@ -132,12 +132,12 @@ PxrUsdMayaTranslatorModelAssembly::Create(
             }
 
             if (refPrimPathStr.empty()) {
-                refs.Add(refAssetPath);
+                refs.AppendReference(refAssetPath);
             } else {
                 SdfPath refPrimPath(refPrimPathStr);
 
                 if (refPrimPath.IsRootPrimPath()) {
-                    refs.Add(SdfReference(refAssetPath, refPrimPath));
+                    refs.AppendReference(SdfReference(refAssetPath, refPrimPath));
                 } else {
                     MString errorMsg("Not creating reference for assembly node '");
                     errorMsg += assemblyNode.fullPathName();

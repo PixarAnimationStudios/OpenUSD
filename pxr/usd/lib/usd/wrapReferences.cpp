@@ -33,24 +33,27 @@ using namespace boost::python;
 void wrapUsdReferences()
 {
     class_<UsdReferences>("References", no_init)
-        .def("Add", (bool (UsdReferences::*)(const SdfReference &))
-             &UsdReferences::Add, arg("ref"))
-        .def("Add", (bool (UsdReferences::*)(const string &, const SdfPath &,
-                                             const SdfLayerOffset &))
-             &UsdReferences::Add, (arg("assetPath"), arg("primPath"),
-                                   arg("layerOffset")=SdfLayerOffset()))
-        .def("Add", (bool (UsdReferences::*)(const string &,
-                                             const SdfLayerOffset &))
-             &UsdReferences::Add, (arg("assetPath"),
-                                   arg("layerOffset")=SdfLayerOffset()))
-        .def("AddInternal",
-             &UsdReferences::AddInternal, 
+        .def("AppendReference", (bool (UsdReferences::*)(const SdfReference &))
+             &UsdReferences::AppendReference, arg("ref"))
+        .def("AppendReference",
+             (bool (UsdReferences::*)(const string &, const SdfPath &,
+                                      const SdfLayerOffset &))
+             &UsdReferences::AppendReference,
+             (arg("assetPath"), arg("primPath"),
+              arg("layerOffset")=SdfLayerOffset()))
+        .def("AppendReference",(bool (UsdReferences::*)(const string &,
+                                                        const SdfLayerOffset &))
+             &UsdReferences::AppendReference,
+             (arg("assetPath"),
+              arg("layerOffset")=SdfLayerOffset()))
+        .def("AppendInternalReference",
+             &UsdReferences::AppendInternalReference, 
                                   (arg("primPath"),
                                    arg("layerOffset")=SdfLayerOffset()))
 
-        .def("Remove", &UsdReferences::Remove, arg("ref"))
-        .def("Clear", &UsdReferences::Clear)
-        .def("SetItems", &UsdReferences::SetItems)
+        .def("RemoveReference", &UsdReferences::RemoveReference, arg("ref"))
+        .def("ClearReferences", &UsdReferences::ClearReferences)
+        .def("SetReferences", &UsdReferences::SetReferences)
         .def("GetPrim", (UsdPrim (UsdReferences::*)()) &UsdReferences::GetPrim)
         .def(!self)
         ;

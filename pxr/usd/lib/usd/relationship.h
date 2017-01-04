@@ -152,7 +152,7 @@ public:
     // validate those objects since it is easy to create a UsdAttribute
     // or UsdRelationship object not backed by scene description).
 
-    /// Adds \p target to the list of targets.
+    /// Appends \p target to the list of targets.
     ///
     /// Passing paths to master prims or any other objects in masters will 
     /// cause an error to be issued. It is not valid to author targets to
@@ -161,7 +161,7 @@ public:
     /// What data this actually authors depends on what data is currently
     /// authored in the authoring layer, with respect to list-editing
     /// semantics, which we will document soon 
-    bool AddTarget(const SdfPath& target) const;
+    bool AppendTarget(const SdfPath& target) const;
 
     /// Removes \p target from the list of targets.
     ///

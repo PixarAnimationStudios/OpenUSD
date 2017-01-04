@@ -45,10 +45,10 @@ def main():
     Usd.ModelAPI(UsdGeom.Xform.Define(stage, '/World')).SetKind(Kind.Tokens.group)
     Usd.ModelAPI(UsdGeom.Xform.Define(stage, '/World/sets')).SetKind(Kind.Tokens.group)
     
-    # in previous examples, we've been using GetReferences().Add(...).  The
+    # in previous examples, we've been using GetReferences().AppendReference(...).  The
     # following uses .SetItems() instead which lets us explicitly set (replace)
     # the references at once instead of adding.
-    stage.DefinePrim('/World/sets/Room_set').GetReferences().SetItems([
+    stage.DefinePrim('/World/sets/Room_set').GetReferences().SetReferences([
         Sdf.Reference(os.path.join(ASSET_BASE, 'Room_set/Room_set.usd'))])
 
     stage.GetEditTarget().GetLayer().Save()

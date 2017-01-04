@@ -33,10 +33,10 @@ using namespace boost::python;
 void wrapUsdInherits()
 {
     class_<UsdInherits>("Inherits", no_init)
-        .def("Add", &UsdInherits::Add, arg("primPath"))
-        .def("Remove", &UsdInherits::Remove, arg("primPath"))
-        .def("Clear", &UsdInherits::Clear)
-        .def("SetItems", &UsdInherits::SetItems)
+        .def("AppendInherit", &UsdInherits::AppendInherit, arg("primPath"))
+        .def("RemoveInherit", &UsdInherits::RemoveInherit, arg("primPath"))
+        .def("ClearInherits", &UsdInherits::ClearInherits)
+        .def("SetInherits", &UsdInherits::SetInherits)
         .def("GetPrim", (UsdPrim (UsdInherits::*)()) &UsdInherits::GetPrim)
         .def(!self)
         ;

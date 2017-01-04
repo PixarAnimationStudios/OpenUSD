@@ -95,7 +95,7 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
 }
 
 bool
-UsdRelationship::AddTarget(const SdfPath& target) const
+UsdRelationship::AppendTarget(const SdfPath& target) const
 {
     std::string errMsg;
     const SdfPath targetToAuthor = _GetTargetForAuthoring(target, &errMsg);

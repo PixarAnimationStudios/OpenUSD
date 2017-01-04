@@ -382,7 +382,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     //   This is done for reasons as described above under mArgs.usdModelRootOverridePath
     UsdPrim usdVariantRootPrim = mStage->DefinePrim(usdVariantRootPrimPath);
     TfToken defaultPrim = usdVariantRootPrim.GetName();
-    usdVariantRootPrim.GetReferences().AddInternal(usdRootPrim.GetPath());
+    usdVariantRootPrim.GetReferences().AppendInternalReference(usdRootPrim.GetPath());
     usdVariantRootPrim.SetActive(true);
     usdRootPrim.SetActive(false);
 

@@ -34,7 +34,7 @@
 // UsdInherits
 // ------------------------------------------------------------------------- //
 bool
-UsdInherits::Add(const SdfPath &primPath)
+UsdInherits::AppendInherit(const SdfPath &primPath)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
@@ -46,7 +46,7 @@ UsdInherits::Add(const SdfPath &primPath)
 }
 
 bool
-UsdInherits::Remove(const SdfPath &primPath)
+UsdInherits::RemoveInherit(const SdfPath &primPath)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
@@ -58,7 +58,7 @@ UsdInherits::Remove(const SdfPath &primPath)
 }
 
 bool
-UsdInherits::Clear()
+UsdInherits::ClearInherits()
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
@@ -69,7 +69,7 @@ UsdInherits::Clear()
 }
 
 bool 
-UsdInherits::SetItems(const SdfPathVector& items)
+UsdInherits::SetInherits(const SdfPathVector& items)
 {
     // Proxy editor has no clear way of setting explicit items in a single
     // call, so instead, just set the field directly.
