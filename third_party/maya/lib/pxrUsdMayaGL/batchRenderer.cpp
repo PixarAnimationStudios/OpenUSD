@@ -29,13 +29,8 @@
 #include "pxr/imaging/garch/glut.h"
 
 #include "pxr/imaging/hd/version.h"
-#if defined(HD_API) && HD_API > 25
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/light.h"
-#else
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/light.h"
-#endif
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -507,15 +502,13 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
         _ValueCache &cache = _valueCacheMap[_cameraId];
         cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices()); 
         cache[HdxCameraTokens->windowPolicy] = VtValue();  // no window policy.
-#elif defined(HD_API) && HD_API > 25
+#else
         renderIndex->InsertSprim<HdxCamera>(this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
         cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
         cache[HdxCameraTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
         cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
         cache[HdxCameraTokens->windowPolicy] = VtValue();  // we don't use window policy.
-#else
-        #error Not supported in Hydra anymore.
 #endif
     }
 
@@ -578,7 +571,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
                                                        HdxCamera::AllDirty);
-#elif defined(HD_API) && HD_API > 25
+#else
     cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
     cache[HdxCameraTokens->projectionMatrix]  = VtValue(projectionMatrix);
     cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
@@ -587,8 +580,6 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
                                                        HdxCamera::AllDirty);
-#else
-    #error Not supported in Hydra anymore.
 #endif
 
     if( _viewport != viewport )
@@ -656,21 +647,13 @@ UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
                            (int)_lightIds.size()));
         _lightIds.push_back(lightId);
 
-#if defined(HD_API) && HD_API > 25
         GetRenderIndex().InsertSprim<HdxLight>(this, lightId);
-#else
-        GetRenderIndex().InsertLight<HdLight>(this, lightId);
-#endif
         hasNumLightsChanged = true;
     }
 
     // Remove unused light Ids from HdRenderIndex
     while (_lightIds.size() > lights.size()) {
-#if defined(HD_API) && HD_API > 25
         GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
-#else
-        GetRenderIndex().RemoveLight(_lightIds.back());
-#endif
         _lightIds.pop_back();
         hasNumLightsChanged = true;
     }
@@ -679,7 +662,6 @@ UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache &cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
-#if defined(HD_API) && HD_API > 25
         cache[HdxLightTokens->params] = VtValue(lights[i]);
         cache[HdxLightTokens->transform] = VtValue();
         cache[HdxLightTokens->shadowParams] = VtValue(HdxShadowParams());
@@ -691,19 +673,6 @@ UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
         // always
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             _lightIds[i], HdxLight::AllDirty);
-#else
-        cache[HdTokens->lightParams] = VtValue(lights[i]);
-        cache[HdTokens->lightTransform] = VtValue();
-        cache[HdTokens->lightShadowParams] = VtValue(HdxShadowParams());
-        cache[HdTokens->lightShadowCollection] = VtValue();
-
-        // Only mark as dirty the parameters to avoid unnecessary invalidation
-        // specially marking as dirty lightShadowCollection will trigger
-        // a collection dirty on geometry and we don't want that to happen
-        // always
-        GetRenderIndex().GetChangeTracker().MarkLightDirty(
-            _lightIds[i], HdChangeTracker::DirtyParams);
-#endif
     }
 
     // sadly the material also comes from lighting context right now...
