@@ -45,9 +45,7 @@ using std::string;
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderType)
-    ((connectedSourceFor, "connectedSourceFor:"))
     (outputName)
-    ((outputs, "outputs:"))
 );
 
 static UsdRelationship
@@ -141,7 +139,8 @@ UsdShadeParameter::_Connect(
     // be able to target a pure-over.
     if (rel && sourcePrim) {
         TfToken sourceName = outputIsParameter ? outputName :
-            TfToken(_tokens->outputs.GetString() + outputName.GetString());
+            TfToken(UsdShadeTokens->outputs.GetString() +
+                    outputName.GetString());
         UsdAttribute  sourceAttr = sourcePrim.GetAttribute(sourceName);
 
         // First make sure there is a source attribute of the proper type
@@ -237,9 +236,11 @@ _EvaluateConnection(
         *source = UsdShadeShader::Get(connection.GetStage(), 
                                       path.GetPrimPath());
         if (path.IsPropertyPath()){
-            const size_t prefixLen = _tokens->outputs.GetString().size();
+            const size_t prefixLen = (
+                    UsdShadeTokens->outputs.GetString().size());
             TfToken const &attrName(path.GetNameToken());
-            if (TfStringStartsWith(attrName, _tokens->outputs)){
+            if (TfStringStartsWith(attrName,
+                        UsdShadeTokens->outputs.GetString())){
                 *outputName = TfToken(attrName.GetString().substr(prefixLen));
             }
             else {
@@ -290,6 +291,6 @@ UsdShadeParameter::IsConnected() const
 TfToken 
 UsdShadeParameter::GetConnectionRelName() const
 {
-    return TfToken(_tokens->connectedSourceFor.GetString() + 
+    return TfToken(UsdShadeTokens->connectedSourceFor.GetString() +
            _attr.GetName().GetString());
 }

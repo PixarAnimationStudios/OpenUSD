@@ -117,22 +117,19 @@ UsdShadeLook::GetSchemaAttributeNames(bool includeInherited)
 
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usd/editContext.h"
+#include "pxr/usd/usdShade/tokens.h"
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (look)
-    ((bindingRelationshipName, "look:binding"))
     ((lookVariantName, "lookVariant"))
-    ((derivesFromName, "derivesFrom"))
-    ((surfaceTerminal, "surface"))
-    ((displacementTerminal, "displacement"))
 );
 
 static 
 UsdRelationship
 _CreateBindingRel(UsdPrim& prim)
 {
-    return prim.CreateRelationship(_tokens->bindingRelationshipName,
+    return prim.CreateRelationship(UsdShadeTokens->lookBinding,
                                    /* custom = */ false);
 }
 
@@ -165,7 +162,7 @@ UsdShadeLook::Unbind(UsdPrim& prim)
 UsdRelationship
 UsdShadeLook::GetBindingRel(const UsdPrim& prim)
 {
-    return prim.GetRelationship(_tokens->bindingRelationshipName);
+    return prim.GetRelationship(UsdShadeTokens->lookBinding);
 }
 
 UsdShadeLook
@@ -347,7 +344,7 @@ SdfPath
 UsdShadeLook::GetBaseLookPath() const 
 {
     UsdRelationship baseRel = GetPrim().GetRelationship(
-            _tokens->derivesFromName);
+            UsdShadeTokens->derivesFrom);
     if (baseRel.IsValid()) {
         SdfPathVector targets;
         baseRel.GetTargets(&targets);
@@ -362,7 +359,7 @@ void
 UsdShadeLook::SetBaseLookPath(const SdfPath& baseLookPath) const 
 {
     UsdRelationship baseRel = GetPrim().CreateRelationship(
-        _tokens->derivesFromName, /* custom = */ false);
+        UsdShadeTokens->derivesFrom, /* custom = */ false);
 
     if (!baseLookPath.IsEmpty()) {
         SdfPathVector targets(1, baseLookPath);
