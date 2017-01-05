@@ -176,6 +176,8 @@ private:
 
     struct _Untyped 
     {
+        virtual ~_Untyped();
+
         bool IsHolding(const std::type_info& ti) const
         {
             return TfSafeTypeCompare(ti, GetTypeid());
@@ -191,6 +193,8 @@ private:
     template <class Context>
     struct _Typed : public _Untyped
     {
+        virtual ~_Typed() { }
+
         _Typed(const Context& context) : _context(context)
         { 
         }

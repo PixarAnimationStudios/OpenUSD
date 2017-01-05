@@ -26,6 +26,8 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/stringUtils.h"
 
+ArResolverContext::_Untyped::~_Untyped() { }
+
 std::string
 Ar_GetDebugString(const std::type_info& info, void const* context) 
 {
