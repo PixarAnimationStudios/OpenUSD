@@ -229,6 +229,15 @@ TfReadDir(
         return false;
     }
 
+#if defined(HAVE_FSTATAT)
+    const int dirFD = dirfd(dir);
+#else
+    std::string entryPath(dirPath);
+    if (entryPath.back() != '/')
+      entryPath += '/';
+    const size_t entryStart = entryPath.size();
+#endif
+
     for (rc = readdir_r(dir, &entry, &result);
          result && rc == 0;
          rc = readdir_r(dir, &entry, &result)) {
@@ -251,7 +260,12 @@ TfReadDir(
             // If d_type is not available, or the filesystem has no support
             // for d_type, fall back to lstat.
             struct stat st;
-            if (fstatat(dirfd(dir), entry.d_name, &st, AT_SYMLINK_NOFOLLOW) != 0)
+#if defined(HAVE_FSTATAT)
+            if (fstatat(dirFD, entry.d_name, &st, AT_SYMLINK_NOFOLLOW) != 0)
+#else
+            entryPath.replace(entryStart, string::npos, entry.d_name);
+            if (lstat(entryPath.c_str(), &st) != 0)
+#endif
                 continue;
 
             if (S_ISDIR(st.st_mode)) {
@@ -277,7 +291,7 @@ TfReadDir(
     closedir(dir);
     
     return true;
-}    
+}
 
 static void
 Tf_ReadDir(
