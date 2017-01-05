@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/symbols.h"
-#include <stdio.h>
-#include <assert.h>
+#include "pxr/base/arch/error.h"
+#include <cstdlib>
 
 static void Code() { }
 static int data = 1;
@@ -48,26 +48,26 @@ int main()
     std::string path;
 
     // Invalid pointer.
-    assert(!_GetLibraryPath(0, &path));
+    ARCH_AXIOM(!_GetLibraryPath(0, &path));
 
     // Pointer to a local non-function.
-    assert(!_GetLibraryPath(&path, &path));
+    ARCH_AXIOM(!_GetLibraryPath(&path, &path));
 
     // Pointer into the DATA section.
-    assert(_GetLibraryPath(&data, &path));
-    assert(GetBasename(path) == "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath(&data, &path));
+    ARCH_AXIOM(GetBasename(path) == "testArchSymbols");
 
     // Pointer into the BSS section.
-    assert(_GetLibraryPath(&bss, &path));
-    assert(GetBasename(path) == "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath(&bss, &path));
+    ARCH_AXIOM(GetBasename(path) == "testArchSymbols");
 
     // Find this library.
-    assert(_GetLibraryPath((void*)&Code, &path));
-    assert(GetBasename(path) == "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath((void*)&Code, &path));
+    ARCH_AXIOM(GetBasename(path) == "testArchSymbols");
 
     // Find another library.
-    assert(_GetLibraryPath((void*)&exit, &path));
-    assert(GetBasename(path) != "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath((void*)&exit, &path));
+    ARCH_AXIOM(GetBasename(path) != "testArchSymbols");
 
     return 0;
 }

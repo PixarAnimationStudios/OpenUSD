@@ -26,11 +26,11 @@
 
 #include "pxr/base/js/converter.h"
 #include "pxr/base/js/json.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/staticData.h"
 
 #include <boost/any.hpp>
 
-#include <cassert>
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -99,7 +99,7 @@ _CheckArrayOf(
 {
     IndenterScope scope(*indenter);
 
-    assert(value.IsArrayOf<T>());
+    TF_AXIOM(value.IsArrayOf<T>());
 
     const std::vector<T> array = value.GetArrayOf<T>();
     const JsArray& expArray = value.GetJsArray();
@@ -108,7 +108,7 @@ _CheckArrayOf(
         << ", expArray.size = " << expArray.size() << std::endl;
 
     for (size_t i = 0; i < array.size(); ++i) {
-        assert(array[i] == expArray[i].Get<T>());
+        TF_AXIOM(array[i] == expArray[i].Get<T>());
     }    
 }
 
@@ -121,7 +121,7 @@ _CheckArray(
 
     indent << "array.size = " << array.size()
         << ", expArray.size = " << expArray.size() << std::endl;
-    assert(array.size() == expArray.size());
+    TF_AXIOM(array.size() == expArray.size());
 
     for (size_t i = 0; i < array.size(); ++i) {
         IndenterScope scope(*indenter);
@@ -135,35 +135,35 @@ _CheckArray(
         switch (expArray[i].GetType()) {
         case JsValue::ObjectType: {
             indent << "checking object conversion" << std::endl;
-            assert(IsHolding<_Dictionary>(array[i]));
+            TF_AXIOM(IsHolding<_Dictionary>(array[i]));
             break;
         }
         case JsValue::ArrayType: {
             indent << "checking array conversion" << std::endl;
-            assert(IsHolding<_AnyVector>(array[i]));
+            TF_AXIOM(IsHolding<_AnyVector>(array[i]));
             break;
         }
         case JsValue::BoolType: {
             indent << "checking bool conversion" << std::endl;
-            assert(IsHolding<bool>(array[i]));
-            assert(Get<bool>(array[i]) == expArray[i].GetBool());
+            TF_AXIOM(IsHolding<bool>(array[i]));
+            TF_AXIOM(Get<bool>(array[i]) == expArray[i].GetBool());
             break;
         }
         case JsValue::StringType: {
             indent << "checking string conversion" << std::endl;
-            assert(IsHolding<string>(array[i]));
-            assert(Get<string>(array[i]) == expArray[i].GetString());
+            TF_AXIOM(IsHolding<string>(array[i]));
+            TF_AXIOM(Get<string>(array[i]) == expArray[i].GetString());
             break;
         }
         case JsValue::RealType: {
             indent << "checking real conversion" << std::endl;
-            assert(IsHolding<double>(array[i]));
-            assert(Get<double>(array[i]) == expArray[i].GetReal());
+            TF_AXIOM(IsHolding<double>(array[i]));
+            TF_AXIOM(Get<double>(array[i]) == expArray[i].GetReal());
             break;
         }
         case JsValue::IntType: {
             indent << "checking int conversion" << std::endl;
-            assert((IsHolding<int64_t>(array[i])&& 
+            TF_AXIOM((IsHolding<int64_t>(array[i])&& 
                     Get<int64_t>(array[i]) == expArray[i].GetInt()) || 
                    (IsHolding<uint64_t>(array[i])&& 
                     Get<uint64_t>(array[i]) == static_cast<uint64_t>(expArray[i].GetInt())));
@@ -171,7 +171,7 @@ _CheckArray(
         }
         case JsValue::NullType: {
             indent << "checking null conversion" << std::endl;
-            assert(IsEmpty(array[i]));
+            TF_AXIOM(IsEmpty(array[i]));
             break;
         }
         default: TF_FATAL_ERROR("Unknown type in test array");
@@ -191,26 +191,26 @@ int main(int argc, char const *argv[])
     // Set up expected values.
     std::cout << "parsing input stream" << std::endl;
     const JsValue value = JsParseStream(ifs);
-    assert(value);
-    assert(value.IsObject());
+    TF_AXIOM(value);
+    TF_AXIOM(value.IsObject());
 
     std::cout << "unwrapping envelope" << std::endl;
     JsObject envelope = value.GetJsObject();
-    assert(envelope["Object"].IsObject());
+    TF_AXIOM(envelope["Object"].IsObject());
     JsObject object = envelope["Object"].GetJsObject();
-    assert(!object.empty());
+    TF_AXIOM(!object.empty());
 
     // Convert the top-level value to another container type.
     std::cout << "converting container" << std::endl;
     const _Any result = JsConvertToContainerType<_Any, _Dictionary>(value);
-    assert(!IsEmpty(result));
-    assert(IsHolding<_Dictionary>(result));
+    TF_AXIOM(!IsEmpty(result));
+    TF_AXIOM(IsHolding<_Dictionary>(result));
 
     std::cout << "checking converted top-level object" << std::endl;
     const _Dictionary& dict = Get<_Dictionary>(result);
     _Dictionary::const_iterator i = dict.find("Object");
-    assert(i != dict.end());
-    assert(IsHolding<_Dictionary>(i->second));
+    TF_AXIOM(i != dict.end());
+    TF_AXIOM(IsHolding<_Dictionary>(i->second));
     const _Dictionary& aObject = Get<_Dictionary>(i->second);
 
     std::cout << "checking converted values" << std::endl;
@@ -224,113 +224,113 @@ int main(int argc, char const *argv[])
 
         if (p.first == "Array") {
             indent << "checking array conversion" << std::endl;
-            assert(object[p.first].IsArray());
-            assert(IsHolding<_AnyVector>(p.second));
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(IsHolding<_AnyVector>(p.second));
             _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
 
             // This array has heterogeneous values, so IsArrayOf<T> should
             // always return false.
-            assert(!object[p.first].IsArrayOf<JsObject>());
-            assert(!object[p.first].IsArrayOf<JsArray>());
-            assert(!object[p.first].IsArrayOf<string>());
-            assert(!object[p.first].IsArrayOf<double>());
-            assert(!object[p.first].IsArrayOf<int>());
-            assert(!object[p.first].IsArrayOf<int64_t>());
-            assert(!object[p.first].IsArrayOf<uint64_t>());
+            TF_AXIOM(!object[p.first].IsArrayOf<JsObject>());
+            TF_AXIOM(!object[p.first].IsArrayOf<JsArray>());
+            TF_AXIOM(!object[p.first].IsArrayOf<string>());
+            TF_AXIOM(!object[p.first].IsArrayOf<double>());
+            TF_AXIOM(!object[p.first].IsArrayOf<int>());
+            TF_AXIOM(!object[p.first].IsArrayOf<int64_t>());
+            TF_AXIOM(!object[p.first].IsArrayOf<uint64_t>());
 
         } else if (p.first == "ArrayString") {
             indent << "checking string array conversion" << std::endl;
-            assert(object[p.first].IsArray());
-            assert(object[p.first].Is<JsArray>());
-            assert(IsHolding<_AnyVector>(p.second));
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            TF_AXIOM(IsHolding<_AnyVector>(p.second));
             _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<string>(object[p.first]);
         } else if (p.first == "ArrayInt64") {
             indent << "checking int64 array conversion" << std::endl;
-            assert(object[p.first].IsArray());
-            assert(object[p.first].Is<JsArray>());
-            assert(IsHolding<_AnyVector>(p.second));
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            TF_AXIOM(IsHolding<_AnyVector>(p.second));
             _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<int64_t>(object[p.first]);
         } else if (p.first == "ArrayUInt64") {
             indent << "checking uint array conversion" << std::endl;
-            assert(object[p.first].IsArray());
-            assert(object[p.first].Is<JsArray>());
-            assert(IsHolding<_AnyVector>(p.second));
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            TF_AXIOM(IsHolding<_AnyVector>(p.second));
             _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<uint64_t>(object[p.first]);
         } else if (p.first == "ArrayReal") {
             indent << "checking real array conversion" << std::endl;
-            assert(object[p.first].IsArray());
-            assert(object[p.first].Is<JsArray>());
-            assert(IsHolding<_AnyVector>(p.second));
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            TF_AXIOM(IsHolding<_AnyVector>(p.second));
             _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<double>(object[p.first]);
         } else if (p.first == "ArrayBool") {
             indent << "checking bool array conversion" << std::endl;
-            assert(object[p.first].IsArray());
-            assert(object[p.first].Is<JsArray>());
-            assert(IsHolding<_AnyVector>(p.second));
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            TF_AXIOM(IsHolding<_AnyVector>(p.second));
             _CheckArray(Get<_AnyVector>(p.second), object[p.first].GetJsArray());
             _CheckArray(Get<_AnyVector>(p.second), 
                         object[p.first].Get<JsArray>());
             _CheckArrayOf<bool>(object[p.first]);
         } else if (p.first == "String") {
             indent << "checking string conversion" << std::endl;
-            assert(object[p.first].IsString());
-            assert(object[p.first].Is<string>());
-            assert(IsHolding<string>(p.second));
-            assert(Get<string>(p.second) == object[p.first].GetString());
-            assert(Get<string>(p.second) == object[p.first].Get<string>());
+            TF_AXIOM(object[p.first].IsString());
+            TF_AXIOM(object[p.first].Is<string>());
+            TF_AXIOM(IsHolding<string>(p.second));
+            TF_AXIOM(Get<string>(p.second) == object[p.first].GetString());
+            TF_AXIOM(Get<string>(p.second) == object[p.first].Get<string>());
         } else if (p.first == "Int64") {
             indent << "checking int conversion" << std::endl;
-            assert(object[p.first].IsInt());
-            assert(object[p.first].Is<int64_t>());
-            assert(IsHolding<int64_t>(p.second));
-            assert(Get<int64_t>(p.second) == object[p.first].GetInt());
-            assert(Get<int64_t>(p.second) == object[p.first].Get<int64_t>());
+            TF_AXIOM(object[p.first].IsInt());
+            TF_AXIOM(object[p.first].Is<int64_t>());
+            TF_AXIOM(IsHolding<int64_t>(p.second));
+            TF_AXIOM(Get<int64_t>(p.second) == object[p.first].GetInt());
+            TF_AXIOM(Get<int64_t>(p.second) == object[p.first].Get<int64_t>());
         } else if (p.first == "UInt64") {
             indent << "checking uint conversion" << std::endl;
-            assert(object[p.first].IsInt());
-            assert(object[p.first].Is<uint64_t>());
-            assert(IsHolding<uint64_t>(p.second));
-            assert(Get<uint64_t>(p.second) == static_cast<uint64_t>(object[p.first].GetInt()));
-            assert(Get<uint64_t>(p.second) == object[p.first].Get<uint64_t>());
+            TF_AXIOM(object[p.first].IsInt());
+            TF_AXIOM(object[p.first].Is<uint64_t>());
+            TF_AXIOM(IsHolding<uint64_t>(p.second));
+            TF_AXIOM(Get<uint64_t>(p.second) == static_cast<uint64_t>(object[p.first].GetInt()));
+            TF_AXIOM(Get<uint64_t>(p.second) == object[p.first].Get<uint64_t>());
         } else if (p.first == "Real") {
             indent << "checking real conversion" << std::endl;
-            assert(object[p.first].IsReal());
-            assert(object[p.first].Is<double>());
-            assert(IsHolding<double>(p.second));
-            assert(Get<double>(p.second) == object[p.first].GetReal());
-            assert(Get<double>(p.second) == object[p.first].Get<double>());
+            TF_AXIOM(object[p.first].IsReal());
+            TF_AXIOM(object[p.first].Is<double>());
+            TF_AXIOM(IsHolding<double>(p.second));
+            TF_AXIOM(Get<double>(p.second) == object[p.first].GetReal());
+            TF_AXIOM(Get<double>(p.second) == object[p.first].Get<double>());
         } else if (p.first == "BoolTrue") {
             indent << "checking bool(true) conversion" << std::endl;
-            assert(object[p.first].IsBool());
-            assert(object[p.first].Is<bool>());
-            assert(IsHolding<bool>(p.second));
-            assert(Get<bool>(p.second));
-            assert(object[p.first].Get<bool>());
+            TF_AXIOM(object[p.first].IsBool());
+            TF_AXIOM(object[p.first].Is<bool>());
+            TF_AXIOM(IsHolding<bool>(p.second));
+            TF_AXIOM(Get<bool>(p.second));
+            TF_AXIOM(object[p.first].Get<bool>());
         } else if (p.first == "BoolFalse") {
             indent << "checking bool(false) conversion" << std::endl;
-            assert(object[p.first].IsBool());
-            assert(object[p.first].Is<bool>());
-            assert(IsHolding<bool>(p.second));
-            assert(!Get<bool>(p.second));
-            assert(!object[p.first].Get<bool>());
+            TF_AXIOM(object[p.first].IsBool());
+            TF_AXIOM(object[p.first].Is<bool>());
+            TF_AXIOM(IsHolding<bool>(p.second));
+            TF_AXIOM(!Get<bool>(p.second));
+            TF_AXIOM(!object[p.first].Get<bool>());
         } else if (p.first == "Null") {
             indent << "checking null conversion" << std::endl;
-            assert(object[p.first].IsNull());
-            assert(IsEmpty(p.second));
+            TF_AXIOM(object[p.first].IsNull());
+            TF_AXIOM(IsEmpty(p.second));
         }
     }
 

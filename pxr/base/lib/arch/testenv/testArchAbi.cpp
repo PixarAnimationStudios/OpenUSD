@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/testArchAbi.h"
+#include "pxr/base/arch/error.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/vsnprintf.h"
-#include <cassert>
 #include <iostream>
 #include <typeinfo>
 #ifdef _WIN32
@@ -60,13 +60,13 @@ main(int argc, char** argv)
 #endif
     if (!plugin) {
         std::cerr << "Failed to load plugin: " << error << std::endl;
-        assert(plugin);
+        ARCH_AXIOM(plugin);
     }
 
     NewDerived newPluginDerived = (NewDerived)GETSYM(plugin, "newDerived");
     if (!newPluginDerived) {
         std::cerr << "Failed to find factory symbol" << std::endl;
-        assert(newPluginDerived);
+        ARCH_AXIOM(newPluginDerived);
     }
 
     // Create a derived object in this executable and in the plugin.
@@ -81,8 +81,8 @@ main(int argc, char** argv)
         << ", cast: " << pluginDerived
         << "->" << dynamic_cast<ArchAbiDerived<int>*>(pluginDerived)
         << std::endl;
-    assert(typeid(*mainDerived) == typeid(*pluginDerived));
-    assert(pluginDerived == dynamic_cast<ArchAbiDerived<int>*>(pluginDerived));
+    ARCH_AXIOM(typeid(*mainDerived) == typeid(*pluginDerived));
+    ARCH_AXIOM(pluginDerived == dynamic_cast<ArchAbiDerived<int>*>(pluginDerived));
 
     return 0;
 }

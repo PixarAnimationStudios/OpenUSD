@@ -24,13 +24,13 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/error.h"
 
 #include <string>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <assert.h>
 
 void
 crash(int sig) {
@@ -39,7 +39,7 @@ crash(int sig) {
 }
 
 void crashCallback(void* data) {
-    assert( data );
+    ARCH_AXIOM( data );
 }
 
 int main()
@@ -53,7 +53,7 @@ int main()
     int childPid;
     int status;
 
-    assert((logFile = fopen(log.c_str(), "w")) != NULL);
+    ARCH_AXIOM((logFile = fopen(log.c_str(), "w")) != NULL);
     fputs("fake log\n", logFile);
     fputs("let's throw in a weird printf %1024$s specifier\n", logFile);
     fclose(logFile);
@@ -70,8 +70,8 @@ int main()
         exit(0);
     }
 
-    assert(childPid == wait(&status));
-    assert(status != 0);
+    ARCH_AXIOM(childPid == wait(&status));
+    ARCH_AXIOM(status != 0);
 
     if ( (childPid = fork()) == 0 )   {
         printf("Crash (spawn thread)\n");
@@ -79,8 +79,8 @@ int main()
         exit(0);
     }
 
-    assert(childPid == wait(&status));
-    assert(status != 0);
+    ARCH_AXIOM(childPid == wait(&status));
+    ARCH_AXIOM(status != 0);
 
     // test GetStackTrace
     std::vector<std::string> stackTrace = ArchGetStackTrace(20);
@@ -95,7 +95,7 @@ int main()
     // will be to simply remove this #if code.
     found = !found;
 #endif
-    assert(found);
+    ARCH_AXIOM(found);
 
     return 0;
 }

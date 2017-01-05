@@ -25,8 +25,6 @@
 #include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/error.h"
 
-#include <assert.h>
-
 #define MINNAPTIME 4
 #define NAPTIME 5
 #define MAXNAPTIME 6
@@ -51,13 +49,13 @@ int main()
     ArchNap(0);
 
     uint64_t ticks = ArchGetTickTime();
-    assert( (uint64_t) ArchTicksToNanoseconds(ticks) == 
+    ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) == 
         uint64_t(static_cast<double>(ticks)*ArchGetNanosecondsPerTick() + .5));
 
     double nanos = double(ArchTicksToNanoseconds(ticks)) / 1e9;
     double secs = ArchTicksToSeconds(ticks);
     double epsilon = 0.0001;
-    assert( (nanos - epsilon <= secs) && (nanos + epsilon >= secs) );
+    ARCH_AXIOM( (nanos - epsilon <= secs) && (nanos + epsilon >= secs) );
 
     return 0;
 }

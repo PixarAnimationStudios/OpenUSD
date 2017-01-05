@@ -22,8 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/demangle.h"
-
-#include <assert.h>
+#include "pxr/base/arch/error.h"
 
 struct Mangled {};
 
@@ -42,11 +41,11 @@ TestDemangle(const std::string& typeName)
     std::string mangledName = typeInfo.name();
     std::string toBeDemangledName = typeInfo.name();
 
-    assert(ArchDemangle(&toBeDemangledName));
-    assert(toBeDemangledName == typeName);
-    assert(ArchGetDemangled(mangledName) == typeName);
-    assert(ArchGetDemangled(typeInfo) == typeName);
-    assert(ArchGetDemangled<T>() == typeName);
+    ARCH_AXIOM(ArchDemangle(&toBeDemangledName));
+    ARCH_AXIOM(toBeDemangledName == typeName);
+    ARCH_AXIOM(ArchGetDemangled(mangledName) == typeName);
+    ARCH_AXIOM(ArchGetDemangled(typeInfo) == typeName);
+    ARCH_AXIOM(ArchGetDemangled<T>() == typeName);
 
     return true;
 }
@@ -65,7 +64,7 @@ int main()
     TestDemangle<MangledAlso<MangledAlso<int> > >("MangledAlso<MangledAlso<int> >");
 #endif
 
-    assert(ArchGetDemangled("type_that_doesnt_exist") == "");
+    ARCH_AXIOM(ArchGetDemangled("type_that_doesnt_exist") == "");
         
     return 0;
 }

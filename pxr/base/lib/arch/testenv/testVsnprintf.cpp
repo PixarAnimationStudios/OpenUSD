@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/vsnprintf.h"
+#include "pxr/base/arch/error.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -46,7 +47,7 @@ int main()
     char str[1] = "";
 
     // ArchSnprintf should report 3 characters not written 
-    assert(ArchSnprintf(str, strlen(str), "   ") == 3);
+    ARCH_AXIOM(ArchSnprintf(str, strlen(str), "   ") == 3);
 
     // ensure that a string longer than 4096 works
     // create a long format string
@@ -56,7 +57,7 @@ int main()
     }
     long_fmt[8191] = '\0';
 
-    assert(ArchStringPrintf(long_fmt).size() == 8191);
+    ARCH_AXIOM(ArchStringPrintf(long_fmt).size() == 8191);
 
     return 0;
 }

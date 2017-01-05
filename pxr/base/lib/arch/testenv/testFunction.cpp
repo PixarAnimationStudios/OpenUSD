@@ -22,22 +22,22 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/function.h"
+#include "pxr/base/arch/error.h"
 
 #include <iostream>
-#include <assert.h>
 
 int main()
 {
     // no templates
-    assert(ArchGetPrettierFunctionName("Bar", "int Foo::Bar(float)") 
+    ARCH_AXIOM(ArchGetPrettierFunctionName("Bar", "int Foo::Bar(float)") 
              == "Foo::Bar");
  
     // templates 
-    assert(ArchGetPrettierFunctionName("Bar", 
+    ARCH_AXIOM(ArchGetPrettierFunctionName("Bar", 
                                          "int Foo<A>::Bar(float) [with A = int]")
              == "Foo<A>::Bar [with A = int]");
 
-    assert(ArchGetPrettierFunctionName("Bar", 
+    ARCH_AXIOM(ArchGetPrettierFunctionName("Bar", 
                 "int Foo<A,B>::Bar(float) [with A = int, B = int]")
              == "Foo<A,B>::Bar [with A = int]");
 

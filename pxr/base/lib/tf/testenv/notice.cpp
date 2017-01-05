@@ -392,30 +392,30 @@ _TestNoticeBlock()
 {
     BlockListener l;
     TestNotice("should not be blocked").Send();
-    assert(l.hits[0] == 1);
-    assert(l.hits[1] == 0);
+    TF_AXIOM(l.hits[0] == 1);
+    TF_AXIOM(l.hits[1] == 0);
 
     {
         TfNotice::Block noticeBlock;
         TestNotice("should be blocked").Send();
-        assert(l.hits[0] == 1);
-        assert(l.hits[1] == 0);
+        TF_AXIOM(l.hits[0] == 1);
+        TF_AXIOM(l.hits[1] == 0);
 
         TestNotice("should be blocked too").Send();
-        assert(l.hits[0] == 1);
-        assert(l.hits[1] == 0);
+        TF_AXIOM(l.hits[0] == 1);
+        TF_AXIOM(l.hits[1] == 0);
     }
 
     TestNotice("should not be blocked").Send();
-    assert(l.hits[0] == 2);
-    assert(l.hits[1] == 0);
+    TF_AXIOM(l.hits[0] == 2);
+    TF_AXIOM(l.hits[1] == 0);
 
     std::thread t(_TestNoticeBlockWorker, std::this_thread::get_id());
     _TestNoticeBlockWorker(std::this_thread::get_id());
     t.join();
 
-    assert(l.hits[0] == 2);
-    assert(l.hits[1] == 20);
+    TF_AXIOM(l.hits[0] == 2);
+    TF_AXIOM(l.hits[1] == 20);
 }
 
 static bool

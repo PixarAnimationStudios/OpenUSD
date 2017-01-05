@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <assert.h>
 #include <unistd.h>
 
 void
@@ -52,8 +51,8 @@ int main()
     }
     int status;
 
-    assert(childPid == wait(&status));
-    assert(status != 0);
+    ARCH_AXIOM(childPid == wait(&status));
+    ARCH_AXIOM(status != 0);
 
     return 0;
 }

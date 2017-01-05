@@ -24,6 +24,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/regTest.h"
+#include "pxr/base/arch/error.h"
 
 using namespace std;
 
@@ -76,11 +77,11 @@ Test_TfType_MultipleInheritance()
 
     vector<TfType> types;
 
-    assert(m.IsClean());
+    TF_AXIOM(m.IsClean());
 
     TfType::Find<Z>().GetAllAncestorTypes(&types);
 
-    assert(!m.IsClean());
+    TF_AXIOM(!m.IsClean());
     m.Clear();
 
     return true;
