@@ -116,13 +116,9 @@ enum SdfSpecType {
 ///
 /// <b>SdfSpecifier:</b>
 /// <ul>
-/// <li><b>SdfSpecifierDef.</b> Defines a new concrete prim.
-///        A prim with the same namespace path must not already
-///        have been defined (as a def or class) by a weaker layer.
-/// <li><b>SdfSpecifierOver.</b> Defines overrides for an existing prim.
-/// <li><b>SdfSpecifierClass.</b> Defines a new abstract prim.
-///        A prim with the same namespace path must not already
-///        have been defined (as a def or class) by a weaker layer.
+/// <li><b>SdfSpecifierDef.</b> Defines a concrete prim..
+/// <li><b>SdfSpecifierOver.</b> Overrides an existing prim.
+/// <li><b>SdfSpecifierClass.</b> Defines an abstract prim.
 /// <li><b>SdfNumSpecifiers.</b> The number of specifiers.
 /// </ul>
 ///
