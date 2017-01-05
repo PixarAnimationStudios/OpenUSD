@@ -116,7 +116,7 @@ enum SdfSpecType {
 ///
 /// <b>SdfSpecifier:</b>
 /// <ul>
-/// <li><b>SdfSpecifierDef.</b> Defines a concrete prim..
+/// <li><b>SdfSpecifierDef.</b> Defines a concrete prim.
 /// <li><b>SdfSpecifierOver.</b> Overrides an existing prim.
 /// <li><b>SdfSpecifierClass.</b> Defines an abstract prim.
 /// <li><b>SdfNumSpecifiers.</b> The number of specifiers.
