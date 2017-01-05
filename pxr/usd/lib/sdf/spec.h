@@ -222,6 +222,11 @@ public:
 
     /// @}
 
+    /// Hash.
+    friend size_t hash_value(const SdfSpec &x) {
+        return hash_value(x._id);
+    }
+
 private:
     bool _HasField(const TfToken& name, SdfAbstractDataValue* value) const;
 

@@ -139,6 +139,11 @@ public:
         return _spec < other._spec;
     }
 
+    /// Hash.
+    friend size_t hash_value(const This &x) {
+        return hash_value(x._spec);
+    }
+
 private:
     SpecType _spec;
 
