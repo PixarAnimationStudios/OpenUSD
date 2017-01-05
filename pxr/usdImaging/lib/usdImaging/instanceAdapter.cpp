@@ -119,7 +119,25 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
     std::vector<UsdPrim> nestedInstances;
 
-    if (instancerData.instancePaths.empty()) {
+    // If this instance prim itself is a drawable gprim, we need to add an
+    // rprim for it to the render index. This won't happen when processing 
+    // the instance's master, since the master is never a drawable prim.
+    // 
+    // We need to ensure this rprim has a different path from the instancer,
+    // so we follow the same scheme as above: we insert a new proto rprim
+    // for this instance under a child path with a unique suffix.
+    //
+    // In this case, we dispatch to the underlying PrimAdapter and disable
+    // instancing.
+    if (instancedPrimAdapter) {
+        UsdTreeIterator treeIt(prim);
+        const SdfPath protoPath = 
+            _InsertProtoRprim(&treeIt, TfToken(),
+                              instanceShaderBinding,
+                              SdfPath(), instancedPrimAdapter, index);
+        instancePath = SdfPath();
+
+    } else if(instancerData.instancePaths.empty()) {
         instancerData.masterPath = masterPrim.GetPath();
         instancerData.shaderBindingPath = instanceShaderBinding;
 
@@ -160,7 +178,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
                 nestedInstances.push_back(*treeIt);
                 continue;
             }
-            
+
             UsdImagingPrimAdapterSharedPtr const& adapter = 
                 _GetPrimAdapter(*treeIt);
             if (!adapter) {
@@ -200,25 +218,6 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
             instancePath = SdfPath();
         }
-    }
-
-    // If this instance prim itself is a drawable gprim, we need to add an
-    // rprim for it to the render index. This won't happen when processing 
-    // the instance's master, since the master is never a drawable prim.
-    // 
-    // We need to ensure this rprim has a different path from the instancer,
-    // so we follow the same scheme as above: we insert a new proto rprim
-    // for this instance under a child path with a unique suffix.
-    //
-    // In this case, we dispatch to the underlying PrimAdapter and disable
-    // instancing.
-    if (instancedPrimAdapter) {
-        UsdTreeIterator treeIt(prim);
-        const SdfPath protoPath = 
-            _InsertProtoRprim(&treeIt, TfToken(),
-                              instanceShaderBinding,
-                              SdfPath(), instancedPrimAdapter, index);
-        instancePath = SdfPath();
     }
 
     if (!instancePath.IsEmpty()) {

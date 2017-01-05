@@ -122,8 +122,10 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
 
     // Init instancer data for this point instancer.
     _InstancerData& instrData = _instancerData[instancerPath];
-    // myself
-    UsdImagingPrimAdapterSharedPtr instancerAdapter = _GetPrimAdapter(prim);
+    // myself. we want to grab PI adapter even if the PI itself is NI
+    // so that the children are bound to the PI adapter.
+    UsdImagingPrimAdapterSharedPtr instancerAdapter
+        = _GetPrimAdapter(prim, /*ignoreInstancing=*/true);
 
     // PERFORMANCE: We may allocate more pools than are actually used, so if
     // we're squeezing memory in the future, we could be a little more efficient
