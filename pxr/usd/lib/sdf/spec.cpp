@@ -32,13 +32,7 @@
 #include "pxr/usd/sdf/schema.h"
 
 #include "pxr/base/arch/hints.h"
-#include "pxr/base/tf/errorMark.h"
-#include "pxr/base/tf/ostreamMethods.h"
-#include "pxr/base/tf/pyError.h"
-#include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
 #include <map>
 
 SDF_DEFINE_BASE_SPEC(SdfSpec);
