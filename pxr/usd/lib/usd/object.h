@@ -24,6 +24,8 @@
 #ifndef USD_OBJECT_H
 #define USD_OBJECT_H
 
+/// \file usd/object.h
+
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primData.h"
 

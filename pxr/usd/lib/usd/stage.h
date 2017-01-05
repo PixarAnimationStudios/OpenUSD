@@ -24,6 +24,8 @@
 #ifndef USD_STAGE_H
 #define USD_STAGE_H
 
+/// \file usd/stage.h
+
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/interpolation.h"

@@ -43,7 +43,7 @@ class PcpNodeRef_ChildrenReverseIterator;
 
 TF_DECLARE_WEAK_PTRS(PcpPrimIndex_Graph);
 
-/// \class PcpNode
+/// \class PcpNodeRef
 ///
 /// PcpNode represents a node in an expression tree for compositing
 /// scene description.
