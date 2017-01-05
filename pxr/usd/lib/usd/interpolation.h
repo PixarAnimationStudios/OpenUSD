@@ -39,8 +39,8 @@
 ///
 enum UsdInterpolationType
 {
-    UsdInterpolationTypeHeld,  //< Held interpolation
-    UsdInterpolationTypeLinear //< Linear interpolation
+    UsdInterpolationTypeHeld,  ///< Held interpolation
+    UsdInterpolationTypeLinear ///< Linear interpolation
 };
 
 /// Sequence of value types that support linear interpolation.
