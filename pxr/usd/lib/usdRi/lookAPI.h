@@ -32,7 +32,7 @@
 #include "pxr/usd/usdRi/tokens.h"
 
 #include "pxr/usd/usdShade/interfaceAttribute.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdRi/rslShader.h"
 #include "pxr/usd/usdRi/risBxdf.h"
 #include "pxr/usd/usdRi/risPattern.h"
@@ -200,10 +200,10 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    // A constructor for creating a look API object from a look prim.
-    explicit UsdRiLookAPI(const UsdShadeLook& look)
+    // A constructor for creating a look API object from a material prim.
+    explicit UsdRiLookAPI(const UsdShadeMaterial& material)
         // : UsdRiLookAPI(look.GetPrim()) // This will have to wait until c++11!
-        : UsdSchemaBase(look.GetPrim())
+        : UsdSchemaBase(material.GetPrim())
     {
     }
     

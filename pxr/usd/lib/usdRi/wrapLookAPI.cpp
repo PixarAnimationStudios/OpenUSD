@@ -146,7 +146,7 @@ _SetInterfaceRecipient1(
 WRAP_CUSTOM {
     typedef UsdRiLookAPI This;
     _class
-        .def(init<UsdShadeLook>(arg("look")))
+        .def(init<UsdShadeMaterial>(arg("material")))
 
         .def("GetSurface", &This::GetSurface)
         .def("GetDisplacement", &This::GetDisplacement)

@@ -34,7 +34,7 @@ Schema classes can be classified into the following two types:
     ends in "API".  In core USD, UsdModelAPI is an example
     of an API schema; UsdRiLookAPI is an example from our RenderMan schema
     module, which adds/extracts RenderMan-specific shading information from a
-    generic UsdShadeLook-typed prim.  Also by convention (with which
+    generic UsdShadeMaterial-typed prim.  Also by convention (with which
     usdGenSchema can help), the properties that "belong" to an API schema are
     typically namespaced with the base-name of the schema, camelCased.  For
     example, UsdRiLookAPI::CreateBxdfRel() will create a relationship named

@@ -174,7 +174,7 @@ UsdRiLookAPI::GetSchemaAttributeNames(bool includeInherited)
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -299,6 +299,6 @@ UsdRiLookAPI::GetInterfaceRecipientParameters(
 std::vector<UsdShadeInterfaceAttribute> 
 UsdRiLookAPI::GetInterfaceAttributes() const
 {
-    return UsdShadeLook(GetPrim()).GetInterfaceAttributes(_tokens->ri);
+    return UsdShadeMaterial(GetPrim()).GetInterfaceAttributes(_tokens->ri);
 }
 
