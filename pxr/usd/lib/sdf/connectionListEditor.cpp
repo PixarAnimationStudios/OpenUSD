@@ -38,7 +38,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::Sdf_ConnectionListEditor(
 
 template <class ChildPolicy>
 void 
-Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
+Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
     SdfListOpType op,
     SdfSpecType specType,
     const std::vector<SdfPath>& oldItems, 
@@ -108,7 +108,7 @@ Sdf_AttributeConnectionListEditor::_OnEdit(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    return Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>::_OnEdit(
+    return Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>::_OnEditShared(
         op, SdfSpecTypeConnection, oldItems, newItems);
 }
 
@@ -131,6 +131,6 @@ Sdf_RelationshipTargetListEditor::_OnEdit(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    return Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>::_OnEdit(
+    return Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>::_OnEditShared(
         op, SdfSpecTypeRelationshipTarget, oldItems, newItems);
 }

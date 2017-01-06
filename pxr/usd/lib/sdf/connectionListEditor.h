@@ -52,7 +52,7 @@ protected:
         const TfToken& connectionListField,             
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
     
-    void _OnEdit(SdfListOpType op,
+    void _OnEditShared(SdfListOpType op,
         SdfSpecType specType,
         const std::vector<SdfPath>& oldItems,
         const std::vector<SdfPath>& newItems) const;
