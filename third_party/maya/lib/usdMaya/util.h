@@ -39,7 +39,14 @@
 #include <maya/MFnMesh.h>
 #include <maya/MFnNumericData.h>
 #include <maya/MGlobal.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <map>
+#include <set>
+#include <string>
 
 
 namespace PxrUsdMayaUtil
@@ -122,6 +129,12 @@ ConvertInchesToMM(double inches) {
 
 // seconds per frame
 double spf();
+
+/// Gets the Maya MObject for the node named \p nodeName.
+MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
+
+/// Gets the Maya MDagPath for the node named \p nodeName.
+MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 
 bool isAncestorDescendentRelationship(const MDagPath & path1,
     const MDagPath & path2);

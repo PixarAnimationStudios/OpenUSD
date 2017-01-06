@@ -35,7 +35,9 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
+#include <maya/MObject.h>
 #include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
 
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorLookTokens,
     PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS);
@@ -168,19 +170,13 @@ PxrUsdMayaTranslatorLook::AssignLook(
             primSchema, 
             context);
 
-    bool foundShader = !shadingEngine.isNull();
-    if (!foundShader) {
-        MSelectionList selList;
-        selList.add("initialShadingGroup");
-        if (selList.isEmpty()) {
-            return false;
-        }
-
-        status = selList.getDependNode(0, shadingEngine);
+    if (shadingEngine.isNull()) {
+        status = PxrUsdMayaUtil::GetMObjectByName("initialShadingGroup",
+                                                  shadingEngine);
         if (status != MS::kSuccess) {
             return false;
         }
-    } 
+    }
 
     // If the gprim does not have a material faceSet which represents per-face 
     // shader assignments, assign the shading engine to the entire gprim.
@@ -275,19 +271,13 @@ PxrUsdMayaTranslatorLook::AssignLook(
         MObject faceGroupShadingEngine = PxrUsdMayaTranslatorLook::Read(
             shadingMode, material, UsdGeomGprim(), context);
  
-       bool foundShader = !faceGroupShadingEngine.isNull();
-        if (!foundShader) {
-            MSelectionList selList;
-            selList.add("initialShadingGroup");
-            if (selList.isEmpty()) {
-                return false;
-            }
-
-            status = selList.getDependNode(0, faceGroupShadingEngine);
+        if (faceGroupShadingEngine.isNull()) {
+            status = PxrUsdMayaUtil::GetMObjectByName("initialShadingGroup",
+                                                      faceGroupShadingEngine);
             if (status != MS::kSuccess) {
                 return false;
             }
-        } 
+        }
 
         int numFaces = faceCounts[setIndex];
         VtIntArray faceGroupIndices;

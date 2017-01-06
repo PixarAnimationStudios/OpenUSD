@@ -30,6 +30,7 @@
 #include <maya/MAnimUtil.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
+#include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -41,9 +42,14 @@
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
+#include <maya/MObject.h>
 #include <maya/MPlugArray.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 #include <maya/MTime.h>
 
+#include <string>
 #include <unordered_map>
 
 
@@ -52,6 +58,34 @@ double PxrUsdMayaUtil::spf()
 {
     static const MTime sec(1.0, MTime::kSeconds);
     return 1.0 / sec.as(MTime::uiUnit());
+}
+
+MStatus
+PxrUsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
+{
+    MSelectionList selectionList;
+    MStatus status = selectionList.add(MString(nodeName.c_str()));
+    if (status != MS::kSuccess) {
+        return status;
+    }
+
+    status = selectionList.getDependNode(0, mObj);
+
+    return status;
+}
+
+MStatus
+PxrUsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
+{
+    MSelectionList selectionList;
+    MStatus status = selectionList.add(MString(nodeName.c_str()));
+    if (status != MS::kSuccess) {
+        return status;
+    }
+
+    status = selectionList.getDagPath(0, dagPath);
+
+    return status;
 }
 
 bool PxrUsdMayaUtil::isAncestorDescendentRelationship(const MDagPath & path1,

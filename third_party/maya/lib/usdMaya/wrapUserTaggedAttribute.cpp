@@ -23,13 +23,14 @@
 //
 #include "usdMaya/UserTaggedAttribute.h"
 
+#include "usdMaya/util.h"
+
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/token.h"
 
 #include <maya/MDagPath.h>
-#include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
 #include <boost/python.hpp>
@@ -41,15 +42,11 @@ static std::vector<PxrUsdMayaUserTaggedAttribute>
 _GetUserTaggedAttributesForNode(
         const std::string& dagString)
 {
-    MStatus status;
     std::vector<PxrUsdMayaUserTaggedAttribute> wrappedAttrs;
 
-    MSelectionList selList;
-    status = selList.add(MString(dagString.c_str()));
-    CHECK_MSTATUS_AND_RETURN(status, wrappedAttrs);
-
     MDagPath dagPath;
-    status = selList.getDagPath(0, dagPath);
+    MStatus status = PxrUsdMayaUtil::GetDagPathByName(dagString,
+                                                      dagPath);
     CHECK_MSTATUS_AND_RETURN(status, wrappedAttrs);
 
     return PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(

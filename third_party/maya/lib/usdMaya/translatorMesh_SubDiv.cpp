@@ -23,41 +23,30 @@
 //
 #include "usdMaya/translatorMesh.h"
 
+#include "usdMaya/util.h"
+
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MFloatArray.h>
-#include <maya/MUintArray.h>
 #include <maya/MFnMesh.h>
-#include <maya/MFnSet.h>
 #include <maya/MFnPartition.h>
-#include <maya/MGlobal.h>
-#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnSet.h>
 #include <maya/MFnStringData.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
 #include <maya/MItMeshVertex.h>
 #include <maya/MItMeshEdge.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
+#include <maya/MUintArray.h>
 
+#include <string>
 #include <unordered_map>
 
-
-MObject
-_FindNode(
-    const std::string &name,
-    MStatus *statusOK)
-{
-    MSelectionList selList;
-    *statusOK = MGlobal::getSelectionListByName( name.c_str(), selList );
-    if (!*statusOK) return MObject::kNullObj;
-
-    MObject node;
-    *statusOK = selList.getDependNode(0, node);
-    if (!*statusOK) return MObject::kNullObj;
-    
-    return node;
-}
 
 bool
 _AddCreaseSet(
@@ -71,18 +60,23 @@ _AddCreaseSet(
     // the editor code in the maya distro at:
     //
     // .../lib/python2.7/site-packages/maya/app/general/creaseSetEditor.py
-    
-    MObject creasePartitionObj =
-        _FindNode(":creasePartition", statusOK);
-    if (creasePartitionObj.isNull())
-    {
+
+    MObject creasePartitionObj;
+    *statusOK = PxrUsdMayaUtil::GetMObjectByName(":creasePartition",
+                                                 creasePartitionObj);
+
+    if (creasePartitionObj.isNull()) {
         statusOK->clear();
         
         // There is no documented way to create a shared node through the C++ API
-        std::string partitionName = MGlobal::executeCommandStringResult(
-            "createNode \"partition\" -shared -name \":creasePartition\"" ).asChar();
-        creasePartitionObj = _FindNode(partitionName, statusOK);
-        if (!*statusOK) return false;
+        const std::string partitionName = MGlobal::executeCommandStringResult(
+            "createNode \"partition\" -shared -name \":creasePartition\"").asChar();
+
+        *statusOK = PxrUsdMayaUtil::GetMObjectByName(partitionName,
+                                                     creasePartitionObj);
+        if (!*statusOK) {
+            return false;
+        }
     }
     
     MFnPartition creasePartition( creasePartitionObj, statusOK );

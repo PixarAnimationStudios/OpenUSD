@@ -24,49 +24,32 @@
 #include "usdMaya/query.h"
 
 #include "usdMaya/usdPrimProvider.h"
+#include "usdMaya/util.h"
 
+#include "pxr/base/arch/systemInfo.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/usd/prim.h"
 
-#include "pxr/base/arch/systemInfo.h"
-
-#include <maya/MFnDagNode.h>
 #include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MPxNode.h>
-#include <maya/MSelectionList.h>
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
 
-static MDagPath 
-_dagPathFromString(
-        const std::string& s,
-        MStatus* status)
-{
-    MDagPath ret;
+#include <string>
 
-    MStatus tmpStatus = MS::kFailure;
 
-    MSelectionList sel;
-    tmpStatus = sel.add(MString(s.c_str()));
-    if (tmpStatus) {
-        tmpStatus = sel.getDagPath(0, ret);
-    }
-
-    if (status) {
-        *status = tmpStatus;
-    }
-
-    return ret;
-}
-
-UsdPrim 
+UsdPrim
 PxrUsdMayaQuery::GetPrim(const std::string& shapeName)
 {
-    MStatus status;
     UsdPrim usdPrim;
 
-    const MDagPath shapeDag = _dagPathFromString(shapeName, &status);
+    MObject shapeObj;
+    MStatus status = PxrUsdMayaUtil::GetMObjectByName(shapeName, shapeObj);
     CHECK_MSTATUS_AND_RETURN(status, usdPrim);
-    MFnDagNode dagNode(shapeDag, &status);
+    MFnDagNode dagNode(shapeObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, usdPrim);
 
     if (const PxrUsdMayaUsdPrimProvider* usdPrimProvider =
