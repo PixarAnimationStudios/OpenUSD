@@ -2,7 +2,7 @@ set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glf)
 
 set(optionalPublicClasses "")
-if (X11_FOUND AND NOT APPLE)
+if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 

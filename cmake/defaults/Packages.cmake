@@ -92,8 +92,8 @@ if (PXR_BUILD_IMAGING)
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     find_package(PTex REQUIRED)
-    if(UNIX)
-        # --X11
+    # --X11
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
     endif()
     # --PySide
