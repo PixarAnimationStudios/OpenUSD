@@ -22,24 +22,24 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/error.h"
 
-#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 
 enum Operation {
-    Ctor200Op,
-    Ctor300Op,
+    Ctor20Op,
+    Ctor30Op,
     CtorTestOp,
     CtorTest2Op,
     MainOp,
     MainAtExitOp,
     DtorTest2Op,
     DtorTestOp,
-    Ctor300AtExitOp,
-    Ctor200AtExitOp,
-    Dtor300Op,
-    Dtor200Op,
+    Ctor30AtExitOp,
+    Ctor20AtExitOp,
+    Dtor30Op,
+    Dtor20Op,
     NumOperations
 };
 
@@ -52,24 +52,19 @@ static Bits done = 0;
 // so if A precedes B and B precedes A we don't necessarily say that A
 // precedes C.  Note that platforms have some flexibility in the order.
 static const Bits dependencies[NumOperations] = {
-    /* Ctor200Op       */   0,
-    /* Ctor300Op       */   BIT(Ctor200Op),
+    /* Ctor20Op       */   0,
+    /* Ctor30Op       */   BIT(Ctor20Op),
     /* CtorTestOp      */   0,
     /* CtorTest2Op     */   BIT(CtorTestOp),
     /* MainOp          */   0,
-    /* MainAtExitOp    */   BIT(MainOp) | BIT(Ctor200Op) | BIT(CtorTest2Op),
+    /* MainAtExitOp    */   BIT(MainOp) | BIT(Ctor20Op) | BIT(CtorTest2Op),
     /* DtorTest2Op     */   BIT(MainAtExitOp),
     /* DtorTestOp      */   BIT(DtorTest2Op),
-    /* Ctor300AtExitOp */   BIT(MainAtExitOp),
-    /* Ctor200AtExitOp */   BIT(Ctor300AtExitOp),
-    /* Dtor300Op       */   BIT(MainAtExitOp),
-    /* Dtor200Op       */   BIT(Dtor300Op)
+    /* Ctor30AtExitOp */   BIT(MainAtExitOp),
+    /* Ctor20AtExitOp */   BIT(Ctor30AtExitOp),
+    /* Dtor30Op       */   BIT(MainAtExitOp),
+    /* Dtor20Op       */   BIT(Dtor30Op)
 };
-
-ARCH_CONSTRUCTOR(200) static void Ctor200();
-ARCH_CONSTRUCTOR(300) static void Ctor300();
-ARCH_DESTRUCTOR(200) static void Dtor200();
-ARCH_DESTRUCTOR(300) static void Dtor300();
 
 static void TestAndSet(Operation operation)
 {
@@ -92,18 +87,18 @@ static void TestAndSet(Operation operation)
                 binary[(deps >>  4) & 15],
                 binary[(deps      ) & 15]);
     }
-    assert((done & deps) == deps);
+    ARCH_AXIOM((done & deps) == deps);
     done |= BIT(operation);
 }
 
-static void Ctor200AtExit()
+static void Ctor20AtExit()
 {
-    TestAndSet(Ctor200AtExitOp);
+    TestAndSet(Ctor20AtExitOp);
 }
 
-static void Ctor300AtExit()
+static void Ctor30AtExit()
 {
-    TestAndSet(Ctor300AtExitOp);
+    TestAndSet(Ctor30AtExitOp);
 }
 
 static void MainAtExit()
@@ -111,26 +106,26 @@ static void MainAtExit()
     TestAndSet(MainAtExitOp);
 }
 
-static void Ctor200()
+ARCH_CONSTRUCTOR(Ctor20, 20, void)
 {
-    TestAndSet(Ctor200Op);
-    atexit(Ctor200AtExit);
+    TestAndSet(Ctor20Op);
+    atexit(Ctor20AtExit);
 }
 
-static void Ctor300()
+ARCH_CONSTRUCTOR(Ctor30, 30, void)
 {
-    TestAndSet(Ctor300Op);
-    atexit(Ctor300AtExit);
+    TestAndSet(Ctor30Op);
+    atexit(Ctor30AtExit);
 }
 
-static void Dtor200()
+ARCH_DESTRUCTOR(Dtor20, 20, void)
 {
-    TestAndSet(Dtor200Op);
+    TestAndSet(Dtor20Op);
 }
 
-static void Dtor300()
+ARCH_DESTRUCTOR(Dtor30, 30, void)
 {
-    TestAndSet(Dtor300Op);
+    TestAndSet(Dtor30Op);
 }
 
 struct Test {

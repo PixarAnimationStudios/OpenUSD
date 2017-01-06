@@ -65,11 +65,11 @@ public:                                                                    \
     { return typeid(SchemaType); }                                         \
 
 #define SDF_DEFINE_ABSTRACT_SPEC(SpecType, BaseSpecType)                   \
-TF_REGISTRY_FUNCTION(TfType)                                               \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType, TfType::Bases<BaseSpecType> >();              \
 }                                                                          \
-TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration)                              \
+TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
     SdfSpecTypeRegistration::RegisterAbstractSpecType<SpecType>();         \
 }
@@ -82,11 +82,11 @@ public:                                                                    \
     static SdfSpecType GetStaticSpecType() { return SpecTypeEnum; }        \
 
 #define SDF_DEFINE_SPEC(SpecType, BaseSpecType)                            \
-TF_REGISTRY_FUNCTION(TfType)                                               \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType, TfType::Bases<BaseSpecType> >();              \
 }                                                                          \
-TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration)                              \
+TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
     SdfSpecTypeRegistration::RegisterSpecType<SpecType>();                 \
 }
@@ -104,11 +104,11 @@ public:                                                                    \
     { return typeid(SchemaType); }                                         \
 
 #define SDF_DEFINE_BASE_SPEC(SpecType)                                     \
-TF_REGISTRY_FUNCTION(TfType)                                               \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType>();                                            \
 }                                                                          \
-TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration)                              \
+TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
     SdfSpecTypeRegistration::RegisterAbstractSpecType<SpecType>();         \
 }

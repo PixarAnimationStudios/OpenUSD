@@ -202,13 +202,13 @@ BOOST_PP_LIST_FOR_EACH(_REGISTRY_FUNCTION, ~, _SDF_UNITS)
 #undef _PROCESS_ENUMERANT
 
 #define _REGISTRY_FUNCTION(r, unused, elem)                          \
-TF_REGISTRY_FUNCTION_WITH_TAG(TfType, _SDF_UNITSLIST_CATEGORY(elem)) \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, BOOST_PP_CAT(Type, _SDF_UNITSLIST_CATEGORY(elem))) \
 {                                                                    \
     TfType::Define<_SDF_UNITSLIST_ENUM(elem)>();                     \
 }                                                                    \
-TF_REGISTRY_FUNCTION_WITH_TAG(VtValue, _SDF_UNITSLIST_CATEGORY(elem))   \
-{                                                                       \
-    _RegisterEnumWithVtValue<_SDF_UNITSLIST_ENUM(elem)>();              \
+TF_REGISTRY_FUNCTION_WITH_TAG(VtValue, BOOST_PP_CAT(Value, _SDF_UNITSLIST_CATEGORY(elem))) \
+{                                                                    \
+    _RegisterEnumWithVtValue<_SDF_UNITSLIST_ENUM(elem)>();           \
 }
 BOOST_PP_LIST_FOR_EACH(_REGISTRY_FUNCTION, ~, _SDF_UNITS)
 #undef _REGISTRY_FUNCTION

@@ -33,10 +33,7 @@ extern void Tf_DebugInitFromEnvironment();
 
 namespace {
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Tf_InitConfig()
+ARCH_CONSTRUCTOR(Tf_InitConfig, 2, void)
 {
     std::string capture = TfGetenv("TF_MALLOC_TAG_CAPTURE");
     std::string debug   = TfGetenv("TF_MALLOC_TAG_DEBUG");
@@ -65,10 +62,7 @@ Tf_InitConfig()
 // descriptions and exits.  If we call this before registry functions were
 // executed we would not see any added inside TF_REGISTRY_FUNCTION, which is
 // most of them.
-ARCH_CONSTRUCTOR(302)
-static
-void
-Tf_InitConfigPost()
+ARCH_CONSTRUCTOR(Tf_InitConfigPost, 202, void)
 {
     Tf_DebugInitFromEnvironment();
 }

@@ -41,14 +41,11 @@ TF_DEFINE_ENV_SETTING(TF_TEST_STRING_ENV_SETTING, "default",
 
 TF_DEFINE_ENV_SETTING(TF_TEST_POST_ENV_SETTING_X, false, "post-registry-manager setting (not set by test)");
 
-// This function runs after registry functions are registered but before
-// global dynamic initializations without the constructor attribute.  This
-// tests that there are no issues with getting an env setting related to
-// global dynamic initialization order.  In particular, getting an env
+// This tests that there are no issues with getting an env setting related
+// to global dynamic initialization order.  In particular, getting an env
 // setting now should cause all of the TF_DEFINE_ENV_SETTING created env
 // settings to be defined but we shouldn't try to define one twice.
-static void _PostRegistryManager() ARCH_CONSTRUCTOR(250);
-static void _PostRegistryManager()
+ARCH_CONSTRUCTOR(_PostRegistryManager, 150, void)
 {
     TF_AXIOM(TfGetEnvSetting(TF_TEST_POST_ENV_SETTING_X) == false);
 }

@@ -151,12 +151,6 @@ function(pxr_shared_library LIBRARY_NAME)
     )
 
     if(WIN32)
-        # If we're building a DLL we want to add a module entry point to it.
-        # We don't do this for Python PYDs though.
-        if (NOT sl_PYTHON_LIBRARY)
-            target_sources(${LIBRARY_NAME} PRIVATE "DllMain.cpp")
-        endif()
-
         if(MSVC)
             set_target_properties(
                 ${LIBRARY_NAME}
