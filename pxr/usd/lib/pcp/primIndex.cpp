@@ -3046,7 +3046,7 @@ _ComposeVariantSelection(
     TRACE_FUNCTION();
     TF_VERIFY(!pathInNode.IsEmpty());
     TF_VERIFY(!pathInNode.ContainsPrimVariantSelection(),
-              pathInNode.GetText());
+              "%s", pathInNode.GetText());
 
     // First check if we have already resolved this variant set.
     // Try all nodes in all parent frames; ancestorRecursionDepth

@@ -196,11 +196,12 @@ public:
         if (_MaybeMoveToHashTable()) {
             _hashLastSet = nullptr;
             TF_VERIFY(_hashData->erase(id.GetFullSpecPath()),
-                      id.GetString().c_str());
+                      "%s", id.GetString().c_str());
         } else {
             auto iter = _flatData.find(id.GetFullSpecPath());
             size_t index = iter - _flatData.begin();
-            if (TF_VERIFY(iter != _flatData.end(), id.GetString().c_str())) {
+            if (TF_VERIFY(iter != _flatData.end(),
+                          "%s", id.GetString().c_str())) {
                 _flatLastSet = nullptr;
                 _flatData.erase(iter);
                 _flatTypes.erase(_flatTypes.begin() + index);

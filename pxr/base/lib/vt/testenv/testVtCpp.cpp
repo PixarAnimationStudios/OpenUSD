@@ -66,8 +66,7 @@ using std::cout;
 using std::endl;
 
 static void die(const std::string &msg) {
-    string str = TfStringPrintf("ERROR: %s failed.", msg.c_str());
-    TF_FATAL_ERROR(str.c_str());
+    TF_FATAL_ERROR("ERROR: %s failed.", msg.c_str());
 }
 
 

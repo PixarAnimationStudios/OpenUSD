@@ -50,7 +50,7 @@ _Glf_GetDictionaryFromJSON(
     if (input.empty())
     {
         const char *errorMsg = "Cannot create VtDictionary from empty string";
-        TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg(errorMsg);
+        TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg("%s", errorMsg);
 
         if( errorStr ) {
             *errorStr = errorMsg;
@@ -81,7 +81,7 @@ _Glf_GetDictionaryFromJSON(
             if (errorStr) {
                 *errorStr = errorMessageStr;
             }
-            TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg(errorMessageStr.c_str());
+            TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg("%s", errorMessageStr.c_str());
         }
         return VtDictionary();
     }
@@ -94,7 +94,7 @@ _Glf_GetDictionaryFromJSON(
             if (errorStr) {
                 *errorStr = errorMessageStr;
             }
-            TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg(errorMessageStr.c_str());
+            TF_DEBUG(GLF_DEBUG_DICTIONARY).Msg("%s", errorMessageStr.c_str());
         }
         return VtDictionary();
     }

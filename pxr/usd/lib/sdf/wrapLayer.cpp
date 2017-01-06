@@ -245,7 +245,7 @@ _ExtractFileFormatArguments(
 {
     std::string errMsg;
     if (!SdfFileFormatArgumentsFromPython(dict, args, &errMsg)) {
-        TF_CODING_ERROR(errMsg.c_str());
+        TF_CODING_ERROR("%s", errMsg.c_str());
         return false;
     }
     return true;
