@@ -137,6 +137,11 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
                               SdfPath(), instancedPrimAdapter, index);
         instancePath = SdfPath();
 
+        TF_WARN("The prim at path <%s> was directly instanced, but rendering "
+                "cannot use the instancing. "
+                "To effectively instance gprims, put the gprim under an Xform, "
+                "and instance the Xform parent.",
+                prim.GetPath().GetText());
     } else if(instancerData.instancePaths.empty()) {
         instancerData.masterPath = masterPrim.GetPath();
         instancerData.shaderBindingPath = instanceShaderBinding;
