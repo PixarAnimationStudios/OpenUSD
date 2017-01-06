@@ -48,7 +48,7 @@ typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilde
 typedef boost::weak_ptr<class Hd_QuadInfoBuilderComputation> Hd_QuadInfoBuilderComputationPtr;
 class HdResourceRegistry;
 class Hd_Subdivision;
-class Hd_QuadInfo;
+struct Hd_QuadInfo;
 class Hd_VertexAdjacency;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 

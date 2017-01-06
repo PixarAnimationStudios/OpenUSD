@@ -34,7 +34,7 @@
 
 class HdBufferArray;
 
-typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
+typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 

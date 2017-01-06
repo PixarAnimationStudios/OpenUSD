@@ -260,7 +260,7 @@ struct _Hasher {
 class CrateFile
 {
 public:
-    class Version;
+    struct Version;
 
 private:
     struct _Fcloser {

@@ -57,7 +57,7 @@ class HdxIntersector {
 public:
     struct Params;
     class Result;
-    class Hit;
+    struct Hit;
 
     HdxIntersector(HdRenderIndexSharedPtr index);
     ~HdxIntersector() = default;

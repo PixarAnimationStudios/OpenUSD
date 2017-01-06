@@ -4889,8 +4889,9 @@ UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
         time, attr, &interpolator, &out);
 }
 
-struct UsdStage_ResolveInfoAccess
+class UsdStage_ResolveInfoAccess
 {
+public:
     template <class T>
     static bool _GetTimeSampleValue(UsdTimeCode time, const UsdAttribute& attr,
                              const UsdResolveInfo &info,
