@@ -25,13 +25,11 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
-#include <stdio.h>
 
-#if defined(ARCH_OS_DARWIN)
-#include <sys/sysctl.h>
-#elif defined(ARCH_OS_LINUX)
-#include <cstring>
+#if defined(ARCH_OS_LINUX)
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #endif
@@ -44,18 +42,9 @@ ARCH_HIDDEN
 void
 Arch_InitTickTimer()
 {
-#if defined(ARCH_CPU_INTEL)
-    // On Intel Macs we use the rdtsc op as our tick timer,
-    // so find the cpu clockspeed.
-    int mib[] = { CTL_HW, HW_CPU_FREQ };
-    unsigned int ticksPerSecond = 0;
-    size_t len = sizeof(ticksPerSecond);
-    int err = sysctl(mib, 2, &ticksPerSecond, &len, NULL, 0);
-    ARCH_AXIOM(err == 0);
-    Arch_NanosecondsPerTick = 1.0e9 / ticksPerSecond;
-#else
-#error Unknown architecture.
-#endif
+    mach_timebase_info_data_t info;
+    mach_timebase_info(&info);
+    Arch_NanosecondsPerTick = static_cast<double>(info.numer) / info.denom;
 }
 
 #elif defined(ARCH_OS_LINUX)
