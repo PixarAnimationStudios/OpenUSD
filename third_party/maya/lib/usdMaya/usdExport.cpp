@@ -68,6 +68,8 @@ MSyntax usdExport::createSyntax()
 
     syntax.addFlag("-fr" , "-frameRange"   , MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag("-pr" , "-preRoll"   , MSyntax::kDouble);
+    syntax.addFlag("-fs" , "-frameSample", MSyntax::kDouble);
+    syntax.makeFlagMultiUse("-frameSample");
 
     syntax.addFlag("-ro"  , "-renderableOnly", MSyntax::kNoArg);
     syntax.addFlag("-sl"  , "-selection", MSyntax::kNoArg);
@@ -250,7 +252,8 @@ try
     double startTime=1;
     double endTime=1;
     double preRoll=0;
-    
+    std::set<double> frameSamples;
+
     // If you provide a frame range we consider this an anim
     // export even if start and end are the same
     if (argData.isFlagSet("frameRange")) {
@@ -264,7 +267,18 @@ try
     if (argData.isFlagSet("preRoll")) {
         argData.getFlagArgument("preRoll", 0, preRoll);
     }
-    
+
+    unsigned int numFrameSamples = argData.numberOfFlagUses("frameSample");
+    for (unsigned int i = 0; i < numFrameSamples; ++i) {
+        MArgList tmpArgList;
+        argData.getFlagArgumentList("frameSample", i, tmpArgList);
+        frameSamples.insert(tmpArgList.asDouble(0));
+    }
+
+    if (frameSamples.empty()) {
+        frameSamples.insert(0.0);
+    }
+
     jobArgs.excludeInvisible = argData.isFlagSet("renderableOnly");
     jobArgs.exportDefaultCameras = argData.isFlagSet("defaultCameras");
 
@@ -386,16 +400,19 @@ try
         if (jobArgs.exportAnimation) {
             MTime oldCurTime = MAnimControl::currentTime();
             for (double i=startTime;i<(endTime+1);i++) {
-                if (verbose) {
-                    MString info;
-                    info = i;
-                    MGlobal::displayInfo(info);
-                }
-                MGlobal::viewFrame(i);
-                // Process per frame data
-                usdWriteJob.evalJob(i);
-                if (computation.isInterruptRequested()) {
-                    break;
+                for (double sampleTime : frameSamples) {
+                    double actualTime = i + sampleTime;
+                    if (verbose) {
+                        MString info;
+                        info = actualTime;
+                        MGlobal::displayInfo(info);
+                    }
+                    MGlobal::viewFrame(actualTime);
+                    // Process per frame data
+                    usdWriteJob.evalJob(actualTime);
+                    if (computation.isInterruptRequested()) {
+                        break;
+                    }
                 }
             }
             // set the time back

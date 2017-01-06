@@ -59,6 +59,7 @@ usdTranslatorExport::writer(const MFileObject &file,
     std::string fileName(file.fullName().asChar());
     JobExportArgs jobArgs;
     double startTime=1, endTime=1;
+    std::set<double> frameSamples;
     bool append=false;
     
     // Get the options 
@@ -140,6 +141,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             if (theOption[0] == MString("endTime")) {
                 endTime = theOption[1].asDouble();
             }
+            if (theOption[0] == MString("frameSample")) {
+                frameSamples.insert(theOption[1].asDouble());
+            }
         }
         // Now resync start and end frame based on animation mode
         if (jobArgs.exportAnimation) {
@@ -148,6 +152,10 @@ usdTranslatorExport::writer(const MFileObject &file,
             startTime=MAnimControl::currentTime().value();
             endTime=startTime;
         }
+    }
+
+    if (frameSamples.empty()) {
+        frameSamples.insert(0.0);
     }
 
     MSelectionList objSelList;
@@ -172,8 +180,11 @@ usdTranslatorExport::writer(const MFileObject &file,
         usdWriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append, startTime, endTime)) {
             for (double i=startTime;i<(endTime+1);i++) {
-                MGlobal::viewFrame(i);
-                writeJob.evalJob(i);
+                for (double sampleTime : frameSamples) {
+                    double actualTime = i + sampleTime;
+                    MGlobal::viewFrame(actualTime);
+                    writeJob.evalJob(actualTime);
+                }
             }
             writeJob.endJob();
             MGlobal::viewFrame(oldCurTime);
