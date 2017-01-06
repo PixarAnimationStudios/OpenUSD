@@ -121,6 +121,11 @@ struct _IsBitwiseReadWrite {
 
 namespace {
 
+// We use type char and a deleter for char[] instead of just using
+// type char[] due to a (now fixed) bug in libc++ in LLVM.  See
+// https://llvm.org/bugs/show_bug.cgi?id=18350.
+typedef std::unique_ptr<char, std::default_delete<char[]> > RawDataPtr;
+
 using namespace Usd_CrateFile;
 
 // To add a new section, add a name here and add that name to _KnownSections
@@ -430,7 +435,7 @@ public:
         _Buffer(_Buffer &&) = default;
         _Buffer &operator=(_Buffer &&) = default;
 
-        unique_ptr<char []> bytes { new char[BufferCap] };
+        RawDataPtr bytes { new char[BufferCap] };
         int64_t size = 0;
     };
 
@@ -639,9 +644,9 @@ struct CrateFile::_PackingContext
 
     // Read the bytes of some unknown section into memory so we can rewrite them
     // out later (to preserve it).
-    unique_ptr<char[]>
+    RawDataPtr
     _ReadSectionBytes(_Section const &sec, CrateFile *crate) const {
-        unique_ptr<char[]> result(new char[sec.size]);
+        RawDataPtr result(new char[sec.size]);
         crate->_ReadRawBytes(sec.start, sec.size, result.get());
         return result;
     }
@@ -657,7 +662,7 @@ struct CrateFile::_PackingContext
                   FieldSetIndex, _Hasher> fieldsToFieldSetIndex;
     
     // Unknown sections we're moving to the new structural area.
-    vector<tuple<string, unique_ptr<char[]>, size_t>> unknownSections;
+    vector<tuple<string, RawDataPtr, size_t>> unknownSections;
 
     // Filename we're writing to.
     std::string fileName;
@@ -1960,7 +1965,7 @@ CrateFile::_ReadTokens(Reader reader)
     // can just construct from the chars directly.
     auto tokensNumBytes = reader.template Read<uint64_t>();
 
-    std::unique_ptr<char[]> chars(new char[tokensNumBytes]);
+    RawDataPtr chars(new char[tokensNumBytes]);
     reader.ReadContiguous(chars.get(), tokensNumBytes);
 
     // Now we read that many null-terminated strings into _tokens.
