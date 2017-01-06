@@ -2357,7 +2357,11 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
 
     for (const auto& path : paths) {
         Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
-        _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
+        // XXX: This should be converted to a TF_VERIFY once
+        // bug 141575 is fixed.
+        if (prim) {
+            _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
+        }
     }
 
     _dispatcher = boost::none;
