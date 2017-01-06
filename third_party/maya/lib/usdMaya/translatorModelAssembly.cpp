@@ -31,6 +31,7 @@
 #include "usdMaya/stageCache.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/translatorXformable.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/kind/registry.h"
@@ -323,30 +324,28 @@ PxrUsdMayaTranslatorModelAssembly::Read(
         return false;
     }
 
-    MStatus status;
+    // We have to create the new assembly node with the assembly command as
+    // opposed to using MDagModifier's createNode() or any other method. That
+    // seems to be the only way to ensure that the assembly's namespace and
+    // container are setup correctly.
+    const std::string assemblyCmd =
+        TfStringPrintf("cmds.assembly(name=\'%s\', type=\'%s\')",
+                       prim.GetName().GetText(),
+                       assemblyTypeName.c_str());
+    MString newAssemblyName;
+    MStatus status = MGlobal::executePythonCommand(assemblyCmd.c_str(),
+                                                   newAssemblyName);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Now we get the MObject for the assembly node we just created.
+    MObject assemblyObj;
+    status = PxrUsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(),
+                                              assemblyObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Re-parent the assembly node underneath parentNode.
     MDagModifier dagMod;
-
-    // Create the assembly node under its parent node.
-    MObject assemblyObj = dagMod.createNode(assemblyTypeName.c_str(), parentNode, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // XXX: This is kind of unfortunate. There doesn't seem to be any API for
-    // specifying both a node type AND a node name when creating nodes using
-    // the MDagModifier. Creating assembly nodes has the side effect of creating
-    // a namespace with the same name as the node in which the members of the
-    // assembly will go. Maya does not allow you to change namespaces associated
-    // with nested assembly nodes, and trying to add a renameNode operation to
-    // the MDagModifier will result in only the node being renamed, not it's
-    // associated namespace. As a result, we change the name of the node even
-    // before the createNode on the MDagModifier has been executed, and that
-    // seems to ensure that both the node and the namespace are named as we
-    // want them to be. If we don't do this, we end up with namespaces such as
-    // "NS_dagAsset1" which are based off of the default assembly node's name
-    // before we've had a chance to rename it.
-    MFnDagNode dagNodeFn(assemblyObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    const MString newAssemblyName(prim.GetName().GetText());
-    dagNodeFn.setName(newAssemblyName, false, &status);
+    status = dagMod.reparentNode(assemblyObj, parentNode);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Read xformable attributes from the UsdPrim on to the assembly node.
