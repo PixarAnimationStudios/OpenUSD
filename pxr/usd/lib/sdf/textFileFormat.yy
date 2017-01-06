@@ -1070,9 +1070,12 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
                 if (_HasField(context->path, context->genericMetadataKey,
                               &v, context)
                     && TF_VERIFY(v.IsHolding<SdfUnregisteredValue>())) {
-                    return v.UncheckedGet<SdfUnregisteredValue>().GetValue();
+                    v = v.UncheckedGet<SdfUnregisteredValue>().GetValue();
                 }
-                return VtValue();
+                else {
+                    v = VtValue();
+                }
+                return v;
             };
 
             auto getRecordedStringAsUnregisteredValue = [context]() {

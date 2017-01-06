@@ -155,7 +155,7 @@ public:
 
     /// Equivalent to IsValid().
     explicit operator bool() const {
-        return IsValid() ? &UsdVariantSet::_variantSetName : NULL;
+        return IsValid();
     }
 
 private:

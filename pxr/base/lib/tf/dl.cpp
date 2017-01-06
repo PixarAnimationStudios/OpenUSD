@@ -57,7 +57,7 @@ TfDlopen(
                             filename.c_str(), flag);
 
     // Clear any existing error.
-    (void*)dlerror();
+    (void)dlerror();
 
     // try to dlopen the dynamic library
     bool state = _opening;

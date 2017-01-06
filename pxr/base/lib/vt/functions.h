@@ -313,8 +313,10 @@ VtCat( BOOST_PP_ENUM_PARAMS(N, VtArray<T> const &s) )
     VtArray<T> ret(newSize);
 
     // fill it with data from old arrays
+#if N > 0
     size_t offset = 0;
     BOOST_PP_REPEAT( N, VtCat_COPY, ignored )
+#endif
 
     return ret;
 }
