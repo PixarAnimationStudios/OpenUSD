@@ -32,7 +32,7 @@
 ///
 #define HF_MALLOC_TAG_FUNCTION() \
     TfAutoMallocTag2 tagFunc(BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME), \
-                             __PRETTY_FUNCTION__);
+                             __ARCH_PRETTY_FUNCTION__);
 
 ///
 /// Creates an auto-mallocTag with the given named tag.
