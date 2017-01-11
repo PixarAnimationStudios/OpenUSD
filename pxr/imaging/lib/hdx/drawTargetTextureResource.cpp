@@ -126,3 +126,9 @@ Hdx_DrawTargetTextureResource::GetLayoutTextureHandle()
     TF_CODING_ERROR("Draw targets are not ptex");
     return 0;
 }
+
+size_t
+Hdx_DrawTargetTextureResource::GetMemoryUsed()
+{
+    return _attachment->GetMemoryUsed();
+}

@@ -226,3 +226,8 @@ GLuint64EXT HdSimpleTextureResource::GetLayoutTextureHandle()
 
     return textureId ? glGetTextureHandleARB(textureId) : 0;
 }
+
+size_t HdSimpleTextureResource::GetMemoryUsed()
+{
+    return _texture->GetMemoryUsed();
+}

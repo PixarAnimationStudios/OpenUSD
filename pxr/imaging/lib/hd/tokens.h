@@ -134,14 +134,20 @@
     (instMeshTopologyRange)                     \
     (instVertexAdjacency)                       \
     (meshTopology)                              \
+    (nonUniformSize)                            \
     (quadrangulateCPU)                          \
     (quadrangulateGPU)                          \
     (quadrangulateFaceVarying)                  \
     (quadrangulatedVerts)                       \
     (rebuildBatches)                            \
+    (singleBufferSize)                          \
+    (ssboSize)                                  \
     (subdivisionRefineCPU)                      \
     (subdivisionRefineGPU)                      \
+    (textureResourceMemory)                     \
+    (textureMemory)                             \
     (triangulateFaceVarying)                    \
+    (uboSize)                                   \
     (vboRelocated)
 
 #define HD_GLSL_PROGRAM_TOKENS                  \

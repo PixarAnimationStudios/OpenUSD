@@ -616,6 +616,7 @@ GlfDrawTarget::Attachment::_GenTexture()
 {
     GLenum internalFormat = _internalFormat;
     GLenum type = _type;
+    size_t memoryUsed = 0;
 
     if (_format==GL_DEPTH_COMPONENT) {
         internalFormat=GL_DEPTH_COMPONENT32F;
@@ -625,6 +626,31 @@ GlfDrawTarget::Attachment::_GenTexture()
             type = GL_FLOAT;
         }
     }
+
+    int bytePerPixel = (_type == GL_FLOAT) ? 4 : 1;
+    int numChannel;
+    switch (_format)
+    {
+        case GL_RG:
+            numChannel = 2;
+            break;
+
+        case GL_RGB:
+            numChannel = 3;
+            break;
+
+        case GL_RGBA:
+            numChannel = 4;
+            break;
+
+        default:
+            numChannel = 1;
+    }
+
+    size_t baseImageSize = (size_t)(bytePerPixel *
+                                    numChannel   *
+                                    _size[0]     *
+                                    _size[1]);
 
     // Create multisampled texture
     if (_numSamples > 1) {
@@ -642,6 +668,8 @@ GlfDrawTarget::Attachment::_GenTexture()
                                  _size[0], _size[1], GL_TRUE );
 
         glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+        memoryUsed = baseImageSize * _numSamples;
     }
 
     // Create non-multisampled texture
@@ -659,6 +687,10 @@ GlfDrawTarget::Attachment::_GenTexture()
                  /*border*/ 0, _format, type, NULL); 
 
     glBindTexture( GL_TEXTURE_2D, 0 );
+
+    memoryUsed += baseImageSize * _numSamples;
+
+    _SetMemoryUsed(memoryUsed);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -710,15 +742,11 @@ GlfDrawTarget::Attachment::GetTextureInfo() const
 {
     VtDictionary info;
 
-    int bytePerPixel = (_type == GL_FLOAT) ? 4 : 1;
-    int numChannel = 1;
-    if (_format == GL_RG) numChannel = 2;
-    else if (_format == GL_RGB) numChannel = 3;
-    else if (_format == GL_RGBA) numChannel = 4;
+
 
     info["width"] = (int)_size[0];
     info["height"] = (int)_size[1];
-    info["memoryUsed"] = (size_t)(bytePerPixel * numChannel * _size[0] * _size[1]);
+    info["memoryUsed"] = GetMemoryUsed();
     info["depth"] = 1;
     info["format"] = (int)_internalFormat;
     info["imageFilePath"] = TfToken("DrawTarget");

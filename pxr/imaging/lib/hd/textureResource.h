@@ -57,6 +57,8 @@ public:
 
     virtual GLuint GetLayoutTextureId() = 0;
     virtual GLuint64EXT GetLayoutTextureHandle() = 0;
+
+    virtual size_t GetMemoryUsed() = 0;
 };
 
 class HdSimpleTextureResource : public HdTextureResource
@@ -75,6 +77,8 @@ public:
 
     virtual GLuint GetLayoutTextureId();
     virtual GLuint64EXT GetLayoutTextureHandle();
+
+    virtual size_t GetMemoryUsed();
 
 private:
     GlfTextureHandleRefPtr _textureHandle;

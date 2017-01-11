@@ -38,6 +38,8 @@
 #include "pxr/imaging/hd/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 
+#include "pxr/imaging/glf/textureRegistry.h"
+
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/work/loops.h"
@@ -585,10 +587,20 @@ HdResourceRegistry::GetResourceAllocation() const
     size_t gpuMemoryUsed = 0;
 
     // buffer array allocation
-    gpuMemoryUsed += _nonUniformBufferArrayRegistry.GetResourceAllocation(result);
-    gpuMemoryUsed += _uniformUboBufferArrayRegistry.GetResourceAllocation(result);
-    gpuMemoryUsed += _uniformSsboBufferArrayRegistry.GetResourceAllocation(result);
-    gpuMemoryUsed += _singleBufferArrayRegistry.GetResourceAllocation(result);
+
+    size_t nonUniformSize   = _nonUniformBufferArrayRegistry.GetResourceAllocation(result);
+    size_t uboSize          = _uniformUboBufferArrayRegistry.GetResourceAllocation(result);
+    size_t ssboSize         = _uniformSsboBufferArrayRegistry.GetResourceAllocation(result);
+    size_t singleBufferSize = _singleBufferArrayRegistry.GetResourceAllocation(result);
+
+    result[HdPerfTokens->nonUniformSize]   = VtValue(nonUniformSize);
+    result[HdPerfTokens->uboSize]          = VtValue(uboSize);
+    result[HdPerfTokens->ssboSize]         = VtValue(ssboSize);
+    result[HdPerfTokens->singleBufferSize] = VtValue(singleBufferSize);
+    gpuMemoryUsed += nonUniformSize +
+                     uboSize        +
+                     ssboSize       +
+                     singleBufferSize;
 
     // glsl program & ubo allocation
     TF_FOR_ALL (progIt, _glslProgramRegistry) {
@@ -649,6 +661,30 @@ HdResourceRegistry::GetResourceAllocation() const
 
         gpuMemoryUsed += size;
     }
+
+    // textures
+    size_t hydraTexturesMemory = 0;
+
+    TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
+        HdTextureResourceSharedPtr textureResource = (textureResourceIt->second);
+        if (not TF_VERIFY(textureResource)) {
+            continue;
+        }
+
+        hydraTexturesMemory += textureResource->GetMemoryUsed();
+    }
+    result[HdPerfTokens->textureResourceMemory] = VtValue(hydraTexturesMemory);
+    gpuMemoryUsed += hydraTexturesMemory;
+
+    GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
+    std::vector<VtDictionary> textureInfo = textureReg.GetTextureInfos();
+    size_t textureMemory = 0;
+    TF_FOR_ALL (textureIt, textureInfo) {
+        VtDictionary &info = (*textureIt);
+        textureMemory += info["memoryUsed"].Get<size_t>();
+    }
+    result[HdPerfTokens->textureMemory] = VtValue(textureMemory);
+
 
     result[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 

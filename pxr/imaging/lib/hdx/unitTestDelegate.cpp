@@ -143,6 +143,10 @@ public:
         return 0;
     }
 
+    virtual size_t GetMemoryUsed() {
+        return 0;
+    }
+
 private:
     GlfDrawTargetRefPtr _drawTarget;
 };

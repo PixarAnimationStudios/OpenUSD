@@ -48,6 +48,8 @@ public:
     virtual GLuint GetLayoutTextureId() override;
     virtual GLuint64EXT GetLayoutTextureHandle() override;
 
+    virtual size_t GetMemoryUsed() override;
+
 private:
     GlfDrawTarget::AttachmentRefPtr  _attachment;
     GLuint                           _sampler;
