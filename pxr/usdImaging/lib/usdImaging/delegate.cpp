@@ -1472,15 +1472,17 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
             return;
         } else {
             TF_DEBUG(USDIMAGING_CHANGES).Msg(
-                    "  - affected instancer prim: <%s>\n", rootPath.GetText());
+                    "  - affected instancer prim: <%s>\n",
+                    instancerPath.GetText());
 
-            _AdapterSharedPtr const& adapter = 
-                                            _AdapterLookupByPath(instancerPath);
-            if (!TF_VERIFY(adapter, "%s\n", rootPath.GetText())) {
+            _AdapterSharedPtr const& adapter =
+                _AdapterLookupByPath(instancerPath);
+
+            if (!TF_VERIFY(adapter, "%s\n", instancerPath.GetText())) {
                 return;
             }
 
-            adapter->ProcessPrimResync(rootPath, proxy);
+            adapter->ProcessPrimResync(instancerPath, proxy);
             return;
         }
     }
