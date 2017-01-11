@@ -115,14 +115,11 @@ UsdShadeSubgraph::GetSchemaAttributeNames(bool includeInherited)
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (subgraph)
-    ((TerminalNamespaceName, "terminal"))
-    ((TerminalNamespacePrefix, "terminal:"))
-);
-
+UsdShadeSubgraph::operator UsdShadeConnectableAPI () const {
+    return UsdShadeConnectableAPI(GetPrim());
+}
 
 UsdShadeInterfaceAttribute
 UsdShadeSubgraph::CreateInterfaceAttribute(
@@ -180,57 +177,21 @@ UsdShadeSubgraph::GetInterfaceAttributes(
     return ret;
 }
 
-
-static TfToken 
-_GetTerminalRelName(const TfToken& name)
+UsdShadeOutput
+UsdShadeSubgraph::CreateOutput(const TfToken& name,
+                             const SdfValueTypeName& typeName)
 {
-    return TfToken(_tokens->TerminalNamespacePrefix.GetString() + name.GetString());
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
 }
 
-UsdRelationship 
-UsdShadeSubgraph::CreateTerminal(
-    const TfToken& terminalName,
-    const SdfPath& targetPath) const
+UsdShadeOutput
+UsdShadeSubgraph::GetOutput(const TfToken &name) const
 {
-    if (!targetPath.IsPropertyPath()) {
-        TF_CODING_ERROR("A terminal needs to be pointing to a property");
-        return UsdRelationship();
-    }
-    const UsdPrim& prim = GetPrim();
-    const TfToken& relName = _GetTerminalRelName(terminalName);
-    UsdRelationship rel = prim.GetRelationship(relName);
-    if (!rel) {
-        rel = prim.CreateRelationship(relName, /* custom = */ false);
-    }
-
-    SdfPathVector  target(1, targetPath);
-    rel.SetTargets(target);
-    return rel;
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
 }
 
-UsdRelationship
-UsdShadeSubgraph::GetTerminal(
-    const TfToken& terminalName) const
+std::vector<UsdShadeOutput>
+UsdShadeSubgraph::GetOutputs() const
 {
-    const UsdPrim& prim = GetPrim();
-    const TfToken& relName = _GetTerminalRelName(terminalName);
-    return prim.GetRelationship(relName);
-}
-
-UsdRelationshipVector
-UsdShadeSubgraph::GetTerminals() const
-{
-    UsdRelationshipVector terminals;
-
-    const UsdPrim& prim = GetPrim();
-    const std::vector<UsdProperty>& terminalNamespaceProperties =
-        prim.GetPropertiesInNamespace(_tokens->TerminalNamespaceName.GetString());
-
-    for (const UsdProperty& property : terminalNamespaceProperties) {
-        if (const UsdRelationship& relationship = property.As<UsdRelationship>()) {
-            terminals.push_back(relationship);
-        }
-    }
-
-    return terminals;
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
 }

@@ -29,6 +29,7 @@
 
 #include "pxr/usd/usd/prim.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include "pxr/usd/usdRi/lookAPI.h"
@@ -279,7 +280,7 @@ _CreateShaderObject(
             continue;
         }
 
-        UsdShadeShader source;
+        UsdShadeConnectableAPI source;
         TfToken sourceOutputName;
         // follow shader connections and recurse.
         if (param.GetConnectedSource(&source, &sourceOutputName)) {

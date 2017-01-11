@@ -97,6 +97,8 @@ void wrapUsdShadeSubgraph()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 WRAP_CUSTOM {
     _class
         .def("CreateInterfaceAttribute", 
@@ -109,14 +111,16 @@ WRAP_CUSTOM {
              &UsdShadeSubgraph::GetInterfaceAttributes,
              (arg("renderTarget")))
 
-        .def("CreateTerminal", 
-             &UsdShadeSubgraph::CreateTerminal,
-             (arg("terminalName"), arg("targetPath")))
-        .def("GetTerminal",
-             &UsdShadeSubgraph::GetTerminal,
-             (arg("terminalName")))
-        .def("GetTerminals",
-             &UsdShadeSubgraph::GetTerminals,
+        .def("CreateOutput", 
+             &UsdShadeSubgraph::CreateOutput,
+             (arg("name"), arg("typeName")))
+        .def("GetOutput",
+             &UsdShadeSubgraph::GetOutput,
+             (arg("name")))
+        .def("GetOutputs",
+             &UsdShadeSubgraph::GetOutputs,
              return_value_policy<TfPySequenceToList>())
     ;
+
+    implicitly_convertible<UsdShadeSubgraph, UsdShadeConnectableAPI>();
 }

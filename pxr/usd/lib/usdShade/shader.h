@@ -31,8 +31,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/tokens.h"
 
+#include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/parameter.h"
-    
 
 #include "pxr/base/vt/value.h"
 
@@ -44,6 +44,7 @@
 #include "pxr/base/tf/type.h"
 
 class SdfAssetPath;
+class UsdShadeConnectableAPI;
 
 // -------------------------------------------------------------------------- //
 // SHADER                                                                     //
@@ -188,6 +189,11 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
+    /// Allow UsdShadeShader to auto-convert to UsdShadeConnectableAPI, so 
+    /// you can pass in a UsdShadeShader to any function that accepts 
+    /// a UsdShadeConnectableAPI.
+    operator UsdShadeConnectableAPI () const;
+
     /// Create a parameter which can either have a value or can be
     /// connected.
     ///
@@ -204,6 +210,23 @@ public:
     /// All attributes are considered parameters if they are not scoped with 
     /// a namespace
     std::vector<UsdShadeParameter> GetParameters() const;
+
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace. Outputs on a shader cannot be connected, as their 
+    /// value is assumed to be computed externally.
+    /// 
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// 
+    std::vector<UsdShadeOutput> GetOutputs() const;
+
 };
 
 #endif

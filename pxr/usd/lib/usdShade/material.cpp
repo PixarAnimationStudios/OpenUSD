@@ -458,27 +458,3 @@ UsdShadeMaterial::HasMaterialFaceSet(const UsdPrim &prim)
     bool isPartition=false;
     return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
 }
-
-UsdRelationship
-UsdShadeMaterial::GetSurfaceTerminal() const
-{
-    return GetTerminal(UsdShadeTokens->surface);
-}
-
-UsdRelationship
-UsdShadeMaterial::CreateSurfaceTerminal(const SdfPath& targetPath) const
-{
-    return CreateTerminal(UsdShadeTokens->surface, targetPath);
-}
-
-UsdRelationship
-UsdShadeMaterial::GetDisplacementTerminal() const
-{
-    return GetTerminal(UsdShadeTokens->displacement);
-}
-
-UsdRelationship
-UsdShadeMaterial::CreateDisplacementTerminal(const SdfPath& targetPath) const
-{
-    return CreateTerminal(UsdShadeTokens->displacement, targetPath);
-}

@@ -160,3 +160,11 @@ class Shader "Shader" (
     )
 }
 
+class "ConnectableAPI" (
+    doc = """UsdShadeConnectable API is an API schema that provides a common 
+    interface for querying and creating connections on shaders and subgraphs.
+    """
+)
+{
+}
+

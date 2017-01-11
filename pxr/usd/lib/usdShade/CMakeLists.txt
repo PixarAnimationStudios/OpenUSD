@@ -10,10 +10,12 @@ pxr_shared_library(usdShade
         usdGeom
 
     PUBLIC_CLASSES
+        connectableAPI
         debugCodes
         interfaceAttribute
         look
         material
+        output
         parameter
         pShader
         pShaderUtils
@@ -27,9 +29,11 @@ pxr_shared_library(usdShade
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapConnectableAPI.cpp
         wrapInterfaceAttribute.cpp
         wrapLook.cpp
         wrapMaterial.cpp
+        wrapOutput.cpp
         wrapParameter.cpp
         wrapPShader.cpp
         wrapShader.cpp

@@ -108,6 +108,7 @@ class Subgraph "Subgraph" (
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/output.h"
 """
     }
 ) {
@@ -245,6 +246,7 @@ class Shader "Shader" (
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/output.h"
     """
     }
 ) {
@@ -261,3 +263,18 @@ class Shader "Shader" (
     )
 }
 
+class "ConnectableAPI"
+(
+    doc = """UsdShadeConnectableAPI is an API schema that provides a common
+    interface for creating outputs and making connections between shading 
+    parameters and outputs.
+    """ 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/subgraph.h"
+    """
+)
+{
+    
+}

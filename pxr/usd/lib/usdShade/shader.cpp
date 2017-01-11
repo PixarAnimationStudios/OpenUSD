@@ -148,6 +148,17 @@ UsdShadeShader::GetSchemaAttributeNames(bool includeInherited)
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (outputs)
+);
+
+UsdShadeShader::operator UsdShadeConnectableAPI () const {
+        return UsdShadeConnectableAPI(GetPrim());
+}
+
 UsdShadeParameter
 UsdShadeShader::CreateParameter(const TfToken& name,
     const SdfValueTypeName& typeName)
@@ -179,3 +190,21 @@ UsdShadeShader::GetParameters() const
     return ret;
 }
 
+UsdShadeOutput
+UsdShadeShader::CreateOutput(const TfToken& name,
+                             const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
+}
+
+UsdShadeOutput
+UsdShadeShader::GetOutput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
+}
+
+std::vector<UsdShadeOutput>
+UsdShadeShader::GetOutputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+}

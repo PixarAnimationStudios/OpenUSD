@@ -32,6 +32,7 @@
 
 #include "pxr/usd/usdGeom/gprim.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/pShader.h"
 #include "pxr/usd/usdShade/shader.h"
@@ -217,10 +218,10 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
                             gprim.GetPrim().GetPath().GetText(),
                             shader.GetPrim().GetPath().GetText());
     for (UsdShadeParameter const& param : shader.GetParameters()) {
-        UsdShadeShader source;
+        UsdShadeConnectableAPI source;
         TfToken outputName;
         if (param.GetConnectedSource(&source, &outputName)) {
-            UsdAttribute attr = source.GetIdAttr();
+            UsdAttribute attr = UsdShadeShader(source).GetIdAttr();
             TfToken id;
             if (!attr || !attr.Get(&id)) {
                 continue;
@@ -230,10 +231,11 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
                             source.GetPath().GetText(),
                             id.GetText());
             if (id == UsdHydraTokens->HwPrimvar_1) {
+                UsdShadeShader sourceShader(source);
                 TfToken t;
                 VtValue v;
                 UsdGeomPrimvar primvarAttr;
-                if (UsdHydraPrimvar(source).GetVarnameAttr().Get(&t, 
+                if (UsdHydraPrimvar(sourceShader).GetVarnameAttr().Get(&t, 
                                             UsdTimeCode::Default())) {
                     primvarAttr = gprim.GetPrimvar(t);
                     if (primvarAttr.ComputeFlattened(&v, time)) {
@@ -255,7 +257,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
                 }
             } else {
                 // Recursively look for more primvars
-                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, source, time, valueCache);
+                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, UsdShadeShader(source), time, valueCache);
             }
         }
     }

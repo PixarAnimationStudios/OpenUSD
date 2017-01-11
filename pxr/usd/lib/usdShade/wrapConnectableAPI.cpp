@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
@@ -46,12 +46,12 @@ using namespace boost::python;
 WRAP_CUSTOM;
 
 
-void wrapUsdShadeMaterial()
+void wrapUsdShadeConnectableAPI()
 {
-    typedef UsdShadeMaterial This;
+    typedef UsdShadeConnectableAPI This;
 
-    class_<This, bases<UsdShadeSubgraph> >
-        cls("Material");
+    class_<This, bases<UsdSchemaBase> >
+        cls("ConnectableAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -61,8 +61,6 @@ void wrapUsdShadeMaterial()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -97,56 +95,16 @@ void wrapUsdShadeMaterial()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/usd/usd/editContext.h"
-
-static UsdPyEditContext
-_GetEditContextForVariant(const UsdShadeMaterial &self,
-                          const TfToken &materialVariantName,
-                          const SdfLayerHandle layer) {
-    return UsdPyEditContext(
-        self.GetEditContextForVariant(materialVariantName, layer));
-}
-
 WRAP_CUSTOM {
     _class
-        .def("Bind", &UsdShadeMaterial::Bind)
-        .def("Unbind", &UsdShadeMaterial::Unbind)
-        .staticmethod("Unbind")
-        .def("GetBindingRel", &UsdShadeMaterial::GetBindingRel)
-        .staticmethod("GetBindingRel")
-        .def("GetBoundMaterial", &UsdShadeMaterial::GetBoundMaterial)
-        .staticmethod("GetBoundMaterial")
-        .def("GetMaterialVariant", &UsdShadeMaterial::GetMaterialVariant)
-        .def("CreateMasterMaterialVariant",
-             &UsdShadeMaterial::CreateMasterMaterialVariant,
-             (arg("masterPrim"), arg("materialPrims"),
-              arg("masterVariantSetName")=TfToken()))
-        .staticmethod("CreateMasterMaterialVariant")
-        .def("GetEditContextForVariant", _GetEditContextForVariant,
-             (arg("materialVariantName"), arg("layer")=SdfLayerHandle()))
+        .def(init<UsdShadeShader const &>(arg("shader")))
+        .def(init<UsdShadeSubgraph const&>(arg("subgraph")))
 
-        .def("GetBaseMaterialPath",
-             &UsdShadeMaterial::GetBaseMaterialPath)
-         .def("GetBaseMaterial",
-              &UsdShadeMaterial::GetBaseMaterial)
-        .def("SetBaseMaterialPath",
-             &UsdShadeMaterial::SetBaseMaterialPath,
-             (arg("baseLookPath")))
-         .def("SetBaseMaterial",
-              &UsdShadeMaterial::SetBaseMaterial,
-              (arg("baseMaterial")))
-        .def("ClearBaseMaterial",
-             &UsdShadeMaterial::ClearBaseMaterial)
-        .def("HasBaseMaterial",
-             &UsdShadeMaterial::HasBaseMaterial)
+        .def("IsShader", &UsdShadeConnectableAPI::IsShader)
+        .def("IsSubgraph", &UsdShadeConnectableAPI::IsSubgraph)
 
-        .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)
-            .staticmethod("CreateMaterialFaceSet")
+    ;
 
-        .def("GetMaterialFaceSet", &UsdShadeMaterial::GetMaterialFaceSet)
-            .staticmethod("GetMaterialFaceSet")
-
-        .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
-            .staticmethod("HasMaterialFaceSet")
-        ;
+    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeSubgraph>();
+    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeShader>();
 }

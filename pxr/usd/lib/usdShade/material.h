@@ -427,32 +427,6 @@ public:
 
     /// @}
 
-    // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeMaterial_Terminals
-    /// 
-    /// API to create and query the existence of standard terminals
-    //
-    /// @{
-    // --------------------------------------------------------------------- //
-
-    /// Get the main terminal of a Material: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    UsdRelationship GetSurfaceTerminal() const;
-
-    /// Create and set the main terminal of a Material: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    UsdRelationship CreateSurfaceTerminal(const SdfPath& targetPath) const;
-
-    /// Get the displacement terminal of a Material
-    /// 
-    UsdRelationship GetDisplacementTerminal() const;
-
-    /// Create and set the displacement terminal of a Material
-    /// 
-    UsdRelationship CreateDisplacementTerminal(const SdfPath& targetPath) const;
-    /// @}
 };
 
 #endif

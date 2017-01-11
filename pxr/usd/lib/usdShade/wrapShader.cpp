@@ -111,6 +111,8 @@ void wrapUsdShadeShader()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 WRAP_CUSTOM {
     _class
         .def("CreateParameter", &UsdShadeShader::CreateParameter,
@@ -118,5 +120,14 @@ WRAP_CUSTOM {
         .def("GetParameter", &UsdShadeShader::GetParameter, arg("name"))
         .def("GetParameters", &UsdShadeShader::GetParameters,
              return_value_policy<TfPySequenceToList>())
+
+        .def("CreateOutput", &UsdShadeShader::CreateOutput,
+             (arg("name"), arg("type")))
+        .def("GetOutput", &UsdShadeShader::GetOutput, arg("name"))
+        .def("GetOutputs", &UsdShadeShader::GetOutputs,
+             return_value_policy<TfPySequenceToList>())
+
         ;
+
+    implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
 }

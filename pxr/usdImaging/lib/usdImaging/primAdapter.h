@@ -34,6 +34,8 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
+#include "pxr/usd/usdShade/shader.h"
+
 #include "pxr/base/tf/type.h"
 
 #include <boost/enable_shared_from_this.hpp> 

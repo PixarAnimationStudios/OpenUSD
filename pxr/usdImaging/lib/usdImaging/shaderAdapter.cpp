@@ -31,6 +31,8 @@
 
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 #include "pxr/usd/usdHydra/shader.h"
 #include "pxr/usd/usdHydra/uvTexture.h"
 #include "pxr/usd/usdHydra/primvar.h"
@@ -217,23 +219,26 @@ UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
                 if (auto usdParam = UsdShadeParameter(attr)) {
                     TF_DEBUG(USDIMAGING_SHADERS).Msg("Parameter: %s\n",
                             usdParam.GetAttr().GetName().GetText());
-                    UsdShadeShader source;
+                    UsdShadeConnectableAPI source;
                     TfToken outputName;
                     if (usdParam.GetConnectedSource(&source, &outputName)) {
-                        if (UsdAttribute attr = source.GetIdAttr()) {
+                        UsdShadeShader sourceShader(source);
+                        if (UsdAttribute attr = sourceShader.GetIdAttr()) {
                             TfToken id;
                             if (attr.Get(&id)) {
                                 if (id == UsdHydraTokens->HwUvTexture_1) {
-                                    connection = _delegate->GetPathForIndex(source.GetPath());
+                                    connection = _delegate->GetPathForIndex(
+                                        sourceShader.GetPath());
                                     TF_DEBUG(USDIMAGING_SHADERS).Msg(
                                                 "\t connected to UV texture\n");
-                                    UsdHydraUvTexture tex(source);
+                                    UsdHydraUvTexture tex(sourceShader);
                                     UsdShadeParameter uv(tex.GetUvAttr());
-                                    UsdShadeShader uvSource;
+                                    UsdShadeConnectableAPI uvSource;
                                     if (uv.GetConnectedSource(&uvSource, 
                                                                 &outputName)) {
                                         TfToken map;
-                                        UsdHydraPrimvar pv(uvSource);
+                                        UsdShadeShader uvSourceShader(uvSource);
+                                        UsdHydraPrimvar pv(uvSourceShader);
                                         if (pv.GetVarnameAttr().Get(&map)) {
                                             samplerCoords.push_back(map);
                                             TF_DEBUG(USDIMAGING_SHADERS).Msg(
@@ -254,7 +259,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
                                                                  .GetString());
                                     TF_DEBUG(USDIMAGING_SHADERS).Msg(
                                                    "\t connected to Primvar\n");
-                                    UsdHydraPrimvar pv(source);
+                                    UsdHydraPrimvar pv(sourceShader);
                                     TfToken name;
                                     if (TF_VERIFY(pv.GetVarnameAttr().Get(&name))) {
                                         samplerCoords.push_back(name);
@@ -352,7 +357,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderTextures(SdfPath const &usdPath) const
                 textureIDs.push_back(_delegate->GetPathForIndex(shader.GetPath()));
             }
             for (UsdShadeParameter param : shader.GetParameters()) {
-                UsdShadeShader source;
+                UsdShadeConnectableAPI source;
                 TfToken outputName;
                 if (param.GetConnectedSource(&source, &outputName)) {
                     stack.push_back(source.GetPath());

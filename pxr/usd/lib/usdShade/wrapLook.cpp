@@ -149,16 +149,5 @@ WRAP_CUSTOM {
         .def("HasLookFaceSet", &UsdShadeLook::HasLookFaceSet)
             .staticmethod("HasLookFaceSet")
 
-        .def("CreateSurfaceTerminal", 
-             &UsdShadeLook::CreateSurfaceTerminal,
-             (arg("targetPath")))
-        .def("GetSurfaceTerminal",
-             &UsdShadeLook::GetSurfaceTerminal)
-
-        .def("CreateDisplacementTerminal", 
-             &UsdShadeLook::CreateDisplacementTerminal,
-             (arg("targetPath")))
-        .def("GetDisplacementTerminal",
-             &UsdShadeLook::GetDisplacementTerminal)
         ;
 }

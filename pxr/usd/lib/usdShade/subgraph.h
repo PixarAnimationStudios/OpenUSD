@@ -35,7 +35,7 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/parameter.h"
-
+#include "pxr/usd/usdShade/output.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -66,12 +66,11 @@ class SdfAssetPath;
 /// explanation of what the interface provides, and how to construct and
 /// use it to effectively share/instance shader networks.
 /// 
-/// <b>Terminals</b>
+///    Subgraph Outputs
 /// 
-/// Analogous to the public interface, these are relationships that each point 
-/// to a single internal shader output.
+/// Outputs on subgraphs typically connect to an output on a shader inside the 
+/// subgraph. 
 /// 
-///
 class UsdShadeSubgraph : public UsdTyped
 {
 public:
@@ -164,6 +163,11 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
+    /// Allow UsdShadeSubgraph to auto-convert to UsdShadeConnectableAPI, so 
+    /// you can pass in a UsdShadeSubgraph to any function that accepts 
+    /// a UsdShadeConnectableAPI.
+    operator UsdShadeConnectableAPI () const;
+
     /// \anchor UsdShadeSubgraph_Interfaces
     /// \name Interface Attributes
     ///
@@ -230,20 +234,27 @@ public:
 
     /// @}
 
-    /// Create and set a custom terminal of a subgraph
+    /// \anchor UsdShadeSubgraph_Outputs
+    /// \name Outputs of a subgraph.
     /// 
-    UsdRelationship CreateTerminal(
-        const TfToken& terminalName,
-        const SdfPath& targetPath) const;
+    /// @{
 
-    /// Get a terminal of a subgraph
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace.
     /// 
-    UsdRelationship GetTerminal(
-        const TfToken& terminalName) const;
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
 
-    /// Get all terminals of a subgraph
+    /// Return the requested output if it exists.
     /// 
-    UsdRelationshipVector GetTerminals() const;
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// 
+    std::vector<UsdShadeOutput> GetOutputs() const;
+    
+    /// @}
 };
 
 #endif

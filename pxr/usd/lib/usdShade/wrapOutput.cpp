@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/usd/conversions.h"
@@ -41,15 +41,16 @@ using std::vector;
 using namespace boost::python;
 
 static bool
-_Set(const UsdShadeParameter &self, object val, const UsdTimeCode &time) {
-    return self.Set(UsdPythonToSdfType(val, self.GetAttr().GetTypeName()), time);
+_Set(const UsdShadeOutput &self, object val, const UsdTimeCode &time) 
+{
+    return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
 static object
-_GetConnectedSource(const UsdShadeParameter &self)
+_GetConnectedSource(const UsdShadeOutput &self)
 {
-    UsdShadeConnectableAPI  source;
-    TfToken         outputName;
+    UsdShadeConnectableAPI source;
+    TfToken outputName;
     
     if (self.GetConnectedSource(&source, &outputName)){
         return make_tuple(source, outputName);
@@ -59,33 +60,33 @@ _GetConnectedSource(const UsdShadeParameter &self)
     }
 }
 
-void wrapUsdShadeParameter()
+void wrapUsdShadeOutput()
 {
-    typedef UsdShadeParameter Parameter;
+    typedef UsdShadeOutput Output;
 
-    bool (Parameter::*ConnectToSource_1)(UsdShadeConnectableAPI const &,
+    bool (Output::*ConnectToSource_1)(UsdShadeConnectableAPI const &,
                                    TfToken const &,
-                                   bool) const = &Parameter::ConnectToSource;
-    bool (Parameter::*ConnectToSource_2)(UsdShadeOutput const &) const =
-                                    &Parameter::ConnectToSource;
-    bool (Parameter::*ConnectToSource_3)(UsdShadeParameter const &) const =
-                                    &Parameter::ConnectToSource;
-    bool (Parameter::*ConnectToSource_4)(SdfPath const &) const =
-                                    &Parameter::ConnectToSource;
+                                   bool) const = &Output::ConnectToSource;
+    bool (Output::*ConnectToSource_2)(UsdShadeOutput const &) const =
+                                    &Output::ConnectToSource;
+    bool (Output::*ConnectToSource_3)(UsdShadeParameter const &) const =
+                                    &Output::ConnectToSource;
 
-    class_<Parameter>("Parameter")
+    class_<Output>("Output")
         .def(init<UsdAttribute>(arg("attr")))
         .def(!self)
 
-        .def("GetName", &Parameter::GetName)
-        .def("GetTypeName", &Parameter::GetTypeName)
+        .def("GetName", &Output::GetName,
+                return_value_policy<return_by_value>())
+        .def("GetOutputName", &Output::GetOutputName)
+        .def("GetTypeName", &Output::GetTypeName)
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
-        .def("SetRenderType", &Parameter::SetRenderType,
+        .def("SetRenderType", &Output::SetRenderType,
              (arg("renderType")))
-        .def("GetRenderType", &Parameter::GetRenderType)
-        .def("HasRenderType", &Parameter::HasRenderType)
+        .def("GetRenderType", &Output::GetRenderType)
+        .def("HasRenderType", &Output::HasRenderType)
 
-        .def("IsConnected", &Parameter::IsConnected)
+        .def("IsConnected", &Output::IsConnected)
 
         .def("ConnectToSource", ConnectToSource_1,
              (arg("source"), arg("outputName"), arg("outputIsParameter")=false))
@@ -93,20 +94,18 @@ void wrapUsdShadeParameter()
              (arg("output")))
         .def("ConnectToSource", ConnectToSource_3,
              (arg("param")))
-        .def("ConnectToSource", ConnectToSource_4,
-             (arg("path")))
 
-        .def("DisconnectSource", &Parameter::DisconnectSource)
-        .def("ClearSource", &Parameter::ClearSource)
+        .def("DisconnectSource", &Output::DisconnectSource)
+        .def("ClearSource", &Output::ClearSource)
 
         .def("GetConnectedSource", _GetConnectedSource)
-        .def("GetAttr", &Parameter::GetAttr,
+        .def("GetAttr", &Output::GetAttr,
                 return_value_policy<return_by_value>())
         ;
 
-    implicitly_convertible<Parameter, UsdAttribute>();
+    implicitly_convertible<Output, UsdAttribute>();
     to_python_converter<
-        std::vector<Parameter>,
-        TfPySequenceToPython<std::vector<Parameter> > >();
+        std::vector<Output>,
+        TfPySequenceToPython<std::vector<Output> > >();
 }
 

@@ -31,8 +31,8 @@
 
 #include "pxr/usd/usdGeom/scope.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include "pxr/usd/usdRi/lookAPI.h"
@@ -133,7 +133,7 @@ _GatherShadingParameters(
         // only material interface attributes should bother recording such.
         
         if (shaderParam.IsConnected()) {
-            UsdShadeShader source;
+            UsdShadeConnectableAPI source;
             TfToken outputName;
 
             if (shaderParam.GetConnectedSource(&source, &outputName)) {
