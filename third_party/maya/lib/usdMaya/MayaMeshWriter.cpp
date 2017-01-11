@@ -87,6 +87,14 @@ _GetMeshNormals(
         return false;
     }
 
+    // using itFV.getNormal() does not always give us the right answer, so
+    // instead, we have to use itFV.normalId() and use that to index into the
+    // normals.
+    MFloatVectorArray mayaNormals;
+    if (mesh.getNormals(mayaNormals) != MS::kSuccess) {
+        return false;
+    }
+
     const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
     if (status != MS::kSuccess) {
         return false;
@@ -98,9 +106,9 @@ _GetMeshNormals(
     MItMeshFaceVertex itFV(mesh.object());
     unsigned int fvi = 0;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        MVector normal;
-        status = itFV.getNormal(normal);
-        if (status != MS::kSuccess) {
+        int normalId = itFV.normalId();
+        MVector normal = mayaNormals[normalId];
+        if (normalId >= mayaNormals.length()) {
             return false;
         }
 
