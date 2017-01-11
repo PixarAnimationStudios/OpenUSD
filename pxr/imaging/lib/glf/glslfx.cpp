@@ -162,34 +162,6 @@ _ComputeResolvedPath(
                 return "";
             }
 
-            // XXX shared_code migration hack!
-            //
-            // While we have two trees, we can't update global assets
-            // used by tests. Use this until shared_code lands, then we
-            // can update the test assets and rip this out.
-            if (pathTokens.size() == 4      && 
-                pathTokens[1] == "Glos"     &&
-                pathTokens[2] == "shaders"  && 
-                pathTokens[3] == "SimpleLightingShader.glslfx") {
-                TF_WARN("Replacing old SimpleLightingShader.glslfx path.");
-                pathTokens[1] = "glos";
-                pathTokens[3] = "simpleLightingShader.glslfx";
-            }
-
-            // XXX oss glop->pxr migration hack!
-            //
-            // While we have two trees, we can't update global assets
-            // used by tests. Use this until shared_code lands, then we
-            // can update the test assets and rip this out.
-            if (pathTokens.size() == 4      && 
-                pathTokens[1] == "glop"     && 
-                pathTokens[2] == "shaders"  && 
-                pathTokens[3] == "ptexTexture.glslfx") {
-                //TF_WARN("Replacing old SimpleLightingShader.glslfx path.");
-                pathTokens[1] = "glf";
-                pathTokens[3] = "ptexTexture.glslfx";
-            }
-
             string packageName = pathTokens[1];
 
             string assetPath = TfStringJoin(
