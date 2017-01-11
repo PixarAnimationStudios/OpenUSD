@@ -45,8 +45,9 @@ main(int argc, char **argv)
     // as we leave them off by default.
     TfInstallTerminateAndCrashHandlers();
 
-    int a = 1;
-    int b = 0;
+    // Avoid compiler doing the constant math expression
+    volatile int a = 1;
+    volatile int b = 0;
     int c = a/b;
     printf("%d",c);
 }
