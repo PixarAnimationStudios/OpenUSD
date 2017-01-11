@@ -28,10 +28,10 @@
 
 #include "pxr/base/gf/vec4f.h"
 
-class GlfSimpleMaterial {
+class GlfSimpleMaterial final {
 public:
     GlfSimpleMaterial();
-    virtual ~GlfSimpleMaterial();
+    ~GlfSimpleMaterial();
 
     GfVec4f const & GetAmbient() const;
     void SetAmbient(GfVec4f const & ambient);
@@ -47,9 +47,6 @@ public:
 
     double GetShininess() const;
     void SetShininess(double specular);
-
-    virtual void Bind();
-    virtual void Unbind();
 
     bool operator ==(GlfSimpleMaterial const & other) const;
     bool operator !=(GlfSimpleMaterial const & other) const;

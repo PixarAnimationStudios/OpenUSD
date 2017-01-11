@@ -257,16 +257,6 @@ void GlfSimpleLight::SetID(SdfPath const & id)
     _id = id;
 }
 
-void
-GlfSimpleLight::Draw() const
-{
-    glColor3f(1.0, 1.0, 0.0);
-    glBegin(GL_LINES);
-    glVertex3fv(_position.GetArray());
-    glVertex3fv(GfVec3f(0.0).GetArray());
-    glEnd();
-}
-
 // -------------------------------------------------------------------------- //
 // VtValue requirements
 // -------------------------------------------------------------------------- //

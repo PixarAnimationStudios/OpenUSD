@@ -31,10 +31,10 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/path.h"
 
-class GlfSimpleLight {
+class GlfSimpleLight final {
 public:
     GlfSimpleLight(GfVec4f const & position = GfVec4f(0.0, 0.0, 0.0, 1.0));
-    virtual ~GlfSimpleLight();
+    ~GlfSimpleLight();
 
     GfMatrix4d const & GetTransform() const;
     void SetTransform(GfMatrix4d const & mat);
@@ -86,8 +86,6 @@ public:
 
     SdfPath const & GetID() const;
     void SetID(SdfPath const & id);
-
-    virtual void Draw() const;
 
     bool operator ==(GlfSimpleLight const & other) const;
     bool operator !=(GlfSimpleLight const & other) const;

@@ -65,8 +65,6 @@ public:
     void BeginCapture(size_t index, bool clear);
     void EndCapture(size_t index);
 
-    virtual void Draw(size_t index) const;
-
 private:
     void _AllocTextureArray();
     void _FreeTextureArray();

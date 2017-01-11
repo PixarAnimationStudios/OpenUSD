@@ -102,21 +102,6 @@ GlfSimpleMaterial::SetShininess(double shininess)
     _shininess = shininess;
 }
 
-void
-GlfSimpleMaterial::Bind()
-{
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, GetAmbient().GetArray());
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, GetDiffuse().GetArray());
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, GetSpecular().GetArray());
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, GetEmission().GetArray());
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, GetShininess());
-}
-
-void
-GlfSimpleMaterial::Unbind()
-{
-}
-
 bool
 GlfSimpleMaterial::operator ==(GlfSimpleMaterial const & other) const
 {

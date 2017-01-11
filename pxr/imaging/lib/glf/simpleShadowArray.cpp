@@ -180,47 +180,6 @@ GlfSimpleShadowArray::EndCapture(size_t)
 }
 
 void
-GlfSimpleShadowArray::Draw(size_t index) const
-{
-    GfVec4d nearPlane[4] = {
-        GfVec4d( 1.0, 1.0, -1.0, 1.0), GfVec4d(-1.0, 1.0, -1.0, 1.0),
-        GfVec4d(-1.0,-1.0, -1.0, 1.0), GfVec4d( 1.0,-1.0, -1.0, 1.0)
-    };
-    GfVec4d farPlane[4] = {
-        GfVec4d( 1.0, 1.0, 1.0, 1.0), GfVec4d(-1.0, 1.0, 1.0, 1.0),
-        GfVec4d(-1.0,-1.0, 1.0, 1.0), GfVec4d( 1.0,-1.0, 1.0, 1.0)
-    };
-
-    glColor3f(1.0, 0.0, 0.0);
-    glBegin(GL_LINE_LOOP);
-    glVertex3dv(nearPlane[0].GetArray());
-    glVertex3dv(nearPlane[1].GetArray());
-    glVertex3dv(nearPlane[2].GetArray());
-    glVertex3dv(nearPlane[3].GetArray());
-    glEnd();
-
-    glColor3f(0.0, 0.0, 1.0);
-    glBegin(GL_LINE_LOOP);
-    glVertex3dv(farPlane[0].GetArray());
-    glVertex3dv(farPlane[1].GetArray());
-    glVertex3dv(farPlane[2].GetArray());
-    glVertex3dv(farPlane[3].GetArray());
-    glEnd();
-
-    glColor3f(0.5, 0.5, 0.5);
-    glBegin(GL_LINES);
-    glVertex3dv(nearPlane[0].GetArray());
-    glVertex3dv(farPlane[0].GetArray());
-    glVertex3dv(nearPlane[1].GetArray());
-    glVertex3dv(farPlane[1].GetArray());
-    glVertex3dv(nearPlane[2].GetArray());
-    glVertex3dv(farPlane[2].GetArray());
-    glVertex3dv(nearPlane[3].GetArray());
-    glVertex3dv(farPlane[3].GetArray());
-    glEnd();
-}
-
-void
 GlfSimpleShadowArray::_AllocTextureArray()
 {
     glGenTextures(1, &_texture);
