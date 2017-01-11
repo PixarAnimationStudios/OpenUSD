@@ -27,7 +27,7 @@
 #include "usdKatana/readMesh.h"
 #include "usdKatana/utils.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
@@ -48,7 +48,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, interface)
 
     attrs.toInterface(interface);
 
-    if (UsdShadeLook::HasLookFaceSet(prim))
+    if (UsdShadeMaterial::HasMaterialFaceSet(prim))
     {
         _CreateFaceSets(prim, privateData, interface);
     }
@@ -62,7 +62,7 @@ _CreateFaceSets(
         const PxrUsdKatanaUsdInPrivateData& data,
         FnKat::GeolibCookInterface& interface)
 {
-    UsdGeomFaceSetAPI faceSet = UsdShadeLook::GetLookFaceSet(prim);
+    UsdGeomFaceSetAPI faceSet = UsdShadeMaterial::GetMaterialFaceSet(prim);
     bool isPartition = faceSet.GetIsPartition();;
     if (!isPartition) {
         TF_WARN("Found face set on prim <%s> that is not a partition.", 
