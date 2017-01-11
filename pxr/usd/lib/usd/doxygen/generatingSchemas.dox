@@ -165,7 +165,7 @@ provide customizations that apply to all the classes in the module:
 over "GLOBAL" (
     customData = {
         string libraryName       = "pxUsdGeom"
-        string libraryPath       = "lava/pxUsdGeom"
+        string libraryPath       = "folder/pxUsdGeom"
         string libraryPrefix     = "PxUsdGeom"
         string tokensPrefix      = "PxUsdGeom"
         dictionary libraryTokens = {

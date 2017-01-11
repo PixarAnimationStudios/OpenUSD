@@ -162,7 +162,7 @@ _ComputeResolvedPath(
                 return "";
             }
 
-            // XXX shared_code glos->amber migration hack!
+            // XXX shared_code migration hack!
             //
             // While we have two trees, we can't update global assets
             // used by tests. Use this until shared_code lands, then we

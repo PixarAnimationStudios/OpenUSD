@@ -203,12 +203,7 @@ public:
 private:
     static GlfGLContextSharedPtr _GetSharedContext()
     {
-        if (GlfGLContext::IsInitialized()
-#ifdef MENV30
-            // XXX skip this test for globaltrees until shared_code lands
-            && ArchIsMainThread()
-#endif
-            ) {
+        if (GlfGLContext::IsInitialized() && ArchIsMainThread()) {
             return GlfGLContext::GetSharedGLContext();
         }
         return GlfGLContextSharedPtr();
