@@ -30,6 +30,7 @@
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/interpolation.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -215,10 +216,10 @@ public:
         LoadNone ///< Load no loadable prims
     };
 
-    /// Attempts to find an existing stage in a cache if UsdStageCacheContext
-    /// objects exist on the stack. Failing that, creates a new stage and
-    /// recursively loads all data within and referenced by the layer found at
-    /// \p filePath, which must be a file that already exists.
+    /// Attempt to find a matching existing stage in a cache if
+    /// UsdStageCacheContext objects exist on the stack. Failing that, create a
+    /// new stage and recursively compose prims defined within and referenced by
+    /// the layer at \p filePath, which must already exist.
     ///
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
@@ -230,13 +231,39 @@ public:
     /// root layer's repository path if the layer has one, otherwise its real 
     /// path.
     static UsdStageRefPtr
-    Open(const std::string& filePath, 
-         InitialLoadSet load = LoadAll);
+    Open(const std::string& filePath, InitialLoadSet load = LoadAll);
     /// \overload
     static UsdStageRefPtr
     Open(const std::string& filePath,
          const ArResolverContext& pathResolverContext,
          InitialLoadSet load = LoadAll);
+
+    /// Create a new stage and recursively compose prims defined within and
+    /// referenced by the layer at \p filePath which must already exist, subject
+    /// to \p mask.
+    /// 
+    /// These OpenMasked() methods do not automatically consult or populate
+    /// UsdStageCache s.
+    ///
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
+    /// Note that the \p pathResolverContext passed here will apply to all path
+    /// resolutions for this stage, regardless of what other context may be
+    /// bound at resolve time. If no context is passed in here, Usd will create
+    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
+    /// root layer's repository path if the layer has one, otherwise its real 
+    /// path.
+    static UsdStageRefPtr
+    OpenMasked(const std::string &filePath,
+               UsdStagePopulationMask const &mask,
+               InitialLoadSet load = LoadAll);
+    /// \overload
+    static UsdStageRefPtr
+    OpenMasked(const std::string &filePath,
+               const ArResolverContext &pathResolverContext,
+               UsdStagePopulationMask const &mask,
+               InitialLoadSet load = LoadAll);
 
     /// Open a stage rooted at \p rootLayer.
     ///
@@ -286,6 +313,50 @@ public:
          const ArResolverContext& pathResolverContext,
          InitialLoadSet load=LoadAll);
 
+    /// Open a stage rooted at \p rootLayer and with limited population subject
+    /// to \p mask.
+    ///
+    /// These OpenMasked() methods do not automatically consult or populate
+    /// UsdStageCache s.
+    ///
+    /// Invoking an overload that does not take a \p sessionLayer argument will
+    /// create a stage with an anonymous in-memory session layer.  To create a
+    /// stage without a session layer, pass TfNullPtr (or None in python) as the
+    /// \p sessionLayer argument.
+    ///
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
+    /// Note that the \p pathResolverContext passed here will apply to all path
+    /// resolutions for this stage, regardless of what other context may be
+    /// bound at resolve time. If no context is passed in here, Usd will create
+    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
+    /// root layer's repository path if the layer has one, otherwise its real 
+    /// path.
+    static UsdStageRefPtr
+    OpenMasked(const SdfLayerHandle& rootLayer,
+               const UsdStagePopulationMask &mask,
+               InitialLoadSet load=LoadAll);
+    /// \overload
+    static UsdStageRefPtr
+    OpenMasked(const SdfLayerHandle& rootLayer,
+               const SdfLayerHandle& sessionLayer,
+               const UsdStagePopulationMask &mask,
+               InitialLoadSet load=LoadAll);
+    /// \overload
+    static UsdStageRefPtr
+    OpenMasked(const SdfLayerHandle& rootLayer,
+               const ArResolverContext& pathResolverContext,
+               const UsdStagePopulationMask &mask,
+               InitialLoadSet load=LoadAll);
+    /// \overload
+    static UsdStageRefPtr
+    OpenMasked(const SdfLayerHandle& rootLayer,
+               const SdfLayerHandle& sessionLayer,
+               const ArResolverContext& pathResolverContext,
+               const UsdStagePopulationMask &mask,
+               InitialLoadSet load=LoadAll);
+    
     virtual ~UsdStage();
 
     void Close();
@@ -457,13 +528,18 @@ public:
     /// SdfPathSet loaded = stage->GetLoadSet(),
     ///            all = stage->FindLoadable(),
     ///            result;
-    /// std::set_difference(loaded.begin(), loaded.end(),
+    /// std::set_difference(loadedz.begin(), loaded.end(),
     ///                     all.begin(), all.end(),
     ///                     std::inserter(result, result.end()));
     /// \endcode
     SdfPathSet FindLoadable(
                          const SdfPath& rootPath = SdfPath::AbsoluteRootPath());
 
+    /// Return this stage's population mask.
+    UsdStagePopulationMask GetPopulationMask() const {
+        return _populationMask;
+    }
+    
     /// @}
 
     // --------------------------------------------------------------------- //
@@ -1127,6 +1203,7 @@ private:
     UsdStage(const SdfLayerRefPtr& rootLayer,
              const SdfLayerRefPtr& sessionLayer,
              const ArResolverContext& pathResolverContext,
+             const UsdStagePopulationMask& mask,
              InitialLoadSet load);
 
     // Helper for Open() overloads -- searches and publishes to bound caches.
@@ -1142,6 +1219,7 @@ private:
     _InstantiateStage(const SdfLayerRefPtr &rootLayer,
                       const SdfLayerRefPtr &sessionLayer,
                       const ArResolverContext &pathResolverContext,
+                      const UsdStagePopulationMask &mask,
                       InitialLoadSet load);
 
     // --------------------------------------------------------------------- //
@@ -1268,9 +1346,11 @@ private:
     // list of children, then invoke _ComposeSubtree on all its children.
     void _ComposeSubtree(
         Usd_PrimDataPtr prim, Usd_PrimDataConstPtr parent,
+        UsdStagePopulationMask const *mask,
         const SdfPath &primIndexPath = SdfPath());
     void _ComposeSubtreeImpl(
         Usd_PrimDataPtr prim, Usd_PrimDataConstPtr parent,
+        UsdStagePopulationMask const *mask,
         const SdfPath &primIndexPath = SdfPath());
     void _ComposeSubtreeInParallel(Usd_PrimDataPtr prim);
     void _ComposeSubtreesInParallel(
@@ -1281,7 +1361,8 @@ private:
     // ensures that the appropriate prim index is specified for \p prim if
     // \p parent is in a master.
     void _ComposeChildSubtree(Usd_PrimDataPtr prim, 
-                              Usd_PrimDataConstPtr parent);
+                              Usd_PrimDataConstPtr parent,
+                              UsdStagePopulationMask const *mask);
 
     // Compose \p prim's list of children and make any modifications necessary
     // to its _children member and the stage's _primMap, including possibly
@@ -1293,7 +1374,8 @@ private:
     // recompose every descendent of \p prim.  Callers that pass recurse=false
     // should invoke _ComposeSubtree on any newly created prims to ensure caches
     // are correctly populated.
-    void _ComposeChildren(Usd_PrimDataPtr prim, bool recurse);
+    void _ComposeChildren(Usd_PrimDataPtr prim,
+                          UsdStagePopulationMask const *mask, bool recurse);
 
     // Instantiate a prim instance.  There must not already be an instance
     // at \p primPath.
@@ -1678,6 +1760,9 @@ private:
 
     // The state used when instantiating the stage.
     const InitialLoadSet _initialLoadSet;
+
+    // The population mask that applies to this stage.
+    UsdStagePopulationMask _populationMask;
     
     bool _isClosingStage;
     

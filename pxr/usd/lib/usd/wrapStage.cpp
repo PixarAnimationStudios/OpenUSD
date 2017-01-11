@@ -259,6 +259,66 @@ void wrapUsdStage()
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("Open")
 
+        .def("OpenMasked", (UsdStageRefPtr (*)(const string &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("filePath"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const string &,
+                                               const ArResolverContext &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("filePath"),
+              arg("pathResolverContext"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const SdfLayerHandle &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("sessionLayer"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const ArResolverContext &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("pathResolverContext"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const SdfLayerHandle &,
+                                               const ArResolverContext &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("sessionLayer"),
+              arg("pathResolverContext"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .staticmethod("OpenMasked")
+        
         .def("Close", &UsdStage::Close)
         .def("Reload", &UsdStage::Reload)
 
@@ -284,6 +344,8 @@ void wrapUsdStage()
         .def("FindLoadable", &UsdStage::FindLoadable,
              arg("rootPath")=SdfPath::AbsoluteRootPath(),
              return_value_policy<TfPySequenceToList>())
+
+        .def("GetPopulationMask", &UsdStage::GetPopulationMask)
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
 

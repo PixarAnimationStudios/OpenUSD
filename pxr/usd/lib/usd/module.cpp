@@ -56,6 +56,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdStage);
     TF_WRAP(UsdStageCache);
     TF_WRAP(UsdStageCacheContext);
+    TF_WRAP(UsdStagePopulationMask);
 
     // Generated schema.
     TF_WRAP(UsdClipsAPI);

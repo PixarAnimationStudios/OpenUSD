@@ -342,6 +342,7 @@ _CreateAnonymousSessionLayer(const SdfLayerHandle &rootLayer)
 UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                    const SdfLayerRefPtr& sessionLayer,
                    const ArResolverContext& pathResolverContext,
+                   const UsdStagePopulationMask& mask,
                    InitialLoadSet load)
     : _pseudoRoot(0)
     , _rootLayer(rootLayer)
@@ -356,6 +357,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _interpolationType(UsdInterpolationTypeLinear)
     , _lastChangeSerialNumber(0)
     , _initialLoadSet(load)
+    , _populationMask(mask)
     , _isClosingStage(false)
 {
     if (!TF_VERIFY(_rootLayer))
@@ -483,6 +485,7 @@ UsdStageRefPtr
 UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
                             const SdfLayerRefPtr &sessionLayer,
                             const ArResolverContext &pathResolverContext,
+                            const UsdStagePopulationMask &mask,
                             InitialLoadSet load)
 {
     TF_DEBUG(USD_STAGE_OPEN)
@@ -511,7 +514,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
         return TfNullPtr;
 
     UsdStageRefPtr stage = TfCreateRefPtr(
-        new UsdStage(rootLayer, sessionLayer, pathResolverContext, load));
+        new UsdStage(rootLayer, sessionLayer, pathResolverContext, mask, load));
 
     ArResolverScopedCache resolverCache;
 
@@ -710,6 +713,39 @@ UsdStage::Open(const std::string& filePath,
     return Open(rootLayer, pathResolverContext, load);
 }
 
+/* static */
+UsdStageRefPtr
+UsdStage::OpenMasked(const std::string& filePath,
+                     const UsdStagePopulationMask &mask,
+                     InitialLoadSet load)
+{
+    TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
+
+    SdfLayerRefPtr rootLayer = _OpenLayer(filePath);
+    if (!rootLayer) {
+        TF_RUNTIME_ERROR("Failed to open layer @%s@", filePath.c_str());
+        return TfNullPtr;
+    }
+    return OpenMasked(rootLayer, mask, load);
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::OpenMasked(const std::string& filePath,
+                     const ArResolverContext& pathResolverContext,
+                     const UsdStagePopulationMask &mask,
+                     InitialLoadSet load)
+{
+    TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
+
+    SdfLayerRefPtr rootLayer = _OpenLayer(filePath, pathResolverContext);
+    if (!rootLayer) {
+        TF_RUNTIME_ERROR("Failed to open layer @%s@", filePath.c_str());
+        return TfNullPtr;
+    }
+    return OpenMasked(rootLayer, pathResolverContext, mask, load);
+}
+
 class Usd_StageOpenRequest : public UsdStageCacheRequest
 {
 public:
@@ -768,6 +804,7 @@ public:
             _CreateAnonymousSessionLayer(_rootLayer),
             _pathResolverContext ? *_pathResolverContext :
             _CreatePathResolverContext(_rootLayer),
+            UsdStagePopulationMask::All(),
             _initialLoadSet);
     }
 
@@ -893,6 +930,116 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              TfStringify(load).c_str());
 
     return _OpenImpl(load, rootLayer, sessionLayer, pathResolverContext);
+}
+
+////////////////////////////////////////////////////////////////////////
+// masked opens.
+
+/* static */
+UsdStageRefPtr
+UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
+                     const UsdStagePopulationMask &mask,
+                     InitialLoadSet load)
+{
+    if (!rootLayer) {
+        TF_CODING_ERROR("Invalid root layer");
+        return TfNullPtr;
+    }
+
+    TF_DEBUG(USD_STAGE_OPEN)
+        .Msg("UsdStage::OpenMasked(rootLayer=@%s@, mask=%s, load=%s)\n",
+             rootLayer->GetIdentifier().c_str(),
+             TfStringify(mask).c_str(),
+             TfStringify(load).c_str());
+
+    return _InstantiateStage(SdfLayerRefPtr(rootLayer),
+                             _CreateAnonymousSessionLayer(rootLayer),
+                             _CreatePathResolverContext(rootLayer),
+                             mask,
+                             load);
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
+                     const SdfLayerHandle& sessionLayer,
+                     const UsdStagePopulationMask &mask,
+                     InitialLoadSet load)
+{
+    if (!rootLayer) {
+        TF_CODING_ERROR("Invalid root layer");
+        return TfNullPtr;
+    }
+
+    TF_DEBUG(USD_STAGE_OPEN)
+        .Msg("UsdStage::OpenMasked(rootLayer=@%s@, sessionLayer=@%s@, "
+             "mask=%s, load=%s)\n",
+             rootLayer->GetIdentifier().c_str(),
+             sessionLayer ? sessionLayer->GetIdentifier().c_str() : "<null>",
+             TfStringify(mask).c_str(),
+             TfStringify(load).c_str());
+
+    return _InstantiateStage(SdfLayerRefPtr(rootLayer),
+                             SdfLayerRefPtr(sessionLayer),
+                             _CreatePathResolverContext(rootLayer),
+                             mask,
+                             load);
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
+                     const ArResolverContext& pathResolverContext,
+                     const UsdStagePopulationMask &mask,
+                     InitialLoadSet load)
+{
+    if (!rootLayer) {
+        TF_CODING_ERROR("Invalid root layer");
+        return TfNullPtr;
+    }
+
+    TF_DEBUG(USD_STAGE_OPEN)
+        .Msg("UsdStage::OpenMasked(rootLayer=@%s@, pathResolverContext=%s, "
+             "mask=%s, load=%s)\n",
+             rootLayer->GetIdentifier().c_str(),
+             pathResolverContext.GetDebugString().c_str(),
+             TfStringify(mask).c_str(),
+             TfStringify(load).c_str());
+
+    return _InstantiateStage(SdfLayerRefPtr(rootLayer),
+                             _CreateAnonymousSessionLayer(rootLayer),
+                             pathResolverContext,
+                             mask,
+                             load);
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
+                     const SdfLayerHandle& sessionLayer,
+                     const ArResolverContext& pathResolverContext,
+                     const UsdStagePopulationMask &mask,
+                     InitialLoadSet load)
+{
+    if (!rootLayer) {
+        TF_CODING_ERROR("Invalid root layer");
+        return TfNullPtr;
+    }
+
+    TF_DEBUG(USD_STAGE_OPEN)
+        .Msg("UsdStage::OpenMasked(rootLayer=@%s@, sessionLayer=@%s@, "
+             "pathResolverContext=%s, mask=%s, load=%s)\n",
+             rootLayer->GetIdentifier().c_str(),
+             sessionLayer ? sessionLayer->GetIdentifier().c_str() : "<null>",
+             pathResolverContext.GetDebugString().c_str(),
+             TfStringify(mask).c_str(),
+             TfStringify(load).c_str());
+
+    return _InstantiateStage(SdfLayerRefPtr(rootLayer),
+                             SdfLayerRefPtr(sessionLayer),
+                             pathResolverContext,
+                             mask,
+                             load);
 }
 
 SdfPropertySpecHandle
@@ -1978,7 +2125,8 @@ struct _SecondLess {
 // ideal allocation order.  See documentation for this method in the .h file for
 // important details regarding this method's behavior.
 void
-UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
+UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
+                           UsdStagePopulationMask const *mask, bool recurse)
 {
     // If prim is deactivated, discard any existing children and return.
     if (!prim->IsActive()) {
@@ -2014,7 +2162,9 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
                 // link here.
                 masterPrim->_SetParentLink(_pseudoRoot);
             }
-            _ComposeSubtree(masterPrim, _pseudoRoot, sourceIndexPath);
+            // XXX: For now, always do full masters without masking.
+            _ComposeSubtree(masterPrim, _pseudoRoot, /*mask=*/nullptr,
+                            sourceIndexPath);
         }
         return;
     }
@@ -2023,6 +2173,23 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
     TfTokenVector nameOrder;
     if (!TF_VERIFY(prim->_ComposePrimChildNames(&nameOrder)))
         return;
+
+    // Filter nameOrder by the mask, if necessary.  If this subtree is
+    // completely included, stop looking at the mask from here forward.
+    if (mask) {
+        if (mask->IncludesSubtree(prim->GetPath())) {
+            mask = nullptr;
+        } else {
+            // Remove all names from nameOrder that aren't included in the mask.
+            SdfPath const &primPath = prim->GetPath();
+            nameOrder.erase(
+                remove_if(nameOrder.begin(), nameOrder.end(),
+                          [&primPath, mask](TfToken const &nameTok) {
+                              return !mask->Includes(
+                                  primPath.AppendChild(nameTok));
+                          }), nameOrder.end());
+        }
+    }
 
     // Optimize for important special cases:
     //
@@ -2042,7 +2209,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
         for (const auto& child : nameOrder) {
             cur = _InstantiatePrim(parentPath.AppendChild(child));
             if (recurse) {
-                _ComposeChildSubtree(cur, prim);
+                _ComposeChildSubtree(cur, prim, mask);
             }
             if (!prev) {
                 head = cur;
@@ -2074,7 +2241,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
                                           prim->GetPath().GetText());
             if (recurse) {
                 for (cur = begin; cur != end; ++cur) {
-                    _ComposeChildSubtree(*cur, prim);
+                    _ComposeChildSubtree(*cur, prim, mask);
                 }
             }
             return;
@@ -2121,8 +2288,8 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
     while (newNameItersIt != newNameItersEnd || oldChildIt != oldChildEnd) {
         // Walk through old children that no longer exist up to the current
         // potentially new name, removing them.
-        while (oldChildIt != oldChildEnd            &&
-               (newNameItersIt == newNameItersEnd   ||
+        while (oldChildIt != oldChildEnd &&
+               (newNameItersIt == newNameItersEnd ||
                 (*oldChildIt)->GetName() < **newNameItersIt)) {
             TF_DEBUG(USD_COMPOSITION).Msg("Removing <%s>\n",
                                           (*oldChildIt)->GetPath().GetText());
@@ -2131,7 +2298,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
 
         // Walk through any matching children and preserve them.
         for (; newNameItersIt != newNameItersEnd &&
-                 oldChildIt != oldChildEnd       &&
+                 oldChildIt != oldChildEnd &&
                  **newNameItersIt == (*oldChildIt)->GetName();
              ++newNameItersIt, ++oldChildIt) {
             TF_DEBUG(USD_COMPOSITION).Msg("Preserving <%s>\n",
@@ -2139,7 +2306,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
             tempChildren.push_back(make_pair(*oldChildIt, *newNameItersIt));
             if (recurse) {
                 Usd_PrimDataPtr child = tempChildren.back().first;
-                _ComposeChildSubtree(child, prim);
+                _ComposeChildSubtree(child, prim, mask);
             }
         }
 
@@ -2155,7 +2322,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
                 make_pair(_InstantiatePrim(newChildPath), *newNameItersIt));
             if (recurse) {
                 Usd_PrimDataPtr child = tempChildren.back().first;
-                _ComposeChildSubtree(child, prim);
+                _ComposeChildSubtree(child, prim, mask);
             }
         }
     }
@@ -2166,14 +2333,15 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim, bool recurse)
     sort(tempChildren.begin(), tempChildren.end(), _SecondLess());
 
     // Now copy the correctly ordered children into place.
-    prim->_firstChild = NULL;
+    prim->_firstChild = nullptr;
     TF_REVERSE_FOR_ALL(i, tempChildren)
         prim->_AddChild(i->first);
 }
 
 void 
 UsdStage::_ComposeChildSubtree(Usd_PrimDataPtr prim, 
-                               Usd_PrimDataConstPtr parent)
+                               Usd_PrimDataConstPtr parent,
+                               UsdStagePopulationMask const *mask)
 {
     if (parent->IsInMaster()) {
         // If this UsdPrim is a child of an instance master, its 
@@ -2181,10 +2349,10 @@ UsdStage::_ComposeChildSubtree(Usd_PrimDataPtr prim,
         // We need to construct the path from the parent's source index.
         const SdfPath sourcePrimIndexPath = 
             parent->GetSourcePrimIndex().GetPath().AppendChild(prim->GetName());
-        _ComposeSubtree(prim, parent, sourcePrimIndexPath);
+        _ComposeSubtree(prim, parent, mask, sourcePrimIndexPath);
     }
     else {
-        _ComposeSubtree(prim, parent);
+        _ComposeSubtree(prim, parent, mask);
     }
 }
 
@@ -2246,7 +2414,8 @@ UsdStage::_ComposeSubtreesInParallel(
     for (size_t i = 0; i != prims.size(); ++i) {
         Usd_PrimDataPtr p = prims[i];
         _dispatcher->Run(
-            &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(), 
+            &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
+            &_populationMask,
             primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
     }
 
@@ -2257,22 +2426,25 @@ UsdStage::_ComposeSubtreesInParallel(
 void
 UsdStage::_ComposeSubtree(
     Usd_PrimDataPtr prim, Usd_PrimDataConstPtr parent,
+    UsdStagePopulationMask const *mask,
     const SdfPath& primIndexPath)
 {
     if (_dispatcher) {
         _dispatcher->Run(
-            &UsdStage::_ComposeSubtreeImpl, this, prim, parent, primIndexPath);
+            &UsdStage::_ComposeSubtreeImpl, this,
+            prim, parent, mask, primIndexPath);
     } else {
         // TF_DEBUG(USD_COMPOSITION).Msg("Composing Subtree at <%s>\n",
         //                               prim->GetPath().GetText());
         // TRACE_FUNCTION();
-        _ComposeSubtreeImpl(prim, parent, primIndexPath);
+        _ComposeSubtreeImpl(prim, parent, mask, primIndexPath);
     }
 }
 
 void
 UsdStage::_ComposeSubtreeImpl(
     Usd_PrimDataPtr prim, Usd_PrimDataConstPtr parent,
+    UsdStagePopulationMask const *mask,
     const SdfPath& inPrimIndexPath)
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
@@ -2324,7 +2496,7 @@ UsdStage::_ComposeSubtreeImpl(
     }
 
     // Compose the set of children on this prim.
-    _ComposeChildren(prim, /*recurse=*/true);
+    _ComposeChildren(prim, mask, /*recurse=*/true);
 }
 
 void
@@ -3344,7 +3516,8 @@ UsdStage::_ComputeSubtreesToRecompose(
             // parent to find the range of siblings.
 
             // Recompose parent's list of children.
-            _ComposeChildren(parentIt->second.get(), /*recurse=*/false);
+            _ComposeChildren(parentIt->second.get(), &_populationMask,
+                             /*recurse=*/false);
 
             // Recompose the subtree for each affected sibling.
             do {
