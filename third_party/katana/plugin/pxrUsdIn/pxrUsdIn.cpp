@@ -559,66 +559,6 @@ public:
         }
     }
 
-    // TODO, consider caching this conversion
-    static
-    std::string GetVariantStringFromSession(
-            FnAttribute::GroupAttribute sessionAttr,
-                    const std::string & rootLocation)
-    {
-        FnAttribute::GroupAttribute variantsAttr =
-                sessionAttr.getChildByName("variants");
-        if (variantsAttr.getNumberOfChildren() == 0)
-        {
-            return "";
-        }
-        
-        std::string rootLocationPlusSlash = rootLocation + "/";
-        
-        std::ostringstream buffer;
-        
-        for (int64_t i = 0, e = variantsAttr.getNumberOfChildren(); i != e;
-                ++i)
-        {
-            std::string entryName = FnAttribute::DelimiterDecode(
-                    variantsAttr.getChildName(i));
-            
-            FnAttribute::GroupAttribute entryVariantSets =
-                    variantsAttr.getChildByIndex(i);
-            
-            if (entryVariantSets.getNumberOfChildren() == 0)
-            {
-                continue;
-            }
-            
-            if (!pystring::startswith(entryName, rootLocationPlusSlash))
-            {
-                continue;
-            }
-            
-            std::string primPath = pystring::slice(entryName,
-                    rootLocation.size());
-            
-            for (int64_t i = 0, e = entryVariantSets.getNumberOfChildren();
-                    i != e; ++i)
-            {
-                std::string variantSetName = entryVariantSets.getChildName(i);
-                
-                FnAttribute::StringAttribute variantValueAttr =
-                        entryVariantSets.getChildByIndex(i);
-                if (!variantValueAttr.isValid())
-                {
-                    continue;
-                }
-                
-                buffer << ' ' << SdfPath(primPath).AppendVariantSelection(
-                        variantSetName, variantValueAttr.getValue("", false)
-                                ).GetString();
-            }
-        }
-        
-        return buffer.str();
-    }
-
     
     // utility to make it easier to exit earlier from InitUsdInArgs
     struct ArgsBuilder
@@ -626,7 +566,7 @@ public:
         UsdStageRefPtr stage;
         std::string rootLocation;
         std::string isolatePath;
-        SdfPathSet variantSelections;
+        FnAttribute::GroupAttribute sessionAttr;
         std::string ignoreLayerRegex;
         double currentTime;
         double shutterOpen;
@@ -653,7 +593,8 @@ public:
                 stage,
                 rootLocation,
                 isolatePath,
-                variantSelections,
+                sessionAttr.isValid() ? sessionAttr :
+                        FnAttribute::GroupAttribute(true),
                 ignoreLayerRegex,
                 currentTime,
                 shutterOpen,
@@ -691,8 +632,6 @@ public:
                 interface.getOpArg("location")).getValue(
                         interface.getRootLocationPath(), false);
         
-        std::string variants = FnKat::StringAttribute(
-                interface.getOpArg("variants")).getValue("", false);
         
         std::string sessionLocation = ab.rootLocation;
         FnKat::StringAttribute sessionLocationAttr = 
@@ -703,23 +642,51 @@ public:
         
         FnAttribute::GroupAttribute sessionAttr = interface.getOpArg("session");
 
-        variants += GetVariantStringFromSession(sessionAttr, sessionLocation);
 
+        
+        
+        // XXX BEGIN convert the legacy variant string to the session
+        // TODO: decide how long to do this as this form has been deprecated
+        //       for some time but may still be present in secondary uses
+        FnAttribute::GroupBuilder legacyVariantsGb;
+        
+        std::string variants = FnKat::StringAttribute(
+                interface.getOpArg("variants")).getValue("", false);
         std::set<std::string> selStrings = TfStringTokenizeToSet(variants);
         TF_FOR_ALL(selString, selStrings) {
             std::string errMsg;
             if (SdfPath::IsValidPathString(*selString, &errMsg)) {
                 SdfPath varSelPath(*selString);
                 if (varSelPath.IsPrimVariantSelectionPath()) {
-                    ab.variantSelections.insert( SdfPath(*selString) );
+                    
+                    std::string entryPath = FnAttribute::DelimiterEncode(
+                            sessionLocation + varSelPath.GetPrimPath().GetString());
+                    std::pair<std::string, std::string> sel =
+                            varSelPath.GetVariantSelection();
+                    
+                    legacyVariantsGb.set(entryPath + "." + sel.first,
+                            FnAttribute::StringAttribute(sel.second));
                     continue;
-                }   
+                }
             }
             
             return ab.buildWithError(
                     TfStringPrintf("PxrUsdIn: Bad variant selection \"%s\"",
                             selString->c_str()).c_str());
         }
+        
+        FnAttribute::GroupAttribute legacyVariants = legacyVariantsGb.build();
+        
+        if (legacyVariants.getNumberOfChildren() > 0)
+        {
+            sessionAttr = FnAttribute::GroupBuilder()
+                .set("variants", legacyVariants)
+                .deepUpdate(sessionAttr)
+                .build();
+        }
+        // XXX END
+
+        ab.sessionAttr = sessionAttr;
 
         ab.ignoreLayerRegex = FnKat::StringAttribute(
                 interface.getOpArg("ignoreLayerRegex")).getValue("", false);
@@ -781,10 +748,9 @@ public:
             }
         }
 
-        ab.stage = 
-            UsdKatanaCache::GetInstance().GetStage(
+        ab.stage =  UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
-                ab.variantSelections, 
+                sessionAttr, sessionLocation,
                 ab.ignoreLayerRegex, 
                 true /* forcePopulate */);
 

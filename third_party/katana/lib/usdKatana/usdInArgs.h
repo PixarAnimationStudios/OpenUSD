@@ -39,6 +39,42 @@ typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
 /// be copied at each location.
 ///
 
+#include <FnAttribute/FnAttribute.h>
+
+
+/// The sessionAttr is a structured GroupAttribute argument for delivering
+/// edits to the session layer of the stage. It replaces the earlier
+/// "variants" string while also providing activate/deactivate edits.
+/// 
+/// It is typically delivered to the node via graphState -- which then provides
+/// it directly here via opArg.
+/// 
+/// The format of the attr is:
+/// |
+/// ---variants
+/// |  |
+/// |  --- <entryPath>
+/// |  |  |
+/// |  | ---variantSetName -> variantSelection
+/// |  |  |
+/// |  |---...
+/// |  ---...
+/// ---activations
+///    |
+///    ---<entryPath> -> IntAttribute(0|1)
+///    |
+///    ---...
+/// 
+/// The format of <entryPath> is a FnAttribute::DelimiterEncode'd scenegraph
+/// location path. This protects against invalid characters in the entry attr
+/// name (as "." is valid in a scenegraph location path). The location path
+/// is the full katana scene path (so that multiple instances of the op) can
+/// distinguish what's relevant based on being beneath its own rootLocation
+/// argument. Internally, a sessionLocation argument may be used to specify
+/// a root separate from its own. This is typically use for cases of recursive
+/// op expansion sharing the same cached stage.
+
+
 class PxrUsdKatanaUsdInArgs : public TfRefBase
 {
 
@@ -50,7 +86,7 @@ public:
             UsdStageRefPtr stage,
             const std::string& rootLocation,
             const std::string& isolatePath,
-            const SdfPathSet& variantSelections,
+            FnAttribute::GroupAttribute sessionAttr,
             const std::string& ignoreLayerRegex,
             double currentTime,
             double shutterOpen,
@@ -64,7 +100,7 @@ public:
                     stage, 
                     rootLocation,
                     isolatePath,
-                    variantSelections,
+                    sessionAttr,
                     ignoreLayerRegex,
                     currentTime,
                     shutterOpen,
@@ -97,8 +133,8 @@ public:
         return _isolatePath;
     }
 
-    const std::set<SdfPath>& GetVariantSelections() const {
-        return _variantSelections;
+    FnAttribute::GroupAttribute GetSessionAttr() {
+        return _sessionAttr;
     }
 
     const std::string& GetIgnoreLayerRegex() const {
@@ -155,7 +191,7 @@ private:
             UsdStageRefPtr stage,
             const std::string& rootLocation,
             const std::string& isolatePath,
-            const SdfPathSet& variantSelections,
+            FnAttribute::GroupAttribute sessionAttr,
             const std::string& ignoreLayerRegex,
             double currentTime,
             double shutterOpen,
@@ -173,7 +209,7 @@ private:
     std::string _rootLocation;
     std::string _isolatePath;
 
-    std::set<SdfPath> _variantSelections;
+    FnAttribute::GroupAttribute _sessionAttr;
     std::string _ignoreLayerRegex;
 
     double _currentTime;

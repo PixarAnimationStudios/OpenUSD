@@ -69,10 +69,8 @@ _GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
     proxiesBuilder.set("viewer.load.opArgs.a.rootLocation", 
         FnKat::StringAttribute(data.GetUsdInArgs()->GetRootLocationPath()));
 
-    proxiesBuilder.set("viewer.load.opArgs.a.variants", 
-        FnKat::StringAttribute(
-            UsdKatanaCache::GetVariantSelectionString(
-                data.GetUsdInArgs()->GetVariantSelections())));
+    proxiesBuilder.set("viewer.load.opArgs.a.session",
+            data.GetUsdInArgs()->GetSessionAttr());
 
     proxiesBuilder.set("viewer.load.opArgs.a.ignoreLayerRegex",
        FnKat::StringAttribute(data.GetUsdInArgs()->GetIgnoreLayerRegex()));

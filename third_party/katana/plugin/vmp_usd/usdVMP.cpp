@@ -109,8 +109,17 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
                 input.getAttribute("rootLocation");
         FnKat::StringAttribute usdReferencePathAttr = 
                 input.getAttribute("referencePath");
-        FnKat::StringAttribute variantStringAttr =
-                input.getAttribute("variants");
+        
+        FnKat::GroupAttribute sessionAttr =
+               input.getAttribute("session");
+        
+        std::string sessionLocation = FnKat::StringAttribute(
+                input.getAttribute("rootLocation")).getValue("", false);
+        sessionLocation = FnKat::StringAttribute(
+                input.getAttribute("sessionLocation")).getValue(
+                        sessionLocation, false);
+
+        
         FnKat::StringAttribute ignoreLayerAttr=
                 input.getAttribute("ignoreLayerRegex");
         FnKat::FloatAttribute forcePopulateAttr = 
@@ -119,7 +128,13 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
         std::string usdFile = usdFileAttr.getValue("", false);
         std::string usdRootLocation = usdRootLocationAttr.getValue("", false);
         std::string usdReferencePath = usdReferencePathAttr.getValue("",false);
-        std::string variantString = variantStringAttr.getValue("",false);
+        
+        std::string sessionKey;
+        if (sessionAttr.isValid())
+        {
+            sessionKey = sessionAttr.getHash().str();
+        }
+        
         std::string ignoreLayerRegex = ignoreLayerAttr.getValue("$^", false);
         bool forcePopulate = forcePopulateAttr.getValue((float)true,false);
 
@@ -127,7 +142,8 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
             return;
 
         _stage = UsdKatanaCache::GetInstance().GetStage(usdFile, 
-                                                        variantString,
+                                                        sessionAttr,
+                                                        sessionLocation,
                                                         ignoreLayerRegex,
                                                         forcePopulate);
 
@@ -149,7 +165,7 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
         _params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
 
         _renderer = UsdKatanaCache::GetInstance()
-                                  .GetRenderer(_stage, _prim, variantString);
+                                  .GetRenderer(_stage, _prim, sessionKey);
     }
     
     // always update frame time

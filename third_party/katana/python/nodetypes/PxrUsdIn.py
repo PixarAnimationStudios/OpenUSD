@@ -337,3 +337,56 @@ def buildOpChain(self, interface):
 nb.setBuildOpChainFnc(buildOpChain)
 
 nb.build()
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInActivationSet')
+nb.setInputPortNames(("in",))
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('locations', '')
+    .set('active', 0)
+    .build(),
+        forceArrayNames=('locations',))
+
+nb.setHintsForParameter('locations', {
+    'widget' : 'scenegraphLocationArray',
+    'help' : 'locations to activate or deactivate.'
+})
+
+nb.setHintsForParameter('active', {
+    'widget' : 'boolean',
+})
+
+def buildOpChain(self, interface):
+    interface.setExplicitInputRequestsEnabled(True)
+    
+    graphState = interface.getGraphState()
+    frameTime = interface.getFrameTime()
+    locations = self.getParameter("locations")
+
+    if locations:
+        state = FnAttribute.IntAttribute(
+            bool(self.getParameter("active").getValue(frameTime)))
+        
+        gb = FnAttribute.GroupBuilder()
+
+        for loc in locations.getChildren():
+            gb.set("activations." + FnAttribute.DelimiterEncode(
+                    loc.getValue(frameTime)), state)
+
+        existingValue = (
+                interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
+        
+        if isinstance(existingValue, FnAttribute.GroupAttribute):
+            gb.deepUpdate(existingValue)
+        
+        graphState = (graphState.edit()
+                .setDynamicEntry("var:pxrUsdInSession", gb.build())
+                .build())
+        
+    interface.addInputRequest("in", graphState)
+
+nb.setBuildOpChainFnc(buildOpChain)
+
+nb.build()
