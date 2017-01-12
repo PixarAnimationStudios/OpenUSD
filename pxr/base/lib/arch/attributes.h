@@ -271,7 +271,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     Arch_ConstructorInit _arch_constructor_init;
     }
 
-#elif defined(ARCH_COMPILER_GCC)
+#elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 
     // The used attribute is required to prevent these apparently unused
     // functions from being removed by the linker.
