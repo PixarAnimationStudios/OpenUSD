@@ -88,51 +88,6 @@ HdRenderIndex::HdRenderIndex()
     // pre-defined reprs (to be deprecated or minimalized)
     static std::once_flag reprsOnce;
     std::call_once(reprsOnce, [](){
-        HdMesh::ConfigureRepr(HdTokens->hull,
-                              HdMeshReprDesc(HdMeshGeomStyleHull,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/false,
-                                             /*blendWireframeColor=*/false));
-        HdMesh::ConfigureRepr(HdTokens->smoothHull,
-                              HdMeshReprDesc(HdMeshGeomStyleHull,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/false));
-        HdMesh::ConfigureRepr(HdTokens->wire,
-                              HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-        HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
-                              HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-
-        HdMesh::ConfigureRepr(HdTokens->refined,
-                              HdMeshReprDesc(HdMeshGeomStyleSurf,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/false));
-        HdMesh::ConfigureRepr(HdTokens->refinedWire,
-                              HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-        HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                              HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-
-
         HdBasisCurves::ConfigureRepr(HdTokens->hull,
                                      HdBasisCurvesGeomStyleLine);
         HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,

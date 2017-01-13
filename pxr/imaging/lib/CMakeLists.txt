@@ -6,6 +6,7 @@ set(DIRS
     glf
     gal
     hd
+    hdSt
     hdx
 )
 

@@ -60,6 +60,7 @@ pxr_shared_library(hd
         drawItemInstance
         drawItemState
         engine
+        geometricShader
         glslProgram
         glslfxShader
         glUtils
@@ -70,12 +71,14 @@ pxr_shared_library(hd
         interleavedMemoryManager
         lightingShader
         mesh
+        meshShaderKey
         meshTopology
         package
         patchIndex
         perfLog
         persistentBuffer
         points
+        quadrangulate
         renderContextCaps
         renderDelegate
         renderDelegateRegistry
@@ -106,6 +109,7 @@ pxr_shared_library(hd
         triangulate
         vboMemoryManager
         vboSimpleMemoryManager
+        vertexAdjacency
         vtBufferSource
 
     PUBLIC_HEADERS
@@ -117,17 +121,13 @@ pxr_shared_library(hd
         basisCurvesShaderKey
         cullingShaderKey
         fallbackLightingShader
-        geometricShader
-        meshShaderKey
         pointsShaderKey
-        quadrangulate
         renderIndexManager
         smoothNormals
         subdivision
         subdivision3
         unitTestDelegate
         unitTestHelper
-        vertexAdjacency
         ${optionalPrivateClasses}
 
     PRIVATE_HEADERS

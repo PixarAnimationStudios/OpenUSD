@@ -33,7 +33,7 @@
 ///
 class HdStreamRenderDelegate final : public HdRenderDelegate {
 public:
-    HdStreamRenderDelegate()          = default;
+    HdStreamRenderDelegate();
     virtual ~HdStreamRenderDelegate() = default;
 
     virtual TfToken GetDefaultGalId() const override;
@@ -54,6 +54,8 @@ public:
                                  SdfPath const& bprimId) override;
     virtual void DestroyBprim(HdBprim *bPrim) override;
 private:
+    static void _ConfigureReprs();
+
     HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
     HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;
 };

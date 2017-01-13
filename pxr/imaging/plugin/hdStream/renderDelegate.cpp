@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/hdStream/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
-#include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/texture.h"
@@ -35,6 +35,12 @@
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdRenderDelegateRegistry::Define<HdStreamRenderDelegate>();
+}
+
+HdStreamRenderDelegate::HdStreamRenderDelegate()
+{
+    static std::once_flag reprsOnce;
+    std::call_once(reprsOnce, _ConfigureReprs);
 }
 
 TfToken
@@ -50,7 +56,7 @@ HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& instancerId)
 {
     if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdMesh(delegate, rprimId, instancerId);
+        return new HdStMesh(delegate, rprimId, instancerId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdBasisCurves(delegate, rprimId, instancerId);
     } else  if (typeId == HdPrimTypeTokens->points) {
@@ -113,3 +119,52 @@ HdStreamRenderDelegate::DestroyBprim(HdBprim *bPrim)
     delete bPrim;
 }
 
+// static
+void
+HdStreamRenderDelegate::_ConfigureReprs()
+{
+    // pre-defined reprs (to be deprecated or minimalized)
+    HdStMesh::ConfigureRepr(HdTokens->hull,
+                            HdStMeshReprDesc(HdMeshGeomStyleHull,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/false,
+                                             /*blendWireframeColor=*/false));
+    HdStMesh::ConfigureRepr(HdTokens->smoothHull,
+                            HdStMeshReprDesc(HdMeshGeomStyleHull,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/false));
+    HdStMesh::ConfigureRepr(HdTokens->wire,
+                            HdStMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
+    HdStMesh::ConfigureRepr(HdTokens->wireOnSurf,
+                            HdStMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
+
+    HdStMesh::ConfigureRepr(HdTokens->refined,
+                            HdStMeshReprDesc(HdMeshGeomStyleSurf,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/false));
+    HdStMesh::ConfigureRepr(HdTokens->refinedWire,
+                            HdStMeshReprDesc(HdMeshGeomStyleEdgeOnly,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
+    HdStMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
+                            HdStMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
+                                             HdCullStyleDontCare,
+                                             /*lit=*/true,
+                                             /*smoothNormals=*/true,
+                                             /*blendWireframeColor=*/true));
+}
