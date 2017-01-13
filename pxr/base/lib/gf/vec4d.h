@@ -306,6 +306,31 @@ std::ostream& operator<<(std::ostream &, GfVec4d const &);
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
 
+inline
+GfVec4d::GfVec4d(class GfVec4f const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+    _data[2] = other[2];
+    _data[3] = other[3];
+}
+inline
+GfVec4d::GfVec4d(class GfVec4h const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+    _data[2] = other[2];
+    _data[3] = other[3];
+}
+inline
+GfVec4d::GfVec4d(class GfVec4i const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+    _data[2] = other[2];
+    _data[3] = other[3];
+}
+
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec4d
 GfCompMult(GfVec4d const &v1, GfVec4d const &v2) {

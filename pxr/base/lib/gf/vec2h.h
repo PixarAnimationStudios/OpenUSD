@@ -281,6 +281,25 @@ std::ostream& operator<<(std::ostream &, GfVec2h const &);
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2i.h"
 
+inline
+GfVec2h::GfVec2h(class GfVec2d const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+}
+inline
+GfVec2h::GfVec2h(class GfVec2f const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+}
+inline
+GfVec2h::GfVec2h(class GfVec2i const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+}
+
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec2h
 GfCompMult(GfVec2h const &v1, GfVec2h const &v2) {

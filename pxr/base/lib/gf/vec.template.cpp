@@ -51,14 +51,6 @@ operator<<(std::ostream &out, {{ VEC }} const &v)
         << {{ LIST("Gf_OstreamHelperP(v[%(i)s])", sep=' << \", \" \n        << ') }} << ')';
 }
 
-{% if IS_FLOATING_POINT(SCL) %}
-{% for S in SCALARS if S != SCL %}
-{{ VEC }}::{{ VEC }}(class {{ VECNAME(DIM, S) }} const &other)
-{
-    {{ LIST("_data[%(i)s] = other[%(i)s];", sep='\n    ') }}
-}
-{% endfor %}
-{% endif %}
 
 {% for S in SCALARS if S != SCL %}
 bool

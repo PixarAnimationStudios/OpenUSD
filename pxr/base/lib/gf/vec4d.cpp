@@ -54,27 +54,6 @@ operator<<(std::ostream &out, GfVec4d const &v)
         << Gf_OstreamHelperP(v[3]) << ')';
 }
 
-GfVec4d::GfVec4d(class GfVec4f const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
-}
-GfVec4d::GfVec4d(class GfVec4h const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
-}
-GfVec4d::GfVec4d(class GfVec4i const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
-}
 
 bool
 GfVec4d::operator==(GfVec4f const &other) const

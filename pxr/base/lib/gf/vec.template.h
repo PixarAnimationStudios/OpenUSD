@@ -309,6 +309,14 @@ std::ostream& operator<<(std::ostream &, {{ VEC }} const &);
 {% for S in SCALARS if S != SCL %}
 #include "pxr/base/gf/vec{{ DIM }}{{ S[0] }}.h"
 {% endfor %}
+
+{% for S in SCALARS if S != SCL %}
+inline
+{{ VEC }}::{{ VEC }}(class {{ VECNAME(DIM, S) }} const &other)
+{
+    {{ LIST("_data[%(i)s] = other[%(i)s];", sep='\n    ') }}
+}
+{% endfor %}
 {% endif %}
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.

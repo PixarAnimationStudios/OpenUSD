@@ -314,6 +314,28 @@ std::ostream& operator<<(std::ostream &, GfVec3f const &);
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec3i.h"
 
+inline
+GfVec3f::GfVec3f(class GfVec3d const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+    _data[2] = other[2];
+}
+inline
+GfVec3f::GfVec3f(class GfVec3h const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+    _data[2] = other[2];
+}
+inline
+GfVec3f::GfVec3f(class GfVec3i const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+    _data[2] = other[2];
+}
+
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec3f
 GfCompMult(GfVec3f const &v1, GfVec3f const &v2) {
