@@ -626,10 +626,9 @@ _GetMaterialAttr(
         // the tree structure that the non-op the SGG creates
         // See _ConvertUsdMAterialPathToKatLocation in
         // katanapkg/plugin/sgg/usd/utils.cpp
-        UsdShadeMaterial materialSchema(materialPrim);
+        
         if (materialSchema.HasBaseMaterial()) {
-            SdfPath baseMaterialPath = UsdShadeMaterial(
-                    materialPrim).GetBaseMaterialPath();
+            SdfPath baseMaterialPath = materialSchema.GetBaseMaterialPath();
             if (UsdShadeMaterial baseMaterial = UsdShadeMaterial::Get(stage, baseMaterialPath)) {
                 // Make a fake context to grab parent data, and recurse on that
                 FnKat::GroupAttribute parentMaterial = _GetMaterialAttr(baseMaterial, currentTime, true);
