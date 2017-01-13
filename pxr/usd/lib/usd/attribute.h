@@ -116,9 +116,9 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// that do not support linear interpolation will use held interpolation 
 /// instead.
 ///
-/// Linear interpolation is done element-by-element for shaped, vector, 
+/// Linear interpolation is done element-by-element for array, vector, 
 /// and matrix data types.  If linear interpolation is requested for
-/// two shaped values with different shapes, held interpolation will
+/// two array values with different sizes, held interpolation will
 /// be used instead.
 ///
 /// \section Usd_AssetPathValuedAttributes Attributes of type SdfAssetPath and UsdAttribute::Get()
@@ -292,7 +292,7 @@ public:
     /// data being read).
     ///
     /// This template is only instantiated for the valid scene description
-    /// value types and their corresponding shaped VtArray containers. See
+    /// value types and their corresponding VtArray containers. See
     /// \ref Usd_Page_Datatypes for the complete list of types.
     ///
     /// Values are retrieved without regard to this attribute's variability.

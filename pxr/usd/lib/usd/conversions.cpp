@@ -64,11 +64,11 @@ UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
     // attribute's type name.
     VtValue defVal = targetType.GetDefaultValue();
 
-    // Attempt to cast the given value to the shaped type -- this will convert
-    // python buffer protocol objects (e.g. numpy arrays) to the appropriate
-    // typed VtArray when possible.  If casting fails, attempt to continue with
-    // the given value.  Deeper in the 'Set()' implementation, we'll issue a
-    // detailed type mismatch error.
+    // Attempt to cast the given value to the default value's type -- this
+    // will convert python buffer protocol objects (e.g. numpy arrays) to the
+    // appropriate typed VtArray when possible.  If casting fails, attempt to
+    // continue with the given value.  Deeper in the 'Set()' implementation,
+    // we'll issue a detailed type mismatch error.
     VtValue cast = VtValue::CastToTypeOf(val, defVal);
     if (!cast.IsEmpty())
         cast.Swap(val);

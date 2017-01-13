@@ -243,7 +243,7 @@ private:
 };
 
 // Specialization to linearly interpolate each element for
-// shaped types.
+// array types.
 template <class T>
 class Usd_LinearInterpolator<VtArray<T> >
     : public Usd_InterpolatorBase
@@ -293,7 +293,7 @@ private:
         _result->swap(lowerValue);
 
         // Fall back to held interpolation (_result is set to lowerValue above)
-        // if shapes don't match. We don't consider this an error because
+        // if sizes don't match. We don't consider this an error because
         // that would be too restrictive. Consumers will be responsible for
         // implementing their own interpolation in cases where this occurs
         // (e.g. meshes with varying topology)
