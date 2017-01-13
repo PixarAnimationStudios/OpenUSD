@@ -156,7 +156,7 @@ HdMeshTopology::ComputeNumPoints(VtIntArray const &verts)
 
     // compute numPoints from topology indices
     int numIndices = verts.size();
-    int numPoints = 0;
+    int numPoints = -1;
     int const * vertsPtr = verts.cdata();
     for (int i= 0;i <numIndices; ++i) {
         // find the max vertex index in face verts

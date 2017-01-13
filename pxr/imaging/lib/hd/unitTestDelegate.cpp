@@ -1009,6 +1009,7 @@ _CreateGrid(int nx, int ny, std::vector<GfVec3f> *points,
             std::vector<int> *numVerts, std::vector<int> *verts,
             GfMatrix4f const &transform)
 {
+    if (nx == 0 && ny == 0) return;
     // create a unit plane (-1 ~ 1)
     for (int y = 0; y <= ny; ++y) {
         for (int x = 0; x <= nx; ++x) {
