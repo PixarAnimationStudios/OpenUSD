@@ -89,6 +89,18 @@ function(_plugInfo_subst libTarget plugInfoPath)
     )
 endfunction() # _plugInfo_subst
 
+# Generate a namespace declaration header, pxr.h at the top level of pxr.
+function(_pxrNamespace_subst)
+    set(PXR_USE_NAMESPACES "0")
+    set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
+    set(PXR_EXTERNAL_NAMESPACE "pxr")
+
+    # Generate the pxr.h file at configuration time
+    configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
+        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
+    )  
+endfunction()
+
 # Install compiled python files alongside the python object,
 # e.g. lib/python/pxr/Ar/__init__.pyc
 function(_install_python LIBRARY_NAME)

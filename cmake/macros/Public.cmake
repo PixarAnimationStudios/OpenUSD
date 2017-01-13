@@ -136,6 +136,9 @@ function(pxr_shared_library LIBRARY_NAME)
     _classes(${LIBRARY_NAME} ${sl_PRIVATE_CLASSES} PRIVATE)
     _classes(${LIBRARY_NAME} ${sl_PUBLIC_CLASSES} PUBLIC)
 
+    # Generate namespace header for pxr
+    _pxrNamespace_subst()
+
     set(PXR_ALL_LIBS
         "${PXR_ALL_LIBS} ${LIBRARY_NAME}"
         CACHE
