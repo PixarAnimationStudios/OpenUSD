@@ -67,8 +67,9 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
     // Every call to BeginCapture will run internally a glViewport so we need
     // to pop the state after creating the shadows
     //
-    // Also store the polygon bit for polygon offset
-    glPushAttrib(GL_VIEWPORT_BIT | GL_POLYGON_BIT);
+    // Also store the polygon bit for polygon offset, the depth buffer bit
+    // for depth func
+    glPushAttrib(GL_VIEWPORT_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (_depthBiasEnable) {
         glEnable(GL_POLYGON_OFFSET_FILL);
