@@ -32,6 +32,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/vt/array.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -87,7 +90,7 @@ Hd_SmoothNormalsComputation::Resolve()
     if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_adjacency)) return true;
 
@@ -171,7 +174,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     HdBufferArrayRangeSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!glDispatchCompute)
         return;

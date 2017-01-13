@@ -83,7 +83,7 @@ Hd_CodeGen::ID
 Hd_CodeGen::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     ID hash = _geometricShader->ComputeHash();
     boost::hash_combine(hash, _metaData.ComputeHash());
@@ -278,7 +278,7 @@ HdGLSLProgramSharedPtr
 Hd_CodeGen::Compile()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // create GLSL program.
 

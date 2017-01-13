@@ -129,7 +129,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
                                    HdBindingRequestVector const &customBindings)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(metaDataOut)) return;
 

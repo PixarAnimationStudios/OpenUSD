@@ -35,6 +35,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vboSimpleMemoryManager.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include <atomic>
 
 #include <boost/functional/hash.hpp>
@@ -85,7 +87,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
     : HdBufferArray(role, TfToken()), _capacity(0), _maxBytesPerElement(0)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // populate BufferResources
     TF_FOR_ALL(it, bufferSpecs) {
@@ -113,7 +115,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
 HdVBOSimpleMemoryManager::_SimpleBufferArray::~_SimpleBufferArray()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // invalidate buffer array range
     // (the range may still be held by drawItems)
@@ -128,7 +130,7 @@ bool
 HdVBOSimpleMemoryManager::_SimpleBufferArray::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // no range referring this buffer = empty
     if (GetRangeCount() > 0 && GetRange(0).expired()) {
@@ -150,7 +152,7 @@ bool
 HdVBOSimpleMemoryManager::_SimpleBufferArray::Resize(int numElements)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // see the comment in
     // HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
@@ -170,7 +172,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     HdBufferArraySharedPtr const &curRangeOwner)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // XXX: make sure glcontext
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
@@ -313,7 +315,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_bufferArray)) return;
 
@@ -366,7 +368,7 @@ VtValue
 HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_bufferArray)) return VtValue();
 

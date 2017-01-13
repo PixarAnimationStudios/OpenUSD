@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -77,7 +79,7 @@ std::string
 HdxSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     std::string source = _glslfx->GetSource(shaderStageKey);
 

@@ -74,7 +74,7 @@ HdBasisCurves::_UpdateDrawItem(HdDrawItem *drawItem,
                                HdBasisCurvesReprDesc desc)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
 
@@ -180,7 +180,7 @@ HdBasisCurves::_GetRepr(TfToken const &reprName,
                         HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _BasisCurvesReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
 
@@ -278,7 +278,7 @@ HdBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
                                  HdBasisCurvesReprDesc desc)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
@@ -371,7 +371,7 @@ HdBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                                        HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
@@ -457,7 +457,7 @@ HdBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
                                         HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();

@@ -214,7 +214,7 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   bool isInherited)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
@@ -243,7 +243,7 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
                                            int* dirtyFlags)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
@@ -280,7 +280,7 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
                                     bool ignoreRootTransform)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
     GfMatrix4d ctm(1.0);

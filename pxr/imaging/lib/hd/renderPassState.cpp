@@ -105,7 +105,7 @@ void
 HdRenderPassState::Sync()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 

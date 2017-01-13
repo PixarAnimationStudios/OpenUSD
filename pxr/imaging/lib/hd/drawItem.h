@@ -29,6 +29,8 @@
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/bbox3d.h"
@@ -49,7 +51,7 @@ typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
 class HdDrawItem {
 public:
 
-    HD_MALLOC_TAG_NEW("new HdDrawItem");
+    HF_MALLOC_TAG_NEW("new HdDrawItem");
 
     HdDrawItem(HdRprimSharedData const *sharedData);
     ~HdDrawItem();

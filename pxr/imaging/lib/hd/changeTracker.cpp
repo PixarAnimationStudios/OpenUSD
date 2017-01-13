@@ -48,7 +48,7 @@ HdChangeTracker::HdChangeTracker()
 HdChangeTracker::~HdChangeTracker()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 }
 
 void 

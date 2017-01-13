@@ -43,7 +43,7 @@ HdBufferArrayRangeSharedPtr
 HdInstancer::GetInstancePrimVars(int level)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdChangeTracker &changeTracker = 
         _delegate->GetRenderIndex().GetChangeTracker();
@@ -211,7 +211,7 @@ HdBufferArrayRangeSharedPtr
 HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Note: this function is called from the prototype HdRprm only if
     // the prototype has DirtyInstanceIndex. There's no need to guard using

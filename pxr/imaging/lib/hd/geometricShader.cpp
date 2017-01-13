@@ -51,7 +51,7 @@ Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
     , _hash(0)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // XXX
     // we will likely move this (the constructor or the entire class) into

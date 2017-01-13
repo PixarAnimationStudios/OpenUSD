@@ -39,6 +39,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 TF_INSTANTIATE_SINGLETON(HdInterleavedUBOMemoryManager);
 TF_INSTANTIATE_SINGLETON(HdInterleavedSSBOMemoryManager);
 
@@ -170,7 +172,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer
 
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     /*
        interleaved uniform buffer layout (for example)
@@ -255,7 +257,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer
 HdInterleavedMemoryManager::_StripedInterleavedBuffer::~_StripedInterleavedBuffer()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // invalidate buffer array ranges in range list
     // (these ranges may still be held by drawItems)
@@ -274,7 +276,7 @@ bool
 HdInterleavedMemoryManager::_StripedInterleavedBuffer::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (_needsCompaction) {
         RemoveUnusedRanges();
@@ -304,7 +306,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     HdBufferArraySharedPtr const &curRangeOwner)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // XXX: make sure glcontext
 
@@ -486,7 +488,7 @@ bool
 HdInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElements)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_stripedBuffer)) return false;
 
@@ -506,7 +508,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_stripedBuffer)) return;
 
@@ -560,7 +562,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
     TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     VtValue result;
     if (!TF_VERIFY(_stripedBuffer)) return result;

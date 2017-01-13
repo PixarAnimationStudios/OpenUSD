@@ -210,7 +210,7 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
                                          UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // These are uniform attributes and can't vary over time.
     UsdTimeCode unvarying = UsdTimeCode::Default();

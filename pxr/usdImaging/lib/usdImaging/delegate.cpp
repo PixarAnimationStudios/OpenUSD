@@ -939,7 +939,7 @@ void
 UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPathVector const& pathsToRepopulate = proxy->_GetPathsToRepopulate();
     if (pathsToRepopulate.empty())
@@ -1090,7 +1090,7 @@ bool
 UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     TF_DEBUG(USDIMAGING_UPDATES).Msg("[Update] Begin update for time (%f)\n",
                             time.GetValue());
@@ -1194,7 +1194,7 @@ void
 UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Mark varying attributes as dirty and build a work queue for threads to
     // populate caches for the new time.
@@ -1221,7 +1221,7 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker,
                                               bool updateDelegates)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     worker->DisableValueCacheMutations();
     {
@@ -1244,7 +1244,7 @@ void
 UsdImagingDelegate::SetTime(UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (_ProcessChangesForTimeUpdate(time)) {
         UsdImagingDelegate::_Worker worker;
@@ -1266,7 +1266,7 @@ UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
     }
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     UsdImagingDelegate::_Worker worker;
 
@@ -1702,7 +1702,7 @@ HdBasisCurvesTopology
 UsdImagingDelegate::GetBasisCurvesTopology(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
     HdBasisCurvesTopology topology;
     VtValue tmp;
@@ -1722,7 +1722,7 @@ HdMeshTopology
 UsdImagingDelegate::GetMeshTopology(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
     HdMeshTopology topology;
     VtValue tmp;
@@ -1742,7 +1742,7 @@ UsdImagingDelegate::SubdivTags
 UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
     SubdivTags tags;
 

@@ -183,7 +183,7 @@ HdRprim::_PopulateConstantPrimVars(HdDrawItem *drawItem,
                                    HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
@@ -325,7 +325,7 @@ HdRprim::_PopulateInstancePrimVars(HdDrawItem *drawItem,
                                    int instancePrimVarSlot)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
 

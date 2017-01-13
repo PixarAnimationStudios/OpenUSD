@@ -208,7 +208,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
                                          UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     TfToken schemeToken;
     _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
     if (schemeToken == UsdGeomTokens->none)
@@ -228,7 +228,7 @@ UsdImagingMeshAdapter::_GetPoints(UsdPrim const& prim,
                                    UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
         *value = VtVec3fArray();
     }
@@ -241,7 +241,7 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
                                        UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if(!prim.IsA<UsdGeomMesh>())
         return;

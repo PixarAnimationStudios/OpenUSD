@@ -177,7 +177,7 @@ void
 Hd_IndirectDrawBatch::_CompileBatch()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     int drawCount = _drawItemInstances.size();
     if (_drawItemInstances.empty()) return;

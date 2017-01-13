@@ -52,7 +52,7 @@ void
 HdPoints::_UpdateDrawItem(HdDrawItem *drawItem, HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
 
@@ -91,7 +91,7 @@ HdReprSharedPtr const &
 HdPoints::_GetRepr(TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _PointsReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
 
@@ -126,7 +126,7 @@ HdPoints::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                                   HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();

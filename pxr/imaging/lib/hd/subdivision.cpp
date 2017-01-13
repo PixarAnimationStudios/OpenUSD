@@ -139,7 +139,7 @@ void
 Hd_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     Hd_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return;

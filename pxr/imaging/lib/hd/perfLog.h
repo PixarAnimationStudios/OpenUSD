@@ -52,17 +52,6 @@ class SdfPath;
 // Emits a trace scope with the specified tag.
 #define HD_TRACE_SCOPE(tag) TRACE_SCOPE(tag)
 
-// Creates an auto-mallocTag with the function, including template params.
-#define HD_MALLOC_TAG_FUNCTION() \
-    TfAutoMallocTag2 tagFunc("Hd", __PRETTY_FUNCTION__);
-// Creates an auto-mallocTag with the given named tag.
-#define HD_MALLOC_TAG(x) \
-    TfAutoMallocTag2 tag2("Hd", x);
-
-// Overrides operator new/delete and injects malloc tags.
-#define HD_MALLOC_TAG_NEW(x) \
-    TF_MALLOC_TAG_NEW("Hd", x);
-
 // Adds a cache hit for the given cache name, the id is provided for debugging,
 // see HdPerfLog for details.
 #define HD_PERF_CACHE_HIT(name, id) \

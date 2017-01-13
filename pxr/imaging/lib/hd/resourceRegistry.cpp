@@ -230,7 +230,7 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
                                HdBufferSourceVector &sources)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (ARCH_UNLIKELY(sources.empty()))
     {
@@ -311,7 +311,7 @@ void
 HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     if (ARCH_UNLIKELY(!source))
     {
         TF_RUNTIME_ERROR("source pointer is null");
@@ -337,7 +337,7 @@ HdResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
                                    HdComputationSharedPtr const &computation)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // if the computation is buffer source computation, it will be appended
     // into pendingBufferSourceComputations, which is executed right after
@@ -353,7 +353,7 @@ void
 HdResourceRegistry::Commit()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // TODO: requests should be sorted by resource, and range.
     {
@@ -529,7 +529,7 @@ void
 HdResourceRegistry::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->garbageCollected);
 

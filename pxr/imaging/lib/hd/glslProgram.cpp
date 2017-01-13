@@ -77,7 +77,7 @@ HdGLSLProgram::CompileShader(GLenum type,
                              std::string const &shaderSource)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // early out for empty source.
     // this may not be an error, since glslfx gives empty string
@@ -147,7 +147,7 @@ bool
 HdGLSLProgram::Link()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!glLinkProgram) return false; // glew initialized
 

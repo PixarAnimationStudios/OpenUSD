@@ -194,7 +194,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
                  SdfPath const& instancerId /*= SdfPath()*/)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
 #if 0
     // TODO: enable this after patching.
@@ -438,7 +438,7 @@ void
 HdRenderIndex::RemoveShader(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _ShaderMap::iterator it = _shaderMap.find(id);
     if (it == _shaderMap.end())
@@ -486,7 +486,7 @@ void
 HdRenderIndex::RemoveTask(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _TaskMap::iterator it = _taskMap.find(id);
     if (it == _taskMap.end())
@@ -506,7 +506,7 @@ HdRenderIndex::InsertSprim(TfToken const& typeId,
                            SdfPath const& sprimId)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (sprimId.IsEmpty()) {
         return;
@@ -553,7 +553,7 @@ void
 HdRenderIndex::RemoveSprim(TfToken const& typeId, SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _SprimTypeMap::iterator typeIt = _sprimTypeMap.find(typeId);
     if (typeIt == _sprimTypeMap.end()) {
@@ -601,7 +601,7 @@ HdRenderIndex::GetSprimSubtree(TfToken const& typeId,
                                SdfPath const& rootPath) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _SprimTypeMap::const_iterator typeIt = _sprimTypeMap.find(typeId);
     if (typeIt == _sprimTypeMap.end()) {
@@ -637,7 +637,7 @@ HdRenderIndex::InsertBprim(TfToken const& typeId,
                            SdfPath const& bprimId)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (bprimId.IsEmpty()) {
         return;
@@ -684,7 +684,7 @@ void
 HdRenderIndex::RemoveBprim(TfToken const& typeId, SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _BprimTypeMap::iterator typeIt = _bprimTypeMap.find(typeId);
     if (typeIt == _bprimTypeMap.end()) {
@@ -732,7 +732,7 @@ HdRenderIndex::GetBprimSubtree(TfToken const& typeId,
                                SdfPath const& rootPath) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _BprimTypeMap::const_iterator typeIt = _bprimTypeMap.find(typeId);
     if (typeIt == _bprimTypeMap.end()) {
@@ -1387,7 +1387,7 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
                                SdfPath const &parentId)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
 #if 0
     // TODO: enable this after patching.
@@ -1409,7 +1409,7 @@ void
 HdRenderIndex::RemoveInstancer(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _InstancerMap::iterator it = _instancerMap.find(id);
     if (it == _instancerMap.end())
@@ -1423,7 +1423,7 @@ HdInstancerSharedPtr
 HdRenderIndex::GetInstancer(SdfPath const &id) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdInstancerSharedPtr instancer;
     TfMapLookup(_instancerMap, id, &instancer);
@@ -1435,7 +1435,7 @@ HdRprim const *
 HdRenderIndex::GetRprim(SdfPath const &id) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _RprimMap::const_iterator it = _rprimMap.find(id);
     if (it != _rprimMap.end())

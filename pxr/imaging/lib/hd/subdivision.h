@@ -29,6 +29,9 @@
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/meshTopology.h"
+
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/token.h"
@@ -291,7 +294,7 @@ Hd_OsdRefineComputation<VERTEX_BUFFER>::Resolve()
     if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     Hd_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) {

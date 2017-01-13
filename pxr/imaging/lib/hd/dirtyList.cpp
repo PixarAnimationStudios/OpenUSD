@@ -132,7 +132,7 @@ HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
 HdDirtyList::~HdDirtyList()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HD_PERF_COUNTER_DECR(HdPerfTokens->dirtyLists);
 }
@@ -365,7 +365,7 @@ SdfPathVector const&
 HdDirtyList::GetDirtyRprims()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     /*
        HdDirtyList has 3-states:

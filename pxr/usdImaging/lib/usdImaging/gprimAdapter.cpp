@@ -433,7 +433,7 @@ GfRange3d
 UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     UsdGeomGprim gprim(prim);
     VtVec3fArray extent;
     if (gprim.GetExtentAttr().Get(&extent, time)) {
@@ -454,7 +454,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                         UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     GfVec3f color(0.5f);
     float opacity = 1.0f;
     VtVec4fArray result(1);
@@ -626,7 +626,7 @@ bool
 UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if(!TF_VERIFY(prim.IsA<UsdGeomGprim>(), "%s\n",
                 prim.GetPath().GetText()))
@@ -639,7 +639,7 @@ SdfPath
 UsdImagingGprimAdapter::_GetSurfaceShader(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     return GetShaderBinding(prim);
 }

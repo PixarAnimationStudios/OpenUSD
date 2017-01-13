@@ -179,7 +179,7 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
                                  bool indirect)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdDrawItem const *firstDrawItem = _drawItemInstances[0]->GetDrawItem();
 
@@ -251,7 +251,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
         bool indirect)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // glew has to be intialized
     if (!glLinkProgram) {

@@ -45,6 +45,8 @@
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/textureResource.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
@@ -66,7 +68,7 @@ typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 ///
 class HdResourceRegistry : public boost::noncopyable  {
 public:
-    HD_MALLOC_TAG_NEW("new HdResourceRegistry");
+    HF_MALLOC_TAG_NEW("new HdResourceRegistry");
 
     /// Returns an instance of resource registry
     static HdResourceRegistry& GetInstance() {

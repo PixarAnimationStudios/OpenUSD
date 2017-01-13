@@ -55,7 +55,7 @@ struct HdBasisCurvesReprDesc {
 ///
 class HdBasisCurves: public HdRprim {
 public:
-    HD_MALLOC_TAG_NEW("new HdBasisCurves");
+    HF_MALLOC_TAG_NEW("new HdBasisCurves");
     HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
                   SdfPath const& instancerId = SdfPath());
 

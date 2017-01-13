@@ -206,7 +206,7 @@ std::string
 Hd_TestLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     std::string source = _glslfx->GetSource(shaderStageKey);
     return source;

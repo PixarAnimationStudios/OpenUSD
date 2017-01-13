@@ -27,6 +27,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 class Hd_DispatchBufferArrayRange : public HdBufferArrayRange {
 public:
     /// Constructor.
@@ -149,7 +151,7 @@ HdDispatchBuffer::HdDispatchBuffer(TfToken const &role, int count,
     : HdBufferArray(role, TfToken()), _count(count), _commandNumUints(commandNumUints)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 

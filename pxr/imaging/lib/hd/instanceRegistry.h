@@ -31,6 +31,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 /// \class HdInstance
 ///
 /// This class is used as a pointer to the shared instance in
@@ -158,7 +160,7 @@ HdInstanceRegistry<INSTANCE>::GetInstance(typename INSTANCE::KeyType const &key,
                                           INSTANCE *instance)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Grab Registry lock
     // (and don't release it in this function, return it instead)
@@ -185,7 +187,7 @@ HdInstanceRegistry<INSTANCE>::FindInstance(typename INSTANCE::KeyType const &key
                                           INSTANCE *instance, bool *found)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Grab Registry lock
     // (and don't release it in this function, return it instead)
@@ -207,7 +209,7 @@ size_t
 HdInstanceRegistry<INSTANCE>::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     size_t count = 0;
     for (typename _Dictionary::iterator it = _dictionary.begin();
@@ -229,7 +231,7 @@ void
 HdInstanceRegistry<INSTANCE>::Invalidate()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _dictionary.clear();
 }

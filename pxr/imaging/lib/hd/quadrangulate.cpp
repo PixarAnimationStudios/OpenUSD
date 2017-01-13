@@ -748,7 +748,7 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
     if (!quadrangulateTableRange) return;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!quadInfo) {

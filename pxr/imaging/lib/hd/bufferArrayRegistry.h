@@ -38,6 +38,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/strategyBase.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
@@ -49,7 +51,7 @@ typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 ///
 class HdBufferArrayRegistry : public boost::noncopyable {
 public:
-    HD_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
+    HF_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
 
     HdBufferArrayRegistry();
     ~HdBufferArrayRegistry()   = default;

@@ -56,7 +56,7 @@ void
 HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("GlimRg", __PRETTY_FUNCTION__);
@@ -263,7 +263,7 @@ void
 HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Apply polygon offset to whole pass.
     // XXX TODO: Move to an appropriate home

@@ -46,7 +46,7 @@ void
 HdxRenderTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdRenderPassStateSharedPtr renderPassState;
 

@@ -26,6 +26,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/work/loops.h"
 
 Hd_VertexAdjacency::Hd_VertexAdjacency()
@@ -211,7 +214,7 @@ Hd_AdjacencyBuilderComputation::Resolve()
     if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // compute adjacency
 
@@ -294,7 +297,7 @@ Hd_AdjacencyBuilderForGPUComputation::Resolve()
     if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // prepare buffer source to be transferred.
     std::vector<int> const &adjacency = _adjacency->GetEntry();

@@ -31,6 +31,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/imaging/pxOsd/refinerFactory.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -370,7 +372,7 @@ Hd_OsdGpuStencilTable *
 Hd_Osd3Subdivision::_GetGpuStencilTable()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!_gpuStencilTable) {
         _gpuStencilTable = Hd_OsdGpuStencilTable::Create(
@@ -400,7 +402,7 @@ Hd_Osd3TopologyComputation::Resolve()
     if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // do far analysis and set stencils and patch table into Hd_Subdivision.
 
@@ -586,7 +588,7 @@ Hd_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
     std::vector<int> *result)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(result)) return;
 
@@ -619,7 +621,7 @@ Hd_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
     OpenSubdiv::Far::PatchTable const *patchTable)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // primitiveParam from patchtable contains a map of
     // gl_PrimitiveID to PtexIndex. It should be reinterpreted
@@ -658,7 +660,7 @@ Hd_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
     OpenSubdiv::Far::PatchTable const *patchTable)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     std::vector<int> ptexIndexToFaceIndexMapping;
     _CreatePtexIndexToCoarseFaceIndexMapping(&ptexIndexToFaceIndexMapping);

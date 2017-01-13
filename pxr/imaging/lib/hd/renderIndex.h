@@ -28,6 +28,9 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/gf/vec4i.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -387,7 +390,7 @@ void
 HdRenderIndex::InsertShader(HdSceneDelegate* delegate, SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdSurfaceShaderSharedPtr shader = boost::make_shared<T>(delegate, id);
     _TrackDelegateShader(delegate, id, shader);
@@ -398,7 +401,7 @@ void
 HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdTaskSharedPtr task = boost::make_shared<T>(delegate, id);
     _TrackDelegateTask(delegate, id, task);

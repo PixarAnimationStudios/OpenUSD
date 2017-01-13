@@ -53,7 +53,7 @@ struct HdPointsReprDesc {
 ///
 class HdPoints: public HdRprim {
 public:
-    HD_MALLOC_TAG_NEW("new HdPoints");
+    HF_MALLOC_TAG_NEW("new HdPoints");
     HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
              SdfPath const& instancerId = SdfPath());
 

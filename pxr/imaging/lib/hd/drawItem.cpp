@@ -36,7 +36,7 @@
 HdDrawItem::HdDrawItem(HdRprimSharedData const *sharedData)
     : _sharedData(sharedData)
 {
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 }
 
 HdDrawItem::~HdDrawItem()

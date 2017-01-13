@@ -200,7 +200,7 @@ void
 HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // CPU frustum culling (if chosen)
     _PrepareCommandBuffer(renderPassState);
@@ -215,7 +215,7 @@ void
 HdRenderPass::Sync()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Sync the dirty list of prims
     _renderIndex->Sync(_dirtyList);

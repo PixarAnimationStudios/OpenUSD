@@ -128,7 +128,7 @@ HdMesh::_PopulateTopology(HdDrawItem *drawItem,
                           HdMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
@@ -304,7 +304,7 @@ void
 HdMesh::_PopulateAdjacency()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // The topology may be null in the event that it has zero faces.
     if (!_topology) return;
@@ -459,7 +459,7 @@ HdMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                                 bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
@@ -744,7 +744,7 @@ HdMesh::_PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
                                      HdMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
@@ -829,7 +829,7 @@ HdMesh::_PopulateElementPrimVars(HdDrawItem *drawItem,
                                  TfTokenVector const &primVarNames)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
     HdSceneDelegate* delegate = GetDelegate();
@@ -908,7 +908,7 @@ HdMesh::_UpdateDrawItem(HdDrawItem *drawItem,
                         bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
 
@@ -1088,7 +1088,7 @@ HdMesh::_GetRepr(TfToken const &reprName,
                  HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _MeshReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
 

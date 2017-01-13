@@ -55,7 +55,7 @@ void
 HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // set raster state to TaskContext
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
@@ -65,7 +65,7 @@ void
 HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdChangeTracker::DirtyBits bits = _GetTaskDirtyBits();
 

@@ -38,7 +38,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
         HdBufferSpecVector const &bufferSpecs)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // early out for empty source
     if (!TF_VERIFY(!bufferSpecs.empty())) {

@@ -40,14 +40,14 @@ void
 HdxDrawTargetResolveTask::_Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 }
 
 void
 HdxDrawTargetResolveTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Extract the list of render pass for draw targets from the task context.
     // This list is set from drawTargetTask.cpp during Sync phase.

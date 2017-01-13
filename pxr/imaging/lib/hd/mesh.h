@@ -71,7 +71,7 @@ struct HdMeshReprDesc {
 class HdMesh : public HdRprim {
 public:
 
-    HD_MALLOC_TAG_NEW("new HdMesh");
+    HF_MALLOC_TAG_NEW("new HdMesh");
 
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
