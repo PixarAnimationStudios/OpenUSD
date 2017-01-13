@@ -23,17 +23,18 @@
 //
 #include "pxr/base/arch/testArchAbi.h"
 #include "pxr/base/arch/error.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/vsnprintf.h"
 #include <iostream>
 #include <typeinfo>
-#ifdef _WIN32
-#include <windows.h>
-#define GETSYM GetProcAddress
+#ifdef ARCH_OS_WINDOWS
+#include <Windows.h>
+#define GETSYM(handle, name) GetProcAddress((HMODULE)handle, name)
 #else
 #include <dlfcn.h>
 #define WINAPI
-#define GETSYM dlsym
+#define GETSYM(handle, name) dlsym(handle, name)
 #endif
 
 typedef ArchAbiBase2* (WINAPI *NewDerived)();
@@ -41,24 +42,22 @@ typedef ArchAbiBase2* (WINAPI *NewDerived)();
 int
 main(int argc, char** argv)
 {
-    // Load the plugin and get the factory function.
-    std::string error;
-#ifdef _WIN32
-    HMODULE plugin = LoadLibrary(".\\libtestArchAbiPlugin.dll");
-    if (!plugin) {
-        error = ArchStringPrintf("%ld", (long)GetLastError());
-    }
-#else
+    // Compute the plugin directory.
     std::string path = ArchGetExecutablePath();
-    // Up two directories.
-    path = path.substr(0, path.rfind('/', path.rfind('/') - 1));
-    path += "/tests/lib/libtestArchAbiPlugin.so";
-    void* plugin = dlopen(path.c_str(), RTLD_LAZY);
-    if (!plugin) {
-        error += dlerror();
-    }
+    // Get directories.
+    path = path.substr(0, path.find_last_of("/\\"));
+
+    // Load the plugin and get the factory function.
+#if defined(ARCH_OS_WINDOWS)
+    path += "\\testArchAbiPlugin.dll";
+#elif defined(ARCH_OS_DARWIN)
+    path += "/lib/libtestArchAbiPlugin.dylib";
+#else
+    path += "/lib/libtestArchAbiPlugin.so";
 #endif
+    auto plugin = ArchLibraryOpen(path, ARCH_LIBRARY_LAZY);
     if (!plugin) {
+        std::string error = ArchLibraryError();
         std::cerr << "Failed to load plugin: " << error << std::endl;
         ARCH_AXIOM(plugin);
     }

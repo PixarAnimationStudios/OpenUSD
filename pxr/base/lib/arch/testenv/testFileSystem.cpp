@@ -24,28 +24,16 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/nap.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-void
-crash(int sig) {
-        printf("crashed!\n");
-        exit(sig);
-}
+ARCH_PRAGMA_DEPRECATED_POSIX_NAME
 
 int main()
 {
-    (void) signal(SIGABRT,crash);
-
     std::string firstName = ArchMakeTmpFileName("archFS");
     FILE *firstFile;
 
@@ -53,7 +41,7 @@ int main()
 
     // Open a file, check that its length is 0, write to it, close it, and then
     // check that its length is now the number of characters written.
-    ARCH_AXIOM((firstFile = fopen(firstName.c_str(), "wb")) != NULL);
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "wb")) != NULL);
     fflush(firstFile);
     ARCH_AXIOM(ArchGetFileLength(firstName.c_str()) == 0);
     fputs(testContent, firstFile);
@@ -61,7 +49,7 @@ int main()
     ARCH_AXIOM(ArchGetFileLength(firstName.c_str()) == strlen(testContent));
 
     // Map the file and assert the bytes are what we expect they are.
-    ARCH_AXIOM((firstFile = fopen(firstName.c_str(), "rb")) != NULL);
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     ArchConstFileMapping cfm = ArchMapFileReadOnly(firstFile);
     fclose(firstFile);
     ARCH_AXIOM(cfm);
@@ -69,7 +57,7 @@ int main()
     cfm.reset();
 
     // Try again with a mutable mapping.
-    ARCH_AXIOM((firstFile = fopen(firstName.c_str(), "rb")) != NULL);
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     ArchMutableFileMapping mfm = ArchMapFileReadWrite(firstFile);
     fclose(firstFile);
     ARCH_AXIOM(mfm);
@@ -78,11 +66,11 @@ int main()
     mfm.get()[0] = 'T'; mfm.get()[2] = 's';
     ARCH_AXIOM(memcmp("Test", mfm.get(), strlen("Test")) == 0);
     mfm.reset();
-    unlink(firstName.c_str());
+    ArchUnlinkFile(firstName.c_str());
 
     // Test ArchPWrite and ArchPRead.
     int64_t len = strlen(testContent);
-    ARCH_AXIOM((firstFile = fopen(firstName.c_str(), "w+b")) != NULL);
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "w+b")) != NULL);
     ARCH_AXIOM(ArchPWrite(firstFile, testContent, len, 0) == len);
     std::unique_ptr<char[]> buf(new char[len]);
     ARCH_AXIOM(ArchPRead(firstFile, buf.get(), len, 0) == len);
@@ -99,7 +87,6 @@ int main()
     std::string retpath;
     retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");
     ARCH_AXIOM (retpath != "");
-    rmdir(retpath.c_str());
-
+    ArchRmDir(retpath.c_str());
     return 0;
 }

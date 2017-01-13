@@ -24,8 +24,6 @@
 #include "pxr/base/arch/function.h"
 #include "pxr/base/arch/error.h"
 
-#include <iostream>
-
 int main()
 {
     // no templates

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,25 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/arch/error.h"
-#include "pxr/base/arch/debugger.h"
-#include <stdio.h>
+#ifndef ARCH_TEST_UTIL_H
+#define ARCH_TEST_UTIL_H
 
-void
-Arch_Error(const char* cond, const char* funcName, size_t lineNo, const char* fileName)
-{
-    fprintf(stderr, " ArchError: %s\n", cond);
-    fprintf(stderr, "  Function: %s\n", funcName);
-    fprintf(stderr, "      File: %s\n", fileName);
-    fprintf(stderr, "      Line: %zu\n", lineNo);
-    ArchAbort();
-}
+// Crash types.
+enum class ArchTestCrashMode {
+    Error,
+    CorruptMemory,
+    CorruptMemoryWithThread
+};
 
-void
-Arch_Warning(const char* cond, const char* funcName, size_t lineNo, const char* fileName)
-{
-    fprintf(stderr, " ArchWarn: %s\n", cond);
-    fprintf(stderr, " Function: %s\n", funcName);
-    fprintf(stderr, "     File: %s\n", fileName);
-    fprintf(stderr, "     Line: %zu\n", lineNo);
-}
+// Cause the test to crash deliberately.
+void ArchTestCrash(ArchTestCrashMode mode);
+
+// On Windows we can't easily fork() so we just run the test again with
+// command line arguments to request a crash.
+void ArchTestCrashArgParse(int argc, char** argv);
+
+#endif

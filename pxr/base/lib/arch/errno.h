@@ -38,14 +38,21 @@
 ///
 /// This function provides a thread-safe method of fetching the error string
 /// from errno. POSIX.1c defines errno as a macro which provides access to a
-/// thread-local integer. This function uses strerror_r, which is thread-safe.
+/// thread-local integer. This function is thread-safe.
 /// \overload
 ARCH_API std::string ArchStrerror();
 
 /// Return the error string for the specified value of errno.
 ///
-/// This function uses strerror_r, which is thread-safe.
+/// This function is thread-safe.
 ARCH_API std::string ArchStrerror(int errorCode);
+
+#if defined(ARCH_OS_WINDOWS)
+/// Return the error string for the specified error code.
+///
+/// This function is thread-safe.
+ARCH_API std::string ArchStrSysError(unsigned long errorCode);
+#endif
 
 ///@}
 

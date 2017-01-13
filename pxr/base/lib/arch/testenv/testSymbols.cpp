@@ -36,10 +36,21 @@ static bool _GetLibraryPath(void* address, std::string* result)
 
 static std::string GetBasename(const std::string& path)
 {
+#if defined(ARCH_OS_WINDOWS)
+    std::string::size_type i = path.find_last_of("/\\");
+    if (i != std::string::npos) {
+        std::string::size_type j = path.find(".exe");
+        if (j != std::string::npos) {
+            return path.substr(i + 1, j - i - 1);
+        }
+        return path.substr(i + 1);
+    }
+#else
     std::string::size_type i = path.rfind('/');
     if (i != std::string::npos) {
         return path.substr(i + 1);
     }
+#endif
     return path;
 }
 

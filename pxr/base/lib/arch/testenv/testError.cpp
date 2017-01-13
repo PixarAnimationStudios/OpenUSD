@@ -25,34 +25,11 @@
 //
 
 #include "pxr/base/arch/error.h"
+#include "pxr/base/arch/testArchUtil.h"
 
-#include <cstdio>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
+int main(int argc, char** argv)
+{
+    ArchTestCrashArgParse(argc, argv);
 
-void
-crash(int sig) {
-        printf("crashed!\n");
-        exit(sig);
-}
-
-int main()
-{   
-    (void) signal(SIGABRT,crash);
-
-    int childPid;
-
-    if ( (childPid = fork()) == 0 )   {
-        printf("Should print error message:\n");
-        ARCH_ERROR("TESTING ARCH ERROR");
-        exit(0);
-    }
-    int status;
-
-    ARCH_AXIOM(childPid == wait(&status));
-    ARCH_AXIOM(status != 0);
-
-    return 0;
+    ArchTestCrash(ArchTestCrashMode::Error);
 }

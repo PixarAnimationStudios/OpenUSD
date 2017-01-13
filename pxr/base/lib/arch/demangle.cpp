@@ -70,14 +70,31 @@ _FixupStringNames(string* name)
 
     string::size_type pos = 0;
     while ((pos = name->find(*from, pos)) != string::npos) {
-	name->replace(pos, from->size(), *to);
-	pos += to->size();
+        name->replace(pos, from->size(), *to);
+        pos += to->size();
     }
 
     pos = 0;
     while ((pos = name->find("std::", pos)) != string::npos) {
-	name->erase(pos, 5);
+        name->erase(pos, 5);
     }
+
+#if defined(ARCH_OS_WINDOWS)
+    pos = 0;
+    while ((pos = name->find("class", pos)) != string::npos) {
+        name->erase(pos, 6);
+    }
+
+    pos = 0;
+    while ((pos = name->find("struct", pos)) != string::npos) {
+        name->erase(pos, 7);
+    }
+
+    pos = 0;
+    while ((pos = name->find("enum", pos)) != string::npos) {
+        name->erase(pos, 5);
+    }
+#endif
 }
 
 #if PXR_USE_NAMESPACES
@@ -111,7 +128,7 @@ _DemangleOld(string* mangledTypeName)
         abi::__cxa_demangle(mangledTypeName->c_str(), NULL, NULL, &status))
     {
         *mangledTypeName = string(realName);
-        free(realName);	    
+        free(realName);    
         _FixupStringNames(mangledTypeName);
         return true;
     }
@@ -142,18 +159,18 @@ _DemangleNew(string* mangledTypeName)
 
     int status;
     bool ok = false;
-		 
+
     if (char* realName =
-	abi::__cxa_demangle(input.c_str(), NULL, NULL, &status))
+            abi::__cxa_demangle(input.c_str(), NULL, NULL, &status))
     {
-	size_t len = strlen(realName);
-	if (len > 1 && realName[len-1] == '*') {
-	    *mangledTypeName = string(&realName[0], len-1);
-	    _FixupStringNames(mangledTypeName);
-	    ok = true;
-	}
-	
-	free(realName);	    
+        size_t len = strlen(realName);
+        if (len > 1 && realName[len-1] == '*') {
+            *mangledTypeName = string(&realName[0], len-1);
+            _FixupStringNames(mangledTypeName);
+            ok = true;
+        }
+
+        free(realName);    
     }
 
     return ok;

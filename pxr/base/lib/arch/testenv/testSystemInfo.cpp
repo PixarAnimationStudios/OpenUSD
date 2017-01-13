@@ -24,10 +24,6 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/error.h"
 
-#include <cstdlib>
-#include <cstring>
-#include <vector>
-
 using std::string;
 
 //most of these tests are just for code coverage

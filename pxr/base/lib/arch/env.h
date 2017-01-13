@@ -21,43 +21,56 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef ARCH_NAP_H
-#define ARCH_NAP_H
-
-/// \file arch/nap.h
-/// \ingroup group_arch_Multithreading
-/// Routines for very brief pauses in execution.
+#ifndef ARCH_ENV_H
+#define ARCH_ENV_H
 
 #include "pxr/base/arch/api.h"
-#include "pxr/base/arch/inttypes.h"
 
-/// \addtogroup group_arch_Multithreading
-///@{
+#include <string>
 
-/// Sleep for some number of centiseconds.
 ///
-/// Sleep for \c n/100 seconds.  Note: if your intent is to simply yield the
-/// processors, DO NOT call this with a value of zero (as one can do with
-/// sginap()). Call \c ArchThreadYield() instead.
-ARCH_API
-void ArchNap(size_t nhundredths);
+/// Architecture dependent access to environment variables.
+/// \ingroup group_arch_SystemFunctions
+/// 
 
-/// Yield to the operating system thread scheduler.
 ///
-/// Returns control to the operating system thread scheduler as a means of
-/// temporarily suspending the calling thread.
-ARCH_API
-void ArchThreadYield();
-
-/// Pause execution of the current thread.
+/// Returns \c true if and only if the current environment contains \c name.
+/// \ingroup group_arch_SystemFunctions
 ///
-/// Pause execution of the current thread without returning control to the
-/// operating system scheduler. This function can be used as a means of
-/// gracefully spin waiting while potentially yielding CPU resouces to
-/// hyper-threads.
+ARCH_API 
+bool
+ArchHasEnv(const std::string &name);
+
+///
+/// Gets a value from the current environment identified by \c name.
+/// \ingroup group_arch_SystemFunctions
+///
+ARCH_API 
+std::string
+ArchGetEnv(const std::string &name);
+
+///
+/// Creates or modifies an environment variable.
+/// \ingroup group_arch_SystemFunctions
+///
 ARCH_API
-void ArchThreadPause();
+bool
+ArchSetEnv(const std::string &name, const std::string &value, bool overwrite);
 
-///@}
+///
+/// Removes an environment variable.
+/// \ingroup group_arch_SystemFunctions
+///
+ARCH_API
+bool
+ArchRemoveEnv(const std::string &name);
 
-#endif // ARCH_NAP_H
+///
+/// Expands environment variables in \c str.
+/// \ingroup group_arch_SystemFunctions
+///
+ARCH_API
+std::string
+ArchExpandEnvironmentVariables(const std::string& str);
+
+#endif // ARCH_ENV_H

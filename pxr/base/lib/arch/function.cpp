@@ -24,8 +24,6 @@
 #include "pxr/base/arch/function.h"
 #include "pxr/base/arch/defines.h"
 
-#include <ciso646>
-
 using namespace std;
 
 /*

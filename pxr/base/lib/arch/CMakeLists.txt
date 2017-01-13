@@ -20,11 +20,13 @@ pxr_shared_library(arch
         daemon
         debugger
         demangle
+        env
         error
         errno
         fileSystem
         function
         hash
+        library
         mallocHook
         nap
         stackTrace
@@ -48,6 +50,7 @@ pxr_shared_library(arch
 
     PRIVATE_HEADERS
         testArchAbi.h
+        testArchUtil.h
 
     CPPFILES
         assumptions.cpp
@@ -64,12 +67,12 @@ pxr_build_test(testArchAbi
     CPPFILES
         testenv/testArchAbi.cpp
 )
-    pxr_build_test(testArchAttributes
-        LIBRARIES
-            arch
-            ${CMAKE_DL_LIBS}
-        CPPFILES
-            testenv/testAttributes.cpp
+pxr_build_test(testArchAttributes
+    LIBRARIES
+        arch
+        ${CMAKE_DL_LIBS}
+    CPPFILES
+        testenv/testAttributes.cpp
     )
 pxr_build_test(testArchDemangle
     LIBRARIES
@@ -83,6 +86,7 @@ pxr_build_test(testArchError
         arch
         ${CMAKE_DL_LIBS}
     CPPFILES
+        testenv/testArchUtil.cpp
         testenv/testError.cpp
 )
 pxr_build_test(testArchErrno
@@ -111,6 +115,7 @@ pxr_build_test(testArchStackTrace
         arch
         ${CMAKE_DL_LIBS}
     CPPFILES
+        testenv/testArchUtil.cpp
         testenv/testStackTrace.cpp
 )
 pxr_build_test(testArchSymbols
@@ -149,11 +154,9 @@ pxr_build_test(testArchVsnprintf
         testenv/testVsnprintf.cpp
 )
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 pxr_register_test(testArchAbi
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAbi"
 )
-endif()
 pxr_register_test(testArchAttributes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAttributes"
 )
@@ -172,11 +175,9 @@ pxr_register_test(testArchFileSystem
 pxr_register_test(testArchFunction
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFunction"
 )
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 pxr_register_test(testArchStackTrace
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace"
 )
-endif()
 pxr_register_test(testArchSymbols
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSymbols"
 )

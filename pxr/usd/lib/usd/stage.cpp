@@ -368,9 +368,12 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
         _rootLayer->GetIdentifier().c_str(),
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
 
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_DEPRECATED_POSIX_NAME
     _mallocTagID = TfMallocTag::IsInitialized() ?
         strdup(::_StageTag(rootLayer->GetIdentifier()).c_str()) :
         _dormantMallocTagID;
+ARCH_PRAGMA_POP
 
     _cache->SetVariantFallbacks(GetGlobalVariantFallbacks());
 }
@@ -5542,7 +5545,8 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                 
                 // gcc 4.8 incorrectly detects boost::optional as uninitialized. 
                 // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47679
-                ARCH_PRAGMA_PUSH_NOERROR_MAYBE_UNINITIALIZED;
+                ARCH_PRAGMA_PUSH
+                ARCH_PRAGMA_MAYBE_UNINITIALIZED
 
                 // We only care about clips that were introduced at this
                 // position within the LayerStack.
@@ -5559,7 +5563,8 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                         return;
                     }
                 }
-                ARCH_PRAGMA_POP_NOERROR_MAYBE_UNINITIALIZED;
+
+                ARCH_PRAGMA_POP
             }    
         }
     }
@@ -6672,17 +6677,17 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template bool UsdStage::_GetValue(                                  \
-        UsdTimeCode, const UsdAttribute&,                                   \
+        UsdTimeCode, const UsdAttribute&,                               \
         SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
     template bool UsdStage::_GetValue(                                  \
-        UsdTimeCode, const UsdAttribute&,                                   \
+        UsdTimeCode, const UsdAttribute&,                               \
         SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                \
                                                                         \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
-        const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,           \
+        const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
         SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
-        const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,           \
+        const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
         SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                      
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)

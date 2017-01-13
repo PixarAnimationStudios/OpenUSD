@@ -25,6 +25,10 @@
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <dlfcn.h>
+#elif defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#include <DbgHelp.h>
+#include <Psapi.h>
 #endif
 
 bool
@@ -34,6 +38,7 @@ ArchGetAddressInfo(
     std::string* symbolName, void** symbolAddress)
 {
 #if defined(_GNU_SOURCE) || defined(ARCH_OS_DARWIN)
+
     Dl_info info;
     if (dladdr(address, &info)) {
         if (objectPath) {
@@ -50,6 +55,75 @@ ArchGetAddressInfo(
         }
         return true;
     }
-#endif
     return false;
+
+#elif defined(ARCH_OS_WINDOWS)
+
+    if (!address) {
+        return false;
+    }
+
+    HMODULE module = nullptr;
+    if (!::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                             reinterpret_cast<LPCSTR>(address),
+                             &module)) {
+        return false;
+    }
+
+    if (objectPath) {
+        char modName[MAX_PATH] = {0};
+        if (GetModuleFileName(module, modName, MAX_PATH)) {
+            objectPath->assign(modName);
+        }
+    }
+
+    if (baseAddress || symbolName || symbolAddress) {
+        DWORD displacement;
+        HANDLE process = GetCurrentProcess();
+        SymInitialize(process, NULL, TRUE);
+
+        // Symbol
+        ULONG64 symBuffer[(sizeof(SYMBOL_INFO) +
+                          MAX_SYM_NAME * sizeof(TCHAR) +
+                          sizeof(ULONG64) - 1) / sizeof(ULONG64)];
+        SYMBOL_INFO *symbol = (SYMBOL_INFO*)symBuffer;
+        symbol->MaxNameLen = MAX_SYM_NAME;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+        // Line
+        IMAGEHLP_LINE64 line = {0};
+        line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+
+        DWORD64 dwAddress = (DWORD64)address;
+        SymFromAddr(process, dwAddress, NULL, symbol);
+        if (!SymGetLineFromAddr64(process, dwAddress,
+                                  &displacement, &line)) {
+            return false;
+        }
+
+        if (baseAddress) {
+            MODULEINFO moduleInfo = {0};
+            if (!GetModuleInformation(process, module,
+                                      &moduleInfo, sizeof(moduleInfo))) {
+                return false;
+            }
+            *baseAddress = moduleInfo.lpBaseOfDll;
+        }
+
+        if (symbolName) {
+            *symbolName = symbol->Name ? symbol->Name : "";
+        }
+
+        if (symbolAddress) {
+            *symbolAddress = (void*)symbol->Address;
+        }
+    }
+    return true;
+
+#else
+
+    return false;
+
+#endif
 }

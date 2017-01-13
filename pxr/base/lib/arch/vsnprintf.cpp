@@ -21,40 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <string>
-#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/vsnprintf.h"
+#include <string>
+
 using std::string;
 
 int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
     /*
      * Built-in vsnprintf either prints into str, or aborts the print
      * but tells you how much room was needed.  
      */
     return vsnprintf(str, size, format, ap);
-#elif defined(ARCH_OS_DARWIN)
-    size_t n = vsnprintf(str, static_cast<ssize_t>(size), format, ap);
-
-    while (n == size-1) {
-        /*
-         * Built-in vsnprintf returns size-1 (how much it used without
-         * the NULL char) if it needs more than size characters (how
-         * much it used, not including the null.)  If necessary,
-         * double size until the call succeeds.  
-	 */
-	size *= 2;
-	char *tmp = new char[size];
-	n = vsnprintf(tmp, static_cast<ssize_t>(size), format, ap);
-
-	delete [] tmp;
-    }
-
-    return n;
 #elif defined(ARCH_OS_WINDOWS)
     int n = _vscprintf(format, ap);
-    return vsnprintf_s(str, size /*size of buffer */, n, format, ap);
+    if (n < size)
+        return vsnprintf_s(str, size /*size of buffer */, n, format, ap);
+    else
+        return n;
 #else
 #error Unknown system architecture.    
 #endif
@@ -69,15 +54,15 @@ ArchVStringPrintf(const char *fmt, va_list ap)
     va_list apcopy;
     va_copy(apcopy, ap);
 
-    char buf[4096];	// past this size, we'll incur a new/delete.
+    char buf[4096]; // past this size, we'll incur a new/delete.
     size_t needed = ArchVsnprintf(buf, sizeof(buf), fmt, ap) + 1;
     string s(needed <= sizeof(buf) ? buf : string());
 
     if (s.empty()) {
-	char* tmp = new char[needed];
-	ArchVsnprintf(tmp, needed, fmt, apcopy);
-	s = string(tmp);
-	delete [] tmp;
+        char* tmp = new char[needed];
+        ArchVsnprintf(tmp, needed, fmt, apcopy);
+        s = string(tmp);
+        delete [] tmp;
     }
 
     va_end(apcopy);

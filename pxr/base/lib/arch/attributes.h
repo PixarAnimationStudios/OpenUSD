@@ -226,7 +226,7 @@
 #   define ARCH_CONSTRUCTOR(_name, _priority, ...) \
         static void _name(__VA_ARGS__); \
         __declspec(allocate(".pxrctor")) \
-        static const Arch_ConstructorEntry arch_ctor_ ## _name = { \
+        static Arch_ConstructorEntry arch_ctor_ ## _name = { \
 	    reinterpret_cast<Arch_ConstructorEntry::Type>(&_name), \
             0u, \
             _priority \
@@ -237,7 +237,7 @@
 #   define ARCH_DESTRUCTOR(_name, _priority, ...) \
         static void _name(__VA_ARGS__); \
         __declspec(allocate(".pxrdtor")) \
-        static const Arch_ConstructorEntry arch_dtor_ ## _name = { \
+        static Arch_ConstructorEntry arch_dtor_ ## _name = { \
 	    reinterpret_cast<Arch_ConstructorEntry::Type>(&_name), \
             0u, \
             _priority \

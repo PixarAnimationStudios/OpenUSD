@@ -30,11 +30,10 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
-#include <math.h>
-#include <cmath>
 
-#if defined(ARCH_OS_WINDOWS)
-#include <float.h>
+#include <cmath>
+#if !defined(M_PI)
+#define M_PI 3.14159265358979323846
 #endif
 
 /// \addtogroup group_arch_Math

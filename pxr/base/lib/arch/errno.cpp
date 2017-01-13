@@ -22,9 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/errno.h"
-#include "pxr/base/arch/defines.h"
 #include <cerrno>
 #include <cstring>
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#endif
 
 std::string
 ArchStrerror()
@@ -49,12 +51,33 @@ ArchStrerror(int errorCode)
     //   unknown). The string always includes a terminating null byte.
     //
     return strerror_r(errorCode, msg_buf, 256);
-#endif // _GNU_SOURCE
-
-#if defined(ARCH_COMPILER_MSVC)
-    strerror_s(msg_buf, 256, errorCode);
-#else
+#elif !defined(ARCH_COMPILER_MSVC)
     strerror_r(errorCode, msg_buf, 256);
-#endif
+#else
+    strerror_s(msg_buf, 256, errorCode);
+#endif // _GNU_SOURCE
     return msg_buf;
 }
+
+#if defined(ARCH_OS_WINDOWS)
+std::string ArchStrSysError(unsigned long errorCode)
+{
+    if(errorCode == 0)
+        return std::string();
+
+    LPSTR buffer = nullptr;
+    size_t len = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                               FORMAT_MESSAGE_FROM_SYSTEM |
+                               FORMAT_MESSAGE_IGNORE_INSERTS,
+                               nullptr,
+                               errorCode,
+                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               (LPSTR)&buffer,
+                               0,
+                               nullptr);
+    std::string message(buffer, len);
+    LocalFree(buffer);
+
+    return message;
+}
+#endif

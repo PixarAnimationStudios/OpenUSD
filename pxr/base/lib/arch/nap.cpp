@@ -50,10 +50,10 @@ ArchNap(size_t hundredths)
     // Note: neither tv_sec and tv_nsec can be negative,
     // because hundredths is unsigned and tv_nsec is big enough to avoid
     // overflow if hundredths == 99.
-    
+
     if (rec.tv_sec == 0 && rec.tv_nsec == 0) {
-	rec.tv_sec = 0;
-	rec.tv_nsec = 1;
+        rec.tv_sec = 0;
+        rec.tv_nsec = 1;
     }
     nanosleep(&rec, 0);
 #else
@@ -70,5 +70,17 @@ ArchThreadYield()
     SwitchToThread();
 #else
 #error Unknown architecture.
+#endif
+}
+
+void
+ArchThreadPause()
+{
+#if defined (ARCH_CPU_INTEL) && defined(ARCH_COMPILER_GCC)
+    __asm__ __volatile__ ("pause");
+#elif defined(ARCH_OS_WINDOWS)
+    YieldProcessor();
+#else
+#warning Unknown architecture. Pause instruction skipped.
 #endif
 }

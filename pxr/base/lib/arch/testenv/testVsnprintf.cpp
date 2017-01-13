@@ -24,7 +24,6 @@
 #include "pxr/base/arch/vsnprintf.h"
 #include "pxr/base/arch/error.h"
 
-#include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <string.h>

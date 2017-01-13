@@ -21,104 +21,162 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/arch/error.h"
-#include "pxr/base/arch/defines.h"
-#include "pxr/base/arch/stackTrace.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <pwd.h>
-#include <unistd.h>
-#include <fstream>
-#include <string>
-#include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
 
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/error.h"
-#if defined(ARCH_OS_DARWIN)
-#include <mach-o/dyld.h>
-#include <mach-o/getsect.h>
-#endif
+#include <cstdlib>
+#include <functional>
 
-#ifdef _POSIX_VERSION
-#include <limits.h>                     /* for PATH_MAX */
+#if defined(ARCH_OS_LINUX)
+
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <unistd.h>
+
+#elif defined(ARCH_OS_DARWIN)
+
+    #include <unistd.h>
+    #include <mach-o/dyld.h>
+
+#elif defined(ARCH_OS_WINDOWS)
+
+    #include <Windows.h>
+    #include <direct.h>
+    #define getcwd(buffer_, size_) _getcwd(buffer_, size_)
+
 #else
-#include <sys/param.h>                  /* for MAXPATHLEN */
+
+    #error Unknown architecture.    
+
 #endif
 
-#ifndef PATH_MAX
-#ifdef _POSIX_VERSION
-#define PATH_MAX _POSIX_PATH_MAX
-#else
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 1024
-#endif
-#endif
-#endif
-
-using std::string;
-
-string
+std::string
 ArchGetCwd()
 {
-    char space[4096];
-    if (getcwd(space, 4096))
-	return string(space);
-
-
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-
-    /*
-     * Try dynamic sizing.
-     */
-
-# if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-    char* buf = getcwd(NULL, 0);
-# else
-    char* buf = getcwd(NULL, -1);
-# endif    
-
-    if (buf) {
-	string result(buf);
-	free(buf);
-	return result;
+    // Try a fixed size buffer.
+    char buffer[ARCH_PATH_MAX];
+    if (getcwd(buffer, ARCH_PATH_MAX)) {
+        return std::string(buffer);
     }
 
-#else
-#error Unknown architecture.
-#endif    
+    // Let the system allocate the buffer.
+    if (char* buf = getcwd(NULL, 0)) {
+        std::string result(buf);
+        free(buf);
+        return result;
+    }
 
     ARCH_WARNING("can't determine working directory");
     return ".";
 }
 
-string
-ArchGetExecutablePath()
+namespace {
+
+// Getting the executable path requires a dynamically allocated buffer
+// on all platforms.  This helper function handles the allocation.
+static std::string
+_DynamicSizedRead(
+    size_t initialSize,
+    const std::function<bool(char*, size_t*)>& callback)
 {
-#if defined(ARCH_OS_LINUX) 
-    // Under Linux, the command line is retrieved from /proc/<pid>/cmdline.
-    // Open the file
-    char buf[2048];
-    int len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-    if (len == -1) {
-        ARCH_WARNING("Unable to read /proc/self/exe to obtain executable path");
-        len = 0;
+    // Make a buffer for the data.
+    // We use an explicit deleter to work around libc++ bug.
+    // See https://llvm.org/bugs/show_bug.cgi?id=18350.
+    std::unique_ptr<char, std::default_delete<char[]> > buffer;
+    buffer.reset(new char[initialSize]);
+
+    // Repeatedly invoke the callback with our buffer until it's big enough.
+    size_t size = initialSize;
+    while (!callback(buffer.get(), &size)) {
+        if (size == -1) {
+            // callback is never going to succeed.
+            return std::string();
+        }
+        buffer.reset(new char[size]);
     }
 
-    buf[len] = '\0';
-    return buf;
-#elif defined(ARCH_OS_DARWIN)
-    char linebuffer[1024];
-    uint32_t bufsize = 1024;
-    linebuffer[0] = 0;
-    _NSGetExecutablePath(linebuffer, &bufsize);
-    return linebuffer;
-#else
+    // Make a string.
+    return std::string(buffer.get());
+}
 
-#error Unknown architecture.    
+}
+
+std::string
+ArchGetExecutablePath()
+{
+#if defined(ARCH_OS_LINUX)
+
+    // On Linux the executable path is retrieved from the /proc/self/exe
+    // symlink.
+    return
+        _DynamicSizedRead(ARCH_PATH_MAX,
+            [](char* buffer, size_t* size) {
+                const ssize_t n = readlink("/proc/self/exe", buffer, *size);
+                if (n >= *size) {
+                    // Find out how much space we need.
+                    struct stat sb;
+                    if (lstat("/proc/self/exe", &sb) == 0) {
+                        *size = sb.st_size + 1;
+                    }
+                    else {
+                        // Try iterating on the size.
+                        *size *= 2;
+                    }
+                    return false;
+                }
+                else if (n == -1) {
+                    ARCH_WARNING("Unable to read /proc/self/exe to obtain "
+                                 "executable path");
+                    *size = -1;
+                    return false;
+                }
+                else {
+                    buffer[n] = '\0';
+                    return true;
+                }
+            });
+
+#elif defined(ARCH_OS_DARWIN)
+
+    // On Darwin _NSGetExecutablePath() returns the executable path.
+    return
+        _DynamicSizedRead(ARCH_PATH_MAX,
+            [](char* buffer, size_t* size) {
+                uint32_t bufsize = *size;
+                if (_NSGetExecutablePath(buffer, &bufsize) == -1) {
+                    // We're told the correct size.
+                    *size = bufsize;
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            });
+
+#elif defined(ARCH_OS_WINDOWS)
+
+    // On Windows GetModuleFileName() returns the executable path.
+    return
+        _DynamicSizedRead(ARCH_PATH_MAX,
+            [](char* buffer, size_t* size) {
+                DWORD nSize = *size;
+                const DWORD n = GetModuleFileName(NULL, buffer, nSize);
+                if (n == 0) {
+                    ARCH_WARNING("Unable to read GetModuleFileName() to obtain "
+                                 "executable path");
+                    *size = -1;
+                    return false;
+                }
+                else if (n >= nSize) {
+                    // We have to iterate to find a suitable size.
+                    *size *= 2;
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            });
 
 #endif
 }

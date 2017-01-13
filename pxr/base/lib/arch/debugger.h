@@ -83,6 +83,13 @@ bool ArchDebuggerAttach() ARCH_NOINLINE;
 ARCH_API
 bool ArchDebuggerIsAttached() ARCH_NOINLINE;
 
+/// Abort.  This will try to avoid the JIT debugger if any if ARCH_AVOID_JIT
+/// is in the environment and the debugger isn't already attached.  In that
+/// case it will _exit(134).  If \p logging is \c false then this will
+/// attempt to bypass any crash logging.
+ARCH_API
+void ArchAbort(bool logging = true);
+
 /// Stop in the debugger.
 ///
 /// This macro expands to \c ArchDebuggerTrap() and, if necessary and

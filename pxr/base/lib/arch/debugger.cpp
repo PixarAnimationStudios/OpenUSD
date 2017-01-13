@@ -47,7 +47,6 @@
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
-#include <ciso646>
 #endif
 
 // We don't want this inlined so ArchDebuggerTrap() is as clean as
@@ -167,9 +166,10 @@ nonLockingFork()
     extern ForkFunc Arch_nonLockingFork;
 
     if (Arch_nonLockingFork != NULL) {
-	return (Arch_nonLockingFork)();
-    } else {
-	return fork();
+        return (Arch_nonLockingFork)();
+    }
+    else {
+        return fork();
     }
 }
 
@@ -195,17 +195,17 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     // background.
     pid_t pid = nonLockingFork();
     if (pid == -1) {
-	// fork failed!
+        // fork failed!
         close(ready[0]);
         close(ready[1]);
-	return false;
+        return false;
     }
 
     if (pid > 0) {
-	// This is the parent.
+        // This is the parent.
         close(ready[1]);
 
-	// Wait for the descendant to report status. We could collect the
+        // Wait for the descendant to report status. We could collect the
         // entire result but we only care if we get any data or not.
         int result;
         ssize_t n = read(ready[0], &result, 1);
@@ -217,7 +217,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
         close(ready[0]);
 
         // Success if descendant sent no data at all.
-	return n == 0;
+        return n == 0;
     }
 
     // This is the child.  Do *not* call exit() from here down.  We must
@@ -240,7 +240,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     if (setsid() == -1) {
         int result = errno;
         write(ready[1], &result, sizeof(result));
-	_exit(1);
+        _exit(1);
     }
 
     // Now we need to ensure that this process does not reacquire a
@@ -263,14 +263,14 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
 
     pid = nonLockingFork();
     if (pid == -1) {
-	// fork failed!
+        // fork failed!
         int result = errno;
         write(ready[1], &result, sizeof(result));
-	_exit(2);
+        _exit(2);
     }
     if (pid > 0) {
-	// This is the parent.
-	_exit(0);
+        // This is the parent.
+        _exit(0);
     }
 
     // Now we are in the grandchild process.  We are not a process group
@@ -280,7 +280,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     int result = ArchCloseAllFiles(1, &ready[1]);
     if (result == -1) {
         write(ready[1], &result, sizeof(result));
-	_exit(3);
+        _exit(3);
     }
 
     // Change directory to root to make sure that we are not on
@@ -290,7 +290,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     result = chdir("/");
     if (result == -1) {
         write(ready[1], &result, sizeof(result));
-	_exit(4);
+        _exit(4);
     }
 
     // Clear any inherited umask.
@@ -315,7 +315,7 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     if (!cb(data)) {
         result = errno;
         write(ready[1], &result, sizeof(result));
-	_exit(6);
+        _exit(6);
     }
 
     // Success
@@ -342,6 +342,7 @@ Arch_DebuggerIsAttachedPosix()
 #if defined(ARCH_OS_DARWIN)
     const int PTRACE_ATTACH = PT_ATTACHEXC;
     const int PTRACE_DETACH = PT_DETACH;
+    return false;
 #endif
 
     // Check for a ptrace based debugger by trying to ptrace.
@@ -547,14 +548,25 @@ ArchDebuggerWait(bool wait)
     _archDebuggerWait = wait;
 }
 
+namespace {
+bool
+_ArchAvoidJIT()
+{
+#if defined(ARCH_OS_WINDOWS)
+    size_t requiredSize;
+    getenv_s(&requiredSize, nullptr, 0, "ARCH_AVOID_JIT");
+    return (requiredSize != 0);
+#else
+    return (getenv("ARCH_AVOID_JIT") != nullptr);
+#endif
+}
+}
+
 bool
 ArchDebuggerAttach()
 {
-    return 
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-		Arch_DebuggerIsAttachedPosix() ||
-#endif
-		Arch_DebuggerAttach();
+    return ArchDebuggerIsAttached() ||
+            (!_ArchAvoidJIT() && Arch_DebuggerAttach());
 }
 
 bool
@@ -567,4 +579,26 @@ ArchDebuggerIsAttached()
     return Arch_DebuggerIsAttachedPosix();
 #endif
     return false;
+}
+
+void
+ArchAbort(bool logging)
+{
+    if (ArchDebuggerIsAttached() || !_ArchAvoidJIT()) {
+        if (!logging) {
+#if !defined(ARCH_OS_WINDOWS)
+            // Remove signal handler.
+            struct sigaction act;
+            act.sa_handler = SIG_DFL;
+            act.sa_flags   = 0;
+            sigemptyset(&act.sa_mask);
+            sigaction(SIGABRT, &act, NULL);
+#endif
+        }
+
+        abort();
+    }
+
+    // The exit code for abort() (128 + SIGABRT).
+    _exit(134);
 }

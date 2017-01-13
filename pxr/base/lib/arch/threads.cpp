@@ -22,19 +22,34 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/threads.h"
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+typedef DWORD ArchThreadId;
+#define ArchCurrentThread() GetCurrentThreadId()
+#define ArchThreadsAreEqual(t1_, t2_) (t1_) == (t2_)
+#else
 #include <pthread.h>
+typedef pthread_t ArchThreadId;
+#define ArchCurrentThread() pthread_self()
+#define ArchThreadsAreEqual(t1_, t2_) pthread_equal(t1_, t2_)
+#endif
 
 // Static initializer to get the main thread id.  We want this to run as early
 // as possible, so we actually capture the main thread's id.  We assume that
 // we're not starting threads before main().
-static pthread_t _GetMainThreadId()
-{
-    return pthread_self();
-}
-pthread_t _mainThreadId = _GetMainThreadId();
 
+namespace {
+
+static ArchThreadId _GetThreadId()
+{
+    return ArchCurrentThread();
+}
+
+const ArchThreadId _mainThreadId = _GetThreadId();
+
+} // anonymous namespace
 
 bool ArchIsMainThread()
 {
-    return pthread_equal(pthread_self(), _mainThreadId);
+    return ArchThreadsAreEqual(_GetThreadId(), _mainThreadId);
 }

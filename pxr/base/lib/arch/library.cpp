@@ -21,25 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/arch/error.h"
-#include "pxr/base/arch/debugger.h"
-#include <stdio.h>
+#include "pxr/base/arch/library.h"
+#include "pxr/base/arch/errno.h"
 
-void
-Arch_Error(const char* cond, const char* funcName, size_t lineNo, const char* fileName)
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+void* ArchLibraryOpen(const std::string &filename, int flag)
 {
-    fprintf(stderr, " ArchError: %s\n", cond);
-    fprintf(stderr, "  Function: %s\n", funcName);
-    fprintf(stderr, "      File: %s\n", fileName);
-    fprintf(stderr, "      Line: %zu\n", lineNo);
-    ArchAbort();
+#if defined(ARCH_OS_WINDOWS)
+    return LoadLibrary(filename.c_str());
+#else
+    // Clear any unchecked error first.
+    (void)dlerror();
+    return dlopen(filename.c_str(), flag);
+#endif
 }
 
-void
-Arch_Warning(const char* cond, const char* funcName, size_t lineNo, const char* fileName)
+std::string ArchLibraryError()
 {
-    fprintf(stderr, " ArchWarn: %s\n", cond);
-    fprintf(stderr, " Function: %s\n", funcName);
-    fprintf(stderr, "     File: %s\n", fileName);
-    fprintf(stderr, "     Line: %zu\n", lineNo);
+#if defined(ARCH_OS_WINDOWS)
+    const DWORD error = ::GetLastError();
+    return error ? ArchStrSysError(error) : std::string();
+#else
+    const char* const error = dlerror();
+    return error ? std::string(error) : std::string();
+#endif
+}
+
+int ArchLibraryClose(void* handle)
+{
+#if defined(ARCH_OS_WINDOWS)
+    int status = ::FreeLibrary(reinterpret_cast<HMODULE>(handle));
+#else
+    int status = dlclose(handle);
+#endif
+    return status;
 }
