@@ -33,9 +33,9 @@ using namespace boost::python;
 void wrapUsdResolveInfo()
 {
     class_<UsdResolveInfo>("ResolveInfo")
-        .add_property("source", &UsdResolveInfo::GetSource)
-        .add_property("node", &UsdResolveInfo::GetNode)
-        .add_property("valueIsBlocked", &UsdResolveInfo::ValueIsBlocked)
+        .def("GetSource", &UsdResolveInfo::GetSource)
+        .def("GetNode", &UsdResolveInfo::GetNode)
+        .def("ValueIsBlocked", &UsdResolveInfo::ValueIsBlocked)
         ;
 
     TfPyWrapEnum<UsdResolveInfoSource>();
