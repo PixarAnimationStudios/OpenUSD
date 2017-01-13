@@ -356,13 +356,16 @@ HdRenderPassState::SetAlphaToCoverageEnabled(bool enabled)
 void
 HdRenderPassState::Bind()
 {
-    // XXX: in future, RenderPassState::Bind() and Unbind() can be a part of
-    // command buffer. At that point we should not rely on GL attribute stack.
+    // XXX: this states set will be refactored as hdstream PSO.
 
-    glPushAttrib(GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
+    // XXX: viewport should be set.
+    // glViewport((GLint)_viewport[0], (GLint)_viewport[1],
+    //            (GLsizei)_viewport[2], (GLsizei)_viewport[3]);
+
+    // when adding another GL state change here, please document
+    // which states to be altered at the comment in the header file
 
     // Apply polygon offset to whole pass.
-    // Restored by GL_POLYGON_BIT|GL_ENABLE_BIT
     if (!_depthBiasUseDefault) {
         if (_depthBiasEnabled) {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -372,10 +375,8 @@ HdRenderPassState::Bind()
         }
     }
 
-    // Restored by GL_DEPTH_BUFFER_BIT
     glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
 
-    // Restored by GL_ENABLE_BIT pop attrib
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -392,7 +393,17 @@ HdRenderPassState::Bind()
 void
 HdRenderPassState::Unbind()
 {
-    glPopAttrib();
+    // restore back to the GL defaults
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDepthFunc(GL_LESS);
+    glPolygonOffset(0, 0);
+
+    for (size_t i = 0; i < _clipPlanes.size(); ++i) {
+        glDisable(GL_CLIP_DISTANCE0 + i);
+    }
 }
 
 size_t

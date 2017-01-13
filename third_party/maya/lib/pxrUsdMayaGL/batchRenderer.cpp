@@ -1173,7 +1173,12 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
     _taskDelegate->SetCameraState(modelViewMatrix, projectionMatrix, viewport);
 
-    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT);
+    // save the current GL states which hydra may reset to default
+    glPushAttrib(GL_LIGHTING_BIT |
+                 GL_ENABLE_BIT |
+                 GL_POLYGON_BIT |
+                 GL_DEPTH_BUFFER_BIT |
+                 GL_VIEWPORT_BIT);
     
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling

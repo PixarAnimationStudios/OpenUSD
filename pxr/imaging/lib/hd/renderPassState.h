@@ -143,6 +143,14 @@ public:
     void SetAlphaToCoverageEnabled(bool enabled);
     bool GetAlphaToCoverageEnabled() const { return _alphaToCoverageEnabled; }
 
+    /// Apply the GL states.
+    /// Following states may be changed and restored to
+    /// the GL default at Unbind().
+    ///   glEnable(GL_POLYGON_OFFSET_FILL)
+    ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
+    ///   glEnable(GL_PROGRAM_POINT_SIZE);
+    ///   glPolygonOffset()
+    ///   glDepthFunc()
     void Bind();
     void Unbind();
 

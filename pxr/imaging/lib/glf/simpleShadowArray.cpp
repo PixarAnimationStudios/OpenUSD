@@ -43,7 +43,8 @@ GlfSimpleShadowArray::GlfSimpleShadowArray(GfVec2i const & size,
     _shadowDepthSampler(0),
     _shadowCompareSampler(0),
     _unbindRestoreDrawFramebuffer(0),
-    _unbindRestoreReadFramebuffer(0)
+    _unbindRestoreReadFramebuffer(0),
+    _unbindRestoreViewport{0,0,0,0}
 {
 }
 
@@ -159,6 +160,9 @@ GlfSimpleShadowArray::BeginCapture(size_t index, bool clear)
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 
+    // save the current viewport
+    glGetIntegerv(GL_VIEWPORT, _unbindRestoreViewport);
+
     glViewport(0, 0, GetSize()[0], GetSize()[1]);
 
     // depth 1.0 means infinity (no occluders).
@@ -172,9 +176,17 @@ GlfSimpleShadowArray::BeginCapture(size_t index, bool clear)
 void
 GlfSimpleShadowArray::EndCapture(size_t)
 {
+    // reset to GL default, except viewport
+    glDepthRange(0, 1.0);
     glDisable(GL_DEPTH_CLAMP);
 
     _UnbindFramebuffer();
+
+    // restore viewport
+    glViewport(_unbindRestoreViewport[0],
+               _unbindRestoreViewport[1],
+               _unbindRestoreViewport[2],
+               _unbindRestoreViewport[3]);
 
     GLF_POST_PENDING_GL_ERRORS();
 }

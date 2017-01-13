@@ -267,7 +267,6 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
 
     // Apply polygon offset to whole pass.
     // XXX TODO: Move to an appropriate home
-    glPushAttrib(GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
     if (!_depthBiasUseDefault) {
         if (_depthBiasEnable) {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -283,8 +282,7 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
     // XXX: Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
     // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
-    GLboolean oldAlphaToCoverage = glIsEnabled(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    
+
     // XXX: When rendering draw targets we need alpha to coverage
     // at least until we support a transparency pass
     glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -297,14 +295,12 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
         }
     }
 
-    // XXX: Do we ever want to disable this?
-    GLboolean oldPointSizeEnabled = glIsEnabled(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // XXX: We "Known" Hydra is always using CCW fase winding
     // which we need to flip.  This is a hack for now, but belongs in Hydra's
     // PSO.
-    glFrontFace(GL_CW);  // Restored by GL_POLYGON_BIT
+    glFrontFace(GL_CW);
 
     size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
@@ -320,19 +316,12 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
         renderPassState->Unbind();
     }
 
-    if (oldAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    } else {
-        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    }
-
-    if (!oldPointSizeEnabled) {
-        glDisable(GL_PROGRAM_POINT_SIZE);
-    }
-
-    glPopAttrib();
+    // Restore to GL defaults
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glFrontFace(GL_CCW);
 }
-
 
 // --------------------------------------------------------------------------- //
 // VtValue Requirements

@@ -126,14 +126,17 @@ HdxDrawTargetRenderPass::Execute(
 
     GfVec2i const &resolution = _drawTarget->GetSize();
 
-    // XXX: Should the Raster State or Renderpass set this?
-    glPushAttrib(GL_VIEWPORT_BIT);
+    // XXX: Should the Raster State or Renderpass set and restore this?
+    // save the current viewport
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
     glViewport(0, 0, resolution[0], resolution[1]);
 
     // Perform actual draw
     _renderPass.Execute(renderPassState);
 
-    glPopAttrib();
+    // restore viewport
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
     _drawTarget->Unbind();
 }

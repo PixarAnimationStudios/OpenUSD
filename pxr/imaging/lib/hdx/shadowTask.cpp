@@ -63,25 +63,15 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
         return;
     }
 
-    // Store the current viewport so we can reset after generating the shadows.
-    // Every call to BeginCapture will run internally a glViewport so we need
-    // to pop the state after creating the shadows
-    //
-    // Also store the polygon bit for polygon offset, the depth buffer bit
-    // for depth func
-    glPushAttrib(GL_VIEWPORT_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
-
     if (_depthBiasEnable) {
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(_depthBiasSlopeFactor, _depthBiasConstantFactor);
     } else {
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
+
     // XXX: Move conversion to sync time once Task header becomes private.
     glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
-
-    // XXX: Do we ever want to disable this?
-    GLboolean oldPointSizeEnabled = glIsEnabled(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // Generate the actual shadow maps
@@ -98,13 +88,9 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
         shadows->EndCapture(shadowId);
     }
 
-    if (!oldPointSizeEnabled)
-    {
-        glDisable(GL_PROGRAM_POINT_SIZE);
-    }
-
-    glPopAttrib();
-
+    // restore GL states to default
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 void

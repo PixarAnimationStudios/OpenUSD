@@ -87,6 +87,8 @@ private:
 
     GLuint _unbindRestoreDrawFramebuffer;
     GLuint _unbindRestoreReadFramebuffer;
+
+    GLint  _unbindRestoreViewport[4];
 };
 
 #endif
