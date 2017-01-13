@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
@@ -35,6 +37,8 @@ using std::string;
     ARCH_COMPILER_GCC_MAJOR > 3 || defined(ARCH_COMPILER_CLANG)
 #define _AT_LEAST_GCC_THREE_ONE_OR_CLANG
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /*
  * The define below allows you to run both the old and new mangling schemes, 
@@ -76,6 +80,23 @@ _FixupStringNames(string* name)
     }
 }
 
+#if PXR_USE_NAMESPACES
+#include <boost/preprocessor/stringize.hpp>
+
+static void
+_StripPxrInternalNamespace(string* name)
+{
+    // Note that this assumes PXR_INTERNAL_NS to be non-empty
+    constexpr const char nsQualifier[] = BOOST_PP_STRINGIZE(PXR_INTERNAL_NS) "::";
+    constexpr const auto nsQualifierSize = sizeof(nsQualifier);
+    size_t lastNsQualifierEndPos = name->find(nsQualifier);
+    while (lastNsQualifierEndPos != std::string::npos) {
+        name->erase(lastNsQualifierEndPos, nsQualifierSize-1);
+        lastNsQualifierEndPos = name->find(nsQualifier);
+    }
+}
+#endif
+
 #if defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
 #include <cxxabi.h>
 
@@ -87,12 +108,12 @@ _DemangleOld(string* mangledTypeName)
 {
     int status;
     if (char* realName =
-	    abi::__cxa_demangle(mangledTypeName->c_str(), NULL, NULL, &status))
+        abi::__cxa_demangle(mangledTypeName->c_str(), NULL, NULL, &status))
     {
-	*mangledTypeName = string(realName);
-	free(realName);	    
-	_FixupStringNames(mangledTypeName);
-	return true;
+        *mangledTypeName = string(realName);
+        free(realName);	    
+        _FixupStringNames(mangledTypeName);
+        return true;
     }
 
     return false;
@@ -149,11 +170,22 @@ ArchDemangle(string* mangledTypeName)
                     "demangling schemes: '%s' (old way) vs '%s' (new way)\n", 
                     copy.c_str(), mangledTypeName->c_str());
         }
+
+        #if PXR_USE_NAMESPACES
+        _StripPxrInternalNamespace(mangledTypeName);
+        #endif
         return true;
     }
     return false;
 #else
-    return _DemangleNew(mangledTypeName);
+    if(_DemangleNew(mangledTypeName)) {
+        #if PXR_USE_NAMESPACES
+        _StripPxrInternalNamespace(mangledTypeName);
+        #endif
+        return true;
+    }
+
+    return false;
 #endif // _PARANOID_CHECK_MODE
 }
 
@@ -167,5 +199,7 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
         _DemangleOld(mangledFunctionName);
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // _AT_LEAST_GCC_THREE_ONE_OR_CLANG

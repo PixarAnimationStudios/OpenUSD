@@ -21,8 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/error.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class DummyClassInNamespace {};
+class OtherDummyClassInNamespace {
+    public: class SubClass { };
+};
+
+template <class T>
+class TemplatedDummyClassInNamespace { };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 struct Mangled {};
 
@@ -57,12 +74,16 @@ int main()
     TestDemangle<Remangled>("Mangled");
     TestDemangle<MangleEnum>("MangleEnum");
 
-#if !defined(__ICC)
-    // not currently tested on icc and sun 64 bit
+    TestDemangle<DummyClassInNamespace>("DummyClassInNamespace"); 
+    TestDemangle<OtherDummyClassInNamespace::SubClass>("OtherDummyClassInNamespace::SubClass");
+    TestDemangle<TemplatedDummyClassInNamespace<DummyClassInNamespace>>(
+        "TemplatedDummyClassInNamespace<DummyClassInNamespace>");
+    TestDemangle<TemplatedDummyClassInNamespace<OtherDummyClassInNamespace::SubClass>>(
+        "TemplatedDummyClassInNamespace<OtherDummyClassInNamespace::SubClass>");
+
     TestDemangle<unsigned long>("unsigned long");
     TestDemangle<MangledAlso<int> >("MangledAlso<int>");
     TestDemangle<MangledAlso<MangledAlso<int> > >("MangledAlso<MangledAlso<int> >");
-#endif
 
     ARCH_AXIOM(ArchGetDemangled("type_that_doesnt_exist") == "");
         
