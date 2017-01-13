@@ -23,66 +23,30 @@
 //
 #ifndef HD_POINTS_H
 #define HD_POINTS_H
+
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/drawingCoord.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/rprim.h"
 
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-
-/// \class HdPointsReprDesc
-///
-/// Descriptor to configure a drawItem for a repr.
-///
-struct HdPointsReprDesc {
-    HdPointsReprDesc(
-        HdPointsGeomStyle geomStyle = HdPointsGeomStyleInvalid)
-        : geomStyle(geomStyle)
-        {}
-
-    HdPointsGeomStyle geomStyle:1;
-};
-
-/// \class HdPoints
-///
-/// Points.
+/// Hydra Schema for a point cloud.
 ///
 class HdPoints: public HdRprim {
 public:
-    HF_MALLOC_TAG_NEW("new HdPoints");
+    virtual ~HdPoints();
+
+
+protected:
+    /// Constructor. instancerId, if specified, is the instancer which uses
+    /// this point cloud as a prototype.
     HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
              SdfPath const& instancerId = SdfPath());
 
-    /// Configure geometric style of drawItems for \p reprName
-    static void ConfigureRepr(TfToken const &reprName,
-                              HdPointsReprDesc desc);
-
-    /// Return the dirtyBits mask to be tracked for \p reprName
-    static int GetDirtyBitsMask(TfToken const &reprName);
-
-protected:
-    virtual HdReprSharedPtr const & _GetRepr(
-        TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBitsState);
-
-    void _PopulateVertexPrimVars(HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBitsState);
-
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const final override;
-
 private:
-    enum DrawingCoord {
-        InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
-    };
 
-    void _UpdateDrawItem(HdDrawItem *drawItem,
-                         HdChangeTracker::DirtyBits *dirtyBits);
-
-    typedef _ReprDescConfigs<HdPointsReprDesc> _PointsReprConfig;
-    static _PointsReprConfig _reprDescConfig;
+    // Class can not be default constructed or copied.
+    HdPoints()                             = delete;
+    HdPoints(const HdPoints &)             = delete;
+    HdPoints &operator =(const HdPoints &) = delete;
 };
 
 #endif // HD_POINTS_H

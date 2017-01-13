@@ -10,5 +10,7 @@ pxr_shared_library(hdSt
         tracelite
 
     PUBLIC_CLASSES
+        basisCurves
         mesh
+        points
 )

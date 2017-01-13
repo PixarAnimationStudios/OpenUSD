@@ -23,10 +23,10 @@
 //
 #include "pxr/imaging/hdStream/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
-#include "pxr/imaging/hdSt/mesh.h"
-#include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/texture.h"
+#include "pxr/imaging/hdSt/mesh.h"
+#include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/light.h"
@@ -58,9 +58,9 @@ HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
     if (typeId == HdPrimTypeTokens->mesh) {
         return new HdStMesh(delegate, rprimId, instancerId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
-        return new HdBasisCurves(delegate, rprimId, instancerId);
+        return new HdStBasisCurves(delegate, rprimId, instancerId);
     } else  if (typeId == HdPrimTypeTokens->points) {
-        return new HdPoints(delegate, rprimId, instancerId);
+        return new HdStPoints(delegate, rprimId, instancerId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -167,4 +167,35 @@ HdStreamRenderDelegate::_ConfigureReprs()
                                              /*lit=*/true,
                                              /*smoothNormals=*/true,
                                              /*blendWireframeColor=*/true));
+
+    HdStBasisCurves::ConfigureRepr(HdTokens->hull,
+                                   HdBasisCurvesGeomStyleLine);
+    HdStBasisCurves::ConfigureRepr(HdTokens->smoothHull,
+                                   HdBasisCurvesGeomStyleLine);
+    HdStBasisCurves::ConfigureRepr(HdTokens->wire,
+                                   HdBasisCurvesGeomStyleLine);
+    HdStBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
+                                   HdBasisCurvesGeomStyleLine);
+    HdStBasisCurves::ConfigureRepr(HdTokens->refined,
+                                   HdBasisCurvesGeomStyleRefined);
+    // XXX: draw coarse line for refinedWire (filed as bug 129550)
+    HdStBasisCurves::ConfigureRepr(HdTokens->refinedWire,
+                                   HdBasisCurvesGeomStyleLine);
+    HdStBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
+                                   HdBasisCurvesGeomStyleRefined);
+
+    HdStPoints::ConfigureRepr(HdTokens->hull,
+                              HdPointsGeomStylePoints);
+    HdStPoints::ConfigureRepr(HdTokens->smoothHull,
+                              HdPointsGeomStylePoints);
+    HdStPoints::ConfigureRepr(HdTokens->wire,
+                              HdPointsGeomStylePoints);
+    HdStPoints::ConfigureRepr(HdTokens->wireOnSurf,
+                              HdPointsGeomStylePoints);
+    HdStPoints::ConfigureRepr(HdTokens->refined,
+                              HdPointsGeomStylePoints);
+    HdStPoints::ConfigureRepr(HdTokens->refinedWire,
+                              HdPointsGeomStylePoints);
+    HdStPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
+                              HdPointsGeomStylePoints);
 }

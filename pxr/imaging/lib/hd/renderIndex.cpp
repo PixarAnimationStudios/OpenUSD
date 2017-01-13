@@ -85,40 +85,6 @@ HdRenderIndex::HdRenderIndex()
     //      leave geometry collection for a while.
     _tracker.AddCollection(HdTokens->geometry);
 
-    // pre-defined reprs (to be deprecated or minimalized)
-    static std::once_flag reprsOnce;
-    std::call_once(reprsOnce, [](){
-        HdBasisCurves::ConfigureRepr(HdTokens->hull,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->wire,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->refined,
-                                     HdBasisCurvesGeomStyleRefined);
-        // XXX: draw coarse line for refinedWire (filed as bug 129550)
-        HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                                     HdBasisCurvesGeomStyleRefined);
-
-        HdPoints::ConfigureRepr(HdTokens->hull,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->smoothHull,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->wire,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->wireOnSurf,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->refined,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->refinedWire,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                                HdPointsGeomStylePoints);
-    });
 }
 
 HdRenderIndex::~HdRenderIndex()

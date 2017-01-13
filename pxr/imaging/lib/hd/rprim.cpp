@@ -153,15 +153,11 @@ HdRprim::SetPrimId(int32_t primId)
     // Don't set DirtyPrimID here, to avoid undesired variability tracking.
 }
 
-HdSceneDelegate*
-HdRprim::GetDelegate() const {
-    return _delegate;
-}
-
 HdRenderIndex& 
 HdRprim::_GetRenderIndex() {
     return _delegate->GetRenderIndex();
 }
+
 HdRenderIndex const& 
 HdRprim::_GetRenderIndex() const {
     return _delegate->GetRenderIndex();

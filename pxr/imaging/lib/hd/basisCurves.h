@@ -25,104 +25,43 @@
 #define HD_BASIS_CURVES_H
 
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/basisCurvesTopology.h"
-#include "pxr/imaging/hd/drawingCoord.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/rprim.h"
 
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/array.h"
-
-#include <boost/shared_ptr.hpp>
-
-/// \class HdBasisCurvesReprDesc
+/// Hydra Schema for a collection of curves using a particular basis.
 ///
-/// Descriptor to configure a drawItem for a repr.
-///
-struct HdBasisCurvesReprDesc {
-    HdBasisCurvesReprDesc(
-        HdBasisCurvesGeomStyle geomStyle = HdBasisCurvesGeomStyleInvalid)
-        : geomStyle(geomStyle)
-        {}
-
-    HdBasisCurvesGeomStyle geomStyle:2;
-};
-
-/// \class HdBasisCurves
-///
-/// A collection of curves using a particular basis.
-///
-class HdBasisCurves: public HdRprim {
+class HdBasisCurves : public HdRprim {
 public:
-    HF_MALLOC_TAG_NEW("new HdBasisCurves");
+    virtual ~HdBasisCurves();
+
+    ///
+    /// Topology
+    ///
+    inline HdBasisCurvesTopology  GetBasisCurvesTopology() const;
+    inline int                    GetRefineLevel()         const;
+
+
+protected:
     HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
                   SdfPath const& instancerId = SdfPath());
 
-    /// Configure geometric style of drawItems for \p reprName
-    static void ConfigureRepr(TfToken const &reprName,
-                              HdBasisCurvesReprDesc desc);
-
-    /// Return the dirtyBits mask to be tracked for \p reprName
-    static int GetDirtyBitsMask(TfToken const &reprName);
-
-    /// Returns whether refinement is always on or not.
-    static bool IsEnabledForceRefinedCurves();
-    
-protected:
-    virtual HdReprSharedPtr const & _GetRepr(
-        TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBits);
-
-    void _PopulateTopology(HdDrawItem *drawItem,
-                           HdChangeTracker::DirtyBits *dirtyBits,
-                           HdBasisCurvesReprDesc desc);
-
-    void _PopulateVertexPrimVars(HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBits);
-
-    void _PopulateElementPrimVars(HdDrawItem *drawItem,
-                                  HdChangeTracker::DirtyBits *dirtyBits);
-
-    HdChangeTracker::DirtyBits _PropagateDirtyBits(
-        HdChangeTracker::DirtyBits dirtyBits);
-
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const final override;
-
 private:
-    enum DrawingCoord {
-        HullTopology = HdDrawingCoord::CustomSlotsBegin,
-        InstancePrimVar  // has to be at the very end
-    };
-
-    enum DirtyBits {
-        DirtyIndices        = HdChangeTracker::CustomBitsBegin,
-        DirtyHullIndices    = (DirtyIndices       << 1),
-    };
-
-    /// We only support drawing smooth curves for a small subset of all the
-    /// curves that hydra needs to support
-    /// We will fallback to line segments for unsupported curves.
-    bool _SupportsSmoothCurves(HdBasisCurvesReprDesc desc,
-                               int refineLevel);
-
-    void _UpdateDrawItem(HdDrawItem *drawItem,
-                         HdChangeTracker::DirtyBits *dirtyBits,
-                         HdBasisCurvesReprDesc desc);
-
-    void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                        HdBasisCurvesReprDesc desc);
-
-    void _SetGeometricShaders();
-
-    void _ResetGeometricShaders();
-
-    HdBasisCurvesTopologySharedPtr _topology;
-    HdTopology::ID _topologyId;
-    int _customDirtyBitsInUse;
-    int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
-
-    typedef _ReprDescConfigs<HdBasisCurvesReprDesc> _BasisCurvesReprConfig;
-    static _BasisCurvesReprConfig _reprDescConfig;
+    // Class can not be default constructed or copied.
+    HdBasisCurves()                                  = delete;
+    HdBasisCurves(const HdBasisCurves &)             = delete;
+    HdBasisCurves &operator =(const HdBasisCurves &) = delete;
 };
+
+inline HdBasisCurvesTopology
+HdBasisCurves::GetBasisCurvesTopology() const
+{
+    return GetDelegate()->GetBasisCurvesTopology(GetId());
+}
+
+inline int
+HdBasisCurves::GetRefineLevel() const
+{
+    return GetDelegate()->GetRefineLevel(GetId());
+}
+
 
 #endif // HD_BASIS_CURVES_H

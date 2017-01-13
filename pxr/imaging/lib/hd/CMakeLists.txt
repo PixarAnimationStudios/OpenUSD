@@ -35,7 +35,9 @@ pxr_shared_library(hd
 
     PUBLIC_CLASSES
         basisCurves
+        basisCurvesComputations
         basisCurvesTopology
+        basisCurvesShaderKey
         binding
         bprim
         bufferArray
@@ -78,6 +80,7 @@ pxr_shared_library(hd
         perfLog
         persistentBuffer
         points
+        pointsShaderKey
         quadrangulate
         renderContextCaps
         renderDelegate
@@ -100,7 +103,6 @@ pxr_shared_library(hd
         sprim
         strategyBase
         surfaceShader
-
         task
         texture
         textureResource
@@ -117,11 +119,8 @@ pxr_shared_library(hd
         version.h
 
     PRIVATE_CLASSES
-        basisCurvesComputations
-        basisCurvesShaderKey
         cullingShaderKey
         fallbackLightingShader
-        pointsShaderKey
         renderIndexManager
         smoothNormals
         subdivision

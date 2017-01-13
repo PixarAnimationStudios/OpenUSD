@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/range3d.h"
@@ -37,7 +38,6 @@
 class HdDrawItem;
 class HdRenderIndex;
 class HdRepr;
-class HdSceneDelegate;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 
@@ -100,11 +100,21 @@ public:
 
     int GetInitialDirtyBitsMask() const;
 
-
     /// Returns the SceneDelegate object that is backing this Rprim.
     /// Note: The scene delegate returned is non-const as the scene
     /// delegate may need to perform mutable operations.
-    HdSceneDelegate* GetDelegate() const;
+    HdSceneDelegate* GetDelegate() const { return _delegate; }
+
+    ///
+    /// Primvar Query
+    ///
+    inline TfTokenVector GetPrimVarVertexNames()      const;
+    inline TfTokenVector GetPrimVarVaryingNames()     const;
+    inline TfTokenVector GetPrimVarFacevaryingNames() const;
+    inline TfTokenVector GetPrimVarUniformNames()     const;
+
+    inline VtValue GetPrimVar(const TfToken &name) const;
+
 
 protected:
     virtual HdReprSharedPtr const & _GetRepr(
@@ -187,5 +197,36 @@ protected:
     };
 
 };
+
+
+inline TfTokenVector
+HdRprim::GetPrimVarVertexNames() const
+{
+    return GetDelegate()->GetPrimVarVertexNames(GetId());
+}
+
+inline TfTokenVector
+HdRprim::GetPrimVarVaryingNames() const
+{
+    return GetDelegate()->GetPrimVarVaryingNames(GetId());
+}
+
+inline TfTokenVector
+HdRprim::GetPrimVarFacevaryingNames() const
+{
+    return GetDelegate()->GetPrimVarFacevaryingNames(GetId());
+}
+
+inline TfTokenVector
+HdRprim::GetPrimVarUniformNames() const
+{
+    return GetDelegate()->GetPrimVarUniformNames(GetId());
+}
+
+inline VtValue
+HdRprim::GetPrimVar(const TfToken &name) const
+{
+    return GetDelegate()->Get(GetId(), name);
+}
 
 #endif //HD_RPRIM_H

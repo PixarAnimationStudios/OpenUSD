@@ -27,7 +27,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/rprim.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
@@ -40,32 +39,22 @@ public:
     ///
     /// Render State
     ///
-    bool        IsDoubleSided() const { return GetDelegate()->GetDoubleSided(GetId()); }
-    HdCullStyle GetCullStyle()  const { return GetDelegate()->GetCullStyle(GetId());   }
+    inline bool        IsDoubleSided() const;
+    inline HdCullStyle GetCullStyle()  const;
 
     ///
-    /// Mesh Topology
+    /// Topology
     ///
-    HdMeshTopology  GetMeshTopology() const { return GetDelegate()->GetMeshTopology(GetId()); }
-    int             GetRefineLevel()  const { return GetDelegate()->GetRefineLevel(GetId());  }
-    PxOsdSubdivTags GetSubdivTags()   const { return GetDelegate()->GetSubdivTags(GetId());   }
+    inline HdMeshTopology  GetMeshTopology() const;
+    inline int             GetRefineLevel()  const;
+    inline PxOsdSubdivTags GetSubdivTags()   const;
 
-    ///
-    /// Primvar Query
-    ///
-    // XXX: Should these be in rprim?
-    TfTokenVector GetPrimVarVertexNames()      const { return GetDelegate()->GetPrimVarVertexNames(GetId());      }
-    TfTokenVector GetPrimVarVaryingNames()     const { return GetDelegate()->GetPrimVarVaryingNames(GetId());     }
-    TfTokenVector GetPrimVarFacevaryingNames() const { return GetDelegate()->GetPrimVarFacevaryingNames(GetId()); }
-    TfTokenVector GetPrimVarUniformNames()     const { return GetDelegate()->GetPrimVarUniformNames(GetId());     }
 
     ///
     /// Primvars Accessors
     ///
-    // XXX: Should GetPrimVar be in rprim?
-    VtValue GetPrimVar(const TfToken &name) const {  return GetDelegate()->Get(GetId(), name); }
-    VtValue GetPoints()  const { return GetPrimVar(HdTokens->points);  }
-    VtValue GetNormals() const { return GetPrimVar(HdTokens->normals); }
+    inline VtValue GetPoints()  const;
+    inline VtValue GetNormals() const;
 
 protected:
     /// Constructor. instancerId, if specified, is the instancer which uses
@@ -80,5 +69,47 @@ private:
     HdMesh(const HdMesh &)             = delete;
     HdMesh &operator =(const HdMesh &) = delete;
 };
+
+inline bool
+HdMesh::IsDoubleSided() const
+{
+    return GetDelegate()->GetDoubleSided(GetId());
+}
+
+inline HdCullStyle
+HdMesh::GetCullStyle() const
+{
+    return GetDelegate()->GetCullStyle(GetId());
+}
+
+inline HdMeshTopology
+HdMesh::GetMeshTopology() const
+{
+    return GetDelegate()->GetMeshTopology(GetId());
+}
+
+inline int
+HdMesh::GetRefineLevel() const
+{
+    return GetDelegate()->GetRefineLevel(GetId());
+}
+
+inline PxOsdSubdivTags
+HdMesh::GetSubdivTags() const
+{
+    return GetDelegate()->GetSubdivTags(GetId());
+}
+
+inline VtValue
+HdMesh::GetPoints() const
+{
+    return GetPrimVar(HdTokens->points);
+}
+
+inline VtValue
+HdMesh::GetNormals() const
+{
+    return GetPrimVar(HdTokens->normals);
+}
 
 #endif //HD_MESH_H
