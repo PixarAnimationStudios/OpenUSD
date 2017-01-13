@@ -30,49 +30,46 @@
 #include <string>
 
 void
-UsdImaging_TestDriver::_Init(UsdStageRefPtr const& usdStage, 
+UsdImaging_TestDriver::_Init(UsdStageRefPtr const& usdStage,
+                             TfToken const &collectionName,
                              TfToken const &reprName)
 {
     _stage = usdStage;
     _delegate.Populate(_stage->GetPseudoRoot());
-    //visible = _delegate.GetCollection("geometry");
-    TfToken colName = HdTokens->geometry;
     _geometryPass = HdRenderPassSharedPtr(
         new HdRenderPass(&_delegate.GetRenderIndex(),
-                         HdRprimCollection(colName, reprName)));
+                         HdRprimCollection(collectionName, reprName)));
     _renderPassState = HdRenderPassStateSharedPtr(new HdRenderPassState());
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(std::string const& usdFilePath,
+                                             TfToken const &collectionName,
                                              TfToken const &reprName)
 {
-    _Init(UsdStage::Open(usdFilePath), reprName);
+    _Init(UsdStage::Open(usdFilePath), collectionName, reprName);
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(std::string const& usdFilePath)
 {
-    _Init(UsdStage::Open(usdFilePath), HdTokens->hull);
+    _Init(UsdStage::Open(usdFilePath), HdTokens->geometry, HdTokens->hull);
 }
 
-UsdImaging_TestDriver::UsdImaging_TestDriver(UsdStageRefPtr const& usdStage, 
+UsdImaging_TestDriver::UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
+                                             TfToken const &collectionName,
                                              TfToken const &reprName)
 {
-    _Init(usdStage, reprName);
+    _Init(usdStage, collectionName, reprName);
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(UsdStageRefPtr const& usdStage)
 {
-    _Init(usdStage, HdTokens->hull);
+    _Init(usdStage, HdTokens->geometry, HdTokens->hull);
 }
 
 void
 UsdImaging_TestDriver::Draw()
 {
-#if defined(HD_API) && HD_API > 21
     _engine.Draw(_delegate.GetRenderIndex(), _geometryPass, _renderPassState);
-#else
-    _engine.Draw(_delegate.GetRenderIndex(), renderPass);
-#endif
 }
 
 void
@@ -92,13 +89,7 @@ UsdImaging_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
                                  GfMatrix4d const &projectionMatrix,
                                  GfVec4d const & viewport)
 {
-#if defined(HD_API) && HD_API > 21
     _renderPassState->SetCamera(modelViewMatrix, projectionMatrix, viewport);
-#else
-    _geometryPass->GetRasterState()->SetCamera(
-        modelViewMatrix, projectionMatrix, viewport);
-
-#endif
 }
 
 void

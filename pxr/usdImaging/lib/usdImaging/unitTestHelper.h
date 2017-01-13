@@ -46,13 +46,17 @@ typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 /// is performed as usual.
 ///
 class UsdImaging_TestDriver {
-    void _Init(UsdStageRefPtr const& usdStage, TfToken const &reprName);
+    void _Init(UsdStageRefPtr const& usdStage,
+               TfToken const &collectionName,
+               TfToken const &reprName);
 public:
     UsdImaging_TestDriver(std::string const& usdFilePath);
-    UsdImaging_TestDriver(std::string const& usdFilePath, 
+    UsdImaging_TestDriver(std::string const& usdFilePath,
+                          TfToken const &collectioName,
                           TfToken const &reprName);
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage);
-    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage, 
+    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
+                          TfToken const &collectioName,
                           TfToken const &reprName);
 
     void Draw();
