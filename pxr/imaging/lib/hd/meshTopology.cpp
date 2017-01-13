@@ -210,7 +210,7 @@ HdMeshTopology::ComputeHash() const
 void
 HdMeshTopology::SetQuadInfo(Hd_QuadInfo const *quadInfo)
 {
-    if (_quadInfo) delete _quadInfo;
+    delete _quadInfo;
     _quadInfo = quadInfo;
 }
 
