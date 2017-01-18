@@ -119,21 +119,15 @@ try
     JobExportArgs jobArgs;
 
     if (argData.isFlagSet("mergeTransformAndShape")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("mergeTransformAndShape", 0, tmpBool);
-        jobArgs.mergeTransformAndShape = tmpBool;
+        argData.getFlagArgument("mergeTransformAndShape", 0, jobArgs.mergeTransformAndShape);
     }
 
     if (argData.isFlagSet("exportRefsAsInstanceable")) {
-        bool tmpBool = false;
-        argData.getFlagArgument("exportRefsAsInstanceable", 0, tmpBool);
-        jobArgs.exportRefsAsInstanceable = tmpBool;
+        argData.getFlagArgument("exportRefsAsInstanceable", 0, jobArgs.exportRefsAsInstanceable);
     }
 
     if (argData.isFlagSet("exportDisplayColor")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportDisplayColor", 0, tmpBool);
-        jobArgs.exportDisplayColor = tmpBool;
+        argData.getFlagArgument("exportDisplayColor", 0, jobArgs.exportDisplayColor);
     }
     
     if (argData.isFlagSet("shadingMode")) {
@@ -159,22 +153,16 @@ try
     }
 
     if (argData.isFlagSet("exportUVs")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportUVs", 0, tmpBool);
-        jobArgs.exportMeshUVs = tmpBool;
-        jobArgs.exportNurbsExplicitUV = tmpBool;
+        argData.getFlagArgument("exportUVs", 0, jobArgs.exportMeshUVs);
+        jobArgs.exportNurbsExplicitUV = jobArgs.exportMeshUVs;
     }
 
     if (argData.isFlagSet("normalizeMeshUVs")) {
-        bool tmpBool = false;
-        argData.getFlagArgument("normalizeMeshUVs", 0, tmpBool);
-        jobArgs.normalizeMeshUVs = tmpBool;
+        argData.getFlagArgument("normalizeMeshUVs", 0, jobArgs.normalizeMeshUVs);
     }
 
     if (argData.isFlagSet("normalizeNurbs")) {
-        bool tmpBool = false;
-        argData.getFlagArgument("normalizeNurbs", 0, tmpBool);
-        jobArgs.normalizeNurbs = tmpBool;
+        argData.getFlagArgument("normalizeNurbs", 0, jobArgs.normalizeNurbs);
     }
 
     if (argData.isFlagSet("nurbsExplicitUVType")) {
@@ -186,9 +174,7 @@ try
     }
 
     if (argData.isFlagSet("exportColorSets")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportColorSets", 0, tmpBool);
-        jobArgs.exportColorSets = tmpBool;
+        argData.getFlagArgument("exportColorSets", 0, jobArgs.exportColorSets);
     }
 
     if (argData.isFlagSet("defaultMeshScheme")) {
@@ -210,9 +196,7 @@ try
     }
 
     if (argData.isFlagSet("exportVisibility")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportVisibility", 0, tmpBool);
-        jobArgs.exportVisibility = tmpBool;
+        argData.getFlagArgument("exportVisibility", 0, jobArgs.exportVisibility);
     }
 
     bool append = false;

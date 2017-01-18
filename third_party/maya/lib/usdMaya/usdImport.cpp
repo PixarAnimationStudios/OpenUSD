@@ -147,9 +147,7 @@ MStatus usdImport::doIt(const MArgList & args)
 
     if (argData.isFlagSet("readAnimData"))
     {   
-        bool tmpBool = false;
-        argData.getFlagArgument("readAnimData", 0, tmpBool);
-        jobArgs.readAnimData = tmpBool;
+        argData.getFlagArgument("readAnimData", 0, jobArgs.readAnimData);
     }
 
     // Specify usd PrimPath.  Default will be "/<useFileBasename>"
