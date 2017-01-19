@@ -204,22 +204,10 @@ usdTranslatorExport::identifyFile(
         const char* buffer,
         short size) const
 {
-    MFileKind retValue = kNotMyFileType;
-    const MString fileName = file.fullName();
-    const int lastIndex = fileName.length() - 1;
-
-    const int periodIndex = fileName.rindex('.');
-    if (periodIndex < 0 || periodIndex >= lastIndex) {
-        return retValue;
+    std::string fileName(file.fullName().asChar());
+    if(UsdStage::IsSupportedFile(fileName))
+    {
+        return kIsMyFileType;
     }
-
-    const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
-
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()   || 
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
-        retValue = kIsMyFileType;
-    }
-
-    return retValue;
+    return kNotMyFileType;
 }
