@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/instantiateSingleton.h"
@@ -36,6 +37,8 @@
 #include <map>
 #include <mutex>
 #include <string>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class Lemur : public TfWeakBase {
 public:

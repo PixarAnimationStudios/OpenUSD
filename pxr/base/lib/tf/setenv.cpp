@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/setenv.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/arch/errno.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 TfSetenv(const std::string & name, const std::string & value)
@@ -52,3 +56,4 @@ TfUnsetenv(const std::string & name)
     return false;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

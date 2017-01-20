@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/ray.h"
 
@@ -36,8 +38,9 @@
 #include <boost/python/return_arg.hpp>
 #include <boost/python/tuple.hpp>
 
-
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static std::string _Repr(GfFrustum const &self)
 {
@@ -254,3 +257,5 @@ void wrapFrustum()
 
     TfPyWrapEnum<This::ProjectionType>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

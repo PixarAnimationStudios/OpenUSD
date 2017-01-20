@@ -24,6 +24,7 @@
 // threadLimits.cpp
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -32,6 +33,8 @@
 #include <tbb/task_scheduler_init.h>
 
 #include <algorithm>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // The environment variable used to limit the number of threads the application
 // may spawn:
@@ -51,6 +54,8 @@ TF_DEFINE_ENV_SETTING(
     "cores, or the process's affinity mask, whichever is smaller. Note that "
     "the environment variable (if set to a non-zero value) will override any "
     "value passed to Work thread-limiting API calls.");
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // This is Work's notion of the currently requested thread limit.  Due to TBB's
 // behavior, the first client to create a tbb::task_scheduler_init will
@@ -182,3 +187,5 @@ WorkGetConcurrencyLimit()
 {
     return _threadLimit;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

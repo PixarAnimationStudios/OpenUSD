@@ -31,6 +31,7 @@
 /// \file gf/vec4i.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -40,6 +41,8 @@
 #include <cstddef>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfVec<class GfVec4i> { static const bool value = true; };
@@ -293,4 +296,6 @@ GfDot(GfVec4i const &v1, GfVec4i const &v2) {
 }
 
  
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // GF_VEC4I_H

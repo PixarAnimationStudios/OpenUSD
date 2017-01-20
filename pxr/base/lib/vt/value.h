@@ -26,6 +26,8 @@
 
 // XXX: Include pyLock.h after pyObjWrapper.h to work around
 // Python include ordering issues.
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyLock.h"
 
@@ -62,6 +64,8 @@
 #include <iostream>
 #include <memory>
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Make a default value.
 /// VtValue uses this to create values to be returned from failed calls to \a
@@ -1091,5 +1095,7 @@ VtValue::IsHolding<void>() const {
 }
 
 #endif // !doxygen
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_VALUE_H

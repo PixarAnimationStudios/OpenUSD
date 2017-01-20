@@ -26,6 +26,7 @@
 
 /// \file tf/diagnosticBase.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/copyOnWritePtr.h"
 #include "pxr/base/tf/enum.h"
@@ -41,7 +42,10 @@
 #include <cstdarg>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 typedef boost::any TfDiagnosticInfo;
+
 class TfDiagnosticMgr;
 
 /// \class TfDiagnosticBase
@@ -205,5 +209,7 @@ protected:
     friend class TfErrorTransport;
     friend class TfErrorMark;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_DIAGNOSTIC_BASE_H

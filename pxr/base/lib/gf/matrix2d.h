@@ -31,6 +31,8 @@
 /// \file gf/matrix2d.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/traits.h"
@@ -39,6 +41,8 @@
 
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfMatrix<class GfMatrix2d> { static const bool value = true; };
@@ -334,5 +338,7 @@ private:
 /// Output a GfMatrix2d
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfMatrix2d const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_MATRIX2D_H

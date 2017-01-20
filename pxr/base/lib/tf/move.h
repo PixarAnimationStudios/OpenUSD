@@ -26,7 +26,11 @@
 
 /// \file tf/move.h
 
+#include "pxr/pxr.h"
+
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// A tag type used to indicate move semantics
 enum TfMoveTagType {
@@ -48,5 +52,7 @@ void TfMoveTo(T *location, T &value) {
     new (location) T;
     swap(*location, value);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_MOVE_H

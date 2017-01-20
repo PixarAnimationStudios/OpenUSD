@@ -24,6 +24,10 @@
 #ifndef GF_TRAITS_H
 #define GF_TRAITS_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// A metafunction with a static const bool member 'value' that is true for
 /// GfVec types, like GfVec2i, GfVec4d, etc and false for all other types.
 template <class T>
@@ -44,5 +48,7 @@ struct GfIsGfQuat { static const bool value = false; };
 /// GfRange types and false for all other types.
 template <class T>
 struct GfIsGfRange { static const bool value = false; };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_TRAITS_H

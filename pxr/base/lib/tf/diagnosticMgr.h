@@ -26,6 +26,7 @@
 
 /// \file tf/diagnosticMgr.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/copyOnWritePtr.h"
 #include "pxr/base/tf/debug.h"
@@ -50,6 +51,8 @@
 #include <cstdarg>
 #include <list>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEBUG_CODES(
     TF_LOG_STACK_TRACE_ON_ERROR,
@@ -389,5 +392,7 @@ private:
     friend class TfErrorTransport;
     friend class TfErrorMark;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_DIAGNOSTIC_MGR_H

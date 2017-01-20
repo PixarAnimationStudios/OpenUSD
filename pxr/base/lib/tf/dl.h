@@ -28,8 +28,12 @@
 /// \ingroup group_tf_SystemsExt
 /// Interface for opening code libraries.
 
+#include "pxr/pxr.h"
+
 #include <dlfcn.h>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_tf_SystemsExt
 ///@{
@@ -61,5 +65,7 @@ bool Tf_DlOpenIsActive();
 bool Tf_DlCloseIsActive();
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

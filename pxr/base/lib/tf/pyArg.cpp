@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyArg.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -34,6 +37,8 @@
 using namespace boost::python;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static bool
 _ArgumentIsNamed(const std::string& name, const TfPyArg& arg)
@@ -139,6 +144,6 @@ TfPyCreateFunctionDocString(
     }
 
     return rval;
-
-
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

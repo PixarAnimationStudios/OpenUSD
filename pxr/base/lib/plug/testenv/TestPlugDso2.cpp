@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/testPlugBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TestPlugDerived2 : public _TestPlugBase2 {
   public:
@@ -48,3 +52,5 @@ TF_REGISTRY_FUNCTION(TfType)
         .SetFactory<_TestPlugFactory<TestPlugDerived2> >()
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,9 +24,12 @@
 #ifndef ARCH_ENV_H
 #define ARCH_ENV_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ///
 /// Architecture dependent access to environment variables.
@@ -72,5 +75,7 @@ ArchRemoveEnv(const std::string &name);
 ARCH_API
 std::string
 ArchExpandEnvironmentVariables(const std::string& str);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_ENV_H

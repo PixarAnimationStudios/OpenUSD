@@ -31,6 +31,8 @@
 
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static bool _opening = false,
             _closing = false;
 
@@ -108,4 +110,4 @@ TfDlclose(void* handle)
     return status;
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

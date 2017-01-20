@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/work/arenaDispatcher.h"
@@ -34,6 +36,8 @@
 
 #include <cstdio>
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void
 _Double(size_t begin, size_t end, std::vector<int> *v)

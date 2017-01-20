@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/scriptModuleLoader.h"
 
@@ -30,6 +33,8 @@
 #include <boost/python/class.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapScriptModuleLoader() {
     typedef TfScriptModuleLoader This;
@@ -46,3 +51,5 @@ void wrapScriptModuleLoader() {
         .def("_LoadModulesForLibrary", &This::LoadModulesForLibrary)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

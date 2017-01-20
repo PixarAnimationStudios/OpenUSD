@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/instantiateSingleton.h"
@@ -39,7 +40,7 @@
 #include <set>
 
 using namespace std;
-
+PXR_NAMESPACE_USING_DIRECTIVE
 
 enum _TestEnum {
     A, B, C

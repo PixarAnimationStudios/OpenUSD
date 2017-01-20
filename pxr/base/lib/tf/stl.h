@@ -27,6 +27,8 @@
 /// \file tf/stl.h
 /// \ingroup group_tf_Stl
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/iterator.h"
 
@@ -38,6 +40,8 @@
 #include <iterator>
 #include <map>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper for TfMapLookup().  Uses std::map API to get a value by key.
 template <class T>
@@ -367,4 +371,6 @@ TfFindBoundary(ForwardIterator first, ForwardIterator last,
     return first;
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_STL_H

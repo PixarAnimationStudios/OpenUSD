@@ -37,11 +37,15 @@
 // Vecs also don't generally support division.  As a special case, the non-int
 // vec types support division by a double, but since it's not all Vecs we can't
 // define Vec / double.
+#include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapArrayVec() {
     BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_VEC_VALUE_TYPES);
     //BOOST_PP_SEQ_FOR_EACH(VT_WRAP_COMPARISON, ~, VT_VEC_VALUE_TYPES);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

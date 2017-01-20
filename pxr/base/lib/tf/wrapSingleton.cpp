@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyUtils.h"
 
 #include <boost/python/class.hpp>
@@ -29,6 +32,7 @@
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Need an empty class to serve as the singleton base class wrapped out to
 // python.
@@ -70,3 +74,5 @@ void wrapSingleton() {
         .def("__init__", raw_function(_DummyInit))
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

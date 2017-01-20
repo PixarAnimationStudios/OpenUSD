@@ -35,6 +35,8 @@
 #include <cfloat>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfRange1f>();
 }
@@ -64,3 +66,5 @@ GfRange1f::GetDistanceSquared(float p) const
 
     return dist;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

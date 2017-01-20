@@ -27,6 +27,7 @@
 /// \file vt/types.h
 /// Defines all the types "TYPED" for which Vt creates a VtTYPEDArray typedef.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/tf/token.h"
@@ -35,6 +36,8 @@
 
 #include <string>
 #include <cstddef>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Value types.
 
@@ -177,5 +180,7 @@ struct Vt_Reserved {
     Vt_Reserved() { data[0] = 0; }
     unsigned int data[NumWords];
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_TYPES_H

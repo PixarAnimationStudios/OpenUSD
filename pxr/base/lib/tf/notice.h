@@ -27,6 +27,7 @@
 /// \file tf/notice.h
 /// \ingroup group_tf_Notification
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
@@ -37,6 +38,8 @@
 
 #include <list>
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Tf_NoticeRegistry;
 
@@ -769,4 +772,6 @@ TfNotice::Send(SenderPtr const &s) const
                  typeid(typename SenderPtr::DataType) : typeid(void));
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_NOTICE_H

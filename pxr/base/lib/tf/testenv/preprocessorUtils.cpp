@@ -23,11 +23,13 @@
 //
 #define TF_MAX_ARITY 24
 
+#include "pxr/pxr.h"
 #include <boost/preprocessor/stringize.hpp>
 #include <string.h>
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
 TestTF_NUM_ARGS()

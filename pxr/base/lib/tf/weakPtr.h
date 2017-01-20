@@ -28,6 +28,8 @@
 /// \ingroup group_tf_Memory
 /// Pointer storage with deletion detection.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/tf.h"
@@ -43,6 +45,8 @@
 
 #include <cstddef>
 #include <type_traits>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfHash;
 template <class U> class TfRefPtr;
@@ -442,5 +446,7 @@ struct Tf_SupportsWeakPtr
     virtual TfWeakBase const &__GetTfWeakBase__() const {       \
         return *this;                                           \
     }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_WEAKPTR_H

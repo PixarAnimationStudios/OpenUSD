@@ -125,12 +125,15 @@
 /// ignored.  If the file itself cannot be read, no error is printed; however,
 /// if the file is malformed, errors are printed to stderr.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/registryManager.h"
 
 #include <atomic>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // POD, statically initialized.
 //
@@ -196,5 +199,7 @@ class Tf_EnvSettingRegistry;
     TF_REGISTRY_FUNCTION_WITH_TAG(Tf_EnvSettingRegistry, envVar) {            \
         (void)TfGetEnvSetting(envVar);                                        \
     }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_ENVSETTING_H

@@ -26,6 +26,7 @@
 
 /// \file vt/array.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/hash.h"
 #include "pxr/base/vt/operators.h"
 #include "pxr/base/vt/streamOut.h"
@@ -51,6 +52,8 @@
 #include <vector>
 
 #include <boost/functional/hash.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class VtArray 
 ///
@@ -486,5 +489,7 @@ VTOPERATOR_CPPSCALAR_DOUBLE(*)
 VTOPERATOR_CPPSCALAR(/)
 VTOPERATOR_CPPSCALAR_DOUBLE(/)
 VTOPERATOR_CPPSCALAR(%)
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_ARRAY_H

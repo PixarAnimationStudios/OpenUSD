@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/hash.h"
 
@@ -32,6 +35,8 @@
 using std::string;
 using std::sort;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef TfHashMap<string, TfStopwatch*, TfHash> NameMap;
 
@@ -159,3 +164,5 @@ operator<<(std::ostream& out, const TfStopwatch& s)
 {
     return out << s.GetSeconds() << " seconds";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -20,8 +20,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/error.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(ARCH_OS_DARWIN)
 
@@ -375,4 +379,6 @@ Arch_ConstructorInit::~Arch_ConstructorInit()
     RunDestructors(GetCurrentModule(this));
 }
 
-#endif
+#endif // ARCH_OS_WINDOWS
+
+PXR_NAMESPACE_CLOSE_SCOPE

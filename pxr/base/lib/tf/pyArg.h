@@ -24,10 +24,14 @@
 #ifndef TF_PY_ARG_H
 #define TF_PY_ARG_H
 
+#include "pxr/pxr.h"
+
 #include <boost/python/dict.hpp>
 #include <boost/python/tuple.hpp>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyArg
 ///
@@ -93,5 +97,7 @@ std::string TfPyCreateFunctionDocString(
     const TfPyArgs& requiredArguments = TfPyArgs(), 
     const TfPyArgs& optionalArguments = TfPyArgs(),
     const std::string& description = std::string());
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PY_ARG_H

@@ -29,6 +29,7 @@
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _SetOutputFile(object const &file)
@@ -65,3 +66,5 @@ void wrapDebug()
 
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,12 +23,17 @@
 //
 ///
 /// \file Tf/TemplateString.cpp
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/templateString.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define _ERROR(ptr, ...) \
     if (ptr) { ptr->push_back(TfStringPrintf(__VA_ARGS__)); }
@@ -234,3 +239,4 @@ _Evaluate(const Mapping& mapping, vector<string>* errors) const
     return result;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

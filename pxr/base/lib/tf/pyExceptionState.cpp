@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyErrorInternal.h"
 
 #include <boost/python/object.hpp>
@@ -28,6 +31,8 @@
 
 using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 string 
 TfPyExceptionState::GetExceptionString() const
@@ -50,3 +55,5 @@ TfPyExceptionState::GetExceptionString() const
     }
     return s;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,6 +23,7 @@
 //
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/testArchUtil.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/defines.h"
@@ -50,6 +51,7 @@ static const char* crashArgument[] = {
 #endif
 
 using namespace std;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 

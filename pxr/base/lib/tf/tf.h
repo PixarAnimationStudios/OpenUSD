@@ -29,12 +29,16 @@
 
 #if defined(__cplusplus) || defined(doxygen)
 
-#include <math.h>
+#include "pxr/pxr.h"
 
 #include "pxr/base/arch/buildMode.h"
 #include "pxr/base/arch/math.h"
 #include "pxr/base/arch/inttypes.h"
+
+#include <math.h>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // This constant will only be defined if not defined already. This is because
 // many files need a higher limit and define this constant themselves before
@@ -155,6 +159,8 @@ struct TfDeleter {
  */
 
 #define TF_DEV_BUILD ARCH_DEV_BUILD
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // defined(__cplusplus)
 

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/typeHeaders.h"
@@ -52,6 +54,8 @@ using std::map;
 using std::string;
 using std::type_info;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtValue>();
@@ -526,3 +530,4 @@ BOOST_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
                       VT_MATRIX_VALUE_TYPES
                       VT_QUATERNION_VALUE_TYPES)
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,10 +28,14 @@
 /// \ingroup group_tf_Containers
 /// A simple iterator adapter for \c STL containers.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnosticLite.h"
+
 #include <type_traits>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // May be specialized by container proxies and container "views" to indicate
 // they should be copied for TfIterator iteration.
@@ -417,5 +421,7 @@ constexpr size_t TfArraySize(const T (&array)[N]) noexcept
 {
     return N;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // TF_ITERATOR_H

@@ -21,10 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapArrayToken() {
     VtWrapArray<VtArray<TfToken> >();
     VtWrapComparisonFunctions<VtArray<TfToken> >();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

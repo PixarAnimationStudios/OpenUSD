@@ -75,9 +75,11 @@
 /// file, in which case they can be made file static.  In the case of the
 /// PRIVATE, you only need to use the DEFINE macro.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
+
 #include <vector>
 
 #include <boost/preprocessor/cat.hpp>
@@ -93,6 +95,8 @@
 #include <boost/preprocessor/seq/push_back.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Macro to define public tokens. This declares a list of tokens that can be
 /// used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
@@ -265,4 +269,6 @@
             _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq))                          \
     }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_STATIC_TOKENS_H

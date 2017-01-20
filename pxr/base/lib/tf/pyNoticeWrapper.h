@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #ifndef BOOST_PP_IS_ITERATING
 
 #ifndef TF_PYNOTICEWRAPPER_H
@@ -30,6 +31,7 @@
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/staticData.h"
@@ -51,6 +53,8 @@
 
 #include <map>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Tf_PyNoticeObjectGenerator {
     typedef Tf_PyNoticeObjectGenerator This;
@@ -170,6 +174,8 @@ TF_REGISTRY_FUNCTION(TfType) \
                     TfType::Bases<Base> >(); \
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // TF_PYNOTICEWRAPPER_H
 
 #else // BOOST_PP_IS_ITERATING
@@ -187,3 +193,4 @@ TfPyNoticeWrapper(PyObject *self
 #undef N
 
 #endif // BOOST_PP_IS_ITERATING
+

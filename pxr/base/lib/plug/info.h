@@ -24,12 +24,16 @@
 #ifndef PLUG_INFO_H
 #define PLUG_INFO_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/js/value.h"
+
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class JsValue;
 
@@ -93,4 +97,6 @@ Plug_ReadPlugInfo(
 /// Sets the paths to the bootstrap plug-path JSON files.
 void Plug_SetPaths(const std::vector<std::string>&);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PLUG_INFO_H

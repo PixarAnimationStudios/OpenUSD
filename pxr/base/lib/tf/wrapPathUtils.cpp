@@ -23,6 +23,7 @@
 //
 ///
 /// \file tf/wrapPathUtils.cpp
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include <boost/python/def.hpp>
@@ -31,6 +32,8 @@
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static string
 _RealPath(string const &path, bool allowInaccessibleSuffix, bool raiseOnError)
@@ -69,3 +72,4 @@ void wrapPathUtils()
     def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

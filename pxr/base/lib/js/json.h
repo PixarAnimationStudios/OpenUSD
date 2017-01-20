@@ -28,10 +28,14 @@
 /// \file js/json.h
 /// Top-level entrypoints for reading and writing JSON.
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/value.h"
+
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \struct JsParseError
 ///
@@ -62,5 +66,7 @@ void JsWriteToStream(const JsValue& value, std::ostream& ostr);
 /// Convert the JsValue \p value to JSON and return it as a string.
 JS_API
 std::string JsWriteToString(const JsValue& value);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // JS_JSON_H

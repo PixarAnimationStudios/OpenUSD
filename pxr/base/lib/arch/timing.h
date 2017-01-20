@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// High-resolution, low-cost timing routines.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
@@ -42,6 +43,8 @@
 #elif defined(ARCH_OS_WINDOWS)
 #include <intrin.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Macro that defines the clocks per second
 ///
@@ -103,5 +106,7 @@ ARCH_API
 double ArchGetNanosecondsPerTick();
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_TIMING_H

@@ -31,12 +31,16 @@
 /// \file gf/quatf.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/traits.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfQuat<class GfQuatf> { static const bool value = true; };
@@ -253,5 +257,7 @@ GfSlerp(const GfQuatf& q0, const GfQuatf& q1, double alpha);
 /// Output a GfQuatd using the format (re, i, j, k)
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfQuatf const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_QUATF_H

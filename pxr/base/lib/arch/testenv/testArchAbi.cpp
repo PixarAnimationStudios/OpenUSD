@@ -21,11 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/testArchAbi.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/vsnprintf.h"
+
 #include <iostream>
 #include <typeinfo>
 #ifdef ARCH_OS_WINDOWS
@@ -36,6 +39,8 @@
 #define WINAPI
 #define GETSYM(handle, name) dlsym(handle, name)
 #endif
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 typedef ArchAbiBase2* (WINAPI *NewDerived)();
 

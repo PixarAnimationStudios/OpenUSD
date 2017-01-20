@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct ArchAbiBase1 {
     void* dummy;
@@ -37,3 +41,5 @@ struct ArchAbiDerived : public ArchAbiBase1, public ArchAbiBase2 {
     virtual ~ArchAbiDerived() { }
     virtual const char* name() const { return "ArchAbiDerived"; }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE

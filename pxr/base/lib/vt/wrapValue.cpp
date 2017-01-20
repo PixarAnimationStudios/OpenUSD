@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/array.h"
@@ -60,6 +62,7 @@ using namespace boost::python;
 using std::string;
 using std::map;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyObjWrapper
 Vt_GetPythonObjectFromHeldValue(VtValue const &self)
@@ -326,3 +329,5 @@ void wrapValue()
     TfPyFunctionFromPython<VtValue ()>();
     
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

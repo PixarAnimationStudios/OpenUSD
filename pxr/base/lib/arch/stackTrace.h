@@ -28,6 +28,7 @@
 /// \ingroup group_arch_Diagnostics
 /// Architecture-specific call-stack tracing routines.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 
@@ -37,6 +38,8 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Diagnostics
 ///@{
@@ -317,5 +320,7 @@ void ArchTestCrash(bool spawnthread);
 #endif  // end ARCH_OS_DARWIN
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // ARCH_STACKTRACE_H

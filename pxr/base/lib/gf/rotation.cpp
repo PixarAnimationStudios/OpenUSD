@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/rotation.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/math.h"
@@ -32,6 +33,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // CODE_COVERAGE_OFF_GCOV_BUG
 TF_REGISTRY_FUNCTION(TfType) {
@@ -612,3 +615,5 @@ operator<<(std::ostream& out, const GfRotation& r)
     return out << '[' << Gf_OstreamHelperP(r.GetAxis()) << " " 
         << Gf_OstreamHelperP(r.GetAngle()) << ']';
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

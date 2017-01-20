@@ -25,8 +25,11 @@
 // Shared library with a registry function.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/registryManager.h"
 #include <cstdio>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class Tf_TestRegistryFunctionPlugin;
 

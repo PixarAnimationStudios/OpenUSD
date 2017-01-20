@@ -27,8 +27,11 @@
 /// \file arch/hash.h
 /// Hash functions.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Hash \a len bytes of \a data.
 ///
@@ -51,5 +54,7 @@ ARCH_API uint32_t ArchHash(const char *data, size_t len, uint32_t seed);
 ARCH_API uint64_t ArchHash64(const char *data, size_t len);
 /// \overload
 ARCH_API uint64_t ArchHash64(const char *data, size_t len, uint64_t seed);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_HASH_H

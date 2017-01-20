@@ -26,8 +26,11 @@
 
 /// \file tf/errorTransport.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/arch/hints.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfErrorTransport
 ///
@@ -84,5 +87,7 @@ swap(TfErrorTransport &l, TfErrorTransport &r)
 {
     l.swap(r);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_ERROR_TRANSPORT

@@ -23,6 +23,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #}
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix{{ DIM }}d.h"
 #include "pxr/base/gf/matrix{{ DIM }}f.h"
 
@@ -50,6 +52,8 @@
 using namespace boost::python;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -363,3 +367,5 @@ void wrapMatrix{{ SUFFIX }}()
                           Py_TPFLAGS_HAVE_GETCHARBUFFER);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

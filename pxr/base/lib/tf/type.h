@@ -24,6 +24,8 @@
 #ifndef TF_TYPE_H
 #define TF_TYPE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/cxxCast.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/registryManager.h"
@@ -41,6 +43,8 @@
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfPyObjWrapper;
 class TfType;
@@ -725,6 +729,8 @@ TfType::_TypeDefiner<T>::_TypeDefiner(TfType const& type)
     _type = &type;
     _type->_DefineCppType(typeid(T), sizeofType, isPodType, isEnumType);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // Implementation details are put in this header.
 #include "pxr/base/tf/type_Impl.h"

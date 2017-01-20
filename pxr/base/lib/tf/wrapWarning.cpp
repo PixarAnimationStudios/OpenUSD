@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/warning.h"
 
 #include "pxr/base/tf/callContext.h"
@@ -34,6 +37,8 @@
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _Warn(string const &msg, string const& moduleName, string const& functionName,
@@ -61,7 +66,7 @@ TfWarning__repr__(TfWarning const &self)
 }
 
 void wrapWarning() {
-    def("_Warn", &::_Warn);
+    def("_Warn", &_Warn);
 
     typedef TfWarning This;
 
@@ -71,3 +76,5 @@ void wrapWarning() {
         .def("__repr__", TfWarning__repr__)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

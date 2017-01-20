@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/systemInfo.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void Arch_InitDebuggerAttach();
 void Arch_InitTmpDir();
@@ -64,3 +68,6 @@ ARCH_CONSTRUCTOR(Arch_InitConfig, 2, void)
 }
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

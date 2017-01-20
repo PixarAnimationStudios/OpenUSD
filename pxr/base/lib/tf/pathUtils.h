@@ -24,10 +24,13 @@
 #ifndef TF_PATHUTILS_H
 #define TF_PATHUTILS_H
 
+#include "pxr/pxr.h"
 
 #include <string>
 #include <vector>
 #include <glob.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \file tf/pathUtils.h
 /// \ingroup group_tf_Path
@@ -131,5 +134,7 @@ std::vector<std::string> TfGlob(std::vector<std::string> const& paths,
 /// GLOB_NOCHECK.
 std::vector<std::string> TfGlob(std::string const& path,
                                 unsigned int flags=GLOB_NOCHECK|GLOB_MARK);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* TF_PATHUTILS_H */

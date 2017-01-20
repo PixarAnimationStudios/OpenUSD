@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -64,6 +66,7 @@ using std::string;
 using std::vector;
 using std::cout;
 using std::endl;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void die(const std::string &msg) {
     TF_FATAL_ERROR("ERROR: %s failed.", msg.c_str());

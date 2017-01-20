@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/frustum.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/ostreamHelpers.h"
@@ -37,6 +38,8 @@
 #include <iostream>
 
 using namespace std;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // CODE_COVERAGE_OFF_GCOV_BUG
 TF_REGISTRY_FUNCTION(TfType) {
@@ -484,11 +487,11 @@ GfFrustum::Transform(const GfMatrix4d &matrix)
     GfVec2d wMax = frustum._window.GetMax();
     // Make sure left < right
     if ( wMin[0] > wMax[0] ) {
-        swap( wMin[0], wMax[0] );
+        std::swap( wMin[0], wMax[0] );
     }
     // Make sure bottom < top
     if ( wMin[1] > wMax[1] ) {
-        swap( wMin[1], wMax[1] );
+        std::swap( wMin[1], wMax[1] );
     }
     frustum._window.SetMin( wMin );
     frustum._window.SetMax( wMax );
@@ -1336,3 +1339,5 @@ operator<<(std::ostream& out, const GfFrustum& f)
 
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

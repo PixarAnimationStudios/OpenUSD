@@ -24,6 +24,8 @@
 #ifndef TF_PYIDENTITY_H
 #define TF_PYIDENTITY_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -45,6 +47,7 @@
 // Specializations for boost::python::pointee and get_pointer for TfRefPtr and
 // TfWeakPtr.
 namespace boost { namespace python {
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // TfWeakPtrFacade
 template <template <class> class X, class Y>
@@ -59,6 +62,8 @@ struct pointee< TfRefPtr<T> > {
 };
 
 }}
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Tf_PyIdentityHelper
 {
@@ -251,5 +256,7 @@ void Tf_PyAddPythonOwnership(Ptr const &t, const void *uniqueId, PyObject *obj)
 {
     Tf_PyOwnershipHelper<Ptr>::Add(t, uniqueId, obj);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYIDENTITY_H

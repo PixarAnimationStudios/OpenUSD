@@ -26,6 +26,8 @@
 #endif
 #define TF_PYMODULE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/attributes.h"
 
 #include <boost/preprocessor/cat.hpp>
@@ -42,6 +44,8 @@
 //    TF_WRAP(ClassName3);
 // }
 //
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Forward declare the function that will be provided that does the wrapping.
 static void WrapModule();
@@ -105,3 +109,5 @@ void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
 
 // Declares and calls the class wrapper for x
 #define TF_WRAP(x) void wrap ## x (); wrap ## x ()
+
+PXR_NAMESPACE_CLOSE_SCOPE

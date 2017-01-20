@@ -21,12 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/camera.h"
-
 #include "pxr/base/gf/frustum.h"
-
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -345,3 +347,5 @@ GfCamera::operator!=(const GfCamera& other) const
 {
     return !(*this == other);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

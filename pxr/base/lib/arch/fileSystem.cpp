@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/env.h"
@@ -50,6 +51,8 @@
 #include <sys/file.h>
 #include <unistd.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using std::string;
 using std::set;
@@ -776,3 +779,5 @@ void ArchFileAdvise(
                   POSIX_FADV_WILLNEED : POSIX_FADV_DONTNEED);
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

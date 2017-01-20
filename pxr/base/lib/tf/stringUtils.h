@@ -28,6 +28,8 @@
 /// \ingroup group_tf_String
 /// Definitions of basic string utilities in tf.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/tf/enum.h"
@@ -42,6 +44,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_tf_String
 ///@{
@@ -610,4 +614,6 @@ std::string TfGetXmlEscapedString(const std::string &in);
 
 ///@}
 
-#endif /* TF_STRINGUTILS_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_STRINGUTILS_H 

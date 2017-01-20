@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/debug.h"
@@ -28,6 +30,8 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/symbols.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // Registry function tag type
 class Tf_TestRegistryFunctionPlugin {};

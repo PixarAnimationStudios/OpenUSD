@@ -24,12 +24,15 @@
 ///
 /// \file js/value.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <boost/noncopyable.hpp>
 #include <boost/variant.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \struct Js_Null
 /// A sentinel type held by default constructed JsValue objects, which
@@ -369,3 +372,5 @@ JsValue::operator!=(const JsValue& other) const
 {
     return !(*this == other);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

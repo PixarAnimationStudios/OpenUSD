@@ -24,6 +24,8 @@
 #ifndef TF_WEAKPTRFACADE_H
 #define TF_WEAKPTRFACADE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakBase.h"
@@ -44,10 +46,13 @@
 // Declare classes in Boost.Python which need to know about TfWeakPtr.
 //
 namespace boost { namespace python { namespace objects {
+PXR_NAMESPACE_USING_DIRECTIVE
 template <class P, class V> struct pointer_holder;
-}}}
+}}} // end namespace boost
 
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfHash;
 template <class U> class TfRefPtr;
@@ -97,11 +102,15 @@ Y *get_pointer(TfWeakPtrFacade<X, Y> const &p) {
     return TfWeakPtrFacadeAccess::FetchPointer(p);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // Inject the global-scope operator for clients that make qualified calls to our
 // previous overload in the boost namespace.
 namespace boost {
-using ::get_pointer;
+    using PXR_NS::get_pointer;
 };
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Common base class, used to identify subtypes in enable_if expressions.
 class TfWeakPtrFacadeBase {};
@@ -447,5 +456,7 @@ hash_value(TfWeakPtrFacade<X, T> const &ptr)
     auto uniqueId = ptr.GetUniqueIdentifier();
     return boost::hash<decltype(uniqueId)>()(uniqueId);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_WEAKPTRFACADE_H

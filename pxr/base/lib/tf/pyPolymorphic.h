@@ -26,6 +26,8 @@
 
 /// \file tf/pyPolymorphic.h
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyOverride.h"
 
 #include "pxr/base/tf/refPtr.h"
@@ -45,6 +47,8 @@
 #include <type_traits>
 
 // TODO: All this stuff with holding onto the class needs to go away.
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename Derived>
 struct TfPyPolymorphic :
@@ -223,13 +227,19 @@ TfPyPolymorphic<Derived>::CallVirtual(
         defaultImpl, static_cast<Cls const *>(this));
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // Specialize has_back_reference<> so that boost.python will pass
 // PyObject* as the 1st argument to TfPyPolymorphic's ctor.
 namespace boost { namespace python {
+PXR_NAMESPACE_USING_DIRECTIVE
+
     template <typename T>
     struct has_back_reference< TfPyPolymorphic<T> >
         : mpl::true_ {};
-}}
+}} // end namespace boost
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Base case for internal Tf_PyMemberFunctionPointerUpcast.
 template <typename Base, typename Fn>
@@ -257,5 +267,7 @@ TfPyProtectedVirtual( Fn fn )
     
     return static_cast<Ret>(fn);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYPOLYMORPHIC_H

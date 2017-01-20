@@ -27,6 +27,8 @@
 /// \file tf/pyEnum.h
 /// Provide facilities for wrapping enums for script.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/type.h"
@@ -53,6 +55,8 @@
 
 #include "pxr/base/tf/hashmap.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Tf_PyEnum
 ///
@@ -449,5 +453,7 @@ public:
     }
 
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYENUM_H

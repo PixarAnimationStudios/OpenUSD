@@ -28,7 +28,11 @@
 /// \ingroup group_tf_SystemsExt
 /// Functions for accessing environment variables.
 
+#include "pxr/pxr.h"
+
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_tf_SystemsExt
 ///@{
@@ -70,5 +74,7 @@ bool TfGetenvBool(const std::string&, bool defaultValue);
 double TfGetenvDouble(const std::string& envName, double defaultValue);
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

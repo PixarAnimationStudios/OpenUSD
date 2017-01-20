@@ -28,6 +28,7 @@
 /// \ingroup group_tf_DebuggingOutput
 /// Conditional debugging output class and macros.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
@@ -40,6 +41,8 @@
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Tf_DebugSymbolRegistry;
 
@@ -576,5 +579,7 @@ struct TfDebug::TimedScopeHelper<false> {
     }
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

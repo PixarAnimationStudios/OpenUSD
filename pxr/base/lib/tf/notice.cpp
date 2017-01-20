@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/noticeRegistry.h"
@@ -29,7 +31,7 @@
 using std::type_info;
 using std::vector;
 
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Note:  We do not register a TfType for TfNotice here.
 // Instead, we register it in Type.cpp.  See Tf_TypeRegistry's constructor.
@@ -163,3 +165,5 @@ TfNotice::Block::~Block()
 {
     Tf_NoticeRegistry::_GetInstance()._DecrementBlockCount();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

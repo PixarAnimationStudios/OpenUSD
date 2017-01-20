@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
@@ -41,6 +43,8 @@
 #include <boost/python/detail/api_placeholder.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Converter from std::vector<VtValue> to python list
 struct VtValueArrayToPython
@@ -301,3 +305,5 @@ void wrapDictionary()
     def("DictionaryPrettyPrint",
         (std::string(*)(const VtDictionary &)) VtDictionaryPrettyPrint);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

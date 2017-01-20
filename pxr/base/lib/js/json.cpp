@@ -24,8 +24,10 @@
 ///
 /// \file js/json.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/tf/diagnostic.h"
+
 #include <iostream>
 #include <vector>
 
@@ -44,6 +46,8 @@
 namespace rj = RAPIDJSON_NAMESPACE;
 
 namespace {
+PXR_NAMESPACE_USING_DIRECTIVE
+
 struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
 {
     bool Null() {
@@ -116,6 +120,8 @@ public:
     std::vector<JsObject::mapped_type> values;
 };
 }
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename Allocator>
 static rj::Value
@@ -271,3 +277,5 @@ JsWriteToString(
 
     return buffer.GetString();
 } 
+
+PXR_NAMESPACE_CLOSE_SCOPE

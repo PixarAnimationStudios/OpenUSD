@@ -28,8 +28,11 @@
 /// \ingroup group_arch_SystemFunctions
 /// Provide architecture-specific system information.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_SystemFunctions
 ///@{
@@ -43,5 +46,7 @@ ARCH_API
 std::string ArchGetExecutablePath();
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_SYSTEMINFO_H

@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -49,6 +52,7 @@ using std::set;
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 string
 TfVStringPrintf(const std::string& fmt, va_list ap)
@@ -958,3 +962,5 @@ TfGetXmlEscapedString(const std::string &in)
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

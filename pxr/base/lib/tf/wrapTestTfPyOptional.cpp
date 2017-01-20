@@ -23,6 +23,9 @@
 //
 ///
 /// \file tf/wrapTestTfPython.cpp
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyOptional.h"
 
 #include <boost/python/class.hpp>
@@ -34,6 +37,8 @@
 using namespace boost::python;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // ////////////////////////////////
 // // optional
@@ -100,3 +105,4 @@ void wrapTf_TestTfPyOptional()
         ;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

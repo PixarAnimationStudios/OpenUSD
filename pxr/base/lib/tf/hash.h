@@ -27,17 +27,22 @@
 /// \file tf/hash.h
 /// \ingroup group_tf_String
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/timeStamp.h"
 #include "pxr/base/arch/hash.h"
+
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_same.hpp>
+
 #include <string>
 
-class TfAnyWeakPtr;
-class TfEnum;
-class TfToken;
+PXR_NAMESPACE_OPEN_SCOPE
+
 class TfType;
+class TfEnum;
+class TfAnyWeakPtr;
+class TfToken;
 
 template <class T> class TfWeakPtr;
 template <class T> class TfRefPtr;
@@ -155,5 +160,7 @@ struct TfHashCString {
 struct TfEqualCString {
     bool operator()(const char* lhs, const char* rhs) const;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

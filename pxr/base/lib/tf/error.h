@@ -26,7 +26,10 @@
 
 /// \file tf/error.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfDiagnosticMgr;
 
@@ -63,5 +66,7 @@ private:
 
     friend class TfDiagnosticMgr;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_ERROR_H

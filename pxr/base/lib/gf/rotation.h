@@ -27,6 +27,7 @@
 /// \file gf/rotation.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/quaternion.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -36,6 +37,8 @@
 #include <boost/functional/hash.hpp>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GfRotation
 /// \ingroup group_gf_LinearAlgebra
@@ -270,5 +273,7 @@ class GfRotation {
 /// Output a GfRotation using the format [(x y z) a].
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream&, const GfRotation&);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_ROTATION_H

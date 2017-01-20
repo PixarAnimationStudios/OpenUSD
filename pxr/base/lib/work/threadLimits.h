@@ -24,6 +24,10 @@
 #ifndef WORK_THREAD_LIMITS_H
 #define WORK_THREAD_LIMITS_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// \file work/threadLimits.h
 
 /// Return the current concurrency limit, always >= 1.
@@ -83,5 +87,7 @@ void WorkSetConcurrencyLimitArgument(int n);
 /// \endcode
 ///
 void WorkSetMaximumConcurrencyLimit();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticBase.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -30,6 +32,8 @@
 #include <string>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfDiagnosticBase::TfDiagnosticBase(
     TfEnum code, const char* codeString,
@@ -70,4 +74,4 @@ TfDiagnosticBase::IsCodingError() const
            (code == TF_DIAGNOSTIC_FATAL_CODING_ERROR_TYPE);
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

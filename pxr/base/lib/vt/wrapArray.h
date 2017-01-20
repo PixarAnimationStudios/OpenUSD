@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
@@ -62,6 +64,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Vt_WrapArray {
 
@@ -575,3 +579,5 @@ void VtRegisterValueCastsFromPythonSequencesToArray()
     VtWrapArray< VtArray< VT_TYPE(elem) > >();
 #define VT_WRAP_COMPARISON(r, unused, elem)        \
     VtWrapComparisonFunctions< VtArray< VT_TYPE(elem) > >();
+
+PXR_NAMESPACE_CLOSE_SCOPE

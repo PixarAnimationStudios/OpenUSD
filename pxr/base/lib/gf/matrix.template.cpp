@@ -23,6 +23,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #}
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix{{ DIM }}d.h"
 #include "pxr/base/gf/matrix{{ DIM }}f.h"
 
@@ -35,6 +37,8 @@
 
 #include <float.h>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<{{ MAT }}>();
@@ -233,3 +237,5 @@ operator *(const {{ MAT }}& m, const GfVec{{ DIM }}f &vec)
 
 {% block customXformFunctions %}
 {% endblock customXformFunctions %}
+
+PXR_NAMESPACE_CLOSE_SCOPE

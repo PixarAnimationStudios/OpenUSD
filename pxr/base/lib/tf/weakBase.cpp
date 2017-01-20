@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/weakBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // TF_TAGGED_ALLOCATION(Tf_Remnant, false);
 // TF_FIXEDSIZE_ALLOCATION(Tf_Remnant, true);
@@ -59,4 +63,4 @@ Tf_Remnant::EnableNotification() const
     _notify = true;
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

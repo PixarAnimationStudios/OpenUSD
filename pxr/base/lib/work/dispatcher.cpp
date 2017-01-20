@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/dispatcher.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 WorkDispatcher::WorkDispatcher()
     : _context(
@@ -73,3 +77,5 @@ WorkDispatcher::_TransportErrors(const TfErrorMark &mark,
     TfErrorTransport transport = mark.Transport();
     errors->grow_by(1)->swap(transport);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

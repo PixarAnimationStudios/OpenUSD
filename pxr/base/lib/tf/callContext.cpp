@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include <tbb/spin_mutex.h>
+
 #include <set>
 #include <string>
 
@@ -35,6 +39,9 @@ namespace {
         set<string> data;
     };
 }
+
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /*
  * TfCallContext's contain const char*'s which are assumed to be program literals.
@@ -57,4 +64,4 @@ Tf_PythonCallContext(char const *fileName,
     return TfCallContext(fileNamePtr, prettyFunctionPtr, line, prettyFunctionPtr);
 }
 
-    
+PXR_NAMESPACE_CLOSE_SCOPE 

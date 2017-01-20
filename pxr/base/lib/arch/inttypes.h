@@ -32,11 +32,16 @@
 /// \c int32_t, and \c int64_t are all defined, as are their unsigned
 /// counterparts \c uint16_t, \c uint32_t, and \c uint64_t.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include <stdint.h>
 #include <inttypes.h>
 #include <sys/types.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 typedef unsigned char uchar;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_INTTYPES_H

@@ -21,11 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/arch/attributes.h"
 
 using std::string;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DEFINE_ENV_SETTING(TF_TEST_BOOL_ENV_SETTING_X, false, "bool env setting (not set by test)");
 TF_DEFINE_ENV_SETTING(TF_TEST_BOOL_ENV_SETTING, false, "bool env setting");

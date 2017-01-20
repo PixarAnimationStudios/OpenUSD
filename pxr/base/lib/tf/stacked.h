@@ -24,6 +24,7 @@
 #ifndef TF_STACKED_H
 #define TF_STACKED_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/demangle.h"
 
@@ -34,6 +35,8 @@
 
 #include <atomic>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfStackedAccess
 ///
@@ -208,5 +211,7 @@ private:
     // Holds the objects in the stack.
     static std::atomic<_StackStorage*> _stackStorage;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_STACKED_H

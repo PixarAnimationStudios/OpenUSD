@@ -26,6 +26,10 @@
 
 #include <Python.h>
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// \class TfPyLock
 ///
 /// Convenience class for accessing the Python Global Interpreter Lock.
@@ -181,5 +185,7 @@ private:
 /// \hideinitializer
 #define TF_PY_ALLOW_THREADS_IN_SCOPE()                  \
     TfPyEnsureGILUnlockedObj __py_lock_allow_threads__
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYLOCK_H

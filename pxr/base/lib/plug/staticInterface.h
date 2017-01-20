@@ -26,10 +26,13 @@
 
 /// \file plug/staticInterface.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 #include <typeinfo>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_abstract.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Base class for common stuff.
 class PLUG_API Plug_StaticInterfaceBase {
@@ -203,4 +206,6 @@ private:
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PLUG_STATICINTERFACE_H

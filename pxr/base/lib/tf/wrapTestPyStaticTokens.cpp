@@ -23,7 +23,11 @@
 //
 /// \file wrapTestPyStaticTokens.cpp
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyStaticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define TF_TEST_TOKENS                  \
     (orange)                            \
@@ -51,3 +55,5 @@ wrapTf_TestPyStaticTokens()
     TF_PY_WRAP_PUBLIC_TOKENS_IN_CURRENT_SCOPE(
         tfTestStaticTokens, TF_TEST_TOKENS);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/valueFromPython.h"
 
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Vt_ValueFromPythonRegistry);
 
@@ -84,4 +88,4 @@ Vt_ValueFromPythonRegistry::_RegisterRValue(_Extractor const &e) {
     _rvalueExtractors.push_back(e);
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

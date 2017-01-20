@@ -27,11 +27,14 @@
 /// \file gf/camera.h
 /// \ingroup group_gf_BasicGeometry
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/range1f.h"
 #include "pxr/base/gf/vec4f.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfFrustum;
 
@@ -239,5 +242,7 @@ private:
     float                   _fStop;
     float                   _focusDistance;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_CAMERA_H

@@ -24,6 +24,7 @@
 ///
 /// \file testenv/testJsConverter.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/converter.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/tf/diagnosticLite.h"
@@ -37,6 +38,8 @@
 #include <vector>
 
 using std::string;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 

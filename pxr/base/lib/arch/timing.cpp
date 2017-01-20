@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/timing.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
@@ -33,6 +35,8 @@
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static double Arch_NanosecondsPerTick = 1.0;
 
@@ -148,3 +152,5 @@ Arch_GetTickTime()
 {
     return ArchGetTickTime();	// we're C++, so we don't get masked
 }				// by the #define in timing.h
+
+PXR_NAMESPACE_CLOSE_SCOPE

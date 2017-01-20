@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/defines.h"
@@ -32,6 +33,8 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // The TfMallocTag code depends upon the Linux memory allocator, ptmalloc3.
 // Turning this test off for any other platforms for now.

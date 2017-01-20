@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
@@ -46,6 +48,8 @@ using std::make_pair;
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtDictionary>();
@@ -699,4 +703,6 @@ VtDictionaryPrettyPrintToFile(const VtDictionary& vtdict,
 
     return ok;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

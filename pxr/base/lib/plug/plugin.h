@@ -24,6 +24,7 @@
 #ifndef PLUG_PLUGIN_H
 #define PLUG_PLUGIN_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 
 #include "pxr/base/js/types.h"
@@ -36,6 +37,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PlugPlugin);
 
@@ -191,5 +194,7 @@ PLUG_API
 std::string
 PlugFindPluginResource(const PlugPluginPtr& plugin,
                        const std::string& path, bool verify = true);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PLUG_PLUGIN_H

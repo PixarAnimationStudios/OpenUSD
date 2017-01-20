@@ -27,11 +27,15 @@
 /// \file tf/stopwatch.h
 /// \ingroup group_tf_Performance
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/timing.h"
 
 #include <iosfwd>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfStopwatch
 /// \ingroup group_tf_Performance
@@ -193,4 +197,6 @@ private:
 /// \ingroup group_tf_DebuggingOutput
 std::ostream& operator<<(std::ostream& out, const TfStopwatch& s);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_STOPWATCH_H

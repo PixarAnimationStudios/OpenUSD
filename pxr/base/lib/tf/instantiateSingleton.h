@@ -36,9 +36,12 @@
 /// \ingroup group_tf_ObjectCreation
 /// Manage a single instance of an object.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/demangle.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename T>
 T&
@@ -83,3 +86,5 @@ TfSingleton<T>::_DestroyInstance()
     template T& TfSingleton< T >::_CreateInstance();                    \
     template void TfSingleton< T >::_DestroyInstance()
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

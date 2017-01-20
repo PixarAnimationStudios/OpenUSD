@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #if !BOOST_PP_IS_ITERATING
 
 #ifndef TF_MAKE_CONSTRUCTOR_H
@@ -34,6 +35,8 @@
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
 
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -59,6 +62,8 @@
 #include <boost/type_traits/remove_reference.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper for wrapping objects that are held by weak pointers, but may also be
 // constructed from script.  This lets one construct an object from script and
@@ -415,6 +420,8 @@ struct Tf_PySequenceToListConverterRefPtrFactory {
         return &PyList_Type;
     }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_MAKE_CONSTRUCTOR_H
 

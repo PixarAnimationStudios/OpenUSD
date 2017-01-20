@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/info.h"
 #include "pxr/base/plug/debugCodes.h"
 #include "pxr/base/js/json.h"
@@ -36,6 +38,8 @@
 #include <fstream>
 #include <regex>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -714,3 +718,5 @@ Plug_ReadPlugInfo(
     context.taskArena.Wait();
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Did check plugin info paths\n");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

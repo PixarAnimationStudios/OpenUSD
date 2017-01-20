@@ -25,8 +25,11 @@
 
 /// \file vt/functions.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define VT_FUNCTIONS_MAX_ARGS 6
 
@@ -279,6 +282,8 @@ VTFUNCTION_BOOL(VtLess,<)
 VTFUNCTION_BOOL(VtGreaterOrEqual,>=)
 VTFUNCTION_BOOL(VtLessOrEqual,<=)
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #else // BOOST_PP_IS_ITERATING
 
 // ****************************************************************************
@@ -329,3 +334,4 @@ VtCat( BOOST_PP_ENUM_PARAMS(N, VtArray<T> const &s) )
 #undef N
 
 #endif // BOOST_PP_IS_ITERATING
+

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/noticeRegistry.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -36,7 +38,7 @@ using std::string;
 using std::vector;
 using std::type_info;
 
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Tf_NoticeRegistry);
 
@@ -369,3 +371,5 @@ Tf_NoticeRegistry::_DecrementBlockCount()
     --_globalBlockCount;
     --_perThreadBlockCount.local();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

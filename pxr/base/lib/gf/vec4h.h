@@ -31,6 +31,7 @@
 /// \file gf/vec4h.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -43,6 +44,8 @@
 #include <cmath>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfVec<class GfVec4h> { static const bool value = true; };
@@ -303,9 +306,14 @@ private:
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfVec4h const &);
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 inline
 GfVec4h::GfVec4h(class GfVec4d const &other)
@@ -417,4 +425,6 @@ GfIsClose(GfVec4h const &v1, GfVec4h const &v2, double tolerance)
 
  
  
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // GF_VEC4H_H

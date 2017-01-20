@@ -26,10 +26,14 @@
 #ifndef TF_PYOVERRIDE_H
 #define TF_PYOVERRIDE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
 #include <boost/python/override.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyMethodResult
 ///
@@ -142,6 +146,8 @@ public:
 
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // TF_PYOVERRIDE_H
 
 #else
@@ -167,4 +173,4 @@ operator()( BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, const& a) ) const
 
 # undef N
 
-#endif 
+#endif // TF_PYOVERRIDE_H

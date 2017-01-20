@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 
 #include "pxr/base/tf/debugCodes.h"
@@ -47,6 +49,8 @@
 
 using std::list;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper function for printing a diagnostic message. This is used in non-main
 // threads and when a delegate is not available.
@@ -616,3 +620,5 @@ _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
 
     fprintf(fout, "%s", _FormatDiagnostic(code, context, msg, info).c_str());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

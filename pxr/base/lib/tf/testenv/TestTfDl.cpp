@@ -28,7 +28,10 @@
 // actually in this file.
 //
 
+#include "pxr/pxr.h"
 #include <stdio.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 int
 TestTfDl_SaySomething()

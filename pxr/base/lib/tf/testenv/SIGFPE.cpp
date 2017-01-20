@@ -21,9 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/tf/diagnostic.h"
+
 #include <stdio.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 /**
  * This executable performs an integer divide by zero (SIGFPE)

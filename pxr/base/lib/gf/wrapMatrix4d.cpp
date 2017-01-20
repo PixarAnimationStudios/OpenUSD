@@ -26,6 +26,8 @@
 
 #define BOOST_PYTHON_MAX_ARITY 20
 
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 
@@ -53,6 +55,8 @@
 using namespace boost::python;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -462,3 +466,5 @@ void wrapMatrix4d()
                           Py_TPFLAGS_HAVE_GETCHARBUFFER);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

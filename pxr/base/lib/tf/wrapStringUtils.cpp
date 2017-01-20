@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/python/def.hpp>
@@ -38,6 +41,8 @@
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static int DictionaryStrcmp(string const &l, string const &r) {
     TfDictionaryLessThan lt;
@@ -120,3 +125,5 @@ void wrapStringUtils() {
     
     Tf_StdStringFromPythonUnicode();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

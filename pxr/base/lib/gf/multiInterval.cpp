@@ -21,14 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/multiInterval.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/multiInterval.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -375,3 +378,5 @@ operator<<(std::ostream &out, const GfMultiInterval &s)
     out << "]";
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

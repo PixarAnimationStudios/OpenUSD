@@ -26,14 +26,18 @@
 
 /// \file tf/denseHashMap.h
 
+#include "pxr/pxr.h"
+#include "pxr/base/tf/hashmap.h"
+
 #include <vector>
 
 #include <boost/compressed_pair.hpp>
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/scoped_ptr.hpp>
-#include "pxr/base/tf/hashmap.h"
 #include <boost/utility.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashMap
 ///
@@ -598,5 +602,6 @@ private:
     boost::scoped_ptr<_HashMap> _h;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif // TF_DENSE_HASH_MAP_H

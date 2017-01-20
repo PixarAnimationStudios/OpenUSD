@@ -27,6 +27,7 @@
 /// \file tf/flyweight.h
 /// An implementation of the "flyweight pattern".
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -36,6 +37,8 @@
 
 #include <atomic>
 #include <memory>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Set this to 1 to enable stats.
 #define TF_FLYWEIGHT_STATS 0
@@ -442,5 +445,7 @@ size_t hash_value(const TfFlyweight<Type, HashFn>& x)
 {
     return x.Hash();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_FLYWEIGHT_H

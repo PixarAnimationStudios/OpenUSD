@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
 
@@ -37,6 +39,7 @@
 #include <iostream>
 #include <fstream>
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static const int numLevels =100; 
 static const int numNodesPerLevel = 1000;

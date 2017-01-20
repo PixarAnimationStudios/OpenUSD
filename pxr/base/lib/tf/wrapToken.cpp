@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/token.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -34,6 +37,8 @@
 #include <string>
 
 namespace bp = boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Tf_TokenFromPythonString
 {
@@ -85,3 +90,5 @@ void wrapToken()
     // Stats.
     bp::def("DumpTokenStats", TfDumpTokenStats);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

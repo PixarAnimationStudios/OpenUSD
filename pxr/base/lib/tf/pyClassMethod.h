@@ -24,10 +24,14 @@
 #ifndef TF_PY_CLASS_METHOD_H
 #define TF_PY_CLASS_METHOD_H
 
+#include "pxr/pxr.h"
+
 #include <boost/python/class.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/def_visitor.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PyClassMethod {
 
@@ -92,5 +96,7 @@ private:
 /// \endcode
 ///
 typedef Tf_PyClassMethod::_TfPyClassMethod TfPyClassMethod;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PY_CLASS_METHOD_H

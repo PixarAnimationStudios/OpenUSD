@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/type.h"
@@ -46,6 +47,8 @@ using std::ostream;
 using std::string;
 using std::stringstream;
 using std::vector;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class TestNotice : public TfNotice {
 public:

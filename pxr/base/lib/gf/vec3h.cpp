@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/vec3h.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
@@ -39,6 +40,8 @@
 
 #include <vector>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfVec3h>();
@@ -265,3 +268,5 @@ GfSlerp(double alpha, const GfVec3h &v0, const GfVec3h &v1)
         v1 * (sin(     alpha *angle) * oneOverSinAngle);
 }
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

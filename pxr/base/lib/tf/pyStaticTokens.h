@@ -27,10 +27,14 @@
 
 /// \file tf/pyStaticTokens.h
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/staticTokens.h"
 #include <boost/bind.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // TODO: Should wrap token arrays to Python.
 
@@ -105,4 +109,6 @@ private:
 #define _TF_PY_TOKENS_WRAP_ATTR_SEQ(key, seq)                               \
     BOOST_PP_SEQ_FOR_EACH(_TF_PY_TOKENS_WRAP_ATTR_ELEMENT, key, seq)
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_PYSTATICTOKENS_H

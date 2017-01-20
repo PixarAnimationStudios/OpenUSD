@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/arch/stackTrace.h"
 
@@ -29,6 +31,8 @@
 #include <thread>
 #include <atomic>
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // This could probably be a regular int since we're not really worried
 // about full thread safety, just whether it is 1 or 0.

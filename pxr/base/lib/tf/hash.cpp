@@ -21,13 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
 //#include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
 #include <cstring>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 size_t
 TfHash::operator()(const TfEnum& e) const
@@ -64,3 +69,5 @@ TfEqualCString::operator()(const char* lhs, const char* rhs) const
 {
     return std::strcmp(lhs, rhs) == 0;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

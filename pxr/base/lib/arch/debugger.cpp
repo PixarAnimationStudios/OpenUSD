@@ -23,6 +23,7 @@
 //
 /// \file debugger.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/daemon.h"
 #include "pxr/base/arch/error.h"
@@ -48,6 +49,8 @@
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // We don't want this inlined so ArchDebuggerTrap() is as clean as
 // possible.  The fewer instructions in that function, the more likely
@@ -322,9 +325,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     _exit(0);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 extern char** environ;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static
 bool
@@ -602,3 +607,5 @@ ArchAbort(bool logging)
     // The exit code for abort() (128 + SIGABRT).
     _exit(134);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

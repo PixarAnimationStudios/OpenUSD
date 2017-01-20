@@ -102,9 +102,13 @@
 /// the longer \c TfSingleton<Registry>::GetInstance() to obtain a reference
 /// to the sole instance of the registry.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnosticLite.h"
+
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfSingleton
 /// \ingroup group_tf_ObjectCreation
@@ -184,5 +188,7 @@ private:
     static T* _instance;
     static std::mutex _mutex;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

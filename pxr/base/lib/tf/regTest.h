@@ -28,10 +28,14 @@
 /// \ingroup group_tf_Internal
 /// Support for simple regression tests.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfRegTest
 /// \ingroup group_tf_Internal
@@ -136,5 +140,7 @@ private:
 /// \hideinitializer
 #define TF_ADD_REGTEST(name)    \
     bool Tf_RegTst##name = TfRegTest::GetInstance().Register(#name, Test_##name)
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

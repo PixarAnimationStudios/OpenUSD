@@ -28,6 +28,7 @@
 /// \ingroup group_arch_Math
 /// Architecture-specific math function calls.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
 
@@ -35,6 +36,8 @@
 #if !defined(M_PI)
 #define M_PI 3.14159265358979323846
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Math
 ///@{
@@ -122,5 +125,7 @@ inline void ArchSinCos(double v, double *s, double *c) {
 #endif
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_MATH_H

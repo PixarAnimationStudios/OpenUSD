@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// Architecture dependent file system access
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
@@ -51,6 +52,8 @@
 #elif defined(ARCH_OS_WINDOWS)
 #include <io.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_SystemFunctions
 ///@{
@@ -323,5 +326,7 @@ void ArchFileAdvise(FILE *file, int64_t offset, size_t count,
                     ArchFileAdvice adv);
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_FILESYSTEM_H

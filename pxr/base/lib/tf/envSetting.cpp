@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stl.h"
@@ -31,10 +33,13 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/pyUtils.h"
+
 #include <boost/python.hpp>
 #include <boost/noncopyable.hpp>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Tf_EnvSettingRegistry : boost::noncopyable {
 public:
@@ -266,3 +271,5 @@ void Tf_InitEnvSettings()
     // and both Tf_InitializeEnvSetting() will try to define the setting.
     Tf_EnvSettingRegistry::GetInstance();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

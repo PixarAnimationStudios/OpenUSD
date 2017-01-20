@@ -35,6 +35,8 @@
 #include <cfloat>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfRange3d>();
 }
@@ -111,3 +113,5 @@ GfRange3d::GetOctant(size_t i) const
 }
 
 const GfRange3d GfRange3d::UnitCube(GfVec3d(0,0,0), GfVec3d(1,1,1));
+
+PXR_NAMESPACE_CLOSE_SCOPE

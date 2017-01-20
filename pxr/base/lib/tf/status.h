@@ -24,7 +24,11 @@
 #ifndef TF_STATUS_H
 #define TF_STATUS_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnosticBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfStatus
 /// \ingroup group_tf_Diagnostic
@@ -49,5 +53,7 @@ private:
 
     friend class TfDiagnosticMgr;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_STATUS_H

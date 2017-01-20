@@ -24,9 +24,12 @@
 #ifndef PLUG_NOTICE_H
 #define PLUG_NOTICE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/notice.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
 
@@ -60,5 +63,7 @@ public:
 private:
     PlugNotice();
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PLUG_NOTICE_H

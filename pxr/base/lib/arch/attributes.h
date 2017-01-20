@@ -30,7 +30,10 @@
 /// This file allows you to define architecture-specific or compiler-specific
 /// options to be used outside lib/arch.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/export.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(doxygen)
 
@@ -274,5 +277,7 @@
 // rather than fail mysteriously at runtime.
 
 #endif
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_ATTRIBUTES_H

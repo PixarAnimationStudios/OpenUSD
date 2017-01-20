@@ -27,8 +27,12 @@
 /// \file tf/bitUtils.h
 /// \ingroup group_tf_BasicMath
 
+#include "pxr/pxr.h"
+
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/integral_c.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Compute the number of bits required to store the given number of values.
 ///
@@ -72,5 +76,7 @@ struct Tf_NumBits<N, SUM, 0>
 /// \hideinitializer
 #define TF_BITS_FOR_ENUM_VALUES(n) \
     (TF_BITS_FOR_VALUES(n) + 1)
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* TF_BIT_UTILS_H */

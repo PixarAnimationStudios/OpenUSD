@@ -27,8 +27,12 @@
 /// \file tf/refBase.h
 /// \ingroup group_tf_Memory
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/refCount.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class T> class TfRefPtr;
 template <class T> class TfWeakPtr;
@@ -136,4 +140,6 @@ public:
     virtual ~TfSimpleRefBase();
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_REFBASE_H

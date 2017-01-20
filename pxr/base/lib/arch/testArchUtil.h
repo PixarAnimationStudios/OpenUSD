@@ -24,6 +24,10 @@
 #ifndef ARCH_TEST_UTIL_H
 #define ARCH_TEST_UTIL_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 // Crash types.
 enum class ArchTestCrashMode {
     Error,

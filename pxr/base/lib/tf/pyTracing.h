@@ -26,8 +26,12 @@
 
 #include <Python.h>
 
+#include "pxr/pxr.h"
+
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \struct PyTraceInfo
 /// Structure passed to python trace functions.  See the Python C API
@@ -53,5 +57,7 @@ void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info);
 
 // For internal use only.  Do not use.
 void Tf_PyTracingPythonInitialized();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYTRACING_H

@@ -23,6 +23,7 @@
 //
 /// \file staticInterface.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/staticInterface.h"
 #include "pxr/base/plug/interfaceFactory.h"
 #include "pxr/base/plug/plugin.h"
@@ -30,6 +31,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include <mutex>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static std::mutex _initializationMutex;
 
@@ -96,3 +99,5 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
                         tfType.GetTypeName().c_str());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

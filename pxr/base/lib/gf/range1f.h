@@ -31,6 +31,8 @@
 /// \file gf/range1f.h
 /// \ingroup group_gf_BasicGeometry
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/gf/traits.h"
 
 #include <boost/functional/hash.hpp>
@@ -38,6 +40,8 @@
 #include <cfloat>
 #include <cstddef>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfRange1d;
 class GfRange1f;
@@ -331,7 +335,9 @@ public:
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfRange1f const &);
 
+PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/gf/range1d.h"
+PXR_NAMESPACE_OPEN_SCOPE
 
 inline bool
 GfRange1f::operator ==(const GfRange1d& other) const {
@@ -344,5 +350,7 @@ GfRange1f::operator !=(const GfRange1d& other) const {
     return !(*this == other);
 }
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_RANGE1F_H

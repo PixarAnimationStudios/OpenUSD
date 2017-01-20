@@ -24,11 +24,14 @@
 #ifndef ARCH_BUILDMODE_H
 #define ARCH_BUILDMODE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 
 #if !defined(__cplusplus)
 #error This include file can be included only in C++ programs.
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct ArchBuildMode {
 
@@ -43,5 +46,7 @@ struct ArchBuildMode {
 };
 
 #define ARCH_DEV_BUILD ArchBuildMode::DEV_BUILD
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_BUILDMODE_H

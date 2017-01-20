@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -35,6 +37,7 @@
 #include <set>
 #include <stdio.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 extern TfEnvSetting<int> PXR_WORK_THREAD_LIMIT;
 

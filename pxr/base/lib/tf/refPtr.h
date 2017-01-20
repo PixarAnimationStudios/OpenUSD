@@ -424,6 +424,8 @@
 /// \endcode
 ///
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/refBase.h"
@@ -443,6 +445,8 @@
 #include <typeinfo>
 #include <type_traits>
 #include <cstddef>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Tf_SupportsUniqueChanged is a metafunction that may be specialized to return
 // false for classes (and all derived classes) that *cannot* ever invoke unique
@@ -1221,7 +1225,10 @@ swap(TfRefPtr<T>& lhs, TfRefPtr<T>& rhs)
     lhs.swap(rhs);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 namespace boost {
+PXR_NAMESPACE_USING_DIRECTIVE
 
 template<typename T>
 T *
@@ -1230,7 +1237,9 @@ get_pointer(TfRefPtr<T> const& p)
     return get_pointer(p);
 }
 
-}
+} // end namespace boost
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Extend boost::hash to support TfRefPtr.
 template <class T>
@@ -1248,4 +1257,6 @@ hash_value(const TfRefPtr<T>& ptr)
 
 #define TF_SUPPORTS_REFPTR(T)   boost::is_base_of<TfRefBase, T >::value
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_REFPTR_H

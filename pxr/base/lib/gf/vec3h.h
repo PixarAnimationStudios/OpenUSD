@@ -31,6 +31,7 @@
 /// \file gf/vec3h.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -43,6 +44,8 @@
 #include <cmath>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfVec<class GfVec3h> { static const bool value = true; };
@@ -311,9 +314,14 @@ private:
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfVec3h const &);
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3i.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 inline
 GfVec3h::GfVec3h(class GfVec3d const &other)
@@ -453,4 +461,6 @@ GfSlerp(double alpha, GfVec3h const &v0, GfVec3h const &v1);
 
  
  
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // GF_VEC3H_H

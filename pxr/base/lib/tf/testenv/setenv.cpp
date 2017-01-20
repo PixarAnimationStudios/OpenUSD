@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/setenv.h"
 
 #include "pxr/base/tf/errorMark.h"
@@ -38,6 +40,7 @@
 
 using std::string;
 using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static unsigned int
 _CheckResultInEnv(const string & envName, const string & envVal)

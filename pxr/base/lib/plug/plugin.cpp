@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/debugCodes.h"
 
@@ -50,6 +52,8 @@
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef TfHashMap< std::string, PlugPluginRefPtr, TfHash > _PluginMap;
 typedef TfHashMap< std::string, PlugPluginPtr, TfHash > _WeakPluginMap;
@@ -671,3 +675,4 @@ PlugFindPluginResource(
     return plugin ? plugin->FindPluginResource(path, verify) : std::string();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

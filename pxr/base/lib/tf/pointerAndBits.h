@@ -24,8 +24,12 @@
 #ifndef TF_POINTERANDBITS_H
 #define TF_POINTERANDBITS_H
 
+#include "pxr/pxr.h"
+
 #include <cstdint>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Return true if \p val is a power of two.
 constexpr bool Tf_IsPow2(uintptr_t val) {
@@ -168,5 +172,7 @@ private:
     // Single pointer member stores pointer value and bits.
     T *_ptrAndBits;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_POINTERANDBITS_H

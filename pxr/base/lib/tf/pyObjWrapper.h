@@ -24,12 +24,16 @@
 #ifndef TF_PYOBJWRAPPER_H
 #define TF_PYOBJWRAPPER_H
 
+#include "pxr/pxr.h"
+
 #include <boost/functional/hash.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyObjWrapper
 ///
@@ -119,5 +123,7 @@ private:
     // Store a shared_ptr to a python object.
     boost::shared_ptr<object> _objectPtr;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYOBJWRAPPER_H

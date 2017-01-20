@@ -21,13 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/enum.h"
+
 #include <iostream>
 #include <map>
 #include <boost/assign/list_of.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 enum DebugOff { OFF1, OFF2 };
 
@@ -293,4 +297,4 @@ TF_ADD_REGTEST(TfDebugFatal_2);
 TF_ADD_REGTEST(TfDebugFatal_3);
 TF_ADD_REGTEST(TfDebugFatal_4);
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

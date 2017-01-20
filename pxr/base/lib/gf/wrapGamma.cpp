@@ -23,6 +23,7 @@
 //
 #include <boost/python/def.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
@@ -32,6 +33,8 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapGamma()
 {    
@@ -49,3 +52,5 @@ void wrapGamma()
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4f>);
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4d>);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

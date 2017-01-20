@@ -26,7 +26,10 @@
 
 /// \file tf/expiryNotifier.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Tf_ExpiryNotifier
 ///
@@ -61,5 +64,7 @@ private:
     static void (*_func)(void const *);
     static void (*_func2)(void const *);
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

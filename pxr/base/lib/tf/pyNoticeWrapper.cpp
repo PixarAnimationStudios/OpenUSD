@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
 using namespace boost::python;
@@ -28,6 +31,7 @@ using namespace boost::python;
 using std::map;
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyNoticeWrapperBase::~TfPyNoticeWrapperBase()
 {
@@ -56,3 +60,5 @@ Tf_PyNoticeObjectGenerator::Invoke(TfNotice const &n)
 
 TfStaticData<map<string, Tf_PyNoticeObjectGenerator::MakeObjectFunc> >
     Tf_PyNoticeObjectGenerator::_generators;
+
+PXR_NAMESPACE_CLOSE_SCOPE

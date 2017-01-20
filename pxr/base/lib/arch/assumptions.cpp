@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/align.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
@@ -37,6 +39,8 @@
 #include <Windows.h>
 #include <memory>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static size_t
 Arch_ObtainCacheLineSize()
@@ -152,3 +156,5 @@ Arch_ValidateAssumptions()
         // CODE_COVERAGE_ON  
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
 
 #include <boost/python/class.hpp>
 
 using std::string;
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static string
 _GetFileString(TfCallContext const& cc) {
@@ -47,9 +51,11 @@ void wrapCallContext() {
     typedef TfCallContext This;
 
     class_ <This> ("CallContext", no_init)
-        .add_property("file", &::_GetFileString)
-        .add_property("function", &::_GetFunctionString)
+        .add_property("file", &_GetFileString)
+        .add_property("function", &_GetFunctionString)
         .add_property("line", &This::GetLine)
-        .add_property("prettyFunction", &::_GetPrettyFunctionString)
+        .add_property("prettyFunction", &_GetPrettyFunctionString)
     ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include "pxr/base/arch/defines.h"
@@ -43,6 +46,8 @@
 
 using namespace boost::python;
 namespace boost_pt = boost::posix_time;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static const unsigned short usecNumDigits = 6;
 
@@ -170,3 +175,5 @@ _ImportPyDateTimeModuleOnce()
         PyDateTime_IMPORT;
     });
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

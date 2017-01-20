@@ -24,6 +24,7 @@
 ///
 /// \file test/atomicOfstreamWrapper.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 
 #include "pxr/base/tf/fileUtils.h"
@@ -39,6 +40,7 @@
 #include <fcntl.h>
 
 using namespace std;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static size_t
 Tf_CountFileMatches(const string& pattern)

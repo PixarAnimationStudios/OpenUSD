@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyTracing.h"
 
 #include "pxr/base/tf/pyInterpreter.h"
@@ -38,6 +41,8 @@
 #include <mutex>
 
 using std::list;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef list<boost::weak_ptr<TfPyTraceFn> > TraceFnList;
 
@@ -148,3 +153,4 @@ void Tf_PyTracingPythonInitialized()
         });
 }
             
+PXR_NAMESPACE_CLOSE_SCOPE

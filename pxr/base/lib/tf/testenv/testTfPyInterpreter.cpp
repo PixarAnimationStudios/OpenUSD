@@ -23,6 +23,7 @@
 //
 // testTfPyInterpreter.mm
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyInterpreter.h"
 
 #include <boost/python/handle.hpp>
@@ -30,6 +31,7 @@
 #include <string>
 
 using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static unsigned int
 testInterpreter(bool verbose)

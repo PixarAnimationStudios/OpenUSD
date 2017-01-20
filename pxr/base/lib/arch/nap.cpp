@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_WINDOWS)
@@ -32,6 +34,8 @@
 #else
 #error Unknown architecture.
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 ArchNap(size_t hundredths)
@@ -84,3 +88,5 @@ ArchThreadPause()
 #warning Unknown architecture. Pause instruction skipped.
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

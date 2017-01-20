@@ -27,6 +27,8 @@
 /// \file tf/registryManager.h
 /// \ingroup group_tf_Initialization
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
@@ -35,6 +37,8 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfRegistryManager
 /// \ingroup group_tf_Initialization
@@ -275,4 +279,6 @@ static Tf_RegistryInit tf_registry_init(BOOST_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME)
 #define TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, TAG) \
     TF_REGISTRY_DEFINE(KEY_TYPE, TAG)
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_REGISTRYMANAGER_H

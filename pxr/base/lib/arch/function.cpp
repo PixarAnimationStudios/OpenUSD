@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/function.h"
 #include "pxr/base/arch/defines.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace std;
 
@@ -260,3 +264,5 @@ ArchGetPrettierFunctionName(const string &function,
     return function;
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

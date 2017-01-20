@@ -24,6 +24,8 @@
 #ifndef TF_PYANNOTATEDBOOLRESULT_H
 #define TF_PYANNOTATEDBOOLRESULT_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -33,6 +35,8 @@
 #include <boost/python/return_by_value.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class Annotation>
 struct TfPyAnnotatedBoolResult :
@@ -139,5 +143,7 @@ bool operator!=(bool lhs, TfPyAnnotatedBoolResult<Annotation>& rhs)
 {
     return rhs != lhs;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYANNOTATEDBOOLRESULT_H

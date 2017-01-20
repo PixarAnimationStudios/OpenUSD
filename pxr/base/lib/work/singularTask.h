@@ -26,9 +26,13 @@
 
 /// \file work/singularTask.h
 
+#include "pxr/pxr.h"
+
 #include <atomic>
 #include <functional>
 #include <type_traits>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class WorkDispatcher;
 class WorkArenaDispatcher;
@@ -136,5 +140,7 @@ private:
     std::function<void (std::atomic_size_t &)> _waker;
     std::atomic_size_t _count;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // WORK_SINGULARTASK_H

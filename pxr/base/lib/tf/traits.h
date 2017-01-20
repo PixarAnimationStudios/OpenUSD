@@ -27,9 +27,13 @@
 /// \file tf/traits.h
 /// \ingroup group_tf_RuntimeTyping
 
+#include "pxr/pxr.h"
+
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_const.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfWeakPtrFacadeBase;
 template <class T> class TfRefPtr;
@@ -381,4 +385,6 @@ struct TfTraits::Type<const void*> {
     static const bool isConst = true;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_TRAITS_H

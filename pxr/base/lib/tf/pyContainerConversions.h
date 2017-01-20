@@ -36,6 +36,8 @@
  *                                      LICENSE.txt?rev=1.2&view=markup
  */
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/iterator.h"
@@ -50,6 +52,8 @@
 #include <list>
 #include <set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Converter from vector<string> to python list.
 template <typename ContainerType>
@@ -430,5 +434,7 @@ void TfPyRegisterStlSequencesFromPython()
     from_python_sequence<
         std::deque<T>, variable_capacity_all_items_convertible_policy>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYCONTAINERCONVERSIONS_H

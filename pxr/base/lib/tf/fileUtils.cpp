@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -53,6 +55,8 @@
 using std::set;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static bool
 Tf_Stat(string const& path, bool resolveSymlinks, struct stat* st = 0)
@@ -493,3 +497,5 @@ TfTouchFile(string const &fileName, bool create)
     // the current time, with millisecond precision.
     return utimes(fileName.c_str(), /* times */ NULL) == 0;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

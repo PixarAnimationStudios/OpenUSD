@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/error.h"
@@ -50,6 +52,10 @@
     #error Unknown architecture.    
 
 #endif
+
+using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 std::string
 ArchGetCwd()
@@ -180,3 +186,5 @@ ArchGetExecutablePath()
 
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

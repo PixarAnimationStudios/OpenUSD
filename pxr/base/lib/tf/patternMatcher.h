@@ -28,11 +28,15 @@
 /// \ingroup group_tf_String
 /// A simple glob and regex matching utility.
 
+#include "pxr/pxr.h"
+
 #include <boost/noncopyable.hpp>
 
 #include <sys/types.h>
 #include <regex.h>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPatternMatcher
 /// \ingroup group_tf_String
@@ -116,5 +120,7 @@ class TfPatternMatcher : public boost::noncopyable {
     mutable regex_t _regex;
         
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PATTERNMATCHER_H

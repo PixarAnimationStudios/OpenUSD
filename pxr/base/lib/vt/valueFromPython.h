@@ -26,6 +26,7 @@
 
 /// \file vt/valueFromPython.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/hash.h"
@@ -39,6 +40,8 @@
 #include <memory>
 #include <type_traits>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Vt_ValueFromPythonRegistry
 ///
@@ -172,5 +175,7 @@ template <class T>
 void VtValueFromPythonLValue() {
     Vt_ValueFromPythonRegistry::Register<T>(/* registerRvalue = */ false);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_VALUE_FROM_PYTHON_H

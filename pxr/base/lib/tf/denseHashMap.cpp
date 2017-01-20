@@ -23,10 +23,3 @@
 //
 
 #include "pxr/base/tf/denseHashMap.h"
-
-
-
-
-
-
-

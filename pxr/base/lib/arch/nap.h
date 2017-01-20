@@ -28,8 +28,11 @@
 /// \ingroup group_arch_Multithreading
 /// Routines for very brief pauses in execution.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Multithreading
 ///@{
@@ -59,5 +62,7 @@ ARCH_API
 void ArchThreadPause();
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_NAP_H

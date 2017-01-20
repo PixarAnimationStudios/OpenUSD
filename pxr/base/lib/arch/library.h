@@ -24,6 +24,7 @@
 #ifndef ARCH_LIBRARY_H
 #define ARCH_LIBRARY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 
 #include <string>
@@ -40,6 +41,8 @@
 #   define ARCH_LIBRARY_LOCAL   0
 #   define ARCH_LIBRARY_GLOBAL  0
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// library.h
 /// Architecture dependent loading and unloading of dynamic libraries.
@@ -63,5 +66,7 @@ std::string ArchLibraryError();
 /// \ingroup group_arch_SystemFunctions
 ARCH_API
 int ArchLibraryClose(void* handle);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_LIBRARY_H

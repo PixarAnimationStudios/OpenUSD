@@ -21,9 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/error.h"
+
 #include <cstdlib>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void Code() { }
 static int data = 1;

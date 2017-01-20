@@ -31,6 +31,7 @@
 /// \file gf/vec{{ SUFFIX }}.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -49,6 +50,8 @@
 {% endif %}
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfVec<class {{ VEC }}> { static const bool value = true; };
@@ -306,9 +309,14 @@ private:
 std::ostream& operator<<(std::ostream &, {{ VEC }} const &);
 
 {% if IS_FLOATING_POINT(SCL) %}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 {% for S in SCALARS if S != SCL %}
 #include "pxr/base/gf/vec{{ DIM }}{{ S[0] }}.h"
 {% endfor %}
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 {% for S in SCALARS if S != SCL %}
 inline
@@ -434,5 +442,7 @@ GfSlerp(double alpha, {{ VEC }} const &v0, {{ VEC }} const &v1);
 {% endif %} {# DIM == 3 #}
 
 {% endif %} {# IS_FLOATING_POINT(SCL) #}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_{{ UPPER(VEC)[2:] }}_H

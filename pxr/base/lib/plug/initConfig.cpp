@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/info.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/getenv.h"
@@ -28,7 +30,10 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/symbols.h"
+
 #include <boost/preprocessor/stringize.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -87,3 +92,5 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
 }
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

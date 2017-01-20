@@ -24,12 +24,17 @@
 #ifndef GF_DECLARE_H
 #define GF_DECLARE_H
 
+#include "pxr/pxr.h"
+
 /// \file gf/declare.h
 /// Declares Gf types.
 ///
 /// This file provides typedefs for Gf types.
 
 class half;
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class GfBBox3d;
 class GfFrustum;
 class GfInterval;
@@ -75,4 +80,6 @@ class GfVec4f;
 class GfVec4h;
 class GfVec4i;
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // GF_DECLARE_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -54,6 +56,8 @@ using std::make_pair;
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Change the following line and recompile this file to disable decrementing
 // the allocation counts when freeing memory.
@@ -339,7 +343,7 @@ Tf_MallocCallSite* Tf_GetOrCreateCallSite(Tf_MallocCallSiteTable* table,
 /*
  * This is a singleton.  Because access to this structure is gated via checks
  * to TfMallocTag::_doTagging, we forego the usual TfSingleton pattern and just
- * use a single static-scoped pointer (::_mallocGlobalData) to point to the
+ * use a single static-scoped pointer (_mallocGlobalData) to point to the
  * singleton instance.
  */
 struct Tf_MallocGlobalData
@@ -442,7 +446,7 @@ struct Tf_MallocPathNode
             }
         }
         Tf_MallocPathNode* pathNode = new Tf_MallocPathNode(site);
-        if (!::_mallocGlobalData->_RegisterPathNode(pathNode)) {
+        if (!_mallocGlobalData->_RegisterPathNode(pathNode)) {
             delete pathNode;
             return NULL;
         }
@@ -904,7 +908,7 @@ void
 TfMallocTag::SetDebugMatchList(const std::string& matchList)
 {
     if (TfMallocTag::IsInitialized()) {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
         _mallocGlobalData->_SetDebugNames(matchList);
     }
 }
@@ -913,7 +917,7 @@ void
 TfMallocTag::SetCapturedMallocStacksMatchList(const std::string& matchList)
 {
     if (TfMallocTag::IsInitialized()) {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
         _mallocGlobalData->_SetTraceNames(matchList);
     }
 }
@@ -935,8 +939,8 @@ TfMallocTag::GetCapturedMallocStacks()
     
     // Swap them out while holding the lock.
     {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
-        traces.swap(::_mallocGlobalData->_callStackTable);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
+        traces.swap(_mallocGlobalData->_callStackTable);
     }
 
     TF_FOR_ALL(i, traces)
@@ -955,7 +959,7 @@ TfMallocTag::_MallocWrapper(size_t nBytes, const void*)
         return ptr;
 
     {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
     
         Tf_MallocPathNode* node = _GetCurrentPathNodeNoLock(td);
         size_t blockSize = Tf_GetMallocBlockSize(ptr, nBytes);
@@ -1022,10 +1026,10 @@ TfMallocTag::_ReallocWrapper(void* oldPtr, size_t nBytes, const void*)
 
     void* newPtr = NULL;
     {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
 
         Tf_MallocBlockInfo info;
-        if (::_mallocGlobalData->_UnregisterPathNodeForBlock(oldPtr, &info)) {
+        if (_mallocGlobalData->_UnregisterPathNodeForBlock(oldPtr, &info)) {
 
             size_t bytesFreed = info.blockSize;
             Tf_MallocPathNode* oldNode = 
@@ -1053,7 +1057,7 @@ TfMallocTag::_ReallocWrapper(void* oldPtr, size_t nBytes, const void*)
 
         // Update malloc global data with bookkeeping information. This has to
         // happen while the mutex is held.
-        if (::_mallocGlobalData->_RegisterPathNodeForBlock(
+        if (_mallocGlobalData->_RegisterPathNodeForBlock(
                 newNode, newPtr, blockSize)) {
 
             _mallocGlobalData->_CaptureMallocStack(
@@ -1090,7 +1094,7 @@ TfMallocTag::_MemalignWrapper(size_t alignment, size_t nBytes, const void*)
     if (_ShouldNotTag(&td) || ARCH_UNLIKELY(!ptr))
         return ptr;
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
 
     Tf_MallocPathNode* node = _GetCurrentPathNodeNoLock(td);
     size_t blockSize = Tf_GetMallocBlockSize(ptr, nBytes);
@@ -1129,10 +1133,10 @@ TfMallocTag::_FreeWrapper(void* ptr, const void*)
         return;
     }
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
 
     Tf_MallocBlockInfo info;
-    if (::_mallocGlobalData->_UnregisterPathNodeForBlock(ptr, &info)) {
+    if (_mallocGlobalData->_UnregisterPathNodeForBlock(ptr, &info)) {
         size_t bytesFreed = info.blockSize;
         Tf_MallocPathNode* node = 
             _mallocGlobalData->_allPathNodes[info.pathNodeIndex];
@@ -1161,7 +1165,7 @@ TfMallocTag::_MallocWrapper_ptmalloc(size_t nBytes, const void*)
     if (_ShouldNotTag(&td))
         return ptr;
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
 
     Tf_MallocPathNode* node = _GetCurrentPathNodeNoLock(td);
     size_t actualBytes;
@@ -1210,7 +1214,7 @@ TfMallocTag::_ReallocWrapper_ptmalloc(void* oldPtr, size_t nBytes, const void*)
     if (_ShouldNotTag(&td))
         return newPtr;
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
 
     Tf_MallocPathNode* newNode = _GetCurrentPathNodeNoLock(td);
     size_t actualBytes;
@@ -1257,7 +1261,7 @@ TfMallocTag::_MemalignWrapper_ptmalloc(size_t alignment, size_t nBytes, const vo
     if (_ShouldNotTag(&td))
         return ptr;
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
 
     Tf_MallocPathNode* node = _GetCurrentPathNodeNoLock(td);
     size_t actualBytes;
@@ -1294,7 +1298,7 @@ TfMallocTag::_FreeWrapper_ptmalloc(void* ptr, const void*)
     _ExtractIndexAndGetSize(ptr, &bytesFreed, &index);
 
     if (index && TfMallocTag::_doTagging) {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
         Tf_MallocPathNode* node = _mallocGlobalData->_allPathNodes[index];
 
         _mallocGlobalData->_RunDebugHookForNode(node, ptr, bytesFreed);
@@ -1364,20 +1368,20 @@ TfMallocTag::GetCallTree(CallTree* tree, bool skipRepeated)
 size_t
 TfMallocTag::GetTotalBytes()
 {
-    if (!::_mallocGlobalData)
+    if (!_mallocGlobalData)
         return 0;
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
     return _mallocGlobalData->_totalBytes;
 }
 
 size_t
 TfMallocTag::GetMaxTotalBytes()
 {
-    if (!::_mallocGlobalData)
+    if (!_mallocGlobalData)
         return 0;
 
-    tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
     return _mallocGlobalData->_maxTotalBytes;
 }
 
@@ -1400,7 +1404,7 @@ TfMallocTag::_Initialize(std::string* errMsg)
      * This is called from an EXECUTE_ONCE block, so no
      * need to lock anything.
      */
-    TF_AXIOM(!::_mallocGlobalData);
+    TF_AXIOM(!_mallocGlobalData);
     _mallocGlobalData = new Tf_MallocGlobalData();
 
     // Note that we are *not* using the _TemporaryTaggingState object
@@ -1461,7 +1465,7 @@ TfMallocTag::Auto::_Begin(const char* name)
     Tf_MallocCallSite* site;
 
     {
-        tbb::spin_mutex::scoped_lock lock(::_mallocGlobalData->_mutex);
+        tbb::spin_mutex::scoped_lock lock(_mallocGlobalData->_mutex);
         site = _mallocGlobalData->_GetOrCreateCallSite(name);
 
         if (_threadData->_callSiteOnStack.size() <= site->_index) {
@@ -1888,4 +1892,4 @@ TfMallocTag::_TemporaryTaggingState::~_TemporaryTaggingState()
     TfMallocTag::_SetTagging(_oldState);
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -33,6 +33,8 @@
 #ifndef TF_HASHSET_H
 #define TF_HASHSET_H
 
+#include "pxr/pxr.h"
+
 #if !defined(TF_NO_GNU_EXT)
 // Use GNU extension.
 #include <ext/hash_set>
@@ -671,4 +673,4 @@ operator!=(const TfHashMultiSet<Key, HashFn, EqualKey, Alloc>& lhs,
     return !(lhs == rhs);
 }
 
-#endif
+#endif // TF_HASHSET_H

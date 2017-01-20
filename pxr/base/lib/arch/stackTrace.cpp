@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/attributes.h"
@@ -92,6 +93,8 @@
 #include <map>
 #include <sstream>
 #include <time.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace std;
 
@@ -220,10 +223,12 @@ static const char* const* stackTraceArgv = nullptr;
 
 static long _GetAppElapsedTime();
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // asgetenv() want's this but we can't declare it inside the namespace.
 extern char **environ;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -1495,3 +1500,5 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
     return retval;
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

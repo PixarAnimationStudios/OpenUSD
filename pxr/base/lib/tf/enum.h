@@ -27,6 +27,7 @@
 /// \file tf/enum.h
 /// \ingroup group_tf_RuntimeTyping
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -41,6 +42,8 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfEnum
 /// \ingroup group_tf_RuntimeTyping
@@ -389,7 +392,6 @@ private:
     int _value;
 };
 
-
 /// Output a TfEnum value.
 /// \ingroup group_tf_DebuggingOutput
 std::ostream& operator<<(std::ostream& out, const TfEnum & e);
@@ -425,4 +427,6 @@ std::ostream& operator<<(std::ostream& out, const TfEnum & e);
                      BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__))        \
                      __VA_ARGS__)
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_ENUM_H

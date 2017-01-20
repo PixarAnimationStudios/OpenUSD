@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/stackTrace.h"
@@ -28,6 +30,8 @@
 #include <thread>
 
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 /**
  * This executable performs an invalid memory reference (SIGSEGV)

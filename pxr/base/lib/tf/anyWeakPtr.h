@@ -28,6 +28,7 @@
 /// \ingroup group_tf_Memory
 /// Type independent WeakPtr holder class
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/cxxCast.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/traits.h"
@@ -40,6 +41,8 @@
 #include <cstddef>
 #include <type_traits>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfAnyWeakPtr
 ///
@@ -282,5 +285,7 @@ TfAnyWeakPtr::_PointerHolder<Ptr>::_IsConst() const
 {
     return TfTraits::Type<typename Ptr::DataType>::isConst;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

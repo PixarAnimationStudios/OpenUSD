@@ -25,9 +25,12 @@
 #define WORK_LOOPS_H
 
 /// \file work/loops.h
+#include "pxr/pxr.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include <tbb/tbb.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
@@ -127,4 +130,6 @@ WorkParallelForEach(
     tbb::parallel_for_each(first, last, std::forward<Fn>(fn), ctx);
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // WORK_LOOPS_H

@@ -28,8 +28,11 @@
 /// \ingroup group_arch_SystemFunctions
 /// Functions for dealing with system errors.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_SystemFunctions
 ///@{
@@ -55,5 +58,7 @@ ARCH_API std::string ArchStrSysError(unsigned long errorCode);
 #endif
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_ERRNO_H

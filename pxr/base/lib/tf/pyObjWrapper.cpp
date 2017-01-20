@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyObjWrapper.h"
 
 #include "pxr/base/tf/pyLock.h"
@@ -29,12 +32,19 @@
 
 #include <boost/python/object.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<TfPyObjWrapper>();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 // A custom deleter for shared_ptr<boost::python::object> that takes the
 // python lock before deleting the python object.  This is necessary since it's
 // invalid to decrement the python refcount without holding the lock.
@@ -45,6 +55,8 @@ struct _DeleteObjectWithLock {
     }
 };
 }
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyObjWrapper::TfPyObjWrapper()
 {
@@ -82,3 +94,5 @@ TfPyObjWrapper::operator!=(TfPyObjWrapper const &other) const
 {
     return not (*this == other);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

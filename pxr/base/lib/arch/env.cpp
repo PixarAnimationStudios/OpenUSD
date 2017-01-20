@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 
@@ -28,6 +29,8 @@
 #include <regex>
 
 #include <stdlib.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 ArchHasEnv(const std::string &name)
@@ -120,3 +123,5 @@ ArchExpandEnvironmentVariables(const std::string& value)
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

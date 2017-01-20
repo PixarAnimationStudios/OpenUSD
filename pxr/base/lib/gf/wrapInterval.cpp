@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/interval.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/interval.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -35,6 +36,8 @@
 using namespace boost::python;
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static string
 _Repr(GfInterval const &self)
@@ -159,3 +162,5 @@ void wrapInterval()
     TfPyContainerConversions::from_python_sequence< std::vector<GfInterval>,
         TfPyContainerConversions::variable_capacity_policy >();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

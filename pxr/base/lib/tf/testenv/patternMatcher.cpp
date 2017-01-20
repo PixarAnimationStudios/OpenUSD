@@ -21,8 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/patternMatcher.h"
 #include "pxr/base/tf/regTest.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
 Test_TfPatternMatcher()

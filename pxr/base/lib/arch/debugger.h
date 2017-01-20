@@ -27,8 +27,11 @@
 /// \file arch/debugger.h
 /// Routines for interacting with a debugger.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/attributes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Stop in a debugger.
 ///
@@ -101,5 +104,7 @@ void ArchAbort(bool logging = true);
 #else
 #define ARCH_DEBUGGER_TRAP do { ArchDebuggerTrap(); } while (0)
 #endif
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_DEBUGGER_H

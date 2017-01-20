@@ -29,6 +29,8 @@
 using namespace std;
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // The menv2x python code invokes these methods.  The presto replacements
 // tend to raise exceptions which is not quite the same behavior.  So we
 // wrap these macros in python callable functions.
@@ -54,3 +56,5 @@ void wrapDiagnostic()
         TfInstallTerminateAndCrashHandlers);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

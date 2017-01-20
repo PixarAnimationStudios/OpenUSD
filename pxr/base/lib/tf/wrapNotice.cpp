@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/pyFunction.h"
@@ -40,10 +42,11 @@
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/scope.hpp>
 
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Tf_PyNotice
 {
@@ -287,4 +290,4 @@ void wrapNotice()
         ;
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

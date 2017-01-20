@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/daemon.h"
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <stdio.h>
@@ -34,6 +36,8 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Fork the current process and close all undesired file descriptors.
 //
@@ -122,3 +126,5 @@ ArchCloseAllFiles(int nExcept, const int* exceptFds)
 
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,7 @@
 #ifndef PLUG_REGISTRY_H
 #define PLUG_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 
 #include "pxr/base/js/value.h"
@@ -42,6 +43,8 @@
 #include <mutex>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
 struct Plug_RegistrationMetadata;
@@ -450,5 +453,7 @@ private:
 };
 
 PLUG_API_TEMPLATE_CLASS(TfSingleton<PlugRegistry>);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PLUG_REGISTRY_H

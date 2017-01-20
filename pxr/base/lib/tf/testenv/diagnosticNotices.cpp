@@ -23,7 +23,7 @@
 //
 /// \file tf/test/testTfDiagnosticNotices.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticNotice.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/regTest.h"
@@ -38,6 +38,7 @@
 #include <string>
 
 using std::string;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 enum TfTestDiagnosticCodes { SMALL, MEDIUM, LARGE };
 enum UnRegisteredErrorCode { UNREGISTERED };

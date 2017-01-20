@@ -21,10 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/vsnprintf.h"
+
 #include <string>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
@@ -79,3 +84,5 @@ ArchStringPrintf(const char *fmt, ...)
     va_end(ap);
     return s;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

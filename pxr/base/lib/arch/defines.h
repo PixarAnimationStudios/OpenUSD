@@ -24,6 +24,10 @@
 #ifndef ARCH_DEFINES_H
 #define ARCH_DEFINES_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 //
 // OS
 //
@@ -99,5 +103,7 @@
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
 #endif
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_DEFINES_H 

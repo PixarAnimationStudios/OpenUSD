@@ -29,6 +29,8 @@
 /// \file gf/matrix{{ SUFFIX }}.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec{{ SUFFIX }}.h"
 #include "pxr/base/gf/traits.h"
@@ -39,6 +41,8 @@
 
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfMatrix<class {{ MAT }}> { static const bool value = true; };
@@ -345,6 +349,8 @@ private:
 /// Output a {{ MAT }}
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, {{ MAT }} const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_{{ UPPER(MAT)[2:] }}_H
 

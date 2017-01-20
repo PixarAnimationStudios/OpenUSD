@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyFunction.h"
 
 #include <boost/python/object.hpp>
@@ -28,6 +30,8 @@
 #include <string>
 
 using namespace boost;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapFunction() {
     TfPyFunctionFromPython<void ()>();
@@ -39,3 +43,4 @@ void wrapFunction() {
     TfPyFunctionFromPython<python::object ()>();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

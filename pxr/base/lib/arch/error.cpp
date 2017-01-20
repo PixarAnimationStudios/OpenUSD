@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/debugger.h"
 #include <stdio.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 Arch_Error(const char* cond, const char* funcName, size_t lineNo, const char* fileName)
@@ -43,3 +47,5 @@ Arch_Warning(const char* cond, const char* funcName, size_t lineNo, const char* 
     fprintf(stderr, "     File: %s\n", fileName);
     fprintf(stderr, "     Line: %zu\n", lineNo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

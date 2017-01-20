@@ -31,6 +31,8 @@
 /// \file gf/matrix4f.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/traits.h"
@@ -43,6 +45,8 @@
 
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfMatrix<class GfMatrix4f> { static const bool value = true; };
@@ -472,5 +476,7 @@ private:
 /// Output a GfMatrix4f
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfMatrix4f const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_MATRIX4F_H

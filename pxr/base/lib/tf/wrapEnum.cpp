@@ -26,6 +26,8 @@
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static size_t __hash__(Tf_PyEnumWrapper const &self)
 {
     return TfHash()(self.value);
@@ -74,3 +76,5 @@ void wrapEnum()
         .def( ~ self)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

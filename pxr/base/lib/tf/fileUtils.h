@@ -28,9 +28,13 @@
 /// \ingroup group_tf_File
 /// Definitions of basic file utilities in tf.
 
+#include "pxr/pxr.h"
+
 #include <string>
 #include <vector>
 #include <boost/function.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Returns true if the path exists.
 ///
@@ -208,4 +212,6 @@ TfReadDir(std::string const &dirPath,
 /// already exist. 
 bool TfTouchFile(std::string const &fileName, bool create=true);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_FILEUTILS_H

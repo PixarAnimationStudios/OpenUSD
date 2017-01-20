@@ -22,7 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/arch/export.h"
+#include "pxr/pxr.h"
 #include "pxr/base/arch/testArchAbi.h"
+
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 extern "C" {
 

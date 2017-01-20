@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/vec{{ SUFFIX }}.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
@@ -39,6 +40,8 @@
 
 #include <vector>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<{{ VEC }}>();
@@ -252,3 +255,4 @@ GfSlerp(double alpha, const {{ VEC }} &v0, const {{ VEC }} &v1)
 
 {% endif %}
 
+PXR_NAMESPACE_CLOSE_SCOPE

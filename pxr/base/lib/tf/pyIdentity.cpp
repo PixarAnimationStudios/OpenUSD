@@ -23,6 +23,7 @@
 //
 #include <Python.h>
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pyIdentity.h"
@@ -35,9 +36,10 @@
 // Compile-time option to help debug identity issues.
 //#define DEBUG_IDENTITY
 
-
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 Tf_PyOwnershipPtrMap::_CacheType Tf_PyOwnershipPtrMap::_cache;
 
@@ -407,3 +409,5 @@ void Tf_PyOwnershipRefBaseUniqueChanged(TfRefBase const *refBase,
             Tf_PyIdentityHelper::Acquire(uniqueId);
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

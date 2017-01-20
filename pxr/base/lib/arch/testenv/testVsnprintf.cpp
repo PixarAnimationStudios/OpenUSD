@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/vsnprintf.h"
 #include "pxr/base/arch/error.h"
 
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 using std::string;
 

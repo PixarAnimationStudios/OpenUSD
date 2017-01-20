@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#if !BOOST_PP_IS_ITERATING
 
+#include "pxr/pxr.h"
+
+#if !BOOST_PP_IS_ITERATING
 
 #  ifndef TF_PYCALL_H
 #  define TF_PYCALL_H
@@ -44,6 +46,8 @@
 #include <boost/preprocessor.hpp>
 #include <boost/python/call.hpp>
 #include <boost/python/object.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyCall
 ///
@@ -74,6 +78,8 @@ struct TfPyCall {
 /* comment needed for scons dependency scanner
 #include "pxr/base/tf/pyCall.h"
 */
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #  endif // TF_PYCALL_H
 
@@ -108,3 +114,4 @@ Return operator()(BOOST_PP_ENUM_BINARY_PARAMS(N, A, a))
 #  undef N
 
 #endif // BOOST_PP_IS_ITERATING
+

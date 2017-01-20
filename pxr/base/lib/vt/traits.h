@@ -26,11 +26,14 @@
 
 /// \file vt/traits.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/mpl/bool.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Integral constant base trait type.  TrueType and FalseType are built from
 /// this template.
@@ -78,5 +81,7 @@ struct VtIsValueProxy : boost::is_base_of<VtValueProxyBase, T> {};
 #define VT_TYPE_IS_VALUE_PROXY(T)                               \
     template <> struct VtIsValueProxy<TF_PP_EAT_PARENS(T)>      \
     : boost::mpl::true_ {}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_TRAITS_H

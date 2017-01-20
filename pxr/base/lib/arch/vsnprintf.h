@@ -28,11 +28,15 @@
 /// \ingroup group_arch_Strings
 /// Architecture dependent memory-safe sprintf capability
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/attributes.h"
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Strings
 ///@{
@@ -95,5 +99,7 @@ std::string ArchVStringPrintf(const char *fmt, va_list ap)
 #endif
 
 /// @}
+
+PXR_NAMESPACE_CLOSE_SCOPE
     
 #endif // ARCH_VSNPRINTF_H

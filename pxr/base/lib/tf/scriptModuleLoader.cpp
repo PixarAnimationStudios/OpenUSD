@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/scriptModuleLoader.h"
 
 #include "pxr/base/tf/debug.h"
@@ -37,6 +39,8 @@
 #include <boost/python/handle.hpp>
 
 #include <deque>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(TfScriptModuleLoader);
 
@@ -437,3 +441,5 @@ _TopologicalSort(vector<TfToken> *result) const
     // Add the leaves themselves, at the end.
     result->insert(result->end(), leaves.begin(), leaves.end());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

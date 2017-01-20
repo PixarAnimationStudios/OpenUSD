@@ -21,11 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pySingleton.h"
 
 #include <string>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PySingleton {
 
@@ -48,3 +53,5 @@ Tf_PySingleton::Visitor TfPySingleton() {
 Tf_PySingleton::Visitor TfPySingleton(string const &reprPrefix) {
     return Tf_PySingleton::Visitor(reprPrefix);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

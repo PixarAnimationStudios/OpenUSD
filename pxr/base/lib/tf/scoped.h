@@ -24,9 +24,13 @@
 #ifndef TF_SCOPED_H
 #define TF_SCOPED_H
 
+#include "pxr/pxr.h"
+
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/utility.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfScoped
 /// \ingroup group_tf_Multithreading
@@ -58,7 +62,7 @@ public:
 
 private:
     // Can't put these on the heap.  No implemention needed.
-    static void *operator new(size_t size);
+    static void *operator new(::std::size_t size);
 
 private:
     Procedure _leave;
@@ -79,7 +83,7 @@ public:
 
 private:
     // Can't put these on the heap.  No implemention needed.
-    static void *operator new(size_t size);
+    static void *operator new(::std::size_t size);
 
 private:
     T* _obj;
@@ -101,7 +105,7 @@ public:
 
 private:
     // Can't put these on the heap.  No implemention needed.
-    static void *operator new(size_t size);
+    static void *operator new(::std::size_t size);
 
 private:
     T* _obj;
@@ -139,7 +143,7 @@ public:
 
 private:
     // Can't put these on the heap.  No implemention needed.
-    static void *operator new(size_t size);
+    static void *operator new(::std::size_t size);
 
 private:
     T* _x;
@@ -189,10 +193,12 @@ private:
     }
 
     // Can't put these on the heap.  No implemention needed.
-    static void *operator new(size_t size);
+    static void *operator new(::std::size_t size);
 
 private:
     TfScoped<> _scope;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_SCOPED_H

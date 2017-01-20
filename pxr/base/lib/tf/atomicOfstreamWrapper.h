@@ -27,10 +27,15 @@
 /// \file tf/atomicOfstreamWrapper.h
 /// Atomic file writer with ofstream interface.
 
+#include "pxr/pxr.h"
+
 #include <boost/noncopyable.hpp>
+
 #include <fstream>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfAtomicOfstreamWrapper
 ///
@@ -108,5 +113,7 @@ private:
     std::string _tmpFilePath;
     std::ofstream _stream;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_ATOMIC_OSTREAM_WRAPPER_H

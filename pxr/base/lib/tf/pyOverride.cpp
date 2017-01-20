@@ -21,7 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyOverride.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyMethodResult::TfPyMethodResult(TfPyMethodResult const &other)
 {
@@ -44,3 +47,5 @@ TfPyMethodResult::operator=(TfPyMethodResult const &other)
     }
     return *this;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

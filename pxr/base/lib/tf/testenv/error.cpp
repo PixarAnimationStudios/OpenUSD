@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/error.h"
@@ -34,6 +35,7 @@
 
 #include <string>
 using std::string;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 enum TfTestErrorCodes { SMALL, MEDIUM, LARGE };
 

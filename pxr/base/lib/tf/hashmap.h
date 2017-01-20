@@ -33,6 +33,8 @@
 #ifndef TF_HASHMAP_H
 #define TF_HASHMAP_H
 
+#include "pxr/pxr.h"
+
 #if !defined(TF_NO_GNU_EXT)
 // Use GNU extension.
 #include <ext/hash_map>
@@ -683,4 +685,4 @@ operator!=(const TfHashMultiMap<Key, Mapped, HashFn, EqualKey, Alloc>& lhs,
     return !(lhs == rhs);
 }
 
-#endif
+#endif // TF_HASHMAP_H

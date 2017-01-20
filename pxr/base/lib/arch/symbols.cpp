@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
@@ -30,6 +32,8 @@
 #include <DbgHelp.h>
 #include <Psapi.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 ArchGetAddressInfo(
@@ -127,3 +131,5 @@ ArchGetAddressInfo(
 
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

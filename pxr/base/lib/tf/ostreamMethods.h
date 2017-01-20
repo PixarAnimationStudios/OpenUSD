@@ -38,7 +38,9 @@
 /// human-readable display; the formats described herein are subject to change
 /// without notice.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
+
 #include <iostream>
 #include <vector>
 #include <list>
@@ -48,15 +50,21 @@
 
 #include <boost/type_traits/has_left_shift.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 template <class T>
 constexpr bool Tf_IsOstreamable() {
     return boost::has_left_shift<
         std::ostream &, /* << */ T, /* -> */ std::ostream &>::value;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // These operator<< overloads need to go in the std namespace for
 // Koenig lookup to work.
 namespace std {
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 /// Output an STL vector using [ ] as delimiters.
 /// \ingroup group_tf_DebuggingOutput
@@ -130,4 +138,4 @@ operator<<(std::ostream &out, const std::map<K, M> &h)
 
 } // namespace std
 
-#endif /* TF_OSTREAMMETHODS_H */
+#endif // TF_OSTREAMMETHODS_H 

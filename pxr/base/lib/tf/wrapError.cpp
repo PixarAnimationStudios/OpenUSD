@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
@@ -45,6 +48,8 @@ using std::string;
 using std::vector;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _RaiseCodingError(string const &msg,
@@ -206,10 +211,10 @@ _SetPythonExceptionDebugTracingEnabled(bool enable)
 }
 
 void wrapError() {
-    def("_RaiseCodingError", &::_RaiseCodingError);
-    def("_RaiseRuntimeError", &::_RaiseRuntimeError);
-    def("_Fatal", &::_Fatal);
-    def("RepostErrors", &::_RepostErrors, arg("exception"));
+    def("_RaiseCodingError", &_RaiseCodingError);
+    def("_RaiseRuntimeError", &_RaiseRuntimeError);
+    def("_Fatal", &_Fatal);
+    def("RepostErrors", &_RepostErrors, arg("exception"));
     def("ReportActiveErrorMarks", TfReportActiveErrorMarks);
     def("SetPythonExceptionDebugTracingEnabled",
         _SetPythonExceptionDebugTracingEnabled, arg("enabled"));
@@ -273,9 +278,11 @@ void wrapError() {
         .def("SetMark", &TfErrorMark::SetMark)
         .def("IsClean", &TfErrorMark::IsClean)
         .def("Clear", &TfErrorMark::Clear)
-        .def("GetErrors", &::_GetErrors,
+        .def("GetErrors", &_GetErrors,
             return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
         ;
     
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

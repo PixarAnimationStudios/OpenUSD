@@ -24,6 +24,7 @@
 ///
 /// \file Tf/AtomicOfstreamWrapper.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 
 #include "pxr/base/arch/fileSystem.h"
@@ -36,6 +37,8 @@
 #include <iostream>
 #include <cerrno>
 #include <cstdio>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using std::string;
 
@@ -234,3 +237,4 @@ TfAtomicOfstreamWrapper::Cancel(
     return success;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

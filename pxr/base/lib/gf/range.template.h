@@ -31,6 +31,8 @@
 /// \file gf/range{{ SUFFIX }}.h
 /// \ingroup group_gf_BasicGeometry
 
+#include "pxr/pxr.h"
+
 {% if DIM > 1 %}
 #include "pxr/base/gf/vec{{ DIM }}d.h"
 #include "pxr/base/gf/vec{{ DIM }}f.h"
@@ -42,6 +44,8 @@
 #include <cfloat>
 #include <cstddef>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfRange{{ DIM }}d;
 class GfRange{{ DIM }}f;
@@ -395,7 +399,9 @@ public:
 std::ostream& operator<<(std::ostream &, {{ RNG }} const &);
 
 {% for S in SCALARS if S != SCL %}
+PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/gf/range{{ DIM }}{{ S[0] }}.h"
+PXR_NAMESPACE_OPEN_SCOPE
 {% endfor %}
 
 {% for S in SCALARS if S != SCL %}
@@ -411,5 +417,7 @@ inline bool
 }
 
 {% endfor %}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_{{ UPPER(RNG)[2:] }}_H

@@ -32,10 +32,13 @@
 /// These functions are useful to help with writing stream operators for
 /// Gf types.  Please do not include this file in any header.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <iostream>
 #include <limits>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper class to write out the correct precision
 template <class T>
@@ -68,4 +71,6 @@ operator<<(std::ostream &out, const Gf_OstreamHelperValue<double> &data)
     return out << TfStringify(data.value);
 }
 
-#endif /* GF_OSTREAM_HELPERS */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // GF_OSTREAM_HELPERS 

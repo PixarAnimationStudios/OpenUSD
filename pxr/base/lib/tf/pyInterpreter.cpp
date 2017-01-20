@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
@@ -43,6 +46,8 @@
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 TfPyInitialize()
@@ -218,3 +223,4 @@ TfPyGetModulePath(const std::string & moduleName)
     return getString.check() ? getString() : string();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

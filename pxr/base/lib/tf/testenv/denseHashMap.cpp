@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/denseHashMap.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <cstdio>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // Test equality operator.
 struct TestTf_DenseHashMapModuloEqual

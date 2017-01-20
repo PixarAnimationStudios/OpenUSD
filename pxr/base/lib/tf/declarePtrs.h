@@ -29,9 +29,13 @@
 ///
 /// This file provides typedefs for standard pointer types.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/refPtr.h"
+
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \struct TfDeclarePtrs
 /// Templated struct used for type definition macros.
@@ -85,5 +89,7 @@ template<typename T> struct TfDeclarePtrs {
 #define TF_DECLARE_WEAK_AND_REF_PTRS(type)                              \
     TF_DECLARE_WEAK_PTRS(type);                                         \
     TF_DECLARE_REF_PTRS(type)
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

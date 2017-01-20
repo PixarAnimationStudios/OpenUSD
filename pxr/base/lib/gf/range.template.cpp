@@ -37,6 +37,8 @@
 #include <cfloat>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<{{ RNG }}>();
 }
@@ -159,3 +161,5 @@ const {{ RNG }} {{ RNG }}::UnitSquare({{ MINMAX }}(0,0), {{ MINMAX }}(1,1));
 
 const {{ RNG }} {{ RNG }}::UnitCube({{ MINMAX }}(0,0,0), {{ MINMAX }}(1,1,1));
 {% endif %}
+
+PXR_NAMESPACE_CLOSE_SCOPE

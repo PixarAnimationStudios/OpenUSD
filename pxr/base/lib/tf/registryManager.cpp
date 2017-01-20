@@ -115,6 +115,7 @@
 // the unload code is safe to call at this time.
 //
 
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/debugCodes.h"
@@ -145,6 +146,8 @@ using std::set;
 using std::string;
 using std::type_info;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -631,3 +634,5 @@ Tf_RegistryInit::Add(
     Tf_RegistryManagerImpl::GetInstance().
             AddRegistrationFunction(libName, func, typeName);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/errorTransport.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 TfErrorTransport::_PostImpl()
@@ -29,3 +33,4 @@ TfErrorTransport::_PostImpl()
     TfDiagnosticMgr::GetInstance()._SpliceErrors(_errorList);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/errno.h"
 #include <cerrno>
 #include <cstring>
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 std::string
 ArchStrerror()
@@ -81,3 +85,5 @@ std::string ArchStrSysError(unsigned long errorCode)
     return message;
 }
 #endif
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -32,9 +32,12 @@
 #error This include file can only be included in C++ programs.
 #endif
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include <cstddef>
 #include <cstdint>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Memory
 ///@{
@@ -77,5 +80,7 @@ ArchAlignMemory(void *base)
 #define ARCH_CACHE_LINE_SIZE 64
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif	// ARCH_ALIGN_H 

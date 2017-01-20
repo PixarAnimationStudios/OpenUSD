@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
@@ -46,6 +47,8 @@ using std::cout;
 using std::endl;
 using std::vector;
 using boost::assign::list_of;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 

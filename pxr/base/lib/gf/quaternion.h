@@ -27,11 +27,14 @@
 /// \file gf/quaternion.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec3d.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GfQuaternion
 /// \ingroup group_gf_LinearAlgebra
@@ -227,5 +230,7 @@ GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1, double alph
 /// Output a GfQuaternion using the format (r + (x, y, z)).
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream& out, const GfQuaternion& q);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_QUATERNION_H

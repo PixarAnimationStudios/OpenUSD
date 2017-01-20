@@ -26,14 +26,18 @@
 
 /// \file js/value.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/types.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Value API Version
 // 1 (or undefined) - Initial version.
@@ -277,5 +281,7 @@ inline bool JsValue::IsArrayOf() const
     return std::all_of(array.begin(), array.end(),
                        [](const JsValue& v) { return v.Is<T>(); });
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // JS_VALUE_H

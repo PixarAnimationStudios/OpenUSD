@@ -22,11 +22,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
+
 #include <boost/python/def.hpp>
 #include <string>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Tf_TestAnnotatedBoolResult : TfPyAnnotatedBoolResult<std::string> {
     Tf_TestAnnotatedBoolResult(bool value, const std::string& annotation)
@@ -48,3 +52,5 @@ void wrapTf_TestPyAnnotatedBoolResult()
     Tf_TestAnnotatedBoolResult::Wrap<Tf_TestAnnotatedBoolResult>(
         "Tf_TestAnnotatedBoolResult", "annotation");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
