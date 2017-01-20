@@ -20,6 +20,13 @@
                         ], 
                         "displayGroup": "deprecated", 
                         "type": "token"
+                    }, 
+                    "renderType": {
+                        "appliesTo": [
+                            "properties"
+                        ], 
+                        "displayGroup": "Rendering", 
+                        "type": "token"
                     }
                 }, 
                 "Types": {

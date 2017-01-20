@@ -38,13 +38,6 @@
                         "documentation": "How a primvar interpolates across a primitive; equivalent to RenderMan's 'class specifier'", 
                         "type": "token"
                     }, 
-                    "renderType": {
-                        "appliesTo": [
-                            "attributes"
-                        ], 
-                        "displayGroup": "Rendering", 
-                        "type": "token"
-                    }, 
                     "unauthoredValuesIndex": {
                         "appliesTo": [
                             "attributes"

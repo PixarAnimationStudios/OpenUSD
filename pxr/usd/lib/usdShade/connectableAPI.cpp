@@ -132,25 +132,64 @@ UsdShadeConnectableAPI::_IsCompatible(const UsdPrim &prim) const
     return IsShader() or IsSubgraph();
 }
 
+static TfToken 
+_GetConnectionRelName(const TfToken &attrName)
+{
+    return TfToken(UsdShadeTokens->connectedSourceFor.GetString() + 
+                   attrName.GetString());
+}
+
+UsdRelationship 
+UsdShadeConnectableAPI::GetConnectionRel(
+    const UsdProperty &shadingProp, 
+    bool create)
+{
+    // If it's already a relationship, simply return it as-is.
+    if (UsdRelationship rel = shadingProp.As<UsdRelationship>())
+        return rel;
+
+    const UsdPrim& prim = shadingProp.GetPrim();
+
+    // If it's an attribute, return the associated connectedSourceFor 
+    // relationship.
+    UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
+    if (shadingAttr) {    
+        const TfToken& relName = _GetConnectionRelName(shadingAttr.GetName());
+        if (UsdRelationship rel = prim.GetRelationship(relName)) {
+            return rel;
+        }
+        else if (create) {
+            return prim.CreateRelationship(relName, /* custom = */ false);
+        }
+    }
+    
+    return UsdRelationship();
+}
+
+/* static */
 bool  
 UsdShadeConnectableAPI::MakeConnection(
-    UsdRelationship const &rel,
+    UsdProperty const &shadingProp,
     UsdShadeConnectableAPI const &source, 
-    TfToken const &outputName, 
+    TfToken const &sourceName, 
     SdfValueTypeName typeName,
-    bool outputIsParameter)
+    UsdShadeAttributeType const sourceType)
 {
-
     UsdPrim sourcePrim = source.GetPrim();
     bool  success = true;
     
+    UsdRelationship rel = UsdShadeConnectableAPI::GetConnectionRel(shadingProp, 
+        /* create */ true);
+
     // XXX it WBN to be able to validate source itself, guaranteeing
     // that the source is, in fact connectable (i.e., a shader or subgraph).
     // However, it remains useful to be able to target a pure-over.
     if (rel && sourcePrim) {
-        TfToken sourceName = outputIsParameter ? outputName :
-            TfToken(UsdShadeTokens->outputs.GetString() + outputName.GetString());
-        UsdAttribute  sourceAttr = sourcePrim.GetAttribute(sourceName);
+        std::string prefix = UsdShadeUtilsGetPrefixForAttributeType(
+            sourceType);
+        TfToken sourceAttrName(prefix + sourceName.GetString());
+
+        UsdAttribute  sourceAttr = sourcePrim.GetAttribute(sourceAttrName);
 
         // First make sure there is a source attribute of the proper type
         // on the sourcePrim.
@@ -164,30 +203,30 @@ UsdShadeConnectableAPI::MakeConnection(
                 TF_DEBUG(KATANA_USDBAKE_CONNECTIONS).Msg(
                         "Connecting parameter <%s> of type %s to source <%s>, "
                         "of potentially incompatible type %s. \n",
-                        rel.GetPath().GetText(),
+                        shadingProp.GetPath().GetText(),
                         sinkType.GetAsToken().GetText(),
                         sourceAttr.GetPath().GetText(),
                         sourceType.GetAsToken().GetText());
             }
         } else {
-            sourceAttr = sourcePrim.CreateAttribute(sourceName, typeName,
+            sourceAttr = sourcePrim.CreateAttribute(sourceAttrName, typeName,
                 /* custom = */ false);
         }
         SdfPathVector  target(1, sourceAttr.GetPath());
         success = rel.SetTargets(target);
     }
     else if (!source){
-        TF_CODING_ERROR("Failed connecting parameter <%s>. "
+        TF_CODING_ERROR("Failed connecting shading property <%s>. "
                         "The given source shader prim <%s> is not defined", 
-                        rel.GetPath().GetText(),
+                        shadingProp.GetPath().GetText(),
                         sourcePrim ? sourcePrim.GetPath().GetText() :
                         "invalid-prim");
         return false;
     }
     else if (!rel){
-        TF_CODING_ERROR("Failed connecting parameter <%s>. "
+        TF_CODING_ERROR("Failed connecting shading property <%s>. "
                         "Unable to make the connection to source <%s>.", 
-                        rel.GetPath().GetText(),
+                        shadingProp.GetPath().GetText(),
                         sourcePrim.GetPath().GetText());
         return false;
     }
@@ -195,35 +234,38 @@ UsdShadeConnectableAPI::MakeConnection(
     return success;
 }
 
+/* static */
 bool
-UsdShadeConnectableAPI::EvaluateConnection(UsdRelationship const &connection,
-                                           UsdShadeConnectableAPI *source, 
-                                           TfToken *outputName)
+UsdShadeConnectableAPI::EvaluateConnection(
+    UsdProperty const &shadingProp,
+    UsdShadeConnectableAPI *source, 
+    TfToken *sourceName,
+    UsdShadeAttributeType *sourceType)
 {
+    UsdRelationship connection = GetConnectionRel(shadingProp, false);
+
     *source = UsdShadeConnectableAPI();
     SdfPathVector targets;
     // There should be no possibility of forwarding, here, since the API
     // only allows targetting prims
-    connection.GetTargets(&targets);
-    // XXX(validation)  targets.size() <= 1, also outputName
+    if (connection) {
+        connection.GetTargets(&targets);
+    }
+
+    // XXX(validation)  targets.size() <= 1, also sourceName
     if (targets.size() == 1) {
         SdfPath const & path = targets[0];
         *source = UsdShadeConnectableAPI::Get(connection.GetStage(), 
                                               path.GetPrimPath());
         if (path.IsPropertyPath()){
-            const size_t prefixLen = UsdShadeTokens->outputs.GetString().size();
             TfToken const &attrName(path.GetNameToken());
-            if (TfStringStartsWith(attrName, UsdShadeTokens->outputs)){
-                *outputName = TfToken(attrName.GetString().substr(prefixLen));
-            }
-            else {
-                *outputName = attrName;
-            }
-        } 
-        else {
+
+            std::tie(*sourceName, *sourceType) = 
+                UsdShadeUtilsGetBaseNameAndType(attrName);
+        } else {
             // XXX validation error
             if ( TfGetEnvSetting(USD_SHADE_BACK_COMPAT) ) {
-                return connection.GetMetadata(_tokens->outputName, outputName)
+                return connection.GetMetadata(_tokens->outputName, sourceName)
                     && *source;
             }
         }

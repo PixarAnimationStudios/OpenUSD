@@ -163,30 +163,68 @@ public:
         return UsdShadeShader(GetPrim());
     }
 
-    /// Authors a connection, given the associated output relationship, \p rel, 
-    /// the source prim to which to connect to and the name of the output to 
-    /// connect to. 
+    /// Authors a connection for a given shading property \p shadingProp. 
+    /// 
+    /// \p shadingProp can represent a parameter, an interface attribute or 
+    /// an output.
+    /// \p source is the connectable prim that produces or contains a value 
+    /// for the given shading property.
+    /// \p sourceName is the name of the shading property that is the target
+    /// of the connection. This excludes any namespace prefix that determines 
+    /// the type of the source (eg, output or interface attribute).
     /// \p typeName is used to validate whether the types of the source and 
     /// target of the connection are compatible.
-    /// \p outputIsParameter is used to indicate that the source of the 
-    /// connection is a UsdShadeParameter and not a UsdShadeOutput.
+    /// \p sourceType is used to indicate the type of the shading property 
+    /// that is the target of the connection. The source type is used to 
+    /// determine the namespace prefix that must be attached to \p sourceName
+    /// to determine the source full property name.
+    /// 
+    /// \return 
+    /// \c true if a connection was created successfully. 
+    /// \c false if \p shadingProp or \p source is invalid.
+    /// 
     static bool MakeConnection(
-        UsdRelationship const &rel,
-        UsdShadeConnectableAPI const &sourceShader, 
-        TfToken const &outputName, 
+        UsdProperty const &shadingProp,
+        UsdShadeConnectableAPI const &source, 
+        TfToken const &sourceName, 
         SdfValueTypeName typeName,
-        bool outputIsParameter);
+        UsdShadeAttributeType const sourceType);
 
-    /// Evaluates the source of a connection.
-    /// XXX: Maybe this should return a UsdShadeParameter.
-    /// (or some common base class of UsdShadeParameter and UsdShadeOutput)
+    /// Evaluates the source of a connection for the given shading property.
+    /// 
+    /// \p shadingProp is the input shading property which is typically an 
+    /// attribute, but can be a relationship in the case of a terminal on a 
+    /// material.
+    /// \p source is an output parameter which will be set to the source 
+    /// connectable prim.
+    /// \p sourceName will be set to the name of the source shading property, 
+    /// which could be the parameter name, output name or the interface 
+    /// attribute name. This does not include the namespace prefix associated 
+    /// with the source type. 
+    /// \p sourceType will have the type of the source shading property.
+    ///
+    /// \return 
+    /// \c true if the shading property is connected to a valid, defined source.
+    /// \c false if the shading property is not connected to a single, valid 
+    /// source. 
+    /// 
     static bool EvaluateConnection(
-        UsdRelationship const &connection,
+        UsdProperty const &shadingProp,
         UsdShadeConnectableAPI *source, 
-        TfToken *outputName);
+        TfToken *sourceName,
+        UsdShadeAttributeType *sourceType);
 
-    /// Create an output which can either have a value or can be connected.
-    /// The attribute representing the output is created in the "outputs:" 
+    /// Returns the relationship that encodes the connection to the given 
+    /// shading property, which can be a parameter, an output or an 
+    /// interface attribute.
+    static UsdRelationship GetConnectionRel(
+        const UsdProperty &shadingProp, 
+        bool create);
+
+    /// Create an output, which represents and externally computed, typed value.
+    /// Outputs on subgraphs can be connected. 
+    /// 
+    /// The attribute representing an output is created in the "outputs:" 
     /// namespace.
     /// 
     UsdShadeOutput CreateOutput(const TfToken& name,

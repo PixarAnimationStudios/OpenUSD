@@ -135,8 +135,10 @@ _GatherShadingParameters(
         if (shaderParam.IsConnected()) {
             UsdShadeConnectableAPI source;
             TfToken outputName;
+            UsdShadeAttributeType sourceType;
 
-            if (shaderParam.GetConnectedSource(&source, &outputName)) {
+            if (shaderParam.GetConnectedSource(&source, &outputName, &sourceType)) 
+            {
                 std::string targetHandle = _CreateShadingNode(
                         source.GetPrim(), 
                         currentTime,

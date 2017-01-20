@@ -45,7 +45,6 @@
 #include "pxr/base/tf/type.h"
 
 class SdfAssetPath;
-class UsdShadeConnectableAPI;
 
 // -------------------------------------------------------------------------- //
 // SHADER                                                                     //

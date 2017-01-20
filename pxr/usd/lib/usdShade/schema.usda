@@ -64,6 +64,12 @@ over "GLOBAL" (
                 denoting an output.
                 """
             }
+            dictionary interface = {
+                string value = "interface:"
+                string doc = """The prefix on UsdShadeSubgraph attributes 
+                denoting an interface attribute.
+                """
+            }
         }
     }
 )

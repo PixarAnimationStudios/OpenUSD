@@ -39,6 +39,7 @@ pxr_shared_library(usdShade
         wrapShader.cpp
         wrapSubgraph.cpp
         wrapTokens.cpp
+        wrapUtils.cpp
 
     PYTHON_FILES
         __init__.py

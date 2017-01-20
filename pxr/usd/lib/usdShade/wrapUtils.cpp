@@ -21,19 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/pyModule.h"
+#include <boost/python/def.hpp>
+#include <boost/python/enum.hpp>
 
-TF_WRAP_MODULE
+#include "pxr/usd/usdShade/utils.h"
+
+using namespace boost::python;
+
+void wrapUsdShadeUtils()
 {
-    TF_WRAP(UsdShadeUtils);
-    TF_WRAP(UsdShadeConnectableAPI);
-    TF_WRAP(UsdShadeInterfaceAttribute); 
-    TF_WRAP(UsdShadeParameter);
-    TF_WRAP(UsdShadeOutput);
-    TF_WRAP(UsdShadePShader);
-    TF_WRAP(UsdShadeShader);
-    TF_WRAP(UsdShadeSubgraph);
-    TF_WRAP(UsdShadeMaterial); 
-    TF_WRAP(UsdShadeLook); 
-    TF_WRAP(UsdShadeTokens);
+    enum_<UsdShadeAttributeType>("AttributeType")
+        .value("Parameter", UsdShadeAttributeType::Parameter)
+        .value("Output", UsdShadeAttributeType::Output)
+        .value("InterfaceAttribute", 
+            UsdShadeAttributeType::InterfaceAttribute)
+        ;
+
+    def("GetPrefixForAttributeType", 
+        UsdShadeUtilsGetPrefixForAttributeType);
+    def("GetBaseNameAndType", 
+        UsdShadeUtilsGetBaseNameAndType);
 }

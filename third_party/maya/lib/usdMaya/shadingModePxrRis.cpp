@@ -282,8 +282,9 @@ _CreateShaderObject(
 
         UsdShadeConnectableAPI source;
         TfToken sourceOutputName;
+        UsdShadeAttributeType sourceType;
         // follow shader connections and recurse.
-        if (param.GetConnectedSource(&source, &sourceOutputName)) {
+        if (param.GetConnectedSource(&source, &sourceOutputName, &sourceType)) {
             if (UsdRiRisObject sourceRisObj = UsdRiRisObject(source.GetPrim())) {
                 MObject sourceObj = _GetOrCreateShaderObject(sourceRisObj, context);
                 MFnDependencyNode sourceDep(sourceObj, &status);

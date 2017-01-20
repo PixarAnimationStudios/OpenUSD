@@ -43,6 +43,7 @@
     (displayColor) \
     (displayOpacity) \
     ((infoId, "info:id")) \
+    ((interface, "interface:")) \
     ((lookBinding, "look:binding")) \
     ((materialBinding, "material:binding")) \
     (materialVariant) \
@@ -78,6 +79,7 @@
 /// \li <b>displayColor</b> - UsdShadePShader
 /// \li <b>displayOpacity</b> - UsdShadePShader
 /// \li <b>infoId</b> - UsdShadeShader
+/// \li <b>interface</b> - The prefix on UsdShadeSubgraph attributes  denoting an interface attribute. 
 /// \li <b>lookBinding</b> - The relationship name on non shading prims to denote a binding to a UsdShadeLook. This is a deprecated relationship and is superceded by material:binding. 
 /// \li <b>materialBinding</b> -  The relationship name on non-shading prims to denote a binding to a UsdShadeMaterial. 
 /// \li <b>materialVariant</b> - The variant name of material variation described on a UsdShadeMaterial. 

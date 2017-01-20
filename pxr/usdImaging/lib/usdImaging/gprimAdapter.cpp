@@ -220,7 +220,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
     for (UsdShadeParameter const& param : shader.GetParameters()) {
         UsdShadeConnectableAPI source;
         TfToken outputName;
-        if (param.GetConnectedSource(&source, &outputName)) {
+        UsdShadeAttributeType sourceType;
+        if (param.GetConnectedSource(&source, &outputName, &sourceType)) {
             UsdAttribute attr = UsdShadeShader(source).GetIdAttr();
             TfToken id;
             if (!attr || !attr.Get(&id)) {
