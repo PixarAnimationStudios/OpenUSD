@@ -150,7 +150,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
     }
 
     HdSt_BasisCurvesShaderKey shaderKey(_topology->GetCurveBasis(),
-                                      hasAuthoredNormals,
+                                        hasAuthoredNormals,
                                         (_SupportsSmoothCurves(desc,
                                                                _refineLevel)));
 
@@ -549,29 +549,6 @@ HdStBasisCurves::_SupportsSmoothCurves(const HdStBasisCurvesReprDesc &desc,
     }
 
     return false;
-}
-
-/*static*/
-int
-HdStBasisCurves::GetDirtyBitsMask(TfToken const &reprName)
-{
-    int mask = HdChangeTracker::Clean;
-    _BasisCurvesReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
-
-    for (auto desc : descs) {
-        if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) {
-            continue;
-        }
-
-        mask |= HdChangeTracker::DirtyNormals
-             |  HdChangeTracker::DirtyPoints
-             |  HdChangeTracker::DirtyPrimVar
-             |  HdChangeTracker::DirtyRefineLevel
-             |  HdChangeTracker::DirtyTopology
-             |  HdChangeTracker::DirtyWidths;
-    }
-
-    return mask;
 }
 
 HdChangeTracker::DirtyBits 

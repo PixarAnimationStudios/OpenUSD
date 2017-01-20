@@ -66,9 +66,6 @@ public:
     static void ConfigureRepr(TfToken const &reprName,
                               HdStBasisCurvesReprDesc desc);
 
-    /// Return the dirtyBits mask to be tracked for \p reprName
-    static int GetDirtyBitsMask(TfToken const &reprName);
-
     /// Returns whether refinement is always on or not.
     static bool IsEnabledForceRefinedCurves();
     

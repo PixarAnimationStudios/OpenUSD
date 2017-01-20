@@ -34,7 +34,6 @@
 HdRprimCollection::HdRprimCollection()
     : _forcedRepr(false)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
-    , _dirtyBitsMask(HdChangeTracker::Clean)
 {
     /*NOTHING*/
 }
@@ -46,9 +45,7 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     , _reprName(reprName)
     , _forcedRepr(forcedRepr)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
-    , _dirtyBitsMask(HdChangeTracker::Clean)
 {
-    _ComputeDirtyBitsMask();
 }
 
 HdRprimCollection::HdRprimCollection(TfToken const& name,
@@ -58,7 +55,6 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     : _name(name)
     , _reprName(reprName)
     , _forcedRepr(forcedRepr)
-    , _dirtyBitsMask(HdChangeTracker::Clean)
 {
     if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Root path must be absolute");
@@ -66,7 +62,6 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     } else {
         _rootPaths.push_back(rootPath);
     }
-    _ComputeDirtyBitsMask();
 }
 
 HdRprimCollection::~HdRprimCollection()
@@ -74,17 +69,6 @@ HdRprimCollection::~HdRprimCollection()
     /*NOTHING*/
 }
 
-void
-HdRprimCollection::_ComputeDirtyBitsMask()
-{
-    // Gather dirtyBits to be tracked on given reprs for each prim type.
-    _dirtyBitsMask = HdChangeTracker::Clean;
-
-    _dirtyBitsMask |= HdRprim::GetDirtyBitsMask(_reprName);
-    _dirtyBitsMask |= HdMesh::GetDirtyBitsMask(_reprName);
-    _dirtyBitsMask |= HdBasisCurves::GetDirtyBitsMask(_reprName);
-    _dirtyBitsMask |= HdPoints::GetDirtyBitsMask(_reprName);
-}
 
 SdfPathVector const& 
 HdRprimCollection::GetRootPaths() const
@@ -148,7 +132,6 @@ HdRprimCollection::ComputeHash() const
     TF_FOR_ALL(pathIt, _rootPaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
     }
-    boost::hash_combine(h, _dirtyBitsMask);
     TF_FOR_ALL(pathIt, _excludePaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
     }

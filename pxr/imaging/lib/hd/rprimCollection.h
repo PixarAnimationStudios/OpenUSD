@@ -95,11 +95,6 @@ public:
         _forcedRepr = flag;
     }
 
-    /// Returns dirty bits which this collection uses.
-    int GetDirtyBitsMask() const {
-        return _dirtyBitsMask;
-    }
-
     /// Returns the paths at which all Rprims must be rooted to be included in
     /// this collection. Defaults to a vector containing only
     /// SdfPath::AbsoluteRootPath().
@@ -141,17 +136,11 @@ private:
     friend std::ostream & operator <<(std::ostream &out, 
         HdRprimCollection const & v);
 
-    void _ComputeDirtyBitsMask();
-
     TfToken _name;
     TfToken _reprName;
     bool _forcedRepr;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
-
-    // A mask of all possible dirty bits that can affect prims in this
-    // collection
-    int _dirtyBitsMask;
 };
 
 typedef std::vector<HdRprimCollection> HdRprimCollectionVector;

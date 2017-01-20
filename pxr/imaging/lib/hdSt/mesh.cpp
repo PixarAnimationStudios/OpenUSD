@@ -1227,39 +1227,6 @@ HdStMesh::_SetGeometricShaders()
     }
 }
 
-/*static*/
-int
-HdStMesh::GetDirtyBitsMask(TfToken const &reprName)
-{
-    HD_TRACE_FUNCTION();
-
-    int mask = HdChangeTracker::Clean
-        | HdChangeTracker::DirtyCullStyle
-        | HdChangeTracker::DirtyDoubleSided
-        | HdChangeTracker::DirtyPrimVar
-        | HdChangeTracker::DirtyRefineLevel
-        ;
-
-    _MeshReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
-
-    for (auto desc : descs) {
-        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
-            continue;
-        }
-
-        mask |= HdChangeTracker::DirtyPoints
-             |  HdChangeTracker::DirtyPrimVar
-             |  HdChangeTracker::DirtyTopology;
-
-        if (desc.smoothNormals) {
-            mask |= HdChangeTracker::DirtyNormals;
-        }
-
-
-    }
-    return mask;
-}
-
 HdChangeTracker::DirtyBits
 HdStMesh::_GetInitialDirtyBits() const
 {

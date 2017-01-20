@@ -106,9 +106,6 @@ public:
                               HdStMeshReprDesc desc1,
                               HdStMeshReprDesc desc2=HdStMeshReprDesc());
 
-    /// Return the dirtyBits mask to be tracked for \p reprName
-    static int GetDirtyBitsMask(TfToken const &reprName);
-
 protected:
     virtual HdReprSharedPtr const & _GetRepr(
         TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBitsState);

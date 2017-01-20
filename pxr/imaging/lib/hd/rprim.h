@@ -95,9 +95,6 @@ public:
     /// Return the unique instance id
     int32_t GetPrimId() const { return _primId; };
 
-    /// Return the dirtyBits mask to be tracked for rprim.
-    static int GetDirtyBitsMask(TfToken const &reprName);
-
     int GetInitialDirtyBitsMask() const;
 
     /// Returns the SceneDelegate object that is backing this Rprim.

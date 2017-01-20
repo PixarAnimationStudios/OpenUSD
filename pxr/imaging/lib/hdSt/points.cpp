@@ -210,26 +210,6 @@ HdStPoints::_PopulateVertexPrimVars(HdDrawItem *drawItem,
                                  sources);
 }
 
-/*static*/
-int
-HdStPoints::GetDirtyBitsMask(TfToken const &reprName)
-{
-    int mask = HdChangeTracker::Clean;
-
-    _PointsReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
-
-    for (auto desc : descs) {
-        if (desc.geomStyle == HdPointsGeomStyleInvalid) {
-            continue;
-        }
-        mask |= HdChangeTracker::DirtyPoints
-             |  HdChangeTracker::DirtyPrimVar
-             |  HdChangeTracker::DirtyWidths;
-    }
-
-    return mask;
-}
-
 HdChangeTracker::DirtyBits 
 HdStPoints::_GetInitialDirtyBits() const
 {

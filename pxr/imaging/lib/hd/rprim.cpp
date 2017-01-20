@@ -387,17 +387,3 @@ HdRprim::_GetInstancerTransforms()
     }
     return transforms;
 }
-
-int
-HdRprim::GetDirtyBitsMask(TfToken const &reprName)
-{
-    int mask =
-          HdChangeTracker::DirtyVisibility
-        | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyTransform
-        | HdChangeTracker::DirtyPrimID
-        | HdChangeTracker::DirtyInstancer
-        | HdChangeTracker::DirtyInstanceIndex
-        | HdChangeTracker::DirtySurfaceShader;
-    return mask;
-}
