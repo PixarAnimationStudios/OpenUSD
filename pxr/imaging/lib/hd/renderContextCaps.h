@@ -81,6 +81,9 @@ public:
     // workarounds for driver issues
     bool copyBufferEnabled;
 
+    // GPU compute
+    bool gpuComputeEnabled;           // GPU subdivision, smooth normals  (4.3)
+
 private:
     void _LoadCaps();
     HdRenderContextCaps();

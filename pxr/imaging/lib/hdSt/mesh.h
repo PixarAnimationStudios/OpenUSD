@@ -78,24 +78,6 @@ public:
 
     virtual ~HdStMesh();
 
-    /// Returns whether computation of smooth normals is enabled on GPU.
-    static bool IsEnabledSmoothNormalsGPU();
-
-    /// Returns whether quadrangulation is enabled.
-    /// This is used temporarily for testing.
-    static bool IsEnabledQuadrangulationCPU();
-
-    /// Returns whether quadrangulation is enabled.
-    /// This is used temporarily for testing.
-    static bool IsEnabledQuadrangulationGPU();
-
-    static bool IsEnabledQuadrangulation() {
-        return IsEnabledQuadrangulationCPU() || IsEnabledQuadrangulationGPU();
-    }
-
-    /// Returns whether GPU refinement is enabled or not.
-    static bool IsEnabledRefineGPU();
-
     /// Returns whether packed (10_10_10 bits) normals to be used
     static bool IsEnabledPackedNormals();
 

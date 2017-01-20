@@ -51,6 +51,18 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_COPY_BUFFER, true,
 TF_DEFINE_ENV_SETTING(HD_GLSL_VERSION, 0,
                       "GLSL version");
 
+// To enable GPU compute features, OpenSubdiv must be configured to support
+// GLSL compute kernel.
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+// default to GPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#else
+// default to CPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#endif
+
 // Initialize members to ensure a sane starting state.
 HdRenderContextCaps::HdRenderContextCaps()
     : glVersion(0)
@@ -68,6 +80,7 @@ HdRenderContextCaps::HdRenderContextCaps()
     , explicitUniformLocation(false)
     , shadingLanguage420pack(false)
     , copyBufferEnabled(true)
+    , gpuComputeEnabled(false)
 {
 }
 
@@ -236,6 +249,21 @@ HdRenderContextCaps::_LoadCaps()
         copyBufferEnabled = false;
     }
 
+    // GPU Compute
+    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+        if (glslVersion >= 430 && shaderStorageBufferEnabled) {
+            gpuComputeEnabled = true;
+        } else {
+            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                    "(OpenGL 4.3 required).\n");
+        }
+#else
+        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
+#endif
+    }
+
     if (TfDebug::IsEnabled(HD_RENDER_CONTEXT_CAPS)) {
         std::cout
             << "HdRenderContextCaps: \n"
@@ -267,6 +295,9 @@ HdRenderContextCaps::_LoadCaps()
             <<    shadingLanguage420pack << "\n"
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
+
+            << "  GPU Compute                        = "
+            <<    gpuComputeEnabled << "\n"
             ;
 
         if (!copyBufferEnabled) {

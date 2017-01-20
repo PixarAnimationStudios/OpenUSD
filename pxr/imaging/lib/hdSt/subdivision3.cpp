@@ -66,13 +66,13 @@ typedef OpenSubdiv::Osd::GLComputeEvaluator HdSt_OsdGpuEvaluator;
 #elif OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
 
 #include <opensubdiv/osd/glXFBEvaluator.h>
-#define HD_ENABLE_GPU_SUBDIVISION 1
+#define HDST_ENABLE_GPU_SUBDIVISION 1
 typedef OpenSubdiv::Osd::GLStencilTableTBO HdSt_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLXFBEvaluator HdSt_OsdGpuEvaluator;
 
 #else
 
-#define HD_ENABLE_GPU_SUBDIVISION 0
+#define HDST_ENABLE_GPU_SUBDIVISION 0
 
 #endif
 
@@ -137,7 +137,7 @@ private:
     OpenSubdiv::Far::PatchTable const *_patchTable;
     bool _adaptive;
 
-#if HD_ENABLE_GPU_SUBDIVISION
+#if HDST_ENABLE_GPU_SUBDIVISION
     /// Returns GPU stencil table. Creates it if not existed.
     /// A valid GL context has to be made to current before calling this method.
     HdSt_OsdGpuStencilTable *_GetGpuStencilTable();
@@ -191,7 +191,7 @@ HdSt_Osd3Subdivision::HdSt_Osd3Subdivision()
       _patchTable(NULL),
       _adaptive(false)
 {
-#if HD_ENABLE_GPU_SUBDIVISION
+#if HDST_ENABLE_GPU_SUBDIVISION
     _gpuStencilTable = NULL;
 #endif
 }
@@ -201,7 +201,7 @@ HdSt_Osd3Subdivision::~HdSt_Osd3Subdivision()
     delete _vertexStencils;
     delete _varyingStencils;
     delete _patchTable;
-#if HD_ENABLE_GPU_SUBDIVISION
+#if HDST_ENABLE_GPU_SUBDIVISION
     delete _gpuStencilTable;
 #endif
 }
@@ -289,7 +289,7 @@ void
 HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
                               TfToken const &name)
 {
-#if HD_ENABLE_GPU_SUBDIVISION
+#if HDST_ENABLE_GPU_SUBDIVISION
     // filling coarse vertices has been done at resource registry.
 
     // vertex buffer wrapper for OpenSubdiv API
@@ -368,7 +368,7 @@ HdSt_Osd3Subdivision::CreateRefineComputationGPU(HdSt_MeshTopology *topology,
                                       topology, name, dataType, numComponents));
 }
 
-#if HD_ENABLE_GPU_SUBDIVISION
+#if HDST_ENABLE_GPU_SUBDIVISION
 HdSt_OsdGpuStencilTable *
 HdSt_Osd3Subdivision::_GetGpuStencilTable()
 {

@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -47,11 +48,11 @@
 
 #include "pxr/base/vt/value.h"
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SMOOTH_NORMALS, "CPU",
-                      "Select smooth normals computation device (CPU/GPU)");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_QUADRANGULATE, "0",
-                      "Enable quadrangulation (0/CPU/GPU)");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINE_GPU, 0, "GPU refinement");
+// for debugging
+TF_DEFINE_ENV_SETTING(HD_ENABLE_FORCE_QUADRANGULATE, 0,
+                      "Apply quadrangulation for all meshes for debug");
+
+// default to use packed normals
 TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
                       "Use packed normals");
 
@@ -76,35 +77,10 @@ HdStMesh::~HdStMesh()
     /*NOTHING*/
 }
 
-/* static */
-bool
-HdStMesh::IsEnabledSmoothNormalsGPU()
+static bool
+_IsEnabledForceQuadrangulate()
 {
-    static bool enabled = (TfGetEnvSetting(HD_ENABLE_SMOOTH_NORMALS) == "GPU");
-    return enabled;
-}
-
-/* static */
-bool
-HdStMesh::IsEnabledQuadrangulationCPU()
-{
-    static bool enabled = (TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "CPU");
-    return enabled;
-}
-
-/* static */
-bool
-HdStMesh::IsEnabledQuadrangulationGPU()
-{
-    static bool enabled = (TfGetEnvSetting(HD_ENABLE_QUADRANGULATE) == "GPU");
-    return enabled;
-}
-
-/* static */
-bool
-HdStMesh::IsEnabledRefineGPU()
-{
-    static bool enabled = (TfGetEnvSetting(HD_ENABLE_REFINE_GPU) == 1);
+    static bool enabled = (TfGetEnvSetting(HD_ENABLE_FORCE_QUADRANGULATE) == 1);
     return enabled;
 }
 
@@ -208,7 +184,8 @@ HdStMesh::_PopulateTopology(HdDrawItem *drawItem,
                     // Quadrangulate preprocessing
                     HdSt_QuadInfoBuilderComputationSharedPtr quadInfoBuilder =
                         topology->GetQuadInfoBuilderComputation(
-                            HdStMesh::IsEnabledQuadrangulationGPU(), id,
+                            HdRenderContextCaps::GetInstance().gpuComputeEnabled,
+                            id,
                             resourceRegistry);
                     resourceRegistry->AddSource(quadInfoBuilder);
                 }
@@ -334,7 +311,7 @@ HdStMesh::_PopulateAdjacency()
 
             resourceRegistry->AddSource(adjacencyComputation);
 
-            if (IsEnabledSmoothNormalsGPU()) {
+            if (HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
                 // also send adjacency table to gpu
                 HdBufferSourceSharedPtr adjacencyForGpuComputation =
                     adjacency->GetAdjacencyBuilderForGPUComputation();
@@ -365,7 +342,7 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
 {
     if (!TF_VERIFY(computations)) return source;
 
-    if (!HdStMesh::IsEnabledQuadrangulationGPU()) {
+    if (!HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
         // CPU quadrangulation
         HdResourceRegistry *resourceRegistry =
             &HdResourceRegistry::GetInstance();
@@ -389,8 +366,9 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
             topology->GetQuadrangulateComputationGPU(
                 source->GetName(), source->GetGLComponentDataType(), id);
         // computation can be null for all quad mesh.
-        if (computation)
+        if (computation) {
             computations->push_back(computation);
+        }
         return source;
     }
 }
@@ -439,7 +417,7 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
 {
     if (!TF_VERIFY(computations)) return source;
 
-    if (!HdStMesh::IsEnabledRefineGPU()) {
+    if (!HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
         // CPU subdivision
         // note: if the topology is empty, the source will be returned
         //       without change. We still need the type of buffer
@@ -493,7 +471,8 @@ HdStMesh::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     int numPoints = _topology ? _topology->ComputeNumPoints() : 0;
 
     bool cpuSmoothNormals =
-        requireSmoothNormals && (!IsEnabledSmoothNormalsGPU());
+        requireSmoothNormals &&
+        (!HdRenderContextCaps::GetInstance().gpuComputeEnabled);
 
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
     // Don't call _GetRefineLevelForDesc(desc) instead of GetRefineLevel(). Why?
@@ -902,7 +881,7 @@ HdStMesh::_UsePtexIndices() const
 
     // Fallback to the environment variable, which allows forcing of
     // quadrangulation for debugging/testing.
-    return IsEnabledQuadrangulation();
+    return _IsEnabledForceQuadrangulate();
 }
 
 void

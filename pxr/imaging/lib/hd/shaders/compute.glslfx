@@ -103,7 +103,8 @@ void main()
                          points[vPrev+2]);
         normal += cross(next - current, prev - current);
     }
-    normal = normalize(normal);
+    float n = 1.0/max(length(normal), 0.000001);
+    normal *= n;
     int nIndex = (index+vertexOffset)*normalsStride + normalsOffset;
     normals[nIndex+0] = normal.x;
     normals[nIndex+1] = normal.y;

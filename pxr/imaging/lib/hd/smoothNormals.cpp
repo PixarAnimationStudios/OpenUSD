@@ -259,6 +259,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     glDispatchCompute(numPoints, 1, 1);
 
     glUseProgram(0);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);

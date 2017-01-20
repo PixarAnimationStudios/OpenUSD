@@ -792,7 +792,7 @@ HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &ran
     uniform.vertexOffset = range->GetOffset();
     // quadinfo offset/stride in aggregated adjacency table
     uniform.quadInfoStride = quadInfoStride;
-    uniform.quadInfoOffset = quadrangulateTable->GetOffset();
+    uniform.quadInfoOffset = quadrangulateTableRange->GetOffset();
     uniform.maxNumVert = quadInfo->maxNumVert;
     // interleaved offset/stride to points
     // note: this code (and the glsl smooth normal compute shader) assumes
@@ -828,6 +828,7 @@ HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &ran
     glDispatchCompute(numNonQuads, 1, 1);
 
     glUseProgram(0);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
