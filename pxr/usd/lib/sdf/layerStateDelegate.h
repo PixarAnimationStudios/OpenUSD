@@ -109,20 +109,20 @@ public:
 
     void PushChild(
         const SdfPath& parentPath,
-        const TfToken field,
-        const TfToken value);
+        const TfToken& field,
+        const TfToken& value);
     void PushChild(
         const SdfPath& parentPath,
-        const TfToken field,
-        const SdfPath value);
+        const TfToken& field,
+        const SdfPath& value);
     void PopChild(
         const SdfPath& parentPath,
-        const TfToken field,
-        const TfToken oldValue);
+        const TfToken& field,
+        const TfToken& oldValue);
     void PopChild(
         const SdfPath& parentPath,
-        const TfToken field,
-        const SdfPath oldValue);
+        const TfToken& field,
+        const SdfPath& oldValue);
 
 protected:
     SdfLayerStateDelegateBase();

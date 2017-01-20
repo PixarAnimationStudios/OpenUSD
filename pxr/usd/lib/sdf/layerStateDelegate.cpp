@@ -141,8 +141,8 @@ SdfLayerStateDelegateBase::MoveSpec(
 void 
 SdfLayerStateDelegateBase::PushChild(
     const SdfPath& parentPath,
-    const TfToken field,
-    const TfToken value)
+    const TfToken& field,
+    const TfToken& value)
 {
     _OnPushChild(parentPath, field, value);
     _layer->_PrimPushChild(parentPath, field, value, /* useDelegate = */ false);
@@ -151,8 +151,8 @@ SdfLayerStateDelegateBase::PushChild(
 void 
 SdfLayerStateDelegateBase::PushChild(
     const SdfPath& parentPath,
-    const TfToken field,
-    const SdfPath value)
+    const TfToken& field,
+    const SdfPath& value)
 {
     _OnPushChild(parentPath, field, value);
     _layer->_PrimPushChild(parentPath, field, value, /* useDelegate = */ false);
@@ -161,18 +161,19 @@ SdfLayerStateDelegateBase::PushChild(
 void 
 SdfLayerStateDelegateBase::PopChild(
     const SdfPath& parentPath,
-    const TfToken field,
-    const TfToken oldValue)
+    const TfToken& field,
+    const TfToken& oldValue)
 {
     _OnPopChild(parentPath, field, oldValue);
-    _layer->_PrimPopChild<TfToken>(parentPath, field, /* useDelegate = */ false);
+    _layer->_PrimPopChild<TfToken>(parentPath, field,
+                                   /* useDelegate = */ false);
 }
 
 void 
 SdfLayerStateDelegateBase::PopChild(
     const SdfPath& parentPath,
-    const TfToken field,
-    const SdfPath oldValue)
+    const TfToken& field,
+    const SdfPath& oldValue)
 {
     _OnPopChild(parentPath, field, oldValue);
     _layer->_PrimPopChild<SdfPath>(parentPath, field,
