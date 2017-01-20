@@ -23,10 +23,13 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/triangulate.h"
-#include "pxr/imaging/hd/meshTopology.h"
+#include "pxr/imaging/hdSt/triangulate.h"
+#include "pxr/imaging/hdSt/meshTopology.h"
+
+#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
 
 #include "pxr/base/gf/vec3i.h"
 
@@ -76,14 +79,14 @@ bool _FanTriangulate(T &dst, U const *src,
     return true;
 }
 
-Hd_TriangleIndexBuilderComputation::Hd_TriangleIndexBuilderComputation(
-    HdMeshTopology *topology, SdfPath const &id)
+HdSt_TriangleIndexBuilderComputation::HdSt_TriangleIndexBuilderComputation(
+    HdSt_MeshTopology *topology, SdfPath const &id)
     : _id(id), _topology(topology)
 {
 }
 
 void
-Hd_TriangleIndexBuilderComputation::AddBufferSpecs(
+HdSt_TriangleIndexBuilderComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 3));
@@ -92,7 +95,7 @@ Hd_TriangleIndexBuilderComputation::AddBufferSpecs(
 }
 
 bool
-Hd_TriangleIndexBuilderComputation::Resolve()
+HdSt_TriangleIndexBuilderComputation::Resolve()
 {
     if (!_TryLock()) return false;
 
@@ -173,7 +176,7 @@ Hd_TriangleIndexBuilderComputation::Resolve()
                 // note that ptex indexing isn't available along with
                 // triangulation.
                 int coarseFaceParam =
-                    HdMeshTopology::EncodeCoarseFaceParam(i, edgeFlag);
+                    HdSt_MeshTopology::EncodeCoarseFaceParam(i, edgeFlag);
                 primitiveParam[tv] = coarseFaceParam;
                 ++tv;
             }
@@ -201,19 +204,19 @@ Hd_TriangleIndexBuilderComputation::Resolve()
 }
 
 bool
-Hd_TriangleIndexBuilderComputation::HasChainedBuffer() const
+HdSt_TriangleIndexBuilderComputation::HasChainedBuffer() const
 {
     return true;
 }
 
 HdBufferSourceSharedPtr
-Hd_TriangleIndexBuilderComputation::GetChainedBuffer() const
+HdSt_TriangleIndexBuilderComputation::GetChainedBuffer() const
 {
     return _primitiveParam;
 }
 
 bool
-Hd_TriangleIndexBuilderComputation::_CheckValid() const
+HdSt_TriangleIndexBuilderComputation::_CheckValid() const
 {
     return true;
 }
@@ -287,8 +290,8 @@ _TriangulateFaceVarying(HdBufferSourceSharedPtr const &source,
                                        source->GetName(), VtValue(results)));
 }
 
-Hd_TriangulateFaceVaryingComputation::Hd_TriangulateFaceVaryingComputation(
-    HdMeshTopology *topology,
+HdSt_TriangulateFaceVaryingComputation::HdSt_TriangulateFaceVaryingComputation(
+    HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &source,
     SdfPath const &id)
     : _id(id), _topology(topology), _source(source)
@@ -296,7 +299,7 @@ Hd_TriangulateFaceVaryingComputation::Hd_TriangulateFaceVaryingComputation(
 }
 
 bool
-Hd_TriangulateFaceVaryingComputation::Resolve()
+HdSt_TriangulateFaceVaryingComputation::Resolve()
 {
     if (!TF_VERIFY(_source)) return false;
     if (!_source->IsResolved()) return false;
@@ -357,14 +360,14 @@ Hd_TriangulateFaceVaryingComputation::Resolve()
 }
 
 void
-Hd_TriangulateFaceVaryingComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_TriangulateFaceVaryingComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
 }
 
 bool
-Hd_TriangulateFaceVaryingComputation::_CheckValid() const
+HdSt_TriangulateFaceVaryingComputation::_CheckValid() const
 {
     return (_source->IsValid());
 }

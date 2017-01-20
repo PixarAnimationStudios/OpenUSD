@@ -26,7 +26,6 @@
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -48,6 +47,9 @@ struct HdStBasisCurvesReprDesc {
 
     HdBasisCurvesGeomStyle geomStyle:2;
 };
+
+typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
+                                              HdSt_BasisCurvesTopologySharedPtr;
 
 /// \class HdStBasisCurves
 ///
@@ -117,7 +119,7 @@ private:
 
     void _ResetGeometricShaders();
 
-    HdBasisCurvesTopologySharedPtr _topology;
+    HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;
     int _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
@@ -126,4 +128,4 @@ private:
     static _BasisCurvesReprConfig _reprDescConfig;
 };
 
-#endif // HD_BASIS_CURVES_H
+#endif // HDST_BASIS_CURVES_H

@@ -1,8 +1,6 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdSt)
 
-set(optionalPublicClasses "")
-
 pxr_shared_library(hdSt
     LIBRARIES
         hd
@@ -13,4 +11,12 @@ pxr_shared_library(hdSt
         basisCurves
         mesh
         points
+
+    PRIVATE_CLASSES
+        basisCurvesTopology
+        meshTopology    
+        quadrangulate
+        subdivision
+        subdivision3
+        triangulate
 )

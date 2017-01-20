@@ -38,6 +38,7 @@
 #include <boost/weak_ptr.hpp>
 
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
+typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationSharedPtr;
 typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationPtr;
 
 class HdMeshTopology;

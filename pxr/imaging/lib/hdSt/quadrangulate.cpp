@@ -23,11 +23,11 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/quadrangulate.h"
+#include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/meshTopology.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/glslProgram.h"
-#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -36,14 +36,14 @@
 
 #include "pxr/base/gf/vec4i.h"
 
-Hd_QuadInfoBuilderComputation::Hd_QuadInfoBuilderComputation(
-    HdMeshTopology *topology, SdfPath const &id)
+HdSt_QuadInfoBuilderComputation::HdSt_QuadInfoBuilderComputation(
+    HdSt_MeshTopology *topology, SdfPath const &id)
     : _id(id), _topology(topology)
 {
 }
 
 bool
-Hd_QuadInfoBuilderComputation::Resolve()
+HdSt_QuadInfoBuilderComputation::Resolve()
 {
     if (!_TryLock()) return false;
 
@@ -56,10 +56,10 @@ Hd_QuadInfoBuilderComputation::Resolve()
     int numVertIndices = _topology->GetFaceVertexIndices().size();
     int numHoleFaces = _topology->GetHoleIndices().size();
     // compute numPoints from topology indices
-    int numPoints = HdMeshTopology::ComputeNumPoints(
+    int numPoints = HdSt_MeshTopology::ComputeNumPoints(
         _topology->GetFaceVertexIndices());
 
-    Hd_QuadInfo *quadInfo = new Hd_QuadInfo();
+    HdSt_QuadInfo *quadInfo = new HdSt_QuadInfo();
 
     quadInfo->numVerts.clear();
     quadInfo->verts.clear();
@@ -120,23 +120,23 @@ Hd_QuadInfoBuilderComputation::Resolve()
 }
 
 bool
-Hd_QuadInfoBuilderComputation::_CheckValid() const
+HdSt_QuadInfoBuilderComputation::_CheckValid() const
 {
     return true;
 }
 
 // ---------------------------------------------------------------------------
 
-Hd_QuadIndexBuilderComputation::Hd_QuadIndexBuilderComputation(
-    HdMeshTopology *topology,
-    Hd_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
+HdSt_QuadIndexBuilderComputation::HdSt_QuadIndexBuilderComputation(
+    HdSt_MeshTopology *topology,
+    HdSt_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
     SdfPath const &id)
     : _id(id), _topology(topology), _quadInfoBuilder(quadInfoBuilder)
 {
 }
 
 void
-Hd_QuadIndexBuilderComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_QuadIndexBuilderComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 4));
     // coarse-quads uses int2 as primitive param.
@@ -144,7 +144,7 @@ Hd_QuadIndexBuilderComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 bool
-Hd_QuadIndexBuilderComputation::Resolve()
+HdSt_QuadIndexBuilderComputation::Resolve()
 {
     // quadInfoBuilder may or may not exists, depending on how we switched
     // the repr of the mesh. If it exists, we have to wait.
@@ -167,7 +167,7 @@ Hd_QuadIndexBuilderComputation::Resolve()
 
     // count num quads
     bool invalidTopology = false;
-    int numQuads = HdMeshTopology::ComputeNumQuads(
+    int numQuads = HdSt_MeshTopology::ComputeNumQuads(
         _topology->GetFaceVertexCounts(),
         _topology->GetHoleIndices(),
         &invalidTopology);
@@ -182,7 +182,7 @@ Hd_QuadIndexBuilderComputation::Resolve()
 
     // quadrangulated verts is added to the end.
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
-    int vertIndex = HdMeshTopology::ComputeNumPoints(
+    int vertIndex = HdSt_MeshTopology::ComputeNumPoints(
         _topology->GetFaceVertexIndices());
 
     // TODO: We need to support ptex index in addition to coarse indices.
@@ -225,7 +225,7 @@ Hd_QuadIndexBuilderComputation::Resolve()
                 quadsFaceVertexIndices[qv][3] = (vertsPtr[v+3]);
             }
             primitiveParam[qv] = GfVec2i(
-                HdMeshTopology::EncodeCoarseFaceParam(i, 0), qv);
+                HdSt_MeshTopology::EncodeCoarseFaceParam(i, 0), qv);
             ++qv;
         } else {
             // quadrangulate non-quad faces
@@ -258,7 +258,7 @@ Hd_QuadIndexBuilderComputation::Resolve()
                     quadsFaceVertexIndices[qv][3] = vertIndex + (j+nv-1)%nv;
                 }
                 primitiveParam[qv] = GfVec2i(
-                    HdMeshTopology::EncodeCoarseFaceParam(i, 0), qv);
+                    HdSt_MeshTopology::EncodeCoarseFaceParam(i, 0), qv);
                 ++qv;
             }
             vertIndex += nv + 1;
@@ -281,19 +281,19 @@ Hd_QuadIndexBuilderComputation::Resolve()
 }
 
 bool
-Hd_QuadIndexBuilderComputation::HasChainedBuffer() const
+HdSt_QuadIndexBuilderComputation::HasChainedBuffer() const
 {
     return true;
 }
 
 HdBufferSourceSharedPtr
-Hd_QuadIndexBuilderComputation::GetChainedBuffer() const
+HdSt_QuadIndexBuilderComputation::GetChainedBuffer() const
 {
     return _primitiveParam;
 }
 
 bool
-Hd_QuadIndexBuilderComputation::_CheckValid() const
+HdSt_QuadIndexBuilderComputation::_CheckValid() const
 {
     return true;
 }
@@ -301,14 +301,14 @@ Hd_QuadIndexBuilderComputation::_CheckValid() const
 
 // ---------------------------------------------------------------------------
 
-Hd_QuadrangulateTableComputation::Hd_QuadrangulateTableComputation(
-    HdMeshTopology *topology, HdBufferSourceSharedPtr const &quadInfoBuilder)
+HdSt_QuadrangulateTableComputation::HdSt_QuadrangulateTableComputation(
+    HdSt_MeshTopology *topology, HdBufferSourceSharedPtr const &quadInfoBuilder)
     : _topology(topology), _quadInfoBuilder(quadInfoBuilder)
 {
 }
 
 bool
-Hd_QuadrangulateTableComputation::Resolve()
+HdSt_QuadrangulateTableComputation::Resolve()
 {
     if (!TF_VERIFY(_quadInfoBuilder)) return false;
     if (!_quadInfoBuilder->IsResolved()) return false;
@@ -316,16 +316,16 @@ Hd_QuadrangulateTableComputation::Resolve()
 
     HD_TRACE_FUNCTION();
 
-    Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!quadInfo) {
-        TF_CODING_ERROR("Hd_QuadInfo is null.");
+        TF_CODING_ERROR("HdSt_QuadInfo is null.");
         return true;
     }
 
     // transfer quadrangulation table to GPU
     // for the same reason as cpu quadrangulation, we need a check
     // of IsAllQuads here.
-    // see the comment on HdMeshTopology::Quadrangulate()
+    // see the comment on HdSt_MeshTopology::Quadrangulate()
     if (!quadInfo->IsAllQuads()) {
         int quadInfoStride = quadInfo->maxNumVert + 2;
         int numNonQuads = quadInfo->numVerts.size();
@@ -371,7 +371,7 @@ Hd_QuadrangulateTableComputation::Resolve()
 }
 
 void
-Hd_QuadrangulateTableComputation::AddBufferSpecs(
+HdSt_QuadrangulateTableComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     // quadinfo computation produces an index buffer for quads.
@@ -381,7 +381,7 @@ Hd_QuadrangulateTableComputation::AddBufferSpecs(
 }
 
 bool
-Hd_QuadrangulateTableComputation::_CheckValid() const
+HdSt_QuadrangulateTableComputation::_CheckValid() const
 {
     return true;
 }
@@ -391,7 +391,7 @@ Hd_QuadrangulateTableComputation::_CheckValid() const
 template <typename T>
 HdBufferSourceSharedPtr
 _Quadrangulate(HdBufferSourceSharedPtr const &source,
-               Hd_QuadInfo const *qi)
+               HdSt_QuadInfo const *qi)
 {
     // CPU quadrangulation
 
@@ -436,8 +436,8 @@ _Quadrangulate(HdBufferSourceSharedPtr const &source,
 }
 
 
-Hd_QuadrangulateComputation::Hd_QuadrangulateComputation(
-    HdMeshTopology *topology,
+HdSt_QuadrangulateComputation::HdSt_QuadrangulateComputation(
+    HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &source,
     HdBufferSourceSharedPtr const &quadInfoBuilder,
     SdfPath const &id)
@@ -447,7 +447,7 @@ Hd_QuadrangulateComputation::Hd_QuadrangulateComputation(
 }
 
 bool
-Hd_QuadrangulateComputation::Resolve()
+HdSt_QuadrangulateComputation::Resolve()
 {
     if (!TF_VERIFY(_source)) return false;
     if (!_source->IsResolved()) return false;
@@ -459,7 +459,7 @@ Hd_QuadrangulateComputation::Resolve()
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->quadrangulateCPU);
 
-    Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!TF_VERIFY(quadInfo)) return true;
 
     // If the topology is all quads, just return source.
@@ -467,7 +467,7 @@ Hd_QuadrangulateComputation::Resolve()
     // whether the topology is all-quads or not until the quadinfo computation
     // is resolved. So we conservatively register primvar quadrangulations
     // on that case, it hits this condition. Once quadinfo resolved on the
-    // topology, HdMeshTopology::GetQuadrangulateComputation returns null
+    // topology, HdSt_MeshTopology::GetQuadrangulateComputation returns null
     // and nobody calls this function for all-quads prims.
     if (quadInfo->IsAllQuads()) {
         _SetResult(_source);
@@ -515,20 +515,20 @@ Hd_QuadrangulateComputation::Resolve()
 }
 
 void
-Hd_QuadrangulateComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_QuadrangulateComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
 }
 
 int
-Hd_QuadrangulateComputation::GetGLComponentDataType() const
+HdSt_QuadrangulateComputation::GetGLComponentDataType() const
 {
     return _source->GetGLComponentDataType();
 }
 
 bool
-Hd_QuadrangulateComputation::_CheckValid() const
+HdSt_QuadrangulateComputation::_CheckValid() const
 {
     return (_source->IsValid());
 }
@@ -637,15 +637,15 @@ _QuadrangulateFaceVarying(HdBufferSourceSharedPtr const &source,
                                        source->GetName(), VtValue(results)));
 }
 
-Hd_QuadrangulateFaceVaryingComputation::Hd_QuadrangulateFaceVaryingComputation(
-    HdMeshTopology *topology,
+HdSt_QuadrangulateFaceVaryingComputation::HdSt_QuadrangulateFaceVaryingComputation(
+    HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
     : _id(id), _topology(topology), _source(source)
 {
 }
 
 bool
-Hd_QuadrangulateFaceVaryingComputation::Resolve()
+HdSt_QuadrangulateFaceVaryingComputation::Resolve()
 {
     if (!TF_VERIFY(_source)) return false;
     if (!_source->IsResolved()) return false;
@@ -706,7 +706,7 @@ Hd_QuadrangulateFaceVaryingComputation::Resolve()
 }
 
 void
-Hd_QuadrangulateFaceVaryingComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_QuadrangulateFaceVaryingComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
@@ -714,15 +714,15 @@ Hd_QuadrangulateFaceVaryingComputation::AddBufferSpecs(HdBufferSpecVector *specs
 
 
 bool
-Hd_QuadrangulateFaceVaryingComputation::_CheckValid() const
+HdSt_QuadrangulateFaceVaryingComputation::_CheckValid() const
 {
     return (_source->IsValid());
 }
 
 // ---------------------------------------------------------------------------
 
-Hd_QuadrangulateComputationGPU::Hd_QuadrangulateComputationGPU(
-    HdMeshTopology *topology, TfToken const &sourceName, GLenum dataType,
+HdSt_QuadrangulateComputationGPU::HdSt_QuadrangulateComputationGPU(
+    HdSt_MeshTopology *topology, TfToken const &sourceName, GLenum dataType,
     SdfPath const &id)
     : _id(id), _topology(topology), _name(sourceName), _dataType(dataType)
 {
@@ -733,7 +733,7 @@ Hd_QuadrangulateComputationGPU::Hd_QuadrangulateComputationGPU(
 }
 
 void
-Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
+HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
 {
     if (!TF_VERIFY(_topology))
         return;
@@ -750,9 +750,9 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!quadInfo) {
-        TF_CODING_ERROR("Hd_QuadInfo is null.");
+        TF_CODING_ERROR("HdSt_QuadInfo is null.");
         return;
     }
 
@@ -838,7 +838,7 @@ Hd_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range
 }
 
 void
-Hd_QuadrangulateComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_QuadrangulateComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
     //
@@ -847,12 +847,12 @@ Hd_QuadrangulateComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 int
-Hd_QuadrangulateComputationGPU::GetNumOutputElements() const
+HdSt_QuadrangulateComputationGPU::GetNumOutputElements() const
 {
-    Hd_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
 
     if (!quadInfo) {
-        TF_CODING_ERROR("Hd_QuadInfo is null [%s]", _id.GetText());
+        TF_CODING_ERROR("HdSt_QuadInfo is null [%s]", _id.GetText());
         return 0;
     }
 

@@ -21,126 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_MESH_TOPOLOGY_H
-#define HD_MESH_TOPOLOGY_H
+#ifndef HDST_MESH_TOPOLOGY_H
+#define HDST_MESH_TOPOLOGY_H
 
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/topology.h"
-#include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/meshTopology.h"
 
-#include "pxr/imaging/pxOsd/meshTopology.h"
-
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/value.h"
-
-#include "pxr/base/tf/token.h"
-
-#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationSharedPtr;
-typedef boost::shared_ptr<class Hd_QuadInfoBuilderComputation> Hd_QuadInfoBuilderComputationSharedPtr;
-typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationPtr;
-typedef boost::weak_ptr<class Hd_QuadInfoBuilderComputation> Hd_QuadInfoBuilderComputationPtr;
 class HdResourceRegistry;
-class Hd_Subdivision;
-struct Hd_QuadInfo;
-class Hd_VertexAdjacency;
-typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
+class HdSt_Subdivision;
+struct HdSt_QuadInfo;
+class SdfPath;
 
-/// \class HdMeshTopology
+typedef boost::weak_ptr<class HdBufferSource> HdBufferSourceWeakPtr;
+typedef boost::weak_ptr<class HdSt_AdjacencyBuilderComputation> HdSt_AdjacencyBuilderComputationPtr;
+typedef boost::weak_ptr<class HdSt_QuadInfoBuilderComputation> HdSt_QuadInfoBuilderComputationPtr;
+typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
+typedef boost::shared_ptr<class HdSt_AdjacencyBuilderComputation> HdSt_AdjacencyBuilderComputationSharedPtr;
+typedef boost::shared_ptr<class HdSt_QuadInfoBuilderComputation> HdSt_QuadInfoBuilderComputationSharedPtr;
+typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
+
+/// \class HdSt_MeshTopology
 ///
-/// Topology data for meshes.
+/// Hydra Stream implementation for mesh topology.
 ///
-/// HtMeshTopology holds the raw input topology data for a mesh and is capable
-/// of computing derivative topological data (such as indices or subdivision
-/// stencil tables and patch tables).
-///
-class HdMeshTopology : public HdTopology {
+class HdSt_MeshTopology final : public HdMeshTopology {
 public:
+    static HdSt_MeshTopologySharedPtr New(const HdMeshTopology &src,
+                                          int refineLevel);
 
-    HdMeshTopology();
-    HdMeshTopology(const HdMeshTopology &, int refineLevel=0);
-    HdMeshTopology(const PxOsdMeshTopology &, int refineLevel=0);
-    HdMeshTopology(
-        TfToken scheme,
-        TfToken orientation,
-        VtIntArray faceVertexCounts,
-        VtIntArray faceVertexIndices,
-        int refineLevel=0);
-    HdMeshTopology(
-        TfToken scheme,
-        TfToken orientation,
-        VtIntArray faceVertexCounts,
-        VtIntArray faceVertexIndices,
-        VtIntArray holeIndices,
-        int refineLevel=0);
-    virtual ~HdMeshTopology();
-
-#if defined(HD_SUPPORT_OPENSUBDIV2)
-    /// Returns whether OpenSubdiv 3.0 to be used.
-    static bool IsEnabledOpenSubdiv3();
-#endif
-
-    /// Returns whether adaptive subdivision is enabled or not.
-    static bool IsEnabledAdaptive();
-
-    PxOsdMeshTopology const & GetPxOsdMeshTopology() const {
-        return _topology;
-    }
-
-    /// Returns the num faces
-    int GetNumFaces() const;
-
-    /// Returns the num facevarying primvars
-    int GetNumFaceVaryings() const;
-
-    /// Returns the num points by looking vert indices array
-    int ComputeNumPoints() const;
-
-    /// Returns the num points by looking vert indices array
-    static int ComputeNumPoints(VtIntArray const &verts);
-
-    /// Returns the number of quadrangulated quads.
-    /// If degenerated face is found, sets invalidFaceFound as true.
-    static int ComputeNumQuads(VtIntArray const &numVerts,
-                               VtIntArray const &holeIndices,
-                               bool *invalidFaceFound=NULL);
-
-    /// Returns the subdivision scheme
-    TfToken const GetScheme() const {
-        return _topology.GetScheme();
-    }
-
-    /// Returns the refinement level
-    int GetRefineLevel() const {
-        return _refineLevel;
-    }
-
-    /// Returns face vertex counts.
-    VtIntArray const &GetFaceVertexCounts() const {
-        return _topology.GetFaceVertexCounts();
-    }
-
-    /// Returns face vertex indics.
-    VtIntArray const &GetFaceVertexIndices() const {
-        return _topology.GetFaceVertexIndices();
-    }
-
-    /// Returns orientation.
-    TfToken const &GetOrientation() const {
-        return _topology.GetOrientation();
-    }
-
-    /// Returns the hash value of this topology to be used for instancing.
-    virtual ID ComputeHash() const;
+    virtual ~HdSt_MeshTopology();
 
     /// Equality check between two mesh topologies.
-    bool operator==(HdMeshTopology const &other) const;
+    bool operator==(HdSt_MeshTopology const &other) const;
 
     /// \name Triangulation
     /// @{
@@ -164,9 +81,9 @@ public:
     /// quadrangulation.
     /// If gpu is true, the quadrangulate table will be transferred to GPU
     /// via the resource registry.
-    Hd_QuadInfoBuilderComputationSharedPtr GetQuadInfoBuilderComputation(
+    HdSt_QuadInfoBuilderComputationSharedPtr GetQuadInfoBuilderComputation(
         bool gpu, SdfPath const &id,
-        HdResourceRegistry *resourceRegistry=NULL);
+        HdResourceRegistry *resourceRegistry = nullptr);
 
     /// Returns the quad indices (for drawing) buffer source computation.
     HdBufferSourceSharedPtr GetQuadIndexBuilderComputation(SdfPath const &id);
@@ -195,10 +112,10 @@ public:
 
     /// Sets the quadrangulation struct. HdMeshTopology takes an
     /// ownership of quadInfo (caller shouldn't free)
-    void SetQuadInfo(Hd_QuadInfo const *quadInfo);
+    void SetQuadInfo(HdSt_QuadInfo const *quadInfo);
 
     /// Returns the quadrangulation struct.
-    Hd_QuadInfo const *GetQuadInfo() const {
+    HdSt_QuadInfo const *GetQuadInfo() const {
         return _quadInfo;
     }
 
@@ -213,46 +130,18 @@ public:
 
     /// @}
 
-
-    ///
-    /// \name Hole
-    /// @{
-
-    /// Sets hole face indices. faceIndices needs to be sorted in
-    /// ascending order.
-    void SetHoleIndices(VtIntArray const &holeIndices) {
-        _topology.SetHoleIndices(holeIndices);
-    }
-
-    /// Returns the hole face indices.
-    VtIntArray const &GetHoleIndices() const {
-        return _topology.GetHoleIndices();
-    }
-
-    /// @}
-
     ///
     /// \name Subdivision
     /// @{
 
 
-    /// Sets subdivision tags.
-    void SetSubdivTags(PxOsdSubdivTags const &subdivTags) {
-        _topology.SetSubdivTags(subdivTags);
-    }
-
-    /// Returns subdivision tags
-    PxOsdSubdivTags &GetSubdivTags() {
-        return _topology.GetSubdivTags();
-    }
-
     /// Returns the subdivision struct.
-    Hd_Subdivision const *GetSubdivision() const {
+    HdSt_Subdivision const *GetSubdivision() const {
         return _subdivision;
     }
 
     /// Returns the subdivision struct (non-const).
-    Hd_Subdivision *GetSubdivision() {
+    HdSt_Subdivision *GetSubdivision() {
         return _subdivision;
     }
 
@@ -294,27 +183,25 @@ public:
     }
 
 private:
-    // Computes smooth normals using vertex adjacency.
-    template <typename Vec3Type>
-    VtArray<Vec3Type>
-    _ComputeSmoothNormals(int numPoints, Vec3Type const * pointsPtr);
-
-private:
-
-    PxOsdMeshTopology _topology;
-    int _refineLevel;
-
     // quadrangulation info on CPU
-    Hd_QuadInfo const *_quadInfo;
+    HdSt_QuadInfo const *_quadInfo;
 
     // quadrangulation info on GPU
     HdBufferArrayRangeSharedPtr _quadrangulateTableRange;
 
-    Hd_QuadInfoBuilderComputationPtr _quadInfoBuilder;
+    HdSt_QuadInfoBuilderComputationPtr _quadInfoBuilder;
 
     // OpenSubdiv
-    Hd_Subdivision *_subdivision;
+    HdSt_Subdivision *_subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
+
+    // Must be created through factory
+    explicit HdSt_MeshTopology(const HdMeshTopology &src, int refineLevel);
+
+    // No default construction or copying.
+    HdSt_MeshTopology()                                      = delete;
+    HdSt_MeshTopology(const HdSt_MeshTopology &)             = delete;
+    HdSt_MeshTopology &operator =(const HdSt_MeshTopology &) = delete;
 };
 
-#endif // HD_MESH_TOPOLOGY_H
+#endif // HDST_MESH_TOPOLOGY_H

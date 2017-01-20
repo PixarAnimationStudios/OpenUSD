@@ -21,16 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/subdivision.h"
+#include "pxr/imaging/hdSt/subdivision.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 /*virtual*/
-Hd_Subdivision::~Hd_Subdivision()
+HdSt_Subdivision::~HdSt_Subdivision()
 {
 }
 
 bool
-Hd_Subdivision::RefinesToTriangles(TfToken const &scheme)
+HdSt_Subdivision::RefinesToTriangles(TfToken const &scheme)
 {
     // XXX: Ideally we'd like to delegate this to the concrete class.
     if (scheme == PxOsdOpenSubdivTokens->loop) {
@@ -40,7 +41,7 @@ Hd_Subdivision::RefinesToTriangles(TfToken const &scheme)
 }
 
 bool
-Hd_Subdivision::RefinesToBSplinePatches(TfToken const &scheme)
+HdSt_Subdivision::RefinesToBSplinePatches(TfToken const &scheme)
 {
     if (scheme == PxOsdOpenSubdivTokens->catmark ||
         scheme == PxOsdOpenSubdivTokens->catmullClark) {
@@ -50,22 +51,22 @@ Hd_Subdivision::RefinesToBSplinePatches(TfToken const &scheme)
 }
 
 // ---------------------------------------------------------------------------
-Hd_OsdTopologyComputation::Hd_OsdTopologyComputation(
-    HdMeshTopology *topology, int level, SdfPath const &id)
+HdSt_OsdTopologyComputation::HdSt_OsdTopologyComputation(
+    HdSt_MeshTopology *topology, int level, SdfPath const &id)
     : _topology(topology), _level(level), _id(id)
 {
 }
 
 /*virtual*/
 void
-Hd_OsdTopologyComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdTopologyComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }
 
 // ---------------------------------------------------------------------------
-Hd_OsdIndexComputation::Hd_OsdIndexComputation(
-    HdMeshTopology *topology, HdBufferSourceSharedPtr const &osdTopology)
+HdSt_OsdIndexComputation::HdSt_OsdIndexComputation(
+    HdSt_MeshTopology *topology, HdBufferSourceSharedPtr const &osdTopology)
     : _topology(topology)
     , _osdTopology(osdTopology)
 {
@@ -73,9 +74,9 @@ Hd_OsdIndexComputation::Hd_OsdIndexComputation(
 
 /*virtual*/
 void
-Hd_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    if (Hd_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
+    if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
         specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 3));
         specs->push_back(HdBufferSpec(HdTokens->primitiveParam, GL_INT, 3));
@@ -93,21 +94,21 @@ Hd_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 
 /*virtual*/
 bool
-Hd_OsdIndexComputation::HasChainedBuffer() const
+HdSt_OsdIndexComputation::HasChainedBuffer() const
 {
     return true;
 }
 
 /*virtual*/
 HdBufferSourceSharedPtr
-Hd_OsdIndexComputation::GetChainedBuffer() const
+HdSt_OsdIndexComputation::GetChainedBuffer() const
 {
     return _primitiveBuffer;
 }
 
 /*virtual*/
 bool
-Hd_OsdIndexComputation::_CheckValid() const
+HdSt_OsdIndexComputation::_CheckValid() const
 {
     return true;
 }
@@ -117,17 +118,18 @@ Hd_OsdIndexComputation::_CheckValid() const
 /// OpenSubdiv GPU Refinement
 ///
 ///
-Hd_OsdRefineComputationGPU::Hd_OsdRefineComputationGPU(HdMeshTopology *topology,
-                                                       TfToken const &name,
-                                                       GLenum dataType,
-                                                       int numComponents)
+HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
+                                                    HdSt_MeshTopology *topology,
+                                                    TfToken const &name,
+                                                    GLenum dataType,
+                                                    int numComponents)
     : _topology(topology), _name(name),
       _dataType(dataType), _numComponents(numComponents)
 {
 }
 
 void
-Hd_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
     //
@@ -136,12 +138,12 @@ Hd_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 void
-Hd_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
+HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    Hd_Subdivision *subdivision = _topology->GetSubdivision();
+    HdSt_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return;
 
     subdivision->RefineGPU(range, _name);
@@ -150,10 +152,10 @@ Hd_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
 }
 
 int
-Hd_OsdRefineComputationGPU::GetNumOutputElements() const
+HdSt_OsdRefineComputationGPU::GetNumOutputElements() const
 {
     // returns the total number of vertices, including coarse and refined ones.
-    Hd_Subdivision const *subdivision = _topology->GetSubdivision();
+    HdSt_Subdivision const *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return 0;
     return subdivision->GetNumVertices();
 }

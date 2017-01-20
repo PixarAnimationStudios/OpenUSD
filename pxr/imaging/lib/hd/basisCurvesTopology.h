@@ -33,19 +33,16 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <vector>
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 
 typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologySharedPtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 
 /// \class HdBasisCurvesTopology
 ///
 /// Topology data for basisCurves.
 ///
-/// HtBasisCurvesTopology holds the raw input topology data for basisCurves
+/// HdBasisCurvesTopology holds the raw input topology data for basisCurves
 ///
 /// The Type, Basis and Wrap mode combined describe the curve and it's
 /// segments.
@@ -83,12 +80,11 @@ public:
     HdBasisCurvesTopology();
     HdBasisCurvesTopology(const HdBasisCurvesTopology &src);
 
-    HdBasisCurvesTopology(
-        TfToken curveType,
-        TfToken curveBasis,
-        TfToken curveWrap,
-        const VtIntArray &curveVertexCounts,
-        const VtIntArray &curveIndices);
+    HdBasisCurvesTopology(const TfToken &curveType,
+                          const TfToken &curveBasis,
+                          const TfToken &curveWrap,
+                          const VtIntArray &curveVertexCounts,
+                          const VtIntArray &curveIndices);
     virtual ~HdBasisCurvesTopology();
 
 
@@ -116,8 +112,6 @@ public:
     /// Equality check between two basisCurves topologies.
     bool operator==(HdBasisCurvesTopology const &other) const;
     bool operator!=(HdBasisCurvesTopology const &other) const;
-
-    HdBufferSourceSharedPtr GetIndexBuilderComputation(bool supportSmoothCurves);
 
     /// Figure out how many vertices / control points this topology references
     size_t CalculateNeededNumberOfControlPoints() const;

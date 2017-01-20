@@ -23,11 +23,12 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/subdivision3.h"
+#include "pxr/imaging/hdSt/subdivision.h"
+
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/subdivision.h"
-#include "pxr/imaging/hd/subdivision3.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -50,7 +51,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-typedef OpenSubdiv::Osd::CpuVertexBuffer Hd_OsdCpuVertexBuffer;
+typedef OpenSubdiv::Osd::CpuVertexBuffer HdSt_OsdCpuVertexBuffer;
 
 // There's a buffer synchronization bug in driver 331, and apparently fixed in 334.
 // Don't enable compute shader kernel until driver updates.
@@ -58,16 +59,16 @@ typedef OpenSubdiv::Osd::CpuVertexBuffer Hd_OsdCpuVertexBuffer;
 #if OPENSUBDIV_HAS_GLSL_COMPUTE
 
 #include <opensubdiv/osd/glComputeEvaluator.h>
-#define HD_ENABLE_GPU_SUBDIVISION 1
-typedef OpenSubdiv::Osd::GLStencilTableSSBO Hd_OsdGpuStencilTable;
-typedef OpenSubdiv::Osd::GLComputeEvaluator Hd_OsdGpuEvaluator;
+#define HDST_ENABLE_GPU_SUBDIVISION 1
+typedef OpenSubdiv::Osd::GLStencilTableSSBO HdSt_OsdGpuStencilTable;
+typedef OpenSubdiv::Osd::GLComputeEvaluator HdSt_OsdGpuEvaluator;
 
 #elif OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
 
 #include <opensubdiv/osd/glXFBEvaluator.h>
 #define HD_ENABLE_GPU_SUBDIVISION 1
-typedef OpenSubdiv::Osd::GLStencilTableTBO Hd_OsdGpuStencilTable;
-typedef OpenSubdiv::Osd::GLXFBEvaluator Hd_OsdGpuEvaluator;
+typedef OpenSubdiv::Osd::GLStencilTableTBO HdSt_OsdGpuStencilTable;
+typedef OpenSubdiv::Osd::GLXFBEvaluator HdSt_OsdGpuEvaluator;
 
 #else
 
@@ -78,43 +79,43 @@ typedef OpenSubdiv::Osd::GLXFBEvaluator Hd_OsdGpuEvaluator;
 
 // ---------------------------------------------------------------------------
 
-class Hd_Osd3Subdivision : public Hd_Subdivision {
+class HdSt_Osd3Subdivision : public HdSt_Subdivision {
 public:
-    /// Construct Hd_Subdivision. It takes an ownership of farmesh.
-    Hd_Osd3Subdivision();
-    virtual ~Hd_Osd3Subdivision();
+    /// Construct HdSt_Subdivision. It takes an ownership of farmesh.
+    HdSt_Osd3Subdivision();
+    virtual ~HdSt_Osd3Subdivision();
 
-    virtual int GetNumVertices() const;
+    virtual int GetNumVertices() const override;
 
     virtual void RefineCPU(HdBufferSourceSharedPtr const &source,
                            bool varying,
-                           void *vertexBuffer);
+                           void *vertexBuffer) override;
 
     virtual void RefineGPU(HdBufferArrayRangeSharedPtr const &range,
-                           TfToken const &name);
+                           TfToken const &name) override;
 
     // computation factory methods
     virtual HdBufferSourceSharedPtr CreateTopologyComputation(
-        HdMeshTopology *topology,
+        HdSt_MeshTopology *topology,
         bool adaptive,
         int level,
-        SdfPath const &id);
+        SdfPath const &id) override;
 
     virtual HdBufferSourceSharedPtr CreateIndexComputation(
-        HdMeshTopology *topology,
+        HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &osdTopology);
 
     virtual HdBufferSourceSharedPtr CreateRefineComputation(
-        HdMeshTopology *topology,
+        HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &source,
         bool varying,
-        HdBufferSourceSharedPtr const &osdTopology);
+        HdBufferSourceSharedPtr const &osdTopology) override;
 
     virtual HdComputationSharedPtr CreateRefineComputationGPU(
-        HdMeshTopology *topology,
+        HdSt_MeshTopology *topology,
         TfToken const &name,
         GLenum dataType,
-        int numComponents);
+        int numComponents) override;
 
     void SetRefinementTables(
         OpenSubdiv::Far::StencilTable const *vertexStencils,
@@ -139,15 +140,15 @@ private:
 #if HD_ENABLE_GPU_SUBDIVISION
     /// Returns GPU stencil table. Creates it if not existed.
     /// A valid GL context has to be made to current before calling this method.
-    Hd_OsdGpuStencilTable *_GetGpuStencilTable();
-    Hd_OsdGpuStencilTable *_gpuStencilTable;
+    HdSt_OsdGpuStencilTable *_GetGpuStencilTable();
+    HdSt_OsdGpuStencilTable *_gpuStencilTable;
 #endif
 };
 
-class Hd_Osd3IndexComputation : public Hd_OsdIndexComputation {
+class HdSt_Osd3IndexComputation : public HdSt_OsdIndexComputation {
 public:
-    Hd_Osd3IndexComputation(Hd_Osd3Subdivision *subdivision,
-                            HdMeshTopology *topology,
+    HdSt_Osd3IndexComputation(HdSt_Osd3Subdivision *subdivision,
+                            HdSt_MeshTopology *topology,
                             HdBufferSourceSharedPtr const &osdTopology);
     /// overrides
     virtual bool Resolve();
@@ -160,13 +161,13 @@ private:
     void _CreatePtexIndexToCoarseFaceIndexMapping(
         std::vector<int> *result);
 
-    Hd_Osd3Subdivision *_subdivision;
+    HdSt_Osd3Subdivision *_subdivision;
 };
 
-class Hd_Osd3TopologyComputation : public Hd_OsdTopologyComputation {
+class HdSt_Osd3TopologyComputation : public HdSt_OsdTopologyComputation {
 public:
-    Hd_Osd3TopologyComputation(Hd_Osd3Subdivision *subdivision,
-                               HdMeshTopology *topology,
+    HdSt_Osd3TopologyComputation(HdSt_Osd3Subdivision *subdivision,
+                               HdSt_MeshTopology *topology,
                                bool adaptive,
                                int level,
                                SdfPath const &id);
@@ -178,13 +179,13 @@ protected:
     virtual bool _CheckValid() const;
 
 private:
-    Hd_Osd3Subdivision *_subdivision;
+    HdSt_Osd3Subdivision *_subdivision;
     bool _adaptive;
 };
 
 // ---------------------------------------------------------------------------
 
-Hd_Osd3Subdivision::Hd_Osd3Subdivision()
+HdSt_Osd3Subdivision::HdSt_Osd3Subdivision()
     : _vertexStencils(NULL),
       _varyingStencils(NULL),
       _patchTable(NULL),
@@ -195,7 +196,7 @@ Hd_Osd3Subdivision::Hd_Osd3Subdivision()
 #endif
 }
 
-Hd_Osd3Subdivision::~Hd_Osd3Subdivision()
+HdSt_Osd3Subdivision::~HdSt_Osd3Subdivision()
 {
     delete _vertexStencils;
     delete _varyingStencils;
@@ -206,7 +207,7 @@ Hd_Osd3Subdivision::~Hd_Osd3Subdivision()
 }
 
 void
-Hd_Osd3Subdivision::SetRefinementTables(
+HdSt_Osd3Subdivision::SetRefinementTables(
     OpenSubdiv::Far::StencilTable const *vertexStencils,
     OpenSubdiv::Far::StencilTable const *varyingStencils,
     OpenSubdiv::Far::PatchTable const *patchTable,
@@ -224,7 +225,7 @@ Hd_Osd3Subdivision::SetRefinementTables(
 
 /*virtual*/
 int
-Hd_Osd3Subdivision::GetNumVertices() const
+HdSt_Osd3Subdivision::GetNumVertices() const
 {
     // returns the total number of vertices, including coarse and refined ones.
     if (!TF_VERIFY(_vertexStencils)) return 0;
@@ -235,7 +236,7 @@ Hd_Osd3Subdivision::GetNumVertices() const
 
 /*virtual*/
 void
-Hd_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
+HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
                               bool varying,
                               void *vertexBuffer)
 {
@@ -260,7 +261,7 @@ Hd_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
     // if the mesh has more vertices than that in use in topology (faceIndices),
     // we need to trim the buffer so that they won't overrun the coarse
     // vertex buffer which we allocated using the stencil table.
-    // see Hd_Osd3Subdivision::GetNumVertices()
+    // see HdSt_Osd3Subdivision::GetNumVertices()
     if (numElements > stencilTable->GetNumControlVertices()) {
         numElements = stencilTable->GetNumControlVertices();
     }
@@ -285,14 +286,14 @@ Hd_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
 
 /*virtual*/
 void
-Hd_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
+HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
                               TfToken const &name)
 {
 #if HD_ENABLE_GPU_SUBDIVISION
     // filling coarse vertices has been done at resource registry.
 
     // vertex buffer wrapper for OpenSubdiv API
-    Hd_OsdRefineComputationGPU::VertexBuffer vertexBuffer(
+    HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(
         range->GetResource(name));
 
     // vertex buffer is not interleaved, but aggregated.
@@ -310,10 +311,10 @@ Hd_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
         /*stride=*/stride);
 
     // GPU evaluator can be static, as long as it's called sequentially.
-    static OpenSubdiv::Osd::EvaluatorCacheT<Hd_OsdGpuEvaluator> evaluatorCache;
+    static OpenSubdiv::Osd::EvaluatorCacheT<HdSt_OsdGpuEvaluator> evaluatorCache;
 
-    Hd_OsdGpuEvaluator const *instance =
-        OpenSubdiv::Osd::GetEvaluator<Hd_OsdGpuEvaluator>(
+    HdSt_OsdGpuEvaluator const *instance =
+        OpenSubdiv::Osd::GetEvaluator<HdSt_OsdGpuEvaluator>(
             &evaluatorCache, srcDesc, dstDesc, (void*)NULL /*deviceContext*/);
 
     instance->EvalStencils(&vertexBuffer, srcDesc,
@@ -326,56 +327,56 @@ Hd_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
 
 /*virtual*/
 HdBufferSourceSharedPtr
-Hd_Osd3Subdivision::CreateTopologyComputation(HdMeshTopology *topology,
+HdSt_Osd3Subdivision::CreateTopologyComputation(HdSt_MeshTopology *topology,
                                               bool adaptive,
                                               int level,
                                               SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(new Hd_Osd3TopologyComputation(
+    return HdBufferSourceSharedPtr(new HdSt_Osd3TopologyComputation(
                                        this, topology, adaptive, level, id));
 
 }
 
 /*virtual*/
 HdBufferSourceSharedPtr
-Hd_Osd3Subdivision::CreateIndexComputation(HdMeshTopology *topology,
+HdSt_Osd3Subdivision::CreateIndexComputation(HdSt_MeshTopology *topology,
                                            HdBufferSourceSharedPtr const &osdTopology)
 {
-    return HdBufferSourceSharedPtr(new Hd_Osd3IndexComputation(
+    return HdBufferSourceSharedPtr(new HdSt_Osd3IndexComputation(
                                        this, topology, osdTopology));
 }
 
 /*virtual*/
 HdBufferSourceSharedPtr
-Hd_Osd3Subdivision::CreateRefineComputation(HdMeshTopology *topology,
+HdSt_Osd3Subdivision::CreateRefineComputation(HdSt_MeshTopology *topology,
                                             HdBufferSourceSharedPtr const &source,
                                             bool varying,
                                             HdBufferSourceSharedPtr const &osdTopology)
 {
-    return HdBufferSourceSharedPtr(new Hd_OsdRefineComputation<Hd_OsdCpuVertexBuffer>(
+    return HdBufferSourceSharedPtr(new HdSt_OsdRefineComputation<HdSt_OsdCpuVertexBuffer>(
                                        topology, source, varying, osdTopology));
 }
 
 /*virtual*/
 HdComputationSharedPtr
-Hd_Osd3Subdivision::CreateRefineComputationGPU(HdMeshTopology *topology,
+HdSt_Osd3Subdivision::CreateRefineComputationGPU(HdSt_MeshTopology *topology,
                                            TfToken const &name,
                                            GLenum dataType,
                                            int numComponents)
 {
-    return HdComputationSharedPtr(new Hd_OsdRefineComputationGPU(
+    return HdComputationSharedPtr(new HdSt_OsdRefineComputationGPU(
                                       topology, name, dataType, numComponents));
 }
 
 #if HD_ENABLE_GPU_SUBDIVISION
-Hd_OsdGpuStencilTable *
-Hd_Osd3Subdivision::_GetGpuStencilTable()
+HdSt_OsdGpuStencilTable *
+HdSt_Osd3Subdivision::_GetGpuStencilTable()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     if (!_gpuStencilTable) {
-        _gpuStencilTable = Hd_OsdGpuStencilTable::Create(
+        _gpuStencilTable = HdSt_OsdGpuStencilTable::Create(
             _vertexStencils, NULL);
     }
 
@@ -385,17 +386,17 @@ Hd_Osd3Subdivision::_GetGpuStencilTable()
 
 // ---------------------------------------------------------------------------
 
-Hd_Osd3TopologyComputation::Hd_Osd3TopologyComputation(
-    Hd_Osd3Subdivision *subdivision,
-    HdMeshTopology *topology,
+HdSt_Osd3TopologyComputation::HdSt_Osd3TopologyComputation(
+    HdSt_Osd3Subdivision *subdivision,
+    HdSt_MeshTopology *topology,
     bool adaptive, int level, SdfPath const &id)
-    : Hd_OsdTopologyComputation(topology, level, id),
+    : HdSt_OsdTopologyComputation(topology, level, id),
       _subdivision(subdivision), _adaptive(adaptive)
 {
 }
 
 bool
-Hd_Osd3TopologyComputation::Resolve()
+HdSt_Osd3TopologyComputation::Resolve()
 {
     using namespace OpenSubdiv;
 
@@ -404,7 +405,7 @@ Hd_Osd3TopologyComputation::Resolve()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // do far analysis and set stencils and patch table into Hd_Subdivision.
+    // do far analysis and set stencils and patch table into HdSt_Subdivision.
 
     // create topology refiner
     PxOsdTopologyRefinerSharedPtr refiner;
@@ -492,7 +493,7 @@ Hd_Osd3TopologyComputation::Resolve()
     }
 
     // set tables to topology
-    // Hd_Subdivision takes an ownership of stencilTable and patchTable.
+    // HdSt_Subdivision takes an ownership of stencilTable and patchTable.
     _subdivision->SetRefinementTables(vertexStencils, varyingStencils,
                                       patchTable, _adaptive);
 
@@ -501,24 +502,24 @@ Hd_Osd3TopologyComputation::Resolve()
 }
 
 bool
-Hd_Osd3TopologyComputation::_CheckValid() const
+HdSt_Osd3TopologyComputation::_CheckValid() const
 {
     return true;
 }
 
 // ---------------------------------------------------------------------------
 
-Hd_Osd3IndexComputation::Hd_Osd3IndexComputation (
-    Hd_Osd3Subdivision *subdivision,
-    HdMeshTopology *topology,
+HdSt_Osd3IndexComputation::HdSt_Osd3IndexComputation (
+    HdSt_Osd3Subdivision *subdivision,
+    HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &osdTopology)
-    : Hd_OsdIndexComputation(topology, osdTopology)
+    : HdSt_OsdIndexComputation(topology, osdTopology)
     , _subdivision(subdivision)
 {
 }
 
 bool
-Hd_Osd3IndexComputation::Resolve()
+HdSt_Osd3IndexComputation::Resolve()
 {
     using namespace OpenSubdiv;
 
@@ -526,7 +527,7 @@ Hd_Osd3IndexComputation::Resolve()
 
     if (!_TryLock()) return false;
 
-    Hd_Subdivision *subdivision = _topology->GetSubdivision();
+    HdSt_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) {
         _SetResolved();
         return true;
@@ -545,7 +546,7 @@ Hd_Osd3IndexComputation::Resolve()
 
     TfToken const& scheme = _topology->GetScheme();
 
-    if (Hd_Subdivision::RefinesToTriangles(scheme)) {
+    if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
         VtArray<GfVec3i> indices(ptableSize/3);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
@@ -556,7 +557,7 @@ Hd_Osd3IndexComputation::Resolve()
 
         _PopulateUniformPrimitiveBuffer(patchTable);
     } else if (_subdivision->IsAdaptive() &&
-               Hd_Subdivision::RefinesToBSplinePatches(scheme)) {
+               HdSt_Subdivision::RefinesToBSplinePatches(scheme)) {
 
         VtArray<Hd_BSplinePatchIndex> indices(ptableSize/16);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
@@ -584,7 +585,7 @@ Hd_Osd3IndexComputation::Resolve()
 }
 
 void
-Hd_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
+HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
     std::vector<int> *result)
 {
     HD_TRACE_FUNCTION();
@@ -598,7 +599,7 @@ Hd_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 
     // hole faces shouldn't affect ptex id.
     // passing empty array to count num quads.
-    int numQuads = HdMeshTopology::ComputeNumQuads(
+    int numQuads = HdSt_MeshTopology::ComputeNumQuads(
         _topology->GetFaceVertexCounts(),
         /*holeFaces=*/VtIntArray());
     result->clear();
@@ -617,7 +618,7 @@ Hd_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 }
 
 void
-Hd_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
+HdSt_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
     OpenSubdiv::Far::PatchTable const *patchTable)
 {
     HD_TRACE_FUNCTION();
@@ -645,7 +646,7 @@ Hd_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
         unsigned int field0 = patchParam.field0;
         unsigned int field1 = patchParam.field1;
         primitiveParam[i][0] =
-            HdMeshTopology::EncodeCoarseFaceParam(faceIndex, 0);
+            HdSt_MeshTopology::EncodeCoarseFaceParam(faceIndex, 0);
         primitiveParam[i][1] = *((int*)&field0);
         primitiveParam[i][2] = *((int*)&field1);
     }
@@ -656,7 +657,7 @@ Hd_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
 }
 
 void
-Hd_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
+HdSt_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
     OpenSubdiv::Far::PatchTable const *patchTable)
 {
     HD_TRACE_FUNCTION();
@@ -689,7 +690,7 @@ Hd_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
         unsigned int field0 = patchParam.field0;
         unsigned int field1 = patchParam.field1;
         primitiveParam[i][0] =
-            HdMeshTopology::EncodeCoarseFaceParam(faceIndex, 0);
+            HdSt_MeshTopology::EncodeCoarseFaceParam(faceIndex, 0);
         primitiveParam[i][1] = *((int*)&field0);
         primitiveParam[i][2] = *((int*)&field1);
 
@@ -703,9 +704,9 @@ Hd_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
 
 // ---------------------------------------------------------------------------
 
-Hd_Subdivision *
-Hd_Osd3Factory::CreateSubdivision()
+HdSt_Subdivision *
+HdSt_Osd3Factory::CreateSubdivision()
 {
-    return new Hd_Osd3Subdivision();
+    return new HdSt_Osd3Subdivision();
 }
 

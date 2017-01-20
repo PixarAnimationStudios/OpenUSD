@@ -43,6 +43,8 @@ struct HdxSelectionTaskParams
     GfVec4f maskColor;
 };
 
+typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+
 /// \class HdxSelectionTask
 ///
 /// The SelectionTask is responsible for setting up render pass global buffers

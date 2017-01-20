@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/topology.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
@@ -39,8 +38,8 @@
 
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
+typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
 
 /// \class HdStMeshReprDesc
 ///
@@ -170,7 +169,7 @@ private:
         DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
 
-    HdMeshTopologySharedPtr _topology;
+    HdSt_MeshTopologySharedPtr _topology;
     Hd_VertexAdjacencySharedPtr _vertexAdjacency;
 
     HdTopology::ID _topologyId;

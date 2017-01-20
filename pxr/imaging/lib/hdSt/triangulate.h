@@ -21,24 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_TRIANGULATE_H
-#define HD_TRIANGULATE_H
+#ifndef HDST_TRIANGULATE_H
+#define HDST_TRIANGULATE_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/usd/sdf/path.h"
 
-class HdMeshTopology;
+class HdSt_MeshTopology;
 
-/// \class Hd_TriangleIndexBuilderComputation
+/// \class HdSt_TriangleIndexBuilderComputation
 ///
 /// Triangle indices computation CPU.
 ///
-class Hd_TriangleIndexBuilderComputation : public HdComputedBufferSource {
+class HdSt_TriangleIndexBuilderComputation : public HdComputedBufferSource {
 public:
-    Hd_TriangleIndexBuilderComputation(HdMeshTopology *topology,
-                                       SdfPath const &id);
+    HdSt_TriangleIndexBuilderComputation(HdSt_MeshTopology *topology,
+                                         SdfPath const &id);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
 
@@ -50,7 +50,7 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _primitiveParam;
 };
 
@@ -86,13 +86,13 @@ private:
 // ----+--------+--------+------
 //
 
-/// \class Hd_TriangulateFaceVaryingComputation
+/// \class HdSt_TriangulateFaceVaryingComputation
 ///
 /// CPU face-varying triangulation.
 ///
-class Hd_TriangulateFaceVaryingComputation : public HdComputedBufferSource {
+class HdSt_TriangulateFaceVaryingComputation : public HdComputedBufferSource {
 public:
-    Hd_TriangulateFaceVaryingComputation(HdMeshTopology *topolgoy,
+    HdSt_TriangulateFaceVaryingComputation(HdSt_MeshTopology *topolgoy,
                                          HdBufferSourceSharedPtr const &source,
                                          SdfPath const &id);
 
@@ -104,8 +104,8 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _source;
 };
 
-#endif  // HD_TRIANGULATE_H
+#endif  // HdSt_TRIANGULATE_H

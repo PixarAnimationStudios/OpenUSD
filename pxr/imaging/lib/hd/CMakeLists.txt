@@ -81,7 +81,6 @@ pxr_shared_library(hd
         persistentBuffer
         points
         pointsShaderKey
-        quadrangulate
         renderContextCaps
         renderDelegate
         renderDelegateRegistry
@@ -100,6 +99,7 @@ pxr_shared_library(hd
         shader
         shaderKey
         shaderParam
+        smoothNormals
         sprim
         strategyBase
         surfaceShader
@@ -108,7 +108,6 @@ pxr_shared_library(hd
         textureResource
         tokens
         topology
-        triangulate
         vboMemoryManager
         vboSimpleMemoryManager
         vertexAdjacency
@@ -122,9 +121,6 @@ pxr_shared_library(hd
         cullingShaderKey
         fallbackLightingShader
         renderIndexManager
-        smoothNormals
-        subdivision
-        subdivision3
         unitTestDelegate
         unitTestHelper
         ${optionalPrivateClasses}

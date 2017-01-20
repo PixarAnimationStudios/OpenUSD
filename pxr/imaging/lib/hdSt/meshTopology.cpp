@@ -23,199 +23,67 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/mesh.h"
-#include "pxr/imaging/hd/meshTopology.h"
+#include "pxr/imaging/hdSt/meshTopology.h"
+#include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/subdivision.h"
+#include "pxr/imaging/hdSt/subdivision3.h"
+#include "pxr/imaging/hdSt/triangulate.h"
+
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/quadrangulate.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/subdivision.h"
-#include "pxr/imaging/hd/subdivision3.h"
-#include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/triangulate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_OPENSUBDIV3_ADAPTIVE, 0,
-                      "Enables OpenSubdiv 3 Adaptive Tessellation");
 
-HdMeshTopology::HdMeshTopology()
-    : _refineLevel(0)
-    , _quadInfo(NULL)
-    , _subdivision(NULL)
+// static
+HdSt_MeshTopologySharedPtr
+HdSt_MeshTopology::New(const HdMeshTopology &src, int refineLevel)
 {
-    HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
+    return HdSt_MeshTopologySharedPtr(new HdSt_MeshTopology(src, refineLevel));
 }
 
-HdMeshTopology::HdMeshTopology(const HdMeshTopology &src, int refineLevel)
-    : _topology(src.GetPxOsdMeshTopology())
-    , _refineLevel(refineLevel)
-    , _quadInfo(NULL)
-    , _subdivision(NULL)
+// explicit
+HdSt_MeshTopology::HdSt_MeshTopology(const HdMeshTopology& src, int refineLevel)
+ : HdMeshTopology(src, refineLevel)
+ , _quadInfo(nullptr)
+ , _quadrangulateTableRange()
+ , _quadInfoBuilder()
+ , _subdivision(nullptr)
+ , _osdTopologyBuilder()
 {
-    HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
 }
 
-HdMeshTopology::HdMeshTopology(const PxOsdMeshTopology &topo, int refineLevel)
-    : _topology(topo)
-    , _refineLevel(refineLevel)
-    , _quadInfo(NULL)
-    , _subdivision(NULL)
+HdSt_MeshTopology::~HdSt_MeshTopology()
 {
-    HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
-}
-
-HdMeshTopology::HdMeshTopology(
-    TfToken scheme,
-    TfToken orientation,
-    VtIntArray faceVertexCounts, 
-    VtIntArray faceVertexIndices,
-    int refineLevel)
-    : _topology(scheme,
-                orientation,
-                faceVertexCounts,
-                faceVertexIndices)
-    , _refineLevel(refineLevel)
-    , _quadInfo(NULL)
-    , _subdivision(NULL)
-{
-    HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
-}
-
-HdMeshTopology::HdMeshTopology(
-    TfToken scheme,
-    TfToken orientation,
-    VtIntArray faceVertexCounts, 
-    VtIntArray faceVertexIndices,
-    VtIntArray holeIndices,
-    int refineLevel)
-    : _topology(scheme,
-                orientation,
-                faceVertexCounts,
-                faceVertexIndices,
-                holeIndices)
-    , _refineLevel(refineLevel)
-    , _quadInfo(NULL)
-    , _subdivision(NULL)
-{
-    HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
-}
-
-HdMeshTopology::~HdMeshTopology()
-{
-    HD_PERF_COUNTER_DECR(HdPerfTokens->meshTopology);
-
     delete _quadInfo;
     delete _subdivision;
 }
 
-bool
-HdMeshTopology::IsEnabledAdaptive()
-{
-    return TfGetEnvSetting(HD_ENABLE_OPENSUBDIV3_ADAPTIVE) == 1;
-}
 
 bool
-HdMeshTopology::operator==(HdMeshTopology const &other) const {
+HdSt_MeshTopology::operator==(HdSt_MeshTopology const &other) const {
 
     TRACE_FUNCTION();
 
     // no need to compare _adajency and _quadInfo
-    return (_topology == other._topology);
-}
-
-int
-HdMeshTopology::GetNumFaces() const
-{
-    return (int)_topology.GetFaceVertexCounts().size();
-}
-
-int
-HdMeshTopology::GetNumFaceVaryings() const
-{
-    return (int)_topology.GetFaceVertexIndices().size();
-}
-
-int
-HdMeshTopology::ComputeNumPoints() const
-{
-    return HdMeshTopology::ComputeNumPoints(_topology.GetFaceVertexIndices());
-}
-
-/*static*/ int
-HdMeshTopology::ComputeNumPoints(VtIntArray const &verts)
-{
-    HD_TRACE_FUNCTION();
-
-    // compute numPoints from topology indices
-    int numIndices = verts.size();
-    int numPoints = -1;
-    int const * vertsPtr = verts.cdata();
-    for (int i= 0;i <numIndices; ++i) {
-        // find the max vertex index in face verts
-        numPoints = std::max(numPoints, vertsPtr[i]);
-    }
-    // numPoints = max vertex index + 1
-    return numPoints + 1;
-}
-
-/*static*/ int
-HdMeshTopology::ComputeNumQuads(VtIntArray const &numVerts,
-                                VtIntArray const &holeFaces,
-                                bool *invalidFaceFound)
-{
-    HD_TRACE_FUNCTION();
-
-    int numFaces = numVerts.size();
-    int numHoleFaces = holeFaces.size();
-    int numQuads = 0;
-    int const *numVertsPtr = numVerts.cdata();
-    int const * holeFacesPtr = holeFaces.cdata();
-    int holeIndex = 0;
-
-    for (int i = 0; i < numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        if (nv < 3) {
-            // skip degenerated face
-            if (invalidFaceFound) *invalidFaceFound = true;
-        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
-            // skip hole face
-            ++holeIndex;
-        } else {
-            // non-quad n-gons are quadrangulated into n-quads.
-            numQuads += (nv == 4 ? 1 : nv);
-        }
-    }
-    return numQuads;
-}
-
-HdTopology::ID
-HdMeshTopology::ComputeHash() const
-{
-    HD_TRACE_FUNCTION();
-
-    HdTopology::ID id =_topology.ComputeHash();
-    boost::hash_combine(id, _refineLevel);
-
-    return id;
+    return HdMeshTopology::operator==(other);
 }
 
 void
-HdMeshTopology::SetQuadInfo(Hd_QuadInfo const *quadInfo)
+HdSt_MeshTopology::SetQuadInfo(HdSt_QuadInfo const *quadInfo)
 {
-    if (_quadInfo) delete _quadInfo;
+    delete _quadInfo;
     _quadInfo = quadInfo;
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetPointsIndexBuilderComputation()
+HdSt_MeshTopology::GetPointsIndexBuilderComputation()
 {
     // this is simple enough to return the result right away.
     int numPoints = ComputeNumPoints();
@@ -227,18 +95,18 @@ HdMeshTopology::GetPointsIndexBuilderComputation()
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetTriangleIndexBuilderComputation(SdfPath const &id)
+HdSt_MeshTopology::GetTriangleIndexBuilderComputation(SdfPath const &id)
 {
     return HdBufferSourceSharedPtr(
-        new Hd_TriangleIndexBuilderComputation(this, id));
+        new HdSt_TriangleIndexBuilderComputation(this, id));
 }
 
-Hd_QuadInfoBuilderComputationSharedPtr
-HdMeshTopology::GetQuadInfoBuilderComputation(
+HdSt_QuadInfoBuilderComputationSharedPtr
+HdSt_MeshTopology::GetQuadInfoBuilderComputation(
     bool gpu, SdfPath const &id, HdResourceRegistry *resourceRegistry)
 {
-    Hd_QuadInfoBuilderComputationSharedPtr builder(
-        new Hd_QuadInfoBuilderComputation(this, id));
+    HdSt_QuadInfoBuilderComputationSharedPtr builder(
+        new HdSt_QuadInfoBuilderComputation(this, id));
 
     // store as a weak ptr.
     _quadInfoBuilder = builder;
@@ -251,7 +119,7 @@ HdMeshTopology::GetQuadInfoBuilderComputation(
         }
 
         HdBufferSourceSharedPtr quadrangulateTable(
-            new Hd_QuadrangulateTableComputation(this, builder));
+            new HdSt_QuadrangulateTableComputation(this, builder));
 
         // allocate quadrangulation table on GPU
         HdBufferSpecVector bufferSpecs;
@@ -267,14 +135,14 @@ HdMeshTopology::GetQuadInfoBuilderComputation(
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetQuadIndexBuilderComputation(SdfPath const &id)
+HdSt_MeshTopology::GetQuadIndexBuilderComputation(SdfPath const &id)
 {
     return HdBufferSourceSharedPtr(
-        new Hd_QuadIndexBuilderComputation(this, _quadInfoBuilder.lock(), id));
+        new HdSt_QuadIndexBuilderComputation(this, _quadInfoBuilder.lock(), id));
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetQuadrangulateComputation(
+HdSt_MeshTopology::GetQuadrangulateComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
     // check if the quad table is already computed as all-quads.
@@ -292,11 +160,11 @@ HdMeshTopology::GetQuadrangulateComputation(
     HdBufferSourceSharedPtr quadInfo = _quadInfoBuilder.lock();
 
     return HdBufferSourceSharedPtr(
-        new Hd_QuadrangulateComputation(this, source, quadInfo, id));
+        new HdSt_QuadrangulateComputation(this, source, quadInfo, id));
 }
 
 HdComputationSharedPtr
-HdMeshTopology::GetQuadrangulateComputationGPU(
+HdSt_MeshTopology::GetQuadrangulateComputationGPU(
     TfToken const &name, GLenum dataType, SdfPath const &id)
 {
     // check if the quad table is already computed as all-quads.
@@ -305,40 +173,40 @@ HdMeshTopology::GetQuadrangulateComputationGPU(
         return HdComputationSharedPtr();
     }
     return HdComputationSharedPtr(
-        new Hd_QuadrangulateComputationGPU(this, name, dataType, id));
+        new HdSt_QuadrangulateComputationGPU(this, name, dataType, id));
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetQuadrangulateFaceVaryingComputation(
+HdSt_MeshTopology::GetQuadrangulateFaceVaryingComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
     return HdBufferSourceSharedPtr(
-        new Hd_QuadrangulateFaceVaryingComputation(this, source, id));
+        new HdSt_QuadrangulateFaceVaryingComputation(this, source, id));
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetTriangulateFaceVaryingComputation(
+HdSt_MeshTopology::GetTriangulateFaceVaryingComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
     return HdBufferSourceSharedPtr(
-        new Hd_TriangulateFaceVaryingComputation(this, source, id));
+        new HdSt_TriangulateFaceVaryingComputation(this, source, id));
 }
 
 bool
-HdMeshTopology::RefinesToTriangles() const
+HdSt_MeshTopology::RefinesToTriangles() const
 {
-    return Hd_Subdivision::RefinesToTriangles(_topology.GetScheme());
+    return HdSt_Subdivision::RefinesToTriangles(_topology.GetScheme());
 }
 
 bool
-HdMeshTopology::RefinesToBSplinePatches() const
+HdSt_MeshTopology::RefinesToBSplinePatches() const
 {
     return (IsEnabledAdaptive() &&
-            Hd_Subdivision::RefinesToBSplinePatches(_topology.GetScheme()));
+            HdSt_Subdivision::RefinesToBSplinePatches(_topology.GetScheme()));
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetOsdTopologyComputation(SdfPath const &id)
+HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
 {
     if (HdBufferSourceSharedPtr builder = _osdTopologyBuilder.lock()) {
         return builder;
@@ -347,14 +215,14 @@ HdMeshTopology::GetOsdTopologyComputation(SdfPath const &id)
     // this has to be the first instance.
     if (!TF_VERIFY(!_subdivision)) return HdBufferSourceSharedPtr();
 
-    // create Hd_Subdivision
-    _subdivision = Hd_Osd3Factory::CreateSubdivision();
+    // create HdSt_Subdivision
+    _subdivision = HdSt_Osd3Factory::CreateSubdivision();
 
     if (!TF_VERIFY(_subdivision)) return HdBufferSourceSharedPtr();
 
     bool adaptive = RefinesToBSplinePatches();
 
-    // create a topology computation for Hd_Subdivision
+    // create a topology computation for HdSt_Subdivision
     HdBufferSourceSharedPtr builder =
         _subdivision->CreateTopologyComputation(this, adaptive,
                                                 _refineLevel, id);
@@ -363,14 +231,14 @@ HdMeshTopology::GetOsdTopologyComputation(SdfPath const &id)
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetOsdIndexBuilderComputation()
+HdSt_MeshTopology::GetOsdIndexBuilderComputation()
 {
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
     return _subdivision->CreateIndexComputation(this, topologyBuilder);
 }
 
 HdBufferSourceSharedPtr
-HdMeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
+HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
                                         bool varying)
 {
     // Make a dependency to far mesh.
@@ -400,7 +268,7 @@ HdMeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
 }
 
 HdComputationSharedPtr
-HdMeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
+HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
                                            GLenum dataType,
                                            int numComponents)
 {

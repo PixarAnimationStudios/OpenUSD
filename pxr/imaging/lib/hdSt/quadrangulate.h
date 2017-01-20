@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_QUADRANGULATE_H
-#define HD_QUADRANGULATE_H
+#ifndef HDST_QUADRANGULATE_H
+#define HDST_QUADRANGULATE_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -36,9 +36,10 @@
 
 #include <boost/shared_ptr.hpp>
 
-typedef boost::shared_ptr<class Hd_QuadInfoBuilderComputation> Hd_QuadInfoBuilderComputationSharedPtr;
+typedef boost::shared_ptr<class HdSt_QuadInfoBuilderComputation>
+                                       HdSt_QuadInfoBuilderComputationSharedPtr;
 
-class HdMeshTopology;
+class HdSt_MeshTopology;
 
 /*
   computation classes for quadrangulation.
@@ -117,8 +118,8 @@ class HdMeshTopology;
     //                   pointsOffset
     //                       <----- numAdditionalPoints  ---->
 
-struct Hd_QuadInfo {
-    Hd_QuadInfo() : pointsOffset(0), numAdditionalPoints(0), maxNumVert(0) { }
+struct HdSt_QuadInfo {
+    HdSt_QuadInfo() : pointsOffset(0), numAdditionalPoints(0), maxNumVert(0) { }
 
     /// Returns true if the mesh is all-quads.
     bool IsAllQuads() const { return numAdditionalPoints == 0; }
@@ -139,13 +140,13 @@ struct Hd_QuadInfo {
                            ----------------------------> QuadrangulateComputationGPU
  */
 
-/// \class Hd_QuadInfoBuilderComputation
+/// \class HdSt_QuadInfoBuilderComputation
 ///
 /// Quad info computation.
 ///
-class Hd_QuadInfoBuilderComputation : public HdNullBufferSource {
+class HdSt_QuadInfoBuilderComputation : public HdNullBufferSource {
 public:
-    Hd_QuadInfoBuilderComputation(HdMeshTopology *topology, SdfPath const &id);
+    HdSt_QuadInfoBuilderComputation(HdSt_MeshTopology *topology, SdfPath const &id);
     virtual bool Resolve();
 
 protected:
@@ -153,18 +154,18 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
 };
 
-/// \class Hd_QuadIndexBuilderComputation
+/// \class HdSt_QuadIndexBuilderComputation
 ///
 /// Quad indices computation CPU.
 ///
-class Hd_QuadIndexBuilderComputation : public HdComputedBufferSource {
+class HdSt_QuadIndexBuilderComputation : public HdComputedBufferSource {
 public:
-    Hd_QuadIndexBuilderComputation(
-        HdMeshTopology *topology,
-        Hd_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
+    HdSt_QuadIndexBuilderComputation(
+        HdSt_MeshTopology *topology,
+        HdSt_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
         SdfPath const &id);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
@@ -177,19 +178,19 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
-    Hd_QuadInfoBuilderComputationSharedPtr _quadInfoBuilder;
+    HdSt_MeshTopology *_topology;
+    HdSt_QuadInfoBuilderComputationSharedPtr _quadInfoBuilder;
     HdBufferSourceSharedPtr _primitiveParam;
 };
 
-/// \class Hd_QuadrangulateTableComputation
+/// \class HdSt_QuadrangulateTableComputation
 ///
 /// Quadrangulate table computation (for GPU quadrangulation).
 ///
-class Hd_QuadrangulateTableComputation : public HdComputedBufferSource {
+class HdSt_QuadrangulateTableComputation : public HdComputedBufferSource {
 public:
-    Hd_QuadrangulateTableComputation(
-        HdMeshTopology *topology,
+    HdSt_QuadrangulateTableComputation(
+        HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &quadInfoBuilder);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
@@ -199,17 +200,17 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _quadInfoBuilder;
 };
 
-/// \class Hd_QuadrangulateComputation
+/// \class HdSt_QuadrangulateComputation
 ///
 /// CPU quadrangulation.
 ///
-class Hd_QuadrangulateComputation : public HdComputedBufferSource {
+class HdSt_QuadrangulateComputation : public HdComputedBufferSource {
 public:
-    Hd_QuadrangulateComputation(HdMeshTopology *topology,
+    HdSt_QuadrangulateComputation(HdSt_MeshTopology *topology,
                                 HdBufferSourceSharedPtr const &source,
                                 HdBufferSourceSharedPtr const &quadInfoBuilder,
                                 SdfPath const &id);
@@ -226,18 +227,18 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _source;
     HdBufferSourceSharedPtr _quadInfoBuilder;
 };
 
-/// \class Hd_QuadrangulateFaceVaryingComputation
+/// \class HdSt_QuadrangulateFaceVaryingComputation
 ///
 /// CPU face-varying quadrangulation.
 ///
-class Hd_QuadrangulateFaceVaryingComputation : public HdComputedBufferSource {
+class HdSt_QuadrangulateFaceVaryingComputation : public HdComputedBufferSource {
 public:
-    Hd_QuadrangulateFaceVaryingComputation(HdMeshTopology *topolgoy,
+    HdSt_QuadrangulateFaceVaryingComputation(HdSt_MeshTopology *topolgoy,
                                            HdBufferSourceSharedPtr const &source,
                                            SdfPath const &id);
 
@@ -249,18 +250,18 @@ protected:
 
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _source;
 };
 
-/// \class Hd_QuadrangulateComputationGPU
+/// \class HdSt_QuadrangulateComputationGPU
 ///
 /// GPU quadrangulation.
 ///
-class Hd_QuadrangulateComputationGPU : public HdComputation {
+class HdSt_QuadrangulateComputationGPU : public HdComputation {
 public:
     /// This computaion doesn't generate buffer source (i.e. 2nd phase)
-    Hd_QuadrangulateComputationGPU(HdMeshTopology *topology,
+    HdSt_QuadrangulateComputationGPU(HdSt_MeshTopology *topology,
                                    TfToken const &sourceName,
                                    GLenum dataType,
                                    SdfPath const &id);
@@ -269,7 +270,7 @@ public:
     virtual int GetNumOutputElements() const;
 private:
     SdfPath const _id;
-    HdMeshTopology *_topology;
+    HdSt_MeshTopology *_topology;
     TfToken _name;
     GLenum _dataType;
 };
@@ -306,4 +307,4 @@ private:
 // ----+-----------+-----------+------
 //
 
-#endif  // HD_QUADRANGULATE_H
+#endif  // HDST_QUADRANGULATE_H

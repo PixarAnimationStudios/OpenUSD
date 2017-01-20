@@ -26,9 +26,6 @@
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
-#include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
@@ -37,49 +34,38 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <vector>
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationSharedPtr;
-typedef boost::shared_ptr<class Hd_QuadInfoBuilderComputation> Hd_QuadInfoBuilderComputationSharedPtr;
-typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationPtr;
-typedef boost::weak_ptr<class Hd_QuadInfoBuilderComputation> Hd_QuadInfoBuilderComputationPtr;
-class HdResourceRegistry;
-class Hd_Subdivision;
-struct Hd_QuadInfo;
-class Hd_VertexAdjacency;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 
 /// \class HdMeshTopology
 ///
 /// Topology data for meshes.
 ///
-/// HtMeshTopology holds the raw input topology data for a mesh and is capable
+/// HdMeshTopology holds the raw input topology data for a mesh and is capable
 /// of computing derivative topological data (such as indices or subdivision
 /// stencil tables and patch tables).
 ///
 class HdMeshTopology : public HdTopology {
 public:
-
     HdMeshTopology();
     HdMeshTopology(const HdMeshTopology &, int refineLevel=0);
     HdMeshTopology(const PxOsdMeshTopology &, int refineLevel=0);
-    HdMeshTopology(
-        TfToken scheme,
-        TfToken orientation,
-        VtIntArray faceVertexCounts,
-        VtIntArray faceVertexIndices,
-        int refineLevel=0);
-    HdMeshTopology(
-        TfToken scheme,
-        TfToken orientation,
-        VtIntArray faceVertexCounts,
-        VtIntArray faceVertexIndices,
-        VtIntArray holeIndices,
-        int refineLevel=0);
+    HdMeshTopology(const TfToken    &scheme,
+                   const TfToken    &orientation,
+                   const VtIntArray &faceVertexCounts,
+                   const VtIntArray &faceVertexIndices,
+                   int refineLevel = 0);
+    HdMeshTopology(const TfToken &scheme,
+                   const TfToken &orientation,
+                   const VtIntArray &faceVertexCounts,
+                   const VtIntArray &faceVertexIndices,
+                   const VtIntArray &holeIndices,
+                   int refineLevel = 0);
     virtual ~HdMeshTopology();
+
+    HdMeshTopology &operator =(const HdMeshTopology &copy);
+
 
 #if defined(HD_SUPPORT_OPENSUBDIV2)
     /// Returns whether OpenSubdiv 3.0 to be used.
@@ -142,78 +128,6 @@ public:
     /// Equality check between two mesh topologies.
     bool operator==(HdMeshTopology const &other) const;
 
-    /// \name Triangulation
-    /// @{
-
-    /// Returns the triangle indices (for drawing) buffer source computation.
-    HdBufferSourceSharedPtr GetTriangleIndexBuilderComputation(
-        SdfPath const &id);
-
-    /// Returns the CPU face-varying triangulate computation
-    HdBufferSourceSharedPtr GetTriangulateFaceVaryingComputation(
-        HdBufferSourceSharedPtr const &source,
-        SdfPath const &id);
-
-    /// @}
-
-    ///
-    /// \name Quadrangulation
-    /// @{
-
-    /// Returns the quadinfo computation for the use of primvar
-    /// quadrangulation.
-    /// If gpu is true, the quadrangulate table will be transferred to GPU
-    /// via the resource registry.
-    Hd_QuadInfoBuilderComputationSharedPtr GetQuadInfoBuilderComputation(
-        bool gpu, SdfPath const &id,
-        HdResourceRegistry *resourceRegistry=NULL);
-
-    /// Returns the quad indices (for drawing) buffer source computation.
-    HdBufferSourceSharedPtr GetQuadIndexBuilderComputation(SdfPath const &id);
-
-    /// Returns the CPU quadrangulated buffer source.
-    HdBufferSourceSharedPtr GetQuadrangulateComputation(
-        HdBufferSourceSharedPtr const &source, SdfPath const &id);
-
-    /// Returns the GPU quadrangulate computation.
-    HdComputationSharedPtr GetQuadrangulateComputationGPU(
-        TfToken const &name, GLenum dataType, SdfPath const &id);
-
-    /// Returns the CPU face-varying quadrangulate computation
-    HdBufferSourceSharedPtr GetQuadrangulateFaceVaryingComputation(
-        HdBufferSourceSharedPtr const &source, SdfPath const &id);
-
-    /// Returns the quadrangulation table range on GPU
-    HdBufferArrayRangeSharedPtr const &GetQuadrangulateTableRange() const {
-        return _quadrangulateTableRange;
-    }
-
-    /// Clears the quadrangulation table range
-    void ClearQuadrangulateTableRange() {
-        _quadrangulateTableRange.reset();
-    }
-
-    /// Sets the quadrangulation struct. HdMeshTopology takes an
-    /// ownership of quadInfo (caller shouldn't free)
-    void SetQuadInfo(Hd_QuadInfo const *quadInfo);
-
-    /// Returns the quadrangulation struct.
-    Hd_QuadInfo const *GetQuadInfo() const {
-        return _quadInfo;
-    }
-
-    /// @}
-
-    ///
-    /// \name Points
-    /// @{
-
-    /// Returns the point indices buffer source computation.
-    HdBufferSourceSharedPtr GetPointsIndexBuilderComputation();
-
-    /// @}
-
-
     ///
     /// \name Hole
     /// @{
@@ -246,40 +160,6 @@ public:
         return _topology.GetSubdivTags();
     }
 
-    /// Returns the subdivision struct.
-    Hd_Subdivision const *GetSubdivision() const {
-        return _subdivision;
-    }
-
-    /// Returns the subdivision struct (non-const).
-    Hd_Subdivision *GetSubdivision() {
-        return _subdivision;
-    }
-
-    /// Returns true if the subdivision on this mesh produces
-    /// triangles (otherwise quads)
-    bool RefinesToTriangles() const;
-
-    /// Returns true if the subdivision on this mesh produces patches
-    bool RefinesToBSplinePatches() const;
-
-    /// Returns the subdivision topology computation. It computes
-    /// far mesh and produces refined quad-indices buffer.
-    HdBufferSourceSharedPtr GetOsdTopologyComputation(SdfPath const &debugId);
-
-    /// Returns the refined indices builder computation.
-    /// this just returns index and primitive buffer, and should be preceded by
-    /// topology computation.
-    HdBufferSourceSharedPtr GetOsdIndexBuilderComputation();
-
-    /// Returns the subdivision primvar refine computation on CPU.
-    HdBufferSourceSharedPtr GetOsdRefineComputation(
-        HdBufferSourceSharedPtr const &source, bool varying);
-
-    /// Returns the subdivision primvar refine computation on GPU.
-    HdComputationSharedPtr GetOsdRefineComputationGPU(
-        TfToken const &name, GLenum dataType, int numComponents);
-
     /// @}
 
     // Per-primitive coarse-face-param encoding/decoding functions
@@ -293,28 +173,10 @@ public:
         return (coarseFaceParam & 3);
     }
 
-private:
-    // Computes smooth normals using vertex adjacency.
-    template <typename Vec3Type>
-    VtArray<Vec3Type>
-    _ComputeSmoothNormals(int numPoints, Vec3Type const * pointsPtr);
 
-private:
-
+protected:
     PxOsdMeshTopology _topology;
     int _refineLevel;
-
-    // quadrangulation info on CPU
-    Hd_QuadInfo const *_quadInfo;
-
-    // quadrangulation info on GPU
-    HdBufferArrayRangeSharedPtr _quadrangulateTableRange;
-
-    Hd_QuadInfoBuilderComputationPtr _quadInfoBuilder;
-
-    // OpenSubdiv
-    Hd_Subdivision *_subdivision;
-    HdBufferSourceWeakPtr _osdTopologyBuilder;
 };
 
 #endif // HD_MESH_TOPOLOGY_H

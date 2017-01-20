@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SUBDIVISION3_H
-#define HD_SUBDIVISION3_H
+#ifndef HDST_SUBDIVISION3_H
+#define HDST_SUBDIVISION3_H
 
 #include "pxr/imaging/hd/version.h"
 
-class Hd_Subdivision;
+class HdSt_Subdivision;
 
-class Hd_Osd3Factory {
+class HdSt_Osd3Factory {
 public:
-    static Hd_Subdivision *CreateSubdivision();
+    static HdSt_Subdivision *CreateSubdivision();
 };
 
-#endif // HD_SUBDIVISION3_H
+#endif // HDST_SUBDIVISION3_H

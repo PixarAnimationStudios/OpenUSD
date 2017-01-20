@@ -24,6 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/basisCurvesTopology.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2i.h"
@@ -35,7 +37,6 @@
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/quadrangulate.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -54,6 +55,7 @@ HdStBasisCurves::_BasisCurvesReprConfig HdStBasisCurves::_reprDescConfig;
 HdStBasisCurves::HdStBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
                  SdfPath const& instancerId)
     : HdBasisCurves(delegate, id, instancerId)
+    , _topology()
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _refineLevel(0)
@@ -298,13 +300,14 @@ HdStBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id) ||
         HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
 
-        HdBasisCurvesTopologySharedPtr topology(
-            new HdBasisCurvesTopology(GetBasisCurvesTopology()));
+
+        const HdBasisCurvesTopology &srcTopology = GetBasisCurvesTopology();
 
         // compute id.
-        _topologyId = topology->ComputeHash();
+        _topologyId = srcTopology.ComputeHash();
         boost::hash_combine(_topologyId, (bool)(_refineLevel>0));
 
+        // XXX: Should be HdSt_BasisCurvesTopologySharedPtr
         HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> topologyInstance;
 
         // ask registry if there's a sharable mesh topology
@@ -312,16 +315,28 @@ HdStBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
             resourceRegistry->RegisterBasisCurvesTopology(_topologyId, &topologyInstance);
 
         if (topologyInstance.IsFirstInstance()) {
-            // if this is the first instance, set this topology to registry.
-            topologyInstance.SetValue(topology);
+            // if this is the first instance, create a new stream topology
+            // representation and use that.
+            HdSt_BasisCurvesTopologySharedPtr topology =
+                                     HdSt_BasisCurvesTopology::New(srcTopology);
+
+            // XXX: Registry is currently in core Hd, so doesn't have access
+            // to the St version of the topology,
+            HdBasisCurvesTopologySharedPtr baseTopology =
+                    boost::static_pointer_cast<HdBasisCurvesTopology>(topology);
+
+            topologyInstance.SetValue(baseTopology);
         }
 
-        _topology = topologyInstance.GetValue();
+        // XXX: Registry is currently in core Hd, so doesn't have access
+        // to the St version of the topology,
+        _topology = boost::static_pointer_cast<HdSt_BasisCurvesTopology>(
+                                                   topologyInstance.GetValue());
         TF_VERIFY(_topology);
 
         // hash collision check
         if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
-            TF_VERIFY(*topology == *_topology);
+            TF_VERIFY(srcTopology == *_topology);
         }
     }
 

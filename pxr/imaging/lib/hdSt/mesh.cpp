@@ -24,6 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/mesh.h"
+#include "pxr/imaging/hdSt/meshTopology.h"
+#include "pxr/imaging/hdSt/quadrangulate.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -33,9 +35,7 @@
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/meshShaderKey.h"
-#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/quadrangulate.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -61,6 +61,7 @@ HdStMesh::_MeshReprConfig HdStMesh::_reprDescConfig;
 HdStMesh::HdStMesh(HdSceneDelegate* delegate, SdfPath const& id,
                SdfPath const& instancerId)
     : HdMesh(delegate, id, instancerId)
+    , _topology()
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)
@@ -150,12 +151,12 @@ HdStMesh::_PopulateTopology(HdDrawItem *drawItem,
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)    || 
         HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id) || 
         HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
-        // make a shallow copy
+        // make a shallow copy and the same time expand the topology to a
+        // stream extended representation
         // note: if we add topologyId computation in delegate,
         // we can move this copy into topologyInstance.IsFirstInstance() block
-        HdMeshTopologySharedPtr topology(
-            new HdMeshTopology(GetMeshTopology(),
-                               GetRefineLevel()));
+        HdSt_MeshTopologySharedPtr topology =
+                    HdSt_MeshTopology::New(GetMeshTopology(), GetRefineLevel());
 
         int refineLevel = topology->GetRefineLevel();
         if (refineLevel > 0) {
@@ -178,6 +179,7 @@ HdStMesh::_PopulateTopology(HdDrawItem *drawItem,
         boost::hash_combine(_topologyId, usePtexIndices);
 
         {
+            // XXX: Should be HdSt_MeshTopologySharedPtr
             HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> topologyInstance;
 
             // ask registry if there's a sharable mesh topology
@@ -186,7 +188,8 @@ HdStMesh::_PopulateTopology(HdDrawItem *drawItem,
 
             if (topologyInstance.IsFirstInstance()) {
                 // if this is the first instance, set this topology to registry.
-                topologyInstance.SetValue(topology);
+                topologyInstance.SetValue(
+                        boost::static_pointer_cast<HdMeshTopology>(topology));
 
                 // if refined, we submit a subdivision preprocessing
                 // no matter what desc says
@@ -203,14 +206,15 @@ HdStMesh::_PopulateTopology(HdDrawItem *drawItem,
                 // HdMeshGeomStyleHull is going to be used.
                 if (usePtexIndices) {
                     // Quadrangulate preprocessing
-                    Hd_QuadInfoBuilderComputationSharedPtr quadInfoBuilder =
+                    HdSt_QuadInfoBuilderComputationSharedPtr quadInfoBuilder =
                         topology->GetQuadInfoBuilderComputation(
                             HdStMesh::IsEnabledQuadrangulationGPU(), id,
                             resourceRegistry);
                     resourceRegistry->AddSource(quadInfoBuilder);
                 }
             }
-            _topology = topologyInstance.GetValue();
+            _topology = boost::static_pointer_cast<HdSt_MeshTopology>(
+                                                   topologyInstance.GetValue());
         }
         TF_VERIFY(_topology);
 
@@ -356,7 +360,7 @@ HdStMesh::_PopulateAdjacency()
 static HdBufferSourceSharedPtr
 _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
                       HdComputationVector *computations,
-                      HdMeshTopologySharedPtr const &topology,
+                      HdSt_MeshTopologySharedPtr const &topology,
                       SdfPath const &id)
 {
     if (!TF_VERIFY(computations)) return source;
@@ -393,7 +397,7 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
 
 static HdBufferSourceSharedPtr
 _QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
-                                 HdMeshTopologySharedPtr const &topology,
+                                 HdSt_MeshTopologySharedPtr const &topology,
                                  SdfPath const &id)
 {
     // note: currently we don't support GPU facevarying quadrangulation.
@@ -412,7 +416,7 @@ _QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
 
 static HdBufferSourceSharedPtr
 _TriangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
-                               HdMeshTopologySharedPtr const &topology,
+                               HdSt_MeshTopologySharedPtr const &topology,
                                SdfPath const &id)
 {
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
@@ -431,7 +435,7 @@ static HdBufferSourceSharedPtr
 _RefinePrimVar(HdBufferSourceSharedPtr const &source,
                bool varying,
                HdComputationVector *computations,
-               HdMeshTopologySharedPtr const &topology)
+               HdSt_MeshTopologySharedPtr const &topology)
 {
     if (!TF_VERIFY(computations)) return source;
 
