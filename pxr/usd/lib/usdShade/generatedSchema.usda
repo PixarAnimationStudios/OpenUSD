@@ -15,7 +15,7 @@ class PShader "PShader"
 class Subgraph "Subgraph" (
     doc = '''A subgraph is a container for shading nodes, as well as other 
     subgraphs. It has a public input interface and provides a list of public 
-    outputs, called terminals.
+    outputs.
 
     <b>Subgraph Interfaces</b>
     
@@ -25,10 +25,10 @@ class Subgraph "Subgraph" (
     explanation of what the interface provides, and how to construct and
     use it to effectively share/instance shader networks.
 
-    <b>Terminals</b>
+    <b>Subgraph Outputs</b>
 
-    Analogous to the public interface, these are relationships that each point 
-    to a single internal shader output.
+    These behave like outputs on a shader and are typically connected to an 
+    output on a shader inside the subgraph.
     '''
 )
 {
