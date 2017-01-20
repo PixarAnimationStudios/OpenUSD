@@ -161,8 +161,7 @@ _DemangleNew(string* mangledTypeName)
     bool ok = false;
 
     if (char* realName =
-            abi::__cxa_demangle(input.c_str(), NULL, NULL, &status))
-    {
+            abi::__cxa_demangle(input.c_str(), NULL, NULL, &status)) {
         size_t len = strlen(realName);
         if (len > 1 && realName[len-1] == '*') {
             *mangledTypeName = string(&realName[0], len-1);
@@ -217,6 +216,24 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
     }
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+#elif defined(ARCH_OS_WINDOWS)
+
+bool
+ArchDemangle(string* mangledTypeName)
+{
+    _FixupStringNames(mangledTypeName);
+    #if PXR_USE_NAMESPACES
+    _StripPxrInternalNamespace(mangledTypeName);
+    #endif
+    return true;
+}
+
+void
+Arch_DemangleFunctionName(string* mangledFunctionName)
+{
+    ArchDemangle(mangledFunctionName);
+}
 
 #endif // _AT_LEAST_GCC_THREE_ONE_OR_CLANG
+
+PXR_NAMESPACE_CLOSE_SCOPE
