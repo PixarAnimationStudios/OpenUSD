@@ -174,6 +174,9 @@ USDVMP::setup(FnKat::ViewerModifierInput& input)
     _params.frame = currentTime;
     
     
+    // To allow drawing of proxies, load the current prim's subtree
+    // before rendering.
+    _loadSubtreeForCurrentPrim();
     
 }
 
@@ -183,9 +186,6 @@ USDVMP::deepSetup(FnKat::ViewerModifierInput& input)
     TF_DEBUG(KATANA_DEBUG_VMP_USD).Msg("%s @ %p : %s\n",
             TF_FUNC_NAME().c_str(), this, input.getFullName().c_str());
 
-    // To allow drawing of proxies, load the current prim's subtree
-    // before rendering.
-    _loadSubtreeForCurrentPrim();
     
     // We are taking over all drawing for this location.
     input.overrideHostGeometry();
@@ -301,7 +301,28 @@ USDVMP::draw(FnKat::ViewerModifierInput& input)
             _renderer->SetCameraState(_viewMatrix, projectionMatrix, viewport);
 
             GfMatrix4d modelMatrix = modelViewMatrix * (_viewMatrix.GetInverse());
-            _renderer->SetRootTransform(modelMatrix);
+            
+            /// XXX suppressing repeated calls to SetRootTransform for very
+            ///     similar values. The episilon is big to account for the
+            ///     precision lost when computing relative to the _viewMatrix
+            ///     Querying the GL state for transformation is currently the
+            ///     most reliable way of getting (close to) accurate answers
+            ///     for all cases given our use of a VMP within a katana viewer
+            ///     proxy sub-scene.
+            ///     TODO: find a better way and ensure that katana 3.0's
+            ///           viewer can answer this directly.
+            double * modelMatrixValues = modelMatrix.GetArray();
+            for (int i = 0; i < 16; ++i)
+            {
+                if (!GfIsClose(modelMatrixValues[i], _lastModelMatrix[i], 0.01))
+                {
+                    _renderer->SetRootTransform(modelMatrix);
+                    memcpy(&_lastModelMatrix[0], modelMatrixValues,
+                            sizeof(double) * 16);
+                    break;
+                }
+            }
+            
 
             glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT);
 

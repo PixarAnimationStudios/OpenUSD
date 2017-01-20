@@ -102,6 +102,13 @@ private:
     UsdPrim _prim;
 
     GfMatrix4d _viewMatrix;
+    
+    // XXX store the last time we SetRootTransform so that we can do a sloppy
+    //     comparison. The current reliable technique for getting the model
+    //     matrix is from GL state (due to our clever abuse of the katana
+    //     proxy system to trigger a VMP in the proxy sub-scene.)
+    double _lastModelMatrix[16];
+    
 };
 
 #endif 
