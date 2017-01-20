@@ -24,16 +24,16 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
+#include "pxr/imaging/hdSt/basisCurvesComputations.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include "pxr/imaging/hd/basisCurvesShaderKey.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -43,7 +43,6 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hd/basisCurvesComputations.h"
 #include "pxr/base/vt/value.h"
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0, 
@@ -150,9 +149,10 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
         }
     }
 
-    Hd_BasisCurvesShaderKey shaderKey(_topology->GetCurveBasis(),
+    HdSt_BasisCurvesShaderKey shaderKey(_topology->GetCurveBasis(),
                                       hasAuthoredNormals,
-                                      (_SupportsSmoothCurves(desc, _refineLevel)));
+                                        (_SupportsSmoothCurves(desc,
+                                                               _refineLevel)));
 
     drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
 }
@@ -435,11 +435,11 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
             // XXX: this really needs to happen for all primvars.
             if (*nameIt == HdTokens->widths) {
                 sources.push_back(HdBufferSourceSharedPtr(
-                        new Hd_BasisCurvesWidthsInterpolaterComputation(
+                        new HdSt_BasisCurvesWidthsInterpolaterComputation(
                                       _topology.get(), value.Get<VtFloatArray>())));
             } else if (*nameIt == HdTokens->normals) {
                 sources.push_back(HdBufferSourceSharedPtr(
-                        new Hd_BasisCurvesNormalsInterpolaterComputation(
+                        new HdSt_BasisCurvesNormalsInterpolaterComputation(
                                       _topology.get(), value.Get<VtVec3fArray>())));
             } else {
                 sources.push_back(HdBufferSourceSharedPtr(

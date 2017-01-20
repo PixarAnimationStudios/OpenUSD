@@ -21,19 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_BASIS_CURVES_SHADER_KEY_H
-#define HD_BASIS_CURVES_SHADER_KEY_H
+#ifndef HDST_BASIS_CURVES_SHADER_KEY_H
+#define HDST_BASIS_CURVES_SHADER_KEY_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/token.h"
 
-struct Hd_BasisCurvesShaderKey
+struct HdSt_BasisCurvesShaderKey
 {
-    Hd_BasisCurvesShaderKey(TfToken const &basis, bool authoredNormals, 
+    HdSt_BasisCurvesShaderKey(TfToken const &basis, bool authoredNormals,
                             bool refine);
-    ~Hd_BasisCurvesShaderKey();
+    ~HdSt_BasisCurvesShaderKey();
 
     TfToken const &GetGlslfxFile() const { return glslfx; }
     TfToken const *GetVS() const  { return VS; }
@@ -56,4 +56,4 @@ struct Hd_BasisCurvesShaderKey
     TfToken FS[6];
 };
 
-#endif  // HD_BASIS_CURVES_SHADER_KEY
+#endif  // HDST_BASIS_CURVES_SHADER_KEY

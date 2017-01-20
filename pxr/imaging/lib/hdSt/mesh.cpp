@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/mesh.h"
+#include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/geometricShader.h"
-#include "pxr/imaging/hd/meshShaderKey.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -1050,14 +1050,14 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
     bool blendWireframeColor = desc.blendWireframeColor;
 
     // create a shaderKey and set to the geometric shader.
-    Hd_MeshShaderKey shaderKey(primType,
-                               desc.lit,
-                               smoothNormals,
-                               _doubleSided,
-                               hasFaceVaryingPrimVars,
-                               blendWireframeColor,
-                               cullStyle,
-                               geomStyle);
+    HdSt_MeshShaderKey shaderKey(primType,
+                                 desc.lit,
+                                 smoothNormals,
+                                 _doubleSided,
+                                 hasFaceVaryingPrimVars,
+                                 blendWireframeColor,
+                                 cullStyle,
+                                 geomStyle);
 
     drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
 

@@ -35,9 +35,7 @@ pxr_shared_library(hd
 
     PUBLIC_CLASSES
         basisCurves
-        basisCurvesComputations
         basisCurvesTopology
-        basisCurvesShaderKey
         binding
         bprim
         bufferArray
@@ -62,6 +60,7 @@ pxr_shared_library(hd
         drawItemInstance
         drawItemState
         engine
+        fallbackLightingShader
         geometricShader
         glslProgram
         glslfxShader
@@ -73,14 +72,12 @@ pxr_shared_library(hd
         interleavedMemoryManager
         lightingShader
         mesh
-        meshShaderKey
         meshTopology
         package
         patchIndex
         perfLog
         persistentBuffer
         points
-        pointsShaderKey
         renderContextCaps
         renderDelegate
         renderDelegateRegistry
@@ -119,7 +116,6 @@ pxr_shared_library(hd
 
     PRIVATE_CLASSES
         cullingShaderKey
-        fallbackLightingShader
         renderIndexManager
         unitTestDelegate
         unitTestHelper

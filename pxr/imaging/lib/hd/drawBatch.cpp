@@ -31,7 +31,6 @@
 #include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/lightingShader.h"
-#include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"

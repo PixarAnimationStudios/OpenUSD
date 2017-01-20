@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
-#include "pxr/imaging/hd/basisCurvesComputations.h"
+#include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include <boost/make_shared.hpp>
 
 
@@ -48,5 +48,5 @@ HdBufferSourceSharedPtr
 HdSt_BasisCurvesTopology::GetIndexBuilderComputation(bool supportSmoothCurves)
 {
     return HdBufferSourceSharedPtr(
-        new Hd_BasisCurvesIndexBuilderComputation(this, supportSmoothCurves));
+        new HdSt_BasisCurvesIndexBuilderComputation(this, supportSmoothCurves));
 }

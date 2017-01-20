@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/meshShaderKey.h"
+#include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/base/tf/staticTokens.h"
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -54,7 +54,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,              "Instancing.Transform"))
 );
 
-Hd_MeshShaderKey::Hd_MeshShaderKey(
+HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     GLenum primType,
     bool lit,
     bool smoothNormals,
@@ -158,6 +158,6 @@ Hd_MeshShaderKey::Hd_MeshShaderKey(
     FS[6] = TfToken();
 }
 
-Hd_MeshShaderKey::~Hd_MeshShaderKey()
+HdSt_MeshShaderKey::~HdSt_MeshShaderKey()
 {
 }

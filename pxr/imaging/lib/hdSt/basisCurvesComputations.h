@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_BASIS_CURVES_COMPUTATIONS_H
-#define HD_BASIS_CURVES_COMPUTATIONS_H
+#ifndef HDST_BASIS_CURVES_COMPUTATIONS_H
+#define HDST_BASIS_CURVES_COMPUTATIONS_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -32,13 +32,13 @@
 
 class HdBasisCurvesTopology;
 
-/// \class Hd_BasisCurvesIndexBuilderComputation
+/// \class HdSt_BasisCurvesIndexBuilderComputation
 ///
 /// Compute basis curves indices as a computation on CPU.
 ///
-class Hd_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
+class HdSt_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:
-    Hd_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
+    HdSt_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
                                           bool supportSmoothCurves);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
@@ -58,10 +58,10 @@ private:
 /// Compute vertex widths based on \p authoredWidths, doing interpolation as
 /// necessary 
 ///
-class Hd_BasisCurvesWidthsInterpolaterComputation
+class HdSt_BasisCurvesWidthsInterpolaterComputation
                             : public HdComputedBufferSource {
 public:
-    Hd_BasisCurvesWidthsInterpolaterComputation(HdBasisCurvesTopology *topology,
+    HdSt_BasisCurvesWidthsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtFloatArray authoredWidths);
     virtual bool Resolve();
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
@@ -77,10 +77,10 @@ private:
 /// Compute vertex normals based on \p authoredNormals, doing interpolation as
 /// necessary 
 ///
-class Hd_BasisCurvesNormalsInterpolaterComputation
+class HdSt_BasisCurvesNormalsInterpolaterComputation
                             : public HdComputedBufferSource {
 public:
-    Hd_BasisCurvesNormalsInterpolaterComputation(HdBasisCurvesTopology *topology,
+    HdSt_BasisCurvesNormalsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtVec3fArray authoredNormals);
     virtual bool Resolve();
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
@@ -93,4 +93,4 @@ private:
     VtVec3fArray _authoredNormals;
 };
 
-#endif //HD_BASIS_CURVES_COMPUTATIONS_H
+#endif //HDST_BASIS_CURVES_COMPUTATIONS_H

@@ -21,34 +21,53 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_POINTS_SHADER_KEY_H
-#define HD_POINTS_SHADER_KEY_H
+#ifndef HDST_MESH_SHADER_KEY_H
+#define HDST_MESH_SHADER_KEY_H
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/token.h"
 
-struct Hd_PointsShaderKey
+struct HdSt_MeshShaderKey
 {
-    Hd_PointsShaderKey();
-    ~Hd_PointsShaderKey();
+    HdSt_MeshShaderKey(GLenum primitiveMode,
+                       bool lit,
+                       bool smoothNormals,
+                       bool doubleSided,
+                       bool faceVarying,
+                       bool blendWireframeColor,
+                       HdCullStyle cullStyle,
+                       HdMeshGeomStyle geomStyle);
+
+    // Note: it looks like gcc 4.8 has a problem issuing
+    // a wrong warning as "array subscript is above array bounds"
+    // when the default destructor is automatically generated at callers.
+    // Having an empty destructor explicitly within this linkage apparently
+    // avoids the issue.
+    ~HdSt_MeshShaderKey();
 
     TfToken const &GetGlslfxFile() const { return glslfx; }
     TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return NULL; }
-    TfToken const *GetTES() const { return NULL; }
-    TfToken const *GetGS() const  { return NULL; }
+    TfToken const *GetTCS() const { return TCS; }
+    TfToken const *GetTES() const { return TES; }
+    TfToken const *GetGS() const  { return GS; }
     TfToken const *GetFS() const  { return FS; }
     bool IsCullingPass() const { return false; }
-    GLenum GetPrimitiveMode() const { return GL_POINTS; }
-    int16_t GetPrimitiveIndexSize() const { return 1; }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-
+    GLenum GetPrimitiveMode() const { return primitiveMode; }
+    int16_t GetPrimitiveIndexSize() const { return primitiveIndexSize; }
+    HdCullStyle GetCullStyle() const { return cullStyle; }
+    HdPolygonMode GetPolygonMode() const { return polygonMode; }
+    GLenum primitiveMode;
+    int16_t primitiveIndexSize;
+    HdCullStyle cullStyle;
+    HdPolygonMode polygonMode;
     TfToken glslfx;
-    TfToken VS[3];
-    TfToken FS[2];
+    TfToken VS[4];
+    TfToken TCS[3];
+    TfToken TES[3];
+    TfToken GS[5];
+    TfToken FS[7];
 };
 
-#endif  // HD_POINTS_SHADER_KEY
+#endif  // HDST_MESH_SHADER_KEY_H

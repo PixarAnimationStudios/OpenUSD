@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/basisCurvesShaderKey.h"
+#include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -46,9 +46,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,            "Instancing.Transform"))
 );
 
-Hd_BasisCurvesShaderKey::Hd_BasisCurvesShaderKey(TfToken const &basis,
-                                                 bool authoredNormals,
-                                                 bool refine)
+HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(TfToken const &basis,
+                                                     bool authoredNormals,
+                                                     bool refine)
     : glslfx(_tokens->baseGLSLFX)
 {
     if (refine) {
@@ -83,6 +83,6 @@ Hd_BasisCurvesShaderKey::Hd_BasisCurvesShaderKey(TfToken const &basis,
     FS[1]  = TfToken();
 }
 
-Hd_BasisCurvesShaderKey::~Hd_BasisCurvesShaderKey()
+HdSt_BasisCurvesShaderKey::~HdSt_BasisCurvesShaderKey()
 {
 }

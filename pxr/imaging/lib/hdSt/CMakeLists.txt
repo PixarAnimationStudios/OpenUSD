@@ -13,8 +13,12 @@ pxr_shared_library(hdSt
         points
 
     PRIVATE_CLASSES
+        basisCurvesComputations
+        basisCurvesShaderKey
         basisCurvesTopology
-        meshTopology    
+        meshShaderKey
+        meshTopology 
+        pointsShaderKey
         quadrangulate
         subdivision
         subdivision3

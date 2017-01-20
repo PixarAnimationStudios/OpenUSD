@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/points.h"
+#include "pxr/imaging/hdSt/pointsShaderKey.h"
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/getenv.h"
@@ -31,7 +32,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/pointsShaderKey.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -72,7 +72,7 @@ HdStPoints::_UpdateDrawItem(HdDrawItem *drawItem,
     /* INSTANCE PRIMVARS */
     _PopulateInstancePrimVars(drawItem, dirtyBits, InstancePrimVar);
 
-    Hd_PointsShaderKey shaderKey;
+    HdSt_PointsShaderKey shaderKey;
     drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
 
     /* PRIMVAR */

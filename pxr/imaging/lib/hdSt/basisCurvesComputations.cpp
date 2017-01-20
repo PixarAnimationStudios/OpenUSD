@@ -22,8 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/hd/basisCurvesComputations.h"
-#include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -106,7 +105,7 @@ InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wra
     return outputValues;
 }
 
-Hd_BasisCurvesIndexBuilderComputation::Hd_BasisCurvesIndexBuilderComputation(
+HdSt_BasisCurvesIndexBuilderComputation::HdSt_BasisCurvesIndexBuilderComputation(
     HdBasisCurvesTopology *topology,
     bool supportSmoothCurves)
     : _topology(topology)
@@ -115,7 +114,7 @@ Hd_BasisCurvesIndexBuilderComputation::Hd_BasisCurvesIndexBuilderComputation(
 }
 
 void
-Hd_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
+HdSt_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     if(_supportSmoothCurves) {
@@ -127,7 +126,7 @@ Hd_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
 }
 
 VtValue
-Hd_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
+HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 {
     std::vector<GfVec2i> indices;
     VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
@@ -173,7 +172,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 }
 
 VtValue
-Hd_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
+HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
     std::vector<GfVec2i> indices;
     VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
@@ -229,7 +228,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 }
 
 VtValue
-Hd_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
+HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
 {
 
     /* 
@@ -349,7 +348,7 @@ Hd_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
 }
 
 bool
-Hd_BasisCurvesIndexBuilderComputation::Resolve()
+HdSt_BasisCurvesIndexBuilderComputation::Resolve()
 {
     if (!_TryLock()) return false;
 
@@ -375,7 +374,7 @@ Hd_BasisCurvesIndexBuilderComputation::Resolve()
 }
 
 bool
-Hd_BasisCurvesIndexBuilderComputation::_CheckValid() const
+HdSt_BasisCurvesIndexBuilderComputation::_CheckValid() const
 {
     return true;
 }
@@ -385,7 +384,7 @@ Hd_BasisCurvesIndexBuilderComputation::_CheckValid() const
 // BasisCurves Widths Interpolater
 // -------------------------------------------------------------------------- //
 
-Hd_BasisCurvesWidthsInterpolaterComputation::Hd_BasisCurvesWidthsInterpolaterComputation(
+HdSt_BasisCurvesWidthsInterpolaterComputation::HdSt_BasisCurvesWidthsInterpolaterComputation(
     HdBasisCurvesTopology *topology,
     VtFloatArray authoredWidths)
  : _topology(topology)
@@ -394,13 +393,13 @@ Hd_BasisCurvesWidthsInterpolaterComputation::Hd_BasisCurvesWidthsInterpolaterCom
 }
 
 void
-Hd_BasisCurvesWidthsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_BasisCurvesWidthsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->push_back(HdBufferSpec(HdTokens->widths, GL_FLOAT, 1));
 }
 
 bool
-Hd_BasisCurvesWidthsInterpolaterComputation::Resolve()
+HdSt_BasisCurvesWidthsInterpolaterComputation::Resolve()
 {
     if (!_TryLock()) return false;
 
@@ -444,7 +443,7 @@ Hd_BasisCurvesWidthsInterpolaterComputation::Resolve()
 }
 
 bool
-Hd_BasisCurvesWidthsInterpolaterComputation::_CheckValid() const
+HdSt_BasisCurvesWidthsInterpolaterComputation::_CheckValid() const
 {
     return true;
 }
@@ -453,7 +452,7 @@ Hd_BasisCurvesWidthsInterpolaterComputation::_CheckValid() const
 // BasisCurves Normals Interpolater
 // -------------------------------------------------------------------------- //
 
-Hd_BasisCurvesNormalsInterpolaterComputation::Hd_BasisCurvesNormalsInterpolaterComputation(
+HdSt_BasisCurvesNormalsInterpolaterComputation::HdSt_BasisCurvesNormalsInterpolaterComputation(
     HdBasisCurvesTopology *topology,
     VtVec3fArray authoredNormals)
  : _topology(topology)
@@ -462,13 +461,13 @@ Hd_BasisCurvesNormalsInterpolaterComputation::Hd_BasisCurvesNormalsInterpolaterC
 }
 
 void
-Hd_BasisCurvesNormalsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_BasisCurvesNormalsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->push_back(HdBufferSpec(HdTokens->normals, GL_FLOAT, 3));
 }
 
 bool
-Hd_BasisCurvesNormalsInterpolaterComputation::Resolve()
+HdSt_BasisCurvesNormalsInterpolaterComputation::Resolve()
 {
     if (!_TryLock()) return false;
 
@@ -512,7 +511,7 @@ Hd_BasisCurvesNormalsInterpolaterComputation::Resolve()
 }
 
 bool
-Hd_BasisCurvesNormalsInterpolaterComputation::_CheckValid() const
+HdSt_BasisCurvesNormalsInterpolaterComputation::_CheckValid() const
 {
     return true;
 }
