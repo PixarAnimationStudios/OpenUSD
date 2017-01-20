@@ -136,6 +136,21 @@ MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 /// Gets the Maya MDagPath for the node named \p nodeName.
 MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 
+/// Get the MPlug for the output time attribute of Maya's global time object
+///
+/// The Maya API does not appear to provide any facilities for getting a handle
+/// to the global time object (e.g. "time1"). We need to find this object in
+/// order to make connections between its "outTime" attribute and the input
+/// "time" attributes on assembly nodes when their "Playback" representation is
+/// activated.
+///
+/// This function makes a best effort attempt to find "time1" by looking through
+/// all MFn::kTime function set objects in the scene and returning the one whose
+/// outTime attribute matches the current time. If no such object can be found,
+/// an invalid plug is returned.
+MPlug
+GetMayaTimePlug();
+
 bool isAncestorDescendentRelationship(const MDagPath & path1,
     const MDagPath & path2);
 

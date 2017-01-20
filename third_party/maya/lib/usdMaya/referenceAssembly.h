@@ -180,6 +180,20 @@ public:
     /// are included in the returned map.
     std::map<std::string, std::string> GetVariantSetSelections() const;
 
+    /// Connect Maya's global time to the assembly's time attribute
+    ///
+    /// This function is called when the assembly's Playback representation is
+    /// activated to enable scrubbing through animation using the timeline,
+    /// since we also create a connection from the assembly to its proxies.
+    void ConnectMayaTimeToAssemblyTime();
+
+    /// Disconnect the assembly's time attribute from Maya's global time
+    ///
+    /// This function is called when the assembly's Playback representation is
+    /// deactivated so that we do not incur the performance overhead of
+    /// propagating Maya's global time to the assembly and its proxies.
+    /// This also disables scrubbing through animation.
+    void DisconnectAssemblyTimeFromMayaTime();
 
   private:
 
@@ -298,6 +312,9 @@ class UsdMayaRepresentationPlayback : public UsdMayaRepresentationProxyBase
         UsdMayaRepresentationProxyBase(assembly, name, false) {};
 
     virtual MString getType () const { return UsdMayaRepresentationPlayback::_assemblyType; };
+
+    virtual bool activate();
+    virtual bool inactivate();
 
   protected:
     virtual void _OverrideProxyPlugs(MFnDependencyNode &shapeFn,

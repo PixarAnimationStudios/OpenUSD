@@ -899,6 +899,47 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
     return result;
 }
 
+void
+UsdMayaReferenceAssembly::ConnectMayaTimeToAssemblyTime()
+{
+    MFnAssembly assemblyFn(thisMObject());
+    MPlug assemblyTimePlug = assemblyFn.findPlug(_psData.time, true);
+    if (!assemblyTimePlug || assemblyTimePlug.isConnected()) {
+        // Bail out if we couldn't find the plug, or if it is already connected.
+        return;
+    }
+
+    const MPlug mayaTimePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    if (mayaTimePlug.isNull()) {
+        return;
+    }
+
+    MDGModifier dgMod;
+    dgMod.connect(mayaTimePlug, assemblyTimePlug);
+    dgMod.doIt();
+}
+
+void
+UsdMayaReferenceAssembly::DisconnectAssemblyTimeFromMayaTime()
+{
+    MFnAssembly assemblyFn(thisMObject());
+    MPlug assemblyTimePlug = assemblyFn.findPlug(_psData.time, true);
+    if (!assemblyTimePlug || !assemblyTimePlug.isConnected()) {
+        // Bail out if we couldn't find the plug, or if it is NOT already
+        // connected.
+        return;
+    }
+
+    const MPlug mayaTimePlug = PxrUsdMayaUtil::GetMayaTimePlug();
+    if (mayaTimePlug.isNull()) {
+        return;
+    }
+
+    MDGModifier dgMod;
+    dgMod.disconnect(mayaTimePlug, assemblyTimePlug);
+    dgMod.doIt();
+}
+
 // =========================================================
 
 UsdMayaRepresentationBase::UsdMayaRepresentationBase(
@@ -1102,6 +1143,28 @@ UsdMayaRepresentationCollapsed::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
     
     // Call parent for common proxy overrides
     UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(shapeFn, dgMod);
+}
+
+/* virtual */
+bool
+UsdMayaRepresentationPlayback::activate()
+{
+    UsdMayaReferenceAssembly* usdAssembly =
+        dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly());
+    usdAssembly->ConnectMayaTimeToAssemblyTime();
+
+    return UsdMayaRepresentationProxyBase::activate();
+}
+
+/* virtual */
+bool
+UsdMayaRepresentationPlayback::inactivate()
+{
+    UsdMayaReferenceAssembly* usdAssembly =
+        dynamic_cast<UsdMayaReferenceAssembly*>(getAssembly());
+    usdAssembly->DisconnectAssemblyTimeFromMayaTime();
+
+    return UsdMayaRepresentationProxyBase::inactivate();
 }
 
 void

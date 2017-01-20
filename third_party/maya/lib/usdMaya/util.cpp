@@ -27,6 +27,7 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
+#include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
@@ -40,6 +41,7 @@
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnSet.h>
 #include <maya/MItDependencyGraph.h>
+#include <maya/MItDependencyNodes.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MObject.h>
@@ -86,6 +88,43 @@ PxrUsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
     status = selectionList.getDagPath(0, dagPath);
 
     return status;
+}
+
+MPlug
+PxrUsdMayaUtil::GetMayaTimePlug()
+{
+    MPlug timePlug;
+    MStatus status;
+
+    // As an extra sanity check, we only return a discovered plug if its
+    // value matches the current time.
+    MTime curTime = MAnimControl::currentTime();
+
+    MItDependencyNodes iter(MFn::kTime, &status);
+    CHECK_MSTATUS_AND_RETURN(status, timePlug);
+
+    while (!timePlug && !iter.isDone()) {
+        MObject node = iter.thisNode();
+        iter.next();
+
+        MFnDependencyNode depNodeFn(node, &status);
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
+        MPlug outTimePlug = depNodeFn.findPlug("outTime", true, &status);
+        if (status != MS::kSuccess || !outTimePlug) {
+            continue;
+        }
+
+        if (outTimePlug.asMTime() != curTime) {
+            continue;
+        }
+
+        timePlug = outTimePlug;
+    }
+
+    return timePlug;
 }
 
 bool PxrUsdMayaUtil::isAncestorDescendentRelationship(const MDagPath & path1,
