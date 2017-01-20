@@ -78,6 +78,11 @@ class Launcher(object):
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
+
+        parser.add_argument('--mask', action='store', nargs='+',
+                            dest='populationMask', metavar='PRIMPATH',
+                            help='Limit stage population to these prims, '
+                            'their descendants and ancestors')
         
         parser.add_argument('--clearsettings', action='store_true', 
                             dest='clearSettings', 

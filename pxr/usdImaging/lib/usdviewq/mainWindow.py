@@ -286,7 +286,8 @@ class MainWindow(QtGui.QMainWindow):
         self.installEventFilter(self)
 
         # read the stage here
-        self._stage = self._openStage(self._parserData.usdFile)
+        self._stage = self._openStage(self._parserData.usdFile,
+                                      self._parserData.populationMask)
         if not self._stage:
             sys.exit(0)
 
@@ -1066,7 +1067,7 @@ class MainWindow(QtGui.QMainWindow):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath):
+    def _openStage(self, usdFilePath, populationMaskPaths):
         # Attempt to do specialized asset resolution based on the
         # UsdviewPlug installed plugin, otherwise use the configured
         # Ar instance for asset resolution.
@@ -1091,9 +1092,16 @@ class MainWindow(QtGui.QMainWindow):
 
         with Timer() as t:
             loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
-            stage = Usd.Stage.Open(usdFilePath, 
-                                   self._pathResolverContext, 
-                                   loadSet)
+            popMask = (None if populationMaskPaths is None else
+                       Usd.StagePopulationMask())
+            if popMask:
+                for p in populationMaskPaths:
+                    popMask.Add(p)
+                stage = Usd.Stage.OpenMasked(
+                    usdFilePath, self._pathResolverContext, popMask, loadSet)
+            else:
+                stage = Usd.Stage.Open(
+                    usdFilePath, self._pathResolverContext, loadSet)
 
             # no point in optimizing for editing if we're not redrawing
             if stage and not self._noRender:
@@ -2383,7 +2391,8 @@ class MainWindow(QtGui.QMainWindow):
             self._currentProp = None
 
             self._stage.Close()
-            self._stage = self._openStage(self._parserData.usdFile)
+            self._stage = self._openStage(self._parserData.usdFile,
+                                          self._parserData.populationMask)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
