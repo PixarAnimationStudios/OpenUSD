@@ -1197,6 +1197,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 %token TOK_PERMISSION
 %token TOK_PAYLOAD
 %token TOK_PREFIX_SUBSTITUTIONS
+%token TOK_SUFFIX_SUBSTITUTIONS
 %token TOK_PROPERTIES
 %token TOK_REFERENCES
 %token TOK_RELOCATES
@@ -1247,6 +1248,7 @@ keyword:
     | TOK_PAYLOAD
     | TOK_PERMISSION
     | TOK_PREFIX_SUBSTITUTIONS
+    | TOK_SUFFIX_SUBSTITUTIONS
     | TOK_PROPERTIES
     | TOK_REFERENCES
     | TOK_RELOCATES
@@ -1739,6 +1741,14 @@ prim_metadata:
     | TOK_PREFIX_SUBSTITUTIONS '=' string_dictionary {
             _SetField(
                 context->path, SdfFieldKeys->PrefixSubstitutions, 
+                context->currentDictionaries[0], context);
+            context->currentDictionaries[0].clear();
+        }
+    // Not parsed with generic metadata because: uses special Python-like
+    // dictionary syntax
+    | TOK_SUFFIX_SUBSTITUTIONS '=' string_dictionary {
+            _SetField(
+                context->path, SdfFieldKeys->SuffixSubstitutions, 
                 context->currentDictionaries[0], context);
             context->currentDictionaries[0].clear();
         }

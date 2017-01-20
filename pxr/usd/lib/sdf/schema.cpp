@@ -511,6 +511,10 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->SessionOwner, "");
     _DoRegisterField(SdfFieldKeys->Specializes, SdfPathListOp())
         .ListValueValidator(&::_ValidateSpecializesPath);
+    _DoRegisterField(SdfFieldKeys->Suffix, "");
+    _DoRegisterField(SdfFieldKeys->SuffixSubstitutions, VtDictionary())
+        .MapKeyValidator(&::_ValidateIsNonEmptyString)
+        .MapValueValidator(&::_ValidateIsString);
 
     // See comment on SdfFieldKeys->ConnectionPaths for why this is read-only.
     _DoRegisterField(SdfFieldKeys->TargetPaths,  SdfPathListOp())
@@ -635,6 +639,10 @@ SdfSchemaBase::_RegisterStandardFields()
                        SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->PrefixSubstitutions,
                        SdfMetadataDisplayGroupTokens->core)
+        .MetadataField(SdfFieldKeys->Suffix,
+                       SdfMetadataDisplayGroupTokens->core)
+        .MetadataField(SdfFieldKeys->SuffixSubstitutions,
+                       SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->SymmetricPeer,
                        SdfMetadataDisplayGroupTokens->symmetry)
         .MetadataField(SdfFieldKeys->SymmetryArguments,
@@ -671,6 +679,8 @@ SdfSchemaBase::_RegisterStandardFields()
         .MetadataField(SdfFieldKeys->Permission,
                        SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->Prefix,
+                       SdfMetadataDisplayGroupTokens->core)
+        .MetadataField(SdfFieldKeys->Suffix,
                        SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->SymmetricPeer,
                        SdfMetadataDisplayGroupTokens->symmetry)

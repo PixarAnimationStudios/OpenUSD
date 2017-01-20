@@ -114,6 +114,7 @@ SDF_DEFINE_GET_SET(DisplayName,      SdfFieldKeys->DisplayName,      std::string
 SDF_DEFINE_GET_SET(Documentation,    SdfFieldKeys->Documentation,    std::string)
 SDF_DEFINE_GET_SET(Hidden,           SdfFieldKeys->Hidden,           bool)
 SDF_DEFINE_GET_SET(Prefix,           SdfFieldKeys->Prefix,           std::string)
+SDF_DEFINE_GET_SET(Suffix,           SdfFieldKeys->Suffix,           std::string)
 SDF_DEFINE_GET_SET(SymmetricPeer,    SdfFieldKeys->SymmetricPeer,    std::string)
 SDF_DEFINE_GET_SET(SymmetryFunction, SdfFieldKeys->SymmetryFunction, TfToken)
 

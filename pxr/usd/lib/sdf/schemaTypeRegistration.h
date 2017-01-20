@@ -91,6 +91,8 @@
 ((SdfFieldKeys->StartTimeCode,           double))                        \
 ((SdfFieldKeys->SubLayers,               std::vector<std::string>))      \
 ((SdfFieldKeys->SubLayerOffsets,         std::vector<SdfLayerOffset>))   \
+((SdfFieldKeys->Suffix,                  std::string))                   \
+((SdfFieldKeys->SuffixSubstitutions,     VtDictionary))                  \
 ((SdfFieldKeys->SymmetricPeer,           std::string))                   \
 ((SdfFieldKeys->SymmetryArgs,            VtDictionary))                  \
 ((SdfFieldKeys->SymmetryArguments,       VtDictionary))                  \

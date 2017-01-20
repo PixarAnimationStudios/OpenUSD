@@ -402,6 +402,14 @@ public:
     /// Sets the prefix string for this prim spec.
     void SetPrefix(const std::string& value);
 
+    /// Returns the suffix string for this prim spec.
+    ///
+    /// The default value for suffix is "".
+    std::string GetSuffix() const;
+
+    /// Sets the suffix string for this prim spec.
+    void SetSuffix(const std::string& value);
+
     /// Returns the custom data for this prim.
     ///
     /// The default value for custom data is an empty dictionary.
@@ -460,6 +468,14 @@ public:
 
     /// Sets the \p prefixSubstitutions dictionary for this prim spec.
     void SetPrefixSubstitutions(const VtDictionary& prefixSubstitutions);
+
+    /// Returns the suffixSubstitutions dictionary for this prim spec.
+    ///
+    /// The default value for suffixSubstitutions is an empty VtDictionary.
+    VtDictionary GetSuffixSubstitutions() const;
+
+    /// Sets the \p suffixSubstitutions dictionary for this prim spec.
+    void SetSuffixSubstitutions(const VtDictionary& suffixSubstitutions);
 
     /// Sets the value for the prim's instanceable flag.
     void SetInstanceable(bool instanceable);

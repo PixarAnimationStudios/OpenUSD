@@ -373,6 +373,16 @@ wrapPrimSpec()
             &This::SetPrefixSubstitutions,
             "Dictionary of prefix substitutions.")
 
+        .add_property("suffix",
+            &This::GetSuffix,
+            &This::SetSuffix,
+            "The prim's suffix.")
+
+        .add_property("suffixSubstitutions",
+            &This::GetSuffixSubstitutions,
+            &This::SetSuffixSubstitutions,
+            "Dictionary of prefix substitutions.")
+
         .add_property("variantSetNameList",
             &This::GetVariantSetNameList,
             "A StringListEditor for the names of the variant \n"

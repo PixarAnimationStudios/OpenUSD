@@ -111,6 +111,7 @@ using std::vector;
 "rootPrims"           { (*yylval_param) = std::string(yytext, yyleng); return TOK_ROOTPRIMS; }
 "scale"               { (*yylval_param) = std::string(yytext, yyleng); return TOK_SCALE; }
 "subLayers"           { (*yylval_param) = std::string(yytext, yyleng); return TOK_SUBLAYERS; }
+"suffixSubstitutions" { (*yylval_param) = std::string(yytext, yyleng); return TOK_SUFFIX_SUBSTITUTIONS; }
 "specializes"         { (*yylval_param) = std::string(yytext, yyleng); return TOK_SPECIALIZES; }
 "symmetryArguments"   { (*yylval_param) = std::string(yytext, yyleng); return TOK_SYMMETRYARGUMENTS; }
 "symmetryFunction"    { (*yylval_param) = std::string(yytext, yyleng); return TOK_SYMMETRYFUNCTION; }

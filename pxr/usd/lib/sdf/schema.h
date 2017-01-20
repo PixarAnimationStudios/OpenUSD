@@ -565,6 +565,8 @@ private:
     ((StartTimeCode, "startTimeCode"))                       \
     ((SubLayers, "subLayers"))                               \
     ((SubLayerOffsets, "subLayerOffsets"))                   \
+    ((Suffix, "suffix"))                                     \
+    ((SuffixSubstitutions, "suffixSubstitutions"))           \
     ((SymmetricPeer, "symmetricPeer"))                       \
     ((SymmetryArgs, "symmetryArgs"))                         \
     ((SymmetryArguments, "symmetryArguments"))               \
