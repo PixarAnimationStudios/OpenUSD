@@ -54,13 +54,9 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 /// expressed as well.
 class HdSurfaceShader : public HdShader {
 public:
-    HdSurfaceShader(HdSceneDelegate* delegate,
-                    SdfPath const & id);
+    HdSurfaceShader(SdfPath const & id);
 
     virtual ~HdSurfaceShader();
-
-    /// Returns the HdSceneDelegate which backs this shader.
-    HdSceneDelegate* GetDelegate() const { return _delegate; }
 
     /// Returns the identifer by which this surface shader is known. This
     /// identifier is a common associative key used by the SceneDelegate,
@@ -69,7 +65,7 @@ public:
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
-    void Sync();
+    void Sync(HdSceneDelegate *sceneDelegate);
 
     // ---------------------------------------------------------------------- //
     /// \name HdShader Virtual Interface                                      //

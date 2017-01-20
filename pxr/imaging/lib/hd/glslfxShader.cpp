@@ -27,7 +27,7 @@
 #include "pxr/imaging/glf/glslfx.h"
 
 HdGLSLFXShader::HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx)
-    : HdSurfaceShader(nullptr, SdfPath())
+    : HdSurfaceShader(SdfPath())
     , _glslfx(glslfx)
 {
     _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());

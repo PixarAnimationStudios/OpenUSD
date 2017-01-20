@@ -49,11 +49,8 @@ class HdSceneDelegate;
 /// The most typical use of a Bprim would be a Texture.
 class HdBprim {
 public:
-    HdBprim(HdSceneDelegate* delegate, SdfPath const & id);
+    HdBprim(SdfPath const & id);
     virtual ~HdBprim();
-
-    /// Returns the HdSceneDelegate which backs this state
-    HdSceneDelegate* GetDelegate() const { return _delegate; }
 
     /// Returns the identifer by which this buffer is known. This
     /// identifier is a common associative key used by the SceneDelegate,
@@ -61,7 +58,7 @@ public:
     SdfPath const& GetID() const { return _id; }
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync() = 0;
+    virtual void Sync(HdSceneDelegate *sceneDelegate) = 0;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
@@ -69,7 +66,6 @@ public:
     virtual int GetInitialDirtyBitsMask() const = 0;
 
 private:
-    HdSceneDelegate* _delegate;
     SdfPath _id;
 };
 

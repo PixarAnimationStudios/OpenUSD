@@ -39,18 +39,15 @@ public:
     virtual TfToken GetDefaultGalId() const override;
 
     virtual HdRprim *CreateRprim(TfToken const& typeId,
-                                 HdSceneDelegate* delegate,
                                  SdfPath const& rprimId,
                                  SdfPath const& instancerId) override;
     virtual void DestroyRprim(HdRprim *rPrim) override;
 
     virtual HdSprim *CreateSprim(TfToken const& typeId,
-                                 HdSceneDelegate* delegate,
                                  SdfPath const& sprimId) override;
     virtual void DestroySprim(HdSprim *sPrim) override;
 
     virtual HdBprim *CreateBprim(TfToken const& typeId,
-                                 HdSceneDelegate* delegate,
                                  SdfPath const& bprimId) override;
     virtual void DestroyBprim(HdBprim *bPrim) override;
 private:

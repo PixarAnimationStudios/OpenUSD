@@ -119,7 +119,7 @@ public:
 
     /// Insert a rprim into index
     void InsertRprim(TfToken const& typeId,
-                     HdSceneDelegate* delegate,
+                     HdSceneDelegate* sceneDelegate,
                      SdfPath const& rprimId,
                      SdfPath const& instancerId = SdfPath());
 
@@ -145,6 +145,15 @@ public:
 
     /// Returns the rprim of id
     HdRprim const *GetRprim(SdfPath const &id) const;
+
+    /// Returns the scene delegate for the given rprim
+    HdSceneDelegate *GetSceneDelegateForRprim(SdfPath const &id) const;
+
+    /// Query function to return the id's of the scene delegate and instancer
+    /// associated with the Rprim at the given path.
+    bool GetSceneDelegateAndInstancerIds(SdfPath const &id,
+                                         SdfPath* sceneDelegateId,
+                                         SdfPath* instancerId) const;
 
     /// Returns true if the given RprimID is a member of the collection.
     bool IsInCollection(SdfPath const& id, TfToken const& collectionName) const;
@@ -308,18 +317,34 @@ private:
     // Index State
     // ---------------------------------------------------------------------- //
     struct _RprimInfo {
-        SdfPath delegateID;
-        size_t childIndex;
-        HdRprim *rprim;
+        HdSceneDelegate *sceneDelegate;
+        size_t           childIndex;
+        HdRprim         *rprim;
+    };
+
+    struct _SprimInfo {
+        HdSceneDelegate *sceneDelegate;
+        HdSprim         *sprim;
+    };
+
+    struct _BprimInfo {
+        HdSceneDelegate *sceneDelegate;
+        HdBprim         *bprim;
+    };
+
+    struct _ShaderInfo {
+        HdSceneDelegate          *sceneDelegate;
+        HdSurfaceShaderSharedPtr  shader;
     };
 
 
-    typedef TfHashMap<SdfPath, HdSurfaceShaderSharedPtr, SdfPath::Hash> _ShaderMap;
+
+    typedef TfHashMap<SdfPath, _ShaderInfo, SdfPath::Hash> _ShaderMap;
     typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
-    typedef TfHashMap<SdfPath, HdSprim *, SdfPath::Hash> _SprimMap;
-    typedef TfHashMap<SdfPath, HdBprim *, SdfPath::Hash> _BprimMap;
+    typedef TfHashMap<SdfPath, _SprimInfo, SdfPath::Hash> _SprimMap;
+    typedef TfHashMap<SdfPath, _BprimInfo, SdfPath::Hash> _BprimMap;
 
     typedef std::set<SdfPath> _RprimIDSet;
     typedef std::set<SdfPath> _SprimIDSet;
@@ -392,7 +417,7 @@ HdRenderIndex::InsertShader(HdSceneDelegate* delegate, SdfPath const& id)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSurfaceShaderSharedPtr shader = boost::make_shared<T>(delegate, id);
+    HdSurfaceShaderSharedPtr shader = boost::make_shared<T>(id);
     _TrackDelegateShader(delegate, id, shader);
 }
 

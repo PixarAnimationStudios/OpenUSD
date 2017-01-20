@@ -58,7 +58,7 @@ typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
 class HdStBasisCurves final: public HdBasisCurves {
 public:
     HF_MALLOC_TAG_NEW("new HdStBasisCurves");
-    HdStBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
+    HdStBasisCurves(SdfPath const& id,
                     SdfPath const& instancerId = SdfPath());
     virtual ~HdStBasisCurves();
 
@@ -70,23 +70,28 @@ public:
     static bool IsEnabledForceRefinedCurves();
     
 protected:
-    virtual HdReprSharedPtr const & _GetRepr(
-        TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBits);
+    virtual HdReprSharedPtr const &
+        _GetRepr(HdSceneDelegate *sceneDelegate,
+                 TfToken const &reprName,
+                 HdChangeTracker::DirtyBits *dirtyBitsState) override;
 
-    void _PopulateTopology(HdDrawItem *drawItem,
+    void _PopulateTopology(HdSceneDelegate *sceneDelegate,
+                           HdDrawItem *drawItem,
                            HdChangeTracker::DirtyBits *dirtyBits,
                            const HdStBasisCurvesReprDesc &desc);
 
-    void _PopulateVertexPrimVars(HdDrawItem *drawItem,
+    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+                                 HdDrawItem *drawItem,
                                  HdChangeTracker::DirtyBits *dirtyBits);
 
-    void _PopulateElementPrimVars(HdDrawItem *drawItem,
+    void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+                                  HdDrawItem *drawItem,
                                   HdChangeTracker::DirtyBits *dirtyBits);
 
     HdChangeTracker::DirtyBits _PropagateDirtyBits(
         HdChangeTracker::DirtyBits dirtyBits);
 
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const final override;
+    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const override;
 
 private:
     enum DrawingCoord {
@@ -105,7 +110,8 @@ private:
     bool _SupportsSmoothCurves(const HdStBasisCurvesReprDesc &desc,
                                int refineLevel);
 
-    void _UpdateDrawItem(HdDrawItem *drawItem,
+    void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                         HdDrawItem *drawItem,
                          HdChangeTracker::DirtyBits *dirtyBits,
                          const HdStBasisCurvesReprDesc &desc);
 

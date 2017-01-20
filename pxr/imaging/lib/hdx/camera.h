@@ -55,7 +55,7 @@ class HdxCamera : public HdSprim {
 public:
     typedef std::vector<GfVec4d> ClipPlanesVector;
 
-    HdxCamera(HdSceneDelegate* delegate, SdfPath const & id);
+    HdxCamera(SdfPath const & id);
     ~HdxCamera();  // note: not virtual (for now)
 
     // change tracking for HdxCamera
@@ -70,7 +70,7 @@ public:
     };
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync() override;
+    virtual void Sync(HdSceneDelegate *sceneDelegate) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
     virtual VtValue Get(TfToken const &token) const override;

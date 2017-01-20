@@ -32,8 +32,8 @@
 
 TF_DEFINE_PUBLIC_TOKENS(HdxLightTokens, HDX_LIGHT_TOKENS);
 
-HdxLight::HdxLight(HdSceneDelegate *delegate, SdfPath const &id)
-    : HdSprim(delegate, id)
+HdxLight::HdxLight(SdfPath const &id)
+ : HdSprim(id)
 {
 }
 
@@ -43,15 +43,14 @@ HdxLight::~HdxLight()
 
 /* virtual */
 void
-HdxLight::Sync()
+HdxLight::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const &id = GetID();
-    HdSceneDelegate *delegate = GetDelegate();
 
-    if (!TF_VERIFY(delegate)) {
+    if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
 
@@ -63,14 +62,14 @@ HdxLight::Sync()
     // efficient.
 
     HdChangeTracker& changeTracker =
-        delegate->GetRenderIndex().GetChangeTracker();
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
     HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
 
     // Change tracking
 
     // Transform
     if (bits & DirtyTransform) {
-        VtValue transform = delegate->Get(id, HdxLightTokens->transform);
+        VtValue transform = sceneDelegate->Get(id, HdxLightTokens->transform);
         if (transform.IsHolding<GfMatrix4d>()) {
             _params[HdxLightTokens->transform] = transform;
         } else {
@@ -81,19 +80,19 @@ HdxLight::Sync()
     // Lighting Params
     if (bits & DirtyParams) {
         _params[HdxLightTokens->params] =
-            delegate->Get(id, HdxLightTokens->params);
+                sceneDelegate->Get(id, HdxLightTokens->params);
     }
 
     // Shadow Params
     if (bits & DirtyShadowParams) {
         _params[HdxLightTokens->shadowParams] =
-            delegate->Get(id, HdxLightTokens->shadowParams);
+                sceneDelegate->Get(id, HdxLightTokens->shadowParams);
     }
 
     // Shadow Collection
     if (bits & DirtyCollection) {
         VtValue vtShadowCollection =
-            delegate->Get(id, HdxLightTokens->shadowCollection);
+                sceneDelegate->Get(id, HdxLightTokens->shadowCollection);
 
         // Optional
         if (vtShadowCollection.IsHolding<HdRprimCollection>()) {

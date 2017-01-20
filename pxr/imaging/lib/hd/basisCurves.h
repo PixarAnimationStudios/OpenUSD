@@ -36,12 +36,12 @@ public:
     ///
     /// Topology
     ///
-    inline HdBasisCurvesTopology  GetBasisCurvesTopology() const;
-    inline int                    GetRefineLevel()         const;
+    inline HdBasisCurvesTopology  GetBasisCurvesTopology(HdSceneDelegate* delegate) const;
+    inline int                    GetRefineLevel(HdSceneDelegate* delegate)         const;
 
 
 protected:
-    HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
+    HdBasisCurves(SdfPath const& id,
                   SdfPath const& instancerId = SdfPath());
 
 private:
@@ -52,15 +52,15 @@ private:
 };
 
 inline HdBasisCurvesTopology
-HdBasisCurves::GetBasisCurvesTopology() const
+HdBasisCurves::GetBasisCurvesTopology(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetBasisCurvesTopology(GetId());
+    return delegate->GetBasisCurvesTopology(GetId());
 }
 
 inline int
-HdBasisCurves::GetRefineLevel() const
+HdBasisCurves::GetRefineLevel(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetRefineLevel(GetId());
+    return delegate->GetRefineLevel(GetId());
 }
 
 

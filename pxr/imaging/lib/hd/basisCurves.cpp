@@ -23,9 +23,9 @@
 //
 #include "pxr/imaging/hd/basisCurves.h"
 
-HdBasisCurves::HdBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
+HdBasisCurves::HdBasisCurves(SdfPath const& id,
                  SdfPath const& instancerId)
-    : HdRprim(delegate, id, instancerId)
+    : HdRprim(id, instancerId)
 {
     /*NOTHING*/
 }

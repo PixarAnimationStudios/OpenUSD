@@ -29,8 +29,8 @@
 
 TF_DEFINE_PUBLIC_TOKENS(HdxCameraTokens, HDX_CAMERA_TOKENS);
 
-HdxCamera::HdxCamera(HdSceneDelegate *delegate, SdfPath const &id)
-    : HdSprim(delegate, id)
+HdxCamera::HdxCamera(SdfPath const &id)
+ : HdSprim(id)
 {
 }
 
@@ -39,14 +39,13 @@ HdxCamera::~HdxCamera()
 }
 
 void
-HdxCamera::Sync()
+HdxCamera::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const &id = GetID();
-    HdSceneDelegate *delegate = GetDelegate();
-    if (!TF_VERIFY(delegate)) {
+    if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
 
@@ -56,7 +55,7 @@ HdxCamera::Sync()
     // aggregation/pre-computation, in order to make the shader execution
     // efficient.
     HdChangeTracker& changeTracker = 
-                                delegate->GetRenderIndex().GetChangeTracker();
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
     HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
     
     if (bits & DirtyMatrices) {
@@ -65,7 +64,7 @@ HdxCamera::Sync()
         GfMatrix4d projectionMatrix(1.0);
 
         // extract view/projection matrices
-        VtValue vMatrices = delegate->Get(id, HdxCameraTokens->matrices);
+        VtValue vMatrices = sceneDelegate->Get(id, HdxCameraTokens->matrices);
         if (not vMatrices.IsEmpty()) {
             const HdxCameraMatrices matrices = 
                 vMatrices.Get<HdxCameraMatrices>();
@@ -86,12 +85,12 @@ HdxCamera::Sync()
 
     if (bits & DirtyWindowPolicy) {
         _cameraValues[HdxCameraTokens->windowPolicy] = 
-            delegate->Get(id, HdxCameraTokens->windowPolicy);
+                sceneDelegate->Get(id, HdxCameraTokens->windowPolicy);
     }
 
     if (bits & DirtyClipPlanes) {
         _cameraValues[HdxCameraTokens->clipPlanes] = 
-            delegate->GetClipPlanes(id);
+                sceneDelegate->GetClipPlanes(id);
     }
 }
 

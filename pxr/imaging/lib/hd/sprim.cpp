@@ -26,9 +26,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-HdSprim::HdSprim(HdSceneDelegate *delegate, SdfPath const &id)
-    : _delegate(delegate)
-    , _id(id)
+HdSprim::HdSprim(SdfPath const &id)
+ : _id(id)
 {
 }
 

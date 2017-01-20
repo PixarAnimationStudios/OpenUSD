@@ -32,8 +32,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-HdTexture::HdTexture(HdSceneDelegate* delegate, SdfPath const& id)
-  : HdBprim(delegate, id)
+HdTexture::HdTexture(SdfPath const& id)
+  : HdBprim(id)
   , _textureResource()
 {
 }
@@ -43,15 +43,14 @@ HdTexture::~HdTexture()
 }
 
 void
-HdTexture::Sync()
+HdTexture::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
  
     SdfPath const& id = GetID();
-    HdSceneDelegate* delegate = GetDelegate();
     HdChangeTracker& changeTracker = 
-                                delegate->GetRenderIndex().GetChangeTracker();    
+                            sceneDelegate->GetRenderIndex().GetChangeTracker();
     HdChangeTracker::DirtyBits bits = changeTracker.GetBprimDirtyBits(id);
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
@@ -60,7 +59,7 @@ HdTexture::Sync()
     if ((bits & (DirtyParams | DirtyTexture)) != 0) {
         HdResourceRegistry *resourceRegistry = 
                                             &HdResourceRegistry::GetInstance();
-        HdTextureResource::ID texID = delegate->GetTextureResourceID(id);
+        HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
         {
             HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
                 texInstance;
@@ -78,7 +77,7 @@ HdTexture::Sync()
                     _textureResource = HdTextureResourceSharedPtr(
                         new HdSimpleTextureResource(texture, false));
                 } else if (texID == HdTextureResource::ComputeFallbackPtexHash()) {
-                    _textureResource = delegate->GetTextureResource(id);
+                    _textureResource = sceneDelegate->GetTextureResource(id);
                     // Hacky Ptex Fallback Implementation (nonfunctional)
                     // For future reference
                     /*if (texResource->GetTexelsTextureId() == 0) {
@@ -95,8 +94,7 @@ HdTexture::Sync()
                         }
                     }*/
                 } else {
-                    _textureResource =
-                        delegate->GetTextureResource(id);
+                    _textureResource = sceneDelegate->GetTextureResource(id);
                 }
 
                 texInstance.SetValue(_textureResource);

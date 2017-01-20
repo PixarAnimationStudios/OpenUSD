@@ -50,6 +50,7 @@
 TF_DECLARE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
 
 class HdSceneDelegate;
+class HdRenderIndex;
 class HdxCamera;
 class HdxDrawTargetAttachmentDescArray;
 
@@ -67,7 +68,7 @@ typedef std::vector<class HdxDrawTarget const *> HdxDrawTargetPtrConstVector;
 ///
 class HdxDrawTarget : public HdSprim {
 public:
-    HdxDrawTarget(HdSceneDelegate* delegate, SdfPath const & id);
+    HdxDrawTarget(SdfPath const & id);
     virtual ~HdxDrawTarget();
 
     /// Dirty bits for the HdxDrawTarget object
@@ -96,7 +97,7 @@ public:
     unsigned int GetVersion() const { return _version; }
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync() override;
+    virtual void Sync(HdSceneDelegate *sceneDelegate) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
     virtual VtValue Get(TfToken const &token) const override;
@@ -118,11 +119,12 @@ public:
     }
 
     /// Debug api to output the contents of the draw target to a png file.
-    bool                WriteToFile(const std::string &attachment,
-                                    const std::string &path) const;
+    bool WriteToFile(const HdRenderIndex &renderIndex,
+                     const std::string &attachment,
+                     const std::string &path) const;
 
     /// returns all HdxDrawTargets in the render index
-    static void GetDrawTargets(HdSceneDelegate *delegate,
+    static void GetDrawTargets(HdSceneDelegate *sceneDelegate,
                                HdxDrawTargetPtrConstVector *drawTargets);
 
 
@@ -142,14 +144,16 @@ private:
     GlfGLContextSharedPtr  _drawTargetContext;
     GlfDrawTargetRefPtr    _drawTarget;
 
-    void _SetAttachments(const HdxDrawTargetAttachmentDescArray &attachments);
+    void _SetAttachments(HdSceneDelegate *sceneDelegate,
+                         const HdxDrawTargetAttachmentDescArray &attachments);
 
     void _SetCamera(const SdfPath &cameraPath);
 
-    const HdxCamera *_GetCamera() const;
+    const HdxCamera *_GetCamera(const HdRenderIndex &renderIndex) const;
 
     void _ResizeDrawTarget();
-    void _RegisterTextureResource(const std::string &name,
+    void _RegisterTextureResource(HdSceneDelegate *sceneDelegate,
+                                  const std::string &name,
                                   HdTextureResourceSharedPtr *resourcePtr);
 
     // No copy

@@ -409,13 +409,16 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
                     ((elementIds[idIndex+1] & 0xff) <<  8) |
                     ((elementIds[idIndex+2] & 0xff) << 16);
 
-    HdRprim const* rprim = _index->GetRprim(hit->objectId);
-    if (!TF_VERIFY(rprim, "%s\n", hit->objectId.GetText())) {
+
+
+    bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
+                                                           &(hit->delegateId),
+                                                           &(hit->instancerId));
+
+    if (!TF_VERIFY(rprimValid, "%s\n", hit->objectId.GetText())) {
         return false;
     }
 
-    hit->delegateId = rprim->GetDelegate()->GetDelegateID();
-    hit->instancerId = rprim->GetInstancerId();
     hit->worldSpaceHitPoint = GfVec3f(hitPoint);
     hit->ndcDepth = float(z);
     hit->instanceIndex = instanceIndex;

@@ -53,7 +53,7 @@ typedef std::vector<class HdxLight const *> HdxLightPtrConstVector;
 ///
 class HdxLight : public HdSprim {
 public:
-    HdxLight(HdSceneDelegate* delegate, SdfPath const & id);
+    HdxLight(SdfPath const & id);
     virtual ~HdxLight();
 
     // change tracking for HdxLight
@@ -70,7 +70,7 @@ public:
     };
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync() override;
+    virtual void Sync(HdSceneDelegate *sceneDelegate) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
     virtual VtValue Get(TfToken const &token) const override;

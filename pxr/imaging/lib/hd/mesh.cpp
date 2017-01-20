@@ -23,9 +23,9 @@
 //
 #include "pxr/imaging/hd/mesh.h"
 
-HdMesh::HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
+HdMesh::HdMesh(SdfPath const& id,
                SdfPath const& instancerId)
-    : HdRprim(delegate, id, instancerId)
+    : HdRprim(id, instancerId)
 {
     /*NOTHING*/
 }

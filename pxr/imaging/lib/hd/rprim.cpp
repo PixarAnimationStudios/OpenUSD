@@ -33,10 +33,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-HdRprim::HdRprim(HdSceneDelegate* delegate, SdfPath const& id,
+HdRprim::HdRprim(SdfPath const& id,
                  SdfPath const& instancerID)
-    : _delegate(delegate)
-    , _id(id)
+    : _id(id)
     , _instancerID(instancerID)
     , _surfaceShaderID()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
@@ -52,44 +51,54 @@ HdRprim::~HdRprim()
 }
 
 std::vector<HdDrawItem>* 
-HdRprim::GetDrawItems(TfToken const &defaultReprName, bool forced)
+HdRprim::GetDrawItems(HdSceneDelegate* delegate,
+                      TfToken const &defaultReprName, bool forced)
 {
     // note: GetDrawItems is called at execute phase.
     // All required dirtyBits should have cleaned at this point.
     HdChangeTracker::DirtyBits dirtyBits(HdChangeTracker::Clean);
-    TfToken reprName = _GetReprName(defaultReprName, forced, &dirtyBits);
-    return _GetRepr(reprName, &dirtyBits)->GetDrawItems();
+    TfToken reprName = _GetReprName(delegate, defaultReprName,
+                                    forced, &dirtyBits);
+    return _GetRepr(delegate, reprName, &dirtyBits)->GetDrawItems();
 }
 
 
 void
-HdRprim::Sync(TfToken const &defaultReprName, bool forced,
+HdRprim::Sync(HdSceneDelegate* delegate,
+              TfToken const &defaultReprName,
+              bool forced,
               HdChangeTracker::DirtyBits *dirtyBits)
 {
+    HdRenderIndex   &renderIndex   = delegate->GetRenderIndex();
+    HdChangeTracker &changeTracker = renderIndex.GetChangeTracker();
+
     // Check if the rprim has a new surface shader associated to it,
     // if so, we will request the binding from the delegate and set it up in
     // this rprim.
     if(*dirtyBits & HdChangeTracker::DirtySurfaceShader) {
         VtValue shaderBinding = 
-            _delegate->Get(GetId(), HdShaderTokens->surfaceShader);
+            delegate->Get(GetId(), HdShaderTokens->surfaceShader);
 
         if(shaderBinding.IsHolding<SdfPath>()){
-            SetSurfaceShaderId(shaderBinding.Get<SdfPath>());
+            _SetSurfaceShaderId(changeTracker, shaderBinding.Get<SdfPath>());
         } else {
-            SetSurfaceShaderId(SdfPath());
+            _SetSurfaceShaderId(changeTracker, SdfPath());
         }
 
         *dirtyBits &= ~HdChangeTracker::DirtySurfaceShader;
     }
 
-    TfToken reprName = _GetReprName(defaultReprName, forced, dirtyBits);
-    _GetRepr(reprName, dirtyBits);
+    TfToken reprName = _GetReprName(delegate, defaultReprName,
+                                    forced, dirtyBits);
+    _GetRepr(delegate, reprName, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
 TfToken
-HdRprim::_GetReprName(TfToken const &defaultReprName, bool forced,
+HdRprim::_GetReprName(HdSceneDelegate* delegate,
+                      TfToken const &defaultReprName,
+                      bool forced,
                       HdChangeTracker::DirtyBits *dirtyBits)
 {
     // resolve reprName
@@ -99,7 +108,7 @@ HdRprim::_GetReprName(TfToken const &defaultReprName, bool forced,
     if (!forced) {
         SdfPath const& id = GetId();
         if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-            _authoredReprName = _delegate->GetReprName(id);
+            _authoredReprName = delegate->GetReprName(id);
         }
         if (!_authoredReprName.IsEmpty()) {
             return _authoredReprName;
@@ -108,42 +117,34 @@ HdRprim::_GetReprName(TfToken const &defaultReprName, bool forced,
     return defaultReprName;
 }
 
-GfRange3d
-HdRprim::GetExtent()
-{
-    return _delegate->GetExtent(GetId());
-}
 
 void
-HdRprim::_UpdateVisibility(HdChangeTracker::DirtyBits *dirtyBits)
+HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
+                           HdChangeTracker::DirtyBits *dirtyBits)
 {
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, GetId())) {
-        _sharedData.visible = _delegate->GetVisible(GetId());
+        _sharedData.visible = delegate->GetVisible(GetId());
     }
 }
 
-bool 
-HdRprim::IsInCollection(TfToken const& collectionName) const
-{
-    return _delegate->IsInCollection(_id, collectionName);
-}
 
 void 
-HdRprim::SetSurfaceShaderId(SdfPath const& surfaceShaderId) 
+HdRprim::_SetSurfaceShaderId(HdChangeTracker &changeTracker,
+                             SdfPath const& surfaceShaderId)
 {
     if (_surfaceShaderID != surfaceShaderId)
     {
         _surfaceShaderID = surfaceShaderId;
 
         // The batches need to be verified and rebuilt if necessary.
-        _GetChangeTracker().MarkShaderBindingsDirty();
+        changeTracker.MarkShaderBindingsDirty();
     }
 }
 
 bool
-HdRprim::IsDirty()
+HdRprim::IsDirty(HdChangeTracker &changeTracker)
 {
-    return _delegate->GetRenderIndex().GetChangeTracker().IsRprimDirty(_id);
+    return changeTracker.IsRprimDirty(GetId());
 }
 
 void
@@ -153,40 +154,26 @@ HdRprim::SetPrimId(int32_t primId)
     // Don't set DirtyPrimID here, to avoid undesired variability tracking.
 }
 
-HdRenderIndex& 
-HdRprim::_GetRenderIndex() {
-    return _delegate->GetRenderIndex();
-}
-
-HdRenderIndex const& 
-HdRprim::_GetRenderIndex() const {
-    return _delegate->GetRenderIndex();
-}
-
 int
 HdRprim::GetInitialDirtyBitsMask() const
 {
     return _GetInitialDirtyBits();
 }
 
-HdChangeTracker& 
-HdRprim::_GetChangeTracker() {
-    return _GetRenderIndex().GetChangeTracker();
-}
-
 void
-HdRprim::_PopulateConstantPrimVars(HdDrawItem *drawItem,
+HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
+                                   HdDrawItem *drawItem,
                                    HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdSceneDelegate* delegate = GetDelegate();
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
     // XXX: this should be in a different method
-    _sharedData.surfaceShader = _GetRenderIndex().GetShader(_surfaceShaderID);
+    _sharedData.surfaceShader = renderIndex.GetShader(_surfaceShaderID);
 
     // update uniforms
     HdBufferSourceVector sources;
@@ -206,7 +193,7 @@ HdRprim::_PopulateConstantPrimVars(HdDrawItem *drawItem,
         // also push the instancer transform separately.
         if (!_instancerID.IsEmpty()) {
             // gather all instancer transforms in the instancing hierarchy
-            VtMatrix4dArray rootTransforms = _GetInstancerTransforms();
+            VtMatrix4dArray rootTransforms = _GetInstancerTransforms(delegate);
             VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
             bool leftHanded = transform.IsLeftHanded();
             for (size_t i = 0; i < rootTransforms.size(); ++i) {
@@ -236,7 +223,7 @@ HdRprim::_PopulateConstantPrimVars(HdDrawItem *drawItem,
         }
     }
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
-        _sharedData.bounds.SetRange(GetExtent());
+        _sharedData.bounds.SetRange(GetExtent(delegate));
 
         GfVec3d const & localMin = drawItem->GetBounds().GetBox().GetMin();
         HdBufferSourceSharedPtr sourceMin(new HdVtBufferSource(
@@ -316,7 +303,8 @@ HdRprim::_PopulateConstantPrimVars(HdDrawItem *drawItem,
 }
 
 void
-HdRprim::_PopulateInstancePrimVars(HdDrawItem *drawItem,
+HdRprim::_PopulateInstancePrimVars(HdSceneDelegate* delegate,
+                                   HdDrawItem *drawItem,
                                    HdChangeTracker::DirtyBits *dirtyBits,
                                    int instancePrimVarSlot)
 {
@@ -329,7 +317,9 @@ HdRprim::_PopulateInstancePrimVars(HdDrawItem *drawItem,
         return;
     }
 
-    HdInstancerSharedPtr instancer = _GetRenderIndex().GetInstancer(_instancerID);
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+
+    HdInstancerSharedPtr instancer = renderIndex.GetInstancer(_instancerID);
     if (!TF_VERIFY(instancer)) return;
 
     HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
@@ -353,7 +343,7 @@ HdRprim::_PopulateInstancePrimVars(HdDrawItem *drawItem,
 
         // next
         currentInstancer
-            = _GetRenderIndex().GetInstancer(currentInstancer->GetParentId());
+            = renderIndex.GetInstancer(currentInstancer->GetParentId());
         ++level;
     }
 
@@ -368,17 +358,17 @@ HdRprim::_PopulateInstancePrimVars(HdDrawItem *drawItem,
 }
 
 VtMatrix4dArray
-HdRprim::_GetInstancerTransforms()
+HdRprim::_GetInstancerTransforms(HdSceneDelegate* delegate)
 {
     SdfPath const& id = GetId();
     SdfPath instancerID = _instancerID;
     VtMatrix4dArray transforms;
-    HdSceneDelegate* delegate = GetDelegate();
+
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     while (!instancerID.IsEmpty()) {
         transforms.push_back(delegate->GetInstancerTransform(instancerID, id));
-        HdInstancerSharedPtr instancer
-            = _GetRenderIndex().GetInstancer(instancerID);
+        HdInstancerSharedPtr instancer = renderIndex.GetInstancer(instancerID);
         if (instancer) {
             instancerID = instancer->GetParentId();
         } else {

@@ -51,16 +51,15 @@ HdStreamRenderDelegate::GetDefaultGalId() const
 
 HdRprim *
 HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
-                                    HdSceneDelegate* delegate,
                                     SdfPath const& rprimId,
                                     SdfPath const& instancerId)
 {
     if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdStMesh(delegate, rprimId, instancerId);
+        return new HdStMesh(rprimId, instancerId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
-        return new HdStBasisCurves(delegate, rprimId, instancerId);
+        return new HdStBasisCurves(rprimId, instancerId);
     } else  if (typeId == HdPrimTypeTokens->points) {
-        return new HdStPoints(delegate, rprimId, instancerId);
+        return new HdStPoints(rprimId, instancerId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -76,15 +75,14 @@ HdStreamRenderDelegate::DestroyRprim(HdRprim *rPrim)
 
 HdSprim *
 HdStreamRenderDelegate::CreateSprim(TfToken const& typeId,
-                                    HdSceneDelegate* delegate,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdxCamera(delegate, sprimId);
+        return new HdxCamera(sprimId);
     } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdxLight(delegate, sprimId);
+        return new HdxLight(sprimId);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
-        return new HdxDrawTarget(delegate, sprimId);
+        return new HdxDrawTarget(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -100,11 +98,10 @@ HdStreamRenderDelegate::DestroySprim(HdSprim *sPrim)
 
 HdBprim *
 HdStreamRenderDelegate::CreateBprim(TfToken const& typeId,
-                                    HdSceneDelegate* delegate,
                                     SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(delegate, bprimId);
+        return new HdTexture(bprimId);
     } else  {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }

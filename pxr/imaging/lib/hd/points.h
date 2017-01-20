@@ -38,7 +38,7 @@ public:
 protected:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this point cloud as a prototype.
-    HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
+    HdPoints(SdfPath const& id,
              SdfPath const& instancerId = SdfPath());
 
 private:

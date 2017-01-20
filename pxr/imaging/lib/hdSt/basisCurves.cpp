@@ -51,9 +51,9 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0,
 // static repr configuration
 HdStBasisCurves::_BasisCurvesReprConfig HdStBasisCurves::_reprDescConfig;
 
-HdStBasisCurves::HdStBasisCurves(HdSceneDelegate* delegate, SdfPath const& id,
+HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
                  SdfPath const& instancerId)
-    : HdBasisCurves(delegate, id, instancerId)
+    : HdBasisCurves(id, instancerId)
     , _topology()
     , _topologyId(0)
     , _customDirtyBitsInUse(0)
@@ -76,9 +76,10 @@ HdStBasisCurves::IsEnabledForceRefinedCurves()
 }
 
 void
-HdStBasisCurves::_UpdateDrawItem(HdDrawItem *drawItem,
-                               HdChangeTracker::DirtyBits *dirtyBits,
-                               const HdStBasisCurvesReprDesc &desc)
+HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                                 HdDrawItem *drawItem,
+                                 HdChangeTracker::DirtyBits *dirtyBits,
+                                 const HdStBasisCurvesReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -86,13 +87,14 @@ HdStBasisCurves::_UpdateDrawItem(HdDrawItem *drawItem,
     SdfPath const& id = GetId();
 
     /* VISIBILITY */
-    _UpdateVisibility(dirtyBits);
+    _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    _PopulateConstantPrimVars(drawItem, dirtyBits);
+    _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
-    _PopulateInstancePrimVars(drawItem, dirtyBits, InstancePrimVar);
+    _PopulateInstancePrimVars(sceneDelegate, drawItem, dirtyBits,
+                              InstancePrimVar);
 
     /* TOPOLOGY */
     // XXX: _PopulateTopology should be split into two phase
@@ -101,7 +103,7 @@ HdStBasisCurves::_UpdateDrawItem(HdDrawItem *drawItem,
                     | HdChangeTracker::DirtyRefineLevel
                     | DirtyIndices
                     | DirtyHullIndices)) {
-        _PopulateTopology(drawItem, dirtyBits, desc);
+        _PopulateTopology(sceneDelegate, drawItem, dirtyBits, desc);
     }
 
     /* PRIMVAR */
@@ -111,8 +113,8 @@ HdStBasisCurves::_UpdateDrawItem(HdDrawItem *drawItem,
         // primvars, so we need to see refined dirty for updating coarse
         // vertex primvars if there is only refined reprs being updated.
         // we'll fix the change tracking in order to address this craziness.
-        _PopulateVertexPrimVars(drawItem, dirtyBits);
-        _PopulateElementPrimVars(drawItem, dirtyBits);
+        _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits);
+        _PopulateElementPrimVars(sceneDelegate, drawItem, dirtyBits);
     }
 
     // Topology and VertexPrimVar may be null, if the curve has zero line
@@ -185,8 +187,9 @@ HdStBasisCurves::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 }
 
 HdReprSharedPtr const &
-HdStBasisCurves::_GetRepr(TfToken const &reprName,
-                        HdChangeTracker::DirtyBits *dirtyBits)
+HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
+                          TfToken const &reprName,
+                          HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -242,7 +245,7 @@ HdStBasisCurves::_GetRepr(TfToken const &reprName,
     if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
             HdDrawItem *drawItem = it->second->GetDrawItem(0);
-            _UpdateDrawItem(drawItem, dirtyBits, descs[0]);
+            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, descs[0]);
             _UpdateDrawItemGeometricShader(drawItem, descs[0]);
         }
     }
@@ -283,7 +286,8 @@ HdStBasisCurves::_SetGeometricShaders()
 }
 
 void
-HdStBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
+HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
+                                   HdDrawItem *drawItem,
                                    HdChangeTracker::DirtyBits *dirtyBits,
                                    const HdStBasisCurvesReprDesc &desc)
 {
@@ -293,7 +297,7 @@ HdStBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
     if (*dirtyBits & HdChangeTracker::DirtyRefineLevel) {
-        _refineLevel = GetRefineLevel();
+        _refineLevel = GetRefineLevel(sceneDelegate);
     }
 
     // XXX: is it safe to get topology even if it's not dirty?
@@ -301,7 +305,8 @@ HdStBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
         HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
 
 
-        const HdBasisCurvesTopology &srcTopology = GetBasisCurvesTopology();
+        const HdBasisCurvesTopology &srcTopology =
+                                          GetBasisCurvesTopology(sceneDelegate);
 
         // compute id.
         _topologyId = srcTopology.ComputeHash();
@@ -389,8 +394,9 @@ HdStBasisCurves::_PopulateTopology(HdDrawItem *drawItem,
 }
 
 void
-HdStBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
-                                       HdChangeTracker::DirtyBits *dirtyBits)
+HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+                                         HdDrawItem *drawItem,
+                                         HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -399,8 +405,8 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primVarNames = GetPrimVarVertexNames();
-    TfTokenVector const& vars = GetPrimVarVaryingNames();
+    TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);
+    TfTokenVector const& vars = GetPrimVarVaryingNames(sceneDelegate);
     primVarNames.insert(primVarNames.end(), vars.begin(), vars.end());
 
     HdBufferSourceVector sources;
@@ -414,7 +420,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
         // changes, but we need support from the delegate.
 
         //assert name not in range.bufferArray.GetResources()
-        VtValue value = GetPrimVar(*nameIt);
+        VtValue value = GetPrimVar(sceneDelegate, *nameIt);
         if (!value.IsEmpty()) {
             if (*nameIt == HdTokens->points) {
                 // We want to validate the topology by making sure the number of
@@ -474,8 +480,9 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdDrawItem *drawItem,
 }
 
 void
-HdStBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
-                                        HdChangeTracker::DirtyBits *dirtyBits)
+HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+                                          HdDrawItem *drawItem,
+                                          HdChangeTracker::DirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -483,7 +490,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
     SdfPath const& id = GetId();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
-    TfTokenVector primVarNames = GetPrimVarUniformNames();
+    TfTokenVector primVarNames = GetPrimVarUniformNames(sceneDelegate);
 
     HdBufferSourceVector sources;
     sources.reserve(primVarNames.size());
@@ -492,7 +499,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdDrawItem *drawItem,
         if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
 
-        VtValue value = GetPrimVar(*nameIt);
+        VtValue value = GetPrimVar(sceneDelegate, *nameIt);
         if (!value.IsEmpty()) {
             sources.push_back(HdBufferSourceSharedPtr(
                               new HdVtBufferSource(*nameIt, value)));

@@ -85,9 +85,8 @@ private:
 };
 
 
-HdSurfaceShader::HdSurfaceShader(HdSceneDelegate* delegate, SdfPath const& id)
-    : _delegate(delegate)
-    , _id(id)
+HdSurfaceShader::HdSurfaceShader(SdfPath const& id)
+ : _id(id)
 {
 }
 
@@ -96,27 +95,24 @@ HdSurfaceShader::~HdSurfaceShader()
 }
 
 void
-HdSurfaceShader::Sync()
+HdSurfaceShader::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
- 
-    // _delegate might be null in certain conditions including when
-    // Hydra is using a fallback surface shader
-    if (!_delegate) {
+
+    if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;  
     }
 
     SdfPath const& id = GetID();
-    HdSceneDelegate* delegate = GetDelegate();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
     HdChangeTracker& changeTracker = 
-                                delegate->GetRenderIndex().GetChangeTracker();
+                            sceneDelegate->GetRenderIndex().GetChangeTracker();
     HdChangeTracker::DirtyBits bits = changeTracker.GetShaderDirtyBits(id);
 
     if(bits & HdChangeTracker::DirtySurfaceShader) {
-        _fragmentSource = delegate->GetSurfaceShaderSource(id);
-        _geometrySource = delegate->GetDisplacementShaderSource(id);
+        _fragmentSource = sceneDelegate->GetSurfaceShaderSource(id);
+        _geometrySource = sceneDelegate->GetDisplacementShaderSource(id);
 
         // XXX Forcing collections to be dirty to reload everything
         //     Something more efficient can be done here
@@ -126,15 +122,18 @@ HdSurfaceShader::Sync()
     if(bits & HdChangeTracker::DirtyParams) {
         HdBufferSourceVector sources;
         TextureDescriptorVector textures;
-        _params = delegate->GetSurfaceShaderParams(id);
+        _params = sceneDelegate->GetSurfaceShaderParams(id);
         TF_FOR_ALL(paramIt, _params) {
             if (paramIt->IsPrimvar()) {
                 // skip -- maybe not necessary, but more memory efficient
                 continue;
             } else if (paramIt->IsFallback()) {
-                HdBufferSourceSharedPtr source(new HdVtBufferSource(
-                                                   paramIt->GetName(),
-                   delegate->GetSurfaceShaderParamValue(id, paramIt->GetName())));
+                VtValue paramVt =
+                        sceneDelegate->GetSurfaceShaderParamValue(id,
+                                                            paramIt->GetName());
+                HdBufferSourceSharedPtr source(
+                             new HdVtBufferSource(paramIt->GetName(), paramVt));
+
                 sources.push_back(source);
             } else if (paramIt->IsTexture()) {
                 bool bindless = HdRenderContextCaps::GetInstance()
@@ -142,7 +141,7 @@ HdSurfaceShader::Sync()
                 // register bindless handle
 
                 HdTextureResource::ID texID =
-                    delegate->GetTextureResourceID(paramIt->GetConnection());
+                  sceneDelegate->GetTextureResourceID(paramIt->GetConnection());
 
                 HdTextureResourceSharedPtr texResource;
                 {

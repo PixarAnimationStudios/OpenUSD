@@ -23,9 +23,9 @@
 //
 #include "pxr/imaging/hd/points.h"
 
-HdPoints::HdPoints(HdSceneDelegate* delegate, SdfPath const& id,
+HdPoints::HdPoints(SdfPath const& id,
                    SdfPath const& instancerId)
-    : HdRprim(delegate, id, instancerId)
+    : HdRprim(id, instancerId)
 {
     /*NOTHING*/
 }

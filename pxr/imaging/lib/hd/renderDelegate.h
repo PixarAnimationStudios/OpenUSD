@@ -32,7 +32,6 @@ class SdfPath;
 class HdRprim;
 class HdSprim;
 class HdBprim;
-class HdSceneDelegate;
 
 /// \class HdRenderDelegate
 ///
@@ -56,7 +55,6 @@ public:
     /// \return A pointer to the new prim or nullptr on error.
     ///                     
     virtual HdRprim *CreateRprim(TfToken const& typeId,
-                                 HdSceneDelegate* delegate,
                                  SdfPath const& rprimId,
                                  SdfPath const& instancerId) = 0;
 
@@ -73,7 +71,6 @@ public:
     /// \return A pointer to the new prim or nullptr on error.
     ///
     virtual HdSprim *CreateSprim(TfToken const& typeId,
-                                 HdSceneDelegate* delegate,
                                  SdfPath const& sprimId) = 0;
 
     ///
@@ -89,7 +86,6 @@ public:
     /// \return A pointer to the new prim or nullptr on error.
     ///
     virtual HdBprim *CreateBprim(TfToken const& typeId,
-                                 HdSceneDelegate* delegate,
                                  SdfPath const& bprimId) = 0;
 
     ///

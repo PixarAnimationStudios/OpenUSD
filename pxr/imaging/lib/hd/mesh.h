@@ -39,27 +39,27 @@ public:
     ///
     /// Render State
     ///
-    inline bool        IsDoubleSided() const;
-    inline HdCullStyle GetCullStyle()  const;
+    inline bool        IsDoubleSided(HdSceneDelegate* delegate) const;
+    inline HdCullStyle GetCullStyle(HdSceneDelegate* delegate)  const;
 
     ///
     /// Topology
     ///
-    inline HdMeshTopology  GetMeshTopology() const;
-    inline int             GetRefineLevel()  const;
-    inline PxOsdSubdivTags GetSubdivTags()   const;
+    inline HdMeshTopology  GetMeshTopology(HdSceneDelegate* delegate) const;
+    inline int             GetRefineLevel(HdSceneDelegate* delegate)  const;
+    inline PxOsdSubdivTags GetSubdivTags(HdSceneDelegate* delegate)   const;
 
 
     ///
     /// Primvars Accessors
     ///
-    inline VtValue GetPoints()  const;
-    inline VtValue GetNormals() const;
+    inline VtValue GetPoints(HdSceneDelegate* delegate)  const;
+    inline VtValue GetNormals(HdSceneDelegate* delegate) const;
 
 protected:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
-    HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
+    HdMesh(SdfPath const& id,
            SdfPath const& instancerId = SdfPath());
 
 private:
@@ -71,45 +71,45 @@ private:
 };
 
 inline bool
-HdMesh::IsDoubleSided() const
+HdMesh::IsDoubleSided(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetDoubleSided(GetId());
+    return delegate->GetDoubleSided(GetId());
 }
 
 inline HdCullStyle
-HdMesh::GetCullStyle() const
+HdMesh::GetCullStyle(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetCullStyle(GetId());
+    return delegate->GetCullStyle(GetId());
 }
 
 inline HdMeshTopology
-HdMesh::GetMeshTopology() const
+HdMesh::GetMeshTopology(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetMeshTopology(GetId());
+    return delegate->GetMeshTopology(GetId());
 }
 
 inline int
-HdMesh::GetRefineLevel() const
+HdMesh::GetRefineLevel(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetRefineLevel(GetId());
+    return delegate->GetRefineLevel(GetId());
 }
 
 inline PxOsdSubdivTags
-HdMesh::GetSubdivTags() const
+HdMesh::GetSubdivTags(HdSceneDelegate* delegate) const
 {
-    return GetDelegate()->GetSubdivTags(GetId());
+    return delegate->GetSubdivTags(GetId());
 }
 
 inline VtValue
-HdMesh::GetPoints() const
+HdMesh::GetPoints(HdSceneDelegate* delegate) const
 {
-    return GetPrimVar(HdTokens->points);
+    return GetPrimVar(delegate, HdTokens->points);
 }
 
 inline VtValue
-HdMesh::GetNormals() const
+HdMesh::GetNormals(HdSceneDelegate* delegate) const
 {
-    return GetPrimVar(HdTokens->normals);
+    return GetPrimVar(delegate, HdTokens->normals);
 }
 
 #endif //HD_MESH_H
