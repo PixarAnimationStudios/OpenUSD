@@ -139,6 +139,16 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
     return self->GetEditTargetForLocalLayer(layer);
 }
 
+static void
+_ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
+{
+    using Predicate = std::function<bool (UsdRelationship const &)>;
+    Predicate pred;
+    if (pypred != boost::python::object())
+        pred = boost::python::extract<Predicate>(pypred);
+    return self.ExpandPopulationMask(pred);
+}
+
 void wrapUsdStage()
 {
     typedef TfWeakPtr<UsdStage> StagePtr;
@@ -346,6 +356,9 @@ void wrapUsdStage()
              return_value_policy<TfPySequenceToList>())
 
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
+        .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
+        .def("ExpandPopulationMask", &_ExpandPopulationMask,
+             arg("predicate")=object())
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
 

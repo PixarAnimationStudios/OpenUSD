@@ -53,6 +53,7 @@
 #include <tbb/concurrent_unordered_set.h>
 #include <tbb/spin_rw_mutex.h>
 
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -533,12 +534,27 @@ public:
     ///                     std::inserter(result, result.end()));
     /// \endcode
     SdfPathSet FindLoadable(
-                         const SdfPath& rootPath = SdfPath::AbsoluteRootPath());
+        const SdfPath& rootPath = SdfPath::AbsoluteRootPath());
 
     /// Return this stage's population mask.
     UsdStagePopulationMask GetPopulationMask() const {
         return _populationMask;
     }
+
+    /// Set this stage's population mask and recompose the stage.
+    void SetPopulationMask(UsdStagePopulationMask const &mask);
+
+    /// Expand this stage's population mask to include the targets of all
+    /// relationships that pass \p pred, recursively.  If \p pred is null,
+    /// include all relationship targets.
+    ///
+    /// This function can be used, for example, to expand a population mask for
+    /// a given prim to include bound materials, if those bound materials are
+    /// expressed as relationships.
+    ///
+    /// See also UsdPrim::FindAllRelationshipTargetPaths().
+    void ExpandPopulationMask(
+        std::function<bool (UsdRelationship const &)> const &pred = nullptr);
     
     /// @}
 

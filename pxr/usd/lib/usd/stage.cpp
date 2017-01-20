@@ -1994,6 +1994,46 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
     return loadable;
 }
 
+void
+UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
+{
+    // For now just set the mask and recompose everything at the Usd level.
+    _populationMask = mask;
+    SdfPathSet absRoot = { SdfPath::AbsoluteRootPath() };
+    _Recompose(PcpChanges(), &absRoot);
+}
+
+void
+UsdStage::ExpandPopulationMask(
+    std::function<bool (UsdRelationship const &)> const &pred)
+{
+    if (GetPopulationMask().IncludesSubtree(SdfPath::AbsoluteRootPath()))
+        return;
+
+    // Walk everything, calling UsdPrim::FindAllRelationshipTargetPaths() and
+    // include them in the mask.  If the mask changes, call SetPopulationMask()
+    // and redo.  Continue until the mask ceases expansion.  
+    while (true) {
+        SdfPathVector tgtPaths =
+            GetPseudoRoot().FindAllRelationshipTargetPaths(pred, false);
+        
+        tgtPaths.erase(remove_if(tgtPaths.begin(), tgtPaths.end(),
+                                 [this](SdfPath const &path) {
+                                     return _populationMask.Includes(path);
+                                 }),
+                       tgtPaths.end());
+        
+        if (tgtPaths.empty())
+            break;
+
+        auto popMask = GetPopulationMask();
+        for (auto const &path: tgtPaths) {
+            popMask.Add(path);
+        }
+        SetPopulationMask(popMask);
+    }
+}
+
 // ------------------------------------------------------------------------- //
 // Instancing
 // ------------------------------------------------------------------------- //
