@@ -105,7 +105,8 @@ _MallocProvidedBySameLibraryAs(const char* functionName,
 static inline bool
 _CheckMallocTagImpl(const std::string& impl, const char* libname)
 {
-    return (impl == "auto"     ||
+    return (impl.empty()       ||
+            impl == "auto"     ||
             impl == "agnostic" ||
             std::strncmp(impl.c_str(), libname, strlen(libname)) == 0);
 }
