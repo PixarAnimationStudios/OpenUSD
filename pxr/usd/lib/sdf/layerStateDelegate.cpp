@@ -139,6 +139,47 @@ SdfLayerStateDelegateBase::MoveSpec(
 }
 
 void 
+SdfLayerStateDelegateBase::PushChild(
+    const SdfPath& parentPath,
+    const TfToken field,
+    const TfToken value)
+{
+    _OnPushChild(parentPath, field, value);
+    _layer->_PrimPushChild(parentPath, field, value, /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PushChild(
+    const SdfPath& parentPath,
+    const TfToken field,
+    const SdfPath value)
+{
+    _OnPushChild(parentPath, field, value);
+    _layer->_PrimPushChild(parentPath, field, value, /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PopChild(
+    const SdfPath& parentPath,
+    const TfToken field,
+    const TfToken oldValue)
+{
+    _OnPopChild(parentPath, field, oldValue);
+    _layer->_PrimPopChild<TfToken>(parentPath, field, /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PopChild(
+    const SdfPath& parentPath,
+    const TfToken field,
+    const SdfPath oldValue)
+{
+    _OnPopChild(parentPath, field, oldValue);
+    _layer->_PrimPopChild<SdfPath>(parentPath, field,
+                                   /* useDelegate = */ false);
+}
+
+void 
 SdfLayerStateDelegateBase::_SetLayer(const SdfLayerHandle& layer)
 {
     _layer = layer;
@@ -271,6 +312,42 @@ void
 SdfSimpleLayerStateDelegate::_OnMoveSpec(
     const SdfPath& oldPath,
     const SdfPath& newPath)
+{
+    _dirty = true;
+}
+
+void
+SdfSimpleLayerStateDelegate::_OnPushChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const TfToken& value)
+{
+    _dirty = true;
+}
+
+void 
+SdfSimpleLayerStateDelegate::_OnPushChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const SdfPath& value)
+{
+    _dirty = true;
+}
+
+void
+SdfSimpleLayerStateDelegate::_OnPopChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const TfToken& oldValue)
+{
+    _dirty = true;
+}
+
+void 
+SdfSimpleLayerStateDelegate::_OnPopChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const SdfPath& oldValue)
 {
     _dirty = true;
 }

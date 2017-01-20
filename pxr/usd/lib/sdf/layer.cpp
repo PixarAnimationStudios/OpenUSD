@@ -3345,6 +3345,106 @@ template void SdfLayer::_PrimSetField(
 
 template <class T>
 void
+SdfLayer::_PrimPushChild(const SdfPath& parentPath, 
+                         const TfToken& fieldName,
+                         const T& value,
+                         bool useDelegate)
+{
+    SdfAbstractDataSpecId id(&parentPath);
+
+    if (not HasField(id, fieldName)) {
+        _PrimSetField(id, fieldName,
+            VtValue(std::vector<T>(1, value)));
+        return;
+    }
+
+    if (useDelegate && TF_VERIFY(_stateDelegate)) {
+        _stateDelegate->PushChild(parentPath, fieldName, value);
+        return;
+    }
+
+    // A few efficiency notes:
+    //
+    // - We want to push the child onto the existing vector.  Since
+    //   VtValue is copy-on-write, we avoid incurring a copy fault
+    //   by retrieving the value from the data store and then
+    //   erasing the field before modifying the vector.  Similarly,
+    //   we swap the vector<T> out of the type-erased VtValue box,
+    //   modify that, then swap it back in.
+    //
+    // - Do not record a field change entry with Sdf_ChangeManager.
+    //   Doing so would require us to provide both the old & new
+    //   values for the vector.  Note tha the the changelist protocol
+    //   already has special affordances for spec add/remove events,
+    //   and child fields are essentially an implementation detail.
+    //
+    VtValue box = _data->Get(id, fieldName);
+    _data->Erase(id, fieldName);
+    std::vector<T> vec;
+    if (box.IsHolding<std::vector<T>>()) {
+        box.Swap(vec);
+    } else {
+        // If the value isn't a vector, we replace it with an empty one.
+    }
+    vec.push_back(value);
+    box.Swap(vec);
+    _data->Set(id, fieldName, box);
+}
+
+template void SdfLayer::_PrimPushChild(
+    const SdfPath&, const TfToken&, 
+    const TfToken &, bool);
+template void SdfLayer::_PrimPushChild(
+    const SdfPath&, const TfToken&, 
+    const SdfPath &, bool);
+
+template <class T>
+void
+SdfLayer::_PrimPopChild(const SdfPath& parentPath, 
+                        const TfToken& fieldName,
+                        bool useDelegate)
+{
+    SdfAbstractDataSpecId id(&parentPath);
+
+    if (useDelegate && TF_VERIFY(_stateDelegate)) {
+        std::vector<T> vec = GetFieldAs<std::vector<T> >(id, fieldName);
+        if (!vec.empty()) {
+            T oldValue = vec.back();
+            _stateDelegate->PopChild(parentPath, fieldName, oldValue);
+        } else {
+            TF_CODING_ERROR("SdfLayer::_PrimPopChild failed: field %s is "
+                            "empty vector", fieldName.GetText());
+        }
+        return;
+    }
+
+    // See efficiency notes in _PrimPushChild().
+    VtValue box = _data->Get(id, fieldName);
+    _data->Erase(id, fieldName);
+    if (!box.IsHolding<std::vector<T>>()) {
+        TF_CODING_ERROR("SdfLayer::_PrimPopChild failed: field %s is "
+                        "non-vector", fieldName.GetText());
+        return;
+    }
+    std::vector<T> vec;
+    box.Swap(vec);
+    if (vec.empty()) {
+        TF_CODING_ERROR("SdfLayer::_PrimPopChild failed: %s is empty",
+                        fieldName.GetText());
+        return;
+    }
+    vec.pop_back();
+    box.Swap(vec);
+    _data->Set(id, fieldName, box);
+}
+
+template void SdfLayer::_PrimPopChild<TfToken>(
+    const SdfPath&, const TfToken&, bool);
+template void SdfLayer::_PrimPopChild<SdfPath>(
+    const SdfPath&, const TfToken&, bool);
+
+template <class T>
+void
 SdfLayer::_PrimSetFieldDictValueByKey(const SdfAbstractDataSpecId& id,
                                       const TfToken& fieldName,
                                       const TfToken& keyPath,

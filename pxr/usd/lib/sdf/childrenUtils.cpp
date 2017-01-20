@@ -109,11 +109,7 @@ bool Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(
     const TfToken childrenKey = ChildPolicy::GetChildrenToken(parentPath);
     const FieldType childName = ChildPolicy::GetFieldValue(childPath);
 
-    std::vector<FieldType> siblings = 
-        layer->GetFieldAs<std::vector<FieldType> >(parentPath, childrenKey);
-    
-    siblings.push_back(childName);
-    layer->SetField(parentPath, childrenKey, siblings);
+    layer->_PrimPushChild(parentPath, childrenKey, childName);
 
     return true;  
 }

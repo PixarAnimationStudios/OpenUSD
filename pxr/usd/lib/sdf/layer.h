@@ -1403,6 +1403,17 @@ private:
                                      const VtValue *oldValue = NULL,
                                      bool useDelegate = true);
 
+    // Primitive for appending a child to the list of children.
+    template <class T>
+    void _PrimPushChild(const SdfPath& parentPath,
+                        const TfToken& fieldName,
+                        const T& value,
+                        bool useDelegate = true);
+    template <class T>
+    void _PrimPopChild(const SdfPath& parentPath,
+                       const TfToken& fieldName,
+                       bool useDelegate = true);
+
     // Move all the fields at all paths at or below \a oldPath to be
     // at a corresponding location at or below \a newPath. This does
     // not update the children fields of the parents of these paths.

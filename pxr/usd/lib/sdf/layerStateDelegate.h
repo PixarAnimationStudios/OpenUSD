@@ -107,6 +107,23 @@ public:
         const SdfPath& oldPath,
         const SdfPath& newPath);
 
+    void PushChild(
+        const SdfPath& parentPath,
+        const TfToken field,
+        const TfToken value);
+    void PushChild(
+        const SdfPath& parentPath,
+        const TfToken field,
+        const SdfPath value);
+    void PopChild(
+        const SdfPath& parentPath,
+        const TfToken field,
+        const TfToken oldValue);
+    void PopChild(
+        const SdfPath& parentPath,
+        const TfToken field,
+        const SdfPath oldValue);
+
 protected:
     SdfLayerStateDelegateBase();
 
@@ -184,6 +201,30 @@ protected:
         const SdfPath& oldPath,
         const SdfPath& newPath) = 0;
 
+    /// Invoked when a child spec is pushed onto a parent's list of children.
+    virtual void _OnPushChild(
+        const SdfPath& parentPath,
+        const TfToken& fieldName,
+        const TfToken& value) = 0;
+
+    /// Invoked when a child spec is pushed onto a parent's list of children.
+    virtual void _OnPushChild(
+        const SdfPath& parentPath,
+        const TfToken& fieldName,
+        const SdfPath& value) = 0;
+
+    /// Invoked when a child spec is popped off a parent's list of children.
+    virtual void _OnPopChild(
+        const SdfPath& parentPath,
+        const TfToken& fieldName,
+        const TfToken& oldValue) = 0;
+
+    /// Invoked when a child spec is popped off a parent's list of children.
+    virtual void _OnPopChild(
+        const SdfPath& parentPath,
+        const TfToken& fieldName,
+        const SdfPath& oldValue) = 0;
+
 private:
     friend class SdfLayer;
     void _SetLayer(const SdfLayerHandle& layer);
@@ -252,6 +293,23 @@ protected:
     virtual void _OnMoveSpec(
         const SdfPath& oldPath,
         const SdfPath& newPath);
+
+    virtual void _OnPushChild(
+        const SdfPath& id,
+        const TfToken& fieldName,
+        const TfToken& value) override;
+    virtual void _OnPushChild(
+        const SdfPath& id,
+        const TfToken& fieldName,
+        const SdfPath& value) override;
+    virtual void _OnPopChild(
+        const SdfPath& id,
+        const TfToken& fieldName,
+        const TfToken& oldValue) override;
+    virtual void _OnPopChild(
+        const SdfPath& id,
+        const TfToken& fieldName,
+        const SdfPath& oldValue) override;
 
 private:
     bool _dirty;
