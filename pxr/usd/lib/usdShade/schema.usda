@@ -274,7 +274,7 @@ class "ConnectableAPI"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/subgraph.h"
     """
+    }
 )
 {
-    
 }

@@ -37,6 +37,7 @@
 #include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/output.h"
 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -66,11 +67,12 @@ class SdfAssetPath;
 /// explanation of what the interface provides, and how to construct and
 /// use it to effectively share/instance shader networks.
 /// 
-///    Subgraph Outputs
+/// <b>Terminals</b>
 /// 
-/// Outputs on subgraphs typically connect to an output on a shader inside the 
-/// subgraph. 
+/// Analogous to the public interface, these are relationships that each point 
+/// to a single internal shader output.
 /// 
+///
 class UsdShadeSubgraph : public UsdTyped
 {
 public:

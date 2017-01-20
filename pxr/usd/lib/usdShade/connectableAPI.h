@@ -30,6 +30,10 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/subgraph.h"
+    
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -39,9 +43,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/subgraph.h"
-
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
@@ -50,7 +51,7 @@ class SdfAssetPath;
 
 /// \class UsdShadeConnectableAPI
 ///
-/// UsdShadeConnectableAPI is an API schema that provides a common 
+/// UsdShadeConnectableAPI is an API schema that provides a common
 /// interface for creating outputs and making connections between shading 
 /// parameters and outputs.
 /// 
