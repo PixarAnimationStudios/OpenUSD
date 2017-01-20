@@ -31,7 +31,9 @@
 // Version 7 -- GetPathForInstanceIndex returns instanceContext.
 // Version 8 -- GetPathForInstanceIndex returns instanceContext (as 
 //              SdfPathVector) and rprimPath  separately.
+// Version 9 -- Rework UsdImagingEngineGL::RenderParams API to conform to
+//              updated purpose tokens and make proxy imaging optional.
 
-#define USD_IMAGING_API 8
+#define USD_IMAGING_API 9
 
 #endif // USD_IMAGING_VERSION_H

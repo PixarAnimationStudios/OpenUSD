@@ -34,6 +34,7 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
+#include "pxr/usdImaging/usdImaging/version.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -153,6 +154,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
     _baseParams.frame = time;
     _baseParams.refineLevel = refineLevel;
 
+#if USD_IMAGING_API >= 9
     // XXX Not yet adding ability to turn off display of proxy geometry, but
     // we should at some point, as in usdview
     if( showGuides )
@@ -163,6 +165,16 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
         _baseParams.geometryCol =
             showRenderGuides ? UsdImagingCollectionTokens->geometryAndProxyAndRender
                              : UsdImagingCollectionTokens->geometryAndProxy;
+#else
+    if( showGuides )
+        _baseParams.geometryCol =
+            showRenderGuides ? UsdImagingCollectionTokens->geometryAndGuides
+                             : UsdImagingCollectionTokens->geometryAndInteractiveGuides;
+    else
+        _baseParams.geometryCol =
+            showRenderGuides ? UsdImagingCollectionTokens->geometryAndRenderGuides
+                             : HdTokens->geometry;
+#endif    
     
     if( tint )
         _baseParams.overrideColor = tintColor;
