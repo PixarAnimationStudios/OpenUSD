@@ -147,10 +147,4 @@ ArchGetNanosecondsPerTick()
     return Arch_NanosecondsPerTick;
 }
 
-uint64_t
-Arch_GetTickTime()
-{
-    return ArchGetTickTime();	// we're C++, so we don't get masked
-}				// by the #define in timing.h
-
 PXR_NAMESPACE_CLOSE_SCOPE
