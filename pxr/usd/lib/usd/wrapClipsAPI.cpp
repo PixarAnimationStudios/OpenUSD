@@ -23,6 +23,7 @@
 //
 #include "pxr/usd/usd/clipsAPI.h"
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -38,6 +39,8 @@
 #include <string>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -80,6 +83,8 @@ void wrapUsdClipsAPI()
     _CustomWrapCode(cls);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -92,8 +97,15 @@ void wrapUsdClipsAPI()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the pxr namespace macros:
+// PXR_NAMESPACE_OPEN_SCOPE, PXR_NAMESPACE_CLOSE_SCOPE.
+//
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 static VtArray<SdfAssetPath> _GetClipAssetPaths(const UsdClipsAPI &self) {
     VtArray<SdfAssetPath> result;
     self.GetClipAssetPaths(&result);
@@ -227,3 +239,5 @@ WRAP_CUSTOM {
              &UsdClipsAPI::ClearTemplateClipMetadata)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -33,7 +33,10 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define USD_TOKENS \
@@ -77,5 +80,7 @@
 /// \li <b>clipTemplateStride</b> -  A double representing the increment value USD will use when searching for asset paths. For example usage see clipTemplateAssetPath. 
 /// \li <b>clipTimes</b> -  List of pairs (stage time, clip time) indicating the time in the active clip that should be consulted for values at the corresponding stage time.   During value resolution, this list will be sorted by stage time;  times will then be linearly interpolated between consecutive entries. For instance, for clip times [(0.0, 0.0), (10.0, 20.0)],  at stage time 0, values from the active clip at time 0 will be used, at stage time 5, values from the active clip at time 10, and at stage  time 10, clip values at time 20. 
 TF_DECLARE_PUBLIC_TOKENS(UsdTokens, USD_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -33,7 +33,10 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define {{ Upper(tokensPrefix) }}_TOKENS \
@@ -68,5 +71,7 @@
 /// \li <b>{{ token.id }}</b> - {{ token.desc }}
 {% endfor %}
 TF_DECLARE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

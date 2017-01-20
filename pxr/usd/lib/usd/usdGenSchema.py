@@ -543,7 +543,8 @@ def GenerateCode(codeGenPath, tokenData, classes, env):
 
         # header file
         clsHFilePath = os.path.join(codeGenPath, cls.GetHeaderFile())
-        customCode = _ExtractCustomCode(clsHFilePath, default='};\n\n#endif\n')
+        customCode = _ExtractCustomCode(clsHFilePath,
+                default='};\n\nPXR_NAMESPACE_CLOSE_SCOPE\n\n#endif\n')
         _WriteFile(clsHFilePath,
                    headerTemplate.render(
                        cls=cls, hasTokenAttrs=hasTokenAttrs) + customCode)
@@ -556,8 +557,10 @@ def GenerateCode(codeGenPath, tokenData, classes, env):
         
         # wrap file
         clsWrapFilePath = os.path.join(codeGenPath, cls.GetWrapFile())
-        customCode = _ExtractCustomCode(clsWrapFilePath, default=
-                                        '\nWRAP_CUSTOM {\n}\n')
+        customCode = _ExtractCustomCode(clsWrapFilePath, default=(
+                                        '\nPXR_NAMESPACE_OPEN_SCOPE\n'
+                                        '\nWRAP_CUSTOM {\n}\n'
+                                        '\nPXR_NAMESPACE_CLOSE_SCOPE'))
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode)
 
