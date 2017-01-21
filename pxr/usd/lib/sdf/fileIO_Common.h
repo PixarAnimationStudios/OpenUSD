@@ -447,6 +447,12 @@ Sdf_WritePrimMetadata(
             Sdf_FileIOUtility::WriteDictionary(out, indent+1, multiLine,
                           prefixSubstitutions, /* stringValuesOnly = */ true );
         }
+        else if (field == SdfFieldKeys->SuffixSubstitutions) {
+            VtDictionary suffixSubstitutions = prim.GetSuffixSubstitutions();
+            Sdf_FileIOUtility::Puts(out, indent+1, "suffixSubstitutions = ");
+            Sdf_FileIOUtility::WriteDictionary(out, indent+1, multiLine,
+                          suffixSubstitutions, /* stringValuesOnly = */ true );
+        }
         else if (field == SdfFieldKeys->VariantSelection) {
             SdfVariantSelectionMap refVariants = prim.GetVariantSelections();
             if (refVariants.size() > 0) {
