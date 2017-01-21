@@ -147,10 +147,15 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
         for (_InstanceKeyToPrimIndexesMap::value_type& v:
                  _pendingAddedPrimIndexes) {
             const Usd_InstanceKey& key = v.first;
-            const _PrimIndexPaths& primIndexes = v.second;
+            _PrimIndexPaths& primIndexes = v.second;
             if (TF_VERIFY(!primIndexes.empty())) {
-                keysToProcess[*std::min_element(
-                        primIndexes.begin(), primIndexes.end())] = key;
+                // Move the min element to the front, since the later call to
+                // _CreateOrUpdateMasterForInstances takes the front item for
+                // the master.
+                swap(primIndexes.front(),
+                     *std::min_element(primIndexes.begin(), primIndexes.end()));
+                TF_VERIFY(
+                    keysToProcess.emplace(primIndexes.front(), key).second);
             }
         }
 
