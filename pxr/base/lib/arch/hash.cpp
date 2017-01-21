@@ -665,7 +665,7 @@ uint64_t ArchHash64(const char *data, size_t len)
     return SpookyHash::Hash64(data, len, /*seed=*/0);
 }
 
-uint64_t ArchHash64(const char *data, size_t len, uint32_t seed)
+uint64_t ArchHash64(const char *data, size_t len, uint64_t seed)
 {
     return SpookyHash::Hash64(data, len, seed);
 }
