@@ -99,16 +99,14 @@ UsdPrim::_MakeProperties(const TfTokenVector &names) const
     std::vector<UsdProperty> props;
     UsdStage *stage = _GetStage();
     props.reserve(names.size());
-    for (const auto& propName : names) {
-        SdfSpecType specType =
-            stage->_GetDefiningSpecType(*this, propName);
+    for (auto const &propName : names) {
+        SdfSpecType specType = stage->_GetDefiningSpecType(*this, propName);
         if (specType == SdfSpecTypeAttribute) {
             props.push_back(GetAttribute(propName));
         } else if (TF_VERIFY(specType == SdfSpecTypeRelationship)) {
             props.push_back(GetRelationship(propName));
         }
     }
-
     return props;
 }
 
@@ -156,6 +154,13 @@ UsdPrim::RemoveProperty(const TfToken &propName)
 UsdProperty
 UsdPrim::GetProperty(const TfToken &propName) const
 {
+    SdfSpecType specType = _GetStage()->_GetDefiningSpecType(*this, propName);
+    if (specType == SdfSpecTypeAttribute) {
+        return GetAttribute(propName);
+    }
+    else if (specType == SdfSpecTypeRelationship) {
+        return GetRelationship(propName);
+    }
     return UsdProperty(UsdTypeProperty, _Prim(), propName);
 }
 
