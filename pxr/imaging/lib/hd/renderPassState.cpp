@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -301,15 +301,15 @@ HdRenderPassState::SetRenderPassShader(HdRenderPassShaderSharedPtr const &render
 }
 
 void 
-HdRenderPassState::SetOverrideShader(HdShaderSharedPtr const &overrideShader)
+HdRenderPassState::SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader)
 {
     _overrideShader = overrideShader;
 }
 
-HdShaderSharedPtrVector
+HdShaderCodeSharedPtrVector
 HdRenderPassState::GetShaders() const
 {
-    HdShaderSharedPtrVector shaders;
+    HdShaderCodeSharedPtrVector shaders;
     shaders.reserve(2);
     shaders.push_back(_lightingShader);
     shaders.push_back(_renderPassShader);

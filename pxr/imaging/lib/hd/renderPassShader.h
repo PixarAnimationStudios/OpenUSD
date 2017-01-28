@@ -28,7 +28,7 @@
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resourceBinder.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -42,7 +42,7 @@ typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 ///
 /// A shader that supports common renderPass functionality.
 ///
-class HdRenderPassShader : public HdShader {
+class HdRenderPassShader : public HdShaderCode {
 public:
     HdRenderPassShader();
     HdRenderPassShader(TfToken const &glslfxFile);
@@ -80,6 +80,11 @@ private:
 
     TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
     HdCullStyle _cullStyle;
+
+
+    // No copying
+    HdRenderPassShader(const HdRenderPassShader &)                     = delete;
+    HdRenderPassShader &operator =(const HdRenderPassShader &)         = delete;
 };
 
 #endif // HD_RENDER_PASS_SHADER_H

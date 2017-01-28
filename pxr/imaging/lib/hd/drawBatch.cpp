@@ -36,7 +36,6 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -187,8 +186,8 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
     size_t shaderHash = state->GetShaderHash();
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
-    HdShaderSharedPtr overrideShader = state->GetOverrideShader();
-    HdShaderSharedPtr surfaceShader  = overrideShader ? overrideShader
+    HdShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
+    HdShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
                                        : firstDrawItem->GetSurfaceShader();
     boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
     bool shaderChanged = (_shaderHash != shaderHash);
@@ -197,7 +196,7 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
     // We need to do this before checking if the shaderChanged because 
     // it is possible that the shader does not need to 
     // be recompiled but some of the parameters have changed.
-    HdShaderSharedPtrVector shaders = state->GetShaders();
+    HdShaderCodeSharedPtrVector shaders = state->GetShaders();
     _program.SetShaders(shaders);
     _program.SetGeometricShader(firstDrawItem->GetGeometricShader());
 
@@ -268,7 +267,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
     _GetCustomBindings(&customBindings, &instanceDraw);
 
     // also (surface, renderPass) shaders use their bindings
-    HdShaderSharedPtrVector shaders = GetComposedShaders();
+    HdShaderCodeSharedPtrVector shaders = GetComposedShaders();
 
     TF_FOR_ALL(it, shaders) {
         (*it)->AddBindings(&customBindings);

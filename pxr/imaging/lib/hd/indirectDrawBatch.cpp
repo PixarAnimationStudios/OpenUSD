@@ -36,7 +36,7 @@
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -992,7 +992,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     glUseProgram(programId);
 
     const Hd_ResourceBinder &binder = program.GetBinder();
-    const HdShaderSharedPtrVector &shaders = program.GetComposedShaders();
+    const HdShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
     // XXX: for surfaces shader, we need to iterate all drawItems to
     //      make textures resident, instead of just the first batchItem

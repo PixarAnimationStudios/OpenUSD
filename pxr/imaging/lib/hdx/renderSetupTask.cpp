@@ -95,7 +95,7 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     _renderPassState->SetDrawingRange(params.drawingRange);
     _renderPassState->SetCullStyle(params.cullStyle);
     if (params.enableHardwareShading) {
-        _renderPassState->SetOverrideShader(HdShaderSharedPtr());
+        _renderPassState->SetOverrideShader(HdShaderCodeSharedPtr());
     } else {
         _renderPassState->SetOverrideShader(
             GetDelegate()->GetRenderIndex().GetShaderFallback());

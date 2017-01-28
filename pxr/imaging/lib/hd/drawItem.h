@@ -42,7 +42,7 @@
 #include <iosfwd>
 
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
-typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 
 /// \class HdDrawItem
 ///
@@ -68,7 +68,7 @@ public:
         return _geometricShader;
     }
 
-    HdShaderSharedPtr GetSurfaceShader() const;
+    HdShaderCodeSharedPtr GetSurfaceShader() const;
 
     GfBBox3d const & GetBounds() const { return _sharedData->bounds; }
 

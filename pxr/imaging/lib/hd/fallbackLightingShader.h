@@ -47,7 +47,7 @@ public:
     Hd_FallbackLightingShader();
     virtual ~Hd_FallbackLightingShader();
 
-    // HdShader overrides
+    // HdShaderCode overrides
     virtual ID ComputeHash() const;
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);

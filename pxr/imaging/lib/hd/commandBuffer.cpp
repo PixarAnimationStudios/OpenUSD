@@ -163,7 +163,7 @@ HdCommandBuffer::_RebuildDrawBatches()
         HdDrawItemInstance* drawItemInstance = &_drawItemInstances[i];
 
         Hd_DrawBatchSharedPtr batch;
-        HdShaderSharedPtr const &geometricShader
+        HdShaderCodeSharedPtr const &geometricShader
             = drawItem->GetGeometricShader();
         TF_VERIFY(geometricShader);
 

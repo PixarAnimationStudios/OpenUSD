@@ -86,7 +86,8 @@ private:
 
 
 HdSurfaceShader::HdSurfaceShader(SdfPath const& id)
- : _id(id)
+ : HdShaderCode()
+ , _id(id)
 {
 }
 
@@ -284,7 +285,7 @@ HdSurfaceShader::GetShaderData() const
     return _paramArray;
 }
 /*virtual*/
-HdShader::TextureDescriptorVector 
+HdShaderCode::TextureDescriptorVector
 HdSurfaceShader::GetTextures() const
 {
     return _textureDescriptors;
@@ -357,7 +358,7 @@ HdSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 /*virtual*/
-HdShader::ID
+HdShaderCode::ID
 HdSurfaceShader::ComputeHash() const
 {
     size_t hash = 0;
@@ -375,8 +376,8 @@ HdSurfaceShader::ComputeHash() const
 
 /*static*/
 bool
-HdSurfaceShader::CanAggregate(HdShaderSharedPtr const &shaderA,
-                              HdShaderSharedPtr const &shaderB)
+HdSurfaceShader::CanAggregate(HdShaderCodeSharedPtr const &shaderA,
+                              HdShaderCodeSharedPtr const &shaderB)
 {
     bool bindlessTexture = HdRenderContextCaps::GetInstance()
                                                 .bindlessTextureEnabled;

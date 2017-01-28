@@ -34,10 +34,10 @@
 #include "pxr/base/tf/hashmap.h"
 
 class HdDrawItem;
-class HdShader;
+class HdShaderCode;
 
-typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
-typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
+typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
 /// \class Hd_ResourceBinder
@@ -242,7 +242,7 @@ public:
     /// Assign all binding points used in drawitem and custom bindings.
     /// Returns metadata to be used for codegen.
     void ResolveBindings(HdDrawItem const *drawItem,
-                         HdShaderSharedPtrVector const &shaders,
+                         HdShaderCodeSharedPtrVector const &shaders,
                          MetaData *metaDataOut,
                          bool indirect,
                          bool instanceDraw,
@@ -273,8 +273,8 @@ public:
         HdBufferArrayRangeSharedPtr const &bar, int level) const;
 
     /// bind/unbind shader parameters and textures
-    void BindShaderResources(HdShader const *shader) const;
-    void UnbindShaderResources(HdShader const *shader) const;
+    void BindShaderResources(HdShaderCode const *shader) const;
+    void UnbindShaderResources(HdShaderCode const *shader) const;
 
     /// piecewise buffer binding utility
     /// (to be used for frustum culling, draw indirect result)

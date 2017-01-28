@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/lightingShader.h"
 
 HdLightingShader::HdLightingShader()
+ : HdShaderCode()
 {
     /*NOTHING*/
 }

@@ -36,13 +36,13 @@
 #include <boost/shared_ptr.hpp>
 
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassShader>
                 HdRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class Hd_FallbackLightingShader>
                 Hd_FallbackLightingShaderSharedPtr;
-typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
+typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
 /// \class HdRenderPassState
 ///
@@ -114,13 +114,13 @@ public:
     }
 
     /// override shader
-    void SetOverrideShader(HdShaderSharedPtr const &overrideShader);
-    HdShaderSharedPtr const &GetOverrideShader() const {
+    void SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader);
+    HdShaderCodeSharedPtr const &GetOverrideShader() const {
         return _overrideShader;
     }
 
     /// returns shaders (lighting/renderpass)
-    HdShaderSharedPtrVector GetShaders() const;
+    HdShaderCodeSharedPtrVector GetShaders() const;
 
     GfMatrix4d const &GetCullMatrix() const {
         return _cullMatrix;
@@ -163,7 +163,7 @@ private:
     HdRenderPassShaderSharedPtr _renderPassShader;
     Hd_FallbackLightingShaderSharedPtr _fallbackLightingShader;
     HdLightingShaderSharedPtr _lightingShader;
-    HdShaderSharedPtr _overrideShader;
+    HdShaderCodeSharedPtr _overrideShader;
 
     // ---------------------------------------------------------------------- //
     // Camera State 

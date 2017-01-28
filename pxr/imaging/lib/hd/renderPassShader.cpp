@@ -45,7 +45,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 HdRenderPassShader::HdRenderPassShader()
-    : _glslfxFile(HdPackageRenderPassShader())
+    : HdShaderCode()
+    , _glslfxFile(HdPackageRenderPassShader())
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)
@@ -54,7 +55,8 @@ HdRenderPassShader::HdRenderPassShader()
 }
 
 HdRenderPassShader::HdRenderPassShader(TfToken const &glslfxFile)
-    : _glslfxFile(glslfxFile)   // user-defined
+    : HdShaderCode()
+    , _glslfxFile(glslfxFile)   // user-defined
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)

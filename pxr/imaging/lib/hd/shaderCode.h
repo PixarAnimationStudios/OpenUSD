@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SHADER_H
-#define HD_SHADER_H
+#ifndef HD_SHADER_CODE_H
+#define HD_SHADER_CODE_H
 
 #include "pxr/imaging/hd/version.h"
 
@@ -37,28 +37,29 @@
 
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
-typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
-typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
-typedef std::vector<HdShaderSharedPtr> HdTextureSharedPtrVector;
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
+typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
-/// \class HdShader
+
+/// \class HdShaderCode
 ///
-/// A shader base class, used in conjunction with HdRenderPass.
+/// A base class representing the implementation (code) of a shader,
+/// used in conjunction with HdRenderPass.
 ///
 /// This interface provides a simple way for clients to affect the
 /// composition of shading programs used for a render pass.
-class HdShader {
+class HdShaderCode {
 public:
     typedef size_t ID;
 
-    HdShader();
-    virtual ~HdShader();
+    HdShaderCode();
+    virtual ~HdShaderCode();
 
     /// Returns the hash value of this shader.
     virtual ID ComputeHash() const = 0;
 
     /// Returns the combined hash values of multiple shaders.
-    static ID ComputeHash(HdShaderSharedPtrVector const &shaders);
+    static ID ComputeHash(HdShaderCodeSharedPtrVector const &shaders);
 
     /// Returns the shader source provided by this shader
     /// for \a shaderStageKey
@@ -97,6 +98,12 @@ public:
 
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
+
+private:
+
+    // No copying
+    HdShaderCode(const HdShaderCode &)                      = delete;
+    HdShaderCode &operator =(const HdShaderCode &)          = delete;
 };
 
 #endif //HD_SHADER_H

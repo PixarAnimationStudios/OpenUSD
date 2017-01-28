@@ -93,7 +93,7 @@ pxr_shared_library(hd
         rprimCollection
         rprimSharedData
         sceneDelegate
-        shader
+        shaderCode
         shaderKey
         shaderParam
         smoothNormals

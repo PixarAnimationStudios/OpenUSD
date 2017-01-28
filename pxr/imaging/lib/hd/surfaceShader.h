@@ -24,7 +24,7 @@
 #ifndef HD_SURFACESHADER_H
 #define HD_SURFACESHADER_H
 
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -52,7 +52,7 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 /// can use this object to express these surface shaders in Hydra. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
-class HdSurfaceShader : public HdShader {
+class HdSurfaceShader : public HdShaderCode {
 public:
     HdSurfaceShader(SdfPath const & id);
 
@@ -80,8 +80,8 @@ public:
     virtual ID ComputeHash() const;
 
     /// Returns if the two shaders can be aggregated in a same drawbatch or not.
-    static bool CanAggregate(HdShaderSharedPtr const &shaderA,
-                             HdShaderSharedPtr const &shaderB);
+    static bool CanAggregate(HdShaderCodeSharedPtr const &shaderA,
+                             HdShaderCodeSharedPtr const &shaderB);
 
 protected:
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
@@ -97,6 +97,11 @@ private:
     HdShaderParamVector _params;
 
     TextureDescriptorVector _textureDescriptors;
+
+    // No copying
+    HdSurfaceShader(const HdSurfaceShader &)                     = delete;
+    HdSurfaceShader &operator =(const HdSurfaceShader &)         = delete;
+
 };
 
 #endif //HD_SURFACESHADER_H

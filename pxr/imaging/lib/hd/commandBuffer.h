@@ -85,7 +85,7 @@ private:
     std::vector<HdDrawItem const*> _drawItems;
     std::vector<HdDrawItemInstance> _drawItemInstances;
     Hd_DrawBatchSharedPtrVector _drawBatches;
-    HdShaderSharedPtrVector _shaders;
+    HdShaderCodeSharedPtrVector _shaders;
     size_t _visibleSize;
     unsigned _visChangeCount;
     unsigned _shaderBindingsVersion;
