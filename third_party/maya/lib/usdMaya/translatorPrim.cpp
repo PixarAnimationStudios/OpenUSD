@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorPrim.h"
 
 #include "usdMaya/translatorUtil.h"
@@ -32,6 +33,9 @@
 
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnDagNode.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 void
 PxrUsdMayaTranslatorPrim::Read(
@@ -116,3 +120,6 @@ PxrUsdMayaTranslatorPrim::Read(
 
     // XXX What about all the "user attributes" that PrimWriter exports???
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

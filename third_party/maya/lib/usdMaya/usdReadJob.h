@@ -26,6 +26,7 @@
 
 /// \file usdReadJob.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/JobArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -38,6 +39,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 class usdReadJob
@@ -98,5 +102,8 @@ class usdReadJob
     const std::string _assemblyTypeName;
     const std::string _proxyShapeTypeName;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_USDREADJOB_H

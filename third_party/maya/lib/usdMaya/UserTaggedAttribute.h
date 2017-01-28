@@ -27,6 +27,7 @@
 #ifndef PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
 #define PXRUSDMAYA_USERTAGGEDATTRIBUTE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -37,6 +38,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define PXRUSDMAYA_ATTR_TOKENS \
     ((USDAttrTypePrimvar, "primvar")) \
@@ -113,5 +117,8 @@ public:
     bool GetTranslateMayaDoubleToUsdSinglePrecision() const;
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_USERTAGGEDATTRIBUTE_H

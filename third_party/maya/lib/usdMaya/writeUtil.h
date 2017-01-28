@@ -27,6 +27,7 @@
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/UserTaggedAttribute.h"
 
 #include "pxr/base/tf/token.h"
@@ -44,6 +45,9 @@
 #include <maya/MString.h>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 struct PxrUsdMayaWriteUtil
@@ -162,5 +166,8 @@ struct PxrUsdMayaWriteUtil
     /// \}
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_WRITEUTIL_H

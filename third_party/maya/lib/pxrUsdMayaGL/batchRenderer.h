@@ -28,6 +28,7 @@
 #ifndef PXRUSDMAYAGL_BATCHRENDERER_H
 #define PXRUSDMAYAGL_BATCHRENDERER_H
 
+#include "pxr/pxr.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/arch/hash.h"
@@ -57,11 +58,14 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class MDagPath;
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEBUG_CODES(
     PXRUSDMAYAGL_QUEUE_INFO
 );
-
-class MDagPath;
 
 typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 
@@ -420,5 +424,8 @@ private:
     /// \brief Sole global batch renderer used by default.
     static std::unique_ptr<UsdMayaGLBatchRenderer> _sGlobalRendererPtr;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYAGL_BATCHRENDERER_H

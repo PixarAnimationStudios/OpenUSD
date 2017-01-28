@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/referenceAssembly.h"
 
 #include "usdMaya/JobArgs.h"
@@ -68,6 +69,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_REF_ASSEMBLIES, true,
@@ -1310,3 +1314,6 @@ bool UsdMayaRepresentationHierBase::activate()
 const MString UsdMayaRepresentationExpanded::_assemblyType("Expanded");
 
 const MString UsdMayaRepresentationFull::_assemblyType("Full");
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

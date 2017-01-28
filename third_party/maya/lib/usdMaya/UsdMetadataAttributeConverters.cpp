@@ -26,6 +26,7 @@
 /// This file registers converters for storing USD-specific metadata, such
 /// as model kind, in extra "USD_" attributes on Maya nodes.
 
+#include "pxr/pxr.h"
 #include "usdMaya/AttributeConverter.h"
 #include "usdMaya/AttributeConverterRegistry.h"
 #include "usdMaya/util.h"
@@ -34,6 +35,9 @@
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -127,3 +131,6 @@ TF_REGISTRY_FUNCTION(AttributeConverterRegistry) {
     );
     AttributeConverterRegistry::Register(converter);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

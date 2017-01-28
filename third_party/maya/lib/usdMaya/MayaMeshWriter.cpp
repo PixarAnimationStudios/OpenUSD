@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
 #include "usdMaya/meshUtil.h"
@@ -34,6 +35,9 @@
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MUintArray.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(-1.0e30);
@@ -458,3 +462,6 @@ MayaMeshWriter::exportsGprims() const
     return true;
 }
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

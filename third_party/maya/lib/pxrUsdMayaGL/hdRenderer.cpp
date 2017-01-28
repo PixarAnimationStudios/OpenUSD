@@ -23,6 +23,7 @@
 //
 // Some header #define's Bool as int, which breaks stuff in sdf/types.h.
 // Include it first to sidestep the problem. :-/
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
 
 // Make sure to include glew first before any header that might include
@@ -44,6 +45,9 @@
 #include <maya/MStateManager.h>
 #include <maya/MViewport2Renderer.h>
 #include <maya/MHWGeometryUtilities.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 void
 UsdMayaGLHdRenderer::CheckRendererSetup(
@@ -414,4 +418,7 @@ UsdMayaGLHdRenderer::SubdLevelToComplexity(int subdLevel)
     //
     return 1.0+(float(subdLevel)*0.1f);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

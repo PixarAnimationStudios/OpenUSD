@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/usdReadJob.h"
 
 #include "usdMaya/primReaderRegistry.h"
@@ -54,6 +55,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 // for now, we hard code this to use displayColor.  But maybe the more
@@ -326,4 +330,7 @@ bool usdReadJob::undoIt()
     }
     return (status == MS::kSuccess);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

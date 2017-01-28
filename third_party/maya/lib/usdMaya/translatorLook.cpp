@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorLook.h"
 
 #include "usdMaya/shadingModeRegistry.h"
@@ -38,6 +39,9 @@
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorLookTokens,
     PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS);
@@ -335,4 +339,7 @@ PxrUsdMayaTranslatorLook::ExportShadingEngines(
                     shadingMode.GetText()).c_str());
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

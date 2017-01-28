@@ -27,11 +27,15 @@
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
 class MFnMesh;
 class MString;
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class UsdGeomMesh;
 
 #define PXRUSDMAYA_MESH_COLOR_SET_TOKENS \
@@ -60,5 +64,8 @@ namespace PxrUsdMayaMeshUtil
     TfToken setSubdivFVLinearInterpolation(const UsdGeomMesh& primSchema, MFnMesh& meshFn);
 
 } // namespace PxrUsdMayaMeshUtil
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_MESH_UTIL_H

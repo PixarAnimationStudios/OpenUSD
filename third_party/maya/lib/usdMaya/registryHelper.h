@@ -24,7 +24,11 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// private helper so that both reader/writer registries can share the same
 /// plugin discovery/load mechanism.
@@ -54,4 +58,7 @@ struct PxrUsdMaya_RegistryHelper
                 const std::string& value);
 
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXRUSDMAYA_REGISTRYHELPER_H

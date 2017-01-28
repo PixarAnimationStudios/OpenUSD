@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "ModelKindWriter.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdMaya_ModelKindWriter::PxrUsdMaya_ModelKindWriter(
     const JobExportArgs& args)
@@ -270,3 +274,6 @@ PxrUsdMaya_ModelKindWriter::Reset()
     _pathsToExportedGprimsMap.clear();
     _pathsWithExportedGprims.clear();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

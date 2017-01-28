@@ -23,6 +23,7 @@
 //
 // Some header #define's Bool as int, which breaks stuff in sdf/types.h.
 // Include it first to sidestep the problem. :-/
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/imaging/glf/glew.h"
@@ -52,6 +53,9 @@
 #include <maya/MSceneMessage.h>
 
 #include <bitset>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -1271,4 +1275,7 @@ UsdMayaGLBatchRenderer::_RenderBounds(
     glPopMatrix();
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

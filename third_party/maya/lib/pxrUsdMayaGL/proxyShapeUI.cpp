@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
 #include "pxrUsdMayaGL/batchRenderer.h"
@@ -35,6 +36,9 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 void*
@@ -208,3 +212,6 @@ UsdMayaProxyShapeUI::UsdMayaProxyShapeUI()
 UsdMayaProxyShapeUI::~UsdMayaProxyShapeUI() {
     // empty
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

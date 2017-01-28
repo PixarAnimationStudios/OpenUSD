@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/UserTaggedAttribute.h"
 
 #include "usdMaya/util.h"
@@ -37,6 +38,9 @@
 #include <boost/python/def.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static std::vector<PxrUsdMayaUserTaggedAttribute>
 _GetUserTaggedAttributesForNode(
@@ -83,3 +87,6 @@ void wrapUserTaggedAttribute() {
             .staticmethod("GetUserTaggedAttributesForNode")
     ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

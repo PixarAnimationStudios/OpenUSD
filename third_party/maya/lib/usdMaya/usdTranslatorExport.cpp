@@ -26,6 +26,7 @@
  * \brief file translator for USD files
  */
 
+#include "pxr/pxr.h"
 #include "usdMaya/usdTranslatorExport.h"
 
 #include "usdMaya/JobArgs.h"
@@ -38,6 +39,9 @@
 #include <maya/MString.h>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 void* usdTranslatorExport::creator() {
@@ -223,3 +227,6 @@ usdTranslatorExport::identifyFile(
 
     return retValue;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaNurbsCurveWriter.h"
 
 #include "pxr/usd/usdGeom/curves.h"
@@ -30,6 +31,9 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MPointArray.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 MayaNurbsCurveWriter::MayaNurbsCurveWriter(MDagPath & iDag, UsdStageRefPtr stage, const JobExportArgs & iArgs) :
     MayaTransformWriter(iDag, stage, iArgs)
@@ -137,3 +141,6 @@ MayaNurbsCurveWriter::exportsGprims() const
     return true;
 }
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

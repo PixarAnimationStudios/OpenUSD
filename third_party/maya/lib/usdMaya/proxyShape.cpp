@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
@@ -52,6 +53,9 @@
 #include <maya/MTime.h>
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Hydra performs its own high-performance frustum culling, so
 // we don't want to rely on Maya to do it on the CPU. AS such, the best
@@ -941,3 +945,6 @@ UsdMayaProxyShape::_CanBeSoftSelected() const
     return softSelHandle.asBool();
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

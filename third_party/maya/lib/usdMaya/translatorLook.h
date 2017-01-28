@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_LOOK_H
 #define PXRUSDMAYA_TRANSLATOR_LOOK_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdShade/material.h"
@@ -32,6 +33,9 @@
 #include "usdMaya/util.h"
 
 #include <maya/MObject.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS \
     ((LookNamespace, "USD_Looks"))
@@ -73,6 +77,9 @@ struct PxrUsdMayaTranslatorLook
             bool mergeTransformAndShape,
             SdfPath overrideRootPath);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_LOOK_H
 

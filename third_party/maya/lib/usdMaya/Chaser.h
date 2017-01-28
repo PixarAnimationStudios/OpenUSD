@@ -26,9 +26,13 @@
 
 /// \file Chaser.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_REF_PTRS(PxrUsdMayaChaser);
 
@@ -60,5 +64,8 @@ public:
     /// \brief Export the data at \p time.
     virtual bool ExportFrame(const UsdTimeCode& time) = 0;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_CHASER_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorXformable.h"
 
 #include "pxr/base/gf/math.h"
@@ -28,6 +29,9 @@
 #include "pxr/base/gf/transform.h"
 
 #include <maya/MVector.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // XXX:
 // This implementation is ported from MfTransformablePrim::
@@ -124,4 +128,7 @@ bool PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
 
     return true;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

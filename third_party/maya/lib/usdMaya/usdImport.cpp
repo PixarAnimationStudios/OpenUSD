@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/usdImport.h"
 
 #include "usdMaya/JobArgs.h"
@@ -36,6 +37,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 usdImport::usdImport(const std::string& assemblyTypeName,
@@ -259,3 +263,6 @@ MStatus usdImport::undoIt()
 
     return (success) ? MS::kSuccess : MS::kFailure;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

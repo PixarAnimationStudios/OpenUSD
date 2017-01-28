@@ -26,12 +26,16 @@
 
 /// \file AttributeConverter.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include <maya/MFnDependencyNode.h>
 
 #include <functional>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief Provides a way to store USD-specific information on a Maya node
 /// as an extra Maya attribute (e.g. "USD_hidden" for the hidden state) when no
@@ -93,5 +97,8 @@ private:
     const MayaToUsdFn _mayaToUsdFn;
     const UsdToMayaFn _usdToMayaFn;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_ATTRIBUTECONVERTER_H

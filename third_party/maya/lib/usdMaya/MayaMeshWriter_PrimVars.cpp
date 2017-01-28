@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
 #include "usdMaya/util.h"
@@ -35,6 +36,9 @@
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MItMeshFaceVertex.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 bool
@@ -567,3 +571,6 @@ bool MayaMeshWriter::_addDisplayPrimvars(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

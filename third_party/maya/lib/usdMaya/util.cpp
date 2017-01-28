@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -54,6 +55,7 @@
 #include <string>
 #include <unordered_map>
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // return seconds per frame
 double PxrUsdMayaUtil::spf()

@@ -24,7 +24,11 @@
 #ifndef _usdExport_MayaNurbsSurfaceWriter_h_
 #define _usdExport_MayaNurbsSurfaceWriter_h_
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomNurbsPatch;
 
@@ -47,5 +51,8 @@ class MayaNurbsSurfaceWriter : public MayaTransformWriter
 };
 
 typedef shared_ptr < MayaNurbsSurfaceWriter > MayaNurbsSurfaceWriterPtr;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // _usdExport_MayaNurbsSurfaceWriter_h_

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "px_vp20/utils.h"
 
 #include "pxr/base/gf/math.h"
@@ -44,6 +45,9 @@
 #include <maya/MStatus.h>
 
 #include <cmath>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
@@ -619,3 +623,6 @@ px_vp20Utils::GetLightingContextFromDrawContext(
 
     return lightingContext;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

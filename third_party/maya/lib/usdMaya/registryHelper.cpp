@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/registryHelper.h"
 #include "usdMaya/debugCodes.h"
 
@@ -32,6 +33,9 @@
 #include "pxr/base/tf/stl.h"
 
 #include <maya/MGlobal.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, 
     (mayaPlugin)
@@ -177,3 +181,6 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

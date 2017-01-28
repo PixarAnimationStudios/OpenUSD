@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/shadingModeImporter.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
 #include <maya/MObject.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 bool
@@ -69,3 +73,6 @@ PxrUsdMayaShadingModeImportContext::AddCreatedObject(
 
     return obj;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

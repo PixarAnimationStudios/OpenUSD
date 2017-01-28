@@ -26,7 +26,11 @@
 
 /// \file AttributeConverterRegistry.h
 
+#include "pxr/pxr.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class AttributeConverter;
 
@@ -41,5 +45,8 @@ struct AttributeConverterRegistry {
     /// \brief Gets a copy of the list of all registered converters.
     static std::vector<const AttributeConverter*> GetAllConverters();
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_ATTRIBUTECONVERTERREGISTRY_H

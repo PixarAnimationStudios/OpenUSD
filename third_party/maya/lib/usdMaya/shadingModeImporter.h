@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_SHADINGMODEIMPORTER_H 
 #define PXRUSDMAYA_SHADINGMODEIMPORTER_H 
 
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderContext.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -33,6 +34,9 @@
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 class PxrUsdMayaShadingModeImportContext
@@ -85,5 +89,8 @@ private:
     PxrUsdMayaPrimReaderContext* _context;
 };
 typedef boost::function< MPlug (PxrUsdMayaShadingModeImportContext*) > PxrUsdMayaShadingModeImporter;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_SHADINGMODEIMPORTER_H 

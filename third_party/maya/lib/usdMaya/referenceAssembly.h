@@ -26,6 +26,7 @@
 
 /// \file referenceAssembly.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
@@ -46,6 +47,9 @@
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/stage.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 extern TfEnvSetting<bool> PIXMAYA_USE_USD_ASSEM_NAMESPACE;
 
@@ -378,5 +382,8 @@ class UsdMayaRepresentationFull : public UsdMayaRepresentationHierBase
 
     virtual MString getType () const { return UsdMayaRepresentationFull::_assemblyType; };
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_REFERENCEASSEMBLY_H

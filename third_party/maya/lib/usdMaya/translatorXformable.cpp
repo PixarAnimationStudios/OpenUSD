@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorXformable.h"
 
 #include "usdMaya/translatorPrim.h"
@@ -43,6 +44,9 @@
 
 #include <boost/assign/list_of.hpp>
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static const std::vector<std::string> _MAYA_OPS = boost::assign::list_of
     ("translate")
@@ -594,4 +598,7 @@ PxrUsdMayaTranslatorXformable::Read(
     }
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

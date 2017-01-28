@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/shadingModeExporter.h"
 
 #include "usdMaya/util.h"
@@ -37,6 +38,9 @@
 #include <maya/MNamespace.h>
 #include <maya/MObjectArray.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
@@ -252,3 +256,6 @@ PxrUsdMayaShadingModeExportContext::GetStandardAttrName(const MPlug& attrPlug) c
     MString mayaPlgName = attrPlug.partialName(false, false, false, false, false, true);
     return mayaPlgName.asChar();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

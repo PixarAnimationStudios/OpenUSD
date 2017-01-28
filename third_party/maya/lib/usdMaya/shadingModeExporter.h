@@ -24,12 +24,16 @@
 #ifndef PXRUSDMAYA_SHADINGMODEEXPORTER_H
 #define PXRUSDMAYA_SHADINGMODEEXPORTER_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/util.h"
 #include "pxr/usd/usd/stage.h"
 
 
 #include <maya/MObject.h>
 #include <boost/function.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class PxrUsdMayaShadingModeExportContext
 {
@@ -82,5 +86,8 @@ private:
 };
 
 typedef boost::function< void (PxrUsdMayaShadingModeExportContext*) > PxrUsdMayaShadingModeExporter;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_SHADINGMODEEXPORTER_H

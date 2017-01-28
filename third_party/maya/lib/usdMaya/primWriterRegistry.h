@@ -26,10 +26,14 @@
 
 /// \file primWriterRegistry.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 
 #include <boost/function.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxrUsdMayaPrimWriterRegistry
 /// \brief Provides functionality to register and lookup usd Maya writer
@@ -85,6 +89,9 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, PxrUsdMayaWriterDumm
     PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, PxrUsdMaya_PrimWriter_##mayaTypeName);\
 }\
 bool PxrUsdMaya_PrimWriter_##mayaTypeName(const PxrUsdMayaPrimWriterArgs& argsVarName, PxrUsdMayaPrimWriterContext* ctxVarName)
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_PRIMWRITERREGISTRY_H
 

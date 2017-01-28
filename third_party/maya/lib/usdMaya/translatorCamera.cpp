@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorCamera.h"
 
 #include "usdMaya/JobArgs.h"
@@ -45,6 +46,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static bool _ReadToCamera(
         const UsdGeomCamera& usdCamera,
@@ -484,3 +488,6 @@ _ReadToCamera(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

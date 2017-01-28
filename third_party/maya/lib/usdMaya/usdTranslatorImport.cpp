@@ -26,6 +26,7 @@
  * \brief file translator for USD files
  */
 
+#include "pxr/pxr.h"
 #include "usdMaya/usdTranslatorImport.h"
 
 #include "usdMaya/JobArgs.h"
@@ -39,6 +40,9 @@
 
 #include <map>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 void* usdTranslatorImport::creator(const std::string& assemblyTypeName,
@@ -138,3 +142,6 @@ usdTranslatorImport::identifyFile(
 
     return retValue;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

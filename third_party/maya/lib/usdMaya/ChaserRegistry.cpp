@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/ChaserRegistry.h"
 
 #include "usdMaya/debugCodes.h"
@@ -28,6 +29,9 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdMayaChaserRegistry::FactoryContext::FactoryContext(
         const UsdStagePtr& stage,
@@ -110,4 +114,7 @@ PxrUsdMayaChaserRegistry::PxrUsdMayaChaserRegistry()
 PxrUsdMayaChaserRegistry::~PxrUsdMayaChaserRegistry()
 {
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

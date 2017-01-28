@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/meshUtil.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -35,6 +36,9 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
@@ -367,3 +371,6 @@ TfToken PxrUsdMayaMeshUtil::setSubdivFVLinearInterpolation(const UsdGeomMesh &pr
 
     return fvLinearInterpolation;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

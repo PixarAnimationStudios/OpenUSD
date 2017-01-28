@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/editUtil.h"
 #include "usdMaya/referenceAssembly.h"
 
@@ -35,6 +36,9 @@
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include <unordered_map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::unordered_map;
 using std::string;
@@ -347,4 +351,7 @@ PxrUsdMayaEditUtil::GetAvarEdits(
     }
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

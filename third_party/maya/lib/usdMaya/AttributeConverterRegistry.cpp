@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/AttributeConverterRegistry.h"
 
 #include "pxr/base/tf/registryManager.h" 
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static std::vector<AttributeConverter*> _reg;
 
@@ -43,3 +47,6 @@ AttributeConverterRegistry::GetAllConverters() {
     }
     return ret;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

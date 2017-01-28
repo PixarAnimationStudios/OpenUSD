@@ -24,7 +24,11 @@
 #ifndef _usdExport_MayaCameraWriter_h_
 #define _usdExport_MayaCameraWriter_h_
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomCamera;
 
@@ -42,5 +46,8 @@ class MayaCameraWriter : public MayaTransformWriter
 };
 
 typedef shared_ptr < MayaCameraWriter > MayaCameraWriterPtr;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // _usdExport_MayaCameraWriter_h_

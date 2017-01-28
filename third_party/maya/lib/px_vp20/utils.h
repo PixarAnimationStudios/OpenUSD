@@ -27,9 +27,13 @@
 #ifndef __PX_VP20_UTILS_H__
 #define __PX_VP20_UTILS_H__
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <maya/MDrawContext.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 class px_vp20Utils
@@ -50,5 +54,8 @@ private:
     ~px_vp20Utils();
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //__PX_VP20_UTILS_H__

@@ -26,6 +26,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 
+#include "pxr/pxr.h"
 #include "pxrUsdMayaGL/proxyDrawOverride.h"
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
@@ -34,6 +35,8 @@
 #include "usdMaya/usdExport.h"
 #include "usdMaya/usdTranslatorImport.h"
 #include "usdMaya/usdTranslatorExport.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static PxrUsdMayaPluginStaticData& _data(PxrUsdMayaPluginStaticData::pxrUsd);
 
@@ -221,3 +224,4 @@ MStatus uninitializePlugin(
     return status;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

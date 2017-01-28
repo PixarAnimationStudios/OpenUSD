@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/editUtil.h"
 
 #include "usdMaya/util.h"
@@ -38,6 +39,9 @@
 #include <maya/MString.h>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace std;
 using namespace boost::python;
@@ -263,3 +267,6 @@ void wrapEditUtil()
         ;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -48,6 +49,8 @@
 
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
 #include "usdMaya/shadingModePxrRis_rfm_map.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace _exporter {
 
@@ -323,3 +326,4 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
     return MPlug();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

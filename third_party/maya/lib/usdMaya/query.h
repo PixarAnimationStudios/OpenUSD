@@ -24,11 +24,15 @@
 #ifndef USD_MAYA_QUERY_H
 #define USD_MAYA_QUERY_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 struct PxrUsdMayaQuery
 {
@@ -38,5 +42,8 @@ struct PxrUsdMayaQuery
     static std::string ResolvePath(const std::string &filePath);
     static void ReloadStage(const std::string& shapeName);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_MAYA_QUERY_H

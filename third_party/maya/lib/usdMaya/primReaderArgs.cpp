@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderArgs.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const UsdPrim& prim,
@@ -76,3 +80,6 @@ PxrUsdMayaPrimReaderArgs::GetEndTime() const
 {
     return _endTime;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

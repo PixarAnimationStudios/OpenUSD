@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
 
 #include "pxr/usd/usdGeom/nurbsPatch.h"
@@ -35,6 +36,9 @@
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MTrimBoundaryArray.h>
 #include <maya/MPointArray.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
         MDagPath & iDag, 
@@ -444,3 +448,6 @@ MayaNurbsSurfaceWriter::exportsGprims() const
     return true;
 }
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

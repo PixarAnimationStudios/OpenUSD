@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_PROXYSHAPE_H
 #define PXRUSDMAYA_PROXYSHAPE_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/usdPrimProvider.h"
 
 #include <maya/MPxSurfaceShape.h>
@@ -35,6 +36,9 @@
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/path.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 extern TfEnvSetting<bool> PIXMAYA_ENABLE_BOUNDING_BOX_MODE;
@@ -173,4 +177,7 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         
 	bool _useFastPlayback;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXRUSDMAYA_PROXYSHAPE_H

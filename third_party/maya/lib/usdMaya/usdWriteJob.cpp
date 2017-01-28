@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/usdWriteJob.h"
 
 #include "usdMaya/JobArgs.h"
@@ -68,6 +69,9 @@
 #include <limits>
 #include <map>
 #include <unordered_set>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 usdWriteJob::usdWriteJob(const JobExportArgs & iArgs) :
     mArgs(iArgs), mModelKindWriter(iArgs)
@@ -597,4 +601,7 @@ void usdWriteJob::postCallback()
     }
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

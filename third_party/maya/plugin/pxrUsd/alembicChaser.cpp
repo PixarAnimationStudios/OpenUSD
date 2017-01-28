@@ -25,6 +25,7 @@
 #include "usdMaya/ChaserRegistry.h"
 #include "usdMaya/writeUtil.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -45,6 +46,8 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens, 
@@ -429,3 +432,4 @@ PXRUSDMAYA_DEFINE_CHASER_FACTORY(alembic, ctx)
             primvarPrefixes);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

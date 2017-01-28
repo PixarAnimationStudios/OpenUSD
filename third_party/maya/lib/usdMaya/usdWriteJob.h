@@ -26,6 +26,7 @@
 
 /// \file usdWriteJob.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/Chaser.h"
 
 #include "usdMaya/util.h"
@@ -33,6 +34,9 @@
 #include "usdMaya/ModelKindWriter.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class usdWriteJob
 {
@@ -83,4 +87,7 @@ class usdWriteJob
 };
 
 typedef shared_ptr < usdWriteJob > usdWriteJobPtr;
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXRUSDMAYA_USDWRITEJOB_H

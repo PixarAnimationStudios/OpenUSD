@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/debugCodes.h"
 #include "usdMaya/registryHelper.h"
@@ -29,6 +30,9 @@
 #include "pxr/base/tf/stl.h"
 
 #include <boost/assign.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (UsdMaya)
@@ -83,4 +87,7 @@ PxrUsdMayaPrimWriterRegistry::Find(
     }
     return ret;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

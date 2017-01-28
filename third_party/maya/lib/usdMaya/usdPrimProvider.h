@@ -24,7 +24,11 @@
 #ifndef USD_MAYA_USDPRIMPROVIDER_H
 #define USD_MAYA_USDPRIMPROVIDER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // interface class 
 class PxrUsdMayaUsdPrimProvider
@@ -35,5 +39,8 @@ public:
 
     virtual ~PxrUsdMayaUsdPrimProvider();
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_MAYA_USDPRIMPROVIDER_H

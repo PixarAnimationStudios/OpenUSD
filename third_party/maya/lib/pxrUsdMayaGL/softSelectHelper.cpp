@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/tf/stl.h"
@@ -30,6 +31,9 @@
 #include <maya/MItSelectionList.h>
 #include <maya/MRichSelection.h>
 #include <maya/MSelectionList.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdMayaGLSoftSelectHelper::UsdMayaGLSoftSelectHelper()
     : _populated(false)
@@ -136,3 +140,6 @@ UsdMayaGLSoftSelectHelper::GetFalloffColor(
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
