@@ -187,7 +187,7 @@ HdEngine::CreateContextWithDefaults()
     GalDelegate *galDelegate = nullptr;
     // Gal is optional, so default could be empty.
     if (defaultGalId.IsEmpty()) {
-        defaultGalId == HdDelegateTokens->none;
+        defaultGalId = HdDelegateTokens->none;
     } else {
         // Gal could be explicitly disabled.
         if (defaultGalId != HdDelegateTokens->none)
