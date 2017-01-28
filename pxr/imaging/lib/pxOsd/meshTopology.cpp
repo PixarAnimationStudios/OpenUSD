@@ -37,16 +37,14 @@ PxOsdMeshTopology::PxOsdMeshTopology() :
     _orientation(PxOsdOpenSubdivTokens->rightHanded),
     _faceVertexCounts(),
     _faceVertexIndices(),
-    _holeIndices(),
-    _subdivTags() { }
+    _holeIndices() { }
 
 PxOsdMeshTopology::PxOsdMeshTopology(PxOsdMeshTopology const & src) :
     _scheme(src._scheme),
     _orientation(src._orientation),
     _faceVertexCounts(src._faceVertexCounts),
     _faceVertexIndices(src._faceVertexIndices),
-    _holeIndices(src._holeIndices),
-    _subdivTags(src._subdivTags) { }
+    _holeIndices(src._holeIndices) { }
 
 PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
                                      TfToken orientation,
@@ -55,9 +53,7 @@ PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
     _scheme(scheme),
     _orientation(orientation),
     _faceVertexCounts(faceVertexCounts),
-    _faceVertexIndices(faceVertexIndices),
-    _holeIndices(),
-    _subdivTags() { }
+    _faceVertexIndices(faceVertexIndices) { }
 
 PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
                                      TfToken orientation,
@@ -67,9 +63,7 @@ PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
     _scheme(scheme),
     _orientation(orientation),
     _faceVertexCounts(faceVertexCounts),
-    _faceVertexIndices(faceVertexIndices),
-    _holeIndices(),
-    _subdivTags() {
+    _faceVertexIndices(faceVertexIndices) {
 
     SetHoleIndices(holeIndices);
 }
