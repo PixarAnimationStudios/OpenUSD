@@ -24,8 +24,12 @@
 #ifndef GAL_DELEGATE_REGISTRY_H
 #define GAL_DELEGATE_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginDelegateRegistry.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GalDelegate;
 
@@ -72,6 +76,9 @@ GalDelegateRegistry::Define()
 {
     HfPluginDelegateRegistry::Define<T, GalDelegate, Bases...>();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //GAL_DELEGATE_REGISTRY_H
 

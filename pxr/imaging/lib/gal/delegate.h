@@ -24,7 +24,11 @@
 #ifndef GAL_DELEGATE_H
 #define GAL_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hf/pluginDelegateBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class GalDelegate
 ///
@@ -45,5 +49,8 @@ private:
     GalDelegate(const GalDelegate &)            = delete;
     GalDelegate &operator=(const GalDelegate &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //GAL_DELEGATE_H

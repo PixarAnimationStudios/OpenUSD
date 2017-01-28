@@ -26,6 +26,9 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GalDelegate>();
@@ -43,3 +46,6 @@ TF_REGISTRY_FUNCTION(TfType)
 // the body of the deleter is provided here, so a vtable is created
 // in this compilation unit.
 GalDelegate::~GalDelegate() = default;
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
