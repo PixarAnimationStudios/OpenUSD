@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -42,6 +43,9 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/task.h>
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Thread-local Xform cache.
 // This should be replaced with (TBD) multi-threaded XformCache::Prepopulate
@@ -541,7 +545,7 @@ UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
 
 template <class AttributeOrQuery>
 static bool
-_IsVarying(const UsdTimeCode time, const AttributeOrQuery& attr) 
+_IsVaryingImpl(const UsdTimeCode time, const AttributeOrQuery& attr) 
 {
     // XXX: Copied from UsdImagingDelegate::_TrackVariability.
     // XXX: This logic is highly sensitive to the underlying quantization of
@@ -588,13 +592,13 @@ _IsVarying(const UsdTimeCode time, const AttributeOrQuery& attr)
 bool
 UsdGeomBBoxCache::_IsVarying(const UsdAttribute& attr)
 {
-    return ::_IsVarying(_time, attr);
+    return _IsVaryingImpl(_time, attr);
 }
 
 bool 
 UsdGeomBBoxCache::_IsVarying(const UsdAttributeQuery& query)
 {
-    return ::_IsVarying(_time, query);
+    return _IsVaryingImpl(_time, query);
 }
 
 // Returns true if the given prim is a component or a subcomponent.
@@ -1305,3 +1309,6 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         TfStringify(_GetCombinedBBoxForIncludedPurposes(*bboxes)).c_str(),
         entry->isVarying ? "true" : "false");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

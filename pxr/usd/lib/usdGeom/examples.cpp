@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformOp.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 //! [CreateMatrixWithDefault]
 bool CreateMatrixWithDefault(UsdGeomXformable const &gprim, GfMatrix4d const &defValue)
@@ -96,3 +100,6 @@ bool CreateAnimatedTransform(UsdGeomXformable const &gprim,
     return true;
 }
 //! [CreateAnimatedTransform]
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

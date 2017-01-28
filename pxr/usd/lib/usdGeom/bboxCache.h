@@ -24,12 +24,16 @@
 #ifndef USDGEOM_BBOXCACHE_H
 #define USDGEOM_BBOXCACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/tf/hashmap.h"
 
 #include <boost/shared_array.hpp>
-#include "pxr/base/tf/hashmap.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomModelAPI;
 class UsdGeomPointBased;
@@ -305,5 +309,8 @@ private:
     UsdGeomXformCache   _ctmCache;
     _PrimBBoxHashMap    _bboxCache;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDGEOM_BBOXCACHE_H

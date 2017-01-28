@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -28,6 +29,9 @@
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::set;
 using std::string;
@@ -458,3 +462,6 @@ UsdGeomFaceSetAPI::AppendFaceGroup(const VtIntArray &indices,
     return success && SetFaceCounts(faceCounts, time) && 
            SetFaceIndices(faceIndices, time);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

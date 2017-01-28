@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include "pxr/base/gf/rotation.h"
@@ -28,6 +29,9 @@
 
 #include <boost/assign/list_of.hpp>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 
@@ -868,3 +872,6 @@ UsdGeomXformCommonAPI::SetScale(
 
     return _xformable.SetXformOpOrder(_xformOps, GetResetXformStack());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

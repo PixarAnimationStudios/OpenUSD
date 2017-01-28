@@ -3439,7 +3439,7 @@ class Camera "Camera" (
                  (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
                  are the coordinates in the camera's space."""
     )
-    float2 clippingRange = (1, 1e+06) (
+    float2 clippingRange = (1, 1000000) (
         doc = """Near and far clipping distances in centimeters (or, more
                  general, world units)."""
     )

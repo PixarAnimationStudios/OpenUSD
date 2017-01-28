@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -35,6 +36,9 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // XXX Backwards-compatibility code for transitioning from customData["zUp"]
 // XXX encoding to newer, permanent upAxis metadata.
@@ -201,4 +205,7 @@ UsdGeomGetFallbackUpAxis()
 {
     return *_fallbackUpAxis;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

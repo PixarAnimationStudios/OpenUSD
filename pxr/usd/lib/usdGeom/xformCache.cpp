@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "pxr/base/tracelite/trace.h"
 
 #include "pxr/base/tf/diagnostic.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 UsdGeomXformCache::UsdGeomXformCache(const UsdTimeCode time)
@@ -215,3 +219,6 @@ UsdGeomXformCache::Swap(UsdGeomXformCache& other)
     std::swap(_time, other._time);
     std::swap(_worldPath, other._worldPath);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

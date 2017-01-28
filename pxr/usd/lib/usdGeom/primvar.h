@@ -24,11 +24,15 @@
 #ifndef USDGEOM_PRIMVAR_H
 #define USDGEOM_PRIMVAR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdGeomPrimvar
 ///
@@ -642,5 +646,8 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
     }
     return success;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIMVAR_H

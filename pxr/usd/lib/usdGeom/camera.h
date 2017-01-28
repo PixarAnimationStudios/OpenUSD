@@ -26,6 +26,7 @@
 
 /// \file usdGeom/camera.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -41,6 +42,8 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
 
@@ -296,7 +299,7 @@ public:
     /// \n  C++ Type: GfVec2f
     /// \n  Usd Type: SdfValueTypeNames->Float2
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 1e+06)
+    /// \n  Fallback Value: (1, 1000000)
     UsdAttribute GetClippingRangeAttr() const;
 
     /// See GetClippingRangeAttr(), and also 
@@ -436,8 +439,10 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class declaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
@@ -454,5 +459,7 @@ public:
     ///
     void SetFromCamera(const GfCamera &camera, const UsdTimeCode &time);
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
@@ -29,6 +30,9 @@
 #include "pxr/base/tf/staticTokens.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -490,4 +494,7 @@ UsdGeomPrimvar::Get(
 
     return _attr.Get(value, time);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
