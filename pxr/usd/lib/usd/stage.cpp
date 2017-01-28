@@ -1657,11 +1657,21 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path)
 }
 
 bool
-UsdStage::_IsValidForLoadUnload(const SdfPath& path) const
+UsdStage::_IsValidForUnload(const SdfPath& path) const
 {
     if (!path.IsAbsolutePath()) {
         TF_CODING_ERROR("Attempted to load/unload a relative path <%s>",
                         path.GetText());
+        return false;
+    }
+
+    return true;
+}
+
+bool
+UsdStage::_IsValidForLoad(const SdfPath& path) const
+{
+    if (!_IsValidForUnload(path)) {
         return false;
     }
 
@@ -1681,7 +1691,7 @@ UsdStage::_IsValidForLoadUnload(const SdfPath& path) const
         // We walked up to the absolute root without finding anything
         // report error.
         if (parentPath == SdfPath::AbsoluteRootPath()) {
-            TF_RUNTIME_ERROR("Attempt to load/unload a path <%s> which is not "
+            TF_RUNTIME_ERROR("Attempt to load a path <%s> which is not "
                              "present in the stage",
                     path.GetString().c_str());
             return false;
@@ -1689,18 +1699,53 @@ UsdStage::_IsValidForLoadUnload(const SdfPath& path) const
     }
 
     if (!curPrim.IsActive()) {
-        TF_WARN("Attempt to load/unload an inactive path <%s>",
-                path.GetString().c_str());
+        TF_CODING_ERROR("Attempt to load an inactive path <%s>",
+                        path.GetString().c_str());
         return false;
     }
 
     if (curPrim.IsMaster()) {
-        TF_RUNTIME_ERROR("Attempt to load/unload instance master <%s>",
-                         path.GetString().c_str());
+        TF_CODING_ERROR("Attempt to load instance master <%s>",
+                        path.GetString().c_str());
         return false;
     }
 
     return true;
+}
+
+template <class Callback>
+void
+UsdStage::_WalkPrimsWithMasters(
+    const SdfPath& rootPath, Callback const &cb) const
+{
+    tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> seenMasterPrimPaths;
+    if (UsdPrim root = GetPrimAtPath(rootPath))
+        _WalkPrimsWithMastersImpl(root, cb, &seenMasterPrimPaths);
+}
+
+template <class Callback>
+void
+UsdStage::_WalkPrimsWithMastersImpl(
+    UsdPrim const &prim,
+    Callback const &cb,
+    tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> *seenMasterPrimPaths
+    ) const
+{
+    UsdTreeIterator childIt = UsdTreeIterator::AllPrims(prim);
+    WorkParallelForEach(
+        childIt, childIt.GetEnd(),
+        [=](UsdPrim const &child) {
+            cb(child);
+            if (child.IsInstance()) {
+                const UsdPrim masterPrim = child.GetMaster();
+                if (TF_VERIFY(masterPrim) and 
+                    seenMasterPrimPaths->insert(masterPrim.GetPath()).second) {
+                    // Recurse.
+                    _WalkPrimsWithMastersImpl(
+                        masterPrim, cb, seenMasterPrimPaths);
+                }
+            }
+        });
 }
 
 void
@@ -1709,19 +1754,31 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
                             bool unloadedOnly,
                             SdfPathSet* usdPrimPaths) const
 {
-    tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> seenMasterPrimPaths;
     tbb::concurrent_vector<SdfPath> primIndexPathsVec;
     tbb::concurrent_vector<SdfPath> usdPrimPathsVec;
 
-    UsdPrim root = GetPrimAtPath(rootPath);
-    if (!root)
-        return;
-
-    _DiscoverPayloadsInternal(root,
-                              primIndexPaths ? &primIndexPathsVec : nullptr,
-                              unloadedOnly,
-                              usdPrimPaths ? &usdPrimPathsVec : nullptr,
-                              &seenMasterPrimPaths);
+    _WalkPrimsWithMasters(
+        rootPath,
+        [this, unloadedOnly, primIndexPaths, usdPrimPaths,
+         &primIndexPathsVec, &usdPrimPathsVec]
+        (UsdPrim const &prim) {
+            // Inactive prims are never included in this query.  Masters are
+            // also never included, since they aren't independently loadable.
+            if (not prim.IsActive() or prim.IsMaster())
+                return;
+            
+            if (prim._GetSourcePrimIndex().HasPayload()) {
+                SdfPath const &payloadIncludePath =
+                    prim._GetSourcePrimIndex().GetPath();
+                if (not unloadedOnly or
+                    not _cache->IsPayloadIncluded(payloadIncludePath)) {
+                    if (primIndexPaths)
+                        primIndexPathsVec.push_back(payloadIncludePath);
+                    if (usdPrimPaths)
+                        usdPrimPathsVec.push_back(prim.GetPath());
+                }
+            }
+        });
 
     // Copy stuff out.
     if (primIndexPaths) {
@@ -1731,51 +1788,6 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
     if (usdPrimPaths) {
         usdPrimPaths->insert(usdPrimPathsVec.begin(), usdPrimPathsVec.end());
     }
-}
-
-void
-UsdStage::_DiscoverPayloadsInternal(
-    UsdPrim const &prim,
-    tbb::concurrent_vector<SdfPath> *primIndexPaths,
-    bool unloadedOnly,
-    tbb::concurrent_vector<SdfPath> *usdPrimPaths,
-    tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> *seenMasterPrimPaths
-    ) const
-{
-    UsdTreeIterator childIt = UsdTreeIterator::AllPrims(prim);
-    
-    WorkParallelForEach(
-        childIt, childIt.GetEnd(),
-        [=](UsdPrim const &child) {
-            // Inactive prims are never included in this query.
-            // Masters are also never included, since they aren't
-            // independently loadable.
-            if (!child.IsActive() || child.IsMaster())
-                return;
-
-            if (child._GetSourcePrimIndex().HasPayload()) {
-                const SdfPath& payloadIncludePath = 
-                    child._GetSourcePrimIndex().GetPath();
-                if (!unloadedOnly ||
-                    !_cache->IsPayloadIncluded(payloadIncludePath)) {
-                    if (primIndexPaths)
-                        primIndexPaths->push_back(payloadIncludePath);
-                    if (usdPrimPaths)
-                        usdPrimPaths->push_back(child.GetPath());
-                }
-            }
-
-            if (child.IsInstance()) {
-                const UsdPrim masterPrim = child.GetMaster();
-                if (TF_VERIFY(masterPrim) && 
-                    seenMasterPrimPaths->insert(masterPrim.GetPath()).second) {
-                    // Recurse.
-                    _DiscoverPayloadsInternal(
-                        masterPrim, primIndexPaths, unloadedOnly, usdPrimPaths,
-                        seenMasterPrimPaths);
-                }
-            }
-        });
 }
 
 void
@@ -1863,6 +1875,7 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
                                aggregateLoads.begin(), aggregateLoads.end());
     pathsToRecomposeVec.insert(pathsToRecomposeVec.begin(),
                                aggregateUnloads.begin(), aggregateUnloads.end());
+    SdfPath::RemoveDescendentPaths(&pathsToRecomposeVec);
     UsdNotice::ObjectsChanged(self, &pathsToRecomposeVec, &otherPaths)
                .Send(self);
 }
@@ -1876,29 +1889,61 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
     // Include implicit (recursive or ancestral) related payloads in both sets.
     SdfPathSet finalLoadSet, finalUnloadSet;
 
-    // It's important that we do not included payloads that were previously
+    // It's important that we do not include payloads that were previously
     // loaded because we need to iterate and will enter an infinite loop if we
     // do not reduce the load set on each iteration. This manifests below in
     // the unloadedOnly=true argument.
-    for (const auto& path : loadSet) {
-        if (!_IsValidForLoadUnload(path)) {
+    for (auto const &path : loadSet) {
+        if (!_IsValidForLoad(path)) {
             continue;
         }
-
-        _DiscoverPayloads(path, &finalLoadSet, true /*unloadedOnly*/);
-        _DiscoverAncestorPayloads(path, &finalLoadSet, true /*unloadedOnly*/);
+        _DiscoverPayloads(path, &finalLoadSet, /*unloadedOnly=*/true);
+        _DiscoverAncestorPayloads(path, &finalLoadSet, /*unloadedOnly=*/true);
     }
 
     // Recursively populate the unload set.
-    for (const auto& path : unloadSet) {
-        if (!_IsValidForLoadUnload(path)) {
+    SdfPathVector unloadPruneSet;
+    for (auto const &path: unloadSet) {
+        if (!_IsValidForUnload(path)) {
             continue;
         }
 
-        // PERFORMANCE: This should exclude any paths in the load set,
-        // to avoid unloading and then reloading the same path.
-        _DiscoverPayloads(path, &finalUnloadSet);
+        // Find all the prim index paths including recursively in masters.  Then
+        // the payload exclude set is everything in pcp's payload set prefixed
+        // by these paths.
+        tbb::concurrent_vector<SdfPath> unloadIndexPaths;
+        _WalkPrimsWithMasters(
+            path,
+            [this, &unloadIndexPaths] (UsdPrim const &prim) {
+                if (prim.IsInMaster() && prim.HasPayload()) {
+                    unloadIndexPaths.push_back(
+                        prim._GetSourcePrimIndex().GetPath());
+                }
+            });
+        UsdPrim prim = GetPrimAtPath(path);
+        if (prim && !prim.IsInMaster())
+            unloadPruneSet.push_back(prim._GetSourcePrimIndex().GetPath());
+        unloadPruneSet.insert(unloadPruneSet.end(),
+                              unloadIndexPaths.begin(), unloadIndexPaths.end());
     }
+    TF_DEBUG(USD_PAYLOADS).Msg("PAYLOAD: unloadPruneSet: %s\n",
+                               TfStringify(unloadPruneSet).c_str());
+    SdfPath::RemoveDescendentPaths(&unloadPruneSet);
+
+    // Now get the current load set and find everything that's prefixed by
+    // something in unloadPruneSet.  That's the finalUnloadSet.
+    SdfPathSet curLoadSet = _cache->GetIncludedPayloads(); //GetLoadSet();
+    SdfPathVector curLoadVec(curLoadSet.begin(), curLoadSet.end());
+    curLoadVec.erase(
+        std::remove_if(
+            curLoadVec.begin(), curLoadVec.end(),
+            [&unloadPruneSet](SdfPath const &path) {
+                return SdfPathFindLongestPrefix(
+                    unloadPruneSet.begin(), unloadPruneSet.end(), path) ==
+                    unloadPruneSet.end();
+            }),
+        curLoadVec.end());
+    finalUnloadSet.insert(curLoadVec.begin(), curLoadVec.end());
 
     // If we aren't changing the load set, terminate recursion.
     if (finalLoadSet.empty() && finalUnloadSet.empty()) {
@@ -2049,9 +2094,10 @@ UsdStage::GetMasters() const
     vector<UsdPrim> masterPrims;
     for (const auto& path : masterPaths) {
         UsdPrim p = GetPrimAtPath(path);
-        if (TF_VERIFY(p)) {
+        if (TF_VERIFY(p, "Failed to find prim at master path <%s>.\n",
+                      path.GetText())) {
             masterPrims.push_back(p);
-        }
+        }                   
     }
     return masterPrims;
 }
