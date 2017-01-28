@@ -25,7 +25,6 @@
 #define USDOBJ_FILE_FORMAT_H
 
 #include "pxr/pxr.h"
-#include "Python.h" 
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
