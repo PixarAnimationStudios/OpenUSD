@@ -22,6 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 include(Version)
+include(CXXDefaults)
 
 function(_install_headers LIBRARY_NAME)
     set(options  "")
@@ -91,10 +92,6 @@ endfunction() # _plugInfo_subst
 
 # Generate a namespace declaration header, pxr.h at the top level of pxr.
 function(_pxrNamespace_subst)
-    set(PXR_USE_NAMESPACES "0")
-    set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
-    set(PXR_EXTERNAL_NAMESPACE "pxr")
-
     # Generate the pxr.h file at configuration time
     configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
         ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
