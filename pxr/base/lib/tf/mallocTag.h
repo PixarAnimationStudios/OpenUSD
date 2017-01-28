@@ -539,16 +539,14 @@ PXR_NAMESPACE_CLOSE_SCOPE
     }                                                                         \
                                                                               \
     inline void* operator new(::std::size_t s) {                              \
-        PXR_NAMESPACE_USING_DIRECTIVE                                         \
-        TfAutoMallocTag tag1(name1);                                          \
-        TfAutoMallocTag tag2(name2);                                          \
+        PXR_NS::TfAutoMallocTag tag1(name1);                                  \
+        PXR_NS::TfAutoMallocTag tag2(name2);                                  \
         return malloc(s);                                                     \
     }                                                                         \
                                                                               \
     inline void* operator new[](::std::size_t s) {                            \
-        PXR_NAMESPACE_USING_DIRECTIVE                                         \
-        TfAutoMallocTag tag1(name1);                                          \
-        TfAutoMallocTag tag2(name2);                                          \
+        PXR_NS::TfAutoMallocTag tag1(name1);                                  \
+        PXR_NS::TfAutoMallocTag tag2(name2);                                  \
         return malloc(s);                                                     \
     }                                                                         \
                                                                               \

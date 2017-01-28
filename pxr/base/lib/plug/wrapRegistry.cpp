@@ -204,13 +204,13 @@ void wrapRegistry()
     class_<This, TfWeakPtr<This>, boost::noncopyable>
         ("Registry", no_init)
         .def(TfPySingleton())
-        .def("RegisterPlugins", &::_RegisterPlugins,
+        .def("RegisterPlugins", &_RegisterPlugins,
             return_value_policy<TfPySequenceToList>())
-        .def("RegisterPlugins", &::_RegisterPluginsList,
+        .def("RegisterPlugins", &_RegisterPluginsList,
             return_value_policy<TfPySequenceToList>())
-        .def("GetStringFromPluginMetaData", &::_GetStringFromPluginMetaData)
+        .def("GetStringFromPluginMetaData", &_GetStringFromPluginMetaData)
         .def("GetPluginWithName", &This::GetPluginWithName)
-        .def("GetPluginForType", &::_GetPluginForType)
+        .def("GetPluginForType", &_GetPluginForType)
         .def("GetAllPlugins", &This::GetAllPlugins,
              return_value_policy<TfPySequenceToList>())
 

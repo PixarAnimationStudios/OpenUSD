@@ -1228,11 +1228,10 @@ swap(TfRefPtr<T>& lhs, TfRefPtr<T>& rhs)
 PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace boost {
-PXR_NAMESPACE_USING_DIRECTIVE
 
 template<typename T>
 T *
-get_pointer(TfRefPtr<T> const& p)
+get_pointer(PXR_NS::TfRefPtr<T> const& p)
 {
     return get_pointer(p);
 }

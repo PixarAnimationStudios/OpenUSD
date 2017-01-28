@@ -43,14 +43,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace {
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 // A custom deleter for shared_ptr<boost::python::object> that takes the
 // python lock before deleting the python object.  This is necessary since it's
 // invalid to decrement the python refcount without holding the lock.
 struct _DeleteObjectWithLock {
     void operator()(boost::python::object *obj) const {
-        TfPyLock lock;
+        PXR_NS::TfPyLock lock;
         delete obj;
     }
 };

@@ -46,7 +46,6 @@
 // Declare classes in Boost.Python which need to know about TfWeakPtr.
 //
 namespace boost { namespace python { namespace objects {
-PXR_NAMESPACE_USING_DIRECTIVE
 template <class P, class V> struct pointer_holder;
 }}} // end namespace boost
 

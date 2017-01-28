@@ -232,10 +232,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // Specialize has_back_reference<> so that boost.python will pass
 // PyObject* as the 1st argument to TfPyPolymorphic's ctor.
 namespace boost { namespace python {
-PXR_NAMESPACE_USING_DIRECTIVE
-
     template <typename T>
-    struct has_back_reference< TfPyPolymorphic<T> >
+    struct has_back_reference< PXR_NS::TfPyPolymorphic<T> >
         : mpl::true_ {};
 }} // end namespace boost
 

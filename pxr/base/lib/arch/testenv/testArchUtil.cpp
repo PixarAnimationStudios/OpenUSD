@@ -51,7 +51,8 @@ static const char* crashArgument[] = {
 #endif
 
 using namespace std;
-PXR_NAMESPACE_USING_DIRECTIVE
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -209,3 +210,5 @@ ArchTestCrashArgParse(int argc, char** argv)
     // Non-windows platforms don't need this.
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

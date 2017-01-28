@@ -64,12 +64,10 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // Koenig lookup to work.
 namespace std {
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 /// Output an STL vector using [ ] as delimiters.
 /// \ingroup group_tf_DebuggingOutput
 template <class T>
-typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::vector<T> &v)
 {
     out << "[ ";
@@ -83,7 +81,7 @@ operator<<(std::ostream &out, const std::vector<T> &v)
 /// Output an STL set using ( ) as delimiters.
 /// \ingroup group_tf_DebuggingOutput
 template <class T>
-typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::set<T> &v)
 {
     out << "( ";
@@ -97,7 +95,7 @@ operator<<(std::ostream &out, const std::set<T> &v)
 /// Output an STL list using { } as delimiters.
 /// \ingroup group_tf_DebuggingOutput
 template <class T>
-typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::list<T> &l)
 {
     out << "{ ";
@@ -112,7 +110,7 @@ operator<<(std::ostream &out, const std::list<T> &l)
 /// \ingroup group_tf_DebuggingOutput
 template <class K, class M, class H, class C, class A>
 typename std::enable_if<
-    Tf_IsOstreamable<K>() && Tf_IsOstreamable<M>(), std::ostream &>::type
+    PXR_NS::Tf_IsOstreamable<K>() && PXR_NS::Tf_IsOstreamable<M>(), std::ostream &>::type
 operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
 {
     out << "< ";
@@ -126,7 +124,7 @@ operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
 /// \ingroup group_tf_DebuggingOutput
 template <class K, class M>
 typename std::enable_if<
-    Tf_IsOstreamable<K>() && Tf_IsOstreamable<M>(), std::ostream &>::type
+    PXR_NS::Tf_IsOstreamable<K>() && PXR_NS::Tf_IsOstreamable<M>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::map<K, M> &h)
 {
     out << "< ";

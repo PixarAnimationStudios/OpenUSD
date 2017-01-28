@@ -47,17 +47,16 @@
 // Specializations for boost::python::pointee and get_pointer for TfRefPtr and
 // TfWeakPtr.
 namespace boost { namespace python {
-PXR_NAMESPACE_USING_DIRECTIVE
 
 // TfWeakPtrFacade
 template <template <class> class X, class Y>
-struct pointee< TfWeakPtrFacade<X, Y> > {
+struct pointee< PXR_NS::TfWeakPtrFacade<X, Y> > {
     typedef Y type;
 };
 
 // TfRefPtr
 template <typename T>
-struct pointee< TfRefPtr<T> > {
+struct pointee< PXR_NS::TfRefPtr<T> > {
     typedef T type;
 };
 
