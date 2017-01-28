@@ -96,6 +96,17 @@ MStatus initializePlugin(
     status = MGlobal::sourceFile("usdMaya.mel");
     CHECK_MSTATUS(status);
 
+    // Set the label for the assembly node type so that it appears correctly
+    // in the 'Create -> Scene Assembly' menu.
+    const MString assemblyTypeLabel("UsdReferenceAssembly");
+    MString setLabelCmd;
+    status = setLabelCmd.format("assembly -e -type ^1s -label ^2s",
+                                _data.referenceAssembly.typeName,
+                                assemblyTypeLabel);
+    CHECK_MSTATUS(status);
+    status = MGlobal::executeCommand(setLabelCmd);
+    CHECK_MSTATUS(status);
+
     // Procs stored in usdMaya.mel
     // Add assembly callbacks for accessing data without creating an MPxAssembly instance
     status = MGlobal::executeCommand("assembly -e -repTypeLabelProc usdMaya_UsdMayaReferenceAssembly_repTypeLabel -type " + _data.referenceAssembly.typeName);
