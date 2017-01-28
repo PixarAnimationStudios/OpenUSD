@@ -682,18 +682,11 @@ PxrUsdKatanaReadPrim(
 
     TfToken visibility;
     UsdGeomImageable imageable = UsdGeomImageable(prim);
-    UsdAttribute visibilityAttr = imageable.GetVisibilityAttr();
-    if (imageable && visibilityAttr.HasAuthoredValueOpinion() &&
-        !visibilityAttr.GetResolveInfo().ValueIsBlocked())
+    if (imageable && imageable.GetVisibilityAttr().Get(&visibility, currentTime))
     {
-        visibilityAttr.Get(&visibility, currentTime);
         if (visibility == UsdGeomTokens->invisible)
         {
             attrs.set("visible", FnKat::IntAttribute(0));
-        }
-        else if (visibility == UsdGeomTokens->inherited)
-        {
-            attrs.set("visible", FnKat::IntAttribute(1));
         }
     }
 
