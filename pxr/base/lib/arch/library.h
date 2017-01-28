@@ -35,11 +35,17 @@
 #   define ARCH_LIBRARY_NOW     RTLD_NOW
 #   define ARCH_LIBRARY_LOCAL   RTLD_LOCAL
 #   define ARCH_LIBRARY_GLOBAL  RTLD_GLOBAL
+#   if defined(ARCH_OS_DARWIN)
+#       define ARCH_LIBRARY_SUFFIX  ".dylib"
+#   else
+#       define ARCH_LIBRARY_SUFFIX  ".so"
+#   endif
 #else
 #   define ARCH_LIBRARY_LAZY    0
 #   define ARCH_LIBRARY_NOW     0
 #   define ARCH_LIBRARY_LOCAL   0
 #   define ARCH_LIBRARY_GLOBAL  0
+#   define ARCH_LIBRARY_SUFFIX  ".dll"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
