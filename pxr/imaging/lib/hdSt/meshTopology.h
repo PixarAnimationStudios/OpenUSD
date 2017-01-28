@@ -24,11 +24,15 @@
 #ifndef HDST_MESH_TOPOLOGY_H
 #define HDST_MESH_TOPOLOGY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/meshTopology.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdResourceRegistry;
 class HdSt_Subdivision;
@@ -203,5 +207,8 @@ private:
     HdSt_MeshTopology(const HdSt_MeshTopology &)             = delete;
     HdSt_MeshTopology &operator =(const HdSt_MeshTopology &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDST_MESH_TOPOLOGY_H

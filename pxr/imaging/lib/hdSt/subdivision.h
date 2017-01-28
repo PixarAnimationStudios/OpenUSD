@@ -24,6 +24,7 @@
 #ifndef HDST_SUBDIVISION_H
 #define HDST_SUBDIVISION_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferResource.h"
@@ -37,6 +38,9 @@
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class Hd_Subdivision
 ///
@@ -334,5 +338,8 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::AddBufferSpecs(HdBufferSpecVector *spe
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDST_SUBDIVISION_H

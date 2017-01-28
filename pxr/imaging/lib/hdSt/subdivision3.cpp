@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/subdivision3.h"
@@ -51,7 +52,11 @@
 
 #include <boost/scoped_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 typedef OpenSubdiv::Osd::CpuVertexBuffer HdSt_OsdCpuVertexBuffer;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // There's a buffer synchronization bug in driver 331, and apparently fixed in 334.
 // Don't enable compute shader kernel until driver updates.
@@ -60,15 +65,26 @@ typedef OpenSubdiv::Osd::CpuVertexBuffer HdSt_OsdCpuVertexBuffer;
 
 #include <opensubdiv/osd/glComputeEvaluator.h>
 #define HDST_ENABLE_GPU_SUBDIVISION 1
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 typedef OpenSubdiv::Osd::GLStencilTableSSBO HdSt_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLComputeEvaluator HdSt_OsdGpuEvaluator;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #elif OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
 
 #include <opensubdiv/osd/glXFBEvaluator.h>
+
 #define HDST_ENABLE_GPU_SUBDIVISION 1
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 typedef OpenSubdiv::Osd::GLStencilTableTBO HdSt_OsdGpuStencilTable;
 typedef OpenSubdiv::Osd::GLXFBEvaluator HdSt_OsdGpuEvaluator;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #else
 
@@ -76,6 +92,7 @@ typedef OpenSubdiv::Osd::GLXFBEvaluator HdSt_OsdGpuEvaluator;
 
 #endif
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 // ---------------------------------------------------------------------------
 
@@ -709,4 +726,7 @@ HdSt_Osd3Factory::CreateSubdivision()
 {
     return new HdSt_Osd3Subdivision();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

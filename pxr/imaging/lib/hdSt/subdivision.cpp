@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /*virtual*/
 HdSt_Subdivision::~HdSt_Subdivision()
@@ -159,3 +163,6 @@ HdSt_OsdRefineComputationGPU::GetNumOutputElements() const
     if (!TF_VERIFY(subdivision)) return 0;
     return subdivision->GetNumVertices();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

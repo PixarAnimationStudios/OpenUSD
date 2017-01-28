@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
@@ -44,6 +45,9 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0, 
                       "Force curves to always be refined.");
@@ -579,3 +583,6 @@ HdStBasisCurves::_GetInitialDirtyBits() const
 
     return (HdChangeTracker::DirtyBits)mask;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

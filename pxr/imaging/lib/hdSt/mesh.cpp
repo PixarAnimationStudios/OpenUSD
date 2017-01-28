@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/mesh.h"
@@ -47,6 +48,9 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // for debugging
 TF_DEFINE_ENV_SETTING(HD_ENABLE_FORCE_QUADRANGULATE, 0,
@@ -1251,3 +1255,6 @@ HdStMesh::_GetInitialDirtyBits() const
 
     return (HdChangeTracker::DirtyBits)mask;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

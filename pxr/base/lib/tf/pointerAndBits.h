@@ -148,7 +148,7 @@ public:
 
     /// Swap this PointerAndBits with \a other.
     void Swap(TfPointerAndBits &other) {
-        std::swap(_ptrAndBits, other._ptrAndBits);
+        ::std::swap(_ptrAndBits, other._ptrAndBits);
     }
 
 private:

@@ -24,11 +24,15 @@
 #ifndef HDST_BASIS_CURVES_COMPUTATIONS_H
 #define HDST_BASIS_CURVES_COMPUTATIONS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/vec3f.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdBasisCurvesTopology;
 
@@ -92,5 +96,8 @@ private:
     HdBasisCurvesTopology *_topology;
     VtVec3fArray _authoredNormals;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDST_BASIS_CURVES_COMPUTATIONS_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/quadrangulate.h"
@@ -35,6 +36,9 @@
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/gf/vec4i.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 HdSt_QuadInfoBuilderComputation::HdSt_QuadInfoBuilderComputation(
     HdSt_MeshTopology *topology, SdfPath const &id)
@@ -859,4 +863,7 @@ HdSt_QuadrangulateComputationGPU::GetNumOutputElements() const
 
     return quadInfo->pointsOffset + quadInfo->numAdditionalPoints;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

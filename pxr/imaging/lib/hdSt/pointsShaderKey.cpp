@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -46,3 +50,6 @@ HdSt_PointsShaderKey::HdSt_PointsShaderKey()
 HdSt_PointsShaderKey::~HdSt_PointsShaderKey()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -23,6 +23,7 @@
 //
 #ifndef HDST_POINTS_H
 #define HDST_POINTS_H
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/enums.h"
@@ -33,6 +34,9 @@
 #include "pxr/base/vt/array.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdStPointsReprDesc
 ///
@@ -86,5 +90,8 @@ private:
     typedef _ReprDescConfigs<HdStPointsReprDesc> _PointsReprConfig;
     static _PointsReprConfig _reprDescConfig;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDST_POINTS_H

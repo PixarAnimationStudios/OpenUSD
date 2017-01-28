@@ -24,7 +24,11 @@
 #ifndef HDST_BASIS_CURVES_TOPOLOGY_H
 #define HDST_BASIS_CURVES_TOPOLOGY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
@@ -53,5 +57,8 @@ private:
     HdSt_BasisCurvesTopology(const HdSt_BasisCurvesTopology &)         = delete;
     HdSt_BasisCurvesTopology &operator =(const HdSt_BasisCurvesTopology &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDST_BASIS_CURVES_TOPOLOGY_H

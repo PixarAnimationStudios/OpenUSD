@@ -24,6 +24,7 @@
 #ifndef HDST_MESH_H
 #define HDST_MESH_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/changeTracker.h"
@@ -35,6 +36,9 @@
 #include "pxr/base/vt/array.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSceneDelegate;
 
@@ -168,5 +172,8 @@ private:
     typedef _ReprDescConfigs<HdStMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;
     static _MeshReprConfig _reprDescConfig;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDST_MESH_H

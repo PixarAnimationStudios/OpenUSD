@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/points.h"
@@ -38,6 +39,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // static repr configuration
 HdStPoints::_PointsReprConfig HdStPoints::_reprDescConfig;
@@ -234,3 +238,6 @@ HdStPoints::_GetInitialDirtyBits() const
 
     return (HdChangeTracker::DirtyBits)mask;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

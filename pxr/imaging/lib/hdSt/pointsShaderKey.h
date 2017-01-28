@@ -24,10 +24,14 @@
 #ifndef HDST_POINTS_SHADER_KEY_H
 #define HDST_POINTS_SHADER_KEY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 struct HdSt_PointsShaderKey
 {
@@ -50,5 +54,8 @@ struct HdSt_PointsShaderKey
     TfToken VS[3];
     TfToken FS[2];
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDST_POINTS_SHADER_KEY

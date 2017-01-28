@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/meshTopology.h"
@@ -39,6 +40,9 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/diagnostic.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 // static
@@ -282,3 +286,6 @@ HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
     return _subdivision->CreateRefineComputationGPU(
         this, name, dataType, numComponents);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

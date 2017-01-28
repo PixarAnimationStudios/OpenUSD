@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include <boost/make_shared.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 // static
@@ -50,3 +54,6 @@ HdSt_BasisCurvesTopology::GetIndexBuilderComputation(bool supportSmoothCurves)
     return HdBufferSourceSharedPtr(
         new HdSt_BasisCurvesIndexBuilderComputation(this, supportSmoothCurves));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

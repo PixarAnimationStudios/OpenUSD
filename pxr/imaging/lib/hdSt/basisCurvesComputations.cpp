@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -32,6 +33,9 @@
 #include "pxr/base/gf/vec4i.h"
 
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 template <typename T> VtArray<T>
 InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wrap,
@@ -515,3 +519,6 @@ HdSt_BasisCurvesNormalsInterpolaterComputation::_CheckValid() const
 {
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

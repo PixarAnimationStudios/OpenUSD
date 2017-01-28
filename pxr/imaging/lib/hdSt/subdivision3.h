@@ -24,7 +24,11 @@
 #ifndef HDST_SUBDIVISION3_H
 #define HDST_SUBDIVISION3_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSt_Subdivision;
 
@@ -32,5 +36,8 @@ class HdSt_Osd3Factory {
 public:
     static HdSt_Subdivision *CreateSubdivision();
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDST_SUBDIVISION3_H
