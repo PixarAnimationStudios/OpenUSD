@@ -80,7 +80,8 @@ ArchThreadYield()
 void
 ArchThreadPause()
 {
-#if defined (ARCH_CPU_INTEL) && defined(ARCH_COMPILER_GCC)
+#if defined (ARCH_CPU_INTEL) && (defined(ARCH_COMPILER_GCC) || \
+                                 defined(ARCH_COMPILER_CLANG))
     __asm__ __volatile__ ("pause");
 #elif defined(ARCH_OS_WINDOWS)
     YieldProcessor();

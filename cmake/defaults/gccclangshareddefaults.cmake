@@ -43,7 +43,13 @@ _disable_warning("deprecated")
 _disable_warning("deprecated-declarations")
 
 # Suppress unused typedef warnings emanating from boost.
-_disable_warning("unused-local-typedefs")
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR
+        NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.1)
+            _disable_warning("unused-local-typedefs")
+    endif()
+endif()
 
 if (${PXR_MAYA_TBB_BUG_WORKAROUND})
     set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wl,-Bsymbolic")
