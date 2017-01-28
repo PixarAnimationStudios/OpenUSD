@@ -24,9 +24,13 @@
 #ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 #define HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdxDrawTargetAttachmentDescArray
 ///
@@ -97,5 +101,8 @@ private:
 
 size_t hash_value(const HdxDrawTargetAttachmentDescArray &attachments);
 std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDescArray &pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H

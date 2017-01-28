@@ -41,6 +41,9 @@
 
 #include <boost/bind.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
 
 // -------------------------------------------------------------------------- //
@@ -394,3 +397,6 @@ operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs)
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

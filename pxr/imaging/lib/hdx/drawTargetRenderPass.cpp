@@ -28,6 +28,9 @@
 #include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static
 void
 _ClearBuffer(GLenum buffer, GLint drawBuffer, const VtValue &value)
@@ -164,3 +167,6 @@ HdxDrawTargetRenderPass::GetDrawTarget()
 {
     return _drawTarget;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

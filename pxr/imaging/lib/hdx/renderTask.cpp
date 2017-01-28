@@ -34,6 +34,9 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // --------------------------------------------------------------------------- //
 
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -179,3 +182,6 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
         pass->Sync();
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

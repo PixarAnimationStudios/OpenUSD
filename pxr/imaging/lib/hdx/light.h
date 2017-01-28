@@ -24,6 +24,7 @@
 #ifndef HDX_LIGHT_H
 #define HDX_LIGHT_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -34,6 +35,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define HDX_LIGHT_TOKENS                        \
     (params)                                    \
@@ -84,5 +88,8 @@ private:
     // cached states
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _params;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_LIGHT_H

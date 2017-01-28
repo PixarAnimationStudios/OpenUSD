@@ -30,6 +30,9 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/base/gf/matrix4d.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PUBLIC_TOKENS(HdxLightTokens, HDX_LIGHT_TOKENS);
 
 HdxLight::HdxLight(SdfPath const &id)
@@ -125,3 +128,6 @@ HdxLight::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

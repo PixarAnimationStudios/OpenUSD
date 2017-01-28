@@ -24,12 +24,16 @@
 #ifndef HDX_DRAW_TARGET_RENDER_PASS_H
 #define HDX_DRAW_TARGET_RENDER_PASS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
@@ -91,5 +95,8 @@ private:
     HdxDrawTargetRenderPass(const HdxDrawTargetRenderPass &)             = delete;
     HdxDrawTargetRenderPass &operator =(const HdxDrawTargetRenderPass &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDX_DRAW_TARGET_RENDER_PASS_H

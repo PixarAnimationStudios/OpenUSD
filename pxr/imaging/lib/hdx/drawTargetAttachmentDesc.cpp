@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc()
  : _name()
  , _format(HdFormatUnknown)
@@ -152,3 +155,6 @@ std::ostream &operator <<(std::ostream &out,
 
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

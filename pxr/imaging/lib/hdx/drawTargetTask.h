@@ -24,6 +24,7 @@
 #ifndef HDX_DRAW_TARGET_TASK_H
 #define HDX_DRAW_TARGET_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
 
@@ -31,6 +32,9 @@
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::unique_ptr<HdxDrawTargetRenderPass> HdxDrawTargetRenderPassUniquePtr;
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
@@ -152,5 +156,8 @@ struct HdxDrawTargetTaskParams
 std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv);
 bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs);
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDX_DRAW_TARGET_TASK_H

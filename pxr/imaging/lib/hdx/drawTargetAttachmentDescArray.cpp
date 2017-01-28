@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray()
  : _attachments()
  , _depthWrapS(HdWrapRepeat)
@@ -182,3 +185,6 @@ std::ostream &operator <<(std::ostream &out,
 
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

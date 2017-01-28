@@ -30,6 +30,9 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static TfToken
 _GetShaderPath(char const * shader)
 {
@@ -69,3 +72,6 @@ HdxPackageSimpleLightingShader()
         _GetShaderPath("simpleLightingShader.glslfx");
     return simpleLightingShader;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

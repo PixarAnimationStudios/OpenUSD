@@ -36,6 +36,9 @@
 
 #include "pxr/base/tf/stl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static const std::string DEPTH_ATTACHMENT_NAME = "depth";
 
 TF_DEFINE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
@@ -397,3 +400,6 @@ HdxDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

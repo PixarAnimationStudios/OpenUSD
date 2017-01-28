@@ -26,6 +26,9 @@
 #include "pxr/imaging/hdx/drawTargetTextureResource.h"
 #include "pxr/imaging/hd/conversions.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 Hdx_DrawTargetTextureResource::Hdx_DrawTargetTextureResource()
  : _attachment()
@@ -132,3 +135,6 @@ Hdx_DrawTargetTextureResource::GetMemoryUsed()
 {
     return _attachment->GetMemoryUsed();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

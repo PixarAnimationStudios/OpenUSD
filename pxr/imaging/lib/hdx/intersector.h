@@ -24,6 +24,7 @@
 #ifndef HDX_INTERSECTOR
 #define HDX_INTERSECTOR
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -40,6 +41,9 @@
 #include <vector>
 #include <unordered_set>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdEngine;
 class HdRenderIndex;
@@ -207,5 +211,8 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& out, HdxIntersector::Hit const & h);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_INTERSECTOR

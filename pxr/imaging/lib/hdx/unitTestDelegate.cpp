@@ -45,6 +45,9 @@
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (rotate)
@@ -852,3 +855,6 @@ Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 {
     return SdfPath::Hash()(textureId);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -40,6 +40,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxIntersector::HdxIntersector(HdRenderIndexSharedPtr index)
     : _index(index)
 { 
@@ -651,4 +654,7 @@ operator<<(std::ostream& out, HdxIntersector::Hit const & h)
         << "Depth: (" << h.ndcDepth << ") ";
     return out;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -24,6 +24,7 @@
 #ifndef HDX_SIMPLE_LIGHT_TASK_H
 #define HDX_SIMPLE_LIGHT_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hdx/light.h"
 
@@ -38,6 +39,9 @@
 #include "pxr/base/gf/vec3f.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRenderIndex;
 class HdSceneDelegate;
@@ -137,5 +141,8 @@ struct HdxShadowParams
 std::ostream& operator<<(std::ostream& out, const HdxShadowParams& pv);
 bool operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
 bool operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_SIMPLE_LIGHT_TASK_H

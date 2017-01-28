@@ -25,6 +25,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // hdxShaderInputs implementation
 bool
 operator==(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
@@ -88,3 +91,6 @@ operator<<(std::ostream& out, const HdxTextureParameters& pv)
         << pv.isPtex;
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

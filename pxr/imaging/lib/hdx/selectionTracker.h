@@ -24,10 +24,14 @@
 #ifndef HDX_SELECTION_TRACKER_H
 #define HDX_SELECTION_TRACKER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/sdf/path.h"
 #include <boost/smart_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRenderIndex;
 class TfToken;
@@ -136,5 +140,8 @@ private:
     int _version;
     HdxSelectionSharedPtr _selection;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_SELECTION_TRACKER_H

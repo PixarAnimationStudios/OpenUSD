@@ -37,6 +37,9 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
     , _viewport()
@@ -223,3 +226,6 @@ bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

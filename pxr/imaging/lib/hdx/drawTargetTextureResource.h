@@ -24,8 +24,12 @@
 #ifndef HDX_DRAW_TARGET_TEXTURE_RESOURCE_H
 #define HDX_DRAW_TARGET_TEXTURE_RESOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/glf/drawTarget.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class Hdx_DrawTargetTextureResource final : public HdTextureResource {
 public:
@@ -59,5 +63,8 @@ private:
     Hdx_DrawTargetTextureResource(const Hdx_DrawTargetTextureResource &)             = delete;
     Hdx_DrawTargetTextureResource &operator =(const Hdx_DrawTargetTextureResource &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDX_DRAW_TARGET_TEXTURE_RESOURCE_H

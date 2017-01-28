@@ -38,6 +38,9 @@
 
 #include "pxr/imaging/glf/drawTarget.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
  : HdSceneTask(delegate, id)
@@ -375,3 +378,6 @@ bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParam
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

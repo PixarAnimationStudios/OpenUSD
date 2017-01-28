@@ -39,6 +39,9 @@
 #include <string>
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxSimpleLightingShader::HdxSimpleLightingShader() 
     : _lightingContext(GlfSimpleLightingContext::New())
     , _bindingMap(TfCreateRefPtr(new GlfBindingMap()))
@@ -156,3 +159,6 @@ HdxSimpleLightingShader::SetLightingState(
         _useLighting = false;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

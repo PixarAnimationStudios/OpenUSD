@@ -24,12 +24,16 @@
 #ifndef HDX_TYPES_H
 #define HDX_TYPES_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/imaging/hd/enums.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Struct used to send shader inputs from Presto and send them to Hydra
 struct HdxShaderInputs
@@ -61,5 +65,8 @@ struct HdxTextureParameters
 bool operator==(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs);
 bool operator!=(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs);
 std::ostream& operator<<(std::ostream& out, const HdxTextureParameters& pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_TYPES_H

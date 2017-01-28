@@ -27,6 +27,9 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PUBLIC_TOKENS(HdxCameraTokens, HDX_CAMERA_TOKENS);
 
 HdxCamera::HdxCamera(SdfPath const &id)
@@ -137,3 +140,6 @@ bool operator!=(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs)
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

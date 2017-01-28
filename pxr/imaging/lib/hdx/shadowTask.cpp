@@ -41,6 +41,9 @@
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
     , _collectionVersion(0)
@@ -284,3 +287,6 @@ bool operator!=(const HdxShadowTaskParams& lhs, const HdxShadowTaskParams& rhs)
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

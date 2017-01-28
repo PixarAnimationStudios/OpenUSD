@@ -33,6 +33,9 @@
 #include <limits>
 #include <iomanip>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxSelectionTracker::HdxSelectionTracker()
     : _version(0)
 {
@@ -311,4 +314,7 @@ HdxSelectionTracker::GetBuffers(HdRenderIndex const* index,
 
     return true;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

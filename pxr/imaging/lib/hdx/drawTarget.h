@@ -24,6 +24,7 @@
 #ifndef HDX_DRAW_TARGET_H
 #define HDX_DRAW_TARGET_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -37,6 +38,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define HDX_DRAW_TARGET_TOKENS                  \
     (attachments)                               \
@@ -161,5 +165,8 @@ private:
     HdxDrawTarget(const HdxDrawTarget &)             = delete;
     HdxDrawTarget &operator =(const HdxDrawTarget &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_DRAW_TARGET_H

@@ -24,6 +24,9 @@
 #include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/base/vt/value.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxDrawTargetRenderPassState::HdxDrawTargetRenderPassState()
  : _colorClearValues()
  , _depthClearValue(1.0f)
@@ -72,3 +75,6 @@ void HdxDrawTargetRenderPassState::SetRprimCollection(
     _rprimCollection = col;
     ++_rprimCollectionVersion;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

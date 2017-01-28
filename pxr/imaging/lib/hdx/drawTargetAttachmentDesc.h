@@ -24,12 +24,16 @@
 #ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_H
 #define HDX_DRAW_TARGET_ATTACHMENT_DESC_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
 #include "pxr/base/vt/value.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdxDrawTargetAttachmentDesc
 ///
@@ -84,5 +88,8 @@ private:
 
 size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment);
 std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDesc &pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_H

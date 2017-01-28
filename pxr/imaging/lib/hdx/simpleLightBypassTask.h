@@ -24,11 +24,15 @@
 #ifndef HDX_SIMPLE_LIGHT_BYPASS_TASK_H
 #define HDX_SIMPLE_LIGHT_BYPASS_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 //
 //  This class exists to isolate code churn of Hd/Hdx/UsdImaging from exisiting
@@ -78,5 +82,8 @@ bool operator==(const HdxSimpleLightBypassTaskParams& lhs,
                 const HdxSimpleLightBypassTaskParams& rhs);
 bool operator!=(const HdxSimpleLightBypassTaskParams& lhs,
                 const HdxSimpleLightBypassTaskParams& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_SIMPLE_LIGHT_BYPASS_TASK_H
