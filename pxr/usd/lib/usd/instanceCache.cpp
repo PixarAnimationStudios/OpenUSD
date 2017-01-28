@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/debugCodes.h"
 
@@ -30,6 +31,9 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::make_pair;
 using std::pair;
@@ -635,3 +639,6 @@ Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
 
     return primInMasterPath;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

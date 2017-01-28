@@ -24,9 +24,13 @@
 #ifndef USD_SHARED_H
 #define USD_SHARED_H
 
+#include "pxr/pxr.h"
 #include <boost/functional/hash.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <atomic>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Implementation storage + refcount for Usd_Shared.
 template <class T>
@@ -101,5 +105,8 @@ struct Usd_Shared
 private:
     boost::intrusive_ptr<Usd_Counted<T>> _held;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_SHARED_H

@@ -24,6 +24,7 @@
 #ifndef USD_CLIP_H
 #define USD_CLIP_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node.h"
 
 #include "pxr/usd/sdf/assetPath.h"
@@ -43,6 +44,9 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Returns true if the given scene description metadata \p fieldName is
 /// associated with value clip functionality.
@@ -284,5 +288,8 @@ typedef std::vector<Usd_ClipRefPtr> Usd_ClipRefPtrVector;
 
 std::ostream&
 operator<<(std::ostream& out, const Usd_ClipRefPtr& clip);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CLIP_H

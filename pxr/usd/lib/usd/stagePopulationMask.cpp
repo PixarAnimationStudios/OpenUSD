@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdStagePopulationMask
 UsdStagePopulationMask::Union(UsdStagePopulationMask const &l,
@@ -139,3 +143,6 @@ operator<<(std::ostream &os, UsdStagePopulationMask const &mask)
 {
     return os << "UsdStagePopulationMask(" << mask.GetPaths() << ')';
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef USD_CRATEDATA_H
 #define USD_CRATEDATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -33,6 +34,9 @@
 #include <memory>
 #include <vector>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class Usd_CrateData
 ///
@@ -115,5 +119,8 @@ private:
     friend class Usd_CrateDataImpl;
     std::unique_ptr<class Usd_CrateDataImpl> _impl;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CRATEDATA_H

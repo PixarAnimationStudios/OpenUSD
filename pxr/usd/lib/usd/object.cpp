@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -31,6 +32,9 @@
 
 #include <boost/python/extract.hpp>
 #include <boost/python/object.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdStageWeakPtr
 UsdObject::GetStage() const
@@ -409,3 +413,6 @@ std::string
 UsdDescribe(const UsdObject &obj) {
     return obj.GetDescription();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

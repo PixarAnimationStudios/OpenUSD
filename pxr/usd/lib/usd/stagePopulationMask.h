@@ -24,10 +24,14 @@
 #ifndef USD_STAGEPOPULATIONMASK_H
 #define USD_STAGEPOPULATIONMASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdStagePopulationMask
 ///
@@ -144,5 +148,8 @@ inline void swap(UsdStagePopulationMask &l, UsdStagePopulationMask &r)
 {
     l.swap(r);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_STAGEPOPULATIONMASK_H

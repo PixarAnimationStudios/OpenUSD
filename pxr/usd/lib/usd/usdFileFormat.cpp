@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/usdFileFormat.h"
 
 #include "pxr/usd/usd/usdaFileFormat.h"
@@ -37,6 +38,9 @@
 #include "pxr/base/tf/type.h"
 
 #include "crateData.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 
@@ -360,3 +364,6 @@ UsdUsdFileFormat::_IsStreamingLayer(
     return formatId == UsdUsdbFileFormatTokens->Id ||
         formatId == UsdUsdcFileFormatTokens->Id;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -26,6 +26,7 @@
 
 /// \file usd/object.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primData.h"
 
@@ -34,6 +35,9 @@
 
 #include <boost/mpl/assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdStage);
 
@@ -671,5 +675,8 @@ UsdObject::SetMetadataByDictKey(const TfToken& key,
     SdfAbstractDataConstTypedValue<T> in(&value);
     return _SetMetadataImpl<SdfAbstractDataConstValue>(key, in, keyPath);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_OBJECT_H

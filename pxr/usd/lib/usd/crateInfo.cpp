@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/crateInfo.h"
 
 #include "crateFile.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace Usd_CrateFile;
 
@@ -93,3 +97,6 @@ UsdCrateInfo::GetSoftwareVersion() const
 {
     return CrateFile::GetSoftwareVersionToken();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

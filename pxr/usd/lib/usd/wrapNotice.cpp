@@ -23,10 +23,14 @@
 //
 ///
 /// \file Sdf/wrapNotice.cpp
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -69,3 +73,6 @@ wrapUsdNotice()
         UsdNotice::StageEditTargetChanged, UsdNotice::StageNotice>::Wrap()
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef USD_RELATIONSHIPS_H
 #define USD_RELATIONSHIPS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/property.h"
 
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdRelationship;
 
@@ -286,5 +290,8 @@ private:
     SdfPath _GetTargetForAuthoring(const SdfPath &targetPath,
                                    std::string* whyNot = 0) const;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_RELATIONSHIPS_H

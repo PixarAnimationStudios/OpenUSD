@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/editTarget.h"
 
 #include "pxr/usd/pcp/layerStack.h"
@@ -35,6 +36,9 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 ////////////////////////////////////////////////////////////////////////
 // UsdEditTarget
@@ -197,3 +201,6 @@ UsdEditTarget::ComposeOver(const UsdEditTarget &weaker) const
         !_layer ? weaker._layer : _layer,
         _mapping.Compose(weaker._mapping));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

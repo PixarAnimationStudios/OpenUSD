@@ -24,11 +24,15 @@
 #ifndef USD_NOTICE_H
 #define USD_NOTICE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/notice.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdNotice
 ///
@@ -173,5 +177,8 @@ public:
     };
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_NOTICE_H

@@ -22,9 +22,13 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/envSetting.h"
 
 #include "pxr/usd/usd/common.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_ENV_SETTING(
     USD_RETIRE_LUMOS, true,
@@ -38,4 +42,7 @@ bool UsdIsRetireLumosEnabled()
 {
     return TfGetEnvSetting(USD_RETIRE_LUMOS);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

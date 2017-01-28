@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
@@ -107,3 +111,6 @@ UsdSchemaBase::_CreateAttr(TfToken const &attrName,
 
     return attr;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

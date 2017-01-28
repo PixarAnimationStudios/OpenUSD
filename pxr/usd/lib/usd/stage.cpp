@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/usd/attribute.h"
@@ -101,6 +102,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::pair;
 using std::make_pair;
@@ -371,7 +375,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
 ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_DEPRECATED_POSIX_NAME
     _mallocTagID = TfMallocTag::IsInitialized() ?
-        strdup(::_StageTag(rootLayer->GetIdentifier()).c_str()) :
+        strdup(_StageTag(rootLayer->GetIdentifier()).c_str()) :
         _dormantMallocTagID;
 ARCH_PRAGMA_POP
 
@@ -6778,3 +6782,6 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

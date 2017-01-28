@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/wrapUtils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -54,3 +58,6 @@ Usd_ObjectSubclass::_ReplaceConverter(boost::python::type_info pti,
     originalConverters[objType] = reg->m_to_python;
     reg->m_to_python = convert;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

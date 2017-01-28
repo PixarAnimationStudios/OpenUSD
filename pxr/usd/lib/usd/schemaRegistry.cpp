@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/schemaBase.h"
 
@@ -41,6 +42,9 @@
 #include <set>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::make_pair;
 using std::set;
@@ -286,3 +290,6 @@ UsdSchemaRegistry::_GetPrimDefinitionAtPath(const SdfPath &path)
 {
     return Usd_SchemaRegistryGetPrimDefinitionAtPath(path);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,8 +24,12 @@
 #ifndef USD_PRIMDATAHANDLE_H
 #define USD_PRIMDATAHANDLE_H
 
+#include "pxr/pxr.h"
 #include <boost/functional/hash.hpp>
 #include <boost/intrusive_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // To start we always validate.
 #define USD_CHECK_ALL_PRIM_ACCESSES
@@ -136,5 +140,8 @@ private:
 
     Usd_PrimDataConstIPtr _p;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIMDATAHANDLE_H

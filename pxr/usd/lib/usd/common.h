@@ -24,6 +24,7 @@
 #ifndef USD_COMMON_H
 #define USD_COMMON_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Forward declare Usd classes.
 class UsdStage;
@@ -70,5 +74,8 @@ typedef std::map<class TfToken, VtValue,
 /// Returns true if the pipeline is configured to process / generate 
 /// USD only and stop generating tidScenes.
 bool UsdIsRetireLumosEnabled();
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

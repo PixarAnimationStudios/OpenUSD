@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/prim.h"
@@ -38,6 +39,9 @@
 #include <algorithm>
 #include <set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // ------------------------------------------------------------------------- //
 // UsdRelationship
@@ -433,3 +437,6 @@ UsdRelationship::_Create(bool fallbackCustom) const
 {
     return bool(_CreateSpec(fallbackCustom));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

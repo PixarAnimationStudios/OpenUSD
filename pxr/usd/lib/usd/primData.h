@@ -26,6 +26,7 @@
 
 /// \file usd/primData.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/sdf/types.h"
@@ -42,6 +43,9 @@
 
 #include <atomic>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdStage);
 
@@ -476,5 +480,8 @@ Usd_MoveToChild(PrimDataPtr &p, PrimDataPtr end,
     }
     return false;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIMDATA_H

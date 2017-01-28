@@ -24,6 +24,7 @@
 #ifndef USD_ATTRIBUTE_H
 #define USD_ATTRIBUTE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/resolveInfo.h"
@@ -37,6 +38,9 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdAttribute;
 
@@ -410,5 +414,8 @@ private:
     template <typename T>
     bool _Get(T* value, UsdTimeCode time) const;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_ATTRIBUTE_H

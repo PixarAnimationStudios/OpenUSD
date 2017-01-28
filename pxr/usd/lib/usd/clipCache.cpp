@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/clipCache.h"
 
 #include "pxr/usd/usd/debugCodes.h"
@@ -39,6 +40,9 @@
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 Usd_ClipCache::Usd_ClipCache()
 {
@@ -353,3 +357,6 @@ Usd_ClipCache::InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat)
 
     _table.erase(path);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

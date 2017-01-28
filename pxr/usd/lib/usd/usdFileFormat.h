@@ -24,10 +24,14 @@
 #ifndef USD_USD_FILE_FORMAT_H
 #define USD_USD_FILE_FORMAT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdUsdFileFormat);
 TF_DECLARE_WEAK_PTRS(SdfLayerBase);
@@ -100,5 +104,8 @@ private:
 
     virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_USD_FILE_FORMAT_H

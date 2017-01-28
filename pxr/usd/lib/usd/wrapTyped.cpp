@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/typed.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -28,6 +29,9 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python/class.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -43,4 +47,7 @@ void wrapUsdTyped()
 
         ;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

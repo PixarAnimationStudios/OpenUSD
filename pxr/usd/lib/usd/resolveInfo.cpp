@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/resolveInfo.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -40,3 +44,6 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdResolveInfoSourceIsTimeDependent,
                      "Source may vary over time");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

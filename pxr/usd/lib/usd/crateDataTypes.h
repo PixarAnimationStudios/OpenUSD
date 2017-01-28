@@ -26,6 +26,7 @@
 //
 // Also note that the enumerant value 0 is reserved, and corresponds to the
 // enumerant 'Invalid'.
+#include "pxr/pxr.h"
 
 // xx(<enumerant>, <enumerant-value>, <c++ type>, <supportsArray>)
 

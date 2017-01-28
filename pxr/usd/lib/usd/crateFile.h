@@ -24,6 +24,7 @@
 #ifndef USD_CRATEFILE_H
 #define USD_CRATEFILE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/crateData.h"
 
 #include "shared.h"
@@ -50,6 +51,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Usd_CrateFile {
 
@@ -201,7 +204,9 @@ enum class TypeEnum {
     Invalid = 0,
 #define xx(ENUMNAME, ENUMVALUE, _unused1, _unused2)     \
     ENUMNAME = ENUMVALUE,
+
 #include "crateDataTypes.h"
+
 #undef xx
     NumTypes
 };
@@ -723,5 +728,8 @@ struct _IsBitwiseReadWrite<CrateFile::Spec_0_0_1> : std::true_type {};
 
 
 } // Usd_CrateFile
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CRATEFILE_H

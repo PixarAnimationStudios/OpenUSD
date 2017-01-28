@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 void
 UsdTimeCode::_IssueGetValueOnDefaultError() const
@@ -38,4 +42,7 @@ std::ostream& operator<<(std::ostream& os, const UsdTimeCode& time)
 {
     return time.IsDefault() ? (os << "DEFAULT") : (os << time.GetValue());
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

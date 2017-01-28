@@ -24,12 +24,16 @@
 #ifndef USD_CLIP_CACHE_H
 #define USD_CLIP_CACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/sdf/pathTable.h"
 
 #include <tbb/mutex.h>
 #include <boost/noncopyable.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class PcpPrimIndex;
 
@@ -62,11 +66,10 @@ public:
 
         void Swap(Clips& rhs)
         {
-            using namespace std;
-            swap(sourceNode, rhs.sourceNode);
-            swap(sourceLayerIndex, rhs.sourceLayerIndex);
-            swap(manifestClip, rhs.manifestClip);
-            swap(valueClips, rhs.valueClips);
+            std::swap(sourceNode, rhs.sourceNode);
+            std::swap(sourceLayerIndex, rhs.sourceLayerIndex);
+            std::swap(manifestClip, rhs.manifestClip);
+            std::swap(valueClips, rhs.valueClips);
         }
 
         PcpNodeRef sourceNode;
@@ -119,5 +122,8 @@ private:
     _ClipTable _table;
     mutable tbb::mutex _mutex;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CLIP_CACHE_H

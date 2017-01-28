@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/instanceKey.h"
 
 #include "pxr/usd/usd/resolver.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 Usd_InstanceKey::Usd_InstanceKey()
 {
@@ -67,3 +71,6 @@ size_t hash_value(const Usd_InstanceKey& key)
 
     return hash;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

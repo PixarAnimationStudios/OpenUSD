@@ -72,12 +72,16 @@
 /// The following variables provide the clauses that can be combined and 
 /// negated to produce predicates:
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/bitUtils.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <bitset>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
@@ -461,5 +465,8 @@ inline Usd_PrimFlagsDisjunction
 operator||(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
     return Usd_Term(lhs) || Usd_Term(rhs);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIMFLAGS_H

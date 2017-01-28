@@ -24,11 +24,15 @@
 #ifndef USD_TYPED_H
 #define USD_TYPED_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdTyped
 ///
@@ -88,5 +92,8 @@ private:
     virtual bool _IsCompatible(const UsdPrim &prim) const;
     virtual const TfType &_GetTfType() const;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_TYPED_H

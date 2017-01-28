@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "crateFile.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -76,6 +77,8 @@
 #include <memory>
 #include <tuple>
 #include <type_traits>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
@@ -2394,7 +2397,9 @@ CrateFile::_DoAllTypeRegistrations() {
     TfAutoMallocTag tag("Usd_CrateFile::CrateFile::_DoAllTypeRegistrations");
 #define xx(_unused1, _unused2, CPPTYPE, _unused3)       \
     _DoTypeRegistration<CPPTYPE>();
+
 #include "crateDataTypes.h"
+
 #undef xx
 }
 
@@ -2403,7 +2408,9 @@ CrateFile::_DeleteValueHandlers() {
 #define xx(_unused1, _unused2, T, _unused3)                                    \
     delete static_cast<_ValueHandler<T> *>(                                    \
         _valueHandlers[static_cast<int>(TypeEnumFor<T>())]);
+
 #include "crateDataTypes.h"
+
 #undef xx
 }
 
@@ -2480,4 +2487,6 @@ static_assert(sizeof(_PathItemHeader_0_0_1) == 16, "");
 } // Usd_CrateFile
 
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

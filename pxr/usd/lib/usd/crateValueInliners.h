@@ -24,12 +24,16 @@
 #ifndef USD_CRATE_VALUE_INLINERS_H
 #define USD_CRATE_VALUE_INLINERS_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/traits.h"
 
 #include <type_traits>
 #include <limits>
 #include <cstdint>
 #include <cstring>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace Usd_CrateValueInliners
 {
@@ -179,6 +183,9 @@ _DecodeInline(VtDictionary *dict, uint32_t ival) {
 }
 
 } // Usd_CrateValueInliners
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CRATE_VALUE_INLINERS_H
 

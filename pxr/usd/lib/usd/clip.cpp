@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/clip.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -46,6 +47,9 @@
 // XXX: Work around GCC 4.8's inability to see that we're using
 //      boost::optional safely.  See GCC bug 47679.
 #include "pxr/base/arch/defines.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #if ARCH_COMPILER_GCC_MAJOR == 4 && ARCH_COMPILER_GCC_MINOR == 8
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
@@ -898,3 +902,6 @@ Usd_Clip::GetLayerIfOpen() const
 
     return SdfLayerHandle();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,11 +24,15 @@
 #ifndef USD_INTERPOLATORS_H
 #define USD_INTERPOLATORS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfAbstractDataSpecId;
 class UsdAttribute;
@@ -313,5 +317,8 @@ private:
 private:
     VtArray<T>* _result;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_INTERPOLATORS_H

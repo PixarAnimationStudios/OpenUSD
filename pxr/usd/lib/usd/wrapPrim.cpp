@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/relationship.h"
@@ -43,6 +44,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -273,4 +277,7 @@ void wrapUsdPrim()
 }
 
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

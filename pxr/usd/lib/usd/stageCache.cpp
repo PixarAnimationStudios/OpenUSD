@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -44,6 +45,9 @@
 #include <atomic>
 #include <vector>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -687,3 +691,6 @@ UsdStageCacheRequest::_Subscribe(_Mailbox *mailbox)
     _data->subscribed.push_back(mailbox);
     mailbox->state = 1; // subscribed.
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef USD_RESOLVER_H
 #define USD_RESOLVER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 
 #include "pxr/usd/pcp/node.h"
@@ -33,6 +34,9 @@
 #include "pxr/usd/sdf/declareHandles.h"
 
 #include <boost/scoped_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class PcpPrimIndex;
 
@@ -102,5 +106,8 @@ private:
     SdfLayerRefPtrVector::const_iterator _curLayer;
     SdfLayerRefPtrVector::const_iterator _lastLayer;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_RESOLVER_H

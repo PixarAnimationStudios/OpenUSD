@@ -24,9 +24,13 @@
 #ifndef USD_USDC_FILE_FORMAT_H
 #define USD_USDC_FILE_FORMAT_H
  
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define USD_USDC_FILE_FORMAT_TOKENS   \
     ((Id,      "usdc"))
@@ -83,5 +87,8 @@ private:
     virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_USDC_FILE_FORMAT_H

@@ -24,6 +24,7 @@
 #ifndef USD_VARIANTSETS_H
 #define USD_VARIANTSETS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/prim.h"
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfPrimSpec);
@@ -249,5 +253,8 @@ private:
 
     friend class UsdPrim;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_VARIANTSETS_H

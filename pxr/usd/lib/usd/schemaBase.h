@@ -24,10 +24,14 @@
 #ifndef USD_SCHEMABASE_H
 #define USD_SCHEMABASE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdSchemaBase
 ///
@@ -139,5 +143,8 @@ private:
     // The held prim.
     Usd_PrimDataHandle _primData;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_SCHEMABASE_H

@@ -26,6 +26,7 @@
 
 /// \file usd/prim.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -47,6 +48,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdTreeIterator;
 class Usd_PrimData;
@@ -1309,6 +1313,9 @@ UsdObject::GetPrim() const
 {
     return UsdPrim(_prim);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIM_H
 

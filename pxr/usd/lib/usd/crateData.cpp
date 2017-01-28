@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/crateData.h"
 
 #include "crateFile.h"
@@ -61,6 +62,8 @@ using std::pair;
 using std::string;
 using std::unordered_map;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace Usd_CrateFile;
 
@@ -1154,3 +1157,6 @@ Usd_CrateData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time)
 {
     return _impl->EraseTimeSample(id, time);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

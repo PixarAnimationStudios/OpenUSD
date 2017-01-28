@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/conversions.h"
 
 #include "pxr/base/vt/dictionary.h"
@@ -38,6 +39,9 @@
 
 #include <boost/python/object.hpp>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // XXX: This function is no longer required -- remove.
 TfPyObjWrapper
@@ -139,3 +143,6 @@ UsdPythonToMetadataValue(
     result->Swap(value);
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

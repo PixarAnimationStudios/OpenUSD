@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/resolver.h"
 
 #include "pxr/usd/usd/debugCodes.h"
@@ -28,6 +29,9 @@
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStack.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 void
 Usd_Resolver::_Init() {
@@ -121,4 +125,7 @@ Usd_Resolver::NextLayer() {
     }
     return false;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

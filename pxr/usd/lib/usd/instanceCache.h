@@ -24,6 +24,7 @@
 #ifndef USD_INSTANCE_CACHE_H
 #define USD_INSTANCE_CACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/instanceKey.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -33,6 +34,9 @@
 #include <boost/noncopyable.hpp>
 #include <map>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class Usd_InstanceChanges
 ///
@@ -246,5 +250,8 @@ private:
     // master prim names.
     size_t _lastMasterIndex;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_INSTANCE_CACHE_H

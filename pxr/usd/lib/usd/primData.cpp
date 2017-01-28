@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/usd/debugCodes.h"
@@ -36,6 +37,9 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace {
 // Static assertion on PrimData size.  We want to be warned when its size
@@ -210,4 +214,7 @@ Usd_IssueFatalPrimAccessError(const Usd_PrimData *p)
 {
     TF_FATAL_ERROR("Used %s", Usd_DescribePrimData(p).c_str());
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

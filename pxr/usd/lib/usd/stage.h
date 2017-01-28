@@ -26,6 +26,7 @@
 
 /// \file usd/stage.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/interpolation.h"
@@ -57,6 +58,9 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class ArResolverContext;
 class GfInterval;
@@ -1863,6 +1867,9 @@ UsdStage::SetMetadataByDictKey(const TfToken& key, const TfToken &keyPath,
     return SetMetadataByDictKey(key, keyPath, in);
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_STAGE_H
 

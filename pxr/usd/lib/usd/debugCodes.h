@@ -24,7 +24,11 @@
 #ifndef USD_DEBUGCODES_H
 #define USD_DEBUGCODES_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEBUG_CODES(
 
@@ -45,5 +49,8 @@ TF_DEBUG_CODES(
     USD_VALIDATE_VARIABILITY
 
 );
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_DEBUGCODES_H

@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include <boost/python/def.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -38,3 +42,6 @@ void wrapUsdCommon()
     def("Describe", (std::string (*)(const UsdStageWeakPtr &)) UsdDescribe);
     def("Describe", (std::string (*)(const UsdStageCache &)) UsdDescribe);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
