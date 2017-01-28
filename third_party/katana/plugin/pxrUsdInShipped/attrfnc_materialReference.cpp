@@ -38,9 +38,18 @@ MaterialReferenceAttrFncCache::createValue(
     if (!materialPathAttr.isValid()) {
         return IMPLPtr(new FnAttribute::GroupAttribute());
     }
-    std::string materialPath = "/" + materialPathAttr.getValue();
+    std::string materialPath = materialPathAttr.getValue();
     if (materialPath.empty()) {
         return IMPLPtr(new FnAttribute::GroupAttribute());
+    }
+    if (materialPath[0] != '/') {
+        materialPath = "/" + materialPath;
+    }
+
+    std::string looksGroupLocation = FnKat::StringAttribute(
+        args.getChildByName("looksGroupLocation")).getValue("", false);
+    if (!looksGroupLocation.empty()) {
+        materialPath = looksGroupLocation + materialPath;
     }
 
     FnAttribute::GroupAttribute sessionAttr;
@@ -72,7 +81,8 @@ MaterialReferenceAttrFncCache::createValue(
         materialSchema,
         false,
         data,
-        attrs);
+        attrs,
+        looksGroupLocation);
 
     // include all the blind data
     UsdKatanaBlindDataObject kbd(prim);
