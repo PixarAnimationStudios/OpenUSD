@@ -626,10 +626,11 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
             if (!points) {
                 VtValue value = GetPoints(sceneDelegate);
-
-                points = HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdTokens->points,
-                                               value));
+                if (!value.IsEmpty()) {
+                    points = HdBufferSourceSharedPtr(
+                        new HdVtBufferSource(HdTokens->points,
+                                             value));
+                }
             }
 
             if (points) {
