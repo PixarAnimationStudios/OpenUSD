@@ -27,6 +27,7 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
+#include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 
@@ -154,7 +155,13 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
                         mayaPlugin.c_str());
                 std::string loadPluginCmd = TfStringPrintf(
                         "loadPlugin -quiet %s", mayaPlugin.c_str());
-                if (!MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                    // Need to ensure Python script modules are loaded
+                    // properly for this library (Maya's loadPlugin will not
+                    // load script modules like TfDlopen would).
+                    TfScriptModuleLoader::GetInstance().LoadModules();
+                }
+                else {
                     TF_CODING_ERROR("Unable to load mayaplugin %s\n",
                             mayaPlugin.c_str());
                 }
