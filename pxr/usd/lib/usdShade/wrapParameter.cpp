@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
@@ -36,6 +37,9 @@
 #include <boost/python/tuple.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 using namespace boost::python;
@@ -115,4 +119,7 @@ void wrapUsdShadeParameter()
         std::vector<Parameter>,
         TfPySequenceToPython<std::vector<Parameter> > >();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -107,6 +107,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/editContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static UsdPyEditContext
 _GetEditContextForVariant(const UsdShadeLook &self,
                           const TfToken &lookVariantName,
@@ -159,3 +161,5 @@ WRAP_CUSTOM {
 
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
@@ -29,6 +30,9 @@
 
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static std::string
 _GetRelPrefix(const TfToken& renderTarget)
@@ -333,3 +337,6 @@ UsdShadeInterfaceAttribute::GetConnectionRelName() const
     return TfToken(UsdShadeTokens->connectedSourceFor.GetString() + 
            _attr.GetName().GetString());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

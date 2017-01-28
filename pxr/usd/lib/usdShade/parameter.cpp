@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/parameter.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
@@ -38,6 +39,9 @@
 #include "pxr/base/tf/envSetting.h"
 
 #include "debugCodes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 using std::string;
@@ -211,3 +215,6 @@ UsdShadeParameter::GetConnectionRelName() const
     return TfToken(UsdShadeTokens->connectedSourceFor.GetString() +
            _attr.GetName().GetString());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

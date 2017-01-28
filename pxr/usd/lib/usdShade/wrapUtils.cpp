@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include <boost/python/def.hpp>
 #include <boost/python/enum.hpp>
 
 #include "pxr/usd/usdShade/utils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -42,3 +46,6 @@ void wrapUsdShadeUtils()
     def("GetBaseNameAndType", 
         UsdShadeUtilsGetBaseNameAndType);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

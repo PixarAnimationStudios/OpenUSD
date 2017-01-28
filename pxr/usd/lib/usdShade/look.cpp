@@ -127,6 +127,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usdShade/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (look)
@@ -434,3 +436,5 @@ UsdShadeLook::HasLookFaceSet(const UsdPrim &prim)
     bool isPartition=false;
     return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

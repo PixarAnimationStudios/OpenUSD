@@ -24,10 +24,14 @@
 #ifndef USD_SHD_UTILS_H
 #define USD_SHD_UTILS_H
 
+#include "pxr/pxr.h"
 #include <string>
 #include <utility>
 
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \enum UsdShadeAttributeType
 /// 
@@ -50,5 +54,8 @@ std::string UsdShadeUtilsGetPrefixForAttributeType(
 /// Given the full name of a shading property, returns it's base name and type.
 std::pair<TfToken, UsdShadeAttributeType> 
     UsdShadeUtilsGetBaseNameAndType(const TfToken &fullName);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

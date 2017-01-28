@@ -24,10 +24,14 @@
 #ifndef USDSHADE_PARAMETER_H
 #define USDSHADE_PARAMETER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdShadeConnectableAPI;
 class UsdShadeOutput;
@@ -285,5 +289,8 @@ private:
     
     UsdAttribute _attr;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDSHADE_PARAMETER_H

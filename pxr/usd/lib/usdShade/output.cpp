@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/output.h"
 
 #include "pxr/usd/usdShade/parameter.h"
@@ -36,6 +37,9 @@
 #include <algorithm>
 
 #include "pxr/base/tf/envSetting.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 using std::string;
@@ -270,3 +274,6 @@ UsdShadeOutput::IsOutput(const UsdAttribute &attr)
     return TfStringStartsWith(attr.GetName().GetString(), 
                               UsdShadeTokens->outputs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

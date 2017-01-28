@@ -175,5 +175,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 WRAP_CUSTOM {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

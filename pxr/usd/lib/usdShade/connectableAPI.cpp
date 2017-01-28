@@ -110,6 +110,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "debugCodes.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_ENV_SETTING(
     USD_SHADE_BACK_COMPAT, true,
     "Set to false to terminate support for older encodings of the UsdShading model.");
@@ -312,3 +314,5 @@ UsdShadeConnectableAPI::GetOutputs() const
     }
     return ret;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

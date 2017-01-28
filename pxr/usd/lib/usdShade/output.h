@@ -24,6 +24,7 @@
 #ifndef USDSHADE_OUTPUT_H
 #define USDSHADE_OUTPUT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/relationship.h"
@@ -31,6 +32,9 @@
 #include "pxr/usd/usdShade/utils.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdShadeConnectableAPI;
 class UsdShadeParameter;
@@ -342,5 +346,8 @@ private:
     // can switch this to be a UsdAttribute instead of UsdProperty.
     UsdProperty _prop;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDSHADE_OUTPUT_H

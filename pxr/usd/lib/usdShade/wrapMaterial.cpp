@@ -107,6 +107,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/editContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static UsdPyEditContext
 _GetEditContextForVariant(const UsdShadeMaterial &self,
                           const TfToken &materialVariantName,
@@ -158,3 +160,5 @@ WRAP_CUSTOM {
             .staticmethod("HasMaterialFaceSet")
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

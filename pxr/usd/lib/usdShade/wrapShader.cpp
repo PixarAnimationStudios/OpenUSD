@@ -121,6 +121,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 WRAP_CUSTOM {
     _class
         .def("CreateParameter", &UsdShadeShader::CreateParameter,
@@ -139,3 +141,5 @@ WRAP_CUSTOM {
 
     implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

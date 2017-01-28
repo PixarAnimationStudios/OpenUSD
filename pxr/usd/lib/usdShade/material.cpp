@@ -128,6 +128,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/usdShade/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (material)
@@ -466,3 +468,5 @@ UsdShadeMaterial::HasMaterialFaceSet(const UsdPrim &prim)
     bool isPartition=false;
     return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

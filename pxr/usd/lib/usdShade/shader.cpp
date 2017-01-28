@@ -158,6 +158,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (outputs)
@@ -216,3 +218,5 @@ UsdShadeShader::GetOutputs() const
 {
     return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

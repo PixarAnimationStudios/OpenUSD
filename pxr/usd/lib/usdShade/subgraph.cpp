@@ -125,6 +125,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 UsdShadeSubgraph::operator UsdShadeConnectableAPI () const {
     return UsdShadeConnectableAPI(GetPrim());
 }
@@ -203,3 +205,5 @@ UsdShadeSubgraph::GetOutputs() const
 {
     return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

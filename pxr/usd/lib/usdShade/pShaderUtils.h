@@ -37,10 +37,14 @@
 //   the Presto "ri" shading model to a more generalized one (see XXX comment
 //   in usd/tokens.h)
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdShade/pShader.h"
 #include "pxr/usd/usd/relationship.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Return whether the given relationship represents a shader binding.
 /// This is true if it's called "shaders" or the isShaderBinding metadata 
@@ -104,5 +108,8 @@ std::string UsdShdGetShaderHandle(const UsdPrim &obj);
 /// Return false if neither ':' nor '_' occur in the string.
 bool UsdShdSplitRibAttributeName(const std::string &name,
                                  std::string *attrName, std::string *argName);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

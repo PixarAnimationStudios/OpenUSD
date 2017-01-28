@@ -107,6 +107,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 WRAP_CUSTOM {
     _class
         .def("CreateInterfaceAttribute", 
@@ -132,3 +134,5 @@ WRAP_CUSTOM {
 
     implicitly_convertible<UsdShadeSubgraph, UsdShadeConnectableAPI>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -103,6 +103,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 WRAP_CUSTOM {
     _class
         .def(init<UsdShadeShader const &>(arg("shader")))
@@ -116,3 +118,5 @@ WRAP_CUSTOM {
     implicitly_convertible<UsdShadeConnectableAPI, UsdShadeSubgraph>();
     implicitly_convertible<UsdShadeConnectableAPI, UsdShadeShader>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

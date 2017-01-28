@@ -242,4 +242,6 @@ public:
     // --(BEGIN CUSTOM CODE)--
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif

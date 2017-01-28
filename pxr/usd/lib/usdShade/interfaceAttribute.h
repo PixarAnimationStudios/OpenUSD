@@ -24,8 +24,12 @@
 #ifndef USDSHADE_INTERFACEATTRIBUTE_H
 #define USDSHADE_INTERFACEATTRIBUTE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/parameter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdShadeParameter;
 class UsdShadeOutput;
@@ -333,5 +337,8 @@ private:
     // The unnamespaced nane of the interface attribute.
     TfToken _name;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDSHADE_INTERFACEATTRIBUTE_H
