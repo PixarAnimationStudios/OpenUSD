@@ -57,6 +57,9 @@
 #include <functional>
 #include <vector>
 
+// Un-comment for extra runtime validation.
+// #define PCP_DIAGNOSTIC_VALIDATION 1
+
 using std::string;
 using std::vector;
 
@@ -626,100 +629,177 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
 
 ////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+/// A task to perform on a particular node.
+struct Task {
+    /// This enum must be in evaluation priority order.
+    enum Type {
+        EvalNodeRelocations,
+        EvalImpliedRelocations,
+        EvalNodeReferences,
+        EvalNodePayload,
+        EvalNodeInherits,
+        EvalImpliedClasses,
+        EvalNodeSpecializes,
+        EvalImpliedSpecializes,
+        EvalNodeVariantSets,
+        EvalNodeVariantAuthored,
+        EvalNodeVariantFallback,
+        EvalNodeVariantNoneFound,
+        None
+    };
+
+    struct PriorityOrder {
+        bool operator()(const Task& a, const Task& b) const {
+            if (a.type != b.type) {
+                return a.type < b.type;
+            }
+            // Node strength order is costly to compute, so avoid it for
+            // arcs with order-indepenent results.
+            switch (a.type) {
+            case EvalNodePayload:
+                if (_hasPayloadDecorator) {
+                    // Payload decorators can depend on non-local information,
+                    // so we must process these in strength order.
+                    return PcpCompareNodeStrength(a.node, b.node) == -1;
+                } else {
+                    // Arbitrary order
+                    return a.node < b.node;
+                }
+            case EvalNodeVariantAuthored:
+                // Variant selections can depend on non-local information
+                // so we must visit them in strength order.
+                if (a.node != b.node) {
+                    return PcpCompareNodeStrength(a.node, b.node) == -1;
+                } else {
+                    // Lower-number vsets have strength priority.
+                    return a.vsetNum < b.vsetNum;
+                }
+            default:
+                // Arbitrary order
+                return a.node < b.node;
+            }
+        }
+        // We can use a slightly cheaper ordering for payload arcs
+        // when there is no payload decorator.
+        const bool _hasPayloadDecorator;
+        PriorityOrder(bool hasPayloadDecorator)
+            : _hasPayloadDecorator(hasPayloadDecorator) {}
+    };
+
+    Task(Type type_, const PcpNodeRef& node_ = PcpNodeRef(),
+         const std::string &vsetName = std::string(),
+         int vsetNum = 0)
+        : type(type_)
+        , node(node_) 
+        , vsetName(vsetName)
+        , vsetNum(vsetNum)
+    { }
+
+    Type type;
+    PcpNodeRef node;
+    // only for variant tasks:
+    std::string vsetName;
+    int vsetNum;
+};
+
+}
+
 // Pcp_PrimIndexer is used during prim cache population to track which
 // tasks remain to finish building the graph.  As new nodes are added,
 // we add task entries to this structure, which ensures that we
 // process them in an appropriate order.
 //
+// This is the high-level control logic for the population algorithm.
+// At each step, it determines what will happen next.
+//
+// Notes on the algorithm:
+//
+// - We can process inherits, and implied inherits in any order
+//   any order, as long as we finish them before moving on to
+//   deciding references and variants.  This is because evaluating any
+//   arcs of the former group does not affect how we evaluate other arcs
+//   of that group -- but they do affect how we evaluate references,
+//   variants and payloads.  Specifically, they may introduce information
+//   needed to evaluate references, opinions with variants selections, 
+//   or overrides to the payload target path.
+//
+//   It is important to complete evaluation of the former group
+//   before proceeding to references/variants/payloads so that we gather
+//   as much information as available before deciding those arcs.
+//
+// - We only want to process a payload when there is nothing else
+//   left to do.  Again, this is to ensure that we have discovered
+//   any opinions which may affect the payload arc, including
+//   those inside variants.
+//
+// - At each step, we may introduce a new node that returns us
+//   to an earlier stage of the algorithm.  For example, a payload
+//   may introduce nodes that contain references, inherits, etc.
+//   We need to process them to completion before we return to
+//   check variants, and so on.
+//
 struct Pcp_PrimIndexer
 {
-    /// The various kinds of tasks.
-    enum TaskType {
-        EvalNodeRelocations,
-        EvalImpliedRelocations,
-        EvalNodeReferences,
-        EvalNodeInherits,
-        EvalNodeSpecializes,
-        EvalImpliedClasses,
-        EvalImpliedSpecializes,
-        EvalNodeVariants,
-        EvalNodeVariantFallbacks,
-        EvalNodePayload,
-        NoTasksLeft
-    };
-
-    /// A task to perform on a particular node.
-    struct Task {
-        Task(TaskType type_, const PcpNodeRef& node_ = PcpNodeRef())
-            : type(type_)
-            , node(node_) 
-        { }
-
-        TaskType type;
-        PcpNodeRef node;
-    };
-
     // The root site for the prim indexing process.
-    PcpLayerStackSite rootSite;
+    const PcpLayerStackSite rootSite;
 
     // Total depth of ancestral recursion.
-    int ancestorRecursionDepth;
+    const int ancestorRecursionDepth;
 
     // Context for the prim index we are building.
-    PcpPrimIndexInputs inputs;
-    PcpPrimIndexOutputs* outputs;
+    const PcpPrimIndexInputs inputs;
+    PcpPrimIndexOutputs* const outputs;
 
     // The previousFrame tracks information across recursive invocations
     // of Pcp_BuildPrimIndex() so that recursive indexes can query
     // outer indexes.  This is used for cycle detection as well as
     // composing the variant selection.
-    PcpPrimIndex_StackFrame *previousFrame;
+    PcpPrimIndex_StackFrame* const previousFrame;
 
-    // Remaining tasks, bucketed (somewhat) by type.
-    typedef PcpNodeRefVector _TaskDataQueue;
-    _TaskDataQueue relocs;
-    _TaskDataQueue impliedRelocs;
-    _TaskDataQueue refs;
-    _TaskDataQueue inhs;
-    _TaskDataQueue specializes;
-    _TaskDataQueue impliedClasses;
-    _TaskDataQueue impliedSpecializes;
-    _TaskDataQueue vars;
-    _TaskDataQueue varFallbacks;
-    _TaskDataQueue payloads;
+    // Open tasks, in priority order
+    typedef std::set<Task, Task::PriorityOrder> _TaskQueue;
+    _TaskQueue tasks;
 
-    struct _NodeStrengthComparator {
-        bool operator()(const PcpNodeRef& a, const PcpNodeRef& b) const
-        {
-            // PcpCompareNodeStrength returns 1 if a is weaker than b.
-            return PcpCompareNodeStrength(a, b) == 1;
-        }
-    };
-
-    bool evaluateImpliedSpecializes;
-    bool evaluateVariants;
+    const bool evaluateImpliedSpecializes;
+    const bool evaluateVariants;
 
 #ifdef PCP_DIAGNOSTIC_VALIDATION
     /// Diagnostic helper to make sure we don't revisit sites.
     PcpNodeRefHashSet seen;
 #endif // PCP_DIAGNOSTIC_VALIDATION
 
-    Pcp_PrimIndexer()
-        : ancestorRecursionDepth(0)
-        , outputs(0)
-        , previousFrame(0)
-        , evaluateImpliedSpecializes(true)
-        , evaluateVariants(true)
+    Pcp_PrimIndexer(PcpPrimIndexInputs inputs_,
+                    PcpPrimIndexOutputs *outputs_,
+                    PcpLayerStackSite rootSite_,
+                    int ancestorRecursionDepth_,
+                    PcpPrimIndex_StackFrame *previousFrame_=nullptr,
+                    bool evaluateImpliedSpecializes_=true,
+                    bool evaluateVariants_=true)
+        : rootSite(rootSite_)
+        , ancestorRecursionDepth(ancestorRecursionDepth_)
+        , inputs(inputs_)
+        , outputs(outputs_)
+        , previousFrame(previousFrame_)
+        , tasks(Task::PriorityOrder(inputs.payloadDecorator))
+        , evaluateImpliedSpecializes(evaluateImpliedSpecializes_)
+        , evaluateVariants(evaluateVariants_)
     {
     }
 
-    static bool _NodeContributesSpecs(const PcpNodeRef& n)
-    {
-        // Optimizations:
-        // - If the node does not have specs or cannot contribute specs,
-        //   we can avoid even enqueueing certain kinds of tasks that will
-        //   end up being no-ops.
-        return (n.HasSpecs() && n.CanContributeSpecs());
+    void AddTask(const Task &task) {
+        tasks.insert(task);
+    }
+
+    // Select the next task to perform.
+    Task PopTask() {
+        if (!tasks.empty()) {
+            Task result = *tasks.begin();
+            tasks.erase(tasks.begin());
+            return result;
+        }
+        return Task(Task::Type::None);
     }
 
     // Add this node and its children to the task queues.  
@@ -733,133 +813,35 @@ struct Pcp_PrimIndexer
         seen.insert(n);
 #endif // PCP_DIAGNOSTIC_VALIDATION
 
-        // Collect nodes in weak-to-strong order.
-        struct _Collector {
-            static void _CollectNodesWeakToStrong(
-                PcpNodeRefVector* allNodes,
-                PcpNodeRefVector* nodesWithSpecs,
-                const PcpNodeRef& node) 
-            {
-                // Weak-to-strong traversal for any existing child nodes.
-                TF_REVERSE_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-                    _CollectNodesWeakToStrong(allNodes, nodesWithSpecs, *child);
-                }
-
-                allNodes->push_back(node);
-                if (_NodeContributesSpecs(node)) {
-                    nodesWithSpecs->push_back(node);
-                }
-            }
-        };
-
-        PcpNodeRefVector allNodes, nodesWithSpecs;
-        _Collector::_CollectNodesWeakToStrong(&allNodes, &nodesWithSpecs, n);
-
-        if (!isUsd) {
-            impliedRelocs.insert(impliedRelocs.end(),
-                                 allNodes.begin(), allNodes.end());
+        TF_FOR_ALL(child, Pcp_GetChildrenRange(n)) {
+            _AddTasksForNodeRecursively(*child, skipCompletedNodes, isUsd);
         }
 
+        // If the node does not have specs or cannot contribute specs,
+        // we can avoid even enqueueing certain kinds of tasks that will
+        // end up being no-ops.
+        bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
         // If the caller tells us the new node and its children were
         // already fully indexed, we do not need to re-scan them for
         // these kinds of arcs.
         if (!skipCompletedNodes) {
-            // Add nodes to list of tasks.
+            if (contributesSpecs) {
+                AddTask(Task(Task::Type::EvalNodeInherits, n));
+                AddTask(Task(Task::Type::EvalNodeSpecializes, n));
+                AddTask(Task(Task::Type::EvalNodeReferences, n));
+            }
             if (!isUsd) {
-                relocs.insert(relocs.end(), allNodes.begin(), allNodes.end());
+                AddTask(Task(Task::Type::EvalNodeRelocations, n));
             }
-            inhs.insert(inhs.end(),
-                        nodesWithSpecs.begin(), nodesWithSpecs.end());
-            specializes.insert(specializes.end(),
-                               nodesWithSpecs.begin(), nodesWithSpecs.end());
-
-            // Add nodesWithSpecs to list of reference tasks. We want
-            // to ensure these tasks are processed in strength order so
-            // that information from stronger references is available
-            // when processing weaker references to add decorators
-            if (!nodesWithSpecs.empty()) {
-                refs.insert(
-                    std::lower_bound(refs.begin(), refs.end(),
-                                     nodesWithSpecs.front(),
-                                     _NodeStrengthComparator()),
-                    nodesWithSpecs.begin(), nodesWithSpecs.end());
+        }
+        if (contributesSpecs) {
+            AddTask(Task(Task::Type::EvalNodePayload, n));
+            if (evaluateVariants) {
+                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
-
-#ifdef PCP_DIAGNOSTIC_VALIDATION
-            TF_VERIFY(boost::algorithm::is_sorted(
-                refs.begin(), refs.end(), _NodeStrengthComparator()));
-#endif // PCP_DIAGNOSTIC_VALIDATION
         }
-
-        // - If this indexer isn't evaluating variants, we can skip over
-        //   processing variant tasks.
-        if (evaluateVariants) {
-            // Add nodesWithSpecs to list of variant tasks. We want
-            // to ensure these tasks are processed in strength order
-            // so that variant selections in stronger variants
-            // are available when processing weaker variants (see
-            // TrickyVariantSelectionInVariant museum case).
-            if (!nodesWithSpecs.empty()) {
-                vars.insert(
-                    std::lower_bound(vars.begin(), vars.end(),
-                                     nodesWithSpecs.front(),
-                                     _NodeStrengthComparator()),
-                    nodesWithSpecs.begin(), nodesWithSpecs.end());
-            }
-
-#ifdef PCP_DIAGNOSTIC_VALIDATION
-            TF_VERIFY(boost::algorithm::is_sorted(
-                    vars.begin(), vars.end(), _NodeStrengthComparator()));
-#endif // PCP_DIAGNOSTIC_VALIDATION
-        }
-
-        // TODO: we should be able to skip the payload tasks when
-        // skipCompletedNodes is true, but first we'll need
-        // to update _EvalNodePayload() to properly decide when to
-        // include a payload arc, and also make sure that the graph's
-        // HasPayload flag gets updated properly.  In the meantime,
-        // we just always add payload tasks to ensure that they
-        // do get handled.
-        //
-        // Add nodesWithSpecs to list of payload tasks. We want to ensure these
-        // tasks are processed in strength order so that information from
-        // stronger payloads is available when processing weaker 
-        // payloads to add decorators
-        if (!nodesWithSpecs.empty()) {
-            payloads.insert(
-                std::lower_bound(payloads.begin(), payloads.end(),
-                                 nodesWithSpecs.front(),
-                                 _NodeStrengthComparator()),
-                nodesWithSpecs.begin(), nodesWithSpecs.end());
-        }
-    }
-
-    void AddImpliedClassTask(const PcpNodeRef &n)
-    {
-        // Use a vector instead of a set because we've empirically
-        // determined that the highwater mark is small, around 8.
-        if (std::find(impliedClasses.begin(), impliedClasses.end(), n) ==
-            impliedClasses.end()) {
-            impliedClasses.push_back(n);
-        }
-    }
-
-    void AddImpliedSpecializesTask(const PcpNodeRef &n)
-    {
-        // Use a vector instead of a set because we've empirically
-        // determined that the highwater mark is small, around 8.
-        if (std::find(impliedSpecializes.begin(), impliedSpecializes.end(), n) == 
-                      impliedSpecializes.end()) {
-            impliedSpecializes.push_back(n);
-        }
-    }
-
-    void AddVariantFallbackTask(const PcpNodeRef &n)
-    {
-        auto i = std::lower_bound(varFallbacks.begin(), varFallbacks.end(),
-                                  n, _NodeStrengthComparator());
-        if (i == varFallbacks.end() || *i != n) {
-            varFallbacks.insert(i, n);
+        if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
+            AddTask(Task(Task::Type::EvalImpliedRelocations, n));
         }
     }
 
@@ -874,7 +856,7 @@ struct Pcp_PrimIndexer
             // prim of the chain of classes the node is a part of, and 
             // propagate the entire chain as a single unit.
             if (PcpNodeRef base = _FindStartingNodeForImpliedClasses(n)) {
-                AddImpliedClassTask(base);
+                AddTask(Task(Task::Type::EvalImpliedClasses, base));
             }
         } else if (_HasClassBasedChild(n)) {
             // The new node is not class-based -- but it has class-based
@@ -882,15 +864,14 @@ struct Pcp_PrimIndexer
             // recursive computation of the node's subgraph.  We need to
             // pick them up and continue propagating them now that we are
             // merging the subgraph into the parent graph.
-            AddImpliedClassTask(n);
+            AddTask(Task(Task::Type::EvalImpliedClasses, n));
         }
-
         if (!skipImpliedSpecializes && evaluateImpliedSpecializes) {
             if (PcpNodeRef base = _FindStartingNodeForImpliedSpecializes(n)) {
                 // We're adding a new specializes node or a node beneath
                 // a specializes node.  Add a task to propagate the subgraph
                 // beneath this node to the appropriate location.
-                AddImpliedSpecializesTask(base);
+                AddTask(Task(Task::Type::EvalImpliedSpecializes, base));
             }
             else if (_HasSpecializesChild(n)) {
                 // The new node is not a specializes node or beneath a
@@ -899,24 +880,8 @@ struct Pcp_PrimIndexer
                 // computation of the node's subgraph.  We need to pick them 
                 // up and continue propagating them now that we are
                 // merging the subgraph into the parent graph.
-                AddImpliedSpecializesTask(n);
+                AddTask(Task(Task::Type::EvalImpliedSpecializes, n));
             }
-        }
-
-        // Any time we add an arc, it can introduce new information to
-        // help decide variant sets.  Take any nodes with variant sets
-        // that we had previously failed to decide using an authored
-        // selection, and retry them.
-        if (evaluateVariants) {
-            TF_FOR_ALL(node, varFallbacks) {
-                // Insert one at a time in strength order checking for dupes.
-                auto i = std::lower_bound(vars.begin(), vars.end(),
-                                          *node, _NodeStrengthComparator());
-                if (i == vars.end() || *i != *node) {
-                    vars.insert(i, *node);
-                }
-            }
-            varFallbacks.clear();
         }
 
         // Recurse over all of the rest of the nodes.  (We assume that any
@@ -925,93 +890,29 @@ struct Pcp_PrimIndexer
         _AddTasksForNodeRecursively(n, skipCompletedNodes, inputs.usd);
     }
 
-    // Select the next task to perform.
-    // This is the high-level control logic for the population algorithm.
-    // At each step, it determines what will happen next.
-    //
-    // Notes on the algorithm:
-    //
-    // - We can process inherits, and implied inherits in any order
-    //   any order, as long as we finish them before moving on to
-    //   deciding references and variants.  This is because evaluating any
-    //   arcs of the former group does not affect how we evaluate other arcs
-    //   of that group -- but they do affect how we evaluate references,
-    //   variants and payloads.  Specifically, they may introduce information
-    //   needed to evaluate references, opinions with variants selections, 
-    //   or overrides to the payload target path.
-    //
-    //   It is important to complete evaluation of the former group
-    //   before proceeding to references/variants/payloads so that we gather
-    //   as much information as available before deciding those arcs.
-    //
-    // - We only want to process a payload when there is nothing else
-    //   left to do.  Again, this is to ensure that we have discovered
-    //   any opinions which may affect the payload arc, including
-    //   those inside variants.
-    //
-    // - At each step, we may introduce a new node that returns us
-    //   to an earlier stage of the algorithm.  For example, a payload
-    //   may introduce nodes that contain references, inherits, etc.
-    //   We need to process them to completion before we return to
-    //   check variants, and so on.
-    //
-    Task PopTask() {
-        if (!relocs.empty()) {
-            Task task(EvalNodeRelocations, relocs.back());
-            relocs.pop_back();
-            return task;
+    // Retry any variant sets that previously failed to find an authored
+    // selection to take into account newly-discovered opinions.
+    // EvalNodeVariantNoneFound is a placeholder representing variants
+    // that were previously visited and yielded no variant; it exists
+    // solely for this function to be able to find and retry them.
+    void RetryVariantTasks() {
+        // Optimization: We know variant tasks are the lowest priority,
+        // and therefore sorted to the end of this container, so we can
+        // reverse-iterate and stop as soon as we pass them.
+        for (_TaskQueue::reverse_iterator i = tasks.rbegin();
+             i != tasks.rend(); /* advance-with-edit below */) {
+            if (i->type == Task::Type::EvalNodeVariantFallback ||
+                i->type == Task::Type::EvalNodeVariantNoneFound) {
+                // Promote this task back to an authored-variant task.
+                Task task(*i);
+                ++i;
+                tasks.erase(i.base());
+                task.type = Task::Type::EvalNodeVariantAuthored;
+                AddTask(task);
+            } else {
+                break;
+            }
         }
-        if (!impliedRelocs.empty()) {
-            Task task(EvalImpliedRelocations, impliedRelocs.back());
-            impliedRelocs.pop_back();
-            return task;
-        }
-        if (!refs.empty()) {
-            Task refTask(EvalNodeReferences, refs.back());
-            refs.pop_back();
-            return refTask;
-        }
-        if (!payloads.empty()) {
-            Task plTask(EvalNodePayload, payloads.back());
-            payloads.pop_back();
-            return plTask;
-        }
-        
-        if (!inhs.empty()) {
-            Task inhTask(EvalNodeInherits, inhs.back());
-            inhs.pop_back();
-            return inhTask;
-        }
-        if (!impliedClasses.empty()) {
-            Task inhTask(EvalImpliedClasses, impliedClasses.back());
-            impliedClasses.pop_back();
-            return inhTask;
-        }
-
-        if (!specializes.empty()) {
-            Task specTask(EvalNodeSpecializes, specializes.back());
-            specializes.pop_back();
-            return specTask;
-        }
-        if (!impliedSpecializes.empty()) {
-            Task specTask(EvalImpliedSpecializes, impliedSpecializes.back());
-            impliedSpecializes.pop_back();
-            return specTask;
-        }
-
-        if (evaluateVariants && !vars.empty()) {
-            Task varTask(EvalNodeVariants, vars.back());
-            vars.pop_back();
-            return varTask;
-        }
-
-        if (evaluateVariants && !varFallbacks.empty()) {
-            Task varTask(EvalNodeVariantFallbacks, varFallbacks.back());
-            varFallbacks.pop_back();
-            return varTask;
-        }
-
-        return Task(NoTasksLeft);
     }
 
     // Convenience function to record an error both in this primIndex's
@@ -2348,7 +2249,7 @@ _EvalImpliedClassTree(
         // instead, we have to explicitly add a task to ensure this occurs.
         // See TrickyInheritsAndRelocates5 for a test case where this is
         // important.
-        indexer->AddImpliedClassTask(destNode);
+        indexer->AddTask(Task(Task::Type::EvalImpliedClasses, destNode));
         return;
     }
 
@@ -3234,31 +3135,45 @@ _ChooseBestFallbackAmongOptions(
     return std::string();
 }
 
-// XXX: The variant evaluation process is more convoluted than it
-//      needs to be.  In particular it seems like we can simplify
-//      this once we remove the old-style standin fallback behavior.
-//
-// XXX: There's a question as to whether Pcp should be responsible
-//      for validating variant selections at some point. Currently, Csd
-//      handles that during name children population and checks that
-//      the each variant and variant set in the selection exists.
-//
-//      One issue is that Csd's variant validation skips over classes; 
-//      this is because classes may express a selection for variants 
-//      that are provided by instances. Pcp currently doesn't know or 
-//      care whether the prim being constructed is a class, and it'd
-//      be nice if it didn't have to.
 static void
-_EvalNodeVariants(
+_AddVariantArc(Pcp_PrimIndexer *indexer,
+               const PcpNodeRef &node,
+               const std::string &vset,
+               int vsetNum,
+               const std::string &vsel)
+{
+    // Variants do not remap the scenegraph's namespace, they simply
+    // represent a branch off into a different section of the layer
+    // storage.  For this reason, the source site includes the
+    // variant selection but the mapping function is identity.
+    SdfPath varPath = node.GetSite().path.AppendVariantSelection(vset, vsel);
+    if (_AddArc(PcpArcTypeVariant,
+                /* parent = */ node,
+                /* origin = */ node,
+                PcpLayerStackSite( node.GetLayerStack(), varPath ),
+                /* mapExpression = */ PcpMapExpression::Identity(),
+                /* arcSiblingNum = */ vsetNum, 
+                /* directNodeShouldContributeSpecs = */ true,
+                /* includeAncestralOpinions = */ false,
+                /* requirePrimAtTarget = */ false,
+                /* skipDuplicateNodes = */ false,
+                indexer )) {
+        // If we expanded a variant set, it may have introduced new
+        // authored variant selections, so we must retry any pending
+        // variant tasks as authored tasks.
+        indexer->RetryVariantTasks();
+    }
+}
+
+static void
+_EvalNodeVariantSets(
     PcpPrimIndex *index, 
     const PcpNodeRef& node, 
-    Pcp_PrimIndexer *indexer,
-    bool fallbacks)
+    Pcp_PrimIndexer *indexer)
 {
     PCP_GRAPH_PHASE(
         node, 
-        "Evaluating %s at %s", 
-        fallbacks ? "variant fallbacks" : "variants",
+        "Evaluating variant sets at %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
     if (!node.CanContributeSpecs())
@@ -3267,131 +3182,120 @@ _EvalNodeVariants(
     std::vector<std::string> vsetNames;
     PcpComposeSiteVariantSets(node.GetSite(), &vsetNames);
 
-    bool shouldAddVariantFallbackTask = false;
-
-    // Compose the selection for each variant set.
-    // Variant sets are ordered strong-to-weak.
     for (int vsetNum=0, numVsets=vsetNames.size();
          vsetNum < numVsets; ++vsetNum) {
+        indexer->AddTask(Task(Task::Type::EvalNodeVariantAuthored,
+                              node, vsetNames[vsetNum], vsetNum));
+    }
+}
 
-        const std::string & vset = vsetNames[vsetNum];
+static void
+_EvalNodeAuthoredVariant(
+    PcpPrimIndex *index, 
+    const PcpNodeRef& node, 
+    Pcp_PrimIndexer *indexer,
+    const std::string &vset,
+    int vsetNum)
+{
+    PCP_GRAPH_PHASE(
+        node, 
+        "Evaluating authored selections for variant set %s at %s", 
+        vset.c_str(),
+        Pcp_FormatSite(node.GetSite()).c_str());
 
-        // Only process vsets we didn't already decide.
-        // Determine this by checking node children.
-        bool vsetAlreadyEvaluated = false;
-        TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-            if (child->GetArcType() == PcpArcTypeVariant &&
-                !child->IsDueToAncestor()) {
-                std::pair<std::string, std::string> vsel =
-                    child->GetPath().GetVariantSelection();
-                if (vsel.first == vset) {
-                    vsetAlreadyEvaluated = true;
-                    break;
-                }
-            }
-        }
-        if (vsetAlreadyEvaluated) {
-            // Already have a node for this vset -- skip.
-            continue;
-        }
+    if (!node.CanContributeSpecs())
+        return;
 
-        PCP_GRAPH_MSG(
-            node, "Processing %s for set '%s'",
-            fallbacks ? "variant fallbacks" : "variant selection",
-            vset.c_str());
+    // Compose options.
+    std::set<std::string> vsetOptions;
+    PcpComposeSiteVariantSetOptions(node.GetSite(), vset, &vsetOptions);
 
-        // Compose options.
-        std::set<std::string> vsetOptions;
-        PcpComposeSiteVariantSetOptions(node.GetSite(), vset, &vsetOptions);
-
-        // Determine what the fallback selection would be.
-        const std::string vselFallback =
-            _ChooseBestFallbackAmongOptions( vset, vsetOptions,
+    // Determine what the fallback selection would be.
+    // Generally speaking, authoring opinions win over fallbacks, however if
+    // MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR==false then that is not
+    // always the case, and we must check the fallback here first.
+    // TODO Remove this once we phase out the old behavior!
+    const std::string vselFallback =
+        _ChooseBestFallbackAmongOptions( vset, vsetOptions,
                                          *indexer->inputs.variantFallbacks );
-        if (!vselFallback.empty()) {
-            PCP_GRAPH_MSG(
-                node, "Found fallback {%s=%s}",
-                vset.c_str(),
-                vselFallback.c_str());
-        }
-
-        // Determine the variant selection for this set.
-        std::string vsel;
-        if (fallbacks) {
-            vsel = vselFallback;
-        } else {
-            // Check for an applicable authored opinion.
-            PcpNodeRef nodeWithVsel;
-            _ComposeVariantSelection(indexer->ancestorRecursionDepth,
-                                     indexer->previousFrame, node,
-                                     node.GetPath().StripAllVariantSelections(),
-                                     vset, &vsel, &nodeWithVsel,
-                                     indexer->outputs);
-            if (!vsel.empty()) {
-                PCP_GRAPH_MSG(
-                    node, "Found variant selection '%s' for set '%s' at %s",
-                    vsel.c_str(),
-                    vset.c_str(),
-                    Pcp_FormatSite(nodeWithVsel.GetSite()).c_str());
-            }
-            // Check if we should use the variant fallback.
-            if (_ShouldUseVariantFallback(indexer, vset, vsel, vselFallback,
-                                          nodeWithVsel)) {
-                PCP_GRAPH_MSG(
-                    node, "Deferring to variant fallback");
-                shouldAddVariantFallbackTask = true;
-                continue;
-            }
-        }
-
-        // If no variant was chosen, do not expand this variant set.
-        if (vsel.empty()) {
-            PCP_GRAPH_MSG(
-                node, "No variant selection found for set '%s'", vset.c_str());
-            continue;
-        }
-
-        // Add the variant arc.
-        SdfPath varPath = node.GetSite()
-            .path.AppendVariantSelection(vset, vsel);
-
-        // Variants do not remap the scenegraph's namespace, they simply
-        // represent a branch off into a different section of the layer
-        // storage.  For this reason, the source site includes the
-        // variant selection but the mapping function is identity.
-        const PcpMapExpression identityMapExpr = PcpMapExpression::Identity();
-
-        PcpNodeRef child =
-            _AddArc( PcpArcTypeVariant,
-                     /* parent = */ node,
-                     /* origin = */ node,
-                     PcpLayerStackSite( node.GetLayerStack(), varPath ),
-                     identityMapExpr,
-                     /* arcSiblingNum = */ vsetNum, 
-                     /* directNodeShouldContributeSpecs = */ true,
-                     /* includeAncestralOpinions = */ false,
-                     /* requirePrimAtTarget = */ false,
-                     /* skipDuplicateNodes = */ false,
-                     indexer );
-
-        // If we expanded a fallback, the fallback may introduced authored
-        // variant selections, so we must restart checking for authored
-        // selections that resolve variant sets on this node.  Rather
-        // than re-enqueue a task for this node, just restart immediately
-        // since we know the new node we just added is strictly weaker
-        // than this node.
-        if (child && fallbacks) {
-            fallbacks = false;
-            vsetNum = -1;
-            PCP_GRAPH_MSG(
-                node, "Restarting variant eval after applying fallback");
-            continue;
-        }
+    if (!vselFallback.empty()) {
+        PCP_GRAPH_MSG(
+            node, "Found fallback {%s=%s}",
+            vset.c_str(),
+            vselFallback.c_str());
     }
 
-    if (shouldAddVariantFallbackTask) {
-        indexer->AddVariantFallbackTask(node);
+    // Determine the authored variant selection for this set, if any.
+    std::string vsel;
+    PcpNodeRef nodeWithVsel;
+    _ComposeVariantSelection(indexer->ancestorRecursionDepth,
+                             indexer->previousFrame, node,
+                             node.GetPath().StripAllVariantSelections(),
+                             vset, &vsel, &nodeWithVsel,
+                             indexer->outputs);
+    if (!vsel.empty()) {
+        PCP_GRAPH_MSG(
+            node, "Found variant selection {%s=%s} at %s",
+            vset.c_str(),
+            vsel.c_str(),
+            Pcp_FormatSite(nodeWithVsel.GetSite()).c_str());
     }
+    // Check if we should use the fallback
+    if (_ShouldUseVariantFallback(indexer, vset, vsel, vselFallback,
+                                  nodeWithVsel)) {
+        PCP_GRAPH_MSG(
+            node, "Deferring to variant fallback");
+        indexer->AddTask(Task(Task::Type::EvalNodeVariantFallback,
+                              node, vset, vsetNum));
+        return;
+    }
+    // If no variant was chosen, do not expand this variant set.
+    if (vsel.empty()) {
+        PCP_GRAPH_MSG(
+            node, "No variant selection found for set '%s'", vset.c_str());
+        indexer->AddTask(Task(Task::Type::EvalNodeVariantNoneFound,
+                              node, vset, vsetNum));
+        return;
+    }
+
+    _AddVariantArc(indexer, node, vset, vsetNum, vsel);
+}
+
+static void
+_EvalNodeFallbackVariant(
+    PcpPrimIndex *index, 
+    const PcpNodeRef& node, 
+    Pcp_PrimIndexer *indexer,
+    const std::string &vset,
+    int vsetNum)
+{
+    PCP_GRAPH_PHASE(
+        node, 
+        "Evaluating fallback selections for variant set %s s at %s", 
+        vset.c_str(),
+        Pcp_FormatSite(node.GetSite()).c_str());
+
+    if (!node.CanContributeSpecs())
+        return;
+
+    // Compose options.
+    std::set<std::string> vsetOptions;
+    PcpComposeSiteVariantSetOptions(node.GetSite(), vset, &vsetOptions);
+
+    // Determine what the fallback selection would be.
+    const std::string vsel =
+        _ChooseBestFallbackAmongOptions( vset, vsetOptions,
+                                         *indexer->inputs.variantFallbacks );
+    // If no variant was chosen, do not expand this variant set.
+    if (vsel.empty()) {
+        PCP_GRAPH_MSG(
+            node, "No variant fallback found for set '%s'", vset.c_str());
+        indexer->AddTask(Task(Task::Type::EvalNodeVariantNoneFound,
+                              node, vset, vsetNum));
+        return;
+    }
+
+    _AddVariantArc(indexer, node, vset, vsetNum, vsel);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4050,54 +3954,55 @@ Pcp_BuildPrimIndex(
     }
 
     // Initialize the task list.
-    Pcp_PrimIndexer indexer;
-    indexer.rootSite = rootSite;
-    indexer.ancestorRecursionDepth = ancestorRecursionDepth;
-    indexer.inputs = inputs;
-    indexer.outputs = outputs;
-    indexer.previousFrame = previousFrame;
-    indexer.evaluateImpliedSpecializes = evaluateImpliedSpecializes;
-    indexer.evaluateVariants = evaluateVariants;
+    Pcp_PrimIndexer indexer(inputs, outputs, rootSite, ancestorRecursionDepth,
+                            previousFrame, evaluateImpliedSpecializes,
+                            evaluateVariants);
     indexer.AddTasksForNode( outputs->primIndex.GetRootNode() );
 
     // Process task list.
     bool tasksAreLeft = true;
     while (tasksAreLeft) {
-        Pcp_PrimIndexer::Task task = indexer.PopTask();
+        Task task = indexer.PopTask();
         switch (task.type) {
-        case Pcp_PrimIndexer::EvalNodeRelocations:
+        case Task::Type::EvalNodeRelocations:
             _EvalNodeRelocations(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalImpliedRelocations:
+        case Task::Type::EvalImpliedRelocations:
             _EvalImpliedRelocations(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalNodeReferences:
+        case Task::Type::EvalNodeReferences:
             _EvalNodeReferences(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalNodePayload:
+        case Task::Type::EvalNodePayload:
             _EvalNodePayload(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalNodeInherits:
+        case Task::Type::EvalNodeInherits:
             _EvalNodeInherits(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalImpliedClasses:
+        case Task::Type::EvalImpliedClasses:
             _EvalImpliedClasses(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalNodeSpecializes:
+        case Task::Type::EvalNodeSpecializes:
             _EvalNodeSpecializes(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalImpliedSpecializes:
+        case Task::Type::EvalImpliedSpecializes:
             _EvalImpliedSpecializes(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalNodeVariants:
-            _EvalNodeVariants(&outputs->primIndex, task.node, &indexer,
-                              /* fallbacks */ false); 
+        case Task::Type::EvalNodeVariantSets:
+            _EvalNodeVariantSets(&outputs->primIndex, task.node, &indexer);
             break;
-        case Pcp_PrimIndexer::EvalNodeVariantFallbacks:
-            _EvalNodeVariants(&outputs->primIndex, task.node, &indexer,
-                              /* fallbacks */ true); 
+        case Task::Type::EvalNodeVariantAuthored:
+            _EvalNodeAuthoredVariant(&outputs->primIndex, task.node, &indexer,
+                                     task.vsetName, task.vsetNum);
             break;
-        case Pcp_PrimIndexer::NoTasksLeft:
+        case Task::Type::EvalNodeVariantFallback:
+            _EvalNodeFallbackVariant(&outputs->primIndex, task.node, &indexer,
+                                     task.vsetName, task.vsetNum);
+            break;
+        case Task::Type::EvalNodeVariantNoneFound:
+            // No-op.  These tasks are just markers for RetryVariantTasks().
+            break;
+        case Task::Type::None:
             tasksAreLeft = false;
             break;
         }
