@@ -78,6 +78,7 @@ public:
     Hd_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
                                  TfToken const &srcName,
                                  TfToken const &dstName,
+                                 GLenum srcDataType,
                                  GLenum dstDataType);
 
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
@@ -91,6 +92,7 @@ private:
     Hd_VertexAdjacency const *_adjacency;
     TfToken _srcName;
     TfToken _dstName;
+    GLenum _srcDataType;
     GLenum _dstDataType;
 };
 

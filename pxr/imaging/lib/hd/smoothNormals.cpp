@@ -163,12 +163,22 @@ Hd_SmoothNormalsComputation::_CheckValid() const
 Hd_SmoothNormalsComputationGPU::Hd_SmoothNormalsComputationGPU(
     Hd_VertexAdjacency const *adjacency,
     TfToken const &srcName, TfToken const &dstName,
-    GLenum dstDataType)
-    : _adjacency(adjacency), _srcName(srcName), _dstName(dstName),
-      _dstDataType(dstDataType)
+    GLenum srcDataType, GLenum dstDataType)
+    : _adjacency(adjacency), _srcName(srcName), _dstName(dstName)
+    , _srcDataType(srcDataType), _dstDataType(dstDataType)
 {
-    if (dstDataType != GL_FLOAT && dstDataType != GL_DOUBLE) {
-        TF_CODING_ERROR("Unsupported points type for computing smooth normals");
+    if (srcDataType != GL_FLOAT && srcDataType != GL_DOUBLE) {
+        TF_CODING_ERROR(
+            "Unsupported points type %x for computing smooth normals",
+            srcDataType);
+        srcDataType = GL_FLOAT;
+    }
+    if (dstDataType != GL_FLOAT && dstDataType != GL_DOUBLE &&
+        dstDataType != GL_INT_2_10_10_10_REV) {
+        TF_CODING_ERROR(
+            "Unsupported normals type %x for computing smooth normals",
+            dstDataType);
+        dstDataType = GL_FLOAT;
     }
 }
 
@@ -189,11 +199,28 @@ Hd_SmoothNormalsComputationGPU::Execute(
     TF_VERIFY(adjacencyRange);
 
     // select shader by datatype
-    TfToken shaderToken = (_dstDataType == GL_FLOAT ?
-                           HdGLSLProgramTokens->smoothNormalsFloat :
-                           HdGLSLProgramTokens->smoothNormalsDouble);
+    TfToken shaderToken;
+    if (_srcDataType == GL_FLOAT) {
+        if (_dstDataType == GL_FLOAT) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToFloat;
+        } else if (_dstDataType == GL_DOUBLE) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToDouble;
+        } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToPacked;
+        }
+    } else if (_srcDataType == GL_DOUBLE) {
+        if (_dstDataType == GL_FLOAT) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToFloat;
+        } else if (_dstDataType == GL_DOUBLE) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToDouble;
+        } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToPacked;
+        }
+    }
+    if (not TF_VERIFY(!shaderToken.IsEmpty())) return;
 
-    HdGLSLProgramSharedPtr computeProgram = HdGLSLProgram::GetComputeProgram(shaderToken);
+    HdGLSLProgramSharedPtr computeProgram
+        = HdGLSLProgram::GetComputeProgram(shaderToken);
     if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();
@@ -229,8 +256,8 @@ Hd_SmoothNormalsComputationGPU::Execute(
     uniform.pointsOffset = points->GetOffset() / points->GetComponentSize();
     uniform.pointsStride = points->GetStride() / points->GetComponentSize();
     // interleaved offset/stride to normals
-    uniform.normalsOffset = normals->GetOffset() / points->GetComponentSize();
-    uniform.normalsStride = normals->GetStride() / points->GetComponentSize();
+    uniform.normalsOffset = normals->GetOffset() / normals->GetComponentSize();
+    uniform.normalsStride = normals->GetStride() / normals->GetComponentSize();
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
@@ -267,7 +294,11 @@ Hd_SmoothNormalsComputationGPU::Execute(
 void
 Hd_SmoothNormalsComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(_dstName, _dstDataType, 3));
+    if (_dstDataType == GL_INT_2_10_10_10_REV) {
+        specs->push_back(HdBufferSpec(_dstName, _dstDataType, 1));
+    } else {
+        specs->push_back(HdBufferSpec(_dstName, _dstDataType, 3));
+    }
 }
 
 

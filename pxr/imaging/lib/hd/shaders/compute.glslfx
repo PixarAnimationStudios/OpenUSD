@@ -31,12 +31,34 @@
 {
     "techniques": {
         "default": {
-            "smoothNormalsFloat": {
-                "source": [ "Compute.SmoothNormalsFloat",
+            "smoothNormalsFloatToFloat": {
+                "source": [ "Compute.SmoothNormalsSrcFloat",
+                            "Compute.SmoothNormalsDstFloat",
                             "Compute.SmoothNormals" ]
             },
-            "smoothNormalsDouble": {
-                "source": [ "Compute.SmoothNormalsDouble",
+            "smoothNormalsDoubleToFloat": {
+                "source": [ "Compute.SmoothNormalsSrcDouble",
+                            "Compute.SmoothNormalsDstFloat",
+                            "Compute.SmoothNormals" ]
+            },
+            "smoothNormalsFloatToDouble": {
+                "source": [ "Compute.SmoothNormalsSrcFloat",
+                            "Compute.SmoothNormalsDstDouble",
+                            "Compute.SmoothNormals" ]
+            },
+            "smoothNormalsDoubleToDouble": {
+                "source": [ "Compute.SmoothNormalsSrcDouble",
+                            "Compute.SmoothNormalsDstDouble",
+                            "Compute.SmoothNormals" ]
+            },
+            "smoothNormalsFloatToPacked": {
+                "source": [ "Compute.SmoothNormalsSrcFloat",
+                            "Compute.SmoothNormalsDstPacked",
+                            "Compute.SmoothNormals" ]
+            },
+            "smoothNormalsDoubleToPacked": {
+                "source": [ "Compute.SmoothNormalsSrcDouble",
+                            "Compute.SmoothNormalsDstPacked",
                             "Compute.SmoothNormals" ]
             },
             "quadrangulateFloat": {
@@ -52,19 +74,49 @@
 }
 
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsFloat
+-- glsl Compute.SmoothNormalsSrcFloat
 
 layout(binding=0) buffer Points { float points[]; };
-layout(binding=1) buffer Normals { float normals[]; };
 layout(binding=2) buffer Adjacency { int entry[]; };
 
 --- --------------------------------------------------------------------------
--- glsl Compute.SmoothNormalsDouble
+-- glsl Compute.SmoothNormalsSrcDouble
 
 layout(binding=0) buffer Points { double points[]; };
-layout(binding=1) buffer Normals { double normals[]; };
 layout(binding=2) buffer Adjacency { int entry[]; };
 
+--- --------------------------------------------------------------------------
+-- glsl Compute.SmoothNormalsDstFloat
+
+layout(binding=1) buffer Normals { float normals[]; };
+void writeNormal(int nIndex, vec3 normal)
+{
+    normals[nIndex+0] = normal.x;
+    normals[nIndex+1] = normal.y;
+    normals[nIndex+2] = normal.z;
+}
+--- --------------------------------------------------------------------------
+-- glsl Compute.SmoothNormalsDstDouble
+
+layout(binding=1) buffer Normals { double normals[]; };
+void writeNormal(int nIndex, vec3 normal)
+{
+    normals[nIndex+0] = normal.x;
+    normals[nIndex+1] = normal.y;
+    normals[nIndex+2] = normal.z;
+}
+--- --------------------------------------------------------------------------
+-- glsl Compute.SmoothNormalsDstPacked
+
+layout(binding=1) buffer Normals { int normals[]; };
+void writeNormal(int nIndex, vec3 normal)
+{
+    normal *= 511.0;
+    normals[nIndex] =
+        ((int(normal.x) & 0x3ff)      ) |
+        ((int(normal.y) & 0x3ff) << 10) |
+        ((int(normal.z) & 0x3ff) << 20);
+}
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormals
 
@@ -106,9 +158,7 @@ void main()
     float n = 1.0/max(length(normal), 0.000001);
     normal *= n;
     int nIndex = (index+vertexOffset)*normalsStride + normalsOffset;
-    normals[nIndex+0] = normal.x;
-    normals[nIndex+1] = normal.y;
-    normals[nIndex+2] = normal.z;
+    writeNormal(nIndex, normal);
 }
 
 --- --------------------------------------------------------------------------

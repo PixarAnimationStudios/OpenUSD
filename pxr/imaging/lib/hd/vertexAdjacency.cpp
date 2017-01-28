@@ -158,10 +158,12 @@ Hd_VertexAdjacency::GetSmoothNormalsComputation(
 HdComputationSharedPtr
 Hd_VertexAdjacency::GetSmoothNormalsComputationGPU(TfToken const &srcName,
                                                    TfToken const &dstName,
+                                                   GLenum srcDataType,
                                                    GLenum dstDataType)
 {
     return HdComputationSharedPtr(new Hd_SmoothNormalsComputationGPU(
-                                      this, srcName, dstName, dstDataType));
+                                      this, srcName, dstName,
+                                      srcDataType, dstDataType));
 }
 
 

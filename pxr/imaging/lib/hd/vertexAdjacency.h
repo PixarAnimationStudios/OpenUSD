@@ -105,7 +105,8 @@ public:
     /// This computation requires adjacency table on GPU produced by
     /// AdjacencyBuilderForGPUComputation.
     HdComputationSharedPtr GetSmoothNormalsComputationGPU(
-        TfToken const &srcName, TfToken const &dstName, GLenum dstDataType);
+        TfToken const &srcName, TfToken const &dstName,
+        GLenum srcDataType, GLenum dstDataType);
 
     /// @}
 

@@ -155,8 +155,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vboRelocated)
 
 #define HD_GLSL_PROGRAM_TOKENS                  \
-    (smoothNormalsFloat)                        \
-    (smoothNormalsDouble)                       \
+    (smoothNormalsFloatToFloat)                 \
+    (smoothNormalsFloatToDouble)                \
+    (smoothNormalsFloatToPacked)                \
+    (smoothNormalsDoubleToFloat)                \
+    (smoothNormalsDoubleToDouble)               \
+    (smoothNormalsDoubleToPacked)               \
     (quadrangulateFloat)                        \
     (quadrangulateDouble)
 

@@ -574,23 +574,22 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         *dirtyBits &= ~DirtySmoothNormals;
 
         TF_VERIFY(_vertexAdjacency);
+        bool doRefine = (refineLevel > 0);
+        bool doQuadrangulate =
+            _UsePtexIndices(sceneDelegate->GetRenderIndex());
+        if (_packedNormals && (doRefine || doQuadrangulate)) {
+            // we can't use packed normals for refined/quad,
+            // let's migrate the buffer to full precision
+            isNew = true;
+            _packedNormals = false;
+        }
 
         if (cpuSmoothNormals) {
             if (points) {
                 // CPU smooth normals depends on CPU adjacency.
                 //
                 HdBufferSourceSharedPtr normal;
-                bool doRefine = (refineLevel > 0);
-                bool doQuadrangulate =
-                               _UsePtexIndices(sceneDelegate->GetRenderIndex());
-
                 if (doRefine || doQuadrangulate) {
-                    if (_packedNormals) {
-                        // we can't use packed normals for refined/quad,
-                        // let's migrate the buffer to full precision
-                        isNew = true;
-                        _packedNormals = false;
-                    }
                     normal = _vertexAdjacency->GetSmoothNormalsComputation(
                             points, HdTokens->normals);
                     if (doRefine) {
@@ -626,8 +625,6 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // HdSceneDelegate::GetPrimVarComponents() once they are implemented
             // in UsdImagindDelegate.
 
-
-
             if (!points) {
                 VtValue value = GetPoints(sceneDelegate);
                 if (!value.IsEmpty()) {
@@ -638,13 +635,18 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             }
 
             if (points) {
-                GLenum normalDataType = points->GetGLComponentDataType();
+                GLenum pointsDataType = points->GetGLComponentDataType();
+                GLenum normalsDataType = pointsDataType;
+                TfToken normalsName = HdTokens->normals;
+                if (_packedNormals) {
+                    normalsDataType = GL_INT_2_10_10_10_REV;
+                    normalsName = HdTokens->packedNormals;
+                }
 
                 computations.push_back(
                     _vertexAdjacency->GetSmoothNormalsComputationGPU(
-                        HdTokens->points,
-                        HdTokens->normals,
-                        normalDataType));
+                        HdTokens->points, normalsName,
+                        pointsDataType, normalsDataType));
 
                 // note: we haven't had explicit dependency for GPU
                 // computations just yet. Currently they are executed
@@ -654,14 +656,14 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                     HdComputationSharedPtr computation =
                         _topology->GetOsdRefineComputationGPU(
                             HdTokens->normals,
-                            normalDataType, 3);
+                            normalsDataType, 3);
                         // computation can be null for empty mesh
                         if (computation)
                             computations.push_back(computation);
                 } else if (_UsePtexIndices(sceneDelegate->GetRenderIndex())) {
                     HdComputationSharedPtr computation =
                         _topology->GetQuadrangulateComputationGPU(
-                            HdTokens->normals, normalDataType, GetId());
+                            HdTokens->normals, normalsDataType, GetId());
                     // computation can be null for all-quad mesh
                     if (computation)
                         computations.push_back(computation);
