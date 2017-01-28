@@ -905,8 +905,7 @@ struct Pcp_PrimIndexer
                 i->type == Task::Type::EvalNodeVariantNoneFound) {
                 // Promote this task back to an authored-variant task.
                 Task task(*i);
-                ++i;
-                tasks.erase(i.base());
+                tasks.erase(--(i.base()));
                 task.type = Task::Type::EvalNodeVariantAuthored;
                 AddTask(task);
             } else {
