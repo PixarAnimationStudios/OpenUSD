@@ -23,6 +23,7 @@
 //
 /// \file wrapStitchClips.cpp
 
+#include "pxr/pxr.h"
 #include <boost/python/def.hpp>
 #include <boost/python/extract.hpp>
 
@@ -30,6 +31,9 @@
 #include "pxr/base/tf/pyUtils.h"
 
 #include <limits>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -115,3 +119,6 @@ wrapStitchClips()
         _ConvertGenerateClipTopologyName,
         (arg("rootLayerName")));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

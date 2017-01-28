@@ -27,6 +27,7 @@
 /// \file usdUtils/stageCache.h
 /// A simple interface for handling a singleton usd stage cache.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -34,6 +35,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayer);
 
@@ -57,5 +61,8 @@ public:
         const TfToken& modelName,
         const std::vector<std::pair<std::string, std::string> > &variantSelections);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

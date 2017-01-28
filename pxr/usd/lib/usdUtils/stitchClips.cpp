@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/stitchClips.h"
 #include "pxr/usd/usdUtils/stitch.h"
 
@@ -53,6 +54,9 @@
 #include <string>
 #include <limits>
 #include <tuple>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace {
     // typedefs
@@ -870,3 +874,6 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
     resultLayer->Save();
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

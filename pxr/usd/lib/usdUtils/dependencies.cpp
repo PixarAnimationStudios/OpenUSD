@@ -23,6 +23,7 @@
 //
 ///
 /// \file usdUtils/dependencies.cpp
+#include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -36,6 +37,9 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <stack>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -189,4 +193,7 @@ UsdUtilsExtractExternalReferences(
             subLayers, references, payloads);
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

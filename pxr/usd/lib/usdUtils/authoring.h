@@ -29,7 +29,11 @@
 /// A collection of utilities for higher-level authoring and copying scene
 /// description than provided by the core Usd and Sdf API's
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -46,5 +50,8 @@ SDF_DECLARE_HANDLES(SdfLayer);
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
                                bool skipSublayers = false);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* _USDUTILS_PIPELINE_H_ */

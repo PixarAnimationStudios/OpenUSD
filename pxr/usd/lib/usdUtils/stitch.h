@@ -31,8 +31,12 @@
 /// layer will be the first parameter to the function and will always have
 /// precedence in conflicts during the merge.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// The function will recurse down the root prims of each layer,
@@ -104,5 +108,8 @@ void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
 void UsdUtilsStitchInfo(const SdfSpecHandle& strongObj, 
                         const SdfSpecHandle& weakObj,
                         bool ignoreTimeSamples = false);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // _USDUTILS_STITCH_H_

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/authoring.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -29,6 +30,9 @@
 
 #include <vector>
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 bool 
 UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
@@ -55,4 +59,7 @@ UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
 
     return true;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
