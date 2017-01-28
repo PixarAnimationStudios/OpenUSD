@@ -33,6 +33,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -54,7 +55,7 @@ FnLogSetup("USDVMP")
 namespace FnKat = Foundry::Katana;
 
 
-typedef boost::shared_ptr<UsdImagingGL> UsdImagingGLSharedPtr;
+typedef boost::shared_ptr<PXR_NS::UsdImagingGL> UsdImagingGLSharedPtr;
 
 //--------------------------------------------------------------------------------
 // USDVMP
@@ -96,12 +97,12 @@ public:
 private:
     void _loadSubtreeForCurrentPrim();
 
-    UsdStageRefPtr _stage;
+    PXR_NS::UsdStageRefPtr _stage;
     UsdImagingGLSharedPtr _renderer;
-    UsdImagingGL::RenderParams _params;
-    UsdPrim _prim;
+    PXR_NS::UsdImagingGL::RenderParams _params;
+    PXR_NS::UsdPrim _prim;
 
-    GfMatrix4d _viewMatrix;
+    PXR_NS::GfMatrix4d _viewMatrix;
     
     // XXX store the last time we SetRootTransform so that we can do a sloppy
     //     comparison. The current reliable technique for getting the model

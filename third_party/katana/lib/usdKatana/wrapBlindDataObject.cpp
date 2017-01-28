@@ -132,6 +132,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 WRAP_CUSTOM {
     _class
         .def("GetKbdAttributeNameSpace",
@@ -162,3 +164,5 @@ WRAP_CUSTOM {
         .staticmethod("IsKbdAttribute")
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

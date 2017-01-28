@@ -23,6 +23,7 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readMesh.h"
 #include "usdKatana/utils.h"
@@ -30,6 +31,8 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdGeom/mesh.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void 
 _CreateFaceSets(

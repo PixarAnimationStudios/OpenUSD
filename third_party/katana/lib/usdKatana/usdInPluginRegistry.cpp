@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/usdInPluginRegistry.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -28,6 +29,9 @@
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::map<std::string, std::string> _UsdTypeRegistry;
 static _UsdTypeRegistry _usdTypeReg;
@@ -149,3 +153,6 @@ PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
 {
     return _DoFindKind(kind, opName, _kindExtReg);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

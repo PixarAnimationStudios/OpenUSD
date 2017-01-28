@@ -23,6 +23,7 @@
 //
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 
+#include "pxr/pxr.h"
 #include "usdKatana/blindDataObject.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
@@ -51,6 +52,8 @@
 #include <sstream>
 
 FnLogSetup("PxrUsdIn")
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace FnKat = Foundry::Katana;
 

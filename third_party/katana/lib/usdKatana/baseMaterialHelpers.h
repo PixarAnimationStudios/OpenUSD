@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #ifndef PXRUSDKATANA_BASEMATERIALHELPERS_H
 #define PXRUSDKATANA_BASEMATERIALHELPERS_H
 
@@ -54,6 +58,9 @@ bool PxrUsdKatana_IsPrimDefFromBaseMaterial(const UsdPrim &prim);
 // (Usd doesn't provide a UsdResolveInfo style API for asking where
 // relationship targets are authored, so we do it here ourselves.)
 bool PxrUsdKatana_AreRelTargetsFromBaseMaterial(const UsdRelationship &rel);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
 

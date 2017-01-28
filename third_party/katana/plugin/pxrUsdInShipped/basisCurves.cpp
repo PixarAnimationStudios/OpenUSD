@@ -23,10 +23,13 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readBasisCurves.h"
 
 #include "pxr/usd/usdGeom/basisCurves.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_BasisCurvesOp, privateData, interface)
 {

@@ -23,6 +23,7 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readModel.h"
 #include "usdKatana/usdInPrivateData.h"
@@ -31,6 +32,9 @@
 
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_ModelOp, privateData, interface)
 {

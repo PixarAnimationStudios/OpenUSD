@@ -24,6 +24,7 @@
 #ifndef USDKATANA_CACHE_H
 #define USDKATANA_CACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/singleton.h"
@@ -34,6 +35,9 @@
 #include <string>
 
 #include <FnAttribute/FnAttribute.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Forward declare pointers.
 SDF_DECLARE_HANDLES(SdfLayer);
@@ -99,5 +103,8 @@ public:
                                              std::string const& sessionKey);
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDKATANA_CACHE_H

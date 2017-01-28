@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/usdInPrivateData.h"
 #include "usdKatana/utils.h"
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/usd/usdGeom/xform.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const UsdPrim& prim,
@@ -215,3 +219,6 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

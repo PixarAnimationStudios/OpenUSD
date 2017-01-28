@@ -24,13 +24,11 @@
 #ifndef PXRUSDKATANA_USDIN_ARGS_H
 #define PXRUSDKATANA_USDIN_ARGS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/base/tf/refPtr.h"
 
 #include <tbb/enumerable_thread_specific.h>
-
-class PxrUsdKatanaUsdInArgs;
-typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
 
 /// \brief Reference counted container for op state that should be constructed
 /// at an ops root and passed to read USD prims into Katana attributes.
@@ -41,6 +39,10 @@ typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
 
 #include <FnAttribute/FnAttribute.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+class PxrUsdKatanaUsdInArgs;
+typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
 
 /// The sessionAttr is a structured GroupAttribute argument for delivering
 /// edits to the session layer of the stage. It replaces the earlier
@@ -285,5 +287,8 @@ struct ArgsBuilder
     }
     
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_USDIN_ARGS_H

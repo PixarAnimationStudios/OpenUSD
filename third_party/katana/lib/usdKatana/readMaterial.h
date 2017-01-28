@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #ifndef PXRUSDKATANA_READMATERIAL_H
 #define PXRUSDKATANA_READMATERIAL_H
 
@@ -38,6 +42,9 @@ PxrUsdKatanaReadMaterial(
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs,
         const std::string& looksGroupLocation = "");
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_READMATERIAL_H
 

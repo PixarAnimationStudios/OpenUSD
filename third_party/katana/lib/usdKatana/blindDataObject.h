@@ -259,4 +259,6 @@ public:
     static bool IsKbdAttribute(const UsdProperty &prop);
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif

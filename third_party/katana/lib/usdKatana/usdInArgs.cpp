@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/usdInArgs.h"
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/boundable.h"
 
 #include <FnAttribute/FnDataBuilder.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
         UsdStageRefPtr stage,
@@ -125,3 +129,6 @@ PxrUsdKatanaUsdInArgs::GetRootPrim() const
         return _stage->GetPrimAtPath(SdfPath(_isolatePath));
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

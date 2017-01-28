@@ -24,8 +24,12 @@
 #ifndef PXRUSDKATANA_ATTRMAP_H
 #define PXRUSDKATANA_ATTRMAP_H
 
+#include "pxr/pxr.h"
 #include <FnAttribute/FnGroupBuilder.h>
 #include <FnGeolib/op/FnGeolibOp.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief An object to store attributes.  The current implementation uses
 /// a Foundry::Katana::GroupBuilder behind the scenes, but the dependence on
@@ -56,5 +60,8 @@ private:
     Foundry::Katana::GroupBuilder _groupBuilder;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_ATTRMAP_H

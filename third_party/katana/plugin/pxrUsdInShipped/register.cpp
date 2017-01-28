@@ -25,6 +25,7 @@
 
 #include <FnGeolib/op/FnGeolibOp.h>
 
+#include "pxr/pxr.h"
 #include "usdKatana/usdInPluginRegistry.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -38,6 +39,9 @@
 #include "pxr/usd/usdShade/look.h"
 
 #include "pxrUsdInShipped/attrfnc_materialReference.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 
 void registerPxrUsdInShippedUiUtils();
 

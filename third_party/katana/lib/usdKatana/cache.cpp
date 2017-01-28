@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
 #include "usdKatana/debugCodes.h"
@@ -43,6 +44,9 @@
 #include <regex.h>
 
 #include <pystring/pystring.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_INSTANTIATE_SINGLETON(UsdKatanaCache);
 
@@ -418,4 +422,7 @@ UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                                                           excludedPaths))));
     return res.first->second;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

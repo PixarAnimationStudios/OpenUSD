@@ -23,12 +23,15 @@
 //
 #include "usdVMP.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/arch/systemInfo.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DEFINE_ENV_SETTING(USDVMP_PROXY_OVERLAY, "ghosted",
             "Overlay effect to distinguish proxies from real geometry. "

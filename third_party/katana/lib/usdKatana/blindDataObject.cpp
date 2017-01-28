@@ -175,6 +175,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -304,3 +306,4 @@ UsdKatanaBlindDataObject::IsKbdAttribute(const UsdProperty &attr)
     return TfStringStartsWith(attr.GetName(), _tokens->kbdNamespace);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

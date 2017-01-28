@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readMaterial.h"
 #include "usdKatana/readPrim.h"
@@ -46,6 +47,9 @@
 #include "pxr/usd/usdHydra/tokens.h"
 
 #include <stack>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 FnLogSetup("PxrUsdKatanaReadMaterial");
 
@@ -745,4 +749,7 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
         }
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

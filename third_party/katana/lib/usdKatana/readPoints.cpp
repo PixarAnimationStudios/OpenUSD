@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readGprim.h"
 #include "usdKatana/readPoints.h"
@@ -28,6 +29,9 @@
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/points.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static FnKat::Attribute
 _GetWidthAttr(const UsdGeomPoints& points, double currentTime)
@@ -100,3 +104,6 @@ PxrUsdKatanaReadPoints(
         attrs.set("geometry.point.width", widthsAttr);
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

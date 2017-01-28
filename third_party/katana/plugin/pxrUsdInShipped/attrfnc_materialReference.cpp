@@ -25,6 +25,7 @@
 
 #include <FnAttribute/FnGroupBuilder.h>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include "usdKatana/attrMap.h"
@@ -36,7 +37,7 @@
 
 #include "pxrUsdInShipped/attrfnc_materialReference.h"
 
-
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // Create the material attribute for referenced USD materials
 MaterialReferenceAttrFncCache::IMPLPtr 

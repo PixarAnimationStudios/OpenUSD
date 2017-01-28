@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/utils.h"
 
 #include "pxr/base/gf/vec3f.h"
@@ -51,6 +52,9 @@
 FnLogSetup("PxrUsdKatanaUtils::SGG");
 
 #include <sstream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static std::string
 _ResolvePath(const std::string& path)
@@ -1386,4 +1390,7 @@ PxrUsdKatanaUtils::BuildInstanceMasterMapping(
     
     return gb.build();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

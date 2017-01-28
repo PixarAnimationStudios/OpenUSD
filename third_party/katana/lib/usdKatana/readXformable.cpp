@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readPrim.h"
 #include "usdKatana/readXformable.h"
@@ -34,6 +35,9 @@
 #include <FnLogging/FnLogging.h>
 
 #include <sstream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 FnLogSetup("PxrUsdKatanaReadXformable");
 
@@ -122,3 +126,6 @@ PxrUsdKatanaReadXformable(
         attrs.set("xform", xformGb.build());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
