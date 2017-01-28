@@ -43,6 +43,9 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (idRenderTask)
@@ -590,3 +593,6 @@ UsdImagingGL_DefaultTaskDelegate::GetClipPlanes(SdfPath const& cameraId)
 {
     return _clipPlanes;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

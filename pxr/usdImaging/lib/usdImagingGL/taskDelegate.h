@@ -23,6 +23,7 @@
 //
 #pragma once
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/hd/version.h"
@@ -32,6 +33,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Render-graph delegate base
@@ -98,3 +101,5 @@ public:
         return UsdImagingGLTaskDelegateSharedPtr(new T(renderIndex, delegateID));
     }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE

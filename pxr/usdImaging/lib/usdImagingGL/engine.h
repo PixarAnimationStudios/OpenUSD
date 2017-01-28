@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
@@ -45,6 +46,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdPrim;
 
@@ -334,4 +338,7 @@ protected:
     typedef boost::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr> _DrawTargetPerContextMap;
     _DrawTargetPerContextMap _drawTargets;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

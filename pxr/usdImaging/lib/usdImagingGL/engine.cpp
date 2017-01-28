@@ -34,6 +34,9 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 struct _HitData {
     int xMin;
@@ -666,4 +669,7 @@ UsdImagingGLEngine::GetResourceAllocation() const
 {
     return VtDictionary();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

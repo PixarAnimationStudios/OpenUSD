@@ -48,6 +48,9 @@
 #include "pxr/imaging/glf/info.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPath& rootPath,
         const SdfPathVector& excludedPrimPaths,
@@ -799,3 +802,6 @@ UsdImagingGLHdEngine::GetResourceAllocation() const
 {
     return HdResourceRegistry::GetInstance().GetResourceAllocation();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

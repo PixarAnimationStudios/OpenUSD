@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_REFENGINE_H
 #define USDIMAGING_REFENGINE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
@@ -35,6 +36,9 @@
 
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdImagingGLRefEngine);
 
@@ -221,5 +225,8 @@ private:
     // For changes from UsdStage.
     TfNotice::Key _objectsChangedNoticeKey;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_REFENGINE_H

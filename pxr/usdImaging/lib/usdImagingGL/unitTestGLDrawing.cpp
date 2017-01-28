@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
@@ -36,6 +37,9 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static void UsdImagingGL_UnitTestHelper_InitPlugins()
 {
@@ -546,3 +550,6 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _widget->Run();
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

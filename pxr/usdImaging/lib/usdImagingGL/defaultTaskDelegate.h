@@ -23,6 +23,7 @@
 //
 #pragma once
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImagingGL/taskDelegate.h"
 
@@ -30,6 +31,9 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // ---------------------------------------------------------------------------
 // Task Delegate for built-in render graph
@@ -135,3 +139,5 @@ private:
 
     std::vector<GfVec4d> _clipPlanes;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
