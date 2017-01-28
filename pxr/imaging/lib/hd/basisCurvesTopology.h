@@ -24,6 +24,7 @@
 #ifndef HD_BASIS_CURVES_TOPOLOGY_H
 #define HD_BASIS_CURVES_TOPOLOGY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -34,6 +35,9 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologySharedPtr;
 
@@ -128,5 +132,8 @@ private:
 };
 
 std::ostream& operator << (std::ostream &out, HdBasisCurvesTopology const &topo);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_BASIS_CURVES_TOPOLOGY_H

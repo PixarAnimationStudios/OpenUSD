@@ -24,6 +24,7 @@
 #ifndef HD_RESOURCE_REGISTRY_H
 #define HD_RESOURCE_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -50,6 +51,9 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
@@ -348,5 +352,8 @@ private:
     _PersistentBufferRegistry _persistentBufferRegistry;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RESOURCE_REGISTRY_H

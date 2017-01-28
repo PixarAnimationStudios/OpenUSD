@@ -24,6 +24,7 @@
 #ifndef HD_PERF_H
 #define HD_PERF_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
@@ -37,6 +38,9 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfPath;
 
@@ -189,5 +193,8 @@ private:
     std::mutex _mutex;
     typedef std::lock_guard<std::mutex> _Lock;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_PERF_H

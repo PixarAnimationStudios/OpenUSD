@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/mesh.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdMesh::HdMesh(SdfPath const& id,
                SdfPath const& instancerId)
     : HdRprim(id, instancerId)
@@ -34,3 +37,6 @@ HdMesh::~HdMesh()
 {
     /*NOTHING*/
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

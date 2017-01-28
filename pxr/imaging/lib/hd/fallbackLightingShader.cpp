@@ -36,6 +36,9 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hd_FallbackLightingShader::Hd_FallbackLightingShader()
 {
     _glslfx.reset(new GlfGLSLFX(HdPackageFallbackLightingShader()));
@@ -95,3 +98,6 @@ Hd_FallbackLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

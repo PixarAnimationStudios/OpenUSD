@@ -41,6 +41,9 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdInterleavedUBOMemoryManager);
 TF_INSTANTIATE_SINGLETON(HdInterleavedSSBOMemoryManager);
 
@@ -641,3 +644,6 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::_GetAggregation() co
 {
     return _stripedBuffer;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

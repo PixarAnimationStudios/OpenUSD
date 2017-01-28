@@ -41,6 +41,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/vt/array.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 template <typename T>
 VtValue
 _CreateVtArray(int numElements, int arraySize, int stride,
@@ -270,3 +273,6 @@ HdGLBufferRelocator::Commit()
 
     _queue.clear();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,8 +24,12 @@
 #ifndef HD_POINTS_H
 #define HD_POINTS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprim.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 /// Hydra Schema for a point cloud.
@@ -48,5 +52,8 @@ private:
     HdPoints(const HdPoints &)             = delete;
     HdPoints &operator =(const HdPoints &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_POINTS_H

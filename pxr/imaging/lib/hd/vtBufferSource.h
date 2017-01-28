@@ -24,6 +24,7 @@
 #ifndef HD_VT_BUFFER_SOURCE_H
 #define HD_VT_BUFFER_SOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -48,6 +49,9 @@
 #include <boost/mpl/vector/vector40.hpp>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdVtBufferSource
 ///
@@ -207,5 +211,8 @@ private:
     short _numComponents;
     bool _staticArray;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_VT_BUFFER_SOURCE_H

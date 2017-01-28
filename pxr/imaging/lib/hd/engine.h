@@ -24,6 +24,7 @@
 #ifndef HD_ENGINE_H
 #define HD_ENGINE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/context.h"
@@ -31,6 +32,9 @@
 #include "pxr/imaging/hf/pluginDelegateDesc.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GalDelegate;
 class HdContext;
@@ -193,5 +197,8 @@ private:
     void _InitalizeDefaultRenderDelegateId();
     void _InitalizeDefaultGalDelegateId();
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_ENGINE_H

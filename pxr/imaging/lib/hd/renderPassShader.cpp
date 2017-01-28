@@ -39,6 +39,9 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_uint, "uint"))
@@ -184,3 +187,6 @@ HdRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
         HdBindingRequest(HdBinding::UNIFORM,
                          HdShaderTokens->cullStyle, _tokens->_uint));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

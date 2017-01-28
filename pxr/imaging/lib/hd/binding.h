@@ -24,10 +24,14 @@
 #ifndef HD_BINDING_H
 #define HD_BINDING_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::vector<class HdBinding> HdBindingVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
@@ -238,5 +242,8 @@ private:
     // GL type name used by CodeGen
     TfToken _glTypeName;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_BINDING_H

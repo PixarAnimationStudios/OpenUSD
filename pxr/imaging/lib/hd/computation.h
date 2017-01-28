@@ -24,11 +24,15 @@
 #ifndef HD_COMPUTATION_H
 #define HD_COMPUTATION_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include <boost/shared_ptr.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
@@ -68,5 +72,8 @@ public:
     /// It is a check to see if the AddBufferSpecs would produce a valid result.
     bool IsValid() { return true; }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_COMPUTATION_H

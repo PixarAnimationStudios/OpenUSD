@@ -30,6 +30,9 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdCopyComputationGPU::HdCopyComputationGPU(
     HdBufferArrayRangeSharedPtr const &src, TfToken const &name)
     : _src(src), _name(name)
@@ -123,3 +126,6 @@ HdCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
                                   resource->GetGLDataType(),
                                   resource->GetNumComponents()));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

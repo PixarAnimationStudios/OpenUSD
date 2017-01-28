@@ -24,8 +24,12 @@
 #ifndef HD_RENDER_CONTEXT_CAPS_H
 #define HD_RENDER_CONTEXT_CAPS_H
 
+#include "pxr/pxr.h"
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/singleton.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdRenderContextCaps
 ///
@@ -91,6 +95,9 @@ private:
 
     friend class TfSingleton<HdRenderContextCaps>;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_RENDER_CONTEXT_CAPS_H
 

@@ -24,12 +24,16 @@
 #ifndef HD_RPRIM_SHARED_DATA_H
 #define HD_RPRIM_SHARED_DATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/gf/bbox3d.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 
@@ -78,5 +82,8 @@ struct HdRprimSharedData {
     // The owning Rprim's identifier.
     SdfPath rprimID;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_RPRIM_SHARED_DATA_H

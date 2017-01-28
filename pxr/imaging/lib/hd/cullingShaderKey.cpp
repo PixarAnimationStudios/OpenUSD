@@ -24,6 +24,9 @@
 #include "pxr/imaging/hd/cullingShaderKey.h"
 #include "pxr/base/tf/staticTokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,       "frustumCull.glslfx"))
@@ -53,3 +56,6 @@ Hd_CullingShaderKey::Hd_CullingShaderKey(
 Hd_CullingShaderKey::~Hd_CullingShaderKey()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

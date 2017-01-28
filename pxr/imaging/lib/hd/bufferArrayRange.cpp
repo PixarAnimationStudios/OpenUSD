@@ -26,6 +26,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdBufferArrayRange::~HdBufferArrayRange() {
 }
 
@@ -80,3 +83,6 @@ HdBufferArrayRangeContainer::Get(int index) const
     }
     return _ranges[index];
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

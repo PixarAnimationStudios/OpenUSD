@@ -24,9 +24,13 @@
 #ifndef HD_BPRIM_H
 #define HD_BPRIM_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSceneDelegate;
 
@@ -68,5 +72,8 @@ public:
 private:
     SdfPath _id;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_BPRIM_H

@@ -29,6 +29,9 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Hd_DispatchBufferArrayRange : public HdBufferArrayRange {
 public:
     /// Constructor.
@@ -244,3 +247,6 @@ HdDispatchBuffer::DebugDump(std::ostream &out) const
 {
     /*nothing*/
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

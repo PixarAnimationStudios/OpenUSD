@@ -36,6 +36,9 @@
 
 #include <cstdlib>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Hd_UnitTestWindow : public GarchGLDebugWindow {
 public:
     typedef Hd_UnitTestWindow This;
@@ -362,3 +365,6 @@ Hd_UnitTestGLDrawing::GetFrustum() const
     frustum.SetPerspective(45.0, aspectRatio, 1, 100000.0);
     return frustum;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

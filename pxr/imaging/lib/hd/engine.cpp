@@ -43,6 +43,9 @@
 
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // Placeholder instead for the default delegates for an unintalized value
 // as the empty token is valid.
 const TfToken HdEngine::_UninitalizedId = TfToken("__UNINIT__");
@@ -662,3 +665,6 @@ HdEngine::_InitalizeDefaultGalDelegateId()
 
     _defaultGalDelegateId = galRegistry.GetDefaultDelegateId();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

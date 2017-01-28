@@ -50,6 +50,9 @@
 #include <iostream>
 #include <set>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdResourceRegistry);
 
 HdResourceRegistry::HdResourceRegistry() :
@@ -858,3 +861,6 @@ HdResourceRegistry::GarbageCollectPersistentBuffers()
             boost::bind(&HdPersistentBufferSharedPtr::unique, _1)),
         _persistentBufferRegistry.end());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef HD_GEOMETRIC_SHADER_H
 #define HD_GEOMETRIC_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
@@ -32,6 +33,9 @@
 #include "pxr/imaging/glf/glslfx.h"
 
 #include <boost/scoped_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 
@@ -120,5 +124,8 @@ private:
     Hd_GeometricShader(const Hd_GeometricShader &)                     = delete;
     Hd_GeometricShader &operator =(const Hd_GeometricShader &)         = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_GEOMETRIC_SHADER_H

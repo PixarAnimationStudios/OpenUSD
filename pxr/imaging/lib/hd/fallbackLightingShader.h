@@ -24,6 +24,7 @@
 #ifndef HD_FALLBACK_LIGHTING_SHADER_H
 #define HD_FALLBACK_LIGHTING_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/glf/glslfx.h"
@@ -37,6 +38,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class Hd_FallbackLightingShader
 ///
@@ -61,5 +65,8 @@ public:
 private:
     boost::scoped_ptr<GlfGLSLFX> _glslfx;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_FALLBACK_LIGHTING_SHADER_H

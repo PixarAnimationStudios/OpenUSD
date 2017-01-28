@@ -24,6 +24,7 @@
 #ifndef HD_TEXTURE_RESOURCE_H
 #define HD_TEXTURE_RESOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
@@ -35,6 +36,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 
@@ -88,5 +92,8 @@ private:
     GLuint _sampler;
     bool _isPtex;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_TEXTURE_RESOURCE_H

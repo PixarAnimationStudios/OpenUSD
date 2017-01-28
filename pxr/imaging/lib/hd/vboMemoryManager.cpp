@@ -41,6 +41,9 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdVBOMemoryManager);
 
 TF_DEFINE_ENV_SETTING(HD_MAX_VBO_SIZE, (1*1024*1024*1024),
@@ -637,3 +640,6 @@ HdVBOMemoryManager::_StripedBufferArrayRange::_GetAggregation() const
 {
     return _stripedBufferArray;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

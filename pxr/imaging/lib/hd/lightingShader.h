@@ -24,11 +24,15 @@
 #ifndef HD_LIGHTING_SHADER_H
 #define HD_LIGHTING_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
 
@@ -51,5 +55,8 @@ private:
     HdLightingShader(const HdLightingShader &)                     = delete;
     HdLightingShader &operator =(const HdLightingShader &)         = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_LIGHTING_SHADER_H

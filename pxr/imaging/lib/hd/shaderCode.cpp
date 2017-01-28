@@ -27,6 +27,9 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdShaderCode::HdShaderCode()
 {
     /*NOTHING*/
@@ -73,4 +76,7 @@ HdShaderCode::GetTextures() const
 {
     return HdShaderCode::TextureDescriptorVector();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

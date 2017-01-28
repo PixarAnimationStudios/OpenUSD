@@ -62,6 +62,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // ------------------------------------------------------------------------- //
 // Generic helpers for extracting data from VtValue into char[]
 // ------------------------------------------------------------------------- //
@@ -492,3 +495,6 @@ std::ostream &operator <<(std::ostream &out,
     out << "    Component Size: "        << self.GetComponentSize() << "\n";
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -44,6 +44,9 @@
 
 #include "pxr/base/tf/getenv.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hd_DrawBatch::Hd_DrawBatch(HdDrawItemInstance * drawItemInstance)
     : _shaderHash(0)
 {
@@ -338,3 +341,6 @@ Hd_DrawBatch::_DrawingProgram::_Link(
 
     return glslProgram->Link();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

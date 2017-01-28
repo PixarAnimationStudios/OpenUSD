@@ -36,6 +36,9 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
                                        int16_t primitiveMode,
                                        int16_t primitiveIndexSize,
@@ -128,3 +131,6 @@ Hd_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

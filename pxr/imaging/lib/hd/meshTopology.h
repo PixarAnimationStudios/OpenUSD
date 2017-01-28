@@ -24,6 +24,7 @@
 #ifndef HD_MESH_TOPOLOGY_H
 #define HD_MESH_TOPOLOGY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 
@@ -35,6 +36,9 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 
@@ -178,5 +182,8 @@ protected:
     PxOsdMeshTopology _topology;
     int _refineLevel;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_MESH_TOPOLOGY_H

@@ -45,6 +45,9 @@
 #include <boost/functional/hash.hpp>
 #include <boost/make_shared.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdCommandBuffer::HdCommandBuffer()
     : _visibleSize(0)
     , _visChangeCount(0)
@@ -290,3 +293,6 @@ HdCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

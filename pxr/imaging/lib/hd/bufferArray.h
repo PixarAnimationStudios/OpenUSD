@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_ARRAY_H
 #define HD_BUFFER_ARRAY_H
 
+#include "pxr/pxr.h"
 #include <atomic>
 #include <mutex>
 
@@ -36,6 +37,9 @@
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdBufferArrayRange;
 
@@ -173,5 +177,8 @@ private:
 
     size_t             _maxNumRanges;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_BUFFER_ARRAY_H

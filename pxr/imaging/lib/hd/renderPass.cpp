@@ -47,6 +47,9 @@
 
 #include <boost/bind.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdRenderPass::HdRenderPass(HdRenderIndex *index)
     : _renderIndex(index)
     , _collectionVersion(0)
@@ -302,3 +305,6 @@ HdRenderPass::GetRenderTags()
 
     return _renderTags;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

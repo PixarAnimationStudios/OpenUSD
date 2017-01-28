@@ -24,7 +24,11 @@
 #ifndef HD_CONTEXT_H
 #define HD_CONTEXT_H
 
+#include "pxr/pxr.h"
 #include <boost/intrusive/list.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::intrusive::link_mode<boost::intrusive::auto_unlink>
                                                            Hd_ContextLinkOption;
@@ -71,5 +75,8 @@ private:
     HdContext(const HdContext &)             = delete;
     HdContext &operator =(const HdContext &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_CONTEXT_H

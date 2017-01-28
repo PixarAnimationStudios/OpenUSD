@@ -29,6 +29,9 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdPerfLog);
 
 static
@@ -231,4 +234,7 @@ HdPerfLog::ResetCounters()
         counterIt->second = 0;
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

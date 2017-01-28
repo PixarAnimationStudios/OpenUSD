@@ -33,6 +33,9 @@
 #include <iostream>
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdChangeTracker::HdChangeTracker() 
     : _needsGarbageCollection(false)
     , _instancerRprimMap()
@@ -916,3 +919,6 @@ HdChangeTracker::DumpDirtyBits(int dirtyBits)
         << HdChangeTracker::StringifyDirtyBits(dirtyBits)
         << "\n";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

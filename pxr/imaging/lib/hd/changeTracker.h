@@ -24,6 +24,7 @@
 #ifndef HD_CHANGE_TRACKER_H
 #define HD_CHANGE_TRACKER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
@@ -34,6 +35,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/weak_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class TfToken;
 class HdRprimCollection;
@@ -498,5 +502,8 @@ private:
     // Used to validate shader bindings (to validate draw batches)
     std::atomic_uint _shaderBindingsVersion;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_CHANGE_TRACKER_H

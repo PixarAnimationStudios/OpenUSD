@@ -24,8 +24,12 @@
 #ifndef HD_BASIS_CURVES_H
 #define HD_BASIS_CURVES_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprim.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Hydra Schema for a collection of curves using a particular basis.
 ///
@@ -63,5 +67,8 @@ HdBasisCurves::GetRefineLevel(HdSceneDelegate* delegate) const
     return delegate->GetRefineLevel(GetId());
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_BASIS_CURVES_H

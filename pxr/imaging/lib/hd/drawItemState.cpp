@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/drawItemState.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdDrawItemState::HdDrawItemState() 
 {
     /*NOTHING*/
@@ -32,3 +35,6 @@ HdDrawItemState::~HdDrawItemState()
 {
     /*NOTHING*/
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

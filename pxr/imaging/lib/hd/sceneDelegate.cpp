@@ -30,6 +30,9 @@
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/gf/matrix4d.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdSceneDelegate::HdSceneDelegate()
     : _index(new HdRenderIndex)
     , _delegateID(SdfPath::AbsoluteRootPath())
@@ -341,3 +344,6 @@ HdSceneDelegate::GetPrimVarComponents(SdfPath const& id, TfToken const& key)
 {
     return 0;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

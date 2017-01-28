@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_ARRAY_REGISTRY_H
 #define HD_BUFFER_ARRAY_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include <condition_variable>
 #include <mutex>
 
@@ -42,6 +43,9 @@
 
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 
@@ -137,4 +141,7 @@ private:
                                HdBufferSpecVector const &bufferSpecs);
 };
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // HD_BUFFER_ARRAY_REGISTRY_H

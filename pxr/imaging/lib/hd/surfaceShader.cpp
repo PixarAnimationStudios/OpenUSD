@@ -35,6 +35,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Hd_BindlessSamplerBufferSource : public HdBufferSource {
 public:
     Hd_BindlessSamplerBufferSource(TfToken const &name, GLenum type, size_t value)
@@ -398,3 +401,6 @@ HdSurfaceShader::CanAggregate(HdShaderCodeSharedPtr const &shaderA,
     }
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

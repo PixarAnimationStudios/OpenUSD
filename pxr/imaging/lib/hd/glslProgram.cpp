@@ -35,6 +35,9 @@
 #include <fstream>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_CONTEXT_CHECK, 0,
     "Enable GL context sharing validation");
 
@@ -265,4 +268,7 @@ HdGLSLProgram::GetComputeProgram(TfToken const &shaderToken)
         return programInstance.GetValue();
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

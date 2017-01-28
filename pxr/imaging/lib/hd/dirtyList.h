@@ -24,10 +24,14 @@
 #ifndef HD_DIRTY_LIST_H
 #define HD_DIRTY_LIST_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRenderIndex;
 
@@ -137,5 +141,8 @@ private:
     bool _isEmpty;
     bool _reprDirty;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_DIRTY_LIST_H

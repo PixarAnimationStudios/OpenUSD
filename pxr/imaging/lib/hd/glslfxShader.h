@@ -24,6 +24,7 @@
 #ifndef HD_GLSLFX_SHADER_H
 #define HD_GLSLFX_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -34,6 +35,9 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdGLSLFXShader> HdGLSLFXShaderSharedPtr;
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
@@ -47,5 +51,8 @@ public:
 private:
     GlfGLSLFXSharedPtr _glslfx;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_GLSLFX_SHADER_H

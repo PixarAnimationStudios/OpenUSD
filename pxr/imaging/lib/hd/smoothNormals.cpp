@@ -41,6 +41,9 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/token.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hd_SmoothNormalsComputation::Hd_SmoothNormalsComputation(
     Hd_VertexAdjacency const *adjacency,
     HdBufferSourceSharedPtr const &points,
@@ -266,4 +269,7 @@ Hd_SmoothNormalsComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->push_back(HdBufferSpec(_dstName, _dstDataType, 3));
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

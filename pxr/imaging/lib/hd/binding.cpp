@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/binding.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 size_t
 HdBindingRequest::ComputeHash() const
 {
@@ -34,3 +37,6 @@ HdBindingRequest::ComputeHash() const
 
     return hash;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

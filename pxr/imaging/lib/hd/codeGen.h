@@ -24,6 +24,7 @@
 #ifndef HD_CODE_GEN_H
 #define HD_CODE_GEN_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceBinder.h"
@@ -33,6 +34,9 @@
 #include <map>
 #include <vector>
 #include <sstream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderPtr;
@@ -102,5 +106,8 @@ private:
     std::string _fsSource;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_CODE_GEN_H

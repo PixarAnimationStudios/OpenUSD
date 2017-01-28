@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
@@ -34,6 +35,8 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class My_TestGLDrawing : public Hd_UnitTestGLDrawing {
 public:

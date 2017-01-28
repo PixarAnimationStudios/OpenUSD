@@ -24,8 +24,12 @@
 #ifndef HD_PACKAGE_H
 #define HD_PACKAGE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TfToken HdPackageComputeShader();
 
@@ -36,5 +40,8 @@ TfToken HdPackageFallbackLightingShader();
 TfToken HdPackageFallbackSurfaceShader();
 
 TfToken HdPackagePtexTextureShader();
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

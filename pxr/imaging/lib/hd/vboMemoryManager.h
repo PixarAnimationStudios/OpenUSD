@@ -24,6 +24,7 @@
 #ifndef HD_VBO_MEMORY_MANAGER_H
 #define HD_VBO_MEMORY_MANAGER_H
 
+#include "pxr/pxr.h"
 #include <boost/shared_ptr.hpp>
 #include <list>
 
@@ -36,6 +37,9 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/strategyBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdVBOMemoryManager
 ///
@@ -242,5 +246,8 @@ protected:
         }
     };
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_VBO_MEMORY_MANAGER_H

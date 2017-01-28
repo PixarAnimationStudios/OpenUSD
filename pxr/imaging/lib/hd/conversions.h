@@ -24,9 +24,13 @@
 #ifndef HD_CONVERSIONS_H
 #define HD_CONVERSIONS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdConversions {
 public:
@@ -44,5 +48,8 @@ public:
 
     static void GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_CONVERSIONS_H

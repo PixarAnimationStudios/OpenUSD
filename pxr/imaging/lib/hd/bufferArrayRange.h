@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_ARRAY_RANGE_H
 #define HD_BUFFER_ARRAY_RANGE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
@@ -31,6 +32,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdBufferArray;
 
@@ -144,5 +148,8 @@ public:
 private:
     std::vector<HdBufferArrayRangeSharedPtr> _ranges;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_BUFFER_ARRAY_RANGE_H

@@ -24,6 +24,7 @@
 #ifndef HD_UNIT_TEST_DELEGATE
 #define HD_UNIT_TEST_DELEGATE
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
@@ -36,6 +37,9 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define HD_UNIT_TEST_TOKENS                             \
     (geometryAndGuides)
@@ -390,5 +394,8 @@ private:
     int _refineLevel;
     std::map<SdfPath, int> _refineLevels;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_UNIT_TEST_DELEGATE

@@ -26,6 +26,9 @@
 
 #include "pxr/base/tf/stl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // -------------------------------------------------------------------------- //
 // HdTask Definitions 
 // -------------------------------------------------------------------------- //
@@ -142,3 +145,6 @@ void HdSceneTask::_GetTaskDirtyState(TfToken const& collectionId, _TaskDirtyStat
     dirtyState->bits              = changeTracker.GetTaskDirtyBits(id);
     dirtyState->collectionVersion = changeTracker.GetCollectionVersion(collectionId);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

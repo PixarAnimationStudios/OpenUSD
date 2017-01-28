@@ -24,6 +24,7 @@
 #ifndef HD_RESOURCE_BINDER_H
 #define HD_RESOURCE_BINDER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -32,6 +33,9 @@
 #include "pxr/base/tf/stl.h"
 
 #include "pxr/base/tf/hashmap.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdDrawItem;
 class HdShaderCode;
@@ -330,5 +334,8 @@ private:
     _BindingMap _bindingMap;
     int _numReservedTextureUnits;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_RESOURCE_BINDER_H

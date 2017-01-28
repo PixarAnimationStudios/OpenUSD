@@ -24,9 +24,13 @@
 #ifndef HD_RENDER_DELEGATE_H
 #define HD_RENDER_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
 #include "pxr/imaging/hf/pluginDelegateBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfPath;
 class HdRprim;
@@ -103,5 +107,8 @@ protected:
     HdRenderDelegate(const HdRenderDelegate &) = delete;
     HdRenderDelegate &operator=(const HdRenderDelegate &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RENDER_DELEGATE_H

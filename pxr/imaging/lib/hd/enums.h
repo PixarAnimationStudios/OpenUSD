@@ -24,6 +24,10 @@
 #ifndef HD_ENUMS_H
 #define HD_ENUMS_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// \enum HdCompareFunction
 ///
 /// Abstraction of the Graphics compare functions.
@@ -235,5 +239,8 @@ enum HdFormat
     HdFormatCount,
     HdFormatUnknown = -1
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_ENUMS_H

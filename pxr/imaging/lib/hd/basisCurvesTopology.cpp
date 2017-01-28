@@ -25,6 +25,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdBasisCurvesTopology::HdBasisCurvesTopology()
   : HdTopology()
   , _curveType(HdTokens->linear)
@@ -165,3 +168,6 @@ HdBasisCurvesTopology::CalculateNeededNumberOfVaryingControlPoints() const
 
     return numVerts;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,11 +24,15 @@
 #ifndef HD_MESH_H
 #define HD_MESH_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.
 ///
@@ -111,5 +115,8 @@ HdMesh::GetNormals(HdSceneDelegate* delegate) const
 {
     return GetPrimVar(delegate, HdTokens->normals);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_MESH_H

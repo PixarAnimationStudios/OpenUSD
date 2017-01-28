@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/repr.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdRepr::HdRepr()
 {
     /*NOTHING*/
@@ -37,3 +40,6 @@ HdRepr::GetDrawItems()
 {
     return &_drawItems;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

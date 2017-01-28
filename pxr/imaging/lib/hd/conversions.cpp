@@ -25,6 +25,9 @@
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/base/tf/iterator.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 struct _FormatDesc {
     GLenum format;
     GLenum type;
@@ -185,3 +188,6 @@ HdConversions::GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType
     *outType           = desc.type;
     *outInternalFormat = desc.internalFormat;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,11 +24,15 @@
 #ifndef HD_UNIT_TEST_DRAWING_GL
 #define HD_UNIT_TEST_DRAWING_GL
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class Hd_UnitTestWindow;
 
@@ -83,5 +87,8 @@ private:
     int _mousePos[2];
     bool _mouseButton[3];
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_UNIT_TEST_DRAWING_GL

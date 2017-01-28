@@ -24,6 +24,7 @@
 #ifndef HD_INTERLEAVED_VBO_MEMORY_MANAGER_H
 #define HD_INTERLEAVED_VBO_MEMORY_MANAGER_H
 
+#include "pxr/pxr.h"
 #include <boost/shared_ptr.hpp>
 #include <list>
 
@@ -38,6 +39,9 @@
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/tokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdInterleavedMemoryManager
 ///
@@ -250,5 +254,8 @@ public:
 protected:
     friend class TfSingleton<HdInterleavedSSBOMemoryManager>;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_INTERLEAVED_VBO_MEMORY_MANAGER_H

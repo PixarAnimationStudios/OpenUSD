@@ -24,6 +24,7 @@
 #ifndef HD_UNIT_TEST_HELPER
 #define HD_UNIT_TEST_HELPER
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -36,6 +37,9 @@
 
 #include <vector>
 #include <boost/scoped_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class Hd_TestDriver
 ///
@@ -125,5 +129,8 @@ private:
     GfVec3f _sceneAmbient;
     boost::scoped_ptr<GlfGLSLFX> _glslfx;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_UNIT_TEST_HELPER

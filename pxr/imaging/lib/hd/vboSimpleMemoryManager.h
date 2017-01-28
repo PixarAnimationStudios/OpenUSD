@@ -24,6 +24,7 @@
 #ifndef HD_VBO_SIMPLE_MEMORY_MANAGER_H
 #define HD_VBO_SIMPLE_MEMORY_MANAGER_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/strategyBase.h"
@@ -31,6 +32,9 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdVBOSimpleMemoryManager
 ///
@@ -213,5 +217,8 @@ protected:
         }
     };
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_VBO_SIMPLE_MEMORY_MANAGER_H

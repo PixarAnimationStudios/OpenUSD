@@ -42,6 +42,9 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_bool, "bool"))
@@ -227,3 +230,6 @@ HdShaderParam::IsPtex() const
 {
     return _isPtex;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

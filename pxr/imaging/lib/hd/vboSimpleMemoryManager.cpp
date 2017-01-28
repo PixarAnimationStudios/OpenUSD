@@ -43,6 +43,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdVBOSimpleMemoryManager);
 
 extern TfEnvSetting<int> HD_MAX_VBO_SIZE;
@@ -437,3 +440,6 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::_GetAggregation() const
 {
     return _bufferArray;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

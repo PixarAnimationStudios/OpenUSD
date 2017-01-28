@@ -24,8 +24,12 @@
 #ifndef HD_RENDER_DELEGATE_REGISTRY_H
 #define HD_RENDER_DELEGATE_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginDelegateRegistry.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRenderDelegate;
 
@@ -71,5 +75,8 @@ void HdRenderDelegateRegistry::Define()
 {
     HfPluginDelegateRegistry::Define<T, HdRenderDelegate, Bases...>();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RENDER_DELEGATE_REGISTRY_H

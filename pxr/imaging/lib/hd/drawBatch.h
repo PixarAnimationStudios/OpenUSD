@@ -24,6 +24,7 @@
 #ifndef HD_DRAW_BATCH_H
 #define HD_DRAW_BATCH_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/resourceBinder.h" // XXX: including private header
@@ -36,6 +37,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdDrawItem;
 class HdDrawItemInstance;
@@ -188,5 +192,8 @@ private:
     _DrawingProgram _program;
     HdShaderCode::ID _shaderHash;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_DRAW_BATCH_H

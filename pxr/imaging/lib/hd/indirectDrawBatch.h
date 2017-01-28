@@ -24,12 +24,16 @@
 #ifndef HD_INDIRECT_DRAW_BATCH_H
 #define HD_INDIRECT_DRAW_BATCH_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/dispatchBuffer.h"
 #include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/persistentBuffer.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::vector<HdBindingRequest> HdBindingRequestVector;
 
@@ -147,5 +151,8 @@ private:
     // complete if we need to read back result data from the GPU.
     GLsync _cullResultSync;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_INDIRECT_DRAW_BATCH_H

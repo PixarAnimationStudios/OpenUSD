@@ -24,6 +24,7 @@
 #ifndef HD_RPRIM_H
 #define HD_RPRIM_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/drawItem.h"
@@ -34,6 +35,9 @@
 #include "pxr/base/gf/range3d.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdDrawItem;
 class HdRenderIndex;
@@ -248,5 +252,8 @@ HdRprim::GetPrimVar(HdSceneDelegate* delegate, const TfToken &name) const
 {
     return delegate->Get(GetId(), name);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RPRIM_H

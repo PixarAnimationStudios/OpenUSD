@@ -27,6 +27,9 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_bool, "bool"))
@@ -181,3 +184,6 @@ HdBufferResource::GetGLTypeName() const
     // float instead of empty
     return _tokens->_float;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

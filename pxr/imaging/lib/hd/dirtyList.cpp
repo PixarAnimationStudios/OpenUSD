@@ -30,6 +30,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static void
 _FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index, 
                    HdRprimCollection const& collection)
@@ -472,3 +475,6 @@ HdDirtyList::GetDirtyRprims()
 
     return _dirtyIds;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -35,6 +35,9 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_int, "int"))
@@ -1074,3 +1077,6 @@ Hd_ResourceBinder::MetaData::ComputeHash() const
 
     return hash;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

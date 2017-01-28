@@ -24,10 +24,14 @@
 #ifndef HD_RENDER_INDEX_MANAGER_H
 #define HD_RENDER_INDEX_MANAGER_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 
 #include <memory>
 #include <unordered_map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRenderIndex;
 
@@ -78,5 +82,8 @@ private:
     Hd_RenderIndexManager(const Hd_RenderIndexManager &)             = delete;
     Hd_RenderIndexManager &operator =(const Hd_RenderIndexManager &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_RENDER_INDEX_MANAGER_H

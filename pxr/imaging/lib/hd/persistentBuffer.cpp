@@ -29,6 +29,9 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdPersistentBuffer::HdPersistentBuffer(
     TfToken const &role, size_t dataSize, void* data)
     : HdResource(role)
@@ -75,3 +78,6 @@ HdPersistentBuffer::~HdPersistentBuffer()
     glDeleteBuffers(1, &id);
     SetAllocation(0, 0);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -31,6 +31,9 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdRprimCollection::HdRprimCollection()
     : _forcedRepr(false)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
@@ -166,3 +169,6 @@ std::ostream& operator<<(std::ostream& out, HdRprimCollection const & v)
 size_t hash_value(HdRprimCollection const &v) {
     return v.ComputeHash();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

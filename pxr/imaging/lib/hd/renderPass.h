@@ -24,6 +24,7 @@
 #ifndef HD_RENDER_PASS_H
 #define HD_RENDER_PASS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/commandBuffer.h"
@@ -33,6 +34,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <unordered_map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdCommandBuffer;
 class HdRenderIndex;
@@ -121,5 +125,8 @@ private:
     bool _lastCullingDisabledState;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RENDER_PASS_H

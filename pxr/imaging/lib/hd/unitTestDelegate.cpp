@@ -40,6 +40,9 @@
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (rotate)
@@ -1605,3 +1608,6 @@ Hd_UnitTestDelegate::PopulateInvalidPrimsSet()
 
     return GfVec3f(0);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

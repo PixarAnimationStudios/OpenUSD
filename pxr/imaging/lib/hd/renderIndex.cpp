@@ -58,6 +58,9 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
 typedef tbb::concurrent_unordered_map<TfToken, 
                         tbb::concurrent_vector<HdDrawItem const*>, 
@@ -1458,3 +1461,6 @@ HdRenderIndex::GetSceneDelegateAndInstancerIds(SdfPath const &id,
 
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

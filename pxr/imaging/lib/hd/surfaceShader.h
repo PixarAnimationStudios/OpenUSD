@@ -24,6 +24,7 @@
 #ifndef HD_SURFACESHADER_H
 #define HD_SURFACESHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/version.h"
 
@@ -36,6 +37,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSceneDelegate;
 
@@ -103,5 +107,8 @@ private:
     HdSurfaceShader &operator =(const HdSurfaceShader &)         = delete;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_SURFACESHADER_H

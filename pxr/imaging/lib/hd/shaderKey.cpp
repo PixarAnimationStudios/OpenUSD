@@ -27,6 +27,9 @@
 #include "pxr/base/tf/token.h"
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static
 std::string
 _JoinTokens(const char *stage, TfToken const *tokens, bool *firstStage)
@@ -126,3 +129,6 @@ HdShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
 
     return ss.str();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

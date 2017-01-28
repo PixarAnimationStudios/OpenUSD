@@ -37,6 +37,9 @@
 #include <string>
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (l0dir)
@@ -274,4 +277,7 @@ Hd_TestLightingShader::SetLight(int light,
         _lights[light].color = color;
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

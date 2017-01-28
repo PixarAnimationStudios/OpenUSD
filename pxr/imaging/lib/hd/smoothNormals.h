@@ -24,6 +24,7 @@
 #ifndef HD_SMOOTH_NORMALS_H
 #define HD_SMOOTH_NORMALS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
@@ -32,6 +33,9 @@
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class Hd_VertexAdjacency;
 
@@ -89,5 +93,8 @@ private:
     TfToken _dstName;
     GLenum _dstDataType;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_SMOOTH_NORMALS_H

@@ -24,11 +24,15 @@
 #ifndef HD_GL_UTILS_H
 #define HD_GL_UTILS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/vt/value.h"
 
 #include <algorithm>
 #include <cmath>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 struct HdVec4f_2_10_10_10_REV {
     // we treat packed type as single-component values
@@ -132,5 +136,8 @@ private:
     GLint _srcBuffer;
     GLint _dstBuffer;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_GL_UTILS_H

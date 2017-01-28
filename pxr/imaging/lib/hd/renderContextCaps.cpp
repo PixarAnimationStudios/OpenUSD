@@ -33,6 +33,9 @@
 #include <iostream>
 #include <mutex>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdRenderContextCaps);
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHADER_STORAGE_BUFFER, true,
@@ -305,4 +308,7 @@ HdRenderContextCaps::_LoadCaps()
         }
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

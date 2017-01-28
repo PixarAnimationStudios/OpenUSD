@@ -32,6 +32,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdTexture::HdTexture(SdfPath const& id)
   : HdBprim(id)
   , _textureResource()
@@ -126,3 +129,6 @@ HdTexture::ShouldGenerateMipMaps() const
 {
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

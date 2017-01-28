@@ -24,12 +24,16 @@
 #ifndef HD_RPRIM_COLLECTION_H
 #define HD_RPRIM_COLLECTION_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdRprimCollection
 ///
@@ -150,5 +154,8 @@ std::ostream& operator<<(std::ostream& out, HdRprimCollection const & v);
 
 // Overload hash_value for HdRprimCollection.  Used by things like boost::hash.
 size_t hash_value(HdRprimCollection const &col);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RPRIM_COLLECTION_H

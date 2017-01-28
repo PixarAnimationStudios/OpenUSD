@@ -24,6 +24,7 @@
 #ifndef HD_RENDER_PASS_SHADER_H
 #define HD_RENDER_PASS_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -35,6 +36,9 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 
@@ -86,5 +90,8 @@ private:
     HdRenderPassShader(const HdRenderPassShader &)                     = delete;
     HdRenderPassShader &operator =(const HdRenderPassShader &)         = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_RENDER_PASS_SHADER_H

@@ -48,6 +48,9 @@
 
 #include <opensubdiv/osd/glslPatchShaderSource.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_float, "float"))
@@ -1929,3 +1932,6 @@ Hd_CodeGen::_GenerateShaderParameters()
     _genGS << declarations.str()
            << accessors.str();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

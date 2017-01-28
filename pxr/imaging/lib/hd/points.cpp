@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/points.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdPoints::HdPoints(SdfPath const& id,
                    SdfPath const& instancerId)
     : HdRprim(id, instancerId)
@@ -34,3 +37,6 @@ HdPoints::~HdPoints()
 {
     /*NOTHING*/
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -25,6 +25,9 @@
 #include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/drawItem.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdDrawItemInstance::HdDrawItemInstance(HdDrawItem const* drawItem)
     : _batch(nullptr)
     , _drawItem(drawItem)
@@ -57,3 +60,6 @@ HdDrawItemInstance::SetBatch(Hd_DrawBatch *batch)
 {
     _batch = batch;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

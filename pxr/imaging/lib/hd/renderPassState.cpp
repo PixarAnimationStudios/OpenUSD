@@ -42,6 +42,9 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderPassState)
@@ -414,4 +417,7 @@ HdRenderPassState::GetShaderHash() const
     boost::hash_combine(hash, _clipPlanes.size());
     return hash;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/patchIndex.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 std::ostream&
 operator<<(std::ostream&o, const Hd_BSplinePatchIndex &patchIndex)
 {
@@ -33,3 +36,6 @@ operator<<(std::ostream&o, const Hd_BSplinePatchIndex &patchIndex)
     o << ']';
     return o;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

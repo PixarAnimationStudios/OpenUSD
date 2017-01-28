@@ -24,6 +24,7 @@
 #ifndef HD_RENDER_INDEX_H
 #define HD_RENDER_INDEX_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -42,6 +43,9 @@
 
 #include <vector>
 #include <unordered_map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRprim;
 class HdSprim;
@@ -530,5 +534,8 @@ HdRenderIndex::InsertSprim(HdSceneDelegate* delegate, SdfPath const& id)
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RENDER_INDEX_H

@@ -25,6 +25,9 @@
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdBprim::HdBprim(SdfPath const &id)
  : _id(id)
 {
@@ -33,3 +36,6 @@ HdBprim::HdBprim(SdfPath const &id)
 HdBprim::~HdBprim()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

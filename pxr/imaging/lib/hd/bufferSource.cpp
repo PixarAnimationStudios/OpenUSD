@@ -24,6 +24,9 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/conversions.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdBufferSource::~HdBufferSource()
 {
 }
@@ -173,3 +176,6 @@ HdNullBufferSource::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

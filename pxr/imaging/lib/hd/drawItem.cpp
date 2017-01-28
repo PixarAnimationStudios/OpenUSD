@@ -33,6 +33,9 @@
 #include <boost/functional/hash.hpp>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdDrawItem::HdDrawItem(HdRprimSharedData const *sharedData)
     : _sharedData(sharedData)
 {
@@ -125,3 +128,6 @@ std::ostream &operator <<(std::ostream &out,
     }
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

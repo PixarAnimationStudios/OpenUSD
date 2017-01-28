@@ -23,6 +23,12 @@
 //
 #include "pxr/imaging/hd/strategyBase.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdAggregationStrategy::~HdAggregationStrategy()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

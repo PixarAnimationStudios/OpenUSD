@@ -41,6 +41,9 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hd_ImmediateDrawBatch::Hd_ImmediateDrawBatch(
     HdDrawItemInstance * drawItemInstance)
     : Hd_DrawBatch(drawItemInstance)
@@ -406,3 +409,6 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
 
     glUseProgram(0);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

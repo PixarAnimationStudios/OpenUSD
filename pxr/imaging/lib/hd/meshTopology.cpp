@@ -27,6 +27,9 @@
 
 #include "pxr/base/tf/envSetting.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_ENV_SETTING(HD_ENABLE_OPENSUBDIV3_ADAPTIVE, 0,
                       "Enables OpenSubdiv 3 Adaptive Tessellation");
 
@@ -193,3 +196,6 @@ HdMeshTopology::ComputeHash() const
 
     return id;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef HD_TASK_H
 #define HD_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -36,6 +37,9 @@
 #include <vector>
 #include <unordered_map>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdRenderIndex;
 
@@ -187,5 +191,8 @@ HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
 struct HdTaskParams {
     SdfPathVector childTasks;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_TASK_H

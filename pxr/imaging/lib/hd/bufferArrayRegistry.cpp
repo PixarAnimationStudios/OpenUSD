@@ -25,6 +25,9 @@
 
 #include "pxr/imaging/hd/bufferArray.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 HdBufferArrayRegistry::HdBufferArrayRegistry()
  : _entries()
@@ -280,3 +283,6 @@ operator <<(std::ostream &out, const HdBufferArrayRegistry& self)
 
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

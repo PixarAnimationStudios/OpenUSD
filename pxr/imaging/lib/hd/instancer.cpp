@@ -29,6 +29,9 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdInstancer::HdInstancer(HdSceneDelegate* delegate,
                          SdfPath const& id,
                          SdfPath const &parentId)
@@ -321,3 +324,6 @@ HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 
     return indexRange;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

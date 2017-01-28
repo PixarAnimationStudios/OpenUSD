@@ -24,6 +24,7 @@
 #ifndef HD_SHADER_CODE_H
 #define HD_SHADER_CODE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/resourceBinder.h"  // XXX: including a private class
@@ -34,6 +35,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
@@ -105,5 +109,8 @@ private:
     HdShaderCode(const HdShaderCode &)                      = delete;
     HdShaderCode &operator =(const HdShaderCode &)          = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_SHADER_H

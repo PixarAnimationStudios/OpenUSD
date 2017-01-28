@@ -24,9 +24,13 @@
 #ifndef HD_SHADER_KEY_H
 #define HD_SHADER_KEY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // This is a static utility class to interpret prim specific shaderKeys.
 //
@@ -88,5 +92,8 @@ struct HdShaderKey {
                                        TfToken const *FS);
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_SHADER_KEY_H

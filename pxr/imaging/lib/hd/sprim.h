@@ -24,12 +24,16 @@
 #ifndef HD_SPRIM_H
 #define HD_SPRIM_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSceneDelegate;
 
@@ -70,5 +74,8 @@ public:
 private:
     SdfPath _id;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_SPRIM_H
