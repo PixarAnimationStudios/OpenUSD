@@ -112,6 +112,27 @@ pxrusdGeom.dylib on Mac for the usdGeom component.
 
 ## USD Developer Options
 
+##### C++ Namespace Configuration
+
+USD comes with options to enable and customize C++ namespaces via the following
+flags:
+
+| Option Name                    | Description                             | Default |
+| ------------------------------ |-----------------------------------------| ------- |
+| PXR_SET_EXTERNAL_NAMESPACE     | The outer namespace identifier          | ```pxr```     |
+| PXR_SET_INTERNAL_NAMESPACE     | The internal namespace identifier       | ```pxrInternal_v_x_y``` (for version x.y.z) |
+| PXR_ENABLE_NAMESPACES          | Enable namespaces                       | ```OFF```    |
+
+When enabled, there are a set of macros provided in a generated header, 
+pxr/pxr.h, which facilitates using namespaces:
+
+| Macro Name                     | Description                             | 
+| ------------------------------ |-----------------------------------------| 
+| PXR_NAMESPACE_OPEN_SCOPE       | Opens the namespace scope.                                           |
+| PXR_NAMESPACE_CLOSE_SCOPE      | Closes the namespace.                                                |
+| PXR_NS                         | Explicit qualification on items, e.g. ```PXR_NS::TfToken foo = ...```|
+| PXR_NAMESPACE_USING_DIRECTIVE  | Enacts a using-directive, e.g. ```using namespace PXR_NS;```         |
+
 ##### ASCII Parser Editing/Validation
 
 There is an ASCII parser for the USD file format, which can be found in 
