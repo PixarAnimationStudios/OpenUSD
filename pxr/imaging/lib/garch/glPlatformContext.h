@@ -26,6 +26,7 @@
 
 /// \file garch/glPlatformContext.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #include <cstddef>
 
@@ -48,6 +49,8 @@
 
 #endif
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 GarchGLPlatformContextState GarchGetNullGLPlatformContextState();
 
 inline
@@ -56,5 +59,8 @@ hash_value(const GarchGLPlatformContextState& x)
 {
     return x.GetHash();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLPLATFORMCONTEXT_H

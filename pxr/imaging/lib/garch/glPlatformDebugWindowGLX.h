@@ -24,9 +24,13 @@
 #ifndef GARCH_GLPLATFORM_DEBUG_WINDOW_GLX_H
 #define GARCH_GLPLATFORM_DEBUG_WINDOW_GLX_H
 
+#include "pxr/pxr.h"
 #include <boost/scoped_ptr.hpp>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GarchGLDebugWindow;
 class GarchGLPlatformDebugContext;
@@ -50,5 +54,8 @@ private:
     GLXContext _glContext;
     boost::scoped_ptr<GarchGLPlatformDebugContext> _glDebugContext;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLPLATFORM_DEBUG_WINDOW_GLX_H

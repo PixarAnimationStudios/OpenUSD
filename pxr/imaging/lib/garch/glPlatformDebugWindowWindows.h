@@ -24,7 +24,11 @@
 #ifndef GARCH_GLPLATFORM_DEBUG_WINDOW_WINDOWS_H
 #define GARCH_GLPLATFORM_DEBUG_WINDOW_WINDOWS_H
 
+#include "pxr/pxr.h"
 #include <windows.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GarchGLDebugWindow;
 
@@ -53,5 +57,8 @@ private:
     HGLRC _hGLRC;
     const char *_className;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLPLATFORM_DEBUG_WINDOW_WINDOWS_H

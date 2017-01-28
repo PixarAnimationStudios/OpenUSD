@@ -24,12 +24,16 @@
 #ifndef GARCH_GL_H
 #define GARCH_GL_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 // Apple installs OpenGL headers in a non-standard location.
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #endif
 
 #ifdef ARCH_OS_DARWIN
@@ -41,5 +45,8 @@ typedef GLvoid (*ArchGLCallbackType)(...);
 #else
 typedef GLvoid (*ArchGLCallbackType)();
 #endif
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GARCH_GL_H

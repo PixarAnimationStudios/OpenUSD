@@ -29,6 +29,9 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef GLXContext (*GLXCREATECONTEXTATTRIBSARBPROC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
 // ---------------------------------------------------------------------------
@@ -216,3 +219,6 @@ Garch_GLPlatformDebugWindow::ExitApp()
 {
     _running = false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

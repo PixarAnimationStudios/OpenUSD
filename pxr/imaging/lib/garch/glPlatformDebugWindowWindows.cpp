@@ -28,6 +28,9 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // ---------------------------------------------------------------------------
 Garch_GLPlatformDebugWindow::_className = _T("GarchGLDebugWindow");
 
@@ -221,3 +224,6 @@ Garch_GLPlatformDebugWindow::ExitApp()
 {
     _running = false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

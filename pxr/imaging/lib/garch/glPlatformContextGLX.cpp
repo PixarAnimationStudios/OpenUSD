@@ -26,6 +26,9 @@
 #include "pxr/imaging/garch/glPlatformContext.h"
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 //
 // GarchGLXContextState
 //
@@ -95,3 +98,6 @@ GarchGetNullGLPlatformContextState()
 {
     return GarchGLXContextState(NULL, None, NULL);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

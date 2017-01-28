@@ -28,6 +28,8 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/arch/defines.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 /* static */
 bool
 GarchGLPlatformDebugContext::IsEnabledDebugOutput()
@@ -46,6 +48,7 @@ GarchGLPlatformDebugContext::IsEnabledCoreProfile()
     return isEnabledCoreProfile;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 ////////////////////////////////////////////////////////////
 #if defined(ARCH_OS_LINUX)
@@ -53,6 +56,8 @@ GarchGLPlatformDebugContext::IsEnabledCoreProfile()
 #include <GL/glx.h>
 #include <GL/glxtokens.h>
 #include <X11/Xlib.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GarchGLPlatformDebugContextPrivate {
 public:
@@ -146,11 +151,15 @@ void *GarchSelectCoreProfileMacVisual()
     return nullptr;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif
 
 ////////////////////////////////////////////////////////////
 
 #if defined(ARCH_OS_DARWIN)
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX: implement debug context
 class GarchGLPlatformDebugContextPrivate {
@@ -165,12 +174,16 @@ public:
 
 void *GarchSelectCoreProfileMacVisual();  // extern obj-c
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif
 
 
 ////////////////////////////////////////////////////////////
 
 #if defined(ARCH_OS_WINDOWS)
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX: implement debug context
 class GarchGLPlatformDebugContextPrivate {
@@ -188,8 +201,11 @@ void *GarchSelectCoreProfileMacVisual()
     return nullptr;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////
 
@@ -242,3 +258,6 @@ GarchGLPlatformDebugContext::chooseMacVisual()
     }
     return nullptr;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

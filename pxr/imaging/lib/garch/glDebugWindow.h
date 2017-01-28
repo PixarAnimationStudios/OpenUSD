@@ -24,7 +24,11 @@
 #ifndef GARCH_GLDEBUGWINDOW_H
 #define GARCH_GLDEBUGWINDOW_H
 
+#include "pxr/pxr.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class Garch_GLPlatformDebugWindow;
 
@@ -71,5 +75,8 @@ private:
     std::string _title;
     int _width, _height;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLDEBUGWINDOW_H

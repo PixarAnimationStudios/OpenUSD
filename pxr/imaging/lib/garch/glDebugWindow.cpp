@@ -34,6 +34,8 @@
 #include "pxr/imaging/garch/glPlatformDebugWindowWin.h"
 #endif
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 GarchGLDebugWindow::GarchGLDebugWindow(const char *title, int width, int height)
     : _title(title)
     , _width(width)
@@ -120,3 +122,6 @@ void
 GarchGLDebugWindow::OnMouseMove(int x, int y, int modKeys)
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
