@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdHydra/uvTexture.h"
-
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -38,6 +38,8 @@
 #include <string>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -150,6 +152,8 @@ void wrapUsdHydraUvTexture()
     _CustomWrapCode(cls);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -162,8 +166,16 @@ void wrapUsdHydraUvTexture()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the pxr namespace macros:
+// PXR_NAMESPACE_OPEN_SCOPE, PXR_NAMESPACE_CLOSE_SCOPE.
+//
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 WRAP_CUSTOM {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
