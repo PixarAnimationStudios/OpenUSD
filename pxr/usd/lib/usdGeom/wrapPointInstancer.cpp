@@ -235,9 +235,91 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/pyEnum.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+static
+std::vector<bool>
+_ComputeMaskAtTime(UsdGeomPointInstancer &self,
+                    UsdTimeCode time)
+{
+    return self.ComputeMaskAtTime(time);
+}
+
+static
+VtMatrix4dArray
+_ComputeInstanceTransformsAtTime(
+    UsdGeomPointInstancer &self,
+    UsdTimeCode time,
+    UsdTimeCode baseTime,
+    UsdGeomPointInstancer::ProtoXformInclusion doProtoXforms,
+    UsdGeomPointInstancer::MaskApplication applyMask)
+{
+    VtMatrix4dArray xforms;
+
+    // On error we'll be returning an empty array.
+    self.ComputeInstanceTransformsAtTime(&xforms, time, baseTime,
+                                         doProtoXforms, applyMask);
+
+    return xforms;
+}
+
 WRAP_CUSTOM {
+
+    typedef UsdGeomPointInstancer This;
+
+    TfPyWrapEnum<This::MaskApplication>();
+
+    TfPyWrapEnum<This::ProtoXformInclusion>();
+
+    _class
+        .def("ActivateId", 
+             &This::ActivateId,
+             (arg("id")))
+        .def("ActivateIds", 
+             &This::ActivateIds,
+             (arg("ids")))
+        .def("ActivateAllIds", 
+             &This::ActivateAllIds)
+        .def("DeactivateId", 
+             &This::DeactivateId,
+             (arg("id")))
+        .def("DeactivateIds", 
+             &This::DeactivateIds,
+             (arg("ids")))
+
+        .def("VisId", 
+             &This::VisId,
+             (arg("id"), arg("time")))
+        .def("VisIds", 
+             &This::VisIds,
+             (arg("ids"), arg("time")))
+        .def("VisAllIds", 
+             &This::VisAllIds,
+             (arg("time")))
+        .def("InvisId", 
+             &This::InvisId,
+             (arg("id"), arg("time")))
+        .def("InvisIds", 
+             &This::InvisIds,
+             (arg("ids"), arg("time")))
+        
+        // The cost to fetch 'ids' is likely dwarfed by python marshalling
+        // costs, so let's not worry about the 'ids' optional arg
+        .def("ComputeMaskAtTime",
+             &_ComputeMaskAtTime,
+             (arg("time")))
+
+        .def("ComputeInstanceTransformsAtTime",
+             &_ComputeInstanceTransformsAtTime,
+             (arg("time"), arg("baseTime"),
+              arg("doProtoXforms")=This::IncludeProtoXform,
+              arg("applyMask")=This::ApplyMask))
+              
+
+        ;
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
