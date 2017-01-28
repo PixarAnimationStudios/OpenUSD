@@ -111,11 +111,11 @@ _GetMeshNormals(
     unsigned int fvi = 0;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         int normalId = itFV.normalId();
-        MVector normal = mayaNormals[normalId];
-        if (normalId >= mayaNormals.length()) {
+        if (normalId < 0 || static_cast<size_t>(normalId) >= mayaNormals.length()) {
             return false;
         }
 
+        MVector normal = mayaNormals[normalId];
         (*normalsArray)[fvi][0] = normal[0];
         (*normalsArray)[fvi][1] = normal[1];
         (*normalsArray)[fvi][2] = normal[2];
