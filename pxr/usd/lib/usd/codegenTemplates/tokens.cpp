@@ -23,8 +23,8 @@
 //
 #include "{{ libraryPath }}/tokens.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+{{ namespaceOpen }}
 
 TF_DEFINE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_TOKENS);
 
-PXR_NAMESPACE_CLOSE_SCOPE
+{{ namespaceClose }}

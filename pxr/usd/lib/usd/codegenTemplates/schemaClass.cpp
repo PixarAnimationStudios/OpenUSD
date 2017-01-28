@@ -29,7 +29,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+{{ namespaceOpen }}
 
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
@@ -179,14 +179,14 @@ const TfTokenVector&
         return localNames;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+{{ namespaceClose }}
 
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
 //
-// Just remember to wrap code in the pxr namespace macros:
-// PXR_NAMESPACE_OPEN_SCOPE, PXR_NAMESPACE_CLOSE_SCOPE.
+// Just remember to wrap code in the appropriate delimiters:
+// '{{ namespaceOpen }}', '{{ namespaceClose }}'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
