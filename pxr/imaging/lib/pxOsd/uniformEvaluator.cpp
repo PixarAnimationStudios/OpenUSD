@@ -35,6 +35,9 @@
 
 #include "pxr/base/gf/vec3d.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace std;
 using namespace OpenSubdiv;
 
@@ -190,4 +193,7 @@ PxOsdUniformEvaluator::EvaluatePoint(
 }
 
                                             
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

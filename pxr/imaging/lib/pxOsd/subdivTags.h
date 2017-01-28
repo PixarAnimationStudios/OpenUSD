@@ -26,8 +26,12 @@
 
 /// \file pxOsd/subdivTags.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxOsdSubdivTags
 ///
@@ -185,5 +189,8 @@ private:
 std::ostream& operator << (std::ostream &out, PxOsdSubdivTags const &);
 bool operator==(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs);
 bool operator!=(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXOSD_SUBDIV_TAGS_H

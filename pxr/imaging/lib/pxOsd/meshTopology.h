@@ -26,6 +26,7 @@
 
 /// \file pxOsd/meshTopology.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/base/vt/array.h"
@@ -35,6 +36,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class PxOsdMeshTopology> PxOsdMeshTopologySharedPtr;
 
@@ -164,5 +168,8 @@ private:
 
 std::ostream& operator << (std::ostream &out, PxOsdMeshTopology const &);
 bool operator!=(const PxOsdMeshTopology& lhs, const PxOsdMeshTopology& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXOSD_MESH_TOPOLOGY_H

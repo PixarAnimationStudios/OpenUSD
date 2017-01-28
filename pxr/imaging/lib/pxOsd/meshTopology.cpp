@@ -32,6 +32,9 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/debug.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 PxOsdMeshTopology::PxOsdMeshTopology() :
     _scheme(PxOsdOpenSubdivTokens->bilinear),
     _orientation(PxOsdOpenSubdivTokens->rightHanded),
@@ -141,3 +144,6 @@ bool operator!=(const PxOsdMeshTopology& lhs, const PxOsdMeshTopology& rhs)
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

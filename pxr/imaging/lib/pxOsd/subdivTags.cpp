@@ -27,6 +27,9 @@
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 PxOsdSubdivTags::ID
 PxOsdSubdivTags::ComputeHash() const {
 
@@ -102,3 +105,6 @@ operator!=(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs)
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

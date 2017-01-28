@@ -26,6 +26,7 @@
 
 /// \file pxOsd/refinerCache.h
 
+#include "pxr/pxr.h"
 #include "meshTopology.h"
 #include "refinerFactory.h"
 
@@ -42,6 +43,9 @@
 #include "pxr/base/tf/hashset.h"
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxOsdRefinerCache
 ///
@@ -79,5 +83,8 @@ private:
     PxOsdRefinerCache const& operator=(PxOsdRefinerCache const&);
     friend class TfSingleton<PxOsdRefinerCache>;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXOSD_REFINER_CACHE_H

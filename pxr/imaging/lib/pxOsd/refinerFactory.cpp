@@ -33,6 +33,9 @@
 
 #include <boost/bind.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 namespace {
 
 struct Converter {
@@ -189,6 +192,8 @@ Converter::GetOptions() const {
 
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // OpenSubdiv 3.x API requires that the client code provides
 // template specialization for topology annotations.
 
@@ -199,8 +204,10 @@ namespace Far {
 
 //----------------------------------------------------------
 template <> inline bool
-TopologyRefinerFactory<Converter>::resizeComponentTopology(
-    Far::TopologyRefiner & refiner, Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::Converter>::resizeComponentTopology(
+    Far::TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     PxOsdMeshTopology const topology = converter.topology;
 
@@ -230,13 +237,13 @@ TopologyRefinerFactory<Converter>::resizeComponentTopology(
 //----------------------------------------------------------
 template <>
 inline bool
-TopologyRefinerFactory<Converter>::assignComponentTopology(
-    Far::TopologyRefiner & refiner, Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTopology(
+    Far::TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     PxOsdMeshTopology const topology = converter.topology;
-
     int const * vertIndices = topology.GetFaceVertexIndices().cdata();
-
     bool flip = (topology.GetOrientation() != PxOsdOpenSubdivTokens->rightHanded);
 
     for (int face=0, idx=0; face<refiner.GetLevel(0).GetNumFaces(); ++face) {
@@ -263,8 +270,10 @@ TopologyRefinerFactory<Converter>::assignComponentTopology(
 
 template <>
 inline bool
-TopologyRefinerFactory<Converter>::assignComponentTags(
-    Far::TopologyRefiner & refiner, Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTags(
+    Far::TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     PxOsdMeshTopology const & topology = converter.topology;
 
@@ -367,8 +376,10 @@ TopologyRefinerFactory<Converter>::assignComponentTags(
 
 template <>
 bool
-TopologyRefinerFactory<Converter>::assignFaceVaryingTopology(
-    TopologyRefiner & refiner, Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::Converter>::assignFaceVaryingTopology(
+    TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     if (converter.fvarTopologies.empty()) return true;
 
@@ -414,9 +425,10 @@ TopologyRefinerFactory<Converter>::assignFaceVaryingTopology(
 //----------------------------------------------------------
 template <>
 inline void
-TopologyRefinerFactory<Converter>::reportInvalidTopology(
+TopologyRefinerFactory<PXR_NS::Converter>::reportInvalidTopology(
     TopologyRefinerFactory::TopologyError /* errCode */,
-        char const * msg, Converter const & converter) {
+        char const * msg, PXR_NS::Converter const & converter) {
+    PXR_NAMESPACE_USING_DIRECTIVE
     TF_WARN("%s (%s)", msg, converter.name.GetText());
 }
 
@@ -426,6 +438,8 @@ TopologyRefinerFactory<Converter>::reportInvalidTopology(
 
 } // namespace OPENSUBDIV_VERSION
 } // namespace OpenSubdiv
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // ---------------------------------------------------------------------------
 PxOsdTopologyRefinerSharedPtr
@@ -464,4 +478,7 @@ PxOsdRefinerFactory::Create(
     return PxOsdTopologyRefinerSharedPtr(refiner);
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

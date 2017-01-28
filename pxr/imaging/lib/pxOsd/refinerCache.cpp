@@ -37,6 +37,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 using std::vector;
 using std::string;
@@ -126,3 +129,6 @@ PxOsdRefinerCache::GetOrCreateRefiner(
 
     return refiner;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -37,6 +37,9 @@
 
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::vector;
 
 boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>
@@ -126,4 +129,7 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
     return boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>(stencilTablePtr);
 
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
