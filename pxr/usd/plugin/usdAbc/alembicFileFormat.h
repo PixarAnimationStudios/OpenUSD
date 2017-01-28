@@ -24,10 +24,14 @@
 #ifndef USDABC_ALEMBIC_FILE_FORMAT_H
 #define USDABC_ALEMBIC_FILE_FORMAT_H
  
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define USDABC_ALEMBIC_FILE_FORMAT_TOKENS  \
     ((Id,      "abc"))                  \
@@ -76,5 +80,8 @@ private:
 private:
     SdfFileFormatConstPtr _usda;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDABC_ALEMBIC_FILE_FORMAT_H

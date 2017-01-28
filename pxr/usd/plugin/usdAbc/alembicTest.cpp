@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicTest.h"
 #include "pxr/usd/usdAbc/alembicData.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -29,6 +30,9 @@
 #include "pxr/base/tf/ostreamMethods.h"
 #include <algorithm>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 template <class T>
 static bool _Truncate(VtValue& v, int max = 5)
@@ -395,3 +399,6 @@ UsdAbc_WriteAlembic(const std::string& srcPathname, const std::string& dstPathna
         SdfFileFormat::FindByExtension(".abc")->
             WriteToFile(boost::get_pointer(layer), dstPathname);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

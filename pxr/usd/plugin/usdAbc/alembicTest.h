@@ -24,7 +24,11 @@
 #ifndef USDABC_ALEMBICTEST_H
 #define USDABC_ALEMBICTEST_H
 
+#include "pxr/pxr.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Test Alembic conversion.
 bool UsdAbc_TestAlembic(const std::string& pathname);
@@ -32,5 +36,8 @@ bool UsdAbc_TestAlembic(const std::string& pathname);
 /// Read Usd file from \p srcPathname and write as Alembic to \p dstPathname.
 bool UsdAbc_WriteAlembic(const std::string& srcPathname,
                          const std::string& dstPathname);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDABC_ALEMBICTEST_H

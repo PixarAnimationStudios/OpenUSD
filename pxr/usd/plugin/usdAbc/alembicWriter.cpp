@@ -23,6 +23,7 @@
 //
 /// \file alembicWriter.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicWriter.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -47,6 +48,9 @@
 #include <set>
 #include <type_traits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // The name of this exporter, embedded in written Alembic files.
 static const char* writerName = "UsdAbc_AlembicData";
 
@@ -59,7 +63,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace {
 
 using namespace ::Alembic::AbcGeom;
-using namespace ::UsdAbc_AlembicUtil;
+using namespace UsdAbc_AlembicUtil;
 
 // The SdfAbstractData time samples type.
 // XXX: SdfAbstractData should typedef this.
@@ -3459,3 +3463,6 @@ UsdAbc_AlembicDataWriter::SetFlag(const TfToken& flagName, bool set)
 {
     _impl->SetFlag(flagName, set);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -26,6 +26,7 @@
 
 /// \file usdAbc/alembicUtil.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/schema.h"
@@ -51,6 +52,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfAbstractDataValue;
 
@@ -1051,5 +1055,8 @@ UsdAbc_ReverseOrderImpl(
 }
 
 } // namespace UsdAbc_AlembicUtil
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDABC_ALEMBICUTIL_H

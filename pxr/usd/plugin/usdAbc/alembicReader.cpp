@@ -23,6 +23,7 @@
 //
 /// \file alembicReader.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -55,6 +56,9 @@
 #include <Alembic/AbcGeom/Visibility.h>
 #include <mutex>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // Define this to dump the namespace hierarchy as we traverse Alembic.
 //#define USDABC_ALEMBIC_DEBUG
 
@@ -71,7 +75,7 @@ TF_DEFINE_ENV_SETTING(
 namespace {
 
 using namespace ::Alembic::AbcGeom;
-using namespace ::UsdAbc_AlembicUtil;
+using namespace UsdAbc_AlembicUtil;
 
 // A global mutex until our HDF5 library is thread safe.  It has to be
 // recursive to handle the case where we write an Alembic file using an
@@ -3893,3 +3897,6 @@ UsdAbc_AlembicDataReader::ListTimeSamplesForPath(
 {
     return _impl->ListTimeSamplesForPath(id);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

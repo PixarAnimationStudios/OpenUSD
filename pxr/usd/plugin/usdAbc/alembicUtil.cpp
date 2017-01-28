@@ -23,10 +23,14 @@
 //
 /// \file alembicUtil.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <Alembic/Abc/IArrayProperty.h>
 #include <Alembic/Abc/IScalarProperty.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PUBLIC_TOKENS(UsdAbc_AlembicContextFlagNames,
                         USDABC_ALEMBIC_CONTEXT_FLAG_NAMES);
@@ -353,3 +357,6 @@ UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
 }
 
 } // namespace UsdAbc_AlembicUtil
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

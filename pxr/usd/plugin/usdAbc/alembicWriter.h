@@ -26,12 +26,16 @@
 
 /// \file usdAbc/alembicWriter.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <set>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Note -- Even though this header is private we try to keep Alembic headers
 //         out of it anyway for simplicity's sake.
@@ -60,5 +64,8 @@ private:
     boost::scoped_ptr<class UsdAbc_AlembicDataWriterImpl> _impl;
     std::string _errorLog;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -23,6 +23,7 @@
 //
 /// \file alembicData.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicData.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
@@ -31,6 +32,9 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Note: The Alembic translator has a few major parts.  Here's a
 //       quick description.
@@ -82,7 +86,7 @@
 //     method for writing an Alembic file.
 //
 
-using namespace ::UsdAbc_AlembicUtil;
+using namespace UsdAbc_AlembicUtil;
 
 TF_DEFINE_ENV_SETTING(USD_ABC_EXPAND_INSTANCES, false,
                       "Force Alembic instances to be expanded.");
@@ -363,3 +367,6 @@ UsdAbc_AlembicData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time
 {
     XXX_UNSUPPORTED(EraseTimeSample);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
