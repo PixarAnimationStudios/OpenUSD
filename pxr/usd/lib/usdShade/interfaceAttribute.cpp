@@ -30,19 +30,12 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 
-// Windows does a #define for "interface", so 
-// interface -> interfaceNS (for interface namespace)
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    ((interfaceRecipientsOf, "interfaceRecipientsOf:"))
-);
-
 static std::string
 _GetRelPrefix(const TfToken& renderTarget)
 {
     return TfStringPrintf("%s:%s", 
             renderTarget.GetText(),
-            _tokens->interfaceRecipientsOf.GetText());
+            UsdShadeTokens->interfaceRecipientsOf.GetText());
 }
 
 /* static */ std::string

@@ -70,6 +70,12 @@ over "GLOBAL" (
                 denoting an interface attribute.
                 """
             }
+            dictionary interfaceRecipientsOf = {
+                string value = "interfaceRecipientsOf:"
+                string doc = """The prefix on UsdShadeSubgraph relationships
+                denoting the target of an interface attribute.
+                """
+            }
         }
     }
 )
