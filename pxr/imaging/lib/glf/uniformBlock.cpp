@@ -30,6 +30,9 @@
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/glContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfUniformBlock::GlfUniformBlock() :
     _buffer(0), _size(0)
 {
@@ -74,3 +77,6 @@ GlfUniformBlock::Update(const void *data, int size)
     }
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -26,6 +26,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfImage>();
@@ -70,3 +73,6 @@ GlfImage::OpenForWriting(std::string const & filename)
 
     return image;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

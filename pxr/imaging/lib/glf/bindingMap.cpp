@@ -30,6 +30,9 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 int
 GlfBindingMap::GetSamplerUnit(std::string const & name)
 {
@@ -260,4 +263,7 @@ GlfBindingMap::Debug() const
         printf("  %s : %d\n", it->first.GetText(), it->second);
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

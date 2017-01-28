@@ -29,6 +29,9 @@
 
 #include <stdio.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Glf_TestGLContextPrivate {
 public:
     Glf_TestGLContextPrivate( Glf_TestGLContextPrivate const * other=NULL );
@@ -234,3 +237,6 @@ GlfTestGLContext::_IsEqual(GlfGLContextSharedPtr const &rhs) const
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

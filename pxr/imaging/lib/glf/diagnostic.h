@@ -26,12 +26,16 @@
 
 /// \file glf/diagnostic.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include <boost/noncopyable.hpp>
 #include <string>
 #include <cstdint>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Posts diagnostic errors for all GL errors in the current context.
 /// This macro tags the diagnostic errors with the name of the calling
@@ -103,5 +107,8 @@ private:
     GLuint _id;
     GLenum _target;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

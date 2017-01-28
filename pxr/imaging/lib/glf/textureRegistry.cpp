@@ -40,6 +40,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON( GlfTextureRegistry );
 
 GlfTextureRegistry &
@@ -379,3 +382,6 @@ GlfTextureRegistry::_TextureMetadata::SetHandle(
 {
     _handle = handle;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

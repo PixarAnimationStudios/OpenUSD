@@ -25,6 +25,9 @@
 #include "pxr/imaging/glf/glContextRegistry.h"
 #include "pxr/imaging/garch/glPlatformContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 //
 // GlfGLContext
 //
@@ -140,3 +143,6 @@ GlfGLContextScopeHolder::_RestoreOldContext()
         GlfGLContext::MakeCurrent(_oldContext);
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

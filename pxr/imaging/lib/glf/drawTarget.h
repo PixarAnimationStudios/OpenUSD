@@ -26,6 +26,7 @@
 
 /// \file glf/drawTarget.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/gf/vec2i.h"
@@ -39,6 +40,9 @@
 #include <map>
 #include <set>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
@@ -255,5 +259,8 @@ private:
     TfRefPtr<AttachmentsContainer> _attachmentsPtr;
     GlfGLContextSharedPtr _owningContext;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_DRAW_TARGET_H

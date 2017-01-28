@@ -26,6 +26,9 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/vt/dictionary.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace std;
 
 
@@ -127,3 +130,6 @@ Glf_GetDictionaryFromInput(
     }
     return VtDictionary();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

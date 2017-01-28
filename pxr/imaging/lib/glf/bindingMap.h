@@ -26,6 +26,7 @@
 
 /// \file glf/bindingMap.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -33,6 +34,9 @@
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/base/tf/hashmap.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GlfBindingMap : public TfRefBase, public TfWeakBase {
 public:
@@ -85,5 +89,8 @@ private:
     BindingMap _samplerBindings;
     BindingMap _uniformBindings;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_BINDING_MAP_H

@@ -26,12 +26,16 @@
 
 /// \file glf/ptexTexture.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 
@@ -103,5 +107,8 @@ private:
 
     const TfToken	_imageFilePath;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_TEXTURE_H

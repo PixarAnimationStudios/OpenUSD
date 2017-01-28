@@ -26,6 +26,7 @@
 
 /// \file glf/textureHandle.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/imaging/garch/gl.h"
@@ -36,6 +37,9 @@
 
 #include <string>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTextureHandle);
 
@@ -64,5 +68,8 @@ protected:
     // requested memory map
     std::map<size_t, size_t> _requestedMemories;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -26,6 +26,7 @@
 
 /// \file glf/glslfx.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glslfxConfig.h"
 
 #include "pxr/base/tf/token.h"
@@ -36,6 +37,9 @@
 #include <vector>
 #include <set>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class GlfGLSLFX
 ///
@@ -239,6 +243,9 @@ private:
 };
 
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
 

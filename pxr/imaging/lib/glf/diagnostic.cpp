@@ -37,6 +37,9 @@
 
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 void
 GlfPostPendingGLErrors(std::string const & where)
 {
@@ -226,3 +229,6 @@ GlfGLQueryObject::GetResultNoWait()
     }
     return value;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

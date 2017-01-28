@@ -42,6 +42,9 @@
 #include <istream>
 #include <fstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 #define CURRENT_VERSION 0.1
 
 using std::string;
@@ -331,7 +334,7 @@ GlfGLSLFX::_ProcessImport(_ParseContext & context)
     }
 
     string errorStr;
-    string importFile = ::_ComputeResolvedPath(TfGetPathName(context.filename),
+    string importFile = _ComputeResolvedPath(TfGetPathName(context.filename),
 					       tokens[1], &errorStr );
     
     if( importFile.empty() ) {
@@ -636,3 +639,6 @@ GlfGLSLFX::GetSource(const TfToken &shaderStageKey) const
 {
     return _GetSource(shaderStageKey);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

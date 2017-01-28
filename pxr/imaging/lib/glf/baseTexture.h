@@ -26,6 +26,7 @@
 
 /// \file glf/uvTexture.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -35,6 +36,9 @@
 #include "pxr/imaging/garch/gl.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTexture);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
@@ -94,5 +98,8 @@ private:
     GLenum	_wrapModeS;
     GLenum	_wrapModeT;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_BASETEXTURE_H

@@ -26,9 +26,13 @@
 
 /// \file glf/utils.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Number of elements.
 ///
@@ -63,5 +67,8 @@ bool GlfIsCompressedFormat(GLenum format);
 /// Supported OGL compressed formats : GL_COMPRESSED_RGBA_BPTC_UNORM, 
 /// GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
 size_t GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum type);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

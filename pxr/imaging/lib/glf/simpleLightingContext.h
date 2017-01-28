@@ -26,6 +26,7 @@
 
 /// \file glf/simpleLightingContext.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/imaging/glf/simpleShadowArray.h"
@@ -36,6 +37,9 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBindingMap);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUniformBlock);
@@ -112,5 +116,8 @@ private:
     bool _shadowUniformBlockValid;
     bool _materialUniformBlockValid;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

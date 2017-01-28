@@ -30,6 +30,9 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tracelite/trace.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfUVTextureDataRefPtr
 GlfUVTextureData::New(
     std::string const &filePath,
@@ -460,3 +463,6 @@ GlfUVTextureData::GetNumMipLevels() const
 {
     return (int)_rawBufferMips.size();   
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

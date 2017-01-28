@@ -26,10 +26,14 @@
 
 /// \file glf/uvTextureStorage.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/baseTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureStorage);
 
@@ -64,5 +68,8 @@ private:
 
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_UVTEXTURESTORAGE_H

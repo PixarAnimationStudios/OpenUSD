@@ -27,6 +27,9 @@
 
 #include "pxr/imaging/garch/gl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfSimpleMaterial::GlfSimpleMaterial() :
     _ambient(0.2, 0.2, 0.2, 1),
     _diffuse(0.8, 0.8, 0.8, 1),
@@ -117,3 +120,6 @@ GlfSimpleMaterial::operator !=(GlfSimpleMaterial const & other) const
 {
     return !(*this == other);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

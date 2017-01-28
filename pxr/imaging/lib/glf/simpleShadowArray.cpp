@@ -32,6 +32,9 @@
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4d.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfSimpleShadowArray::GlfSimpleShadowArray(GfVec2i const & size,
                                            size_t numLayers) :
     _size(size),
@@ -277,3 +280,6 @@ GlfSimpleShadowArray::_UnbindFramebuffer()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _unbindRestoreDrawFramebuffer);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _unbindRestoreReadFramebuffer);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

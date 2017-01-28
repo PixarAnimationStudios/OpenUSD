@@ -24,6 +24,7 @@
 #ifndef GLF_BASETEXTUREDATA_H
 #define GLF_BASETEXTUREDATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -33,6 +34,9 @@
 #include "pxr/imaging/glf/utils.h"
 
 #include <boost/noncopyable.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 
@@ -91,5 +95,8 @@ protected:
         GLenum format, GLenum type, bool isSRGB);
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_BASETEXTURE_DATA

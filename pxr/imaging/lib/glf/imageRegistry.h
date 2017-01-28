@@ -24,6 +24,7 @@
 #ifndef GLF_IMAGE_REGISTRY_H
 #define GLF_IMAGE_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
 
@@ -31,6 +32,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
@@ -64,5 +68,8 @@ protected:
 private:
     boost::scoped_ptr<GlfRankedTypeMap> _typeMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_IMAGE_REGISTRY_H

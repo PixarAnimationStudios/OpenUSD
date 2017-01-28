@@ -26,7 +26,11 @@
 
 /// \file glf/simpleMaterial.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec4f.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GlfSimpleMaterial final {
 public:
@@ -58,5 +62,8 @@ private:
     GfVec4f _emission;
     double _shininess;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

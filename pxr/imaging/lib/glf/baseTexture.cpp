@@ -34,6 +34,9 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfBaseTexture, TfType::Bases<GlfTexture> >();
@@ -254,3 +257,6 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
         _SetMemoryUsed(texData->ComputeBytesUsed());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

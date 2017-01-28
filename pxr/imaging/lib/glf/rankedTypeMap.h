@@ -26,6 +26,7 @@
 
 /// \file glf/rankedTypeMap.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/debug.h"
@@ -33,6 +34,9 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class GlfRankedTypeMap
 ///
@@ -173,5 +177,8 @@ GlfRankedTypeMap::Add(
 	}
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

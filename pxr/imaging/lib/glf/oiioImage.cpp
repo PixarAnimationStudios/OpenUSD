@@ -38,6 +38,9 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/typedesc.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 OIIO_NAMESPACE_USING
 
 class Glf_OIIOImage : public GlfImage {
@@ -502,4 +505,7 @@ Glf_OIIOImage::Write(StorageSpec const & storage,
     }
     return true;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -26,8 +26,12 @@
 
 /// \file glf/glRawContext.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glPlatformContext.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfGLRawContext> GlfGLRawContextSharedPtr;
 
@@ -59,5 +63,8 @@ private:
 private:
     GarchGLPlatformContextState _state;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_GLRAWCONTEXT_H

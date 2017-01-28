@@ -24,12 +24,16 @@
 #ifndef GLF_UVTEXTURE_DATA_H
 #define GLF_UVTEXTURE_DATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
@@ -192,5 +196,8 @@ private:
     boost::scoped_ptr<unsigned char> _rawBuffer;
     std::vector<Mip> _rawBufferMips;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_UVTEXTURE_DATA_H

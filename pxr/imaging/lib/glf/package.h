@@ -26,8 +26,15 @@
 
 /// \file glf/package.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TfToken GlfPackageSimpleLightingShader();
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

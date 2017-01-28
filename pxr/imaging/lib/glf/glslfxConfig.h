@@ -26,10 +26,14 @@
 
 /// \file glf/glslfxConfig.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class GlfGLSLFXConfig 
 ///
@@ -159,5 +163,8 @@ private:
     Attributes _attributes;
     _SourceKeyMap _sourceKeyMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

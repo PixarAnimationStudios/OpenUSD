@@ -28,6 +28,9 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/registryManager.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_ERROR_STACKTRACE,
@@ -40,3 +43,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Glf texture plugin registration");
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

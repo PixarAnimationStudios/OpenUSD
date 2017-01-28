@@ -32,6 +32,9 @@
 #include <boost/weak_ptr.hpp>
 #include <map>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::weak_ptr<class GlfGLContext> GlfGLContextWeakPtr;
 
 static GlfGLContextSharedPtr _nullContext;
@@ -187,3 +190,6 @@ GlfGLContextRegistrationInterface::~GlfGLContextRegistrationInterface()
 {
     // Do nothing
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -26,6 +26,7 @@
 
 /// \file glf/image.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include "pxr/base/tf/token.h"
@@ -37,6 +38,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
@@ -186,5 +190,8 @@ public:
         return GlfImageSharedPtr(new T);
     }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_IMAGE_H

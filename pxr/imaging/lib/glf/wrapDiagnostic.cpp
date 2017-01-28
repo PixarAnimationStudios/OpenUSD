@@ -26,6 +26,9 @@
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 void wrapDiagnostic()
@@ -44,3 +47,6 @@ void wrapDiagnostic()
 
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

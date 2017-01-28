@@ -26,6 +26,7 @@
 
 /// \file glf/texture.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -38,6 +39,9 @@
 #include <string>
 #include <vector>
 #include <boost/noncopyable.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define GLF_TEXTURE_TOKENS                      \
     (texels)                                    \
@@ -148,5 +152,8 @@ public:
         return TfNullPtr;
     }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_TEXTURE_H

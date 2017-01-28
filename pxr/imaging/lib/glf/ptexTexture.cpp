@@ -46,6 +46,9 @@
 #include <list>
 #include <algorithm>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::string;
 using namespace boost;
 
@@ -318,4 +321,7 @@ GlfPtexTexture::IsMagFilterSupported(GLenum filter)
         return false;
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

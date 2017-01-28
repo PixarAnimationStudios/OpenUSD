@@ -27,6 +27,9 @@
 
 #include "pxr/imaging/garch/gl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfSimpleLight::GlfSimpleLight(GfVec4f const & position) :
     _ambient(0.2, 0.2, 0.2, 1.0),
     _diffuse(1.0, 1.0, 1.0, 1.0),
@@ -316,3 +319,6 @@ operator<<(std::ostream& out, const GlfSimpleLightVector& pv)
 {
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

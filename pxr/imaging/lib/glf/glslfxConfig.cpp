@@ -29,6 +29,9 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::string;
 using std::vector;
 
@@ -481,3 +484,6 @@ GlfGLSLFXConfig::_GetAttributes(VtDictionary const & dict,
 
     return ret;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

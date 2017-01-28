@@ -38,6 +38,9 @@
 
 #include "pxr/base/tracelite/trace.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_ENV_SETTING(GLF_DRAW_TARGETS_NUM_SAMPLES, 4,
                       "Number of samples greater than 1 forces MSAA.");
 
@@ -761,3 +764,6 @@ GlfDrawTarget::Attachment::TouchContents()
 {
     _UpdateContentsID();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

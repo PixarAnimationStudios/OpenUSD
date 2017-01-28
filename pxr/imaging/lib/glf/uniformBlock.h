@@ -26,10 +26,14 @@
 
 /// \file glf/uniformBlock.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/imaging/garch/gl.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUniformBlock);
 TF_DECLARE_WEAK_PTRS(GlfBindingMap);
@@ -61,5 +65,8 @@ private:
     GLuint _buffer;
     int _size;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

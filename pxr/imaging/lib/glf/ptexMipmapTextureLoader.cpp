@@ -31,6 +31,9 @@
 #include <cstring>
 #include <cassert>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // sample neighbor pixels and populate around blocks
 void
 GlfPtexMipmapTextureLoader::Block::guttering(
@@ -993,3 +996,6 @@ GlfPtexMipmapTextureLoader::generateBuffers()
     fclose(fp);
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

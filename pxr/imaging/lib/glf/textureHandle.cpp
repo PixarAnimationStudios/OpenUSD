@@ -35,6 +35,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfTextureHandleRefPtr
 GlfTextureHandle::New(GlfTextureRefPtr texture)
 {
@@ -90,3 +93,6 @@ GlfTextureHandle::_ComputeMemoryRequirement()
     _texture->SetMemoryRequested(maxTargetMemory);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

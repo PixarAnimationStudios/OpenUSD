@@ -37,6 +37,9 @@
 #include <string>
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::set;
 using std::string;
 using std::vector;
@@ -90,3 +93,6 @@ GlfHasLegacyGraphics()
     // clients.
     return !GLEW_VERSION_2_0;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

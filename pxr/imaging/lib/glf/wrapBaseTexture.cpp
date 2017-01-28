@@ -26,6 +26,9 @@
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 void wrapBaseTexture()
@@ -58,4 +61,7 @@ void wrapBaseTexture()
         ;
 }
     
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

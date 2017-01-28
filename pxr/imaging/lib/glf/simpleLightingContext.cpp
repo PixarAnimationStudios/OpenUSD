@@ -41,6 +41,9 @@
 #include <iostream>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((lightingUB, "Lighting"))
@@ -491,3 +494,6 @@ GlfSimpleLightingContext::SetStateFromOpenGL()
     glGetFloatv(GL_LIGHT_MODEL_AMBIENT, &sceneAmbient[0]);
     SetSceneAmbient(sceneAmbient);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

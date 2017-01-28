@@ -26,6 +26,9 @@
 #include "pxr/base/arch/defines.h"
 #include <mutex>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 void GlfGlewInit()
 {
     static std::once_flag once;
@@ -40,3 +43,6 @@ void GlfGlewInit()
         glewInit();
     });
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

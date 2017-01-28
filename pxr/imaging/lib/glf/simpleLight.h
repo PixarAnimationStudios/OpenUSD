@@ -26,10 +26,14 @@
 
 /// \file glf/simpleLight.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/path.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GlfSimpleLight final {
 public:
@@ -122,5 +126,8 @@ typedef std::vector<class GlfSimpleLight> GlfSimpleLightVector;
 
 // VtValue requirements
 std::ostream& operator<<(std::ostream& out, const GlfSimpleLightVector& pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
