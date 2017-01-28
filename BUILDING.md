@@ -59,7 +59,7 @@ when invoking cmake. This plugin is compatible with Maya 2016. The additional de
 
 | Dependency Name   | Description                                                                                     | Version   |
 | ----------------- | -----------------------------------                                                             | --------- |
-| MAYA_LOCATION     | The root path to a Maya SDK install                                                             | Maya 2016 |
+| MAYA_LOCATION     | The root path to a Maya SDK install                                                             | Maya 2016 EXT2 SP2 |
 | MAYA_tbb_LIBRARY  | The location of TBB, this should be the same as TBB_tbb_LIBRARY provided to the core USD build  |           |
 
 For further information see the documentation on the Maya plugin [here](http://openusd.org/docs/Maya-USD-Plugins.html).
