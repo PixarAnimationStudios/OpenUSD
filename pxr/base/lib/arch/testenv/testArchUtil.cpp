@@ -146,7 +146,7 @@ ArchTestCrash(ArchTestCrashMode mode)
     // Make a command line for a new copy of this program with an argument
     // to tell it to crash.
     std::string cmdLine =
-        '"' + ArchGetExecutablePath() + '"' +
+        '"' + ArchGetExecutablePath() + "\" " +
         crashArgument[static_cast<int>(mode)];
 
     // Start a new copy of this program and tell it to crash.
