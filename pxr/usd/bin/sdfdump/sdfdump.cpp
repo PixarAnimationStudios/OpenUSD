@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/vsnprintf.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -38,6 +39,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -356,10 +360,13 @@ void Report(SdfLayerHandle layer, ReportParams const &p)
 
 } // anon
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 int
 main(int argc, char const *argv[])
 {
     namespace po = boost::program_options;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     progName = TfGetBaseName(argv[0]);
 
