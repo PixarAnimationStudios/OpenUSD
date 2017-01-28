@@ -98,11 +98,7 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
-        if (WorkGetConcurrencyLimit() == 1) {
-            _rootTask->enqueue(_MakeInvokerTask(std::forward<Callable>(c)));
-        } else {
-            _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
-        }
+        _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
     }
 
     template <class Callable, class A0, class ... Args>
