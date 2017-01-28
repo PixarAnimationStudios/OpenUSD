@@ -14,4 +14,4 @@ configs:
     digest: d41d8cd98f00b204e9800998ecf8427e
     inputs: []
     outputs:
-    - {metric: time, value: 0.1701477133714286}
+    - {metric: time, value: 0.08060948999999999}
