@@ -24,10 +24,14 @@
 #ifndef USDVIEWQ_UTILS_H
 #define USDVIEWQ_UTILS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdStage;
 
@@ -67,5 +71,8 @@ public:
     /// visibiity if it is imageable.
     static UsdviewqUtils::PrimInfo GetPrimInfo(UsdPrim prim, UsdTimeCode time);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDVIEWQ_UTILS_H

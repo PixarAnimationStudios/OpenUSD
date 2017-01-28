@@ -24,12 +24,19 @@
 #ifndef USDVIEWQ_DEBUGCODES_H
 #define USDVIEWQ_DEBUGCODES_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEBUG_CODES(
 
     USDVIEWQ_DEBUG_CLIPPING
 
     );
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDVIEWQ_DEBUGCODES_H

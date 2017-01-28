@@ -33,6 +33,9 @@
 
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 using std::vector;
 
@@ -71,3 +74,6 @@ void wrapUtils() {
             .staticmethod("GetPrimInfo")
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

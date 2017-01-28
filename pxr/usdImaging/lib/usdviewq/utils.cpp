@@ -33,6 +33,9 @@
 #include "pxr/usd/usd/treeIterator.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static 
 bool _IsA(UsdPrim const& prim, TfType const& schemaType)
 {
@@ -108,3 +111,6 @@ UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
     
     return info;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
