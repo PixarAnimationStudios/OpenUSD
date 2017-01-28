@@ -26,8 +26,8 @@
 
 /// \file usd/clipsAPI.h
 
-#include "pxr/usd/usd/schemaBase.h"
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 

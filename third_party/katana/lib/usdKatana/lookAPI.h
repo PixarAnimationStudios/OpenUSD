@@ -26,6 +26,7 @@
 
 /// \file usdKatana/lookAPI.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -39,6 +40,8 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
 
@@ -137,11 +140,11 @@ public:
     // PRIMNAME 
     // --------------------------------------------------------------------- //
     /// When a Material derives from another, "base" Material (see
-    /// \ref UsdShadeMaterial::SetBaseMaterial() "SetBaseMaterial()"), 
-    /// it seems natural to
-    /// think about a "child" that inherits from its base Material "parent".
-    /// However, in USD, the derived Material cannot be a child of the base 
-    /// Material because the \em derives relationship would cause an infinite
+    /// \ref UsdShadeMaterial::SetBaseMaterial() "SetBaseMaterial()"), it seems 
+    /// natural to think about a "child" that inherits from its base Material 
+    /// "parent".
+    /// However, in USD, the derived Material cannot be a child of the base Material
+    /// because the \em derives relationship would cause an infinite
     /// recursion in the composition graph (because the derived Material must
     /// inherit not just the base Material prim itself, but all of the shader and
     /// other prims scoped underneath it, which would include the derived Material
@@ -184,8 +187,10 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class declaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 };
