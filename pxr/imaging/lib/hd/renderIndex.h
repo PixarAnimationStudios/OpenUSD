@@ -453,10 +453,9 @@ class HdxLight;
 namespace HdRenderIndexInternal
 {  
     template <typename T>
-    static inline const TfToken & _GetTypeId();
+    inline const TfToken & _GetTypeId();
 
     template <>
-    //static
     inline
     const TfToken &
     _GetTypeId<HdMesh>()
@@ -465,7 +464,6 @@ namespace HdRenderIndexInternal
     }
     
     template <>
-    //static
     inline
     const TfToken &
     _GetTypeId<HdBasisCurves>()
@@ -474,7 +472,6 @@ namespace HdRenderIndexInternal
     }
     
     template <>
-    //static
     inline
     const TfToken &
     _GetTypeId<HdPoints>()
@@ -483,7 +480,6 @@ namespace HdRenderIndexInternal
     }
 
     template <>
-    //static
     inline
     const TfToken &
     _GetTypeId<HdxCamera>()
@@ -492,7 +488,6 @@ namespace HdRenderIndexInternal
     }
 
     template <>
-    //static
     inline
     const TfToken &
     _GetTypeId<HdxDrawTarget>()
@@ -501,7 +496,6 @@ namespace HdRenderIndexInternal
     }
 
     template <>
-    //static
     inline
     const TfToken &
     _GetTypeId<HdxLight>()
