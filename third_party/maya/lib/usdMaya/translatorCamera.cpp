@@ -23,6 +23,7 @@
 //
 #include "usdMaya/translatorCamera.h"
 
+#include "usdMaya/JobArgs.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorUtil.h"
@@ -39,12 +40,17 @@
 
 #include <maya/MDagModifier.h>
 #include <maya/MFnAnimCurve.h>
-#include <maya/MFnCamera.h>
 #include <maya/MPlug.h>
 #include <maya/MObject.h>
 
 #include <string>
 #include <vector>
+
+static bool _ReadToCamera(
+        const UsdGeomCamera& usdCamera,
+        MFnCamera& cameraObject,
+        const PxrUsdMayaPrimReaderArgs& args,
+        PxrUsdMayaPrimReaderContext* context);
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((MayaCameraTypeName, "camera"))
@@ -337,6 +343,7 @@ PxrUsdMayaTranslatorCamera::Read(
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
     TF_VERIFY(!cameraObj.isNull());
+
     MFnCamera cameraFn(cameraObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     const std::string cameraShapeName = prim.GetName().GetString() +
@@ -347,6 +354,37 @@ PxrUsdMayaTranslatorCamera::Read(
         const SdfPath shapePrimPath = primPath.AppendChild(TfToken(cameraShapeName));
         context->RegisterNewMayaNode(shapePrimPath.GetString(), cameraObj);
     }
+
+    return _ReadToCamera(usdCamera, cameraFn, args, context);
+}
+
+/* static */
+bool 
+PxrUsdMayaTranslatorCamera::ReadToCamera(
+        const UsdGeomCamera& usdCamera,
+        MFnCamera& cameraObject)
+{
+    JobImportArgs defaultJobArgs;
+    PxrUsdMayaPrimReaderArgs args(
+            usdCamera.GetPrim(), 
+            defaultJobArgs.shadingMode,
+            defaultJobArgs.defaultMeshScheme,
+            defaultJobArgs.readAnimData,
+            defaultJobArgs.useCustomFrameRange,
+            defaultJobArgs.startTime,
+            defaultJobArgs.endTime);
+
+    return _ReadToCamera(usdCamera, cameraObject, args, NULL);
+}
+
+bool
+_ReadToCamera(
+        const UsdGeomCamera& usdCamera,
+        MFnCamera& cameraFn,
+        const PxrUsdMayaPrimReaderArgs& args,
+        PxrUsdMayaPrimReaderContext* context)
+{
+    MStatus status;
 
     // Now translate all of the USD camera attributes over to plugs on the
     // Maya cameraFn.

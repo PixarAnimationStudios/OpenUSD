@@ -29,8 +29,8 @@
 
 #include "pxr/usd/usdGeom/camera.h"
 
+#include <maya/MFnCamera.h>
 #include <maya/MObject.h>
-
 
 /// \brief Provides helper functions for translating to/from UsdGeomCamera
 struct PxrUsdMayaTranslatorCamera
@@ -42,6 +42,13 @@ struct PxrUsdMayaTranslatorCamera
             MObject parentNode,
             const PxrUsdMayaPrimReaderArgs& args,
             PxrUsdMayaPrimReaderContext* context);
+
+    /// Helper function to access just the logic that writes from a non-animated
+    /// camera into an existing maya camera.
+    static bool ReadToCamera(
+            const UsdGeomCamera& usdCamera,
+            MFnCamera& cameraObject);
+
 };
 
 
