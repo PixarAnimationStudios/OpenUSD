@@ -24,9 +24,12 @@
 #ifndef USDIMAGING_SHADERADAPTER_H
 #define USDIMAGING_SHADERADAPTER_H
 
-class UsdImagingDelegate;
-
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/shaderParam.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdImagingDelegate;
 
 /// \class UsdImagingShaderAdapter
 /// \brief Provides information that can be used to generate a surface shader in
@@ -66,5 +69,8 @@ public:
 private:
     UsdImagingDelegate* _delegate;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_SHADERADAPTER_H

@@ -24,12 +24,16 @@
 #ifndef USD_ADAPTER_REGISTRY_H
 #define USD_ADAPTER_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class TfType;
 class UsdImagingPrimAdapter;
@@ -74,5 +78,8 @@ public:
     /// Returns NULL if no adapter was registered for this key.
     UsdImagingPrimAdapterSharedPtr ConstructAdapter(TfToken const& adapterKey);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_ADAPTER_REGISTRY_H

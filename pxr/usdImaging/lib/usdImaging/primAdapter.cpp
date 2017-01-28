@@ -33,6 +33,9 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdImagingPrimAdapter>();
@@ -362,3 +365,6 @@ UsdImagingPrimAdapter::GetRelativeInstancerTransform(
 {
     return GfMatrix4d(1);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

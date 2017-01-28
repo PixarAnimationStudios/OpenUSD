@@ -26,6 +26,9 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdHydra/lookAPI.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // TODO: We should centralize this logic in a UsdImaging ShaderAdapter.
 
 /*static*/
@@ -102,3 +105,6 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
 
     return SdfPath::EmptyPath();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

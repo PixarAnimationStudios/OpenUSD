@@ -29,6 +29,9 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 void
 UsdImaging_TestDriver::_Init(UsdStageRefPtr const& usdStage,
                              TfToken const &collectionName,
@@ -117,4 +120,7 @@ UsdImaging_TestDriver::GetStage()
 {
     return _stage;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

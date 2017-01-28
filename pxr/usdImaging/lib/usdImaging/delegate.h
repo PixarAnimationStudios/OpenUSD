@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_DELEGATE_H
 #define USDIMAGING_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
@@ -57,6 +58,9 @@
 #include <tbb/spin_rw_mutex.h>
 #include <map>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdImagingDelegate);
 typedef std::vector<UsdPrim> UsdPrimVector;
@@ -705,5 +709,8 @@ private:
     SdfPathVector _instancersToRemove;
     SdfPathVector _depsToRemove;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDIMAGING_DELEGATE_H

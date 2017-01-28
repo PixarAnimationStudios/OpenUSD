@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_UNIT_TEST_HELPER
 #define USDIMAGING_UNIT_TEST_HELPER
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
@@ -34,6 +35,9 @@
 
 #include <string>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 
@@ -90,5 +94,8 @@ private:
     HdRenderPassStateSharedPtr _renderPassState;
     UsdStageRefPtr _stage;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDIMAGING_UNIT_TEST_HELPER

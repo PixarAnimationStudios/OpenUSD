@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_INSTANCE_ADAPTER_H
 #define USDIMAGING_INSTANCE_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/base/tf/hashmap.h"
@@ -33,6 +34,9 @@
 #include <boost/enable_shared_from_this.hpp> 
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdImagingInstanceAdapter
 ///
@@ -358,5 +362,8 @@ private:
         _MasterToInstancerMap;
     _MasterToInstancerMap _masterToInstancerMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_INSTANCE_ADAPTER_H

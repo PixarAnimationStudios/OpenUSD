@@ -39,6 +39,9 @@
 
 #include <cmath>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingCapsuleAdapter Adapter;
@@ -328,3 +331,6 @@ UsdImagingCapsuleAdapter::GetMeshTopology()
 
     return VtValue(capsuleTopo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

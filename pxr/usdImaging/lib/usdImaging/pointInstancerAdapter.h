@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_POINT_INSTANCER_ADAPTER_H
 #define USDIMAGING_POINT_INSTANCER_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
@@ -31,6 +32,9 @@
 #include <mutex>
 #include <boost/unordered_map.hpp> 
 #include <boost/shared_ptr.hpp> 
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Delegate support for UsdGeomMesh.
 ///
@@ -300,5 +304,8 @@ private:
     _InstancerDataMap _instancerData;
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_POINT_INSTANCER_ADAPTER_H

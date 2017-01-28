@@ -45,6 +45,9 @@
 // XXX: feels wrong
 #include "pxr/imaging/glf/ptexTexture.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingGprimAdapter Adapter;
@@ -644,3 +647,6 @@ UsdImagingGprimAdapter::_GetSurfaceShader(UsdPrim const& prim)
 
     return GetShaderBinding(prim);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -44,6 +44,9 @@
 
 #include <limits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // // XXX: These should come from Hd or UsdImaging
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -1579,3 +1582,6 @@ UsdImagingInstanceAdapter::GetRelativeInstancerTransform(
     UsdPrim prim = _GetPrim(instancerPath.GetPrimPath());
     return GetTransform(prim, time) * GetRootTransform().GetInverse();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

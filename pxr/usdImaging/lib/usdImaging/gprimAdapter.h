@@ -24,9 +24,13 @@
 #ifndef USDIMAGING_GPRIM_ADAPTER_H
 #define USDIMAGING_GPRIM_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/usd/usdGeom/xformCache.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomGprim;
 
@@ -138,5 +142,8 @@ private:
     /// Returns the surface shader for this prim
     SdfPath _GetSurfaceShader(UsdPrim const& prim);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDIMAGING_GPRIM_ADAPTER_H

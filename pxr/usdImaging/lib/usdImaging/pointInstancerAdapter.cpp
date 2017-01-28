@@ -43,6 +43,9 @@
 #include <limits>
 #include <atomic>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // XXX: These should come from Hd or UsdImaging
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -1727,3 +1730,6 @@ UsdImagingPointInstancerAdapter::GetRelativeInstancerTransform(
         return GetTransform(prim, time) * transformRoot.GetInverse();
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

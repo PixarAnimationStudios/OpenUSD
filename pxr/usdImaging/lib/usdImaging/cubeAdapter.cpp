@@ -38,6 +38,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingCubeAdapter Adapter;
@@ -216,3 +219,6 @@ UsdImagingCubeAdapter::GetMeshTransform(UsdPrim const& prim,
     GfMatrix4d xf(GfVec4d(size, size, size, 1.0));
     return xf;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

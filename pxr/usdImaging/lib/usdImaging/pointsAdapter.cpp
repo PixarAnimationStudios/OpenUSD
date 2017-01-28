@@ -33,6 +33,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingPointsAdapter Adapter;
@@ -183,3 +186,6 @@ UsdImagingPointsAdapter::_GetPoints(UsdPrim const& prim,
         *value = VtVec3fArray();
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

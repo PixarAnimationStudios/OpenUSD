@@ -39,6 +39,9 @@
 
 #include <cmath>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingConeAdapter Adapter;
@@ -300,3 +303,6 @@ UsdImagingConeAdapter::GetMeshTopology()
 
     return VtValue(coneTopo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

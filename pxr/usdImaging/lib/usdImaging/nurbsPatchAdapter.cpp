@@ -36,6 +36,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingNurbsPatchAdapter Adapter;
@@ -248,3 +251,6 @@ UsdImagingNurbsPatchAdapter::GetMeshTopology(UsdPrim const& prim,
 
     return VtValue(topo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,8 +24,12 @@
 #ifndef USDIMAGING_MESH_ADAPTER_H
 #define USDIMAGING_MESH_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSubdivTags;
 class PxOsdSubdivTags;
@@ -95,5 +99,8 @@ private:
     void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, UsdTimeCode time);
     void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, UsdTimeCode time);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_MESH_ADAPTER_H

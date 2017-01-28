@@ -38,6 +38,9 @@
 #include "pxr/usd/usdHydra/primvar.h"
 #include "pxr/usd/usdHydra/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 UsdImagingShaderAdapter::UsdImagingShaderAdapter(UsdImagingDelegate* delegate)
     : _delegate(delegate)
 {
@@ -391,4 +394,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderTextures(SdfPath const &usdPath) const
     
     return textureIDs;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

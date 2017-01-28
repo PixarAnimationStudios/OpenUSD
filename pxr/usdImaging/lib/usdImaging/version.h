@@ -24,6 +24,12 @@
 #ifndef USD_IMAGING_VERSION_H
 #define USD_IMAGING_VERSION_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+
 // Version 3 -- add support for nested instancers in InsertInstancer.
 // Version 4 -- Populate returns SdfPath, HdxSelectionInstanceMap.
 // Version 5 -- GetPathForInstanceIndex returns absoluteInstanceIndex.
@@ -35,5 +41,8 @@
 //              updated purpose tokens and make proxy imaging optional.
 
 #define USD_IMAGING_API 9
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_IMAGING_VERSION_H

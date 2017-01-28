@@ -24,12 +24,15 @@
 #ifndef USDIMAGING_INHERITEDCACHE_H
 #define USDIMAGING_INHERITEDCACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/treeIterator.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdImaging_InheritedCache
 ///
@@ -397,8 +400,12 @@ UsdImaging_InheritedCache<S>::_GetValue(const UsdPrim& prim) const
 // Xform Cache
 // -------------------------------------------------------------------------- //
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/base/gf/matrix4d.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdImaging_XfStrategy;
 typedef UsdImaging_InheritedCache<UsdImaging_XfStrategy> UsdImaging_XformCache;
@@ -468,9 +475,13 @@ struct UsdImaging_XfStrategy {
 // Visibility Cache
 // -------------------------------------------------------------------------- //
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdImaging_VisStrategy;
 typedef UsdImaging_InheritedCache<UsdImaging_VisStrategy> UsdImaging_VisCache;
@@ -515,7 +526,12 @@ struct UsdImaging_VisStrategy {
 // MaterialBinding Cache
 // -------------------------------------------------------------------------- //
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #include "pxr/usd/usdShade/material.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 struct UsdImaging_MaterialStrategy;
 typedef UsdImaging_InheritedCache<UsdImaging_MaterialStrategy> 
@@ -578,5 +594,8 @@ struct UsdImaging_MaterialStrategy {
         return binding; 
     }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_INHERITEDCACHE_H

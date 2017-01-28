@@ -39,6 +39,9 @@
 
 #include <cmath>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingCylinderAdapter Adapter;
@@ -318,3 +321,6 @@ UsdImagingCylinderAdapter::GetMeshTopology()
 
     return VtValue(cylinderTopo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

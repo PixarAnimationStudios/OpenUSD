@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_PRIM_ADAPTER_H
 #define USDIMAGING_PRIM_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
@@ -40,6 +41,8 @@
 
 #include <boost/enable_shared_from_this.hpp> 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 
@@ -298,5 +301,8 @@ public:
         return UsdImagingPrimAdapterSharedPtr(new T);
     }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_PRIM_ADAPTER_H

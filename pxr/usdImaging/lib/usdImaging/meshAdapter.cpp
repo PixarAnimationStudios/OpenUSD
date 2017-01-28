@@ -38,6 +38,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingMeshAdapter Adapter;
@@ -282,4 +285,7 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     _GetPtr(prim, UsdGeomTokens->holeIndices, time, &iarray);
     tags->SetHoleIndices(iarray);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

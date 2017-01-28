@@ -38,6 +38,9 @@
 #include <set>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(UsdImagingAdapterRegistry);
 
 TF_MAKE_STATIC_DATA(TfType, _adapterBaseType) {
@@ -182,3 +185,6 @@ UsdImagingAdapterRegistry::ConstructAdapter(TfToken const& adapterKey)
 
     return instance;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

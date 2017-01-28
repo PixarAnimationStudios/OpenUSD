@@ -24,9 +24,13 @@
 #ifndef USDIMAGING_INSTANCER_CONTEXT_H
 #define USDIMAGING_INSTANCER_CONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 
@@ -52,5 +56,8 @@ public:
     /// default adapter may be overriden for the sake of instancing.
     UsdImagingPrimAdapterSharedPtr instancerAdapter;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_INSTANCER_CONTEXT_H

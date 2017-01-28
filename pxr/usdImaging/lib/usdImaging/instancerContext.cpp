@@ -22,3 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

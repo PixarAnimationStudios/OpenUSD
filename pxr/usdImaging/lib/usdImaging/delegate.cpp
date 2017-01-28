@@ -62,6 +62,9 @@
 #include <limits>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // TODO: 
 // reduce shader traversals to a single pass; currently usdImaging will traverse
 // a single shader network multiple times during sync.
@@ -2969,3 +2972,6 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
 
     return texResource;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
