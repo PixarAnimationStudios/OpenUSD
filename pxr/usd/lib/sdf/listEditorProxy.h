@@ -26,6 +26,7 @@
 
 /// \file sdf/listEditorProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/listEditor.h"
 #include "pxr/usd/sdf/listProxy.h"
 #include "pxr/usd/sdf/changeBlock.h"
@@ -37,6 +38,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfListEditorProxy
 ///
@@ -400,4 +403,6 @@ struct Vt_DefaultValueFactory<SdfListEditorProxy<TP> > {
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_LISTEDITORPROXY_H

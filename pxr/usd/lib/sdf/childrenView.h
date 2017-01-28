@@ -26,14 +26,18 @@
 
 /// \file sdf/childrenView.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
+
 #include <boost/compressed_pair.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <algorithm>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfChildrenViewTrivialPredicate
 ///
@@ -527,4 +531,6 @@ struct Tf_IteratorInterface<SdfChildrenView<C, P, A>, true> {
     static IteratorType End(Type const &c) { return c.rend(); }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHILDRENVIEW_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathNode.h"
 #include "pxr/usd/sdf/pathParser.h"
@@ -48,6 +49,7 @@ using std::pair;
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static inline bool _IsValidIdentifier(TfToken const &name);
 
@@ -1524,3 +1526,5 @@ SdfPath::RemoveAncestorPaths(SdfPathVector *paths)
 size_t hash_value(SdfPath const &path) {
     return path.GetHash();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

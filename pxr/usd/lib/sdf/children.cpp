@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/children.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/children.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -35,6 +36,8 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/base/tf/ostreamMethods.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template<class ChildPolicy>
 Sdf_Children<ChildPolicy>::Sdf_Children() :
@@ -222,4 +225,4 @@ template class Sdf_Children<Sdf_RelationshipChildPolicy>;
 template class Sdf_Children<Sdf_VariantChildPolicy>;
 template class Sdf_Children<Sdf_VariantSetChildPolicy>;
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

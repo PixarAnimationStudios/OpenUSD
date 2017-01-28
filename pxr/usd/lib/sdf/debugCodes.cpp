@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/debugCodes.h"
-
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
@@ -35,3 +37,5 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Post stack trace when opening an SdfLayer with no path resolver context");
     TF_DEBUG_ENVIRONMENT_SYMBOL(SDF_FILE_FORMAT, "Sdf file format plugins");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

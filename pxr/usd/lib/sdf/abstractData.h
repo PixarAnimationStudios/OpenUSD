@@ -24,6 +24,7 @@
 #ifndef SDF_ABSTRACTDATA_H
 #define SDF_ABSTRACTDATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -37,6 +38,8 @@
 
 #include <boost/optional.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfAbstractData);
 class SdfAbstractDataSpecVisitor;
@@ -558,5 +561,7 @@ public:
     /// complete, even if some \c VisitSpec() returned \c false.
     virtual void Done(const SdfAbstractData& data) = 0;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SD_ABSTRACTDATA_H

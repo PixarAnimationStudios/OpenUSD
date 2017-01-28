@@ -24,7 +24,7 @@
 ///
 /// \file Sdf/AssetPathResolver.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/debugCodes.h"
 
@@ -45,6 +45,8 @@ using std::make_pair;
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_Tokens,
     ((AnonLayerPrefix,  "anon:"))
@@ -221,12 +223,16 @@ Sdf_GetAnonLayerIdentifierTemplate(
         (idTag.empty() ? idTag : ":" + idTag);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // Defined in layerIdentifier.yy
 bool
 Sdf_ParseLayerIdentifier(
     const string& argumentString,
     string* layerPath,
-    SdfLayer::FileFormatArguments* args);
+    PXR_NS::SdfLayer::FileFormatArguments* args);
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 string
 Sdf_CreateIdentifier(
@@ -312,3 +318,5 @@ Sdf_GetLayerDisplayName(
     Sdf_SplitIdentifier(identifier, &layerPath, &arguments);
     return TfGetBaseName(layerPath);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

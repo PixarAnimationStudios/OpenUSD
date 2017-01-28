@@ -23,14 +23,15 @@
 //
 /// \file SubLayerListEditor.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/subLayerListEditor.h"
-
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/mallocTag.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 Sdf_SubLayerListEditor::Sdf_SubLayerListEditor(
     const SdfLayerHandle& owner)
@@ -77,3 +78,5 @@ Sdf_SubLayerListEditor::_OnEdit(
     
     _GetOwner()->SetField(SdfFieldKeys->SubLayerOffsets, newLayerOffsets);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

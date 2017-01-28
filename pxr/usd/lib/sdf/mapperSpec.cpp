@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file MapperSpec.cpp
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/accessorHelpers.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -31,6 +33,8 @@
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define SDF_ACCESSOR_CLASS                   SdfMapperSpec
 #define SDF_ACCESSOR_READ_PREDICATE(key_)    SDF_NO_PREDICATE
@@ -128,3 +132,5 @@ SdfMapperSpec::SetSymmetryArgs(const VtDictionary& dict)
 #undef SDF_ACCESSOR_CLASS
 #undef SDF_ACCESSOR_READ_PREDICATE
 #undef SDF_ACCESSOR_WRITE_PREDICATE
+
+PXR_NAMESPACE_CLOSE_SCOPE

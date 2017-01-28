@@ -26,9 +26,12 @@
 
 /// \file sdf/proxyPolicies.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/spec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfReference;
 class SdfMapperSpec;
@@ -262,4 +265,6 @@ public:
     SdfRelationshipViewPredicate();
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PROXYPOLICIES_H

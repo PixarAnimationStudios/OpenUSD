@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/tokens.h"
-
 #include "pxr/base/tf/bitUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
@@ -43,6 +44,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Size of path nodes is important, so we want the compiler to tell us if it
 // changes.
@@ -672,3 +675,5 @@ void Sdf_DumpPathStats()
 
     printf("\n");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

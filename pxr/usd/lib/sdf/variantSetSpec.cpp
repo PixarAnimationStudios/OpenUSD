@@ -23,6 +23,7 @@
 //
 /// \file VariantSetSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
@@ -33,6 +34,8 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_SPEC(SdfVariantSetSpec, SdfSpec);
 
@@ -169,3 +172,5 @@ SdfVariantSetSpec::RemoveVariant(const SdfVariantSpecHandle& variant)
             variant->GetName().c_str());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

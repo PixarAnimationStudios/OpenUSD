@@ -26,12 +26,17 @@
 
 /// \file sdf/namespaceEdit.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
+
 #include <boost/function.hpp>
 #include <boost/operators.hpp>
+
 #include <iosfwd>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfNamespaceEdit
 ///
@@ -289,4 +294,6 @@ private:
     SdfNamespaceEditVector _edits;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_NAMESPACEEDIT_H

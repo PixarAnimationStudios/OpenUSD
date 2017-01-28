@@ -24,12 +24,14 @@
 #ifndef SDF_LAYER_STATE_DELEGATE_H
 #define SDF_LAYER_STATE_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/types.h"
-
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -314,5 +316,7 @@ protected:
 private:
     bool _dirty;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LAYER_STATE_DELEGATE_H

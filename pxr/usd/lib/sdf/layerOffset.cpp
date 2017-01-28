@@ -24,6 +24,7 @@
 ///
 /// LayerOffset.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/base/gf/math.h"
 
@@ -37,6 +38,8 @@
 #include <vector>
 
 #define EPSILON (1e-6)
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<SdfLayerOffset>();
@@ -141,3 +144,5 @@ std::ostream & operator<<( std::ostream &out,
         << layerOffset.GetOffset() << ", "
         << layerOffset.GetScale() << ")";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

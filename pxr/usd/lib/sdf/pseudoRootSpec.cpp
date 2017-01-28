@@ -23,8 +23,12 @@
 //
 /// \file PseudoRootSpec.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/pseudoRootSpec.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 SDF_DEFINE_SPEC(SdfPseudoRootSpec, SdfPrimSpec);
+
+PXR_NAMESPACE_CLOSE_SCOPE

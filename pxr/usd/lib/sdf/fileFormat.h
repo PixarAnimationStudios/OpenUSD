@@ -26,8 +26,8 @@
 
 /// \file sdf/fileFormat.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
-
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -39,6 +39,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class ArAssetInfo;
 
@@ -343,5 +345,7 @@ public:
 
 #define SDF_FILE_FORMAT_FACTORY_ACCESS \
     template<typename T> friend class Sdf_FileFormatFactory
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_FILE_FORMAT_H

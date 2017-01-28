@@ -24,8 +24,8 @@
 #ifndef SDF_LIST_EDITOR_H
 #define SDF_LIST_EDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
-
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -43,6 +43,8 @@
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
@@ -333,5 +335,7 @@ operator<<(std::ostream& s, const Sdf_ListEditor<TypePolicy>& x)
         return s << " }";
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LIST_EDITOR_H

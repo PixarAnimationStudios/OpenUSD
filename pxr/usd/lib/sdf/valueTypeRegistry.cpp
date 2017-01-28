@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/valueTypeRegistry.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdf/valueTypePrivate.h"
@@ -31,6 +33,8 @@
 #include <boost/functional/hash.hpp>
 
 #include <tbb/spin_rw_mutex.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -559,3 +563,5 @@ Sdf_ValueTypeRegistry::Clear()
 {
     _impl->Clear();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

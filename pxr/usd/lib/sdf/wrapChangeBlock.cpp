@@ -21,15 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/changeManager.h"
-
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyUtils.h"
 
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Sdf_PythonChangeBlock {
 public:
@@ -92,6 +94,8 @@ wrapChangeBlock()
     // Helpers to open/close change blocks in a non-RAII fashion. Primarily
     // here for API compatibility, consumers should prefer the ChangeBlock
     // object above.
-    def("BeginChangeBlock", &::_BeginBlock);
-    def("EndChangeBlock", &::_EndBlock);
+    def("BeginChangeBlock", &_BeginBlock);
+    def("EndChangeBlock", &_EndBlock);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

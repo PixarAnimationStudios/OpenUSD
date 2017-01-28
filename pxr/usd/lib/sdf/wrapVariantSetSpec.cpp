@@ -23,6 +23,7 @@
 //
 /// \file wrapVariantSetSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
@@ -32,6 +33,8 @@
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static
 SdfVariantSetSpecHandle
@@ -79,3 +82,5 @@ void wrapVariantSetSpec()
 
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,6 +23,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
@@ -32,6 +33,8 @@
 
 using std::map;
 using std::vector;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 #define YYSTYPE Sdf_ParserHelpers::Value
 

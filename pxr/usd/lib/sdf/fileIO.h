@@ -24,10 +24,17 @@
 #ifndef SDF_FILEIO_H
 #define SDF_FILEIO_H
 
+#include "pxr/pxr.h"
+
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class SdfSpec;
 
 // Write the provided \a spec to \a out indented \a indent levels.
 bool Sdf_WriteToStream(const SdfSpec &spec, std::ostream& out, size_t indent);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -24,8 +24,8 @@
 #ifndef SDF_LIST_OP_LIST_EDITOR_H
 #define SDF_LIST_OP_LIST_EDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/listEditor.h"
-
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/path.h"
@@ -33,6 +33,8 @@
 #include "pxr/usd/sdf/listOp.h"
 
 #include <boost/array.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Sdf_ListOpListEditor
 ///
@@ -305,5 +307,7 @@ Sdf_ListOpListEditor<TP>::_GetOperations(SdfListOpType op) const
 {
     return _listOp.GetItems(op);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LIST_OP_LIST_EDITOR_H

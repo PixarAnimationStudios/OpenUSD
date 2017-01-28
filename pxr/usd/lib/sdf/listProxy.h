@@ -26,6 +26,7 @@
 
 /// \file sdf/listProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/listEditor.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -41,6 +42,8 @@
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/remove_reference.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfListProxy
 ///
@@ -613,4 +616,6 @@ struct Tf_ShouldIterateOverCopy<SdfListProxy<T> > : boost::true_type
 {
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_LISTPROXY_H

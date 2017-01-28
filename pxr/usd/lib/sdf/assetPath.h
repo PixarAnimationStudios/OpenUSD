@@ -26,10 +26,14 @@
 
 /// \file sdf/assetPath.h
 
+#include "pxr/pxr.h"
+
 #include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfAssetPath
 ///
@@ -120,4 +124,6 @@ std::ostream& operator<<(std::ostream& out, const SdfAssetPath& ap);
 
 /// @}
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_ASSETPATH_H

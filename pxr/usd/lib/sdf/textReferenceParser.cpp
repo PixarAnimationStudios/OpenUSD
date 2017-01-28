@@ -23,17 +23,22 @@
 //
 ///
 /// \file sdf/textReferenceParser.cpp
-#include "pxr/usd/sdf/textReferenceParser.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/textReferenceParser.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tracelite/trace.h"
+
 #include <boost/range/iterator_range.hpp>
 #include <boost/regex.hpp>
+
 #include <fstream>
 #include <sstream>
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_Tokens,
     (baseAsset)
@@ -186,3 +191,4 @@ SdfExtractExternalReferencesFromString(
         subLayers, references, payloads);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

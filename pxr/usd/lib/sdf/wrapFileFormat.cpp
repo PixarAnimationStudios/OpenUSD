@@ -24,8 +24,8 @@
 ///
 /// \file Sdf/wrapFileFormat.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
-
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyStaticTokens.h"
@@ -34,6 +34,8 @@
 #include <boost/python/scope.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -143,3 +145,4 @@ void wrapFileFormat()
         "Tokens", SdfFileFormatTokens, SDF_FILE_FORMAT_TOKENS);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

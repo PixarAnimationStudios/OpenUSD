@@ -24,8 +24,8 @@
 ///
 /// \file Sdf/textFileFormat.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/textFileFormat.h"
-
 #include "pxr/usd/sdf/fileIO.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/layer.h"
@@ -42,7 +42,11 @@
 
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PUBLIC_TOKENS(SdfTextFileFormatTokens, SDF_TEXT_FILE_FORMAT_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // Our interface to the YACC menva parser for parsing to SdfData.
 extern bool Sdf_ParseMenva(
@@ -51,13 +55,15 @@ extern bool Sdf_ParseMenva(
     const string& token,
     const string& version,
     bool metadataOnly,
-    SdfDataRefPtr data);
+    PXR_NS::SdfDataRefPtr data);
 
 extern bool Sdf_ParseMenvaFromString(
     const std::string & menvaString,
     const string& token,
     const string& version,
-    SdfDataRefPtr data);
+    PXR_NS::SdfDataRefPtr data);
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -420,3 +426,5 @@ SdfTextFileFormat::_IsStreamingLayer(const SdfLayerBase& layer) const
 {
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

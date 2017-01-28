@@ -26,6 +26,7 @@
 
 /// \file sdf/fileIO_Common.h 
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"
@@ -52,6 +53,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Simple FileIO Utilities
@@ -1193,4 +1196,6 @@ Sdf_WriteRelationship(
     return true;
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_FILEIO_COMMON_H

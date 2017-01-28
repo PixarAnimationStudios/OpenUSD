@@ -26,6 +26,7 @@
 
 /// \file sdf/accessorHelpers.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
@@ -47,6 +48,8 @@
 //
 // Also, please observe good form and #undef the symbols after instancing the
 // accessor macros.
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // "Helper" macros
 #define _GET_KEY_(key_)     key_
@@ -248,5 +251,7 @@ struct Sdf_AccessorHelpers<T, false>
     static SdfSpecHandle GetSpecHandle(const T* spec)
     { return SdfCreateNonConstHandle(&(spec->_GetSpec())); }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // #ifndef SDF_ACCESSORHELPERS_H

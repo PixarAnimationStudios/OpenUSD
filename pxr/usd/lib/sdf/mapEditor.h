@@ -24,6 +24,7 @@
 #ifndef SDF_MAPEDITOR_H
 #define SDF_MAPEDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/spec.h"
 
@@ -31,6 +32,8 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfToken;
 
@@ -88,5 +91,7 @@ protected:
 template <class T>
 boost::shared_ptr<Sdf_MapEditor<T> > 
 Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_MAPEDITOR_H

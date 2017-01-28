@@ -23,8 +23,10 @@
 //
 /// \file LayerTree.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerTree.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // SdfLayerTree
@@ -65,3 +67,5 @@ SdfLayerTree::GetChildTrees() const
 {
     return _childTrees;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

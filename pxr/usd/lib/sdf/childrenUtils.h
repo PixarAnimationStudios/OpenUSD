@@ -26,8 +26,11 @@
 
 /// \file sdf/childrenUtils.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/types.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Sdf_ChildrenUtils
 ///
@@ -148,4 +151,6 @@ public:
     /// @}
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHILDRENUTILS_H

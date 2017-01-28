@@ -24,8 +24,8 @@
 #ifndef SDF_PATH_H
 #define SDF_PATH_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/tokens.h"
-
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
@@ -41,6 +41,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Sdf_PathNode;
 
@@ -778,9 +780,11 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
     return final == result ? end : final;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // Sdf_PathNode is not public API, but we need to include it here
 // so we can inline the ref-counting operations, which must manipulate
 // its internal _refCount member.
 #include "pxr/usd/sdf/pathNode.h"
 
-#endif
+#endif // SDF_PATH_H

@@ -26,6 +26,7 @@
 
 /// \file sdf/layer.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
@@ -47,6 +48,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
@@ -1662,5 +1665,7 @@ SdfLayer::EraseTimeSample(const SdfPath& path, double time)
 {
     EraseTimeSample(SdfAbstractDataSpecId(&path), time);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LAYER_H

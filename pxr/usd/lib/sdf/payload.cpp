@@ -24,14 +24,14 @@
 // Payload.cpp
 //
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/payload.h"
-
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
 #include <ostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -73,3 +73,5 @@ std::ostream & operator<<( std::ostream &out,
         << payload.GetAssetPath() << ", "
         << payload.GetPrimPath() << ")";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

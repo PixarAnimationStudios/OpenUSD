@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/mapEditor.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
@@ -28,7 +30,10 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
+
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Sdf_MapEditor<T>
@@ -198,3 +203,5 @@ Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field)
 SDF_INSTANTIATE_MAP_EDITOR(VtDictionary); 
 SDF_INSTANTIATE_MAP_EDITOR(SdfVariantSelectionMap); 
 SDF_INSTANTIATE_MAP_EDITOR(SdfRelocatesMap); 
+
+PXR_NAMESPACE_CLOSE_SCOPE

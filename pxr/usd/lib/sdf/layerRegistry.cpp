@@ -24,9 +24,8 @@
 ///
 /// \file Sdf/LayerRegistry.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerRegistry.h"
-
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -42,6 +41,8 @@
 
 using namespace boost::multi_index;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // A simple layer repr, used for debug and error messages, that includes both
 // the identifier and the real path.
@@ -349,3 +350,4 @@ operator<<(std::ostream& ostr, const Sdf_LayerRegistry& registry)
     return ostr;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

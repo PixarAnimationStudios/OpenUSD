@@ -23,8 +23,8 @@
 //
 /// \file PrimSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/primSpec.h"
-
 #include "pxr/usd/sdf/accessorHelpers.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
@@ -53,6 +53,8 @@
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_SPEC(SdfPrimSpec, SdfSpec);
 
@@ -911,3 +913,5 @@ SdfCreatePrimInLayer(const SdfLayerHandle& layer, const SdfPath& primPath)
 
     return primSpec;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

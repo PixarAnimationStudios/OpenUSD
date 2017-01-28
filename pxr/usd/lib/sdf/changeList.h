@@ -26,12 +26,15 @@
 
 /// \file sdf/changeList.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
 #include <set>
 #include <map>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfChangeList;
 typedef std::map<SdfLayerHandle, SdfChangeList> SdfLayerChangeListMap;
@@ -179,4 +182,6 @@ private:
 // Stream-output operator
 std::ostream& operator<<(std::ostream&, const SdfChangeList &);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHANGELIST_H

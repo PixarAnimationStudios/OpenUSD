@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/identity.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Sdf_Identity
@@ -195,3 +199,5 @@ Sdf_IdentityRegistry::MoveIdentity(const SdfPath &oldPath,
     // Erase the old identity map entry.
     _ids.erase(oldIdIt);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

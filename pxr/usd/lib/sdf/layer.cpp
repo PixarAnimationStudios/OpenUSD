@@ -23,6 +23,8 @@
 //
 ///
 /// \file Sdf/layer.cpp
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -73,6 +75,8 @@ using std::map;
 using std::set;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -3523,7 +3527,7 @@ SdfLayer::_MoveSpec(const SdfPath &oldPath, const SdfPath &newPath)
 }
 
 static void
-_MoveSpec(
+_MoveSpecInternal(
     SdfAbstractDataRefPtr data, Sdf_IdentityRegistry* idReg,
     const SdfPath& oldSpecPath, 
     const SdfPath& oldRootPath, const SdfPath& newRootPath)
@@ -3553,7 +3557,7 @@ SdfLayer::_PrimMoveSpec(const SdfPath& oldPath, const SdfPath& newPath,
     Sdf_ChangeManager::Get().DidMoveSpec(SdfLayerHandle(this), oldPath, newPath);
 
     Traverse(oldPath, 
-        boost::bind(::_MoveSpec, _data, &_idRegistry, _1, oldPath, newPath));
+        boost::bind(_MoveSpecInternal, _data, &_idRegistry, _1, oldPath, newPath));
 }
 
 bool 
@@ -3920,3 +3924,5 @@ SdfLayer::_Save(bool force) const
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

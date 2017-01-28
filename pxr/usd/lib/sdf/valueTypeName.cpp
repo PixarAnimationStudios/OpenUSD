@@ -21,10 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdf/valueTypePrivate.h"
+
 #include <boost/functional/hash.hpp>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -188,3 +193,5 @@ operator<<(std::ostream& s, const SdfValueTypeName& typeName)
 {
     return s << typeName.GetAsToken().GetString();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

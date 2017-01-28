@@ -21,11 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/connectionListEditor.h"
-
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
+
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class ChildPolicy>
 Sdf_ConnectionListEditor<ChildPolicy>::Sdf_ConnectionListEditor(
@@ -134,3 +137,5 @@ Sdf_RelationshipTargetListEditor::_OnEdit(
     return Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>::_OnEditShared(
         op, SdfSpecTypeRelationshipTarget, oldItems, newItems);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

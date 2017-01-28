@@ -26,6 +26,7 @@
 
 /// \file sdf/variantSetSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
@@ -35,6 +36,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfVariantSetSpec 
 ///
@@ -109,5 +112,7 @@ public:
 
     /// @}
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SD_VARIANTSETSPEC_H

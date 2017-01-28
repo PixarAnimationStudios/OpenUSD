@@ -22,6 +22,4 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file PyChildrenView.cpp
-
-
 #include "pxr/usd/sdf/pyChildrenView.h"

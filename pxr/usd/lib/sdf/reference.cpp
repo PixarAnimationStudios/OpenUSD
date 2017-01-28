@@ -24,7 +24,7 @@
 // Reference.cpp
 //
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/reference.h"
 
 #include "pxr/base/tf/registryManager.h"
@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <ostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -107,3 +108,5 @@ std::ostream & operator<<( std::ostream &out,
         << reference.GetLayerOffset() << ", "
         << reference.GetCustomData() << ")";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,8 +23,8 @@
 //
 /// \file AttributeSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
-
 #include "pxr/usd/sdf/accessorHelpers.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -40,6 +40,8 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_SPEC(SdfAttributeSpec, SdfPropertySpec);
 
@@ -440,6 +442,8 @@ SdfAttributeSpec::GetRoleName() const
 SDF_DEFINE_SET(DisplayUnit, SdfFieldKeys->DisplayUnit, const TfEnum&)
 SDF_DEFINE_HAS(DisplayUnit, SdfFieldKeys->DisplayUnit)
 SDF_DEFINE_CLEAR(DisplayUnit, SdfFieldKeys->DisplayUnit)
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // Clean up macro shenanigans
 #undef SDF_ACCESSOR_CLASS

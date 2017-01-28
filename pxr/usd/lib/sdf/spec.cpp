@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/specType.h"
 #include "pxr/usd/sdf/changeBlock.h"
@@ -33,7 +35,10 @@
 
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/type.h"
+
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_BASE_SPEC(SdfSpec);
 
@@ -410,3 +415,5 @@ SdfSpec::_DeleteSpec(const SdfPath &path)
 {
     return GetLayer()->_DeleteSpec(path);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

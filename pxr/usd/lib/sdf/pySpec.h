@@ -65,6 +65,7 @@
 /// If you need a custom repr you can use SdfPySpecNoRepr() or
 /// SdfPyAbstractSpecNoRepr() and def("__repr__", ...).
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -84,11 +85,13 @@
 
 #include <string>
 
+namespace bp = boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class SdfSpec;
 
 namespace Sdf_PySpecDetail {
-
-namespace bp = boost::python;
 
 bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 
@@ -464,6 +467,8 @@ SdfPyAbstractSpecNoRepr()
 {
     return Sdf_PySpecDetail::SpecVisitor<true>(false);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PYSPEC_H
 

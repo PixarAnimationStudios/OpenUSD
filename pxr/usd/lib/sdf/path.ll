@@ -23,17 +23,19 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/pathParser.h"
 #include "pxr/usd/sdf/tokens.h"
+#include "path.tab.h"
 
 #include <string>
 
 using std::string;
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 // As a pure parser, we must define the following
 #define YY_DECL int pathYylex(YYSTYPE *yylval_param, yyscan_t yyscanner)
-
-#include "path.tab.h"
 
 %}
 
@@ -105,4 +107,3 @@ using std::string;
 }
 
 %%
-

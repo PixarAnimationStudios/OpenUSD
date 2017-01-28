@@ -23,6 +23,7 @@
 //
 /// \file wrapLayer.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -30,7 +31,6 @@
 #include "pxr/usd/sdf/pyChildrenProxy.h"
 #include "pxr/usd/sdf/pyUtils.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
-
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyFunction.h"
@@ -42,6 +42,8 @@
 #include <boost/python/overloads.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef SdfPyChildrenProxy<SdfLayer::RootPrimsView> RootPrimsProxy;
 
@@ -709,7 +711,7 @@ void wrapLayer()
             "The pseudo-root of the layer.")
 
         .add_property("rootPrims",
-            &::_WrapGetRootPrims,
+            &_WrapGetRootPrims,
             "The root prims of this layer, as an ordered dictionary.\n\n"
             "The prims may be accessed by index or by name.\n"
             "Although this property claims it is read only, you can modify "
@@ -742,7 +744,7 @@ void wrapLayer()
             "of this list.")
 
         .add_property("subLayerOffsets",
-            &::_WrapGetSubLayerOffsets,
+            &_WrapGetSubLayerOffsets,
             "The sublayer offsets of this layer, as a list.  Although this "
             "property is claimed to be read only, you can modify the contents "
             "of this list by assigning new layer offsets to specific indices.")
@@ -795,7 +797,7 @@ void wrapLayer()
         .add_property("permissionToEdit", &This::PermissionToEdit, 
               "Return true if permitted to be edited (modified), false otherwise.\n")
 
-        .def("ApplyRootPrimOrder", &::_ApplyRootPrimOrder,
+        .def("ApplyRootPrimOrder", &_ApplyRootPrimOrder,
                  return_value_policy<TfPySequenceToList>())
 
         .setattr("CommentKey", SdfFieldKeys->Comment)
@@ -836,3 +838,5 @@ void wrapLayer()
         TfPyContainerConversions::variable_capacity_policy>();
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,7 +23,7 @@
 //
 /// \file ChildrenUtils.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
@@ -40,6 +40,8 @@
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/ostreamMethods.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // ChildrenUtils
@@ -819,3 +821,5 @@ template class Sdf_ChildrenUtils<Sdf_VariantChildPolicy>;
 template class Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>;
 template class Sdf_ChildrenUtils<Sdf_RelationshipTargetChildPolicy>;
 template class Sdf_ChildrenUtils<Sdf_AttributeConnectionChildPolicy>;
+
+PXR_NAMESPACE_CLOSE_SCOPE

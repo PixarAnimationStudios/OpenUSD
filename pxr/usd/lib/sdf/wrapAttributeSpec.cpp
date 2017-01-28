@@ -25,6 +25,7 @@
 
 #define TF_MAX_ARITY 8
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -36,6 +37,8 @@
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static 
 std::vector<TfToken> 
@@ -213,7 +216,7 @@ void wrapAttributeSpec()
             "for more information.")
 
         .add_property("connectionMappers",
-            &::_WrapGetConnectionMappersProxy,
+            &_WrapGetConnectionMappersProxy,
             "The mappers for this attribute in a map proxy keyed by "
             "connection path.\n\n"
             "The returned proxy can be used to remove the mapper for a given "
@@ -222,16 +225,16 @@ void wrapAttributeSpec()
             "to assign a mapper.")
               
         .add_property("connectionMarkers",
-            &::_WrapGetMarkers,
-            &::_WrapSetMarkers,
+            &_WrapGetMarkers,
+            &_WrapSetMarkers,
             "The markers for this attribute in a map proxy keyed by "
             "connection path.\n\n"
             "The returned proxy can be used to set or remove the marker for a "
             "given path or to access the markers.")
 
 	.add_property("allowedTokens",
-	    &::_WrapGetAllowedTokens,
-	    &::_WrapSetAllowedTokens,
+	    &_WrapGetAllowedTokens,
+	    &_WrapSetAllowedTokens,
 	    "The allowed value tokens for this property")
 
         .def("GetConnectionMarker", &This::GetConnectionMarker)
@@ -249,3 +252,5 @@ void wrapAttributeSpec()
         .setattr("DisplayUnitKey", SdfFieldKeys->DisplayUnit)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

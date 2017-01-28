@@ -26,6 +26,7 @@
 
 /// \file sdf/primSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/path.h"
@@ -38,6 +39,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class TypePolicy> class Sdf_ListEditor;
 
@@ -659,5 +662,7 @@ private:
 /// primPath must be a valid prim path.
 SdfPrimSpecHandle SdfCreatePrimInLayer(const SdfLayerHandle& layer,
                                        const SdfPath& primPath);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PRIMSPEC_H

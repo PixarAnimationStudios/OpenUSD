@@ -23,18 +23,22 @@
 //
 /// \file namespaceEdit.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/variant.hpp>
+
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -1017,3 +1021,5 @@ SdfBatchNamespaceEdit::Process(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

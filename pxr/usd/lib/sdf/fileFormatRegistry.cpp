@@ -24,9 +24,8 @@
 ///
 /// \file Sdf/fileFormatRegistry.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormatRegistry.h"
-
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/plug/plugin.h"
@@ -38,6 +37,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_PlugInfoKeyTokens,
     ((FormatId,   "formatId"))
@@ -423,3 +424,4 @@ Sdf_FileFormatRegistry::_GetFileFormat(
     return info->GetFileFormat();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

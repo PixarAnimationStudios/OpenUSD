@@ -24,6 +24,7 @@
 
 %{
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/vt/array.h"
@@ -41,7 +42,6 @@
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/tracelite/trace.h"
-
 
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/iterator.h"
@@ -65,6 +65,8 @@
 // See this page for info as to why this is here.  Especially note the last
 // paragraph.  http://www.delorie.com/gnu/docs/bison/bison_91.html
 #define YYINITDEPTH 1500
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 using Sdf_ParserHelpers::Value;
 using boost::get;

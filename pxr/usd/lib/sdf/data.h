@@ -24,6 +24,8 @@
 #ifndef SDF_DATA_H
 #define SDF_DATA_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -33,6 +35,8 @@
 
 #include "pxr/base/tf/hashmap.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfData);
 
@@ -131,5 +135,7 @@ private:
 
     _HashTable _data;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_DATA_H

@@ -26,6 +26,7 @@
 
 /// \file sdf/mapEditProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -40,6 +41,8 @@
 #include <boost/operators.hpp>
 #include <iterator>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfToken;
 
@@ -926,4 +929,6 @@ struct Vt_DefaultValueFactory<SdfMapEditProxy<T, _ValuePolicy> > {
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_MAPEDITPROXY_H

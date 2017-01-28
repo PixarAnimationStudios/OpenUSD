@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 // Types.cpp
-#include "pxr/usd/sdf/types.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/valueTypeName.h"
@@ -42,6 +43,8 @@
 using std::map;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(SDF_WRITE_OLD_TYPENAMES, false,
                       "Write values using old type-name alias");
@@ -524,3 +527,5 @@ operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

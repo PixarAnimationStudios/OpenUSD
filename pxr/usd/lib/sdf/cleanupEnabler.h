@@ -26,7 +26,10 @@
 
 /// \file sdf/cleanupEnabler.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stacked.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfCleanupEnabler
 ///
@@ -74,5 +77,7 @@ public:
     /// Returns whether cleanup is currently being scheduled.
     static bool IsCleanupEnabled();
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // #ifndef SDF_CLEANUP_ENABLER_H

@@ -24,6 +24,7 @@
 #ifndef SDF_SCHEMA_H
 #define SDF_SCHEMA_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/valueTypeName.h"
@@ -41,6 +42,8 @@
 #include <boost/function.hpp>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class JsValue;
 class SdfPath;
@@ -597,4 +600,6 @@ private:
 TF_DECLARE_PUBLIC_TOKENS(SdfFieldKeys, SDF_FIELD_KEYS);
 TF_DECLARE_PUBLIC_TOKENS(SdfChildrenKeys, SDF_CHILDREN_KEYS);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_SCHEMA_H

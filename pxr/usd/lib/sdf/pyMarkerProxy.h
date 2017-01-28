@@ -21,9 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef SDF_PYMARKERPROXY_H
+#define SDF_PYMARKERPROXY_H
 
 /// \file sdf/pyMarkerProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
@@ -35,6 +38,8 @@
 #include <boost/python.hpp>
 #include <deque>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class SpecType>
 class Sdf_PyMarkerPolicy {
@@ -473,3 +478,6 @@ private:
     OwnerSpecHandle _spec;
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PYMARKERPROXY_H

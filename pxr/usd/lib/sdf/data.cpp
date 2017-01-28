@@ -21,10 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/work/utils.h"
+
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SdfData::~SdfData()
 {
@@ -411,3 +416,4 @@ SdfData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time)
         Set(id, SdfDataTokens->TimeSamples, VtValue(samples));
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/tracelite/trace.h"
 
@@ -31,6 +32,8 @@
 using std::vector;
 using std::pair;
 using std::make_pair;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdfDataTokens, SDF_DATA_TOKENS);
 
@@ -431,3 +434,5 @@ SdfAbstractData::ListDictKeys(const SdfAbstractDataSpecId& id,
 SdfAbstractDataSpecVisitor::~SdfAbstractDataSpecVisitor()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

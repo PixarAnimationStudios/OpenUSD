@@ -26,6 +26,7 @@
 
 /// \file sdf/propertySpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -39,6 +40,8 @@
 
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfPropertySpec
 ///
@@ -325,5 +328,7 @@ public:
 private:
     TfToken _GetAttributeValueTypeName() const;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // #ifndef SDF_PROPERTYSPEC_H

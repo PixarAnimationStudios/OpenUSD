@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeManager.h"
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/layer.h"
@@ -35,6 +37,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Sdf_ChangeManager);
 
@@ -548,3 +552,5 @@ Sdf_ChangeManager::DidRemoveSpec(const SdfLayerHandle &layer, const SdfPath &pat
         TF_CODING_ERROR("Unsupported Spec Type for <" + path.GetString() + ">");
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

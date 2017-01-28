@@ -23,6 +23,7 @@
 //
 /// \file VariantSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -35,6 +36,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_SPEC(SdfVariantSpec, SdfSpec);
 
@@ -147,3 +150,5 @@ SdfCreateVariantInLayer(
     return TfStatic_cast<SdfVariantSpecHandle>(
         layer->GetObjectAtPath(variantPath));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

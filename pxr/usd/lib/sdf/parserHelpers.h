@@ -24,8 +24,8 @@
 #ifndef SDF_PARSER_HELPERS_H
 #define SDF_PARSER_HELPERS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
-
 #include "pxr/base/arch/inttypes.h"
 
 #include <boost/function.hpp>
@@ -41,6 +41,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_ParserHelpers {
 
@@ -341,5 +343,6 @@ ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
 std::string Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
                                  unsigned int* numLines = NULL);
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PARSER_HELPERS_H

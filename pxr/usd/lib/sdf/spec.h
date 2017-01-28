@@ -26,6 +26,7 @@
 
 /// \file sdf/spec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/identity.h"
 #include "pxr/usd/sdf/declareSpec.h"
@@ -34,9 +35,13 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
+
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfSpec
 ///
@@ -238,4 +243,6 @@ private:
     Sdf_IdentityRefPtr _id;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_SPEC_H

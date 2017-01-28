@@ -24,6 +24,7 @@
 #ifndef SDF_PATHNODE_H
 #define SDF_PATHNODE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/mallocTag.h"
 
@@ -31,6 +32,8 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/atomic.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Sdf_PathNode
 //
@@ -740,12 +743,14 @@ Sdf_PathNode::GetElement() const
 /// Diagnostic output.
 void Sdf_DumpPathStats();
 
-inline void intrusive_ptr_add_ref(const Sdf_PathNode* p) {
+inline void intrusive_ptr_add_ref(const PXR_NS::Sdf_PathNode* p) {
     ++p->_refCount;
 }
-inline void intrusive_ptr_release(const Sdf_PathNode* p) {
+inline void intrusive_ptr_release(const PXR_NS::Sdf_PathNode* p) {
     if (p->_refCount.fetch_and_decrement() == 1)
         p->_Destroy();
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PATHNODE_H

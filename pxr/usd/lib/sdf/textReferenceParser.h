@@ -26,8 +26,12 @@
 
 /// \file sdf/textReferenceParser.h
 
+#include "pxr/pxr.h"
+
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Parses the file at \p layerPath, identifying external references, and
 /// sorting them into separate type-based buckets. Sublayers are returned in
@@ -49,5 +53,7 @@ void SdfExtractExternalReferencesFromString(
     std::vector<std::string>* subLayers,
     std::vector<std::string>* references,
     std::vector<std::string>* payloads);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_TEXT_REFERENCE_PARSER_H

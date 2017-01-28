@@ -101,6 +101,7 @@
 /* Line 189 of yacc.c  */
 #line 29 "pxr/usd/sdf/layerIdentifier.yy"
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include <string>
 
@@ -108,6 +109,8 @@
 
 struct yy_buffer_state;
 typedef void *yyscan_t;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 //--------------------------------------------------------------------
 // Context object for storing parser results
@@ -140,7 +143,7 @@ static void layerIdentifierYyerror(
 
 
 /* Line 189 of yacc.c  */
-#line 121 "pxr/usd/sdf/layerIdentifier.tab.cpp"
+#line 124 "pxr/usd/sdf/layerIdentifier.tab.cpp"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -170,7 +173,7 @@ struct Sdf_LayerIdentifierParserContext;
 
 
 /* Line 209 of yacc.c  */
-#line 151 "pxr/usd/sdf/layerIdentifier.tab.cpp"
+#line 154 "pxr/usd/sdf/layerIdentifier.tab.cpp"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -198,7 +201,7 @@ typedef int YYSTYPE;
 
 
 /* Line 264 of yacc.c  */
-#line 179 "pxr/usd/sdf/layerIdentifier.tab.cpp"
+#line 182 "pxr/usd/sdf/layerIdentifier.tab.cpp"
 
 #ifdef short
 # undef short
@@ -482,7 +485,7 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    80,    80,    81,    85,    90,    91,    95,    98,   101
+       0,    83,    83,    84,    88,    93,    94,    98,   101,   104
 };
 #endif
 
@@ -1387,7 +1390,7 @@ yyreduce:
         case 4:
 
 /* Line 1455 of yacc.c  */
-#line 85 "pxr/usd/sdf/layerIdentifier.yy"
+#line 88 "pxr/usd/sdf/layerIdentifier.yy"
     {
         context->layerPath = (yyvsp[(1) - (1)]);
     ;}
@@ -1396,7 +1399,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 95 "pxr/usd/sdf/layerIdentifier.yy"
+#line 98 "pxr/usd/sdf/layerIdentifier.yy"
     {
         context->args[(yyvsp[(1) - (3)])] = (yyvsp[(3) - (3)]);
     ;}
@@ -1405,7 +1408,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 98 "pxr/usd/sdf/layerIdentifier.yy"
+#line 101 "pxr/usd/sdf/layerIdentifier.yy"
     {
         context->args[(yyvsp[(1) - (3)])] = (yyvsp[(3) - (3)]);
     ;}
@@ -1414,7 +1417,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 101 "pxr/usd/sdf/layerIdentifier.yy"
+#line 104 "pxr/usd/sdf/layerIdentifier.yy"
     {
         context->args[(yyvsp[(1) - (2)])] = std::string();
     ;}
@@ -1423,7 +1426,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 1404 "pxr/usd/sdf/layerIdentifier.tab.cpp"
+#line 1407 "pxr/usd/sdf/layerIdentifier.tab.cpp"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1635,7 +1638,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 106 "pxr/usd/sdf/layerIdentifier.yy"
+#line 109 "pxr/usd/sdf/layerIdentifier.yy"
 
 
 static void 

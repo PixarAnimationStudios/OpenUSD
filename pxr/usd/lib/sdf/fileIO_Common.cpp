@@ -24,6 +24,7 @@
 //
 // FileIO_Common.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/reference.h"
 
@@ -36,6 +37,8 @@ using std::map;
 using std::ostream;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static const char *_IndentString = "    ";
 
@@ -741,3 +744,5 @@ const char* Sdf_FileIOUtility::Stringify( SdfVariability val )
         return "";
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

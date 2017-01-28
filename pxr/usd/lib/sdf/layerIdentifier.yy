@@ -27,6 +27,7 @@ struct Sdf_LayerIdentifierParserContext;
 }
 
 %{
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include <string>
 
@@ -34,6 +35,8 @@ struct Sdf_LayerIdentifierParserContext;
 
 struct yy_buffer_state;
 typedef void *yyscan_t;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 //--------------------------------------------------------------------
 // Context object for storing parser results

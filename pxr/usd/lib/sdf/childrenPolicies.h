@@ -28,11 +28,14 @@
 // determine how the view maps between keys (the child's name or path) and
 // values (the child's SpecHandle).
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
 #include "pxr/usd/sdf/schema.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfAttributeSpec);
 SDF_DECLARE_HANDLES(SdfMapperSpec);
@@ -286,4 +289,6 @@ public:
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHILDREN_POLICIES_H

@@ -24,12 +24,15 @@
 #ifndef SDF_SITE_H
 #define SDF_SITE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <set>
 #include <vector>
 #include <boost/operators.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfSite
 ///
@@ -76,5 +79,7 @@ public:
 
 typedef std::set<SdfSite> SdfSiteSet;
 typedef std::vector<SdfSite> SdfSiteVector;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_SITE_H

@@ -21,15 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/markerUtils.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/markerUtils.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
-
+#include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Sdf_MarkerUtilsPolicy<Spec>
@@ -237,3 +241,5 @@ public:
 };
 
 template class Sdf_MarkerUtils<SdfRelationshipSpec>;
+
+PXR_NAMESPACE_CLOSE_SCOPE

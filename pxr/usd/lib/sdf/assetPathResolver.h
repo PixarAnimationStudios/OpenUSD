@@ -26,6 +26,7 @@
 
 /// \file sdf/assetPathResolver.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"
 
@@ -34,6 +35,8 @@
 #include "pxr/base/vt/value.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -144,5 +147,7 @@ bool Sdf_IdentifierContainsArguments(
 /// Sdf_GetAnonLayerDisplayName is called.
 std::string Sdf_GetLayerDisplayName(
     const std::string& identifier);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_ASSET_PATH_RESOLVER_H

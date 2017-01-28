@@ -24,8 +24,8 @@
 #ifndef SDF_PATHTABLE_H
 #define SDF_PATHTABLE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
-
 #include "pxr/base/tf/pointerAndBits.h"
 
 #include <boost/iterator/iterator_facade.hpp>
@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfPathTable
 ///
@@ -658,5 +660,6 @@ private:
 
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PATHTABLE_H

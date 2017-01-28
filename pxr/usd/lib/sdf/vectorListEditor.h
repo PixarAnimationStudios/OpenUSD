@@ -24,13 +24,15 @@
 #ifndef SDF_VECTOR_LIST_EDITOR_H
 #define SDF_VECTOR_LIST_EDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/listEditor.h"
-
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listOp.h"
 
 #include "pxr/base/tf/ostreamMethods.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Various adapter classes used by Sdf_VectorListEditor to allow for
 // conversions between the publicly exposed value type and the underlying 
@@ -344,5 +346,7 @@ Sdf_VectorListEditor<TP, FST>::_GetOperations(SdfListOpType op) const
     
     return _data;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_VECTOR_LIST_EDITOR_H

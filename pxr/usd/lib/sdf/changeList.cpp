@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(SdfChangeList);
 
@@ -361,3 +365,5 @@ SdfChangeList::DidRemoveTarget(const SdfPath &targetPath)
 {
     GetEntry(targetPath).flags.didRemoveTarget = true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

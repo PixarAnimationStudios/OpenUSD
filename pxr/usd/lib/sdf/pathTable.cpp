@@ -21,10 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/pathTable.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/pathTable.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/work/loops.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 Sdf_ClearPathTableInParallel(void **entryStart, size_t numEntries,
@@ -48,3 +51,5 @@ Sdf_ClearPathTableInParallel(void **entryStart, size_t numEntries,
             }
         });
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

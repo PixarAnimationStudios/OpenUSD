@@ -23,7 +23,7 @@
 //
 /// \file PySpec.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/spec.h"
@@ -33,6 +33,8 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_PySpecDetail {
 
@@ -104,3 +106,5 @@ _CreateHolder(const std::type_info& ti, const SdfSpec& spec)
 }
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

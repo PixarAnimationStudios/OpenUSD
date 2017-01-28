@@ -24,6 +24,7 @@
 ///
 /// \file Sdf/LayerUtils.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/layer.h"
@@ -32,6 +33,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 string
 SdfComputeAssetPathRelativeToLayer(
@@ -92,3 +95,4 @@ SdfFindOrOpenRelativeToLayer(
     return SdfLayer::FindOrOpen(*layerPath, args);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

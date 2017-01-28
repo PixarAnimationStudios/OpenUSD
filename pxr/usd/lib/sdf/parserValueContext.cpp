@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/parserValueContext.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Sdf_ToStringVisitor : boost::static_visitor<std::string>
 {
@@ -334,3 +338,5 @@ Sdf_ParserValueContext::SetRecordedString(const std::string &text)
 {
     _recordedString = text;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

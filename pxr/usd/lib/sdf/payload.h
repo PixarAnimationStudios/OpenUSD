@@ -26,6 +26,7 @@
 
 /// \file sdf/payload.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/dictionary.h"
 
@@ -34,6 +35,8 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPayload;
 
@@ -106,5 +109,7 @@ private:
 
 /// Writes the string representation of \a SdfPayload to \a out.
 std::ostream & operator<<(std::ostream &out, const SdfPayload &payload);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

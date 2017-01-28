@@ -23,8 +23,8 @@
 //
 /// \file RelationshipSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
-
 #include "pxr/usd/sdf/accessorHelpers.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
@@ -39,6 +39,8 @@
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_SPEC(SdfRelationshipSpec, SdfPropertySpec);
 
@@ -662,3 +664,5 @@ SDF_DEFINE_GET_SET(NoLoadHint, SdfFieldKeys->NoLoadHint, bool);
 #undef SDF_ACCESSOR_CLASS                   
 #undef SDF_ACCESSOR_READ_PREDICATE
 #undef SDF_ACCESSOR_WRITE_PREDICATE
+
+PXR_NAMESPACE_CLOSE_SCOPE

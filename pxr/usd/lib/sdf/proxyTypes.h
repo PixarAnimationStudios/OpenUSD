@@ -24,6 +24,7 @@
 #ifndef SDF_PROXY_TYPES_H
 #define SDF_PROXY_TYPES_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/childrenProxy.h"
 #include "pxr/usd/sdf/childrenView.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
@@ -32,6 +33,8 @@
 #include "pxr/usd/sdf/listProxy.h"
 #include "pxr/usd/sdf/mapEditProxy.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfSpec);
 
@@ -85,4 +88,6 @@ SdfGetPathEditorProxy(const SdfSpecHandle& o, const TfToken & n);
 SdfReferenceEditorProxy
 SdfGetReferenceEditorProxy(const SdfSpecHandle& o, const TfToken & n);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PROXY_TYPES_H

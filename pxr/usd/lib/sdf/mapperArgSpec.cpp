@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \fild MapperArgSpec.cpp
-#include "pxr/usd/sdf/mapperArgSpec.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -34,6 +35,8 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define SDF_ACCESSOR_CLASS                   SdfMapperArgSpec
 #define SDF_ACCESSOR_READ_PREDICATE(key_)    SDF_NO_PREDICATE
@@ -128,3 +131,5 @@ SDF_DEFINE_GET_SET(Value, SdfFieldKeys->MapperArgValue, VtValue)
 #undef SDF_ACCESSOR_CLASS
 #undef SDF_ACCESSOR_READ_PREDICATE
 #undef SDF_ACCESSOR_WRITE_PREDICATE
+
+PXR_NAMESPACE_CLOSE_SCOPE
