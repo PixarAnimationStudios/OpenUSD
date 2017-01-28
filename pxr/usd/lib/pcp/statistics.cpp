@@ -21,14 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/statistics.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/statistics.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 
 #include "pxr/base/arch/defines.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Pcp_GraphStats
 {
@@ -389,3 +392,5 @@ Pcp_PrintPrimIndexStatistics(
 {
     Pcp_Statistics::PrintPrimIndexStats(primIndex, out);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/cache.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/diagnostic.h"
@@ -70,6 +71,8 @@ using std::pair;
 using std::vector;
 
 using boost::dynamic_pointer_cast;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     PCP_CULLING, true,
@@ -1561,3 +1564,5 @@ PcpCache::PrintStatistics() const
 {
     Pcp_PrintCacheStatistics(this);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

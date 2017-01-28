@@ -50,6 +50,7 @@
 /// Conceptually, though, they are operating on the scene description
 /// identified by a PcpSite.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/payload.h"
@@ -61,6 +62,8 @@
 
 #include <set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpLayerStackSite;
 
@@ -109,4 +112,6 @@ void PcpComposeSiteVariantSelections( const PcpLayerStackSite & site,
                                       SdfVariantSelectionMap *result );
 bool PcpComposeSiteHasVariantSelections( const PcpLayerStackSite & site );
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_COMPOSE_SITE_H

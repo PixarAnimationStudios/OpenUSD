@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/primIndex_Graph.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/node_Iterator.h"
@@ -33,6 +34,8 @@
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/bind.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 const size_t PcpPrimIndex_Graph::_Node::_invalidNodeIndex;
 
@@ -844,3 +847,5 @@ PcpPrimIndex_Graph::_ComputeEraseCulledNodeIndexMapping(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

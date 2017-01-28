@@ -24,7 +24,9 @@
 #ifndef PCP_MAP_EXPRESSION_H
 #define PCP_MAP_EXPRESSION_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapFunction.h"
+
 #include <boost/shared_ptr.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -32,6 +34,8 @@
 
 #include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class PcpMapExpression
 ///
@@ -260,4 +264,6 @@ private: // data
     _NodeRefPtr _node;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_MAP_EXPRESSION_H

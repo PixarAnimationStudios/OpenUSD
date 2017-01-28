@@ -24,6 +24,7 @@
 #ifndef PCP_ITERATOR_H
 #define PCP_ITERATOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,6 +35,8 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpPrimIndex;
 class PcpPrimIndex_Graph;
@@ -309,5 +312,7 @@ struct PcpIteratorTraits<PcpPropertyIterator>
     typedef PcpPropertyRange RangeType;
     typedef PcpPropertyReverseIterator ReverseIteratorType;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_ITERATOR_H

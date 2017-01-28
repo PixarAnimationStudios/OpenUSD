@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/namespaceEdits.h" 
 #include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/dependencies.h"
@@ -36,6 +38,8 @@ using std::pair;
 using std::vector;
 
 using boost::dynamic_pointer_cast;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -1016,3 +1020,5 @@ PcpComputeNamespaceEdits(
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

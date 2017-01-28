@@ -24,12 +24,16 @@
 #ifndef PCP_TYPES_H
 #define PCP_TYPES_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/pcp/site.h"
 
 #include <limits>
 #include <vector>
+
 #include <boost/operators.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \enum PcpArcType
 ///
@@ -189,5 +193,7 @@ typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap;
 /// either -1 or numeric_limits::max() (which are equivalent for size_t). 
 /// for better clarity.
 constexpr size_t PCP_INVALID_INDEX = std::numeric_limits<size_t>::max();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_TYPES_H

@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/diagnostic.h"
 
+#include "pxr/pxr.h"
+
+#include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
@@ -42,6 +44,8 @@
 #include <boost/assign/list_of.hpp>
 #include <fstream>
 #include <sstream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::set<PcpNodeRef> Pcp_NodeSet;
 
@@ -885,3 +889,5 @@ void Pcp_GraphMsg(                                                      \
 
 #include BOOST_PP_LOCAL_ITERATE()
 #undef _ADD_TO_NODES
+
+PXR_NAMESPACE_CLOSE_SCOPE

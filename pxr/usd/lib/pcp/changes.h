@@ -26,12 +26,16 @@
 
 /// \file pcp/changes.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/declarePtrs.h"
+
 #include <map>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
@@ -378,4 +382,6 @@ private:
     mutable PcpLifeboat _lifeboat;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_CHANGES_H

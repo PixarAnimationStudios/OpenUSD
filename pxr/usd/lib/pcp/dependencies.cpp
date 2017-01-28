@@ -23,7 +23,7 @@
 //
 /// \file Dependencies.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependencies.h"
 
 #include "pxr/usd/pcp/cache.h"
@@ -37,7 +37,10 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stl.h"
+
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 Pcp_Dependencies::Pcp_Dependencies()
 {
@@ -236,3 +239,5 @@ Pcp_Dependencies::UsesLayerStack(const PcpLayerStackPtr& layerStack) const
 {
     return _deps.find(layerStack) != _deps.end();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

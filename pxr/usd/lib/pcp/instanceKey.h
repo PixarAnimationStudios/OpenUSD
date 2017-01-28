@@ -24,6 +24,7 @@
 #ifndef PCP_INSTANCE_KEY_H
 #define PCP_INSTANCE_KEY_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/site.h"
@@ -36,6 +37,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpPrimIndex;
 
@@ -118,5 +121,7 @@ private:
 
     size_t _hash;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_INSTANCE_KEY_H

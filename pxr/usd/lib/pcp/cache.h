@@ -24,6 +24,7 @@
 #ifndef PCP_CACHE_H
 #define PCP_CACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependency.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/mapFunction.h"
@@ -43,6 +44,8 @@
 #include "pxr/base/tf/hashset.h"
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Forward declarations:
 class PcpChanges;
@@ -641,4 +644,6 @@ private:
     boost::scoped_ptr<Pcp_Dependencies> _primDependencies;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_CACHE_H

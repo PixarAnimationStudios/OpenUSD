@@ -24,9 +24,12 @@
 #ifndef PCP_TARGET_INDEX_H
 #define PCP_TARGET_INDEX_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfSpec);
 class PcpCache;
@@ -90,5 +93,7 @@ PcpBuildFilteredTargetIndex(
     PcpCache *cacheForValidation,
     PcpTargetIndex *targetIndex,
     PcpErrorVector *allErrors);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_TARGET_INDEX_H

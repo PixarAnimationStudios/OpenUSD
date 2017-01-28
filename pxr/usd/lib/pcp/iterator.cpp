@@ -21,13 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/iterator.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/pcp/propertyIndex.h"
 #include "pxr/usd/pcp/types.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 PcpNodeIterator::PcpNodeIterator()
     : _graph(0)
@@ -286,3 +289,5 @@ PcpPropertyIterator::IsLocal() const
 {
     return _pos < _propertyIndex->GetNumLocalSpecs();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

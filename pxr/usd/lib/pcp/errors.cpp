@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/lexical_cast.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -899,3 +903,5 @@ PcpRaiseErrors(const PcpErrorVector &errors)
         TF_RUNTIME_ERROR("%s", (*err)->ToString().c_str());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

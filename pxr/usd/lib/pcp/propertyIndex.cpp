@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/propertyIndex.h"
 
+#include "pxr/pxr.h"
+
+#include "pxr/usd/pcp/propertyIndex.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
@@ -42,6 +44,8 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////
 
@@ -520,3 +524,5 @@ PcpBuildPrimPropertyIndex( const SdfPath& propertyPath,
     Pcp_PropertyIndexer indexer(propertyIndex, propSite, allErrors);
     indexer.GatherPropertySpecs(primIndex, cache.IsUsd());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

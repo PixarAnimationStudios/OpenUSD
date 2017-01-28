@@ -23,13 +23,16 @@
 //
 /// \file LayerStackIdentifier.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include <boost/functional/hash.hpp>
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 PcpLayerStackIdentifier::PcpLayerStackIdentifier() : _hash(0)
 {
@@ -164,3 +167,5 @@ operator<<(std::ostream& s, const PcpLayerStackIdentifier& x)
                  << PcpIdentifierFormatIdentifier;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

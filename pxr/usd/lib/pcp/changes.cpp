@@ -23,7 +23,7 @@
 //
 /// \file Changes.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/debugCodes.h"
@@ -38,6 +38,8 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static
 void
@@ -1779,3 +1781,5 @@ PcpChanges::_DidChangeLayerStackRelocations(
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

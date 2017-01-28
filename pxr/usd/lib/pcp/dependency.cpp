@@ -23,10 +23,13 @@
 //
 /// \file Dependency.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependency.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/base/tf/enum.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -140,3 +143,5 @@ PcpDependencyFlagsToString(const PcpDependencyFlags depFlags)
     }
     return TfStringJoin(tags, ", ");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,6 +23,7 @@
 //
 /// \file LayerStackRegistry.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
@@ -31,6 +32,7 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
+
 #include <boost/unordered_map.hpp>
 
 #include <algorithm>
@@ -39,6 +41,8 @@
 
 using std::pair;
 using std::make_pair;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Pcp_LayerStackRegistryData {
 public:
@@ -392,3 +396,5 @@ Pcp_MutedLayers::IsLayerMuted(const SdfLayerHandle& anchorLayer,
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

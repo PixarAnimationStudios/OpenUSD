@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/primIndex.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/composeSite.h"
@@ -58,6 +59,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR, false,
@@ -4500,3 +4503,5 @@ PcpPrimIndex::ComputePrimPropertyNames( TfTokenVector *nameOrder ) const
     _ComposePrimPropertyNames(
         *this, GetRootNode(), IsUsd(), nameOrder, &nameSet);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

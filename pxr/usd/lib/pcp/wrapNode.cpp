@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 
@@ -29,6 +31,8 @@
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define PCP_GET_NODE_FN(nodeFn)                                         \
     static boost::python::object                                        \
@@ -103,3 +107,5 @@ wrapNode()
         .def(self != self)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

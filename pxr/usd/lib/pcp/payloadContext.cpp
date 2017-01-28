@@ -21,12 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/payloadContext.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/payloadContext.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex_StackFrame.h"
 #include "pxr/usd/sdf/layer.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 PcpPayloadContext::PcpPayloadContext(
     const PcpNodeRef& parentNode, 
@@ -149,3 +152,5 @@ Pcp_CreatePayloadContext(
 {
     return PcpPayloadContext(parentNode, previousFrame);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

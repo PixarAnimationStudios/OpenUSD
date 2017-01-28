@@ -29,8 +29,11 @@
 /// A collection of private helper utilities to support instancing
 /// functionality.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Helper function to determine whether the given prim index is
 /// instanceable. An instanceable prim index must have instanceable
@@ -188,5 +191,7 @@ Pcp_TraverseInstanceableWeakToStrong(
 
     visitor->Visit(rootNode, /* nodeIsInstanceable = */ false);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_INSTANCING_H

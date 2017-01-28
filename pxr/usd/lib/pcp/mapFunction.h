@@ -21,12 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PCP_MAP_H
-#define PCP_MAP_H
+#ifndef PCP_MAPFUNCTION_H
+#define PCP_MAPFUNCTION_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/base/tf/flyweight.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class PcpMapFunction
 ///
@@ -206,4 +209,6 @@ size_t hash_value(const PcpMapFunction& x)
     return x.Hash();
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_MAPFUNCTION_H

@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/site.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/primSpec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Implementation notes:
 //
@@ -285,3 +289,5 @@ PcpComposeSiteHasVariantSelections( const PcpLayerStackSite & site )
     
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

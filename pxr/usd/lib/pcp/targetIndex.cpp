@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/targetIndex.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/targetIndex.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node_Iterator.h"
@@ -37,6 +38,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper structure for deferring the computation of a prim index
 // until needed, then caching the result to avoid multiple lookups
@@ -537,3 +540,5 @@ PcpBuildTargetIndex(
         /* cacheForValidation = */ 0,
         targetIndex, allErrors );
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,15 +24,17 @@
 #ifndef PCP_NODE_H
 #define PCP_NODE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/sdf/types.h"
-
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/hashset.h"
 
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpArc;
 class PcpLayerStackSite;
@@ -401,4 +403,6 @@ struct Tf_ShouldIterateOverCopy<PcpNodeRef::child_const_range> :
 // this method avoids constructing a new SdfPath value.
 int PcpNode_GetNonVariantPathElementCount(const SdfPath &path);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_NODE_H

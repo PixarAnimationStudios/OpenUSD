@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/layerStack.h"
@@ -28,6 +30,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <tbb/concurrent_hash_map.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Pcp_VariableImpl;
 
@@ -390,3 +394,5 @@ intrusive_ptr_release(PcpMapExpression::_Node* p)
     if (p->_refCount.fetch_and_decrement() == 1)
         delete p;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,7 +23,7 @@
 //
 // \file LayerStack.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
@@ -43,6 +43,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Computing layer stacks
@@ -760,3 +762,5 @@ operator<<(std::ostream& s, const PcpLayerStackRefPtr& x)
         return s << "@NULL@";
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

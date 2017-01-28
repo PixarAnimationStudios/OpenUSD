@@ -26,6 +26,7 @@
 
 /// \file pcp/dependencies.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/pcp/layerStack.h"
@@ -35,10 +36,14 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/site.h"
+
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
+
 #include <iosfwd>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpLifeboat;
 class PcpPrimIndexDependencies;
@@ -261,4 +266,6 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
             );
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_DEPENDENCIES_H

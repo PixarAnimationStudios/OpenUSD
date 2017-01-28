@@ -24,9 +24,12 @@
 #ifndef PCP_PRIM_INDEX_STACK_FRAME_H
 #define PCP_PRIM_INDEX_STACK_FRAME_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/arc.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/site.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class PcpPrimIndex_StackFrame
 ///
@@ -126,5 +129,7 @@ public:
         }
     }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_PRIM_INDEX_STACK_FRAME_H

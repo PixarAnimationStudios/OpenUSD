@@ -24,9 +24,12 @@
 ///
 /// \file Pcp/Utils.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SdfLayer::FileFormatArguments 
 Pcp_GetArgumentsForTargetSchema(
@@ -46,3 +49,5 @@ Pcp_GetArgumentsForTargetSchema(
         (*args)[SdfFileFormatTokens->TargetArg] = targetSchema;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

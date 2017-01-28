@@ -26,8 +26,12 @@
 
 /// \file pcp/utils.h
 
-#include <string>
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
+
+#include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SdfLayer::FileFormatArguments Pcp_GetArgumentsForTargetSchema(
     const std::string& targetSchema);
@@ -35,5 +39,7 @@ SdfLayer::FileFormatArguments Pcp_GetArgumentsForTargetSchema(
 void Pcp_GetArgumentsForTargetSchema(
     const std::string& targetSchema,
     SdfLayer::FileFormatArguments* args);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_UTILS_H

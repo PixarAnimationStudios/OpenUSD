@@ -26,10 +26,15 @@
 
 /// \file pcp/layerStackIdentifier.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/ar/resolverContext.h"
+
 #include <boost/operators.hpp>
+
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -122,4 +127,6 @@ std::ostream& PcpIdentifierFormatRealPath(std::ostream&);
 /// manipulators.
 std::ostream& PcpIdentifierFormatIdentifier(std::ostream&);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_LAYER_STACK_IDENTIFIER_H

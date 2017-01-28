@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
 
 #include <boost/python.hpp>
@@ -28,6 +30,8 @@
 
 using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static string
 _Str(const PcpMapExpression& e)
@@ -70,3 +74,5 @@ wrapMapExpression()
         .add_property("isNull", &This::IsNull)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

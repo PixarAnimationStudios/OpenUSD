@@ -21,9 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/site.h"
 #include "pxr/usd/pcp/layerStack.h"
+
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -138,3 +143,5 @@ operator<<(std::ostream& s, const PcpLayerStackSite& x)
 {
     return s << x.layerStack << "<" << x.path << ">";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
