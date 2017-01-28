@@ -116,6 +116,7 @@ pxr_shared_library(tf
         wrapTypeHelpers
 
     PUBLIC_HEADERS
+        api.h
         cxxCast.h
         declarePtrs.h
         diagnosticLite.h
