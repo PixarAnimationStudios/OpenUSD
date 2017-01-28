@@ -45,9 +45,8 @@
 
 /// \class PxOsdRefinerCache
 ///
-/// A class that acts as a singleton cache of expensive OpenSubdiv stencil
-/// tables, patch tables, and topology refiners. This data is used to
-/// project onto subdivs by OsdProjector.
+/// An API remnant to be removed soon. Does no caching at all.
+/// 
 ///
 class PxOsdRefinerCache {
 public:
@@ -67,70 +66,6 @@ public:
         PatchTableSharedPtr *patchTable = NULL);        
 
 private:
-    struct CacheEntry {
-        PxOsdMeshTopology topology;
-        bool bilinearStencils;
-        int level;
-
-        // Stored hash, based on topology, level, and bilinear
-        PxOsdMeshTopology::ID hash;
-
-        // Caches of stuff derived from topology
-        PxOsdTopologyRefinerSharedPtr refiner;
-        StencilTableSharedPtr cvStencils;
-        PatchTableSharedPtr patchTable;
-
-        CacheEntry(
-            PxOsdMeshTopology _topology, bool _bilinearStencils,
-            int _level):
-            topology(_topology),
-            bilinearStencils(_bilinearStencils),
-            level(_level)
-            {
-                hash = ComputeHash(topology, bilinearStencils,level);
-            }
-
-        ~CacheEntry( ) {
-        }
-
-        bool CreateRefiner();
-        
-        static PxOsdMeshTopology::ID ComputeHash(
-            PxOsdMeshTopology const& topology, bool bilinearStencils, int level)
-            {
-                // Take the hash key computed from topology and salt
-                // it with bilinear and level to produce "unique" key
-                PxOsdMeshTopology::ID hash = topology.ComputeHash();
-                int valsToHash[2] = {level, (int)bilinearStencils};
-                return ArchHash((char const*) valsToHash,
-                                sizeof(int) * 2, hash);
-            }
-
-        bool operator==(CacheEntry const& x) const
-            {
-                return ((x.topology == topology)                 &&
-                        (x.bilinearStencils == bilinearStencils) &&
-                        (x.level == level));
-            }
-        CacheEntry& operator=(CacheEntry const& x) 
-            {
-                topology = x.topology;
-                bilinearStencils = x.bilinearStencils;
-                level = x.level;
-                refiner = x.refiner;
-                cvStencils = x.cvStencils;
-                patchTable = x.patchTable;
-                return *this;
-            }                
-        
-    };
-
-    struct HashFunctor {
-    public:
-        size_t operator() (CacheEntry const& entry) const {
-            return entry.hash;
-        }
-    };
     
     PxOsdRefinerCache() {
         TfSingleton< PxOsdRefinerCache >::SetInstanceConstructed(
@@ -139,11 +74,6 @@ private:
 
     ~PxOsdRefinerCache() {
     }
-
-    std::mutex _mutex;
-
-    typedef TfHashSet<CacheEntry, HashFunctor> _CacheEntrySet;
-    _CacheEntrySet _cachedEntries;
     
     PxOsdRefinerCache(PxOsdRefinerCache const&);
     PxOsdRefinerCache const& operator=(PxOsdRefinerCache const&);
