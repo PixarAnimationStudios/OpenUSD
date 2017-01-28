@@ -24,14 +24,18 @@
 #ifndef HF_PLUGIN_DELEGATE_ENTRY_H
 #define HF_PLUGIN_DELEGATE_ENTRY_H
 
-class HfPluginDelegateBase;
-class HfPluginDelegateDesc;
-
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include <string>
 #include <functional>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class HfPluginDelegateBase;
+class HfPluginDelegateDesc;
+
 
 
 ///
@@ -137,5 +141,8 @@ private:
     Hf_PluginDelegateEntry &operator =(const Hf_PluginDelegateEntry &) = delete;
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HF_PLUGIN_DELEGATE_ENTRY_H

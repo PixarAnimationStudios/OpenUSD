@@ -24,8 +24,12 @@
 #ifndef HF_PERF_LOG_H
 #define HF_PERF_LOG_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
 #include <boost/preprocessor/stringize.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 ///
 /// Creates an auto-mallocTag with the function, including template params.
@@ -45,5 +49,8 @@
 ///
 #define HF_MALLOC_TAG_NEW(x) \
     TF_MALLOC_TAG_NEW(BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME), x);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HF_PERF_LOG_H

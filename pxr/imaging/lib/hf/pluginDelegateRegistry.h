@@ -24,10 +24,14 @@
 #ifndef HF_PLUGIN_DELEGATE_REGISTRY_H
 #define HF_PLUGIN_DELEGATE_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hf/pluginDelegateDesc.h"
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HfPluginDelegateBase;
 class Hf_PluginDelegateEntry;
@@ -183,6 +187,9 @@ HfPluginDelegateRegistry::Define()
     _SetFactory(type, func);
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HF_PLUGIN_DELEGATE_REGISTRY_H
 

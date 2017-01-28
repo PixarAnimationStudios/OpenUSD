@@ -26,6 +26,9 @@
 #include "pxr/imaging/hf/pluginDelegateDesc.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hf_PluginDelegateEntry::Hf_PluginDelegateEntry(const TfType &type,
                                                const std::string &displayName,
                                                int   priority)
@@ -137,3 +140,6 @@ Hf_PluginDelegateEntry::SetFactory(TfType &type,
 {
     type.SetFactory(std::unique_ptr<_Factory>(new _Factory(func)));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

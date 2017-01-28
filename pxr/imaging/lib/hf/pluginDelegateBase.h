@@ -24,6 +24,10 @@
 #ifndef HF_PLUGIN_DELEGATE_BASE_H
 #define HF_PLUGIN_DELEGATE_BASE_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 ///
 /// \class HfPluginDelegate
 ///
@@ -47,5 +51,8 @@ private:
     HfPluginDelegateBase(const HfPluginDelegateBase &)            = delete;
     HfPluginDelegateBase &operator=(const HfPluginDelegateBase &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HF_PLUGIN_DELEGATE_BASE_H
