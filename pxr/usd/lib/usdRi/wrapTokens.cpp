@@ -22,12 +22,16 @@
 // language governing permissions and limitations under the Apache License.
 //
 // GENERATED FILE.  DO NOT EDIT.
+#include "pxr/pxr.h"
 #include "pxr/usd/usdRi/tokens.h"
-
 #include "pxr/base/tf/pyStaticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapUsdRiTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdRiTokens,
                              USDRI_TOKENS);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

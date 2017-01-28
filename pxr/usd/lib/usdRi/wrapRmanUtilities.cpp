@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
 #include "pxr/base/tf/token.h"
@@ -28,6 +29,9 @@
 #include <boost/python/def.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/return_by_value.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -49,3 +53,6 @@ void wrapUsdRiRmanUtilities()
         UsdRiConvertFromRManFaceVaryingLinearInterpolation,
         return_value_policy<return_by_value>());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

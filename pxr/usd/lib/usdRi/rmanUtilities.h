@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #ifndef USDRI_RMANUTILITIES_H
 #define USDRI_RMANUTILITIES_H
 
@@ -45,5 +49,8 @@ int UsdRiConvertToRManFaceVaryingLinearInterpolation(const TfToken &token);
 /// Given the integer \p i that corresponds to an rman enum for face-varying
 /// interpolate boundary condition, returns the equivalent UsdGeom token.
 const TfToken &UsdRiConvertFromRManFaceVaryingLinearInterpolation(int i);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDRI_RMANUTILITIES_H
