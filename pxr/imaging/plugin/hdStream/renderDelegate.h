@@ -23,7 +23,11 @@
 #ifndef HDSTREAM_RENDER_DELEGATE_H
 #define HDSTREAM_RENDER_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 ///
 /// HdStreamRenderDelegate
@@ -56,5 +60,8 @@ private:
     HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
     HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDSTREAM_RENDER_DELEGATE_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdStream/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/texture.h"
@@ -30,6 +31,9 @@
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/light.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -196,3 +200,6 @@ HdStreamRenderDelegate::_ConfigureReprs()
     HdStPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
                               HdPointsGeomStylePoints);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
