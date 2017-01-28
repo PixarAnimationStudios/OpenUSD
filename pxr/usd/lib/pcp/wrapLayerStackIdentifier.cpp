@@ -70,7 +70,7 @@ void wrapLayerStackIdentifier()
                       make_getter(&This::pathResolverContext, 
                                   return_value_policy<return_by_value>()))
 
-        .def("__repr__", &::_Repr)
+        .def("__repr__", &_Repr)
         .def("__hash__", &This::GetHash)
         .def(!self)
         .def(self == self)
