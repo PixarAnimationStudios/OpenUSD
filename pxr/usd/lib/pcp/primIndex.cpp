@@ -4136,11 +4136,12 @@ _ComposeChildNames( const PcpPrimIndex& primIndex,
                     TfTokenVector *nameOrder,
                     PcpTokenSet *nameSet )
 {
-    PcpLayerStackSite site = node.GetSite();
+    PcpLayerStackRefPtr const &layerStack = node.GetLayerStack();
+    SdfPath const &sitePath = node.GetPath();
 
-    TF_REVERSE_FOR_ALL(layerIt, site.layerStack->GetLayers()) {
+    TF_REVERSE_FOR_ALL(layerIt, layerStack->GetLayers()) {
         const VtValue& specNamesValue =
-            (*layerIt)->GetField(site.path, namesField);
+            (*layerIt)->GetField(sitePath, namesField);
         if (specNamesValue.IsHolding<TfTokenVector>()) {
             const TfTokenVector & specNames =
                 specNamesValue.UncheckedGet<TfTokenVector>();
@@ -4159,7 +4160,7 @@ _ComposeChildNames( const PcpPrimIndex& primIndex,
         if (!applyListOrdering)
             continue;
 
-        const VtValue& orderValue = (*layerIt)->GetField(site.path, orderField);
+        const VtValue& orderValue = (*layerIt)->GetField(sitePath, orderField);
         if (orderValue.IsHolding<TfTokenVector>()) {
             const TfTokenVector & ordering =
                 orderValue.UncheckedGet<TfTokenVector>();
