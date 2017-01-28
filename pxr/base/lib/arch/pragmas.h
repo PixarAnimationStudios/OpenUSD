@@ -106,6 +106,9 @@
     #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME \
         __pragma(warning(disable:4996)) 
 
+    #define ARCH_PRAGMA_FORCING_TO_BOOL \
+        __pragma(warning(disable:4800)) 
+
     #define ARCH_PRAGMA_UNSAFE_USE_OF_BOOL \
         __pragma(warning(disable:4804)) 
 
@@ -168,6 +171,10 @@
 
 #if !defined ARCH_PRAGMA_DEPRECATED_POSIX_NAME
     #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME
+#endif
+
+#if !defined ARCH_PRAGMA_FORCING_TO_BOOL
+    #define ARCH_PRAGMA_FORCING_TO_BOOL
 #endif
 
 #if !defined ARCH_PRAGMA_UNSAFE_USE_OF_BOOL

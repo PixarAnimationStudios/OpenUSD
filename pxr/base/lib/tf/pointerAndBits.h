@@ -25,8 +25,10 @@
 #define TF_POINTERANDBITS_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,8 +52,27 @@ constexpr bool Tf_IsPow2(uintptr_t val) {
 template <class T>
 class TfPointerAndBits
 {
+    // Microsoft Visual Studio doesn't like alignof(<abstract-type>).
+    // We'll assume that such an object has a pointer in it (the vtbl
+    // pointer) and use void* for alignment in that case.
+    template <typename U, bool = false>
+    struct _AlignOf {
+        static constexpr uintptr_t value = alignof(U);
+    };
+    template <typename U>
+    struct _AlignOf<U, true> {
+        static constexpr uintptr_t value = alignof(void*);
+    };
+
+    // Microsoft Visual Studio doesn't like alignof(<abstract-type>).
+    // We'll assume that such an object has a pointer in it (the vtbl
+    // pointer) and use void* for alignment in that case.
+    static constexpr uintptr_t _GetAlign() {
+        return _AlignOf<T, std::is_abstract<T>::value>::value;
+    }
+
     static constexpr bool _SupportsAtLeastOneBit() {
-        return alignof(T) > 1 && Tf_IsPow2(alignof(T));
+        return _GetAlign() > 1 && Tf_IsPow2(_GetAlign());
     }
 
 public:
@@ -71,11 +92,11 @@ public:
     }
 
     constexpr uintptr_t GetMaxValue() const {
-        return alignof(T) - 1;
+        return _GetAlign() - 1;
     }
 
     constexpr uintptr_t GetNumBitsValues() const {
-        return alignof(T);
+        return _GetAlign();
     }
 
     /// Assignment.  Leaves bits unmodified.
@@ -97,7 +118,10 @@ public:
     /// Retrieve the stored bits as the integral type \a Integral.
     template <class Integral>
     Integral BitsAs() const {
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_FORCING_TO_BOOL
         return static_cast<Integral>(_GetBits());
+        ARCH_PRAGMA_POP
     }
 
     /// Set the stored bits.  No static range checking is performed.
