@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/ar/defaultResolver.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/ar/defaultResolver.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -35,6 +36,8 @@
 #include "pxr/base/vt/value.h"
 
 #include <tbb/concurrent_hash_map.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static bool
 _IsFileRelative(const std::string& path) {
@@ -358,3 +361,4 @@ ArDefaultResolver::_UnbindContext(
 {
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

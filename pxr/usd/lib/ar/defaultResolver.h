@@ -24,6 +24,7 @@
 #ifndef AR_DEFAULT_RESOLVER_H
 #define AR_DEFAULT_RESOLVER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -31,6 +32,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class ArDefaultResolver
 ///
@@ -144,5 +147,7 @@ private:
 
     _PerThreadCachePtrStack _threadCacheStack;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_DEFAULT_RESOLVER_H

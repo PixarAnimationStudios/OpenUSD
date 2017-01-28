@@ -24,8 +24,11 @@
 #ifndef AR_DEFINE_RESOLVER_CONTEXT_H
 #define AR_DEFINE_RESOLVER_CONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/pyResolverContext.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \def AR_DECLARE_RESOLVER_CONTEXT(ContextObject)
 ///
@@ -49,5 +52,7 @@ struct ArIsContextObject<context>                      \
 template <class Context>
 void 
 ArWrapResolverContextForPython();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_DEFINE_RESOLVER_CONTEXT_H

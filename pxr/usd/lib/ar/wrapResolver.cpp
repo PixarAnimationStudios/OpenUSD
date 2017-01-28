@@ -26,12 +26,15 @@
 #include <boost/python/reference_existing_object.hpp>
 #include <boost/python/return_value_policy.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 
 #include <boost/noncopyable.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 wrapResolver()
@@ -52,3 +55,5 @@ wrapResolver()
     def("GetResolver", ArGetResolver,
         return_value_policy<reference_existing_object>());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

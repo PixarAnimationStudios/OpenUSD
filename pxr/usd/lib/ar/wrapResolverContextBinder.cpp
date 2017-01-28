@@ -24,11 +24,14 @@
 #include <boost/python/class.hpp>
 #include <boost/python/object.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 
 #include <memory>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
@@ -75,3 +78,5 @@ wrapResolverContextBinder()
         .def("__exit__", &This::Exit)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

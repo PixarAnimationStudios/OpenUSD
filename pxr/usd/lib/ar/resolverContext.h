@@ -24,6 +24,7 @@
 #ifndef AR_RESOLVER_CONTEXT_H
 #define AR_RESOLVER_CONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 
@@ -32,6 +33,8 @@
 #include <memory>
 #include <string>
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class ArIsContextObject
 ///
@@ -241,5 +244,7 @@ std::string ArGetDebugString(const Context& context)
     return Ar_GetDebugString(typeid(Context),
                              static_cast<void const*>(&context));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_RESOLVER_CONTEXT_H

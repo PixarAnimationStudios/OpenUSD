@@ -21,10 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/ar/resolverContext.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/stringUtils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ArResolverContext::_Untyped::~_Untyped() { }
 
@@ -34,3 +37,5 @@ Ar_GetDebugString(const std::type_info& info, void const* context)
     return TfStringPrintf("<'%s' @ %p>", 
                           ArchGetDemangled(info).c_str(), context);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

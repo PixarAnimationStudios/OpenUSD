@@ -29,6 +29,7 @@
 // the Python include issues throughout the codebase.
 #include <Python.h>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/debugCodes.h"
 #include "pxr/usd/ar/defaultResolver.h"
 #include "pxr/usd/ar/defineResolver.h"
@@ -45,6 +46,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -179,3 +182,5 @@ ArGetResolver()
     static _ResolverHolder holder;
     return *holder.resolver;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
