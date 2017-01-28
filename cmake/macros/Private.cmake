@@ -96,6 +96,10 @@ function(_pxrNamespace_subst)
     configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
         ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
     )  
+
+    install(FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
+            DESTINATION include/pxr
+    )
 endfunction()
 
 # Install compiled python files alongside the python object,
