@@ -231,4 +231,59 @@ private:
 
 };
 
+
+// utility to make it easier to exit earlier from InitUsdInArgs
+struct ArgsBuilder
+{
+    UsdStageRefPtr stage;
+    std::string rootLocation;
+    std::string isolatePath;
+    FnAttribute::GroupAttribute sessionAttr;
+    std::string ignoreLayerRegex;
+    double currentTime;
+    double shutterOpen;
+    double shutterClose;
+    std::vector<double> motionSampleTimes;
+    std::set<std::string> defaultMotionPaths;
+    PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
+    bool verbose;
+    const char * errorMessage;
+    
+    
+    ArgsBuilder()
+    : currentTime(0.0)
+    , shutterOpen(0.0)
+    , shutterClose(0.0)
+    , verbose(false)
+    , errorMessage(0)
+    {
+    }
+    
+    PxrUsdKatanaUsdInArgsRefPtr build()
+    {
+        return PxrUsdKatanaUsdInArgs::New(
+            stage,
+            rootLocation,
+            isolatePath,
+            sessionAttr.isValid() ? sessionAttr :
+                    FnAttribute::GroupAttribute(true),
+            ignoreLayerRegex,
+            currentTime,
+            shutterOpen,
+            shutterClose,
+            motionSampleTimes,
+            defaultMotionPaths,
+            extraAttributesOrNamespaces,
+            verbose,
+            errorMessage);
+    }
+    
+    PxrUsdKatanaUsdInArgsRefPtr buildWithError(std::string errorStr)
+    {
+        errorMessage = errorStr.c_str();
+        return build();
+    }
+    
+};
+
 #endif // PXRUSDKATANA_USDIN_ARGS_H

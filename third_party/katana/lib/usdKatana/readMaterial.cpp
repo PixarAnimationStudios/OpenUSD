@@ -85,20 +85,27 @@ PxrUsdKatanaReadMaterial(
     UsdStageRefPtr stage = material.GetPrim().GetStage();
     SdfPath primPath = material.GetPrim().GetPath();
 
-    // we do this before ReadPrim because ReadPrim calls ReadBlindData which we
-    // don't want to stomp here.
+    // we do this before ReadPrim because ReadPrim calls ReadBlindData 
+    // (primvars only) which we don't want to stomp here.
     attrs.set("material", _GetMaterialAttr(
         material, data.GetUsdInArgs()->GetCurrentTime(), flatten));
 
-    PxrUsdKatanaReadPrim(material.GetPrim(), data, attrs);
-
     const std::string& parentPrefix = (looksGroupLocation.empty()) ?
         data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
-
-    attrs.set("katanaLookPath", FnKat::StringAttribute(
-        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-            primPath, data).substr(parentPrefix.size()+1)));
     
+    std::string katanaPath = 
+        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+            primPath, data).substr(parentPrefix.size()+1);
+
+    // these paths are relative in katana
+    if (!katanaPath.empty() > 0 && katanaPath[0] == '/') {
+        katanaPath = katanaPath.substr(1);
+    }
+
+    attrs.set("material.katanaPath", FnKat::StringAttribute(katanaPath));
+
+    PxrUsdKatanaReadPrim(material.GetPrim(), data, attrs);
+
     attrs.set("type", FnKat::StringAttribute("material"));
 
     // clears out prmanStatements.
