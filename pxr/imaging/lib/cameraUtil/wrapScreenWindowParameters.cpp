@@ -29,6 +29,9 @@
 
 #include <boost/python.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 void
@@ -50,3 +53,6 @@ wrapScreenWindowParameters()
         .add_property("zFacingViewMatrix", getZFacingViewMatrixFunc);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

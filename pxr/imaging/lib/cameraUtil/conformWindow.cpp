@@ -33,6 +33,9 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // Overview of ConformWindowPolicy:
 //
 //                 Original window:
@@ -273,3 +276,6 @@ CameraUtilConformWindow(
         frustum->GetWindow(), policy, targetAspect);
     frustum->SetWindow(screenWindowFitted);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

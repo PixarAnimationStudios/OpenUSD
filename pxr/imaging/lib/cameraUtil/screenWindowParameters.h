@@ -24,7 +24,11 @@
 #ifndef PXR_SCREEN_WINDOW_PARAMETERS_H
 #define PXR_SCREEN_WINDOW_PARAMETERS_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/camera.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class CameraUtilScreenWindowParameters
 ///
@@ -66,5 +70,8 @@ private:
     double _fieldOfView;
     GfMatrix4d _zFacingViewMatrix;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_SCREEN_WINDOW_PARAMETERS_H

@@ -24,6 +24,10 @@
 #ifndef PXR_CONFORM_WINDOW_H
 #define PXR_CONFORM_WINDOW_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class GfVec2d;
 class GfVec4d;
 class GfMatrix4d;
@@ -90,5 +94,8 @@ void
 CameraUtilConformWindow(
     GfFrustum *frustum,
     CameraUtilConformWindowPolicy policy, double targetAspect);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
