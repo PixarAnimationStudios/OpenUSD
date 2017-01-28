@@ -51,7 +51,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/algorithm/cxx11/is_sorted.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>
 #include <functional>
@@ -650,19 +649,21 @@ struct Task {
         None
     };
 
+    // This sorts tasks in priority order from lowest priority to highest
+    // priority, so highest priority tasks come last.
     struct PriorityOrder {
         bool operator()(const Task& a, const Task& b) const {
             if (a.type != b.type) {
-                return a.type < b.type;
+                return a.type > b.type;
             }
             // Node strength order is costly to compute, so avoid it for
-            // arcs with order-indepenent results.
+            // arcs with order-independent results.
             switch (a.type) {
             case EvalNodePayload:
                 if (_hasPayloadDecorator) {
                     // Payload decorators can depend on non-local information,
                     // so we must process these in strength order.
-                    return PcpCompareNodeStrength(a.node, b.node) == -1;
+                    return PcpCompareNodeStrength(a.node, b.node) == 1;
                 } else {
                     // Arbitrary order
                     return a.node < b.node;
@@ -671,10 +672,10 @@ struct Task {
                 // Variant selections can depend on non-local information
                 // so we must visit them in strength order.
                 if (a.node != b.node) {
-                    return PcpCompareNodeStrength(a.node, b.node) == -1;
+                    return PcpCompareNodeStrength(a.node, b.node) == 1;
                 } else {
                     // Lower-number vsets have strength priority.
-                    return a.vsetNum < b.vsetNum;
+                    return a.vsetNum > b.vsetNum;
                 }
             default:
                 // Arbitrary order
@@ -697,6 +698,20 @@ struct Task {
         , vsetNum(vsetNum)
     { }
 
+    inline bool operator==(Task const &rhs) const {
+        return type == rhs.type && node == rhs.node &&
+            vsetName == rhs.vsetName && vsetNum == rhs.vsetNum;
+    }
+
+    inline bool operator!=(Task const &rhs) const { return !(*this == rhs); }
+
+    friend void swap(Task &lhs, Task &rhs) {
+        std::swap(lhs.type, rhs.type);
+        std::swap(lhs.node, rhs.node);
+        lhs.vsetName.swap(rhs.vsetName);
+        std::swap(lhs.vsetNum, rhs.vsetNum);
+    } 
+    
     Type type;
     PcpNodeRef node;
     // only for variant tasks:
@@ -759,7 +774,7 @@ struct Pcp_PrimIndexer
     PcpPrimIndex_StackFrame* const previousFrame;
 
     // Open tasks, in priority order
-    typedef std::set<Task, Task::PriorityOrder> _TaskQueue;
+    using _TaskQueue = std::vector<Task>;
     _TaskQueue tasks;
 
     const bool evaluateImpliedSpecializes;
@@ -782,24 +797,27 @@ struct Pcp_PrimIndexer
         , inputs(inputs_)
         , outputs(outputs_)
         , previousFrame(previousFrame_)
-        , tasks(Task::PriorityOrder(inputs.payloadDecorator))
         , evaluateImpliedSpecializes(evaluateImpliedSpecializes_)
         , evaluateVariants(evaluateVariants_)
     {
     }
 
-    void AddTask(const Task &task) {
-        tasks.insert(task);
+    void AddTask(Task &&task) {
+        Task::PriorityOrder comp(inputs.payloadDecorator);
+        auto iter = std::lower_bound(tasks.begin(), tasks.end(), task, comp);
+        if (iter == tasks.end() || *iter != task) {
+            tasks.insert(iter, std::move(task));
+        }
     }
 
     // Select the next task to perform.
     Task PopTask() {
+        Task task(Task::Type::None);
         if (!tasks.empty()) {
-            Task result = *tasks.begin();
-            tasks.erase(tasks.begin());
-            return result;
+            task = std::move(tasks.back());
+            tasks.pop_back();
         }
-        return Task(Task::Type::None);
+        return task;
     }
 
     // Add this node and its children to the task queues.  
@@ -896,22 +914,52 @@ struct Pcp_PrimIndexer
     // that were previously visited and yielded no variant; it exists
     // solely for this function to be able to find and retry them.
     void RetryVariantTasks() {
-        // Optimization: We know variant tasks are the lowest priority,
-        // and therefore sorted to the end of this container, so we can
-        // reverse-iterate and stop as soon as we pass them.
-        for (_TaskQueue::reverse_iterator i = tasks.rbegin();
-             i != tasks.rend(); /* advance-with-edit below */) {
-            if (i->type == Task::Type::EvalNodeVariantFallback ||
-                i->type == Task::Type::EvalNodeVariantNoneFound) {
-                // Promote this task back to an authored-variant task.
-                Task task(*i);
-                tasks.erase(--(i.base()));
-                task.type = Task::Type::EvalNodeVariantAuthored;
-                AddTask(task);
-            } else {
-                break;
-            }
+        // Optimization: We know variant tasks are the lowest priority, and
+        // therefore sorted to the front of this container.  We promote the
+        // leading non-authored variant tasks to authored tasks, then merge them
+        // with any existing authored tasks.
+        auto nonAuthVariantsEnd = std::find_if_not(
+            tasks.begin(), tasks.end(),
+            [](Task const &t) {
+                return t.type == Task::Type::EvalNodeVariantFallback ||
+                       t.type == Task::Type::EvalNodeVariantNoneFound;
+            });
+
+        if (nonAuthVariantsEnd == tasks.begin()) {
+            // No variant tasks present.
+            return;
         }
+
+        auto authVariantsEnd = std::find_if_not(
+            nonAuthVariantsEnd, tasks.end(),
+            [](Task const &t) {
+                return t.type == Task::Type::EvalNodeVariantAuthored;
+            });
+
+        // Now we've split tasks into three ranges:
+        // non-authored variant tasks : [begin, nonAuthVariantsEnd)
+        // authored variant tasks     : [nonAuthVariantsEnd, authVariantsEnd)
+        // other tasks                : [authVariantsEnd, end)
+        //
+        // We want to change the non-authored variant tasks' types to be
+        // authored instead, and then sort them in with the othered authored
+        // tasks.
+
+        // Change types.
+        std::for_each(tasks.begin(), nonAuthVariantsEnd,
+                      [](Task &t) {
+                          t.type = Task::Type::EvalNodeVariantAuthored;
+                      });
+
+        // Sort and merge.
+        Task::PriorityOrder comp(inputs.payloadDecorator);
+        std::sort(tasks.begin(), nonAuthVariantsEnd, comp);
+        std::inplace_merge(
+            tasks.begin(), nonAuthVariantsEnd, authVariantsEnd, comp);
+
+        // XXX Is it possible to have dupes here?  blevin?
+        tasks.erase(
+            std::unique(tasks.begin(), authVariantsEnd), authVariantsEnd);
     }
 
     // Convenience function to record an error both in this primIndex's
