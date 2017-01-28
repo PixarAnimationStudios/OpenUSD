@@ -51,14 +51,17 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/tf/pyLock.h"
 
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_vector.h>
-
 #include <iostream>
 #include <mutex>
 #include <unordered_set>
 
+#include <tbb/concurrent_unordered_map.h>
+#include <tbb/concurrent_vector.h>
+
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+typedef tbb::concurrent_unordered_map<TfToken, 
+                        tbb::concurrent_vector<HdDrawItem const*>, 
+                        TfToken::HashFunctor > _ConcurrentDrawItemView; 
 
 HdRenderIndex::HdRenderIndex()
     : _delegateRprimMap()
@@ -745,20 +748,20 @@ _AppendDrawItem(HdSceneDelegate* delegate,
                 TfToken const& collectionName,
                 TfToken const& reprName,
                 bool forcedRepr,
-                tbb::concurrent_vector<HdDrawItem const*>* result)
+                _ConcurrentDrawItemView* result)
 {
     if (rprim->IsInCollection(delegate, collectionName)) {
         std::vector<HdDrawItem> *drawItems =
                 rprim->GetDrawItems(delegate, reprName, forcedRepr);
 
         TF_FOR_ALL(drawItemIt, *drawItems) {
-            result->push_back(&(*drawItemIt));
+            TfToken t =  rprim->GetRenderTag(delegate);
+            (*result)[t].push_back(&(*drawItemIt));
         }
     }
 }
 
-// XXX: Remove
-HdRenderIndex::HdDrawItemView
+HdRenderIndex::HdDrawItemView 
 HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 {
     HD_TRACE_FUNCTION();
@@ -774,10 +777,10 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     TfToken const& reprName = collection.GetReprName();
     bool forcedRepr = collection.IsForcedRepr();
 
-    // We could hold this vector persistently to avoid
-    // reallocating and copying on every request.
-    tbb::concurrent_vector<HdDrawItem const*> result;
-    result.reserve(_rprimMap.size());
+    _ConcurrentDrawItemView result;
+
+    // Structure that will hold the values to be returned
+    HdDrawItemView finalResult;
 
     // Here we are going to leverage a common pattern: often a delegate will be
     // created and its root will be used to filter the items being drawn, as a
@@ -842,9 +845,13 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 
     // If we had all delegate roots in the rootPaths vector, we're done.
     if (remainingRootPaths.empty()) {
-        HdRenderIndex::HdDrawItemView finalResult;
-        finalResult.reserve(result.size());
-        finalResult.insert(finalResult.begin(), result.begin(), result.end());
+        for (_ConcurrentDrawItemView::iterator it = result.begin(); 
+                                              it != result.end(); ++it) {
+            finalResult[it->first].reserve(it->second.size());
+            finalResult[it->first].insert(
+                finalResult[it->first].begin(), 
+                it->second.begin(), it->second.end());
+        }
         return finalResult;
     }
 
@@ -896,9 +903,15 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         pathIt++;
     }
 
-    HdRenderIndex::HdDrawItemView finalResult;
-    finalResult.reserve(result.size());
-    finalResult.insert(finalResult.begin(), result.begin(), result.end());
+    // Copy results to the output data structure
+    for (_ConcurrentDrawItemView::iterator it = result.begin(); 
+                                           it != result.end(); ++it) {
+        finalResult[it->first].reserve(it->second.size());
+        finalResult[it->first].insert(
+            finalResult[it->first].begin(), 
+            it->second.begin(), it->second.end());
+    }
+
     return finalResult;
 }
 

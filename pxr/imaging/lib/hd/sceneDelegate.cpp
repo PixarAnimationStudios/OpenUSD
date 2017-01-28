@@ -78,6 +78,13 @@ HdSceneDelegate::IsInCollection(SdfPath const& id,
     return true;
 }
 
+/*virtual*/
+TfToken
+HdSceneDelegate::GetRenderTag(SdfPath const& id)
+{
+    return HdTokens->geometry;
+}
+
 // -----------------------------------------------------------------------//
 /// \name Rprim Aspects
 // -----------------------------------------------------------------------//

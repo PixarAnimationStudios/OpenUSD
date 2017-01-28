@@ -128,6 +128,12 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
 }
 
 
+TfToken
+HdRprim::GetRenderTag(HdSceneDelegate* delegate) const
+{
+    return delegate->GetRenderTag(_id);
+}
+
 void 
 HdRprim::_SetSurfaceShaderId(HdChangeTracker &changeTracker,
                              SdfPath const& surfaceShaderId)

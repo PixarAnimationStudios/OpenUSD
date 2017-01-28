@@ -63,6 +63,9 @@ public:
               TfToken const &reprName, bool forced,
               HdChangeTracker::DirtyBits *dirtyBits);
 
+    /// Returns the render tag associated to this rprim
+    TfToken GetRenderTag(HdSceneDelegate* delegate) const;
+
     /// Returns the identifier of this Rprim. This is both used in the
     /// RenderIndex and the SceneDelegate and acts as the associative key for
     /// the Rprim in both contexts.

@@ -67,9 +67,8 @@ typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
 class HdRenderIndex : public boost::noncopyable {
 public:
 
-    // XXX: These should return iterator ranges, not vectors;
-    //      they also shouldn't be pointers.
-    typedef std::vector<HdDrawItem const*> HdDrawItemView;
+    typedef std::unordered_map<TfToken, std::vector<HdDrawItem const*>,
+                               boost::hash<TfToken> > HdDrawItemView;
 
     HdRenderIndex();
     ~HdRenderIndex();

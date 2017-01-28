@@ -30,9 +30,9 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
-#include "pxr/imaging/glf/simpleLight.h"
-
 #include <boost/shared_ptr.hpp>
+
+#include <unordered_map>
 
 class HdCommandBuffer;
 class HdRenderIndex;
@@ -66,8 +66,17 @@ public:
         return _dirtyList;
     }
 
+    /// Returns the most recent list of render tags that this render pass
+    /// has found in the render items included in the collection.
+    TfTokenVector const &GetRenderTags();
+
     /// Execute render pass task
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
+
+    /// Execute a specific render bucket specified by the 
+    /// render tag.
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                 TfToken const &renderTag);
 
     /// Sync the render pass resources
     void Sync();
@@ -103,7 +112,11 @@ private:
     // Core RenderPass State
     // ---------------------------------------------------------------------- //
     HdRprimCollection _collection;
-    HdCommandBuffer _cmdBuffer;
+    typedef std::unordered_map<TfToken, 
+                               HdCommandBuffer,
+                               boost::hash<TfToken> > _HdCommandBufferMap;
+    _HdCommandBufferMap _cmdBuffers;
+    TfTokenVector _renderTags;
 
     bool _lastCullingDisabledState;
 

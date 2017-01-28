@@ -158,6 +158,10 @@ public:
     /// Returns the authored repr (if any) for the given prim.
     virtual TfToken GetReprName(SdfPath const &id);
 
+    /// Returns the render tag that will be used to bucked prims during
+    /// render pass bucketing.
+    virtual TfToken GetRenderTag(SdfPath const& id);
+
     // -----------------------------------------------------------------------//
     /// \name Instancer prototypes
     // -----------------------------------------------------------------------//
