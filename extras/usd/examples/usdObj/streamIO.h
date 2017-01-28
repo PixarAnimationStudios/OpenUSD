@@ -24,10 +24,13 @@
 #ifndef USDOBJ_STREAMIO_H
 #define USDOBJ_STREAMIO_H
 
-class UsdObjStream;
-
+#include "pxr/pxr.h"
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdObjStream;
 
 /// Read obj data from \a fileName into \a data.  Return true if successful,
 /// false otherwise.  If unsuccessful, return an error message in \a error if it
@@ -45,5 +48,8 @@ UsdObjReadDataFromStream(std::istream &input,
                          UsdObjStream *stream,
                          std::string *error = 0);
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDOBJ_STREAMIO_H

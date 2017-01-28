@@ -23,13 +23,20 @@
 //
 #ifndef USDOBJ_TRANSLATOR_H
 #define USDOBJ_TRANSLATOR_H
+#include "pxr/pxr.h"
 #include "Python.h"
 #include "pxr/base/tf/declarePtrs.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayer);
 
 /// Return an anonymous (in-memory-only) layer with data from \p objStream
 /// translated to Usd.
 SdfLayerRefPtr
 UsdObjTranslateObjToUsd(const class UsdObjStream &objStream);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDOBJ_TRANSLATOR_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "translator.h"
 #include "stream.h"
 
@@ -31,6 +32,9 @@
 #include "pxr/base/vt/array.h"
 
 #include "pxr/base/gf/range3f.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SdfLayerRefPtr
 UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
@@ -113,4 +117,7 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
 }
 
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

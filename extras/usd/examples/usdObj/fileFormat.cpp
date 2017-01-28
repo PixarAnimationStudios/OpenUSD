@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "fileFormat.h"
 
 #include "pxr/usd/usd/usdaFileFormat.h"
@@ -35,6 +36,9 @@
 
 #include <fstream>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 
@@ -155,3 +159,6 @@ UsdObjFileFormat::WriteToStream(
     return SdfFileFormat::FindById(
         UsdUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

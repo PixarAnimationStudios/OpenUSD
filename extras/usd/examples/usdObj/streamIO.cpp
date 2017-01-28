@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "streamIO.h"
 #include "stream.h"
 
@@ -35,6 +36,7 @@
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 UsdObjReadDataFromFile(std::string const &fileName,
@@ -139,3 +141,6 @@ UsdObjReadDataFromStream(std::istream &input,
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,11 +24,15 @@
 #ifndef USDOBJ_FILE_FORMAT_H
 #define USDOBJ_FILE_FORMAT_H
 
+#include "pxr/pxr.h"
 #include "Python.h" 
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define USDOBJ_FILE_FORMAT_TOKENS       \
     ((Id,      "obj"))                  \
@@ -86,5 +90,8 @@ private:
         return false;
     }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDOBJ_FILE_FORMAT_H
