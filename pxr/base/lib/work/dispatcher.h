@@ -27,6 +27,8 @@
 /// \file work/dispatcher.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/work/threadLimits.h"
+
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
 
@@ -96,7 +98,11 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
-        _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
+        if (WorkGetConcurrencyLimit() == 1) {
+            _rootTask->enqueue(_MakeInvokerTask(std::forward<Callable>(c)));
+        } else {
+            _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
+        }
     }
 
     template <class Callable, class A0, class ... Args>
