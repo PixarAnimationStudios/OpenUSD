@@ -179,12 +179,6 @@ Hd_SmoothNormalsComputationGPU::Execute(
     if (!glDispatchCompute)
         return;
 
-    // XXX: workaround until the shading stuff is implemeted.
-    // The drawing program is owned and set by testHdBasicDrawing now,
-    // so it has to be restored if it's changed in hd.
-    GLint restoreProgram = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &restoreProgram);
-
     int numPoints = range->GetNumElements();
 
     TF_VERIFY(_adjacency);
@@ -265,9 +259,6 @@ Hd_SmoothNormalsComputationGPU::Execute(
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, 0);
-
-    // XXX: workaround until shading stuff implemeted.
-    glUseProgram(restoreProgram);
 }
 
 void
