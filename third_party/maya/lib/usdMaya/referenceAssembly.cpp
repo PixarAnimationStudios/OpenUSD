@@ -72,6 +72,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens, PXRUSDMAYA_VARIANT_SET_TOKENS);
 
 
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_REF_ASSEMBLIES, true,
@@ -454,15 +455,13 @@ UsdMayaReferenceAssembly::getRepNamespace() const
     return emptyNS;
 }
 
-static const std::string USD_VARIANT_SET_PREFIX("usdVariantSet_");
-
 // virtual
 MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, MPlugArray& affectedPlugs)
 {
     // Hardcoded dynamic attr naming: usdVariantSet_*
     // If an attr starts with "usdVariantSet_", then dirty the stage
     MString dirtiedPlugName = dirtiedPlug.partialName();
-    const MString variantSetPrefix(USD_VARIANT_SET_PREFIX.c_str());
+    const MString variantSetPrefix(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
     if ((dirtiedPlugName.length() > variantSetPrefix.length()) && 
         (dirtiedPlugName.substring(0, variantSetPrefix.length()-1) == variantSetPrefix))
     {
@@ -537,11 +536,11 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
         }
 
         std::string attrName(attrPlug.partialName().asChar());
-        if (!TfStringStartsWith(attrName, USD_VARIANT_SET_PREFIX)) {
+        if (!TfStringStartsWith(attrName, PxrUsdMayaVariantSetTokens->PlugNamePrefix)) {
             continue;
         }
 
-        std::string variantSet = attrName.substr(USD_VARIANT_SET_PREFIX.size());
+        std::string variantSet = attrName.substr(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
         varSetNames.insert(variantSet);
     }
     return varSetNames;
@@ -606,7 +605,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                 TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
                 const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
                 TF_FOR_ALL(variantSet, varSetNamesForCache) {
-                    MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
+                    MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
                     variantSetPlugName += variantSet->c_str();
                     MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
                     if (!varSetPlg.isNull()) {
@@ -748,7 +747,7 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
         std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
         MFnDependencyNode depNodeFn(thisMObject());
         TF_FOR_ALL(variantSet, variantSetNames) {
-            MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
+            MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
             variantSetPlugName += variantSet->c_str();
             MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
             if (!varSetPlg.isNull()) {
@@ -806,7 +805,7 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
 
     bool setAttrSuccess = MPxAssembly::setInternalValueInContext(plug, dataHandle, ctx);
 
-    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), USD_VARIANT_SET_PREFIX);
+    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), PxrUsdMayaVariantSetTokens->PlugNamePrefix);
 
     if ( varSelChanged || 
          (std::find(_psData.attrsAffectingRepresentation.begin(), 
@@ -889,7 +888,7 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
 
     std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
     for (std::string variantSetName : variantSetNames) {
-        MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
+        MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
         variantSetPlugName += variantSetName.c_str();
         MPlug variantSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
         if (!variantSetPlg.isNull()) {
