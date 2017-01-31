@@ -4235,15 +4235,14 @@ struct StrongestValueComposer
             _done = false;
             if (isDict) {
                 // Merge dictionaries: _value is weaker, tmpDict stronger.
-                VtDictionaryOverRecursive(&tmpDict, 
-                                          _UncheckedGet<VtDictionary>(_value));
+                VtDictionaryOverRecursive(
+                    &tmpDict, _UncheckedGet<VtDictionary>(_value));
                 _Set(_value, tmpDict);
-                return true;
             }
+            return true;
         } else if (_done && _IsHolding<SdfTimeSampleMap>(_value)) {
             _ApplyLayerOffset(_value, node, layer);
         }
-
         return _done;
     }
     void ConsumeUsdFallback(const TfToken &primTypeName,
