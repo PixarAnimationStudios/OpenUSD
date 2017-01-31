@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 
+#include "pxr/pxr.h"
+
+#include "pxr/imaging/glf/glew.h"
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -55,6 +57,8 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
 
