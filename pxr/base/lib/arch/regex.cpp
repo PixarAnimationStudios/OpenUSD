@@ -207,7 +207,7 @@ ArchRegex::operator bool() const
 std::string
 ArchRegex::GetError() const
 {
-    return _impl ? (_error.empty() ? "uncompiled pattern" : _error) : "";
+    return _impl ? "" : (_error.empty() ? "uncompiled pattern" : _error);
 }
 
 unsigned int
