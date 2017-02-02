@@ -30,7 +30,7 @@
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static int
 Garch_GetModifierKeys(NSUInteger flags)
@@ -187,6 +187,8 @@ Garch_GetModifierKeys(NSUInteger flags)
 @end
 
 // ---------------------------------------------------------------------------
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 Garch_GLPlatformDebugWindow::Garch_GLPlatformDebugWindow(GarchGLDebugWindow *w)
     : _callback(w)
