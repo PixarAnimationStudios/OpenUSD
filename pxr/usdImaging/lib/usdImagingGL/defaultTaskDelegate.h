@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#pragma once
+#ifndef USDIMAGINGGL_DEFAULT_TASK_DELEGATE_H
+#define USDIMAGINGGL_DEFAULT_TASK_DELEGATE_H
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
@@ -141,3 +142,5 @@ private:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDIMAGINGGL_DEFAULT_TASK_DELEGATE_H

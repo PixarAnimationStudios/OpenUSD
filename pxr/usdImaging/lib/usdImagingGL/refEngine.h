@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_REFENGINE_H
-#define USDIMAGING_REFENGINE_H
+#ifndef USDIMAGINGGL_REFENGINE_H
+#define USDIMAGINGGL_REFENGINE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
@@ -229,4 +229,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_REFENGINE_H
+#endif // USDIMAGINGGL_REFENGINE_H

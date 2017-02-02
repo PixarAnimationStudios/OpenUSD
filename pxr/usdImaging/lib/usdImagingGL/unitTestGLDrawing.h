@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_UNIT_TEST_DRAWING_GL
-#define USDIMAGING_UNIT_TEST_DRAWING_GL
+#ifndef USDIMAGINGGL_UNIT_TEST_GL_DRAWING_H
+#define USDIMAGINGGL_UNIT_TEST_GL_DRAWING_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4d.h"
@@ -111,4 +111,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_UNIT_TEST_DRAWING_GL
+#endif // USDIMAGINGGL_UNIT_TEST_GL_DRAWING_H

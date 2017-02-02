@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USD_IMAGING_VERSION_H
-#define USD_IMAGING_VERSION_H
+#ifndef USDIMAGING_VERSION_H
+#define USDIMAGING_VERSION_H
 
 #include "pxr/pxr.h"
 
@@ -45,4 +45,4 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USD_IMAGING_VERSION_H
+#endif // USDIMAGING_VERSION_H
