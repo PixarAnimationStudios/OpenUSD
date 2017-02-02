@@ -39,6 +39,7 @@
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/gf/quath.h"
 
 #include <limits>
 #include <atomic>
@@ -555,9 +556,23 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                         false);
             }
 
-            VtVec4fArray rotations;
-            if (instancer.GetOrientationsAttr().Get(&rotations, time)) {
-                if (!rotations.empty()) {
+            VtQuathArray orientations;
+            if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
+                if (!orientations.empty()) {
+                    // convert to Vec4Array that hydra instancer requires.
+                    // Also note that hydra's instancer takes GfQuaterion layout
+                    // (real, imaginary) which differs from GfQuath's
+                    // (imaginary, real)
+                    VtVec4fArray rotations;
+                    rotations.reserve(orientations.size());
+                    for (const GfQuath& orientation : orientations) {
+                        rotations.push_back(
+                            GfVec4f(orientation.GetReal(),
+                                    orientation.GetImaginary()[0],
+                                    orientation.GetImaginary()[1],
+                                    orientation.GetImaginary()[2]));
+                    }
+
                     valueCache->GetPrimvar(cachePath, _tokens->rotate) =
                         rotations;
                     UsdImagingValueCache::PrimvarInfo primvar;
@@ -857,14 +872,29 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
             }
 
-            VtVec4fArray rotations;
-            if (instancer.GetOrientationsAttr().Get(&rotations, time)) {
+            VtQuathArray orientations;
+            if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
+                // convert to Vec4Array that hydra instancer requires.
+                // Also note that hydra's instancer takes GfQuaterion layout
+                // (real, imaginary) which differs from GfQuath's
+                // (imaginary, real)
+                VtVec4fArray rotations;
+                rotations.reserve(orientations.size());
+                for (const GfQuath& orientation : orientations) {
+                    rotations.push_back(
+                        GfVec4f(orientation.GetReal(),
+                                orientation.GetImaginary()[0],
+                                orientation.GetImaginary()[1],
+                                orientation.GetImaginary()[2]));
+                }
+
                 valueCache->GetPrimvar(cachePath, _tokens->rotate) = rotations;
                 UsdImagingValueCache::PrimvarInfo primvar;
                 primvar.name = _tokens->rotate;
                 primvar.interpolation = _tokens->instance;
                 _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
             }
+
 
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {
