@@ -2,12 +2,12 @@ set(PXR_PACKAGE usdMaya)
 
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
-        ar 
-        gf 
-        js 
-        kind 
-        plug 
-        sdf 
+        ar
+        gf
+        js
+        kind
+        plug
+        sdf
         tf
         usd
         usdGeom
@@ -71,7 +71,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
         Chaser
         ChaserRegistry
-        
+       
         AttributeConverter
         AttributeConverterRegistry
 
@@ -109,21 +109,234 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapAssembly.cpp 
-        wrapEditUtil.cpp 
-        wrapQuery.cpp 
-        wrapStageCache.cpp 
-        wrapUserTaggedAttribute.cpp 
+        wrapAssembly.cpp
+        wrapEditUtil.cpp
+        wrapQuery.cpp
+        wrapStageCache.cpp
+        wrapUserTaggedAttribute.cpp
 
     PYTHON_FILES
-        __init__.py 
-        AEpxrUsdReferenceAssemblyTemplate.py 
-        userExportedAttributesUI.py 
+        __init__.py
+        AEpxrUsdReferenceAssemblyTemplate.py
+        userExportedAttributesUI.py
+        testenv/testUsdExportAssembly.py
+        testenv/testUsdExportCamera.py
+        testenv/testUsdExportColorSets.py
+        testenv/testUsdExportDisplayColor.py
+        testenv/testUsdExportFrameOffset.py
+        testenv/testUsdExportUVSets.py
+        testenv/testUsdImportCamera.py
+        testenv/testUsdImportColorSets.py
+        testenv/testUsdImportFrameRange.py
+        testenv/testUsdImportSessionLayer.py
+        testenv/testUsdImportUVSets.py
+        testenv/testUsdMayaGetVariantSetSelections.py
+        testenv/testUsdMayaModelKindWriter.py
+        testenv/testUsdMayaUserExportedAttributes.py
+        testenv/testUsdMetadataAttributeConverters.py
 
     RESOURCE_FILES
-        AEpxrUsdProxyShapeTemplate.mel 
-        usdMaya.mel 
-        usdTranslatorExport.mel 
-        usdTranslatorImport.mel 
+        AEpxrUsdProxyShapeTemplate.mel
+        usdMaya.mel
+        usdTranslatorExport.mel
+        usdTranslatorImport.mel
+)
+
+pxr_test_scripts(
+        testenv/testUsdExportAssembly.py
+        testenv/testUsdExportCamera.py
+        testenv/testUsdExportColorSets.py
+        testenv/testUsdExportDisplayColor.py
+        testenv/testUsdExportFrameOffset.py
+        testenv/testUsdExportUVSets.py
+        testenv/testUsdImportCamera.py
+        testenv/testUsdImportColorSets.py
+        testenv/testUsdImportFrameRange.py
+        testenv/testUsdImportSessionLayer.py
+        testenv/testUsdImportUVSets.py
+        testenv/testUsdMayaGetVariantSetSelections.py
+        testenv/testUsdMayaModelKindWriter.py
+        testenv/testUsdMayaUserExportedAttributes.py
+        testenv/testUsdMetadataAttributeConverters.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportAssemblyTest
+    DEST testUsdExportAssembly
+)
+pxr_register_test(testUsdExportAssembly
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportAssembly"
+    TESTENV testUsdExportAssembly
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportCameraTest
+    DEST testUsdExportCamera
+)
+pxr_register_test(testUsdExportCamera
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportCamera"
+    TESTENV testUsdExportCamera
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportColorSetsTest
+    DEST testUsdExportColorSets
+)
+pxr_register_test(testUsdExportColorSets
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportColorSets"
+    TESTENV testUsdExportColorSets
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportDisplayColorTest
+    DEST testUsdExportDisplayColor
+)
+pxr_register_test(testUsdExportDisplayColor
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportDisplayColor"
+    TESTENV testUsdExportDisplayColor
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportFrameOffsetTest
+    DEST testUsdExportFrameOffset
+)
+pxr_register_test(testUsdExportFrameOffset
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportFrameOffset"
+    TESTENV testUsdExportFrameOffset
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportUVSetsTest
+    DEST testUsdExportUVSets
+)
+pxr_register_test(testUsdExportUVSets
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportUVSets"
+    TESTENV testUsdExportUVSets
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportCameraTest
+    DEST testUsdImportCamera
+)
+pxr_register_test(testUsdImportCamera
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportCamera"
+    TESTENV testUsdImportCamera
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportColorSetsTest
+    DEST testUsdImportColorSets
+)
+pxr_register_test(testUsdImportColorSets
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportColorSets"
+    TESTENV testUsdImportColorSets
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportFrameRangeTest
+    DEST testUsdImportFrameRange
+)
+pxr_register_test(testUsdImportFrameRange
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportFrameRange"
+    TESTENV testUsdImportFrameRange
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportSessionLayerTest
+    DEST testUsdImportSessionLayer
+)
+pxr_register_test(testUsdImportSessionLayer
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportSessionLayer"
+    TESTENV testUsdImportSessionLayer
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportUVSetsTest
+    DEST testUsdImportUVSets
+)
+pxr_register_test(testUsdImportUVSets
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportUVSets"
+    TESTENV testUsdImportUVSets
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMayaGetVariantSetSelectionsTest
+    DEST testUsdMayaGetVariantSetSelections
+)
+pxr_register_test(testUsdMayaGetVariantSetSelections
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaGetVariantSetSelections"
+    TESTENV testUsdMayaGetVariantSetSelections
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMayaModelKindWriterTest
+    DEST testUsdMayaModelKindWriter
+)
+pxr_register_test(testUsdMayaModelKindWriter
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaModelKindWriter"
+    TESTENV testUsdMayaModelKindWriter
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMayaUserExportedAttributesTest
+    DEST testUsdMayaUserExportedAttributes
+)
+pxr_register_test(testUsdMayaUserExportedAttributes
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaUserExportedAttributes"
+    TESTENV testUsdMayaUserExportedAttributes
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMetadataAttributeConvertersTest
+    DEST testUsdMetadataAttributeConverters
+)
+pxr_register_test(testUsdMetadataAttributeConverters
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadataAttributeConverters"
+    TESTENV testUsdMetadataAttributeConverters
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
 )
 
