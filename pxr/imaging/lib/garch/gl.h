@@ -29,24 +29,31 @@
 #if defined(ARCH_OS_DARWIN)
 // Apple installs OpenGL headers in a non-standard location.
 #include <OpenGL/gl.h>
-#else
+#else  // !ARCH_OS_DARWIN
 #include <GL/gl.h>
+#endif // ARCH_OS_DARWIN
+
+#ifdef ARCH_OS_DARWIN
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#endif
-
-#ifdef ARCH_OS_DARWIN
 typedef GLvoid (*ArchGLCallbackType)(...);
+
 #define GL_RGBA16F 0x881A
 #define GL_RGB16F 0x881B
 #define GL_RGBA32F 0x8814
 #define GL_RGB32F 0x8815
-#else
-typedef GLvoid (*ArchGLCallbackType)();
-#endif
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#else // !ARCH_OS_DARWIN
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+typedef GLvoid (*ArchGLCallbackType)();
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // ARCH_OS_DARWIN
 
 #endif // GARCH_GL_H

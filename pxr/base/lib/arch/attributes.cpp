@@ -25,8 +25,6 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/error.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 #if defined(ARCH_OS_DARWIN)
 
 #include <mach-o/dyld.h>
@@ -37,6 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #include <cstdint>
 #include <cstring>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -228,6 +228,8 @@ static void InstallDyldCallbacks()
 
 } // anonymous namespace
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #elif defined(ARCH_OS_WINDOWS)
 
 #include <Windows.h>
@@ -236,6 +238,8 @@ static void InstallDyldCallbacks()
 #include <cstring>
 #include <set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -379,6 +383,6 @@ Arch_ConstructorInit::~Arch_ConstructorInit()
     RunDestructors(GetCurrentModule(this));
 }
 
-#endif // ARCH_OS_WINDOWS
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // ARCH_OS_WINDOWS

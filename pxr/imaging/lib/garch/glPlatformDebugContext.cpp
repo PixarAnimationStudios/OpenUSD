@@ -153,7 +153,7 @@ void *GarchSelectCoreProfileMacVisual()
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // ARCH_OS_LINUX
 
 ////////////////////////////////////////////////////////////
 
@@ -176,7 +176,7 @@ void *GarchSelectCoreProfileMacVisual();  // extern obj-c
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // ARCH_OS_DARWIN
 
 
 ////////////////////////////////////////////////////////////
@@ -203,11 +203,11 @@ void *GarchSelectCoreProfileMacVisual()
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
-
-PXR_NAMESPACE_OPEN_SCOPE
+#endif // ARCH_OS_WINDOWS
 
 ////////////////////////////////////////////////////////////
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 GarchGLPlatformDebugContext::GarchGLPlatformDebugContext(int majorVersion,
                                                        int minorVersion,

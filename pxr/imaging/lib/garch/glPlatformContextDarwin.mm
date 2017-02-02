@@ -24,6 +24,7 @@
 #import <Foundation/Foundation.h>
 #import <AppKit/NSOpenGL.h>
 
+#include "pxr/pxr.h"
 #include "glPlatformContextDarwin.h"
 
 #ifdef ARCH_OS_IOS
@@ -31,6 +32,8 @@ typedef EAGLContext NSGLContext;
 #else
 typedef NSOpenGLContext NSGLContext;
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GarchNSGLContextState::Detail
 {
@@ -120,3 +123,5 @@ GarchSelectCoreProfileMacVisual()
 
     return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

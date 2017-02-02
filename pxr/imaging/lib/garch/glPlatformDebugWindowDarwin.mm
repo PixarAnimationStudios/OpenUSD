@@ -22,12 +22,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/garch/glPlatformDebugWindowDarwin.h"
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static int
 Garch_GetModifierKeys(NSUInteger flags)
@@ -232,3 +235,5 @@ Garch_GLPlatformDebugWindow::ExitApp()
 {
     [NSApp stop:nil];
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
