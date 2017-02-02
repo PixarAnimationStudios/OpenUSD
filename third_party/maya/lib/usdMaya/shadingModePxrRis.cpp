@@ -44,7 +44,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 
-#include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
 
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
@@ -275,9 +274,7 @@ _CreateShaderObject(
     }
 
     // The rest of this is not really RIS specific at all.
-    BOOST_FOREACH(
-            const UsdShadeParameter &param, 
-            risShader.GetParameters()) {
+    for (const UsdShadeParameter &param : risShader.GetParameters()) {
         MPlug mayaAttr = _ImportAttr(param.GetAttr(), fnDep);
         if (mayaAttr.isNull()) {
             continue;
