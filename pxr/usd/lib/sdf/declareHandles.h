@@ -154,18 +154,18 @@ private:
     template <class U> friend class SdfHandle;
 };
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
 template <class T>
 T*
-get_pointer(const PXR_NS::SdfHandle<T>& x)
+get_pointer(const SdfHandle<T>& x)
 {
     return !x ? 0 : x.operator->();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 namespace boost {
 
-using ::get_pointer;
+using PXR_NS::get_pointer;
 
 namespace python {
 
