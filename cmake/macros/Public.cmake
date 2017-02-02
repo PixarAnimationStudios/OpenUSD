@@ -972,7 +972,7 @@ function(pxr_register_test TEST_NAME)
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-	set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHON_PATH}")
+	set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
         else()
