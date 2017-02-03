@@ -198,8 +198,8 @@ public:
     /// relationship)
     bool ClearTargets(bool removeSpec) const;
 
-    /// Compose this relationship's targets and return the result as a
-    /// vector of SdfPath.
+    /// Compose this relationship's targets and fill \p targets with the result.
+    /// All preexisting elements in \p targets are lost.
     ///
     /// By default, any relationship targets that point to a child prim or
     /// a property of a child prim beneath an instanceable prim will be
@@ -220,10 +220,10 @@ public:
     bool GetTargets(SdfPathVector* targets,
                     bool forwardToObjectsInMasters = true) const;
 
-    /// Compose this relationship's \em ultimate targets, taking into
-    /// account "relationship forwarding", and return the result as a vector
-    /// of SdfPath. This method never returns relationship paths in the targets
-    /// vector.
+    /// Compose this relationship's \em ultimate targets, taking into account
+    /// "relationship forwarding", and fill \p targets with the result.  All
+    /// preexisting elements in \p targets are lost.  This method never inserts
+    /// relationship paths in \p targets.
     ///
     /// See documentation on GetTargets for information on the 
     /// \p forwardToObjectsInMasters parameter. Note that setting this

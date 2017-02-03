@@ -386,15 +386,11 @@ UsdRelationship::GetForwardedTargets(SdfPathVector* targets,
                                      bool forwardToObjectsInMasters) const
 {
     if (!targets) {
-        TF_CODING_ERROR("Received null target pointer while processing <%s>\n",
-                GetPath().GetText());
+        TF_CODING_ERROR("Passed null pointer for targets on <%s>",
+                        GetPath().GetText());
         return false;
-    } else if (!targets->empty()) {
-        TF_CODING_ERROR("Received non-empty targets while processing <%s>\n",
-                GetPath().GetText());
-        targets->clear();
     }
-
+    targets->clear();
     return _GetForwardedTargets(targets,
                                 /*includeForwardingRels=*/false,
                                 forwardToObjectsInMasters);
