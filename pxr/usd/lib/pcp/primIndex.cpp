@@ -47,11 +47,13 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/functional/hash.hpp>
+#include <boost/optional.hpp>
 #include <algorithm>
 #include <functional>
 #include <vector>
@@ -652,7 +654,7 @@ struct Task {
     // This sorts tasks in priority order from lowest priority to highest
     // priority, so highest priority tasks come last.
     struct PriorityOrder {
-        bool operator()(const Task& a, const Task& b) const {
+        inline bool operator()(const Task& a, const Task& b) const {
             if (a.type != b.type) {
                 return a.type > b.type;
             }
@@ -666,9 +668,10 @@ struct Task {
                     return PcpCompareNodeStrength(a.node, b.node) == 1;
                 } else {
                     // Arbitrary order
-                    return a.node < b.node;
+                    return a.node > b.node;
                 }
             case EvalNodeVariantAuthored:
+            case EvalNodeVariantFallback:
                 // Variant selections can depend on non-local information
                 // so we must visit them in strength order.
                 if (a.node != b.node) {
@@ -677,9 +680,18 @@ struct Task {
                     // Lower-number vsets have strength priority.
                     return a.vsetNum > b.vsetNum;
                 }
+            case EvalNodeVariantNoneFound:
+                // In the none-found case, we only need to ensure a consistent
+                // and distinct order for distinct tasks, the specific order can
+                // be arbitrary.
+                if (a.node != b.node) {
+                    return a.node > b.node;
+                } else {
+                    return a.vsetNum > b.vsetNum;
+                }
             default:
                 // Arbitrary order
-                return a.node < b.node;
+                return a.node > b.node;
             }
         }
         // We can use a slightly cheaper ordering for payload arcs
@@ -689,11 +701,24 @@ struct Task {
             : _hasPayloadDecorator(hasPayloadDecorator) {}
     };
 
-    Task(Type type_, const PcpNodeRef& node_ = PcpNodeRef(),
-         const std::string &vsetName = std::string(),
-         int vsetNum = 0)
-        : type(type_)
-        , node(node_) 
+    explicit Task(Type type, const PcpNodeRef& node = PcpNodeRef())
+        : type(type)
+        , node(node)
+        , vsetNum(0)
+    { }
+
+    Task(Type type, const PcpNodeRef& node,
+         std::string &&vsetName, int vsetNum)
+        : type(type)
+        , node(node)
+        , vsetName(std::move(vsetName))
+        , vsetNum(vsetNum)
+    { }
+
+    Task(Type type, const PcpNodeRef& node,
+         std::string const &vsetName, int vsetNum)
+        : type(type)
+        , node(node)
         , vsetName(vsetName)
         , vsetNum(vsetNum)
     { }
@@ -710,15 +735,45 @@ struct Task {
         std::swap(lhs.node, rhs.node);
         lhs.vsetName.swap(rhs.vsetName);
         std::swap(lhs.vsetNum, rhs.vsetNum);
-    } 
+    }
+
+    // Stream insertion operator for debugging.
+    friend std::ostream &operator<<(std::ostream &os, Task const &task) {
+        os << TfStringPrintf(
+            "Task(type=%s, nodePath=<%s>, nodeSite=<%s>",
+            TfEnum::GetName(task.type).c_str(),
+            task.node.GetPath().GetText(),
+            TfStringify(task.node.GetSite()).c_str());
+        if (task.vsetName) {
+            os << TfStringPrintf(", vsetName=%s, vsetNum=%d",
+                                 task.vsetName->c_str(), task.vsetNum);
+        }
+        return os << ")";
+    }        
     
     Type type;
     PcpNodeRef node;
     // only for variant tasks:
-    std::string vsetName;
+    boost::optional<std::string> vsetName;
     int vsetNum;
 };
 
+}
+
+TF_REGISTRY_FUNCTION(TfEnum) {
+    TF_ADD_ENUM_NAME(Task::EvalNodeRelocations);
+    TF_ADD_ENUM_NAME(Task::EvalImpliedRelocations);
+    TF_ADD_ENUM_NAME(Task::EvalNodeReferences);
+    TF_ADD_ENUM_NAME(Task::EvalNodePayload);
+    TF_ADD_ENUM_NAME(Task::EvalNodeInherits);
+    TF_ADD_ENUM_NAME(Task::EvalImpliedClasses);
+    TF_ADD_ENUM_NAME(Task::EvalNodeSpecializes);
+    TF_ADD_ENUM_NAME(Task::EvalImpliedSpecializes);
+    TF_ADD_ENUM_NAME(Task::EvalNodeVariantSets);
+    TF_ADD_ENUM_NAME(Task::EvalNodeVariantAuthored);
+    TF_ADD_ENUM_NAME(Task::EvalNodeVariantFallback);
+    TF_ADD_ENUM_NAME(Task::EvalNodeVariantNoneFound);
+    TF_ADD_ENUM_NAME(Task::None);
 }
 
 // Pcp_PrimIndexer is used during prim cache population to track which
@@ -764,7 +819,7 @@ struct Pcp_PrimIndexer
     const int ancestorRecursionDepth;
 
     // Context for the prim index we are building.
-    const PcpPrimIndexInputs inputs;
+    const PcpPrimIndexInputs &inputs;
     PcpPrimIndexOutputs* const outputs;
 
     // The previousFrame tracks information across recursive invocations
@@ -785,7 +840,7 @@ struct Pcp_PrimIndexer
     PcpNodeRefHashSet seen;
 #endif // PCP_DIAGNOSTIC_VALIDATION
 
-    Pcp_PrimIndexer(PcpPrimIndexInputs inputs_,
+    Pcp_PrimIndexer(PcpPrimIndexInputs const &inputs_,
                     PcpPrimIndexOutputs *outputs_,
                     PcpLayerStackSite rootSite_,
                     int ancestorRecursionDepth_,
@@ -906,6 +961,18 @@ struct Pcp_PrimIndexer
         // embedded class hierarchies have already been propagated to
         // the top node n, letting us avoid redundant work.)
         _AddTasksForNodeRecursively(n, skipCompletedNodes, inputs.usd);
+
+        _DebugPrintTasks("After AddTasksForNode");
+    }
+
+    inline void _DebugPrintTasks(char const *label) const {
+#if 0
+        printf("-- %s ----------------\n", label);
+        for (auto iter = tasks.rbegin(); iter != tasks.rend(); ++iter) {
+            printf("%s\n", TfStringify(*iter).c_str());
+        }
+        printf("----------------\n");
+#endif
     }
 
     // Retry any variant sets that previously failed to find an authored
@@ -960,6 +1027,12 @@ struct Pcp_PrimIndexer
         // XXX Is it possible to have dupes here?  blevin?
         tasks.erase(
             std::unique(tasks.begin(), authVariantsEnd), authVariantsEnd);
+
+#ifdef PCP_DIAGNOSTIC_VALIDATION
+        TF_VERIFY(std::is_sorted(tasks.begin(), tasks.end(), comp));
+#endif // PCP_DIAGNOSTIC_VALIDATION
+
+        _DebugPrintTasks("After RetryVariantTasks");
     }
 
     // Convenience function to record an error both in this primIndex's
@@ -3232,7 +3305,7 @@ _EvalNodeVariantSets(
     for (int vsetNum=0, numVsets=vsetNames.size();
          vsetNum < numVsets; ++vsetNum) {
         indexer->AddTask(Task(Task::Type::EvalNodeVariantAuthored,
-                              node, vsetNames[vsetNum], vsetNum));
+                              node, std::move(vsetNames[vsetNum]), vsetNum));
     }
 }
 
@@ -4040,11 +4113,11 @@ Pcp_BuildPrimIndex(
             break;
         case Task::Type::EvalNodeVariantAuthored:
             _EvalNodeAuthoredVariant(&outputs->primIndex, task.node, &indexer,
-                                     task.vsetName, task.vsetNum);
+                                     *task.vsetName, task.vsetNum);
             break;
         case Task::Type::EvalNodeVariantFallback:
             _EvalNodeFallbackVariant(&outputs->primIndex, task.node, &indexer,
-                                     task.vsetName, task.vsetNum);
+                                     *task.vsetName, task.vsetNum);
             break;
         case Task::Type::EvalNodeVariantNoneFound:
             // No-op.  These tasks are just markers for RetryVariantTasks().
