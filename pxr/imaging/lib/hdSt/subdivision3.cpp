@@ -307,6 +307,8 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
                               TfToken const &name)
 {
 #if HDST_ENABLE_GPU_SUBDIVISION
+    if (!TF_VERIFY(_vertexStencils)) return;
+
     // filling coarse vertices has been done at resource registry.
 
     // vertex buffer wrapper for OpenSubdiv API
