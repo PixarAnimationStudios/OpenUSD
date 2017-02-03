@@ -866,9 +866,13 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
     prim->SetInfo(UsdTokens->clipTemplateEndTime, VtValue(endTime));
     prim->SetInfo(UsdTokens->clipTemplateStride, VtValue(stride));
 
+    const std::string topologyId 
+        = _GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
+                                     topologyLayer->GetRealPath(),
+                                     resultLayer->GetRealPath());
+
     // set root layer metadata
-    _StitchClipsTopologySubLayerPath(resultLayer, 
-                                     topologyLayer->GetIdentifier());
+    _StitchClipsTopologySubLayerPath(resultLayer, topologyId);
     resultLayer->SetStartTimeCode(startTime);
     resultLayer->SetEndTimeCode(endTime);
     resultLayer->Save();
